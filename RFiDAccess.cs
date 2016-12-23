@@ -122,7 +122,7 @@ namespace RFiDGear
 		//********************************************************
 		public void authToMifareDesfireCard()
 		{
-			helperClass converter = new helperClass();
+			CustomConverter converter = new CustomConverter();
 			
 		}
 		
@@ -182,14 +182,14 @@ namespace RFiDGear
 		//OutPutParameter:-------
 		//Description:Perform action after time interval passed
 		//********************************************************
-		public bool readMiFareClassicSingleSector(int sectorNumber,int keyNumber, MifareClassicAccessBits sab)
+		public bool readMiFareClassicSingleSector(int sectorNumber,int keyNumber, MifareClassicAccessBitsModel sab)
 		{
 			SettingsReaderWriter settings = new SettingsReaderWriter();
 			
 			settings.readSettings();
 			
-			MifareKey keyA = new MifareKey() { Value = new helperClass().FormatSectorStringWithSpacesEachByte(new SettingsReaderWriter()._defaultClassicCardKeysAKeys[keyNumber])};
-			MifareKey keyB = new MifareKey() { Value = new helperClass().FormatSectorStringWithSpacesEachByte(new SettingsReaderWriter()._defaultClassicCardKeysBKeys[keyNumber])};
+			MifareKey keyA = new MifareKey() { Value = new CustomConverter().FormatSectorStringWithSpacesEachByte(new SettingsReaderWriter()._defaultClassicCardKeysAKeys[keyNumber])};
+			MifareKey keyB = new MifareKey() { Value = new CustomConverter().FormatSectorStringWithSpacesEachByte(new SettingsReaderWriter()._defaultClassicCardKeysBKeys[keyNumber])};
 			
 			int blockCount = 0, sectorCount = 0; sectorIsAuth = true; sectorCanRead = true;
 			
@@ -299,7 +299,7 @@ namespace RFiDGear
 			IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 			aiToUse.MasterCardKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
 
-			helperClass converter = new helperClass();
+			CustomConverter converter = new CustomConverter();
 			
 			if (readerUnit.ConnectToReader()) {
 				if (readerUnit.WaitInsertion(100)) {
@@ -363,7 +363,7 @@ namespace RFiDGear
 			aiToWrite.WriteKey.KeyType = DESFireKeyType.DF_KEY_AES;
 			aiToWrite.WriteKeyNo = 2;
 
-			helperClass converter = new helperClass();
+			CustomConverter converter = new CustomConverter();
 			
 			DESFireKeySettings desFireKeySet;
 			byte nBNmbr;
@@ -440,7 +440,7 @@ namespace RFiDGear
 			aiToWrite.WriteKey.KeyType = DESFireKeyType.DF_KEY_AES;
 			aiToWrite.WriteKeyNo = 2;
 
-			helperClass converter = new helperClass();
+			CustomConverter converter = new CustomConverter();
 			
 			DESFireKeySettings desFireKeySet;
 			byte nBNmbr;
@@ -497,7 +497,7 @@ namespace RFiDGear
 			aiToUse.MasterCardKey.Value = cardMasterKey;
 			aiToUse.MasterCardKey.KeyType = keyType;
 			
-			helperClass converter = new helperClass();
+			CustomConverter converter = new CustomConverter();
 			
 			
 			if (readerUnit.ConnectToReader()) {
@@ -676,7 +676,7 @@ namespace RFiDGear
 
 		byte[] currentMifareClassicSector;
 		
-		helperClass converter = new helperClass();
+		CustomConverter converter = new CustomConverter();
 		
 		byte blocknSectorData;
 		int discarded;
@@ -727,7 +727,7 @@ namespace RFiDGear
 	public class dataSourceClassDESFireFileData
 	{
 		
-		helperClass converter = new helperClass();
+		CustomConverter converter = new CustomConverter();
 		
 		byte data;
 		int discarded;

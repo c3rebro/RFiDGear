@@ -15,7 +15,7 @@ namespace RFiDGear
 	/// <summary>
 	/// Description of mifareClassicAccessBits.
 	/// </summary>
-	public class MifareClassicAccessBits
+	public class MifareClassicAccessBitsModel
 	{
 		private SectorAccessBits sab;
 		
@@ -71,7 +71,7 @@ namespace RFiDGear
 		
 		byte[] st;
 		
-		public MifareClassicAccessBits()
+		public MifareClassicAccessBitsModel()
 		{
 			st = new byte[4] { 0x00, 0x00, 0x00, 0xC3 };
 			sab = new SectorAccessBits();
@@ -251,7 +251,7 @@ namespace RFiDGear
 		public bool decodeSectorTrailer(string st)
 		{
 			
-			helperClass convert = new helperClass();
+			CustomConverter convert = new CustomConverter();
 			
 			byte[] _bytes = new byte[255];
 			int discarded = 0;
@@ -267,7 +267,7 @@ namespace RFiDGear
 		public bool encodeSectorTrailer(string cond, int type)
 		{
 			
-			helperClass convert = new helperClass();
+			CustomConverter convert = new CustomConverter();
 			
 			if (cond == sectorTrailerAB[1] || cond == dataBlockAB[1] || cond == dataBlockABs[1] ||
 			    cond == sectorTrailerAB[3] || cond == dataBlockAB[3] || cond == dataBlockABs[3] ||
@@ -429,7 +429,7 @@ namespace RFiDGear
 		
 		public bool checkSectorTrailerCorrectness(string stString)
 		{
-			helperClass convert = new helperClass();
+			CustomConverter convert = new CustomConverter();
 			byte[] st = new byte[255];
 			int discarded = 0;
 			

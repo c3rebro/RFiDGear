@@ -62,12 +62,12 @@ namespace RFiDGear
 		#endregion
 		
 		
-		helperClass converter;
+		CustomConverter converter;
 		
 		#region constructors
 		public SettingsReaderWriter()
 		{
-			converter = new helperClass();
+			converter = new CustomConverter();
 			this.readSettings();
 		}
 		#endregion

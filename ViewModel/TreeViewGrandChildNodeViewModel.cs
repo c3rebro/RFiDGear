@@ -37,11 +37,11 @@ namespace RFiDGear.ViewModel
 
 		#endregion // Data
 		
-		readonly Model.chipMifareClassicDataBlock _dataBlock;
+		readonly Model.MifareClassicDataBlockModel _dataBlock;
 		readonly string _tag;
 		
 
-		public TreeViewGrandChildNodeViewModel(Model.chipMifareClassicDataBlock dataBlock, TreeViewChildNodeViewModel parentSector, CARD_TYPE cardType, int sectorNumber)
+		public TreeViewGrandChildNodeViewModel(Model.MifareClassicDataBlockModel dataBlock, TreeViewChildNodeViewModel parentSector, CARD_TYPE cardType, int sectorNumber)
 		{
 			_dataBlock = dataBlock;
 			_dataBlock.dataBlockNumber = dataBlock.dataBlockNumber;

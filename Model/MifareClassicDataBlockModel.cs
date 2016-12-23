@@ -13,10 +13,10 @@ namespace RFiDGear.Model
 	/// <summary>
 	/// Description of chipMifareClassicDataBlock.
 	/// </summary>
-	public class chipMifareClassicDataBlock
+	public class MifareClassicDataBlockModel
 	{
 		
-		public chipMifareClassicDataBlock(int blockNumberDisplayItem)
+		public MifareClassicDataBlockModel(int blockNumberDisplayItem)
 		{
 			this.dataBlockNumber = blockNumberDisplayItem;
 		}

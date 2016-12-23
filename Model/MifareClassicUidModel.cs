@@ -18,15 +18,15 @@ namespace RFiDGear.Model
 	/// Description of chipMifareClassicUid.
 	/// </summary>
 	
-	public class chipMifareClassicUid
+	public class MifareClassicUidModel
 	{
-		readonly List<chipMifareClassicSector> _sectorList = new List<chipMifareClassicSector>();
+		readonly List<MifareClassicSectorModel> _sectorList = new List<MifareClassicSectorModel>();
 
-		public List<chipMifareClassicSector> SectorList {
+		public List<MifareClassicSectorModel> SectorList {
 			get { return _sectorList; }
 		}
 		
-		public chipMifareClassicUid(string uid)
+		public MifareClassicUidModel(string uid)
 		{
 			this.uidNumber = uid;
 		}

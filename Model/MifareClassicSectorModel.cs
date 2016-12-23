@@ -14,17 +14,17 @@ namespace RFiDGear.Model
 	/// <summary>
 	/// Description of chipMifareClassicSector.
 	/// </summary>
-	public class chipMifareClassicSector
+	public class MifareClassicSectorModel
 	{
 		
-		readonly List<chipMifareClassicDataBlock> mifareClassicBlock = new List<chipMifareClassicDataBlock>();
+		readonly List<MifareClassicDataBlockModel> mifareClassicBlock = new List<MifareClassicDataBlockModel>();
 		
-		public chipMifareClassicSector(int sectorNumber)
+		public MifareClassicSectorModel(int sectorNumber)
 		{
 			this.mifareClassicSectorNumber = sectorNumber;
 		}
 		
-		public IList<chipMifareClassicDataBlock> dataBlock {
+		public IList<MifareClassicDataBlockModel> dataBlock {
 			get { return mifareClassicBlock; }
 		}
 		

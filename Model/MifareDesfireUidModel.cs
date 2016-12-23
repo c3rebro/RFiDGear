@@ -16,15 +16,15 @@ namespace RFiDGear.Model
 	/// <summary>
 	/// Description of chipUid.
 	/// </summary>
-	public class chipMifareDesfireUid
+	public class MifareDesfireUidModel
 	{
-		readonly List<chipMifareDesfireAppID> _appList = new List<chipMifareDesfireAppID>();
+		readonly List<MifareDesfireAppModel> _appList = new List<MifareDesfireAppModel>();
 
-		public List<chipMifareDesfireAppID> AppList {
+		public List<MifareDesfireAppModel> AppList {
 			get { return _appList; }
 		}
 				
-		public chipMifareDesfireUid(string uid)
+		public MifareDesfireUidModel(string uid)
 		{
 			uidNumber = uid;
 		}

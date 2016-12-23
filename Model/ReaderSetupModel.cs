@@ -14,7 +14,7 @@ namespace RFiDGear
 	/// <summary>
 	/// Description of RFiDReaderSetup.
 	/// </summary>
-	public class RFiDReaderSetup : RFiDAccess
+	public class ReaderSetupModel : RFiDAccess
 	{
 		private RFiDAccess chipReaderWriter;
 		
@@ -27,7 +27,7 @@ namespace RFiDGear
 			"SmartID", "STidPRG", "N/A"
 		};
 		
-		public RFiDReaderSetup(string readerProviderByName) : base(null) {
+		public ReaderSetupModel(string readerProviderByName) : base(null) {
 			if((!String.IsNullOrEmpty(new SettingsReaderWriter()._defaultReaderProvider)) && String.IsNullOrEmpty(readerProviderByName)){
 				chipReaderWriter = new RFiDAccess(new SettingsReaderWriter()._defaultReaderProvider);
 			}

@@ -13,10 +13,10 @@ namespace RFiDGear.Model
 	/// <summary>
 	/// Description of chipMifareDesfireAppID.
 	/// </summary>
-	public class chipMifareDesfireAppID
+	public class MifareDesfireAppModel
 	{
 		
-		public chipMifareDesfireAppID()
+		public MifareDesfireAppModel()
 		{
 		}
 	}

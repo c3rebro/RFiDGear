@@ -23,7 +23,7 @@ namespace RFiDGear
 	//**************************************************************************
 	//class for Hexidecimal to Byte and Byte to Hexidecimal conversion
 	//**************************************************************************
-	public class helperClass
+	public class CustomConverter
 	{
 		
 		public string desFireKeyToEdit { get; set; }
@@ -32,7 +32,7 @@ namespace RFiDGear
 		public string[] _constDesfireCardKeyType = { "3DES", "AES", "DES" };
 		public string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 		
-		public helperClass()
+		public CustomConverter()
 		{
 			
 			// constructor
@@ -167,47 +167,7 @@ namespace RFiDGear
 			desFireKeyToEdit = temp;
 			
 			return KEY_ERROR.NO_ERROR;
-		}
-		
-		public string CalculateMD5Hash(string input)
-		{
-			
-			StringBuilder sb = new StringBuilder();
-			// step 1, calculate MD5 hash from input
-			string result;
-			MD5 md5 = System.Security.Cryptography.MD5.Create();
-
-			byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
-			
-							inputBytes = md5.ComputeHash(inputBytes);
-			do {
-				
-				sb.Clear();
-				result="";
-				inputBytes = md5.ComputeHash(inputBytes);
-
-				byte[] hash =  inputBytes; //md5.ComputeHash(inputBytes);
-			
-
-
-				// step 2, convert byte array to hex string
-
-			
-
-				for (int i = 0; i < hash.Length; i++) {
-
-					sb.Append(hash[i].ToString("X2"));
-				}
-				
-				result = sb.ToString().ToLower();
-				
-			} while(!result.Contains("c7"));
-
-
-			return sb.ToString();
-
-		}
-		
+		}		
 		
 		byte HexToByte(string hex)
 		{

@@ -34,7 +34,7 @@ namespace RFiDGear.ViewModel
 		
 		bool isClassicAuthInfo = true;
 		
-		MifareClassicAccessBits sab;
+		MifareClassicAccessBitsModel sab;
 		
 		readonly ObservableCollection<sourceForSectorTrailerDataGrid> displaySourceForSectorTrailerDataGrid;
 		readonly ObservableCollection<sourceForLongDataBlockDataGrid> displaySourceForLongDataBlockDataGrid;
@@ -54,7 +54,7 @@ namespace RFiDGear.ViewModel
 		
 		public KeySettingsMifareClassicDialogViewModel(bool isModal = true)
 		{
-			sab = new MifareClassicAccessBits();
+			sab = new MifareClassicAccessBitsModel();
 			
 			displaySourceForSectorTrailerDataGrid = new ObservableCollection<sourceForSectorTrailerDataGrid>();
 			foreach(string accessConditions in sab.GetSectorTrailerAccessConditions){

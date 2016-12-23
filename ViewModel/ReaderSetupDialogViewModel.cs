@@ -86,27 +86,27 @@ namespace RFiDGear.ViewModel
 		
 		public string[] ReaderProviderList {
 			get {
-				return new RFiDReaderSetup(null).ReaderList;
+				return new ReaderSetupModel(null).ReaderList;
 			}
 		}
 
 		public string SelectedReader {
-			get { return new RFiDReaderSetup(null).SelectedReader; }
-			set { new RFiDReaderSetup(null).SelectedReader = value; }
+			get { return new ReaderSetupModel(null).SelectedReader; }
+			set { new ReaderSetupModel(null).SelectedReader = value; }
 		}
 		
 		public string ReaderStatus {
-			get { return !String.IsNullOrWhiteSpace(new RFiDReaderSetup(null).GetChipUID)
+			get { return !String.IsNullOrWhiteSpace(new ReaderSetupModel(null).GetChipUID)
 					? String.Format("Connected to Card:"
 					                + '\n'
 					                +"UID: {0} "
 					                + '\n'
-					                +"Type: {1}",new RFiDReaderSetup(null).GetChipUID, new RFiDReaderSetup(null).GetChipType)
+					                +"Type: {1}",new ReaderSetupModel(null).GetChipUID, new ReaderSetupModel(null).GetChipType)
 					: "not Connected";}
 		}
 		
 		public string DefaultReader {
-			get { return new RFiDReaderSetup(null).GetReaderName;}
+			get { return new ReaderSetupModel(null).GetReaderName;}
 		}
 		
 		#region ResourceLoader

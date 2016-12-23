@@ -13,14 +13,14 @@ namespace RFiDGear
 	/// <summary>
 	/// Description of DesfireDataContent.
 	/// </summary>
-	public class DesfireDataContent
+	public class MifareDesfireFileModel
 	{
-		helperClass converter = new helperClass();
+		CustomConverter converter = new CustomConverter();
 		
 		byte data;
 		int discarded;
 		
-		public DesfireDataContent(byte[] cardContent, int arIndex)
+		public MifareDesfireFileModel(byte[] cardContent, int arIndex)
 		{
 			data = cardContent[arIndex];
 		}

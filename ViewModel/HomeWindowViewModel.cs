@@ -26,8 +26,8 @@ namespace RFiDGear.ViewModel
 	/// </summary>
 	public class HomeWindowViewModel : ViewModelBase
 	{
-		RFiDReaderSetup readerSetup;
-		MifareClassicAccessBits sab;
+		ReaderSetupModel readerSetup;
+		MifareClassicAccessBitsModel sab;
 		
 		private ObservableCollection<IDialogViewModel> _Dialogs = new ObservableCollection<IDialogViewModel>();
 		public ObservableCollection<IDialogViewModel> Dialogs { get { return _Dialogs; } }
@@ -37,15 +37,15 @@ namespace RFiDGear.ViewModel
 		ObservableCollection<dataSourceClassMifareBlocks> DataSourceForMifareClassicDataBlock = new ObservableCollection<dataSourceClassMifareBlocks>();
 		ObservableCollection<object> gridSource;
 		ObservableCollection<TreeViewParentNodeViewModel> _uids = new ObservableCollection<TreeViewParentNodeViewModel>();
-		List<Model.chipMifareClassicUid> mifareClassicUidModels = new List<RFiDGear.Model.chipMifareClassicUid>();
-		List<Model.chipMifareDesfireUid> mifareDesfireViewModels = new List<RFiDGear.Model.chipMifareDesfireUid>();
+		List<Model.MifareClassicUidModel> mifareClassicUidModels = new List<RFiDGear.Model.MifareClassicUidModel>();
+		List<Model.MifareDesfireUidModel> mifareDesfireViewModels = new List<RFiDGear.Model.MifareDesfireUidModel>();
 		
 		Updater updater = new Updater();
 		
 		public HomeWindowViewModel()
 		{
-			readerSetup = new RFiDReaderSetup(null);
-			sab = new MifareClassicAccessBits();
+			readerSetup = new ReaderSetupModel(null);
+			sab = new MifareClassicAccessBitsModel();
 
 			Messenger.Default.Register<NotificationMessage<string>>(
 				this, nm => {
@@ -191,17 +191,17 @@ namespace RFiDGear.ViewModel
 		public ICommand ReadChipCommand { get { return new RelayCommand(OnNewReadChipCommand); } }
 		public void OnNewReadChipCommand()
 		{
-			if (!String.IsNullOrEmpty(new RFiDReaderSetup(null).GetChipUID)) {
-				if (new RFiDReaderSetup(null).SelectedReader != "N/A") {
-					if (!knownUIDs.Contains(new RFiDReaderSetup(null).GetChipUID)) {
-						knownUIDs.Add(new RFiDReaderSetup(null).GetChipUID);
+			if (!String.IsNullOrEmpty(new ReaderSetupModel(null).GetChipUID)) {
+				if (new ReaderSetupModel(null).SelectedReader != "N/A") {
+					if (!knownUIDs.Contains(new ReaderSetupModel(null).GetChipUID)) {
+						knownUIDs.Add(new ReaderSetupModel(null).GetChipUID);
 						RaisePropertyChanged("TreeViewParentNode");
 					}
 				}
 			} else {
-				if (new RFiDReaderSetup(null).SelectedReader != "N/A") {
-					if (!knownUIDs.Contains(new RFiDReaderSetup(null).GetChipUID)) {
-						knownUIDs.Add(new RFiDReaderSetup(null).GetChipUID);
+				if (new ReaderSetupModel(null).SelectedReader != "N/A") {
+					if (!knownUIDs.Contains(new ReaderSetupModel(null).GetChipUID)) {
+						knownUIDs.Add(new ReaderSetupModel(null).GetChipUID);
 						RaisePropertyChanged("TreeViewParentNode");
 					}
 				}
@@ -392,7 +392,7 @@ namespace RFiDGear.ViewModel
 		}
 		public ObservableCollection<TreeViewParentNodeViewModel> TreeViewParentNode {
 			get {
-				helperClass converter = new helperClass();
+				CustomConverter converter = new CustomConverter();
 				if (!String.IsNullOrEmpty(readerSetup.GetChipUID)) {
 					
 					if (!knownUIDs.Contains(readerSetup.GetChipUID))
@@ -400,21 +400,21 @@ namespace RFiDGear.ViewModel
 					
 					switch (readerSetup.GetChipType) {
 						case "Mifare1K":
-							_uids.Add(new TreeViewParentNodeViewModel(new Model.chipMifareClassicUid(readerSetup.GetChipUID), CARD_TYPE.CT_CLASSIC_1K));
+							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID), CARD_TYPE.CT_CLASSIC_1K));
 							break;
 							
 						case "Mifare2K":
-							_uids.Add(new TreeViewParentNodeViewModel(new Model.chipMifareClassicUid(readerSetup.GetChipUID), CARD_TYPE.CT_CLASSIC_2K));
+							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID), CARD_TYPE.CT_CLASSIC_2K));
 							break;
 							
 							
 						case "Mifare4K":
-							_uids.Add(new TreeViewParentNodeViewModel(new Model.chipMifareClassicUid(readerSetup.GetChipUID), CARD_TYPE.CT_CLASSIC_4K));
+							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID), CARD_TYPE.CT_CLASSIC_4K));
 							break;
 							
 							
 						case "DESFireEV1":
-							_uids.Add(new TreeViewParentNodeViewModel(new Model.chipMifareDesfireUid(readerSetup.GetChipUID), CARD_TYPE.CT_DESFIRE_EV1));
+							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareDesfireUidModel(readerSetup.GetChipUID), CARD_TYPE.CT_DESFIRE_EV1));
 							break;
 					}
 					
