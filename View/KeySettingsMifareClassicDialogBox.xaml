@@ -1,0 +1,317 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Controls:MetroWindow
+	x:Class="RFiDGear.View.KeySettingsMifareClassicDialogBox" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+	Title="RFiDGear.View"
+	WindowStartupLocation="CenterOwner"
+	BorderThickness="0"
+	GlowBrush="Black"
+	ResizeMode="CanResizeWithGrip"
+	Height="506"
+	Width="988">
+	<Grid
+		Margin="0,0,0,0"
+		HorizontalAlignment="Stretch"
+		Height="472"
+		VerticalAlignment="Top">
+		<Controls:MetroAnimatedTabControl
+			Grid.Column="0"
+			Grid.Row="0"
+			HorizontalAlignment="Stretch"
+			VerticalAlignment="Top"
+			Margin="0,0,0,0">
+			<TabItem
+				Header="Mifare Classic &amp; Desfire Key Setup">
+				<Grid
+					Grid.Column="0"
+					Grid.Row="0"
+					Margin="0,0,0,0"
+					HorizontalAlignment="Stretch"
+					VerticalAlignment="Stretch"
+					Height="378">
+					<GroupBox
+						Header="Mifare Classic Keys"
+						Height="113"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Top"
+						Margin="8,8,8,0"
+						IsEnabled="{Binding IsClassicAuthInfoEnabled}">
+						<Canvas>
+							<Label
+								Content="Key A Nr."
+								Height="26"
+								Canvas.Left="8"
+								Width="96"
+								Canvas.Top="8" />
+							<ComboBox
+								Height="20"
+								Canvas.Top="8"
+								Canvas.Left="89"
+								Width="65" />
+							<Label
+								Content="Key B Value"
+								Height="26"
+								Canvas.Top="39"
+								Canvas.Left="180"
+								Width="81" />
+							<PasswordBox
+								Height="20"
+								Canvas.Top="39"
+								Canvas.Left="273"
+								Width="222" />
+							<Label
+								Content="Key B Nr."
+								Height="26"
+								Canvas.Left="8"
+								Width="96"
+								Canvas.Top="39" />
+							<ComboBox
+								Height="20"
+								Canvas.Left="89"
+								Width="65"
+								Canvas.Top="39" />
+							<Label
+								Content="Key A Value"
+								Height="26"
+								Canvas.Top="8"
+								Canvas.Left="180"
+								Width="77" />
+							<PasswordBox
+								Height="20"
+								Canvas.Top="8"
+								Canvas.Left="273"
+								Width="222" />
+						</Canvas>
+					</GroupBox>
+					<GroupBox
+						Header="Mifare DESFire Keys"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="8,131,8,8"
+						IsEnabled="{Binding IsDesfireAuthInfoEnabled}">
+						<Canvas>
+							<Label
+								Content="Card Master Key"
+								Height="26"
+								Canvas.Top="8"
+								Canvas.Left="8"
+								Width="162" />
+							<Label
+								Content="Application Master Key"
+								Height="26"
+								Canvas.Top="39"
+								Canvas.Left="8"
+								Width="162" />
+							<PasswordBox
+								Height="20"
+								Canvas.Top="39"
+								Width="372"
+								Canvas.Left="273" />
+							<PasswordBox
+								Height="20"
+								Canvas.Top="8"
+								Width="372"
+								Canvas.Left="273" />
+							<Label
+								Content="Read Key Nr."
+								Height="26"
+								Width="96"
+								Canvas.Left="8"
+								Canvas.Top="70.5" />
+							<Label
+								Content="Write Key Nr."
+								Height="26"
+								Width="96"
+								Canvas.Left="8"
+								Canvas.Top="101.5" />
+							<ComboBox
+								Height="20"
+								Width="65"
+								Canvas.Top="101.5"
+								Canvas.Left="102" />
+							<ComboBox
+								Height="20"
+								Width="65"
+								Canvas.Top="70.5"
+								Canvas.Left="102" />
+							<Label
+								Content="Read Key"
+								Height="26"
+								Canvas.Top="70"
+								Canvas.Left="186"
+								Width="114" />
+							<Label
+								Content="Write Key"
+								Height="26"
+								Canvas.Top="102"
+								Canvas.Left="186"
+								Width="114" />
+							<PasswordBox
+								Height="20"
+								Canvas.Top="102"
+								Width="372"
+								Canvas.Left="273" />
+							<PasswordBox
+								Height="20"
+								Canvas.Top="70"
+								Width="372"
+								Canvas.Left="273" />
+							<Label
+								Content="Key Type"
+								Height="26"
+								Canvas.Top="8"
+								Canvas.Left="658"
+								Width="61.5" />
+							<ComboBox
+								Canvas.Top="8"
+								Height="26"
+								Canvas.Left="739"
+								Width="100" />
+							<Label
+								Content="Key Type"
+								Height="26"
+								Canvas.Top="39"
+								Canvas.Left="658"
+								Width="61.5" />
+							<ComboBox
+								Canvas.Top="39"
+								Height="26"
+								Canvas.Left="739"
+								Width="100" />
+							<Label
+								Content="Key Type"
+								Height="26"
+								Canvas.Left="658"
+								Canvas.Top="70"
+								Width="61.5" />
+							<ComboBox
+								Height="26"
+								Canvas.Left="739"
+								Canvas.Top="70"
+								Width="100" />
+							<Label
+								Content="Key Type"
+								Height="26"
+								Canvas.Left="658"
+								Canvas.Top="102"
+								Width="61.5" />
+							<ComboBox
+								Height="26"
+								Canvas.Left="739"
+								Canvas.Top="102"
+								Width="100" />
+						</Canvas>
+					</GroupBox>
+				</Grid>
+			</TabItem>
+			<TabItem
+				Header="Mifare Classic Access Bits"
+				IsEnabled="{Binding IsClassicAuthInfoEnabled}">
+				<Grid
+					Grid.Column="0"
+					Grid.Row="0"
+					Margin="0,0,0,0"
+					HorizontalAlignment="Stretch"
+					VerticalAlignment="Stretch"
+					Height="378">
+					<GroupBox
+						Header="Sector Trailer | Access Bits"
+						Width="549"
+						Height="360"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,8,0,0">
+						<DataGrid
+							ItemsSource="{Binding SectorTrailerSource}"
+							AutoGenerateColumns="True"
+							AutoGeneratingColumn="OnAutoGeneratingColumn"
+							SelectedItem="{Binding SelectedSectorTrailerAccessBitsRow, Mode=TwoWay}"
+							HorizontalAlignment="Stretch"
+							VerticalAlignment="Stretch"
+							Margin="8,8,8,8"></DataGrid>
+					</GroupBox>
+					<GroupBox
+						Header="Data Block | Access Bits"
+						Height="359"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Top"
+						Margin="564,9,8,0">
+						<Grid
+							VerticalAlignment="Stretch"
+							Margin="0,0,0,0"
+							HorizontalAlignment="Stretch">
+							<DataGrid
+								AutoGenerateColumns="True"
+								AutoGeneratingColumn="OnAutoGeneratingColumn"
+								ItemsSource="{Binding DataBlockSource}"
+								SelectedItem="{Binding SelectedDataBlockAccessBitsRow, Mode=TwoWay}"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Stretch"
+								Margin="8,41,8,8" />
+							<Label
+								Content="DataBlock Selection"
+								Width="132"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Left"
+								VerticalAlignment="Stretch"
+								Margin="8,8,0,285" />
+							<ComboBox
+								ItemsSource="{Binding DataBlockSelection}"
+								SelectedItem="{Binding SelectedDataBlockItem, Mode=TwoWay}"
+								Height="20"
+								Width="230"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Left"
+								VerticalAlignment="Top"
+								Margin="156,8,0,0" />
+						</Grid>
+					</GroupBox>
+				</Grid>
+			</TabItem>
+		</Controls:MetroAnimatedTabControl>
+		<DockPanel
+			LastChildFill="True"
+			Height="50"
+			Grid.Column="0"
+			Grid.Row="0"
+			HorizontalAlignment="Stretch"
+			VerticalAlignment="Bottom"
+			Margin="8,0,489,0">
+			<Button
+				Content="Apply And Exit"
+				Command="{Binding ApplyCommand}"
+				Height="23"
+				DockPanel.Dock="Left"
+				Width="130" />
+			<Button
+				Content="Try to Authenticate"
+				Width="130"
+				Height="23"
+				DockPanel.Dock="Right" />
+			<Button
+				Content="Exit Without Save"
+				Command="{Binding ExitCommand}"
+				Width="130"
+				Height="23" />
+		</DockPanel>
+		<TextBox
+			Width="473"
+			Height="25"
+			Grid.Column="0"
+			Grid.Row="0"
+			HorizontalAlignment="Right"
+			VerticalAlignment="Bottom"
+			Margin="0,0,8,13" />
+	</Grid>
+</Controls:MetroWindow>

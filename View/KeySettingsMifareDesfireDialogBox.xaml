@@ -1,0 +1,9 @@
+﻿<Controls:MetroWindow x:Class="RFiDGear.View.KeySettingsMifareDesfireDialogBox"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+	Title="RFiDGear.View" Height="300" Width="300">
+	<Grid>
+		
+	</Grid>
+</Controls:MetroWindow>

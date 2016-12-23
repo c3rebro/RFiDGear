@@ -1,0 +1,193 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <ProjectGuid>{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}</ProjectGuid>
+    <ProjectTypeGuids>{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>RFiDGear</RootNamespace>
+    <AssemblyName>RFiDGear</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFrameworkProfile />
+    <NoWin32Manifest>False</NoWin32Manifest>
+    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
+    <NoStdLib>False</NoStdLib>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <BaseAddress>4194304</BaseAddress>
+    <RegisterForComInterop>False</RegisterForComInterop>
+    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
+    <FileAlignment>4096</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <DebugSymbols>True</DebugSymbols>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <BaseIntermediateOutputPath>obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <DebugSymbols>False</DebugSymbols>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="GalaSoft.MvvmLight">
+      <HintPath>packages\MvvmLightLibs.5.3.0.0\lib\net45\GalaSoft.MvvmLight.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="GalaSoft.MvvmLight.Extras">
+      <HintPath>packages\MvvmLightLibs.5.3.0.0\lib\net45\GalaSoft.MvvmLight.Extras.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Ionic.Zip.Reduced">
+      <HintPath>..\AutoUpdate\RedCell.Diagnostics.Update\bin\Ionic.Zip.Reduced.dll</HintPath>
+    </Reference>
+    <Reference Include="MahApps.Metro">
+      <HintPath>packages\MahApps.Metro.1.3.0\lib\net45\MahApps.Metro.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CSharp">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="Microsoft.Practices.ServiceLocation">
+      <HintPath>packages\CommonServiceLocator.1.3\lib\portable-net4+sl5+netcore45+wpa81+wp8\Microsoft.Practices.ServiceLocation.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="PresentationCore">
+      <RequiredTargetFramework>3.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="PresentationFramework">
+      <RequiredTargetFramework>3.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="RedCell.Diagnostics.Update">
+      <HintPath>..\AutoUpdate\RedCell.Diagnostics.Update\bin\RedCell.Diagnostics.Update.dll</HintPath>
+    </Reference>
+    <Reference Include="RedCell.Net">
+      <HintPath>..\AutoUpdate\RedCell.Diagnostics.Update\bin\RedCell.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Xaml">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="WindowsBase">
+      <RequiredTargetFramework>3.0</RequiredTargetFramework>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="App.xaml.cs">
+      <SubType>Code</SubType>
+      <DependentUpon>App.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="HomeWindow.xaml.cs">
+      <DependentUpon>HomeWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Model\chipMifareClassicDataBlock.cs" />
+    <Compile Include="Model\chipMifareClassicSector.cs" />
+    <Compile Include="Model\chipMifareClassicUid.cs" />
+    <Compile Include="Model\chipMifareDesfireApp.cs" />
+    <Compile Include="Model\chipMifareDesfireFile.cs" />
+    <Compile Include="Model\chipMifareDesfireUid.cs" />
+    <Compile Include="Model\helperClass.cs" />
+    <Compile Include="Model\MifareClassicAccessBits.cs" />
+    <Compile Include="Model\RFiDAccess.cs" />
+    <Compile Include="Model\RFiDReaderSetup.cs" />
+    <Compile Include="Model\SettingsReaderWriter.cs" />
+    <Compile Include="MVVMDialogs\Behaviors\DialogBehavior.cs" />
+    <Compile Include="MVVMDialogs\Presenters\IDialogBoxPresenter.cs" />
+    <Compile Include="MVVMDialogs\ViewModels\IDialogViewModel.cs" />
+    <Compile Include="MVVMDialogs\ViewModels\IUserDialogViewModel.cs" />
+    <Compile Include="Presenters\MessageBoxPresenter.cs" />
+    <Compile Include="Presenters\OpenFileDialogPresenter.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\WPFAssemblyInfo.cs" />
+    <Compile Include="Resources\ResourceLoader.cs" />
+    <Compile Include="ViewModel\CustomDialogViewModel.cs" />
+    <Compile Include="ViewModel\HomeWindowViewModel.cs" />
+    <Compile Include="ViewModel\KeySettingsMifareClassicDialogViewModel.cs" />
+    <Compile Include="ViewModel\MessageBoxViewModel.cs" />
+    <Compile Include="ViewModel\OpenFileDialogViewModel.cs" />
+    <Compile Include="ViewModel\ReaderSetupDialogViewModel.cs" />
+    <Compile Include="ViewModel\RelayCommand.cs" />
+    <Compile Include="ViewModel\TreeViewChildNodeViewModel.cs" />
+    <Compile Include="ViewModel\TreeViewGrandChildNodeViewModel.cs" />
+    <Compile Include="ViewModel\TreeViewParentNodeViewModel.cs" />
+    <Compile Include="ViewModel\ViewModelLocator.cs" />
+    <Compile Include="View\CustomDialogBox.xaml.cs">
+      <DependentUpon>CustomDialogBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\KeySettingsMifareClassicDialogBox.xaml.cs">
+      <DependentUpon>KeySettingsMifareClassicDialogBox.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\KeySettingsMifareDesfireDialogBox.xaml.cs">
+      <DependentUpon>KeySettingsMifareDesfireDialogBox.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\ReaderSetupDialogBox.xaml.cs">
+      <DependentUpon>ReaderSetupDialogBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="WeakEventHandler.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="HomeWindow.xaml" />
+    <Page Include="View\CustomDialogBox.xaml" />
+    <Page Include="View\KeySettingsMifareClassicDialogBox.xaml" />
+    <Page Include="View\KeySettingsMifareDesfireDialogBox.xaml" />
+    <Page Include="View\ReaderSetupDialogBox.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Model" />
+    <Folder Include="MVVMDialogs" />
+    <Folder Include="MVVMDialogs\Behaviors" />
+    <Folder Include="MVVMDialogs\Presenters" />
+    <Folder Include="MVVMDialogs\ViewModels" />
+    <Folder Include="Presenters" />
+    <Folder Include="Resources" />
+    <Folder Include="View" />
+    <Folder Include="ViewModel" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Manifest.de.resx" />
+    <EmbeddedResource Include="Resources\Manifest.en.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="LibLogicalAccess">
+      <Guid>{DFDCDD8C-B13E-465B-8982-B09FC4917EAC}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>55</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+    </COMReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
