@@ -1,10 +1,13 @@
 # RFiDGear
-A Frontend to Read/Modify/Write RFiD Tags using the great and easy to use LibLogicalAccess Library. Written in C#, using SharpDevelop 5.1 and .NET 4.5.2
-
-Inludes static Librarys from:
-
-MVVM Light and
-ServiceLocator 1.3 for the MVVM Pattern
-LibLogicalAccess 1.85 
-MVVMDialogs to Ease User Interaction with respect to MVVM
+A Frontend to Read/Modify/Write RFiD Tags using the great and easy to use LibLogicalAccess Library.<br/>
+Written in C#, using SharpDevelop 5.1 and .NET 4.5.2<br/>
+<br/>
+Inludes static Librarys from:<br/>
+<br/>
+MVVM Light 5.3 and<br/>
+ServiceLocator 1.3 for the MVVM Pattern<br/>
+<br/>
+LibLogicalAccess 1.85 and<br/>
+<br/>
+MVVMDialogs to Ease User Interaction with respect to MVVM and<br/><br/>
 RedCell Auto Updater for Online Updating the Application
