@@ -1,12 +1,9 @@
 ﻿using Microsoft.Win32;
 using RFiDGear.ViewModel;
 using MvvmDialogs.Presenters;
-using MvvmDialogs.ViewModels;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace RFiDGear.Presenters
 {

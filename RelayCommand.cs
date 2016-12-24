@@ -1,12 +1,4 @@
-﻿/*
- * Created by SharpDevelop.
- * User: rotts
- * Date: 02.12.2016
- * Time: 22:32
- * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
- */
-using System;
+﻿using System;
 using System.Windows.Input;
 
 namespace RFiDGear.ViewModel

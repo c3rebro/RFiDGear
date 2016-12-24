@@ -1,13 +1,4 @@
-﻿/*
- * Created by SharpDevelop.
- * User: C3rebro
- * Date: 04.12.2016
- * Time: 22:44
- * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
- */
-using System;
-using LibLogicalAccess;
+﻿using System;
 
 namespace RFiDGear
 {

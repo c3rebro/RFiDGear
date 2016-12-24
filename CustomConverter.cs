@@ -1,20 +1,5 @@
-﻿/*
- * Created by SharpDevelop.
- * User: rotts
- * Date: 24.09.2013
- * Time: 20:00
- * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
- */
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Globalization;
+﻿using System;
 using System.Linq;
-using System.Resources;
-using System.Security.Cryptography;
-using System.Text;
-using System.Timers;
 
 namespace RFiDGear
 {

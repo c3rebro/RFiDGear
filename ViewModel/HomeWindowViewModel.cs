@@ -1,20 +1,10 @@
-﻿/*
- * Created by SharpDevelop.
- * User: C3rebro
- * Date: 03.12.2016
- * Time: 22:21
- * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
- */
-using GalaSoft.MvvmLight;
+﻿using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Messaging;
 using MvvmDialogs.ViewModels;
 using RedCell.Diagnostics.Update;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using System.Linq;

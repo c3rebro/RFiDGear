@@ -1,24 +1,10 @@
-﻿/*
- * Created by SharpDevelop.
- * User: rotts
- * Date: 14.12.2016
- * Time: 21:40
- * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
- */
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+﻿using GalaSoft.MvvmLight;
 using MvvmDialogs.ViewModels;
 using System;
-using System.Globalization;
-using System.Resources;
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace RFiDGear.ViewModel

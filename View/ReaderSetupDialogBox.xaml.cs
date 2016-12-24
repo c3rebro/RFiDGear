@@ -1,29 +1,6 @@
-﻿/*
- * Created by SharpDevelop.
- * User: C3rebro
- * Date: 11/24/2016
- * Time: 00:08
- * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
- */
-using System;
-using MahApps.Metro.Controls;
-using LibLogicalAccess;
-using System.ComponentModel;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
+﻿using System;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Runtime.InteropServices;
-using System.Globalization;
 using System.Linq;
-using System.IO;
-using System.Resources;
-using System.Timers;
-using System.Windows.Interop;
 
 namespace RFiDGear.View
 {
