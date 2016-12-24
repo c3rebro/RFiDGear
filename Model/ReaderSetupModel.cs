@@ -44,8 +44,11 @@ namespace RFiDGear
 				if (new SettingsReaderWriter()._defaultReaderProvider != value && value != "N/A") {
 					if(chipReaderWriter == null)
 						chipReaderWriter = new RFiDAccess(value);
-					chipReaderWriter = null;
-					chipReaderWriter = new RFiDAccess(value);
+					else{
+						chipReaderWriter = null;
+						chipReaderWriter = new RFiDAccess(value);
+					}
+					new SettingsReaderWriter().saveSettings(null, value);
 				}
 			}
 		}

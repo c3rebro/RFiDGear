@@ -16,9 +16,9 @@ namespace RFiDGear
 	/// </summary>
 	/// 
 	/// <summary>
-	/// Interaction logic for HomeWindow.xaml
+	/// Interaction logic for MainWindow.xaml
 	/// </summary>
-	public partial class HomeWindow
+	public partial class MainWindow
 	{
 		/*
 		ResourceManager resManager;
@@ -29,7 +29,7 @@ namespace RFiDGear
 		//ReaderSetupDialogBox readerSetup;
 		
 		 */
-		public HomeWindow()
+		public MainWindow()
 		{
 			//
 			// The InitializeComponent() call is required for Windows Forms designer support.

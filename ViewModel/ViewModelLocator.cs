@@ -39,17 +39,17 @@ namespace RFiDGear.ViewModel
 			//SimpleIoc.Default.Register<IDataService, DataService>();
 
 
-			SimpleIoc.Default.Register<HomeWindowViewModel>();
-			//SimpleIoc.Default.Register<Messenger, HomeWindowViewModel>(true);
+			SimpleIoc.Default.Register<MainWindowViewModel>();
+			//SimpleIoc.Default.Register<Messenger, MainWindowViewModel>(true);
 			SimpleIoc.Default.Register<KeySettingsMifareClassicDialogViewModel>();
 			
 		}
 
-		public HomeWindowViewModel Main
+		public MainWindowViewModel Main
 		{
 			get
 			{
-				return ServiceLocator.Current.GetInstance<HomeWindowViewModel>();
+				return ServiceLocator.Current.GetInstance<MainWindowViewModel>();
 			}
 		}
 

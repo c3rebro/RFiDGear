@@ -5,7 +5,7 @@
              xmlns:vm="clr-namespace:RFiDGear.ViewModel"
              xmlns:view="clr-namespace:RFiDGear.View"
              xmlns:pre="clr-namespace:RFiDGear.Presenters"
-             StartupUri="HomeWindow.xaml"
+             StartupUri="MainWindow.xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              d1p1:Ignorable="d"
              xmlns:d1p1="http://schemas.openxmlformats.org/markup-compatibility/2006">

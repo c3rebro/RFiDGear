@@ -9,7 +9,7 @@ namespace RFiDGear
 	/// Description of RFiDAccess.
 	/// 
 	/// Initialize Reader
-	/// The folllowing Readers are supportet by the Lib
+	/// The following Readers are supportet by the Lib
 	/// 
 	/// 	new PCSCReaderProvider(),
 	///		new A3MLGM5600ReaderProviderClass(),
@@ -665,11 +665,6 @@ namespace RFiDGear
 			currentMifareClassicSector = dataBlock;
 			blocknSectorData = currentMifareClassicSector[indexByte];
 
-		}
-		
-		[DisplayName("Nr")]
-		public string RowNumber{
-			get { return "0";}
 		}
 		
 		[DisplayName("Int")]

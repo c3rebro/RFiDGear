@@ -107,8 +107,8 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="CustomConverter.cs" />
-    <Compile Include="HomeWindow.xaml.cs">
-      <DependentUpon>HomeWindow.xaml</DependentUpon>
+    <Compile Include="MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Model\MifareClassicDataBlockModel.cs" />
     <Compile Include="Model\MifareClassicSectorModel.cs" />
@@ -131,7 +131,7 @@
     <Compile Include="RFiDAccess.cs" />
     <Compile Include="SettingsReaderWriter.cs" />
     <Compile Include="ViewModel\CustomDialogViewModel.cs" />
-    <Compile Include="ViewModel\HomeWindowViewModel.cs" />
+    <Compile Include="ViewModel\MainWindowViewModel.cs" />
     <Compile Include="ViewModel\KeySettingsMifareClassicDialogViewModel.cs" />
     <Compile Include="ViewModel\MessageBoxViewModel.cs" />
     <Compile Include="ViewModel\OpenFileDialogViewModel.cs" />
@@ -156,7 +156,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="HomeWindow.xaml" />
+    <Page Include="MainWindow.xaml" />
     <Page Include="View\CustomDialogBox.xaml" />
     <Page Include="View\KeySettingsMifareClassicDialogBox.xaml" />
     <Page Include="View\ReaderSetupDialogBox.xaml" />

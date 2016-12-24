@@ -447,7 +447,7 @@ namespace RFiDGear
 				XmlNode node = doc.SelectSingleNode("//defaultReader");
 				_oldReader = node.Attributes["readerName"].Value;
 				_oldReaderProvider = node.Attributes["readerProvider"].Value;
-				if (! (String.IsNullOrEmpty(readerName) || String.IsNullOrEmpty(readerProviderByName))) {
+				if (! (String.IsNullOrEmpty(readerName) && String.IsNullOrEmpty(readerProviderByName))) {
 					
 					node.Attributes["readerName"].Value = readerName;
 					node.Attributes["readerProvider"].Value = readerProviderByName;

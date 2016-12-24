@@ -12,27 +12,28 @@ using System.Linq;
 namespace RFiDGear.ViewModel
 {
 	/// <summary>
-	/// Description of HomeWindowViewModel.
+	/// Description of MainWindowViewModel.
 	/// </summary>
-	public class HomeWindowViewModel : ViewModelBase
+	public class MainWindowViewModel : ViewModelBase
 	{
-		ReaderSetupModel readerSetup;
-		MifareClassicAccessBitsModel sab;
+		private ReaderSetupModel readerSetup;
+		private MifareClassicAccessBitsModel sab;
 		
 		private ObservableCollection<IDialogViewModel> _Dialogs = new ObservableCollection<IDialogViewModel>();
 		public ObservableCollection<IDialogViewModel> Dialogs { get { return _Dialogs; } }
 		
-		List<string> knownUIDs = new List<string>();
-		dataSourceClassMifareBlocks currentBlock;
-		ObservableCollection<dataSourceClassMifareBlocks> DataSourceForMifareClassicDataBlock = new ObservableCollection<dataSourceClassMifareBlocks>();
-		ObservableCollection<object> gridSource;
-		ObservableCollection<TreeViewParentNodeViewModel> _uids = new ObservableCollection<TreeViewParentNodeViewModel>();
-		List<Model.MifareClassicUidModel> mifareClassicUidModels = new List<RFiDGear.Model.MifareClassicUidModel>();
-		List<Model.MifareDesfireUidModel> mifareDesfireViewModels = new List<RFiDGear.Model.MifareDesfireUidModel>();
+		private List<string> knownUIDs = new List<string>();
+		private dataSourceClassMifareBlocks currentBlock;
+		private ObservableCollection<dataSourceClassMifareBlocks> DataSourceForMifareClassicDataBlock = new ObservableCollection<dataSourceClassMifareBlocks>();
+		private ObservableCollection<object> gridSource;
+		private ObservableCollection<TreeViewParentNodeViewModel> _uids = new ObservableCollection<TreeViewParentNodeViewModel>();
 		
-		Updater updater = new Updater();
+		private List<Model.MifareClassicUidModel> mifareClassicUidModels = new List<RFiDGear.Model.MifareClassicUidModel>();
+		private List<Model.MifareDesfireUidModel> mifareDesfireViewModels = new List<RFiDGear.Model.MifareDesfireUidModel>();
 		
-		public HomeWindowViewModel()
+		private Updater updater = new Updater();
+		
+		public MainWindowViewModel()
 		{
 			readerSetup = new ReaderSetupModel(null);
 			sab = new MifareClassicAccessBitsModel();
@@ -62,7 +63,7 @@ namespace RFiDGear.ViewModel
 			//any dialog boxes added in the constructor won't appear until DialogBehavior.DialogViewModels gets bound to the Dialogs collection.
 		}
 
-		void ReadSectorsWithDefaultConfig(TreeViewParentNodeViewModel selectedPnVM)
+		private void ReadSectorsWithDefaultConfig(TreeViewParentNodeViewModel selectedPnVM)
 		{
 			
 			Mouse.OverrideCursor = Cursors.Wait;
@@ -87,7 +88,7 @@ namespace RFiDGear.ViewModel
 			Mouse.OverrideCursor = Cursors.Arrow;
 		}
 		
-		void ShowDataBlockInDataGrid(TreeViewGrandChildNodeViewModel selectedGCN)
+		private void ShowDataBlockInDataGrid(TreeViewGrandChildNodeViewModel selectedGCN)
 		{
 			DataSourceForMifareClassicDataBlock.Clear();
 			for (int i = 0; i < selectedGCN.DataBlockContent.Length; i++) {
