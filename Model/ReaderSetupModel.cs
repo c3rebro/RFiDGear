@@ -48,7 +48,7 @@ namespace RFiDGear
 						chipReaderWriter = null;
 						chipReaderWriter = new RFiDAccess(value);
 					}
-					new SettingsReaderWriter().saveSettings(null, value);
+					new SettingsReaderWriter().saveSettings(currentReaderUnitName, value);
 				}
 			}
 		}
