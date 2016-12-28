@@ -17,7 +17,7 @@ namespace RFiDGear.ViewModel
 	public class MainWindowViewModel : ViewModelBase
 	{
 		private ReaderSetupModel readerSetup;
-		private MifareClassicAccessBitsModel sab;
+		private MifareClassicAccessBitsModel sabModel;
 		
 		private ObservableCollection<IDialogViewModel> _Dialogs = new ObservableCollection<IDialogViewModel>();
 		public ObservableCollection<IDialogViewModel> Dialogs { get { return _Dialogs; } }
@@ -36,25 +36,29 @@ namespace RFiDGear.ViewModel
 		public MainWindowViewModel()
 		{
 			readerSetup = new ReaderSetupModel(null);
-			sab = new MifareClassicAccessBitsModel();
+			sabModel = new MifareClassicAccessBitsModel();
 
 			Messenger.Default.Register<NotificationMessage<string>>(
 				this, nm => {
-				// Processing the Message
-				switch (nm.Notification) {
-					case "ReadAllSectors":
-						ReadSectorsWithDefaultConfig((TreeViewParentNodeViewModel)nm.Sender);
-							// Do something with receivedJob
-						break;
-					case "DeleteMe":
-						knownUIDs.Remove(nm.Content);
-						_uids.Remove((TreeViewParentNodeViewModel)nm.Sender);
-						break;
-					case "EditAuthInfoAndReadAllSectors":
-						NewSectorTrailerEditDialog((TreeViewParentNodeViewModel)nm.Sender);
-						break;
-				}
-			});
+					// Processing the Message
+					switch (nm.Notification) {
+						case "ReadAllSectors":
+							ReadSectorsWithDefaultConfig((TreeViewParentNodeViewModel)nm.Sender);
+							break;
+						case "DeleteMe":
+							knownUIDs.Remove(nm.Content);
+							_uids.Remove((TreeViewParentNodeViewModel)nm.Sender);
+							break;
+						case "EditAuthInfoAndReadAllSectors":
+							NewSectorTrailerEditDialog((TreeViewParentNodeViewModel)nm.Sender);
+							break;
+						case "EditAuthAndModifySector":
+							NewSectorTrailerEditDialog((TreeViewChildNodeViewModel)nm.Sender);
+							break;
+						case "ReadSectorWithDefaults":
+							break;
+					}
+				});
 			
 			Messenger.Default.Register<TreeViewChildNodeViewModel>(this, NewSectorTrailerEditDialog);
 			Messenger.Default.Register<TreeViewGrandChildNodeViewModel>(this, ShowDataBlockInDataGrid);
@@ -75,7 +79,7 @@ namespace RFiDGear.ViewModel
 				if (treeViewPnVM.UidNumber == selectedPnVM.UidNumber) {
 					selectedPnVM.IsExpanded = true;
 					foreach (TreeViewChildNodeViewModel cnVM in treeViewPnVM.Children) {
-						readerSetup.readMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber, sab);
+						readerSetup.readMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber, sabModel);
 						cnVM.IsAuthenticated = readerSetup.sectorSuccesfullyAuth;
 						foreach (TreeViewGrandChildNodeViewModel gcVM in cnVM.Children) {
 							gcVM.IsAuthenticated = readerSetup.dataBlockSuccesfullyAuth[(((cnVM.SectorNumber + 1) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
@@ -109,21 +113,23 @@ namespace RFiDGear.ViewModel
 		{
 			this.Dialogs.Add(new KeySettingsMifareClassicDialogViewModel {
 			                 	
-				Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
+			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
+			                 	SectorAccessBitsAsString = "FF0780",
 
-				OnOk = (sender) => {
-					sender.Close();
-				},
+			                 	OnOk = (sender) => {
+			                 		sabModel.encodeSectorTrailer(sender.SectorAccessBitsAsString, 0);
+			                 		sender.Close();
+			                 	},
 
-				OnCancel = (sender) => {
-					sender.Close();
+			                 	OnCancel = (sender) => {
+			                 		sender.Close();
 
-				},
+			                 	},
 
-				OnCloseRequest = (sender) => {
-					sender.Close();
-				}
-			});
+			                 	OnCloseRequest = (sender) => {
+			                 		sender.Close();
+			                 	}
+			                 });
 		}
 
 		public void NewSectorTrailerEditDialog(TreeViewParentNodeViewModel sectorVM)
@@ -137,23 +143,23 @@ namespace RFiDGear.ViewModel
 			
 			this.Dialogs.Add(new KeySettingsMifareClassicDialogViewModel {
 			                 	
-				Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
-				IsClassicAuthInfoEnabled = isClassicCard,
+			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
+			                 	IsClassicAuthInfoEnabled = isClassicCard,
 
-				OnOk = (sender) => {
-					sender.Close();
-				},
+			                 	OnOk = (sender) => {
+			                 		sender.Close();
+			                 	},
 
-				OnCancel = (sender) => {
-					sender.Close();
+			                 	OnCancel = (sender) => {
+			                 		sender.Close();
 
-				},
+			                 	},
 
-				OnCloseRequest = (sender) => {
-					sender.Close();
-				}
-			});
-		}		
+			                 	OnCloseRequest = (sender) => {
+			                 		sender.Close();
+			                 	}
+			                 });
+		}
 		
 		#region Resource getters
 		
@@ -236,86 +242,86 @@ namespace RFiDGear.ViewModel
 		public void OnNewLanguageChangedDialog()
 		{
 			this.Dialogs.Add(new CustomDialogViewModel {
-				Message = ResourceLoader.getResource("messageBoxRestartRequiredMessage"),
-				Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
+			                 	Message = ResourceLoader.getResource("messageBoxRestartRequiredMessage"),
+			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
 
-				OnOk = (sender) => {
-					sender.Close();
-					App.Current.Shutdown();
-				},
+			                 	OnOk = (sender) => {
+			                 		sender.Close();
+			                 		App.Current.Shutdown();
+			                 	},
 
-				OnCancel = (sender) => {
-					sender.Close();
+			                 	OnCancel = (sender) => {
+			                 		sender.Close();
 
-				},
+			                 	},
 
-				OnCloseRequest = (sender) => {
-					sender.Close();
-				}
-			});
+			                 	OnCloseRequest = (sender) => {
+			                 		sender.Close();
+			                 	}
+			                 });
 		}
 		
 		public ICommand NewReaderSetupDialogCommand { get { return new RelayCommand(OnNewReaderSetupDialog); } }
 		public void OnNewReaderSetupDialog()
 		{
 			this.Dialogs.Add(new ReaderSetupDialogViewModel {
-				Caption = "RFiDGear Reader Setup",
+			                 	Caption = "RFiDGear Reader Setup",
 			                 	
-				OnOk = (sender) => {
+			                 	OnOk = (sender) => {
 			                 		
-					//currentReaderSetup = new RFiDReaderSetup(sender.SelectedReader);
+			                 		//currentReaderSetup = new RFiDReaderSetup(sender.SelectedReader);
 			                 		
-					sender.Close();
+			                 		sender.Close();
 			                 		
-				},
+			                 	},
 
-				OnCancel = (sender) => {
-					sender.Close();
-				},
+			                 	OnCancel = (sender) => {
+			                 		sender.Close();
+			                 	},
 
-				OnCloseRequest = (sender) => {
-					sender.Close();
-				}
-			});
+			                 	OnCloseRequest = (sender) => {
+			                 		sender.Close();
+			                 	}
+			                 });
 		}
 		
 		public ICommand NewModalDialogCommand { get { return new RelayCommand(OnNewModalDialog); } }
 		public void OnNewModalDialog()
 		{
 			this.Dialogs.Add(new CustomDialogViewModel {
-				Message = "Hello World!",
-				Caption = "Modal Dialog Box",
+			                 	Message = "Hello World!",
+			                 	Caption = "Modal Dialog Box",
 
-				OnOk = (sender) => {
-					sender.Close();
-					new MessageBoxViewModel("You pressed ok!", "Bye bye!").Show(this.Dialogs);
-				},
+			                 	OnOk = (sender) => {
+			                 		sender.Close();
+			                 		new MessageBoxViewModel("You pressed ok!", "Bye bye!").Show(this.Dialogs);
+			                 	},
 
-				OnCancel = (sender) => {
-					sender.Close();
-					new MessageBoxViewModel("You pressed cancel!", "Bye bye!").Show(this.Dialogs);
-				},
+			                 	OnCancel = (sender) => {
+			                 		sender.Close();
+			                 		new MessageBoxViewModel("You pressed cancel!", "Bye bye!").Show(this.Dialogs);
+			                 	},
 
-				OnCloseRequest = (sender) => {
-					sender.Close();
-					new MessageBoxViewModel("You clicked the caption bar close button!", "Bye bye!").Show(this.Dialogs);
-				}
-			});
+			                 	OnCloseRequest = (sender) => {
+			                 		sender.Close();
+			                 		new MessageBoxViewModel("You clicked the caption bar close button!", "Bye bye!").Show(this.Dialogs);
+			                 	}
+			                 });
 		}
 
 		public ICommand NewModelessDialogCommand { get { return new RelayCommand(OnNewModelessDialog); } }
 		public void OnNewModelessDialog()
 		{
 			var confirmClose = new Action<CustomDialogViewModel>((sender) => {
-				if (new MessageBoxViewModel {
-					Caption = "Closing",
-					Message = "Are you sure you want to close this window?",
-					Buttons = MessageBoxButton.YesNo,
-					Image = MessageBoxImage.Question
-				}
+			                                                     	if (new MessageBoxViewModel {
+			                                                     	    	Caption = "Closing",
+			                                                     	    	Message = "Are you sure you want to close this window?",
+			                                                     	    	Buttons = MessageBoxButton.YesNo,
+			                                                     	    	Image = MessageBoxImage.Question
+			                                                     	    }
 			                                                     	    .Show(this.Dialogs) == MessageBoxResult.Yes)
-					sender.Close();
-			});
+			                                                     		sender.Close();
+			                                                     });
 
 			new CustomDialogViewModel(false) {
 				Message = "Hello World!",

@@ -15,28 +15,25 @@ namespace RFiDGear.ViewModel
 	public class KeySettingsMifareClassicDialogViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		
-		readonly string[] cmbbxItems = {"DataBlock 0", "DataBlock 1", "DataBlock 2", "All DataBlocks"};
-		int selectionIndex = 3;
+		private readonly string[] cmbbxItems = {"DataBlock 0", "DataBlock 1", "DataBlock 2", "All DataBlocks"};
+		private int selectionIndex = 3;
 		
-		bool isClassicAuthInfo = true;
+		private bool isClassicAuthInfo = true;
 		
-		MifareClassicAccessBitsModel sab;
+		private MifareClassicAccessBitsModel sab;
 		
-		readonly ObservableCollection<sourceForSectorTrailerDataGrid> displaySourceForSectorTrailerDataGrid;
-		readonly ObservableCollection<sourceForLongDataBlockDataGrid> displaySourceForLongDataBlockDataGrid;
-		readonly ObservableCollection<sourceForShortDataBlockDataGrid> displaySourceForShortDataBlockDataGrid;
+		private readonly ObservableCollection<sourceForSectorTrailerDataGrid> displaySourceForSectorTrailerDataGrid;
+		private readonly ObservableCollection<sourceForLongDataBlockDataGrid> displaySourceForLongDataBlockDataGrid;
+		private readonly ObservableCollection<sourceForShortDataBlockDataGrid> displaySourceForShortDataBlockDataGrid;
 		
-		ObservableCollection<object> displaySourceForDataBlock0DataGrid;
-		
-		ObservableCollection<object> displaySourceForDataBlock1DataGrid;
-		
-		ObservableCollection<object> displaySourceForDataBlock2DataGrid;
-		
-		ObservableCollection<object> displaySourceForCombinedDataBlockDataGrid;
+		private ObservableCollection<object> displaySourceForDataBlock0DataGrid;
+		private ObservableCollection<object> displaySourceForDataBlock1DataGrid;
+		private ObservableCollection<object> displaySourceForDataBlock2DataGrid;
+		private ObservableCollection<object> displaySourceForCombinedDataBlockDataGrid;
 
 		
-		sourceForSectorTrailerDataGrid _selectedSectorTrailerAccessBitsItem;
-		object _selectedDataBlockAccessBitsItem;
+		private sourceForSectorTrailerDataGrid _selectedSectorTrailerAccessBitsItem;
+		private object _selectedDataBlockAccessBitsItem;
 		
 		public KeySettingsMifareClassicDialogViewModel(bool isModal = true)
 		{
@@ -205,6 +202,16 @@ namespace RFiDGear.ViewModel
 		
 		public ObservableCollection<string> DataBlockSelection{
 			get {return new ObservableCollection<string>(cmbbxItems);}
+		}
+		
+		public string SectorAccessBitsAsString{
+			get {return sab.DecodedSectorTrailerAccessBits;}
+			set { sab.decodeSectorTrailer(value);}
+		}
+		
+		public sourceForSectorTrailerDataGrid SelectedSectorTrailerAccessBitsItem{
+			get {return _selectedSectorTrailerAccessBitsItem;}
+			set {_selectedSectorTrailerAccessBitsItem = value;}
 		}
 	}
 }

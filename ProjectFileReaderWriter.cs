@@ -1,12 +1,5 @@
-﻿/*
- * Created by SharpDevelop.
- * User: rotts
- * Date: 19.11.2016
- * Time: 21:26
- * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
- */
-using System;
+﻿using System;
+using System.Collections.Generic;
 
 namespace RFiDGear
 {
@@ -15,6 +8,10 @@ namespace RFiDGear
 	/// </summary>
 	public class ProjectFileReaderWriter
 	{
+		private List<string> MifareClassicAKeys;
+		private List<string> MifareClassicBKeys;
+		private List<string> SectorAccessBits;
+		
 		public ProjectFileReaderWriter()
 		{
 		}

@@ -1,5 +1,6 @@
 ﻿using System;
 using LibLogicalAccess;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 
@@ -65,6 +66,7 @@ namespace RFiDGear
 		IReaderProvider readerProvider;
 		IReaderUnit readerUnit;
 		chip card;
+		List<object> readerList;
 		
 		string readerProviderName;
 		string readerUnitName;
@@ -122,7 +124,7 @@ namespace RFiDGear
 			try {
 				readerProvider = new LibraryManagerClass().GetReaderProvider(readerProviderName);
 				readerUnit = readerProvider.CreateReaderUnit();
-				
+
 				if (readerUnit.ConnectToReader()) {
 					if (readerUnit.WaitInsertion(200)) {
 						if (readerUnit.Connect()) {

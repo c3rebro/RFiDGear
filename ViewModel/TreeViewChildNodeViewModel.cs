@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Input;
-using RFiDGear;
+using RFiDGear.Model;
 
 namespace RFiDGear.ViewModel
 {
@@ -18,34 +18,37 @@ namespace RFiDGear.ViewModel
 		
 		#region Data
 
-		readonly ObservableCollection<TreeViewGrandChildNodeViewModel> _children;
-		readonly TreeViewParentNodeViewModel _parent;
+		private readonly ObservableCollection<TreeViewGrandChildNodeViewModel> _children;
+		private readonly TreeViewParentNodeViewModel _parent;
 		
-		static object _selectedItem;
+		private static object _selectedItem;
 
-		bool _isExpanded;
-		bool _isSelected;
+		private bool _isExpanded;
+		private bool _isSelected;
 
 		#endregion // Data
 		
-		readonly Model.MifareClassicSectorModel _sector;
-		readonly Model.MifareDesfireAppModel _appID;
-		readonly CARD_TYPE _cardType;
-		readonly ViewModel.RelayCommand _cmdReadSectorWithDefaults;
-		readonly string _parentUid;
+		private readonly MifareClassicSectorModel _sector;
+		private readonly MifareDesfireAppModel _appID;
+		private readonly CARD_TYPE _cardType;
+		private readonly RelayCommand _cmdReadSectorWithDefaults;
+		private readonly RelayCommand _cmdEditAuthAndModifySector;
 		
-		readonly List<MenuItem> ContextMenuItems;
+		private readonly string _parentUid;
+		
+		private readonly List<MenuItem> ContextMenuItems;
 
-		bool? isAuth;
+		private bool? isAuth;
 		
-		public TreeViewChildNodeViewModel(Model.MifareClassicSectorModel sector, TreeViewParentNodeViewModel parent, CARD_TYPE cardType, int sectorNumber)
+		public TreeViewChildNodeViewModel(MifareClassicSectorModel sector, TreeViewParentNodeViewModel parent, CARD_TYPE cardType, int sectorNumber)
 		{
 			_sector = sector;
 			_sector.mifareClassicSectorNumber = sectorNumber;
 			_cardType = cardType;
 			_parent = parent;
 			
-			_cmdReadSectorWithDefaults = new ViewModel.RelayCommand(ReadSectorWithDefaults);
+			_cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
+			_cmdEditAuthAndModifySector = new RelayCommand(EditAuthAndModifySector);
 			
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
@@ -54,8 +57,8 @@ namespace RFiDGear.ViewModel
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Edit Authentication Settings and Read Sector",
-			                     	Command = _cmdReadSectorWithDefaults
+			                     	Header = "Edit Authentication Settings and Modify Sector",
+			                     	Command = _cmdEditAuthAndModifySector
 			                     });			
 			
 			_children = new ObservableCollection<TreeViewGrandChildNodeViewModel>();
@@ -63,7 +66,7 @@ namespace RFiDGear.ViewModel
 			LoadChildren();
 		}
 
-		public TreeViewChildNodeViewModel(Model.MifareDesfireAppModel appID, TreeViewParentNodeViewModel parentUID, CARD_TYPE cardType)
+		public TreeViewChildNodeViewModel(MifareDesfireAppModel appID, TreeViewParentNodeViewModel parentUID, CARD_TYPE cardType)
 		{
 			_appID = appID;
 			_cardType = cardType;
@@ -165,7 +168,13 @@ namespace RFiDGear.ViewModel
 		public ICommand ReadSectorCommand {get { return new RelayCommand(ReadSectorWithDefaults); }}
 		public void ReadSectorWithDefaults() {
 			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewChildNode", "ReadSectorsWithDefaults")
+				new NotificationMessage<string>(this, "TreeViewChildNode", "ReadSectorWithDefaults")
+			);
+		}
+
+		public void EditAuthAndModifySector() {
+			Messenger.Default.Send<NotificationMessage<string>>(
+				new NotificationMessage<string>(this, "TreeViewChildNode", "EditAuthAndModifySector")
 			);
 		}
 		
@@ -201,7 +210,7 @@ namespace RFiDGear.ViewModel
 				case CARD_TYPE.CT_CLASSIC_1K:
 					{
 						for (int i = 0; i < 4; i++) {
-							_children.Add(new ViewModel.TreeViewGrandChildNodeViewModel(new Model.MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
+							_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
 						}
 					}
 					break;
@@ -209,7 +218,7 @@ namespace RFiDGear.ViewModel
 				case CARD_TYPE.CT_CLASSIC_2K:
 					{
 						for (int i = 0; i < 4; i++) {
-							_children.Add(new ViewModel.TreeViewGrandChildNodeViewModel(new Model.MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
+							_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
 						}
 					}
 					break;
@@ -218,12 +227,12 @@ namespace RFiDGear.ViewModel
 					{
 						if (SectorNumber < 32) {
 							for (int i = 0; i < 4; i++) {
-								_children.Add(new ViewModel.TreeViewGrandChildNodeViewModel(new Model.MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
+								_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
 							}
 						} else {
 							
 							for (int i = 0; i < 16; i++) {
-								_children.Add(new ViewModel.TreeViewGrandChildNodeViewModel(new Model.MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
+								_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
 							}
 						}
 					}
