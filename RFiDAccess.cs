@@ -163,7 +163,7 @@ namespace RFiDGear
 		//OutPutParameter:-------
 		//Description:Perform action after time interval passed
 		//********************************************************
-		public bool readMiFareClassicSingleSector(int sectorNumber,int keyNumber, MifareClassicAccessBitsModel sab)
+		public bool readMiFareClassicSingleSector(int sectorNumber,int keyNumber)
 		{
 			SettingsReaderWriter settings = new SettingsReaderWriter();
 			
@@ -644,103 +644,6 @@ namespace RFiDGear
 			get { return desFireFileData; }
 		}
 		#endregion
-	}
-
-	
-
-	
-
-
-
-	public class dataSourceClassMifareBlocks
-	{
-
-		byte[] currentMifareClassicSector;
-		
-		CustomConverter converter = new CustomConverter();
-		
-		byte blocknSectorData;
-		int discarded;
-		
-		public dataSourceClassMifareBlocks(byte[] dataBlock, int indexByte)
-		{
-			currentMifareClassicSector = dataBlock;
-			blocknSectorData = currentMifareClassicSector[indexByte];
-
-		}
-		
-		[DisplayName("Int")]
-		public byte singleByteBlock0AsByte {
-			get { return blocknSectorData; }
-			set { blocknSectorData = value; }
-		}
-		
-		[DisplayName("Hex")]
-		public string singleByteBlock0AsString {
-			get { return blocknSectorData.ToString("X2"); }
-			set { blocknSectorData = converter.GetBytes(value, out discarded)[0]; }
-		}
-
-		[DisplayName("ASCII")]
-		public char singleByteBlock0AsChar {
-			get {
-				if (blocknSectorData < 32 | blocknSectorData > 126)
-					return '.';
-				else
-					return (char)blocknSectorData;
-			}
-			
-			set {
-				if ((byte)value < 32 | (byte)value > 126)
-					blocknSectorData |= 0;
-				else
-					blocknSectorData = (byte)value;
-			}
-			
-		}
-	}
-
-	public class dataSourceClassDESFireFileData
-	{
-		
-		CustomConverter converter = new CustomConverter();
-		
-		byte data;
-		int discarded;
-		
-		public dataSourceClassDESFireFileData(byte[] readerClass, int index)
-		{
-			data = readerClass[index];
-		}
-		
-		[DisplayName("Data as Int")]
-		public byte singleByteAsByte {
-			get { return data; }
-			set { data = value; }
-		}
-		
-		[DisplayName("Data as Hex")]
-		public string singleByteAsString {
-			get { return data.ToString("X2"); }
-			set { data = converter.GetBytes(value, out discarded)[0]; }
-		}
-
-		[DisplayName("Data as ASCII")]
-		public char singleByteAsChar {
-			get {
-				if (data < 32 | data > 126)
-					return '.';
-				else
-					return (char)data;
-			}
-			
-			set {
-				if ((byte)value < 32 | (byte)value > 126)
-					data |= 0;
-				else
-					data = (byte)value;
-			}
-		}
 	}
 }
 

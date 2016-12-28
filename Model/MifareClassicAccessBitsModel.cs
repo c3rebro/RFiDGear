@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel;
 using LibLogicalAccess;
 
 namespace RFiDGear
@@ -20,7 +19,7 @@ namespace RFiDGear
 		private string decodedBlock1AccessBits;
 		private string decodedBlock2AccessBits;
 		
-		readonly string[] dataBlockABs = new string[8] {
+		private readonly string[] dataBlockABs = new string[8] {
 			"A,A,A,A",
 			"",
 			"A,N,N,N",
@@ -31,7 +30,7 @@ namespace RFiDGear
 			"N,N,N,N"
 		};
 		
-		readonly string[] dataBlockAB = new string[8] {
+		private readonly string[] dataBlockAB = new string[8] {
 			"AB,AB,AB,AB",
 			"AB,B,N,N",
 			"AB,N,N,N",
@@ -42,7 +41,7 @@ namespace RFiDGear
 			"N,N,N,N"
 		};
 		
-		readonly string[] sectorTrailerAB = new string[8] {
+		private readonly string[] sectorTrailerAB = new string[8] {
 			"N,A,A,N,A,A",
 			"N,B,AB,N,N,B",
 			"N,N,A,N,A,N",
@@ -61,7 +60,7 @@ namespace RFiDGear
 		private uint _C2;
 		private uint _C3;
 		
-		byte[] st;
+		private byte[] st;
 		
 		public MifareClassicAccessBitsModel()
 		{
@@ -152,10 +151,10 @@ namespace RFiDGear
 			C1 |= C2;
 			C1 &= 0x07;
 			
-			//if(isTransportConfiguration)
-			//	decodedBlock2AccessBits = dataBlockABs[C1];
-			//else
-			decodedBlock2AccessBits = dataBlockAB[C1];
+			if(isTransportConfiguration)
+				decodedBlock2AccessBits = dataBlockABs[C1];
+			else
+				decodedBlock2AccessBits = dataBlockAB[C1];
 
 			#endregion
 
@@ -190,10 +189,10 @@ namespace RFiDGear
 			C1 |= C2;
 			C1 &= 0x07;
 			
-			//if(isTransportConfiguration)
-			//	decodedBlock1AccessBits = dataBlockABs[C1];
-			//else
-			decodedBlock1AccessBits = dataBlockAB[C1];
+			if(isTransportConfiguration)
+				decodedBlock1AccessBits = dataBlockABs[C1];
+			else
+				decodedBlock1AccessBits = dataBlockAB[C1];
 			
 			#endregion
 			
@@ -231,10 +230,10 @@ namespace RFiDGear
 			C1 |= C2;
 			C1 &= 0x07;
 			
-			//if(isTransportConfiguration)
-			//	decodedBlock0AccessBits = dataBlockABs[C1];
-			//else
-			decodedBlock0AccessBits = dataBlockAB[C1];
+			if(isTransportConfiguration)
+				decodedBlock0AccessBits = dataBlockABs[C1];
+			else
+				decodedBlock0AccessBits = dataBlockAB[C1];
 			
 			#endregion
 			
@@ -439,6 +438,7 @@ namespace RFiDGear
 		}
 		public string SectorTrailerAccessBits {
 			get{ return sectorTrailerString; }
+			set{ sectorTrailerString = value;}
 		}
 		public string DecodedDataBlock0AccessBits {
 			get{ return decodedBlock0AccessBits; }
@@ -464,219 +464,6 @@ namespace RFiDGear
 		}
 		public string[] GetShortDataBlockAccessConditions{
 			get { return dataBlockABs;}
-		}
-	}
-	
-	public class sourceForSectorTrailerDataGrid
-	{
-		readonly string readKeyA;
-		readonly string writeKeyA;
-		readonly string readAccessCond;
-		readonly string writeAccessCond;
-		readonly string readKeyB;
-		readonly string writeKeyB;
-
-		private string convertCondToHumanReadableFormat(string cond){
-			switch(cond){
-				case "N":
-					return "not Allowed";
-				case "A":
-					return "using Key A";
-				case "B":
-					return "using Key B";
-				case "AB":
-					return "Key A or B";
-				default:
-					return null;
-			}
-		}
-		
-		public sourceForSectorTrailerDataGrid(string accessBits)
-		{
-			string[] temp = accessBits.Split(',');
-			
-			for(int i=0; i<temp.Length; i++){
-				switch(i){
-					case 0:
-						readKeyA=convertCondToHumanReadableFormat(temp[i]);
-						break;
-					case 1:
-						writeKeyA=convertCondToHumanReadableFormat(temp[i]);
-						break;
-					case 2:
-						readAccessCond=convertCondToHumanReadableFormat(temp[i]);
-						break;
-					case 3:
-						writeAccessCond=convertCondToHumanReadableFormat(temp[i]);
-						break;
-					case 4:
-						readKeyB=convertCondToHumanReadableFormat(temp[i]);
-						break;
-					case 5:
-						writeKeyB=convertCondToHumanReadableFormat(temp[i]);
-						break;
-				}
-			}
-		}
-		
-		[DisplayName("ReadKey A")]
-		public string getReadKeyA {
-			get { return readKeyA; }
-		}
-		
-		[DisplayName("WriteKey A")]
-		public string getWriteKeyA {
-			get { return writeKeyA; }
-		}
-		
-		[DisplayName("Read\nAccess\nCondition")]
-		public string getReadAccessCond {
-			get { return readAccessCond; }
-		}
-		
-		[DisplayName("Write\nAccess\nCondition")]
-		public string getWriteAccessCond {
-			get { return writeAccessCond; }
-		}
-		
-		[DisplayName("ReadKey B")]
-		public string getReadKeyB {
-			get { return readKeyB; }
-		}
-		
-		[DisplayName("WriteKey B")]
-		public string getWriteKeyB {
-			get { return writeKeyB; }
-		}
-	}
-	
-	public class sourceForLongDataBlockDataGrid
-	{
-		readonly string read;
-		readonly string write;
-		readonly string inc;
-		readonly string dec;
-
-		private string convertCondToHumanReadableFormat(string cond){
-			switch(cond){
-				case "N":
-					return "not Allowed";
-				case "A":
-					return "using Key A";
-				case "B":
-					return "using Key B";
-				case "AB":
-					return "Key A or B";
-				default:
-					return null;
-			}
-		}
-		
-		public sourceForLongDataBlockDataGrid(string accessBits)
-		{
-			string[] temp = accessBits.Split(',');
-			
-			for(int i=0; i<temp.Length; i++){
-				switch(i){
-					case 0:
-						read=convertCondToHumanReadableFormat(temp[i]);
-						break;
-					case 1:
-						write=convertCondToHumanReadableFormat(temp[i]);
-						break;
-					case 2:
-						inc=convertCondToHumanReadableFormat(temp[i]);
-						break;
-					case 3:
-						dec=convertCondToHumanReadableFormat(temp[i]);
-						break;
-				}
-			}
-		}
-		
-		[DisplayName("Read")]
-		public string getReadKeyA {
-			get { return read; }
-		}
-		
-		[DisplayName("Write")]
-		public string getWriteKeyA {
-			get { return write; }
-		}
-		
-		[DisplayName("Incr.")]
-		public string getReadAccessCond {
-			get { return inc; }
-		}
-		
-		[DisplayName("Decr.\nTransf.\nRestore")]
-		public string getWriteAccessCond {
-			get { return dec; }
-		}
-	}
-	
-	public class sourceForShortDataBlockDataGrid
-	{
-		readonly string read;
-		readonly string write;
-		readonly string inc;
-		readonly string dec;
-
-		private string convertCondToHumanReadableFormat(string cond){
-			switch(cond){
-				case "N":
-					return "not Allowed";
-				case "A":
-					return "using Key A";
-				case "B":
-					return "using Key B";
-				case "AB":
-					return "Key A or B";
-				default:
-					return null;
-			}
-		}
-		
-		public sourceForShortDataBlockDataGrid(string accessBits)
-		{
-			string[] temp = accessBits.Split(',');
-			
-			for(int i=0; i<temp.Length; i++){
-				switch(i){
-					case 0:
-						read=convertCondToHumanReadableFormat(temp[i]);
-						break;
-					case 1:
-						write=convertCondToHumanReadableFormat(temp[i]);
-						break;
-					case 2:
-						inc=convertCondToHumanReadableFormat(temp[i]);
-						break;
-					case 3:
-						dec=convertCondToHumanReadableFormat(temp[i]);
-						break;
-				}
-			}
-		}
-		
-		[DisplayName("Read")]
-		public string getReadKeyA {
-			get { return read; }
-		}
-		
-		[DisplayName("Write")]
-		public string getWriteKeyA {
-			get { return write; }
-		}
-		
-		[DisplayName("Incr.")]
-		public string getReadAccessCond {
-			get { return inc; }
-		}
-		
-		[DisplayName("Decr.\nTransf.\nRestore")]
-		public string getWriteAccessCond {
-			get { return dec; }
 		}
 	}
 }

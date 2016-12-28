@@ -107,6 +107,11 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="CustomConverter.cs" />
+    <Compile Include="DataSource\SourceForDESFireFileData.cs" />
+    <Compile Include="DataSource\SourceForLongDataBlockDataGrid.cs" />
+    <Compile Include="DataSource\SourceForMifareDataBlocks.cs" />
+    <Compile Include="DataSource\SourceForSectorTrailerDataGrid.cs" />
+    <Compile Include="DataSource\SourceForShortDataBlockDataGrid.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
@@ -168,6 +173,7 @@
     <Folder Include="MVVMDialogs\Behaviors" />
     <Folder Include="MVVMDialogs\Presenters" />
     <Folder Include="MVVMDialogs\ViewModels" />
+    <Folder Include="DataSource" />
     <Folder Include="Presenters" />
     <Folder Include="Resources" />
     <Folder Include="View" />

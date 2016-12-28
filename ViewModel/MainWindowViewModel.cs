@@ -2,6 +2,7 @@
 using GalaSoft.MvvmLight.Messaging;
 using MvvmDialogs.ViewModels;
 using RedCell.Diagnostics.Update;
+using RFiDGear.DataSource;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -17,14 +18,13 @@ namespace RFiDGear.ViewModel
 	public class MainWindowViewModel : ViewModelBase
 	{
 		private ReaderSetupModel readerSetup;
-		private MifareClassicAccessBitsModel sabModel;
-		
+
 		private ObservableCollection<IDialogViewModel> _Dialogs = new ObservableCollection<IDialogViewModel>();
 		public ObservableCollection<IDialogViewModel> Dialogs { get { return _Dialogs; } }
 		
 		private List<string> knownUIDs = new List<string>();
-		private dataSourceClassMifareBlocks currentBlock;
-		private ObservableCollection<dataSourceClassMifareBlocks> DataSourceForMifareClassicDataBlock = new ObservableCollection<dataSourceClassMifareBlocks>();
+		private SourceForMifareDataBlocks currentBlock;
+		private ObservableCollection<SourceForMifareDataBlocks> DataSourceForMifareClassicDataBlock = new ObservableCollection<SourceForMifareDataBlocks>();
 		private ObservableCollection<object> gridSource;
 		private ObservableCollection<TreeViewParentNodeViewModel> _uids = new ObservableCollection<TreeViewParentNodeViewModel>();
 		
@@ -36,7 +36,6 @@ namespace RFiDGear.ViewModel
 		public MainWindowViewModel()
 		{
 			readerSetup = new ReaderSetupModel(null);
-			sabModel = new MifareClassicAccessBitsModel();
 
 			Messenger.Default.Register<NotificationMessage<string>>(
 				this, nm => {
@@ -79,7 +78,7 @@ namespace RFiDGear.ViewModel
 				if (treeViewPnVM.UidNumber == selectedPnVM.UidNumber) {
 					selectedPnVM.IsExpanded = true;
 					foreach (TreeViewChildNodeViewModel cnVM in treeViewPnVM.Children) {
-						readerSetup.readMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber, sabModel);
+						readerSetup.readMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber);
 						cnVM.IsAuthenticated = readerSetup.sectorSuccesfullyAuth;
 						foreach (TreeViewGrandChildNodeViewModel gcVM in cnVM.Children) {
 							gcVM.IsAuthenticated = readerSetup.dataBlockSuccesfullyAuth[(((cnVM.SectorNumber + 1) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
@@ -96,28 +95,24 @@ namespace RFiDGear.ViewModel
 		{
 			DataSourceForMifareClassicDataBlock.Clear();
 			for (int i = 0; i < selectedGCN.DataBlockContent.Length; i++) {
-				DataSourceForMifareClassicDataBlock.Add(new dataSourceClassMifareBlocks(selectedGCN.DataBlockContent, i));
+				DataSourceForMifareClassicDataBlock.Add(new SourceForMifareDataBlocks(selectedGCN.DataBlockContent, i));
 			}
 			gridSource = new ObservableCollection<object>(DataSourceForMifareClassicDataBlock);
 			RaisePropertyChanged("DataGridSource");
 		}
 		
 		public ICommand SectorTrailerEditDialogCommand { get { return new RelayCommand(GetTreeViewSelection); } }
-		
-		object currentTreeViewItem;
 		void GetTreeViewSelection(){
 			
 		}
 		
 		public void NewSectorTrailerEditDialog(TreeViewChildNodeViewModel sectorVM)
 		{
-			this.Dialogs.Add(new KeySettingsMifareClassicDialogViewModel {
+			this.Dialogs.Add(new KeySettingsMifareClassicDialogViewModel("FF0780") {
 			                 	
 			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
-			                 	SectorAccessBitsAsString = "FF0780",
 
 			                 	OnOk = (sender) => {
-			                 		sabModel.encodeSectorTrailer(sender.SectorAccessBitsAsString, 0);
 			                 		sender.Close();
 			                 	},
 
@@ -141,7 +136,7 @@ namespace RFiDGear.ViewModel
 			else
 				isClassicCard = false;
 			
-			this.Dialogs.Add(new KeySettingsMifareClassicDialogViewModel {
+			this.Dialogs.Add(new KeySettingsMifareClassicDialogViewModel("FF0780") {
 			                 	
 			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
 			                 	IsClassicAuthInfoEnabled = isClassicCard,
@@ -384,7 +379,7 @@ namespace RFiDGear.ViewModel
 		
 		public object SelectedDataGridItem {
 			get { return currentBlock; }
-			set { currentBlock = (dataSourceClassMifareBlocks)value;
+			set { currentBlock = (SourceForMifareDataBlocks)value;
 			}
 		}
 		public ObservableCollection<TreeViewParentNodeViewModel> TreeViewParentNode {
