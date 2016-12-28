@@ -44,6 +44,11 @@ namespace RFiDGear.DataSource
 					return null;
 			}
 		}
+
+		public SourceForSectorTrailerDataGrid()
+		{
+			
+		}
 		
 		public SourceForSectorTrailerDataGrid(string accessBits)
 		{
@@ -70,6 +75,9 @@ namespace RFiDGear.DataSource
 						writeKeyB=convertCondToHumanReadableFormat(temp[i]);
 						break;
 				}
+				
+				encodeSectorTrailer(accessBits, 3);
+				encodeSectorTrailer(null,4);
 			}
 		}
 		

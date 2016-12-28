@@ -37,7 +37,7 @@ namespace RFiDGear.ViewModel
 		
 		public KeySettingsMifareClassicDialogViewModel(string defaultSab, bool isModal = true)
 		{
-			sourceForSTDG = new SourceForSectorTrailerDataGrid(defaultSab);
+			sourceForSTDG = new SourceForSectorTrailerDataGrid("N,A,A,A,A,A");
 			
 			displaySourceForSectorTrailerDataGrid = new ObservableCollection<SourceForSectorTrailerDataGrid>();
 			foreach(string accessConditions in sourceForSTDG.GetSectorTrailerAccessConditions){

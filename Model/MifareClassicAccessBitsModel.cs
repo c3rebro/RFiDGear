@@ -285,7 +285,7 @@ namespace RFiDGear
 				C3 = 0x00;
 			
 			switch (type) {
-				case 0:
+				case 0:			// DataBlock
 					{
 						C1 <<= 4;
 						st[1] |= (byte)C1;
@@ -295,7 +295,7 @@ namespace RFiDGear
 					}
 					break;
 					
-				case 1:
+				case 1:			// DataBlock
 					{
 						C1 <<= 5;
 						st[1] |= (byte)C1;
@@ -306,7 +306,7 @@ namespace RFiDGear
 					}
 					break;
 					
-				case 2:
+				case 2:			// DataBlock
 					{
 						C1 <<= 6;
 						st[1] |= (byte)C1;
@@ -317,7 +317,7 @@ namespace RFiDGear
 					}
 					break;
 					
-				case 3:
+				case 3:			// SectorTrailer
 					{
 						C1 <<= 7;
 						st[1] |= (byte)C1;
@@ -328,7 +328,7 @@ namespace RFiDGear
 					}
 					break;
 					
-				default:
+				default:			// CheckSum
 					{
 						sectorTrailerByte = buildSectorTrailerInvNibble(st);
 						sectorTrailerString = convert.HexToString(sectorTrailerByte);
