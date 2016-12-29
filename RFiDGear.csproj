@@ -159,6 +159,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="GitPages\images\image001.jpg" />
+    <None Include="GitPages\images\image002.jpg" />
+    <None Include="GitPages\images\image003.jpg" />
     <None Include="index.html" />
     <None Include="packages.config" />
     <None Include="style.css" />
@@ -170,12 +173,14 @@
     <Page Include="View\ReaderSetupDialogBox.xaml" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="GitPages\images" />
     <Folder Include="Model" />
     <Folder Include="MVVMDialogs" />
     <Folder Include="MVVMDialogs\Behaviors" />
     <Folder Include="MVVMDialogs\Presenters" />
     <Folder Include="MVVMDialogs\ViewModels" />
     <Folder Include="DataSource" />
+    <Folder Include="GitPages" />
     <Folder Include="Presenters" />
     <Folder Include="Resources" />
     <Folder Include="View" />
