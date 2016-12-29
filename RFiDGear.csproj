@@ -162,6 +162,7 @@
     <None Include="GitPages\images\image001.jpg" />
     <None Include="GitPages\images\image002.jpg" />
     <None Include="GitPages\images\image003.jpg" />
+    <None Include="google40c0c4994e785d2e.html" />
     <None Include="index.html" />
     <None Include="packages.config" />
     <None Include="style.css" />
