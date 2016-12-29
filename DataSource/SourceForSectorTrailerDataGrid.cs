@@ -6,7 +6,7 @@ namespace RFiDGear.DataSource
 	/// <summary>
 	/// Description of SourceForSectorTrailerDataGrid.
 	/// </summary>
-	public class SourceForSectorTrailerDataGrid : MifareClassicAccessBitsModel
+	public class SourceForSectorTrailerDataGrid
 	{
 		readonly string readKeyA;
 		readonly string writeKeyA;
@@ -14,7 +14,11 @@ namespace RFiDGear.DataSource
 		readonly string writeAccessCond;
 		readonly string readKeyB;
 		readonly string writeKeyB;
-
+		
+		readonly string accessBits;
+		
+		MifareClassicAccessBitsModel abModel;
+		
 		private string convertCondToHumanReadableFormat(string cond){
 			switch(cond){
 				case "N":
@@ -45,39 +49,35 @@ namespace RFiDGear.DataSource
 			}
 		}
 
-		public SourceForSectorTrailerDataGrid()
+		public SourceForSectorTrailerDataGrid(string _accessBits)
 		{
+			abModel = new MifareClassicAccessBitsModel();
 			
-		}
-		
-		public SourceForSectorTrailerDataGrid(string accessBits)
-		{
+			accessBits = _accessBits;
+			
 			string[] temp = accessBits.Split(',');
 			
 			for(int i=0; i<temp.Length; i++){
 				switch(i){
 					case 0:
 						readKeyA=convertCondToHumanReadableFormat(temp[i]);
-						break;
+						continue;
 					case 1:
 						writeKeyA=convertCondToHumanReadableFormat(temp[i]);
-						break;
+						continue;
 					case 2:
 						readAccessCond=convertCondToHumanReadableFormat(temp[i]);
-						break;
+						continue;
 					case 3:
 						writeAccessCond=convertCondToHumanReadableFormat(temp[i]);
-						break;
+						continue;
 					case 4:
 						readKeyB=convertCondToHumanReadableFormat(temp[i]);
-						break;
+						continue;
 					case 5:
 						writeKeyB=convertCondToHumanReadableFormat(temp[i]);
-						break;
+						continue;
 				}
-				
-				encodeSectorTrailer(accessBits, 3);
-				encodeSectorTrailer(null,4);
 			}
 		}
 		
@@ -89,6 +89,15 @@ namespace RFiDGear.DataSource
 			                     convertCondFromHumanReadableFormat(writeAccessCond),
 			                     convertCondFromHumanReadableFormat(readKeyB),
 			                     convertCondFromHumanReadableFormat(writeKeyB));
+		}
+		
+		public MifareClassicAccessBitsModel ProcessSectorTrailerEncoding(string block0AB, string block1AB, string block2AB){
+			abModel.encodeSectorTrailer(block0AB, 0);
+			abModel.encodeSectorTrailer(block1AB, 1);
+			abModel.encodeSectorTrailer(block2AB, 2);
+			abModel.encodeSectorTrailer(accessBits, 3);
+			abModel.encodeSectorTrailer(null, 4);
+			return this.abModel;
 		}
 		
 		[DisplayName("ReadKey A")]

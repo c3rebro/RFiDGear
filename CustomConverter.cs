@@ -17,13 +17,6 @@ namespace RFiDGear
 		public string[] _constDesfireCardKeyType = { "3DES", "AES", "DES" };
 		public string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 		
-		public CustomConverter()
-		{
-			
-			// constructor
-			
-		}
-		
 		public int GetByteCount(string hexString)
 		{
 			int numHexChars = 0;

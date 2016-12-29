@@ -19,7 +19,7 @@ namespace RFiDGear
 		private string decodedBlock1AccessBits;
 		private string decodedBlock2AccessBits;
 		
-		private readonly string[] dataBlockABs = new string[8] {
+		public static readonly string[] dataBlockABs = new string[8] {
 			"A,A,A,A",
 			"",
 			"A,N,N,N",
@@ -30,7 +30,7 @@ namespace RFiDGear
 			"N,N,N,N"
 		};
 		
-		private readonly string[] dataBlockAB = new string[8] {
+		public static readonly string[] dataBlockAB = new string[8] {
 			"AB,AB,AB,AB",
 			"AB,B,N,N",
 			"AB,N,N,N",
@@ -41,7 +41,7 @@ namespace RFiDGear
 			"N,N,N,N"
 		};
 		
-		private readonly string[] sectorTrailerAB = new string[8] {
+		public static readonly string[] sectorTrailerAB = new string[8] {
 			"N,A,A,N,A,A",
 			"N,B,AB,N,N,B",
 			"N,N,A,N,A,N",
@@ -452,18 +452,9 @@ namespace RFiDGear
 			get{ return decodedBlock2AccessBits; }
 			set{ decodedBlock2AccessBits = value; }
 		}
-		public SectorAccessBits GetSetAccessBits{
+		public SectorAccessBits LibLogicalAccessAB{
 			get {return sab;}
 			set {sab = value;}
-		}
-		public string[] GetSectorTrailerAccessConditions{
-			get { return sectorTrailerAB;}
-		}
-		public string[] GetDataBlockAccessConditions{
-			get { return dataBlockAB;}
-		}
-		public string[] GetShortDataBlockAccessConditions{
-			get { return dataBlockABs;}
 		}
 	}
 }
