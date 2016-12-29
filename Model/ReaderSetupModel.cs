@@ -10,20 +10,19 @@ namespace RFiDGear
 		private RFiDAccess chipReaderWriter;
 		
 		readonly static string[] readerProviderList = {
-			"A3MLGM5600", "Admitto",
-			"AxessTMC13", "Deister", "Elatec",
-			"Gunnebo", "IdOnDemand",
-			"OK5553", "PCSC", "Promag",
-			"RFIDeas", "Rpleth", "SCIEL",
-			"SmartID", "STidPRG", "N/A"
+			"Admitto","AxessTMC13", "Deister",
+			"Gunnebo", "IdOnDemand","PCSC",
+			"Promag","RFIDeas", "Rpleth",
+			"SCIEL","SmartID", "STidPRG",
+			"N/A"
 		};
 		
-		public ReaderSetupModel(string readerProviderByName) : base(null) {
-			if((!String.IsNullOrEmpty(new SettingsReaderWriter()._defaultReaderProvider)) && String.IsNullOrEmpty(readerProviderByName)){
+		public ReaderSetupModel(string readerProviderByName)
+			: base(null)
+		{
+			if ((!String.IsNullOrEmpty(new SettingsReaderWriter()._defaultReaderProvider)) && String.IsNullOrEmpty(readerProviderByName)) {
 				chipReaderWriter = new RFiDAccess(new SettingsReaderWriter()._defaultReaderProvider);
-			}
-			
-			else if(!String.IsNullOrEmpty(readerProviderByName)){
+			} else if (!String.IsNullOrEmpty(readerProviderByName)) {
 				chipReaderWriter = new RFiDAccess(readerProviderByName);
 			}
 		}
@@ -42,9 +41,9 @@ namespace RFiDGear
 			}
 			set {
 				if (new SettingsReaderWriter()._defaultReaderProvider != value && value != "N/A") {
-					if(chipReaderWriter == null)
+					if (chipReaderWriter == null)
 						chipReaderWriter = new RFiDAccess(value);
-					else{
+					else {
 						chipReaderWriter = null;
 						chipReaderWriter = new RFiDAccess(value);
 					}
@@ -56,7 +55,7 @@ namespace RFiDGear
 		public string GetChipUID {
 			get {
 
-				if(!chipReaderWriter.readChipPublic() && !String.IsNullOrEmpty(chipReaderWriter.currentChipUID))
+				if (!chipReaderWriter.readChipPublic() && !String.IsNullOrEmpty(chipReaderWriter.currentChipUID))
 					return chipReaderWriter.currentChipUID;
 				return null;
 			}
@@ -64,7 +63,7 @@ namespace RFiDGear
 		
 		public string GetChipType {
 			get {
-				if(!chipReaderWriter.readChipPublic() && !String.IsNullOrEmpty(chipReaderWriter.currentChipType))
+				if (!chipReaderWriter.readChipPublic() && !String.IsNullOrEmpty(chipReaderWriter.currentChipType))
 					return chipReaderWriter.currentChipType;
 				return null;
 			}

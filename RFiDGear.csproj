@@ -159,7 +159,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="index.html" />
     <None Include="packages.config" />
+    <None Include="style.css" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="MainWindow.xaml" />

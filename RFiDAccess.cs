@@ -10,26 +10,6 @@ namespace RFiDGear
 	/// Description of RFiDAccess.
 	/// 
 	/// Initialize Reader
-	/// The following Readers are supportet by the Lib
-	/// 
-	/// 	new PCSCReaderProvider(),
-	///		new A3MLGM5600ReaderProviderClass(),
-	///		new AdmittoReaderProviderClass(),
-	///		new AxessTMC13ReaderProviderClass(),
-	///		new DeisterReaderProviderClass(),
-	///		new ElatecReaderProviderClass(),
-	///		new GunneboReaderProviderClass(),
-	///		new IdOnDemandReaderProviderClass(),
-	///		new KeyboardReaderProviderClass(),
-	///		new OK5553ReaderProviderClass(),
-	///		new PCSCReaderProviderClass(),
-	///		new PromagReaderProviderClass(),
-	///		new RFIDeasReaderProviderClass(),
-	///		new RplethReaderProviderClass(),
-	///		new SCIELReaderProviderClass(),
-	///		new SmartIDReaderProviderClass(),
-	///		new STidPRGReaderProviderClass()
-	/// 
 	/// </summary>
 	/// 
 	
