@@ -24,6 +24,26 @@ namespace RFiDGear.ViewModel
 			"DataBlock 2",
 			"All DataBlocks"
 		};
+		
+		private readonly string[] keyCmbbxItems = {
+			"No. 0",
+			"No. 1",
+			"No. 2",
+			"No. 3",
+			"No. 4",
+			"No. 5",
+			"No. 6",
+			"No. 7",
+			"No. 8",
+			"No. 9",
+			"No. 10",
+			"No. 11",
+			"No. 12",
+			"No. 13",
+			"No. 14",
+			"No. 15"
+		};
+		
 		private int selectionIndex = 3;
 		
 		private bool isClassicAuthInfo = true;
@@ -247,6 +267,10 @@ namespace RFiDGear.ViewModel
 		
 		public ObservableCollection<string> DataBlockSelection {
 			get { return new ObservableCollection<string>(cmbbxItems); }
+		}
+		
+		public ObservableCollection<string> KeySelection {
+			get { return new ObservableCollection<string>(keyCmbbxItems); }
 		}
 		
 		/*
