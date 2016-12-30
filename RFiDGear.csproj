@@ -159,11 +159,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="GitPages\images\image001.jpg" />
-    <None Include="GitPages\images\image002.jpg" />
-    <None Include="GitPages\images\image003.jpg" />
-    <None Include="google40c0c4994e785d2e.html" />
-    <None Include="index.html" />
+    <None Include="docs\GitPages\images\image001.jpg" />
+    <None Include="docs\GitPages\images\image002.jpg" />
+    <None Include="docs\GitPages\images\image003.jpg" />
+    <None Include="docs\google40c0c4994e785d2e.html" />
+    <None Include="docs\index.html" />
     <None Include="packages.config" />
     <None Include="style.css" />
   </ItemGroup>
@@ -174,14 +174,15 @@
     <Page Include="View\ReaderSetupDialogBox.xaml" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="GitPages\images" />
+    <Folder Include="docs\GitPages\images" />
     <Folder Include="Model" />
     <Folder Include="MVVMDialogs" />
     <Folder Include="MVVMDialogs\Behaviors" />
     <Folder Include="MVVMDialogs\Presenters" />
     <Folder Include="MVVMDialogs\ViewModels" />
     <Folder Include="DataSource" />
-    <Folder Include="GitPages" />
+    <Folder Include="docs\GitPages" />
+    <Folder Include="docs" />
     <Folder Include="Presenters" />
     <Folder Include="Resources" />
     <Folder Include="View" />
