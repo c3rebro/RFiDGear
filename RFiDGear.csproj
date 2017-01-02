@@ -17,6 +17,9 @@
     <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <WarningLevel>4</WarningLevel>
+    <ReferencePath>C:\Program Files\Microsoft SDKs\Windows\v8.1A\bin\</ReferencePath>
+    <SignAssembly>False</SignAssembly>
+    <DelaySign>False</DelaySign>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -138,7 +141,7 @@
     <Compile Include="SettingsReaderWriter.cs" />
     <Compile Include="ViewModel\CustomDialogViewModel.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
-    <Compile Include="ViewModel\KeySettingsMifareClassicDialogViewModel.cs" />
+    <Compile Include="ViewModel\MifareAuthSettingsDialogViewModel.cs" />
     <Compile Include="ViewModel\MessageBoxViewModel.cs" />
     <Compile Include="ViewModel\OpenFileDialogViewModel.cs" />
     <Compile Include="ViewModel\ReaderSetupDialogViewModel.cs" />

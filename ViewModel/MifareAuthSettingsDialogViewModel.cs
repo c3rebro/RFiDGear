@@ -13,7 +13,7 @@ namespace RFiDGear.ViewModel
 	/// <summary>
 	/// Description of KeySettingsMifareClassicDialogViewModel.
 	/// </summary>
-	public class KeySettingsMifareClassicDialogViewModel : ViewModelBase, IUserDialogViewModel
+	public class MifareAuthSettingsDialogViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		//private SourceForSectorTrailerDataGrid sourceForSTDG;
 		private MifareClassicAccessBitsModel abModel;
@@ -61,7 +61,7 @@ namespace RFiDGear.ViewModel
 		private SourceForSectorTrailerDataGrid _selectedSectorTrailerAccessBitsItem;
 		private object _selectedDataBlockAccessBitsItem;
 		
-		public KeySettingsMifareClassicDialogViewModel(string defaultSab, bool isModal = true)
+		public MifareAuthSettingsDialogViewModel(string defaultSab, bool isModal = true)
 		{
 			//sourceForSTDG = new SourceForSectorTrailerDataGrid("N,A,A,A,A,A");
 			abModel = new MifareClassicAccessBitsModel();
@@ -190,9 +190,9 @@ namespace RFiDGear.ViewModel
 				Close();
 		}
 		
-		public Action<KeySettingsMifareClassicDialogViewModel> OnOk { get; set; }
-		public Action<KeySettingsMifareClassicDialogViewModel> OnCancel { get; set; }
-		public Action<KeySettingsMifareClassicDialogViewModel> OnCloseRequest { get; set; }
+		public Action<MifareAuthSettingsDialogViewModel> OnOk { get; set; }
+		public Action<MifareAuthSettingsDialogViewModel> OnCancel { get; set; }
+		public Action<MifareAuthSettingsDialogViewModel> OnCloseRequest { get; set; }
 
 		public void Close()
 		{

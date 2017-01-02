@@ -108,7 +108,7 @@ namespace RFiDGear.ViewModel
 		
 		public void NewSectorTrailerEditDialog(TreeViewChildNodeViewModel sectorVM)
 		{
-			this.Dialogs.Add(new KeySettingsMifareClassicDialogViewModel("FF0780") {
+			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel("FF0780") {
 			                 	
 			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
 
@@ -136,7 +136,7 @@ namespace RFiDGear.ViewModel
 			else
 				isClassicCard = false;
 			
-			this.Dialogs.Add(new KeySettingsMifareClassicDialogViewModel("FF0780") {
+			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel("FF0780") {
 			                 	
 			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
 			                 	IsClassicAuthInfoEnabled = isClassicCard,

@@ -92,7 +92,6 @@ namespace RFiDGear
 			readChipPublic();
 		}
 		
-		
 		//********************************************************
 		//Function Name: readChip
 		//Input Parameter:-------
@@ -191,7 +190,7 @@ namespace RFiDGear
 								blockAuthSuccessful = new bool[256];
 								blockReadSuccessful = new bool[256];
 								
-								blockCount = 16;
+								blockCount = 4;
 								sectorCount = 40;
 								
 								cardDataBlock = new byte[16];
