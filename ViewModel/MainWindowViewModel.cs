@@ -18,6 +18,7 @@ namespace RFiDGear.ViewModel
 	public class MainWindowViewModel : ViewModelBase
 	{
 		private ReaderSetupModel readerSetup;
+		private ProjectFileReaderWriter projectFileReaderWriter;
 
 		private ObservableCollection<IDialogViewModel> _Dialogs = new ObservableCollection<IDialogViewModel>();
 		public ObservableCollection<IDialogViewModel> Dialogs { get { return _Dialogs; } }
@@ -36,6 +37,7 @@ namespace RFiDGear.ViewModel
 		public MainWindowViewModel()
 		{
 			readerSetup = new ReaderSetupModel(null);
+			projectFileReaderWriter = new ProjectFileReaderWriter();
 
 			Messenger.Default.Register<NotificationMessage<string>>(
 				this, nm => {
@@ -198,8 +200,6 @@ namespace RFiDGear.ViewModel
 					}
 				}
 			}
-			
-
 		}
 		
 		public ICommand CloseAllCommand { get { return new RelayCommand(OnCloseAll); } }
@@ -392,16 +392,16 @@ namespace RFiDGear.ViewModel
 					
 					switch (readerSetup.GetChipType) {
 						case "Mifare1K":
-							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID), CARD_TYPE.CT_CLASSIC_1K));
+							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_1K), CARD_TYPE.CT_CLASSIC_1K));
 							break;
 							
 						case "Mifare2K":
-							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID), CARD_TYPE.CT_CLASSIC_2K));
+							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_2K), CARD_TYPE.CT_CLASSIC_2K));
 							break;
 							
 							
 						case "Mifare4K":
-							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID), CARD_TYPE.CT_CLASSIC_4K));
+							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_4K), CARD_TYPE.CT_CLASSIC_4K));
 							break;
 							
 							

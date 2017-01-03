@@ -1,4 +1,7 @@
-﻿using GalaSoft.MvvmLight.Messaging;
+﻿using RFiDGear.Model;
+
+using GalaSoft.MvvmLight.Messaging;
+
 using System;
 using System.ComponentModel;
 using System.Collections.Generic;
@@ -24,8 +27,8 @@ namespace RFiDGear.ViewModel
 
 		#endregion // Data
 		
-		readonly Model.MifareClassicUidModel _chipMifareClassicUid;
-		readonly Model.MifareDesfireUidModel _chipMifareDesfireUid;
+		readonly MifareClassicUidModel _chipMifareClassicUid;
+		readonly MifareDesfireUidModel _chipMifareDesfireUid;
 		readonly CARD_TYPE _cardType;
 		readonly List<MenuItem> ContextMenuItems;
 		readonly RelayCommand _cmdReadAllSectorsWithDefaultKeys;
@@ -33,9 +36,10 @@ namespace RFiDGear.ViewModel
 		readonly RelayCommand _cmdEditAuthInfoAndReadAllSectors;
 		readonly string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 		
-		public TreeViewParentNodeViewModel(Model.MifareClassicUidModel uid, CARD_TYPE cardType)
+		public TreeViewParentNodeViewModel(MifareClassicUidModel uidModel, CARD_TYPE cardType)
 		{
-			_chipMifareClassicUid = uid;
+			_chipMifareClassicUid = uidModel;
+			new ProjectFileReaderWriter().WriteDatabase(uidModel);
 			_cardType = cardType;
 			
 			_cmdReadAllSectorsWithDefaultKeys = new ViewModel.RelayCommand(ReadSectorsWithDefaultConfig);
@@ -92,7 +96,7 @@ namespace RFiDGear.ViewModel
 		
 		void DeleteMeCommand() {
 			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, _chipMifareClassicUid.uidNumber, "DeleteMe")
+				new NotificationMessage<string>(this, _chipMifareClassicUid.UidNumber, "DeleteMe")
 			);
 		}
 		
@@ -183,11 +187,11 @@ namespace RFiDGear.ViewModel
 		}
 		
 		public string ParentNodeDisplayItem {
-			get { return String.Format("[{0} Type: {1}]", _chipMifareClassicUid.uidNumber, _constCardType[(int)_cardType]); }
+			get { return String.Format("[{0} Type: {1}]", _chipMifareClassicUid.UidNumber, _constCardType[(int)_cardType]); }
 		}
 		
 		public string UidNumber {
-			get { return _chipMifareClassicUid.uidNumber; }
+			get { return _chipMifareClassicUid.UidNumber; }
 		}
 		
 		public CARD_TYPE CardType {

@@ -546,8 +546,4 @@ namespace RFiDGear
 		}
 		#endregion
 	}
-	
-	public class KeySettingsDialogContent{
-		
-	}
 }

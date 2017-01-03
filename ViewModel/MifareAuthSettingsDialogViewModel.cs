@@ -84,6 +84,7 @@ namespace RFiDGear.ViewModel
 					displaySourceForShortDataBlockDataGrid.Add(new SourceForShortDataBlockDataGrid(accessConditions));
 			}
 			
+			// select the default item
 			foreach (SourceForSectorTrailerDataGrid item in displaySourceForSectorTrailerDataGrid) {
 				if (item.GetSectorAccessBitsFromHumanReadableFormat() == "N,A,A,A,A,A")
 					_selectedSectorTrailerAccessBitsItem = item;

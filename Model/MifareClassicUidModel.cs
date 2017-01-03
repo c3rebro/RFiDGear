@@ -16,11 +16,14 @@ namespace RFiDGear.Model
 			get { return _sectorList; }
 		}
 		
-		public MifareClassicUidModel(string uid)
+		public MifareClassicUidModel(string uid, CARD_TYPE cardType)
 		{
-			this.uidNumber = uid;
+			this.CardType = cardType;
+			this.UidNumber = uid;
 		}
 		
-		public string uidNumber { get; set; }
+		public string UidNumber { get; set; }
+		
+		public CARD_TYPE CardType { get; set; }
 	}
 }
