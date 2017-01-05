@@ -28,7 +28,7 @@ namespace RFiDGear.ViewModel
 
 		#endregion // Data
 		
-		private readonly MifareClassicSectorModel _sector;
+		public MifareClassicSectorModel _sectorModel { get; set; }
 		private readonly MifareDesfireAppModel _appID;
 		private readonly CARD_TYPE _cardType;
 		private readonly RelayCommand _cmdReadSectorWithDefaults;
@@ -40,10 +40,10 @@ namespace RFiDGear.ViewModel
 
 		private bool? isAuth;
 		
-		public TreeViewChildNodeViewModel(MifareClassicSectorModel sector, TreeViewParentNodeViewModel parent, CARD_TYPE cardType, int sectorNumber)
+		public TreeViewChildNodeViewModel(MifareClassicSectorModel sectorModel, TreeViewParentNodeViewModel parent, CARD_TYPE cardType, int sectorNumber)
 		{
-			_sector = sector;
-			_sector.mifareClassicSectorNumber = sectorNumber;
+			_sectorModel = sectorModel;
+			_sectorModel.mifareClassicSectorNumber = sectorNumber;
 			_cardType = cardType;
 			_parent = parent;
 			
@@ -59,7 +59,7 @@ namespace RFiDGear.ViewModel
 			ContextMenuItems.Add(new MenuItem() {
 			                     	Header = "Edit Authentication Settings and Modify Sector",
 			                     	Command = _cmdEditAuthAndModifySector
-			                     });			
+			                     });
 			
 			_children = new ObservableCollection<TreeViewGrandChildNodeViewModel>();
 			
@@ -183,16 +183,16 @@ namespace RFiDGear.ViewModel
 		}
 		
 		public string SectorNumberDisplayItem {
-			get { return String.Format("Sector: [{0}]", _sector.mifareClassicSectorNumber); }
+			get { return String.Format("Sector: [{0}]", _sectorModel.mifareClassicSectorNumber); }
 		}
 		
 		public int SectorNumber {
-			get { return _sector.mifareClassicSectorNumber; }
-			set { _sector.mifareClassicSectorNumber = value; }
+			get { return _sectorModel.mifareClassicSectorNumber; }
+			set { _sectorModel.mifareClassicSectorNumber = value; }
 		}
 		
 		public int BlockCount {
-			get { return _sector.mifareClassicSectorNumber > 31 ? 16 : 4; }
+			get { return _sectorModel.mifareClassicSectorNumber > 31 ? 16 : 4; }
 		}
 
 		public bool? IsAuthenticated {
@@ -210,7 +210,7 @@ namespace RFiDGear.ViewModel
 				case CARD_TYPE.CT_CLASSIC_1K:
 					{
 						for (int i = 0; i < 4; i++) {
-							_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
+							_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
 						}
 					}
 					break;
@@ -218,7 +218,7 @@ namespace RFiDGear.ViewModel
 				case CARD_TYPE.CT_CLASSIC_2K:
 					{
 						for (int i = 0; i < 4; i++) {
-							_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
+							_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
 						}
 					}
 					break;
@@ -227,19 +227,20 @@ namespace RFiDGear.ViewModel
 					{
 						if (SectorNumber < 32) {
 							for (int i = 0; i < 4; i++) {
-								_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
+								_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
 							}
 						} else {
 							
 							for (int i = 0; i < 16; i++) {
-								_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sector.mifareClassicSectorNumber));
+								_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
 							}
 						}
 					}
 					break;
 			}
-			//foreach (Model.chipMifareClassicDataBlock dataBlock in Definitions.MifareClassicLayout.GetMifareClassicDataBlocks(_sector))
-			//   base.Children.Add(new ViewModel.TreeViewGrandChildNodeViewModel(dataBlock, this));
+			foreach(TreeViewGrandChildNodeViewModel item in _children){
+				_sectorModel.dataBlock.Add(item._dataBlock);			                           
+			}
 		}
 	}
 }

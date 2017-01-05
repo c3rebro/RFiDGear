@@ -27,7 +27,7 @@ namespace RFiDGear.ViewModel
 
 		#endregion // Data
 		
-		readonly MifareClassicUidModel _chipMifareClassicUid;
+		public MifareClassicUidModel mifareClassicUidModel { get; set; } 
 		readonly MifareDesfireUidModel _chipMifareDesfireUid;
 		readonly CARD_TYPE _cardType;
 		readonly List<MenuItem> ContextMenuItems;
@@ -38,8 +38,7 @@ namespace RFiDGear.ViewModel
 		
 		public TreeViewParentNodeViewModel(MifareClassicUidModel uidModel, CARD_TYPE cardType)
 		{
-			_chipMifareClassicUid = uidModel;
-			new ProjectFileReaderWriter().WriteDatabase(uidModel);
+			mifareClassicUidModel = uidModel;
 			_cardType = cardType;
 			
 			_cmdReadAllSectorsWithDefaultKeys = new ViewModel.RelayCommand(ReadSectorsWithDefaultConfig);
@@ -96,7 +95,7 @@ namespace RFiDGear.ViewModel
 		
 		void DeleteMeCommand() {
 			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, _chipMifareClassicUid.UidNumber, "DeleteMe")
+				new NotificationMessage<string>(this, mifareClassicUidModel.UidNumber, "DeleteMe")
 			);
 		}
 		
@@ -187,11 +186,11 @@ namespace RFiDGear.ViewModel
 		}
 		
 		public string ParentNodeDisplayItem {
-			get { return String.Format("[{0} Type: {1}]", _chipMifareClassicUid.UidNumber, _constCardType[(int)_cardType]); }
+			get { return String.Format("[{0} Type: {1}]", mifareClassicUidModel.UidNumber, _constCardType[(int)_cardType]); }
 		}
 		
 		public string UidNumber {
-			get { return _chipMifareClassicUid.UidNumber; }
+			get { return mifareClassicUidModel.UidNumber; }
 		}
 		
 		public CARD_TYPE CardType {
@@ -234,6 +233,10 @@ namespace RFiDGear.ViewModel
 						_children.Add(new ViewModel.TreeViewChildNodeViewModel(new Model.MifareDesfireAppModel(),this, _cardType));
 					}
 					break;
+			}
+			
+			foreach(TreeViewChildNodeViewModel item in _children){
+				mifareClassicUidModel.SectorList.Add(item._sectorModel);
 			}
 		}
 	}

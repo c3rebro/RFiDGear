@@ -18,12 +18,11 @@ namespace RFiDGear.ViewModel
 	public class MainWindowViewModel : ViewModelBase
 	{
 		private ReaderSetupModel readerSetup;
-		private ProjectFileReaderWriter projectFileReaderWriter;
+		private DatabaseReaderWriter databaseReaderWriter;
 
 		private ObservableCollection<IDialogViewModel> _Dialogs = new ObservableCollection<IDialogViewModel>();
 		public ObservableCollection<IDialogViewModel> Dialogs { get { return _Dialogs; } }
 		
-		private List<string> knownUIDs = new List<string>();
 		private SourceForMifareDataBlocks currentBlock;
 		private ObservableCollection<SourceForMifareDataBlocks> DataSourceForMifareClassicDataBlock = new ObservableCollection<SourceForMifareDataBlocks>();
 		private ObservableCollection<object> gridSource;
@@ -37,7 +36,7 @@ namespace RFiDGear.ViewModel
 		public MainWindowViewModel()
 		{
 			readerSetup = new ReaderSetupModel(null);
-			projectFileReaderWriter = new ProjectFileReaderWriter();
+			databaseReaderWriter = new DatabaseReaderWriter();
 
 			Messenger.Default.Register<NotificationMessage<string>>(
 				this, nm => {
@@ -47,7 +46,7 @@ namespace RFiDGear.ViewModel
 							ReadSectorsWithDefaultConfig((TreeViewParentNodeViewModel)nm.Sender);
 							break;
 						case "DeleteMe":
-							knownUIDs.Remove(nm.Content);
+							databaseReaderWriter.databaseUIDs.Remove(nm.Content);
 							_uids.Remove((TreeViewParentNodeViewModel)nm.Sender);
 							break;
 						case "EditAuthInfoAndReadAllSectors":
@@ -110,7 +109,7 @@ namespace RFiDGear.ViewModel
 		
 		public void NewSectorTrailerEditDialog(TreeViewChildNodeViewModel sectorVM)
 		{
-			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel("FF0780") {
+			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel() {
 			                 	
 			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
 
@@ -138,7 +137,7 @@ namespace RFiDGear.ViewModel
 			else
 				isClassicCard = false;
 			
-			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel("FF0780") {
+			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel() {
 			                 	
 			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
 			                 	IsClassicAuthInfoEnabled = isClassicCard,
@@ -187,15 +186,15 @@ namespace RFiDGear.ViewModel
 		{
 			if (!String.IsNullOrEmpty(new ReaderSetupModel(null).GetChipUID)) {
 				if (new ReaderSetupModel(null).SelectedReader != "N/A") {
-					if (!knownUIDs.Contains(new ReaderSetupModel(null).GetChipUID)) {
-						knownUIDs.Add(new ReaderSetupModel(null).GetChipUID);
+					if (!databaseReaderWriter.databaseUIDs.Contains(new ReaderSetupModel(null).GetChipUID)) {
+						databaseReaderWriter.databaseUIDs.Add(new ReaderSetupModel(null).GetChipUID);
 						RaisePropertyChanged("TreeViewParentNode");
 					}
 				}
 			} else {
 				if (new ReaderSetupModel(null).SelectedReader != "N/A") {
-					if (!knownUIDs.Contains(new ReaderSetupModel(null).GetChipUID)) {
-						knownUIDs.Add(new ReaderSetupModel(null).GetChipUID);
+					if (!databaseReaderWriter.databaseUIDs.Contains(new ReaderSetupModel(null).GetChipUID)) {
+						databaseReaderWriter.databaseUIDs.Add(new ReaderSetupModel(null).GetChipUID);
 						RaisePropertyChanged("TreeViewParentNode");
 					}
 				}
@@ -387,8 +386,10 @@ namespace RFiDGear.ViewModel
 				CustomConverter converter = new CustomConverter();
 				if (!String.IsNullOrEmpty(readerSetup.GetChipUID)) {
 					
-					if (!knownUIDs.Contains(readerSetup.GetChipUID))
-						knownUIDs.Add(readerSetup.GetChipUID);
+					if (!databaseReaderWriter.databaseUIDs.Contains(readerSetup.GetChipUID))
+					{
+						databaseReaderWriter.databaseUIDs.Add(readerSetup.GetChipUID);
+					}
 					
 					switch (readerSetup.GetChipType) {
 						case "Mifare1K":
@@ -399,17 +400,19 @@ namespace RFiDGear.ViewModel
 							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_2K), CARD_TYPE.CT_CLASSIC_2K));
 							break;
 							
-							
 						case "Mifare4K":
 							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_4K), CARD_TYPE.CT_CLASSIC_4K));
 							break;
-							
 							
 						case "DESFireEV1":
 							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareDesfireUidModel(readerSetup.GetChipUID), CARD_TYPE.CT_DESFIRE_EV1));
 							break;
 					}
 					
+					foreach(TreeViewParentNodeViewModel pnVM in _uids)
+					{
+						databaseReaderWriter.WriteDatabase(pnVM.mifareClassicUidModel);
+					}
 					return _uids;
 				}
 				return null;

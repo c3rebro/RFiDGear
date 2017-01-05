@@ -25,7 +25,7 @@ namespace RFiDGear.ViewModel
 
 		#endregion // Data
 		
-		readonly Model.MifareClassicDataBlockModel _dataBlock;
+		public Model.MifareClassicDataBlockModel _dataBlock {get; set;}
 		readonly string _tag;
 		
 

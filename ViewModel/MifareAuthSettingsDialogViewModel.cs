@@ -15,8 +15,7 @@ namespace RFiDGear.ViewModel
 	/// </summary>
 	public class MifareAuthSettingsDialogViewModel : ViewModelBase, IUserDialogViewModel
 	{
-		//private SourceForSectorTrailerDataGrid sourceForSTDG;
-		private MifareClassicAccessBitsModel abModel;
+		private DatabaseReaderWriter databaseReaderWriter;
 		
 		private readonly string[] cmbbxItems = {
 			"DataBlock 0",
@@ -56,15 +55,13 @@ namespace RFiDGear.ViewModel
 		private ObservableCollection<object> displaySourceForDataBlock1DataGrid;
 		private ObservableCollection<object> displaySourceForDataBlock2DataGrid;
 		private ObservableCollection<object> displaySourceForCombinedDataBlockDataGrid;
-
 		
 		private SourceForSectorTrailerDataGrid _selectedSectorTrailerAccessBitsItem;
 		private object _selectedDataBlockAccessBitsItem;
 		
-		public MifareAuthSettingsDialogViewModel(string defaultSab, bool isModal = true)
+		public MifareAuthSettingsDialogViewModel(bool isModal = true)
 		{
-			//sourceForSTDG = new SourceForSectorTrailerDataGrid("N,A,A,A,A,A");
-			abModel = new MifareClassicAccessBitsModel();
+			databaseReaderWriter = new DatabaseReaderWriter();
 			
 			displaySourceForSectorTrailerDataGrid = new ObservableCollection<SourceForSectorTrailerDataGrid>();
 			displaySourceForLongDataBlockDataGrid = new ObservableCollection<SourceForLongDataBlockDataGrid>();
@@ -84,10 +81,17 @@ namespace RFiDGear.ViewModel
 					displaySourceForShortDataBlockDataGrid.Add(new SourceForShortDataBlockDataGrid(accessConditions));
 			}
 			
-			// select the default item
+			// select the default items
+			displaySourceForCombinedDataBlockDataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
+			
 			foreach (SourceForSectorTrailerDataGrid item in displaySourceForSectorTrailerDataGrid) {
 				if (item.GetSectorAccessBitsFromHumanReadableFormat() == "N,A,A,A,A,A")
 					_selectedSectorTrailerAccessBitsItem = item;
+			}
+			
+			foreach (SourceForShortDataBlockDataGrid item in displaySourceForCombinedDataBlockDataGrid) {
+				if (item.GetShortDataBlockAccessBitsFromHumanReadableFormat() == "A,A,A,A")
+					_selectedDataBlockAccessBitsItem = item;
 			}
 			this.IsModal = isModal;
 		}
