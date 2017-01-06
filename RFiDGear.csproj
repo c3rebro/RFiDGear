@@ -162,13 +162,17 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="bottom.gif" />
+    <None Include="bullet.gif" />
     <None Include="GitPages\images\image001.jpg" />
     <None Include="GitPages\images\image002.jpg" />
     <None Include="GitPages\images\image003.jpg" />
     <None Include="google40c0c4994e785d2e.html" />
     <None Include="index.html" />
+    <None Include="logo.gif" />
     <None Include="packages.config" />
     <None Include="style.css" />
+    <None Include="top.gif" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="MainWindow.xaml" />
