@@ -11,8 +11,11 @@ namespace RFiDGear.Model
 		
 		readonly List<MifareClassicDataBlockModel> mifareClassicBlock = new List<MifareClassicDataBlockModel>();
 		
+		public MifareClassicAccessBitsModel sectorAccessBits { get; set; }
+		
 		public MifareClassicSectorModel(int sectorNumber)
 		{
+			sectorAccessBits = new MifareClassicAccessBitsModel();
 			this.mifareClassicSectorNumber = sectorNumber;
 		}
 		
@@ -21,5 +24,6 @@ namespace RFiDGear.Model
 		}
 		
 		public int mifareClassicSectorNumber { get; set; }
+		
 	}
 }

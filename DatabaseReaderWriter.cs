@@ -72,40 +72,17 @@ namespace RFiDGear
 		
 		public void WriteDatabase(MifareClassicUidModel mifareClassicChip)
 		{
+			// TODO implement communication between database, viewmodel and model
 			try {
-				
+
 				XmlDocument doc = new XmlDocument();
 				doc.Load(Path.Combine(appDataPath,databaseFileName));
 				
-				if (doc.SelectSingleNode("//UidNodesDatabase") == null) {
-					XmlElement root = doc.DocumentElement;
-					XmlElement chipUidNode = doc.CreateElement("UidNode");
-					XmlElement sectorTrailer = doc.CreateElement("SectorTrailerNode");
-					
-					chipUidNode.SetAttribute("ChipUid",mifareClassicChip.UidNumber);
-					chipUidNode.SetAttribute("ChipType",converter._constCardType[(int)mifareClassicChip.CardType]);
-					
-					
-					for(int i = 0; i< 31; i++)
-					{
-						sectorTrailer.SetAttribute(String.Format("SectorTrailer{0:d2}",i),String.Format("{0:d2};000000000000;FF0780C3;FFFFFFFFFFFF",i));
-					}
-
-					root.AppendChild(chipUidNode);
-					chipUidNode.AppendChild(sectorTrailer);
-					
-					doc.AppendChild(root);
-					doc.Save(Path.Combine(appDataPath,databaseFileName));
-				}
-				
-				else
-				{
+				if (doc.SelectSingleNode("//UidNodesDatabase") != null) {
 					XmlNode root = doc.SelectSingleNode("//UidNodesDatabase");
-
-					XmlNodeList chipUidNodesList = doc.SelectNodes("UidNode");
-					XmlNodeList sectorTrailersList = doc.SelectNodes("SectorTrailerNode");
+					//XmlElement root = doc.DocumentElement;
 					
-					if(doc.SelectSingleNode("//ChipUid") == null)
+					if(doc.SelectSingleNode("//UidNode") == null)
 					{
 						XmlElement chipUidNode = doc.CreateElement("UidNode");
 						XmlElement sectorTrailer = doc.CreateElement("SectorTrailerNode");
@@ -113,38 +90,42 @@ namespace RFiDGear
 						chipUidNode.SetAttribute("ChipUid",mifareClassicChip.UidNumber);
 						chipUidNode.SetAttribute("ChipType",converter._constCardType[(int)mifareClassicChip.CardType]);
 						
-						root.AppendChild(chipUidNode);
 						
 						for(int i = 0; i< 31; i++)
 						{
-							sectorTrailer.SetAttribute(String.Format("SectorTrailer{0:d2}",i),String.Format("{0:d2}:000000000000;FF0780C3;FFFFFFFFFFFF",i));
-							chipUidNode.AppendChild(sectorTrailer);
+							sectorTrailer.SetAttribute(String.Format("SectorTrailer{0:d2}",i),String.Format("{0:d2};000000000000,FF0780C3,FFFFFFFFFFFF",i));
 						}
-						
 
-						//chipUidNode.AppendChild(sectorTrailer);
+						root.AppendChild(chipUidNode);
+						chipUidNode.AppendChild(sectorTrailer);
 						
 						doc.AppendChild(root);
 						doc.Save(Path.Combine(appDataPath,databaseFileName));
 					}
-					else if (databaseUIDs.Contains(mifareClassicChip.UidNumber))
+					
+					foreach(XmlNode node in doc.SelectNodes("//SectorTrailerNode"))
 					{
-						foreach(XmlNode node in doc.SelectNodes("//UidNode"))
+						List<MifareClassicSectorModel> sectorModels = new List<MifareClassicSectorModel>(mifareClassicChip.SectorList);
+						
+						foreach(XmlNode innerNode in node.Attributes)
 						{
-							foreach(XmlNode innerNode in node.Attributes["SectorTrailer"])
+							string[] stCombined = innerNode.Value.Split(';');
+							string[] stSeparated = stCombined[1].Split(',');
+							
+							if(Convert.ToInt32(stCombined[0]) > sectorModels.Count)
+								return;
+							
+							foreach(MifareClassicSectorModel sectorModel in sectorModels)
 							{
-								string[] arr = innerNode.Value.Split(':');
+								if(Convert.ToInt32(stCombined[0]) == sectorModel.mifareClassicSectorNumber)
+								{
+									sectorModel.sectorAccessBits.decodeSectorTrailer(stSeparated[1]);
+								}
 							}
 						}
 					}
 					
-					
-					foreach(MifareClassicSectorModel sector in mifareClassicChip.SectorList)
-					{
-						foreach(XmlElement elem in root.SelectNodes(""));
-					}
 				}
-				
 			} catch (XmlException e) {
 
 				Environment.Exit(0);

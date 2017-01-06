@@ -7,7 +7,7 @@ namespace RFiDGear.Model
 	/// </summary>
 	public class MifareClassicDataBlockModel
 	{
-		
+	
 		public MifareClassicDataBlockModel(int blockNumberDisplayItem)
 		{
 			this.dataBlockNumber = blockNumberDisplayItem;

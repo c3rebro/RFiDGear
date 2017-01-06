@@ -109,9 +109,10 @@ namespace RFiDGear.ViewModel
 		
 		public void NewSectorTrailerEditDialog(TreeViewChildNodeViewModel sectorVM)
 		{
-			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel() {
+			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel(sectorVM) {
 			                 	
 			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
+			                 	
 
 			                 	OnOk = (sender) => {
 			                 		sender.Close();
@@ -128,16 +129,16 @@ namespace RFiDGear.ViewModel
 			                 });
 		}
 
-		public void NewSectorTrailerEditDialog(TreeViewParentNodeViewModel sectorVM)
+		public void NewSectorTrailerEditDialog(TreeViewParentNodeViewModel uidVM)
 		{
 			bool isClassicCard;
 			
-			if(sectorVM.CardType == CARD_TYPE.CT_CLASSIC_1K || sectorVM.CardType == CARD_TYPE.CT_CLASSIC_2K || sectorVM.CardType == CARD_TYPE.CT_CLASSIC_4K)
+			if(uidVM.CardType == CARD_TYPE.CT_CLASSIC_1K || uidVM.CardType == CARD_TYPE.CT_CLASSIC_2K || uidVM.CardType == CARD_TYPE.CT_CLASSIC_4K)
 				isClassicCard = true;
 			else
 				isClassicCard = false;
 			
-			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel() {
+			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel(uidVM) {
 			                 	
 			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
 			                 	IsClassicAuthInfoEnabled = isClassicCard,

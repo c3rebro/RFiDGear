@@ -16,6 +16,7 @@ namespace RFiDGear.ViewModel
 	public class MifareAuthSettingsDialogViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		private DatabaseReaderWriter databaseReaderWriter;
+		private object parentTreeViewViewModel;
 		
 		private readonly string[] cmbbxItems = {
 			"DataBlock 0",
@@ -59,9 +60,10 @@ namespace RFiDGear.ViewModel
 		private SourceForSectorTrailerDataGrid _selectedSectorTrailerAccessBitsItem;
 		private object _selectedDataBlockAccessBitsItem;
 		
-		public MifareAuthSettingsDialogViewModel(bool isModal = true)
+		public MifareAuthSettingsDialogViewModel(object treeViewViewModel, bool isModal = true)
 		{
 			databaseReaderWriter = new DatabaseReaderWriter();
+			parentTreeViewViewModel = treeViewViewModel;
 			
 			displaySourceForSectorTrailerDataGrid = new ObservableCollection<SourceForSectorTrailerDataGrid>();
 			displaySourceForLongDataBlockDataGrid = new ObservableCollection<SourceForLongDataBlockDataGrid>();
@@ -81,16 +83,18 @@ namespace RFiDGear.ViewModel
 					displaySourceForShortDataBlockDataGrid.Add(new SourceForShortDataBlockDataGrid(accessConditions));
 			}
 			
-			// select the default items
+			// select the default items from Database
 			displaySourceForCombinedDataBlockDataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
 			
 			foreach (SourceForSectorTrailerDataGrid item in displaySourceForSectorTrailerDataGrid) {
-				if (item.GetSectorAccessBitsFromHumanReadableFormat() == "N,A,A,A,A,A")
+				if (item.GetSectorAccessBitsFromHumanReadableFormat() == 
+				    (parentTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedSectorTrailerAccessBits ) //"N,A,A,A,A,A"
 					_selectedSectorTrailerAccessBitsItem = item;
 			}
 			
 			foreach (SourceForShortDataBlockDataGrid item in displaySourceForCombinedDataBlockDataGrid) {
-				if (item.GetShortDataBlockAccessBitsFromHumanReadableFormat() == "A,A,A,A")
+				if (item.GetShortDataBlockAccessBitsFromHumanReadableFormat() == 
+				    (parentTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedDataBlock0AccessBits ) //"A,A,A,A"
 					_selectedDataBlockAccessBitsItem = item;
 			}
 			this.IsModal = isModal;
@@ -278,12 +282,12 @@ namespace RFiDGear.ViewModel
 			get { return new ObservableCollection<string>(keyCmbbxItems); }
 		}
 		
-		/*
-		public string SectorAccessBitsAsString{
-			get {return sourceForSTDG.DecodedSectorTrailerAccessBits;}
-			set { sourceForSTDG.decodeSectorTrailer(value);}
+		
+		public object ViewModelContext{
+			get {return parentTreeViewViewModel;}
+			set { parentTreeViewViewModel=value;}
 		}
-		 */
+		
 		
 		public SourceForSectorTrailerDataGrid SelectedSectorTrailerAccessBitsItem {
 			get { return _selectedSectorTrailerAccessBitsItem; }
