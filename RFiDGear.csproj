@@ -171,6 +171,7 @@
     <None Include="index.html" />
     <None Include="logo.gif" />
     <None Include="packages.config" />
+    <None Include="README.md" />
     <None Include="style.css" />
     <None Include="top.gif" />
   </ItemGroup>
