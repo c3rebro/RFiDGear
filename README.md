@@ -1,6 +1,6 @@
 # RFiDGear
-RFiDGear is a RFID / NFC frontend for Microsoft Windows 7/8/8.1/ and Windows 10 to Read / Modify / Write RFiD / NFC Tags.<br/>
-Written in C#, using SharpDevelop 5.1 and .NET 4.5.2<br/>
+RFiDGear is a RFID / NFC frontend for Microsoft Windows 7/8/8.1/ and Windows 10 to Read / Modify / Write RFiD / NFC Tags.
+It's written in C#, using SharpDevelop 5.1 and .NET 4.5.2<br/>
 <br/>
 Inludes static Librarys from:<br/>
 <br/>
