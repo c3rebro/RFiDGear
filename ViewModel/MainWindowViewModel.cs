@@ -1,8 +1,13 @@
-﻿using GalaSoft.MvvmLight;
+﻿using RFiDGear.DataSource;
+using RFiDGear.Model;
+
+using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Messaging;
+
 using MvvmDialogs.ViewModels;
+
 using RedCell.Diagnostics.Update;
-using RFiDGear.DataSource;
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -28,8 +33,8 @@ namespace RFiDGear.ViewModel
 		private ObservableCollection<object> gridSource;
 		private ObservableCollection<TreeViewParentNodeViewModel> _uids = new ObservableCollection<TreeViewParentNodeViewModel>();
 		
-		private List<Model.MifareClassicUidModel> mifareClassicUidModels = new List<RFiDGear.Model.MifareClassicUidModel>();
-		private List<Model.MifareDesfireUidModel> mifareDesfireViewModels = new List<RFiDGear.Model.MifareDesfireUidModel>();
+		private List<MifareClassicUidModel> mifareClassicUidModels = new List<MifareClassicUidModel>();
+		private List<MifareDesfireUidModel> mifareDesfireViewModels = new List<MifareDesfireUidModel>();
 		
 		private Updater updater = new Updater();
 		
@@ -109,10 +114,18 @@ namespace RFiDGear.ViewModel
 		
 		public void NewSectorTrailerEditDialog(TreeViewChildNodeViewModel sectorVM)
 		{
+			bool isClassicCard;
+			
+			if(sectorVM.Parent.CardType == CARD_TYPE.CT_CLASSIC_1K || sectorVM.Parent.CardType == CARD_TYPE.CT_CLASSIC_2K || sectorVM.Parent.CardType == CARD_TYPE.CT_CLASSIC_4K)
+				isClassicCard = true;
+			else
+				isClassicCard = false;
+			
 			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel(sectorVM) {
 			                 	
 			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
-			                 	
+			                 	ViewModelContext = sectorVM,
+			                 	IsClassicAuthInfoEnabled = isClassicCard,
 
 			                 	OnOk = (sender) => {
 			                 		sender.Close();
@@ -186,16 +199,16 @@ namespace RFiDGear.ViewModel
 		public void OnNewReadChipCommand()
 		{
 			if (!String.IsNullOrEmpty(new ReaderSetupModel(null).GetChipUID)) {
-				if (new ReaderSetupModel(null).SelectedReader != "N/A") {
-					if (!databaseReaderWriter.databaseUIDs.Contains(new ReaderSetupModel(null).GetChipUID)) {
-						databaseReaderWriter.databaseUIDs.Add(new ReaderSetupModel(null).GetChipUID);
+				if (readerSetup.SelectedReader != "N/A") {
+					if (!databaseReaderWriter.databaseUIDs.Contains(readerSetup.GetChipUID)) {
+						databaseReaderWriter.databaseUIDs.Add(readerSetup.GetChipUID);
 						RaisePropertyChanged("TreeViewParentNode");
 					}
 				}
 			} else {
-				if (new ReaderSetupModel(null).SelectedReader != "N/A") {
-					if (!databaseReaderWriter.databaseUIDs.Contains(new ReaderSetupModel(null).GetChipUID)) {
-						databaseReaderWriter.databaseUIDs.Add(new ReaderSetupModel(null).GetChipUID);
+				if (readerSetup.SelectedReader != "N/A") {
+					if (!databaseReaderWriter.databaseUIDs.Contains(readerSetup.GetChipUID)) {
+						databaseReaderWriter.databaseUIDs.Add(readerSetup.GetChipUID);
 						RaisePropertyChanged("TreeViewParentNode");
 					}
 				}
@@ -387,29 +400,32 @@ namespace RFiDGear.ViewModel
 				CustomConverter converter = new CustomConverter();
 				if (!String.IsNullOrEmpty(readerSetup.GetChipUID)) {
 					
+					//add chip to database if it is a new uid
 					if (!databaseReaderWriter.databaseUIDs.Contains(readerSetup.GetChipUID))
 					{
 						databaseReaderWriter.databaseUIDs.Add(readerSetup.GetChipUID);
 					}
 					
+					// fill treeview with dummy models and viewmodels
 					switch (readerSetup.GetChipType) {
 						case "Mifare1K":
-							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_1K), CARD_TYPE.CT_CLASSIC_1K));
+							_uids.Add(new TreeViewParentNodeViewModel(new MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_1K), CARD_TYPE.CT_CLASSIC_1K));
 							break;
 							
 						case "Mifare2K":
-							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_2K), CARD_TYPE.CT_CLASSIC_2K));
+							_uids.Add(new TreeViewParentNodeViewModel(new MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_2K), CARD_TYPE.CT_CLASSIC_2K));
 							break;
 							
 						case "Mifare4K":
-							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_4K), CARD_TYPE.CT_CLASSIC_4K));
+							_uids.Add(new TreeViewParentNodeViewModel(new MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_4K), CARD_TYPE.CT_CLASSIC_4K));
 							break;
 							
 						case "DESFireEV1":
-							_uids.Add(new TreeViewParentNodeViewModel(new Model.MifareDesfireUidModel(readerSetup.GetChipUID), CARD_TYPE.CT_DESFIRE_EV1));
+							_uids.Add(new TreeViewParentNodeViewModel(new MifareDesfireUidModel(readerSetup.GetChipUID), CARD_TYPE.CT_DESFIRE_EV1));
 							break;
 					}
 					
+					//fill the models with data from db
 					foreach(TreeViewParentNodeViewModel pnVM in _uids)
 					{
 						databaseReaderWriter.WriteDatabase(pnVM.mifareClassicUidModel);

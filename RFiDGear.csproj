@@ -152,8 +152,8 @@
     <Compile Include="View\CustomDialogBox.xaml.cs">
       <DependentUpon>CustomDialogBox.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\KeySettingsMifareClassicDialogBox.xaml.cs">
-      <DependentUpon>KeySettingsMifareClassicDialogBox.xaml</DependentUpon>
+    <Compile Include="View\MifareAuthSettingsDialogBox.xaml.cs">
+      <DependentUpon>MifareAuthSettingsDialogBox.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="View\ReaderSetupDialogBox.xaml.cs">
@@ -178,7 +178,7 @@
   <ItemGroup>
     <Page Include="MainWindow.xaml" />
     <Page Include="View\CustomDialogBox.xaml" />
-    <Page Include="View\KeySettingsMifareClassicDialogBox.xaml" />
+    <Page Include="View\MifareAuthSettingsDialogBox.xaml" />
     <Page Include="View\ReaderSetupDialogBox.xaml" />
   </ItemGroup>
   <ItemGroup>

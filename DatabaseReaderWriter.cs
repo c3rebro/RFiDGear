@@ -105,6 +105,7 @@ namespace RFiDGear
 					
 					foreach(XmlNode node in doc.SelectNodes("//SectorTrailerNode"))
 					{
+						//create List of gotten viewmodels with models as accessable properties
 						List<MifareClassicSectorModel> sectorModels = new List<MifareClassicSectorModel>(mifareClassicChip.SectorList);
 						
 						foreach(XmlNode innerNode in node.Attributes)
@@ -119,7 +120,11 @@ namespace RFiDGear
 							{
 								if(Convert.ToInt32(stCombined[0]) == sectorModel.mifareClassicSectorNumber)
 								{
+									//add sector access bits from db string e.g. "FF0780C3" to the current selected model add decode to 
+									// match datagrid source for accessBit modify dialog as well as encoding for liblogicalaccess sectoraccessbits
+									sectorModel.sectorAccessBits.sectorKeyAKey = stSeparated[0];
 									sectorModel.sectorAccessBits.decodeSectorTrailer(stSeparated[1]);
+									sectorModel.sectorAccessBits.sectorKeyBKey = stSeparated[2];
 								}
 							}
 						}

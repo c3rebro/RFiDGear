@@ -2,6 +2,7 @@
 using MvvmDialogs.ViewModels;
 using RFiDGear.DataSource;
 using System;
+using System.Security;
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,7 +17,7 @@ namespace RFiDGear.ViewModel
 	public class MifareAuthSettingsDialogViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		private DatabaseReaderWriter databaseReaderWriter;
-		private object parentTreeViewViewModel;
+		private object selectedTreeViewViewModel;
 		
 		private readonly string[] cmbbxItems = {
 			"DataBlock 0",
@@ -63,7 +64,7 @@ namespace RFiDGear.ViewModel
 		public MifareAuthSettingsDialogViewModel(object treeViewViewModel, bool isModal = true)
 		{
 			databaseReaderWriter = new DatabaseReaderWriter();
-			parentTreeViewViewModel = treeViewViewModel;
+			selectedTreeViewViewModel = treeViewViewModel;
 			
 			displaySourceForSectorTrailerDataGrid = new ObservableCollection<SourceForSectorTrailerDataGrid>();
 			displaySourceForLongDataBlockDataGrid = new ObservableCollection<SourceForLongDataBlockDataGrid>();
@@ -87,14 +88,14 @@ namespace RFiDGear.ViewModel
 			displaySourceForCombinedDataBlockDataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
 			
 			foreach (SourceForSectorTrailerDataGrid item in displaySourceForSectorTrailerDataGrid) {
-				if (item.GetSectorAccessBitsFromHumanReadableFormat() == 
-				    (parentTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedSectorTrailerAccessBits ) //"N,A,A,A,A,A"
+				if (item.GetSectorAccessBitsFromHumanReadableFormat() ==
+				    (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedSectorTrailerAccessBits ) //"N,A,A,A,A,A"
 					_selectedSectorTrailerAccessBitsItem = item;
 			}
 			
 			foreach (SourceForShortDataBlockDataGrid item in displaySourceForCombinedDataBlockDataGrid) {
-				if (item.GetShortDataBlockAccessBitsFromHumanReadableFormat() == 
-				    (parentTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedDataBlock0AccessBits ) //"A,A,A,A"
+				if (item.GetShortDataBlockAccessBitsFromHumanReadableFormat() ==
+				    (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedDataBlock0AccessBits ) //"A,A,A,A"
 					_selectedDataBlockAccessBitsItem = item;
 			}
 			this.IsModal = isModal;
@@ -282,10 +283,20 @@ namespace RFiDGear.ViewModel
 			get { return new ObservableCollection<string>(keyCmbbxItems); }
 		}
 		
+		// TODO Add Keys to KeySetup Dialog. Keys are published as follows: 1. add sector trailer to db. 2. add st to model in databasereaderwriter class
+		public string selectedClassicKeyAKey {
+			get { return (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey; }
+			set { (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey = value; }
+		}
+		
+		public string selectedClassicKeyBKey {
+			get { return (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey; }
+			set { (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey = value; }
+		}
 		
 		public object ViewModelContext{
-			get {return parentTreeViewViewModel;}
-			set { parentTreeViewViewModel=value;}
+			get {return selectedTreeViewViewModel;}
+			set { selectedTreeViewViewModel=value;}
 		}
 		
 		

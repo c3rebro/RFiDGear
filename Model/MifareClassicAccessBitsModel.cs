@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security;
 using LibLogicalAccess;
 
 namespace RFiDGear
@@ -9,6 +10,9 @@ namespace RFiDGear
 	public class MifareClassicAccessBitsModel
 	{
 		private SectorAccessBits sab;
+		
+		public string sectorKeyAKey {get; set; }
+		public string sectorKeyBKey {get; set; }
 		
 		private string[] accessConditionDisplayItem = {"using Key A","using Key B","Key A or B","not Allowed"};
 		private string sectorTrailerString;

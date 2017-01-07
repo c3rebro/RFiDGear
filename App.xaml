@@ -4,7 +4,7 @@
       <vm:ViewModelLocator x:Key="Locator" d:IsDataSource="True" xmlns:vm="clr-namespace:RFiDGear.ViewModel" />
       <view:ReaderSetupDialogBox x:Key="{x:Type vm:ReaderSetupDialogViewModel}" x:Shared="False" />
       <view:CustomDialogBox x:Key="{x:Type vm:CustomDialogViewModel}" x:Shared="False" />
-      <view:KeySettingsMifareClassicDialogBox x:Key="{x:Type vm:MifareAuthSettingsDialogViewModel}" x:Shared="False" />
+      <view:MifareAuthSettingsDialogBox x:Key="{x:Type vm:MifareAuthSettingsDialogViewModel}" x:Shared="False" />
       <pre:MessageBoxPresenter x:Key="{x:Type vm:MessageBoxViewModel}" />
       <pre:OpenFileDialogPresenter x:Key="{x:Type vm:OpenFileDialogViewModel}" />
       <ResourceDictionary.MergedDictionaries>
