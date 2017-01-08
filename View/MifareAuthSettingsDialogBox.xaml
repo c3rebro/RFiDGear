@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Controls:MetroWindow
 	x:Class="RFiDGear.View.MifareAuthSettingsDialogBox" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
 	Title="RFiDGear.View"
@@ -45,11 +45,14 @@
 								Width="96"
 								Canvas.Top="8" />
 							<ComboBox
+								Name="KeyAKeySelectionCombobox"
 								Height="20"
 								Canvas.Top="8"
 								Canvas.Left="89"
-								Width="65" 
-								ItemsSource="{Binding KeySelection}"/>
+								ItemsSource="{Binding KeySelection}"
+								SelectedIndex="{Binding KeySelectionComboboxIndex, Mode=OneWay}"
+								IsEnabled="{Binding IsFixedKeyNumber}"
+								Width="81" />
 							<Label
 								Content="Key B Value"
 								Height="26"
@@ -60,9 +63,9 @@
 								Height="20"
 								Canvas.Top="39"
 								Canvas.Left="273"
-								Width="222" 
-								Text="{Binding selectedClassicKeyBKey, Mode=TwoWay}"
-								/>
+								Width="222"
+								Text="{Binding selectedClassicKeyBKey, Mode=TwoWay}" 
+								FontFamily="Lucida Console"/>
 							<Label
 								Content="Key B Nr."
 								Height="26"
@@ -70,11 +73,14 @@
 								Width="96"
 								Canvas.Top="39" />
 							<ComboBox
+								Name="KeyBKeySelectionCombobox"
 								Height="20"
 								Canvas.Left="89"
-								Width="65"
 								Canvas.Top="39"
-								ItemsSource="{Binding KeySelection}"/>
+								ItemsSource="{Binding KeySelection}"
+								SelectedIndex="{Binding KeySelectionComboboxIndex, Mode=OneWay}"
+								IsEnabled="{Binding IsFixedKeyNumber}"
+								Width="81" />
 							<Label
 								Content="Key A Value"
 								Height="26"
@@ -85,8 +91,9 @@
 								Height="20"
 								Canvas.Top="8"
 								Canvas.Left="273"
-								Width="222" 
-								Text="{Binding selectedClassicKeyAKey, Mode=TwoWay}"/>
+								Width="222"
+								Text="{Binding selectedClassicKeyAKey, Mode=TwoWay}"  
+								FontFamily="Lucida Console"/>
 						</Canvas>
 					</GroupBox>
 					<GroupBox

@@ -283,6 +283,20 @@ namespace RFiDGear.ViewModel
 			get { return new ObservableCollection<string>(keyCmbbxItems); }
 		}
 		
+		public int KeySelectionComboboxIndex {
+			get { if(selectedTreeViewViewModel is TreeViewChildNodeViewModel)
+					return (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.mifareClassicSectorNumber;
+				else
+					return 0;}
+		}
+		
+		public bool? IsFixedKeyNumber {
+			get { if(selectedTreeViewViewModel is TreeViewChildNodeViewModel)
+					return false;
+				else
+					return true; }
+		}
+		
 		// TODO Add Keys to KeySetup Dialog. Keys are published as follows: 1. add sector trailer to db. 2. add st to model in databasereaderwriter class
 		public string selectedClassicKeyAKey {
 			get { return (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey; }
@@ -298,7 +312,6 @@ namespace RFiDGear.ViewModel
 			get {return selectedTreeViewViewModel;}
 			set { selectedTreeViewViewModel=value;}
 		}
-		
 		
 		public SourceForSectorTrailerDataGrid SelectedSectorTrailerAccessBitsItem {
 			get { return _selectedSectorTrailerAccessBitsItem; }
