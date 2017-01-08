@@ -115,7 +115,7 @@ namespace RFiDGear
 						else
 							sectorModels = new List<MifareClassicSectorModel>() {mifareClassicChip as MifareClassicSectorModel};
 						
-						// TODO dont need to iterate through all elem when saving single sectoraccessbits object
+						// TODO dont need to iterate through all elem when saving single sectoraccessbits object. add if statement here
 						foreach(XmlNode innerNode in node.Attributes)
 						{
 							string[] stCombined = innerNode.Value.Split(';');
