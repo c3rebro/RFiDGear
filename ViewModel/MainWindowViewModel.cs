@@ -128,7 +128,6 @@ namespace RFiDGear.ViewModel
 			                 	IsClassicAuthInfoEnabled = isClassicCard,
 
 			                 	OnOk = (sender) => {
-			                 		databaseReaderWriter.WriteDatabase((sender.ViewModelContext as TreeViewChildNodeViewModel)._sectorModel);
 			                 		sender.Close();
 			                 	},
 
