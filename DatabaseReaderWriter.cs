@@ -81,7 +81,6 @@ namespace RFiDGear
 				
 				if (doc.SelectSingleNode("//UidNodesDatabase") != null) {
 					XmlNode root = doc.SelectSingleNode("//UidNodesDatabase");
-					//XmlElement root = doc.DocumentElement;
 					
 					if(doc.SelectSingleNode("//UidNode") == null)
 					{
