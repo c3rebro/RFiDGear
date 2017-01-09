@@ -136,7 +136,8 @@ namespace RFiDGear
 										sectorModel.sectorAccessBits.sectorKeyBKey = stSeparated[2];
 									}
 									else{
-										innerNode.Value = String.Format("{0}{1}{2}"
+										innerNode.Value = String.Format("{0};{1},{2},{3}"
+										                                ,sectorModel.mifareClassicSectorNumber
 										                                ,sectorModel.sectorAccessBits.sectorKeyAKey
 										                                ,sectorModel.sectorAccessBits.SectorTrailerAccessBits
 										                                ,sectorModel.sectorAccessBits.sectorKeyBKey);
