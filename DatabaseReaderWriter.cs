@@ -73,7 +73,7 @@ namespace RFiDGear
 		
 		public void WriteDatabase(object mifareClassicChip)
 		{
-			// TODO implement communication between database, viewmodel and model
+			// TODO implement communication between database, viewmodel and mode
 			try {
 
 				XmlDocument doc = new XmlDocument();
