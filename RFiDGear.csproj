@@ -161,18 +161,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="bottom.gif" />
-    <None Include="bullet.gif" />
+    <None Include="docs\bottom.gif" />
+    <None Include="docs\bullet.gif" />
+    <None Include="docs\google40c0c4994e785d2e.html" />
     <None Include="docs\index.html" />
+    <None Include="docs\logo.gif" />
     <None Include="docs\style.css" />
+    <None Include="docs\top.gif" />
     <None Include="GitPages\images\image001.jpg" />
     <None Include="GitPages\images\image002.jpg" />
     <None Include="GitPages\images\image003.jpg" />
-    <None Include="google40c0c4994e785d2e.html" />
-    <None Include="logo.gif" />
     <None Include="packages.config" />
     <None Include="README.md" />
-    <None Include="top.gif" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="MainWindow.xaml" />
