@@ -168,9 +168,9 @@
     <None Include="docs\logo.gif" />
     <None Include="docs\style.css" />
     <None Include="docs\top.gif" />
-    <None Include="GitPages\images\image001.jpg" />
-    <None Include="GitPages\images\image002.jpg" />
-    <None Include="GitPages\images\image003.jpg" />
+    <None Include="docs\images\image001.jpg" />
+    <None Include="docs\images\image002.jpg" />
+    <None Include="docs\images\image003.jpg" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>
@@ -181,14 +181,12 @@
     <Page Include="View\ReaderSetupDialogBox.xaml" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="GitPages\images" />
+    <Folder Include="docs\images" />
     <Folder Include="Model" />
     <Folder Include="MVVMDialogs" />
     <Folder Include="MVVMDialogs\Behaviors" />
     <Folder Include="MVVMDialogs\Presenters" />
     <Folder Include="MVVMDialogs\ViewModels" />
-    <Folder Include="GitPages" />
-    <Folder Include="master" />
     <Folder Include="docs" />
     <Folder Include="Presenters" />
     <Folder Include="Resources" />
