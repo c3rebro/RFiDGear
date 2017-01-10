@@ -28,8 +28,8 @@ namespace RFiDGear.ViewModel
 
 		#endregion // Data
 		
-		public MifareClassicSectorModel _sectorModel { get; set; }
-		private readonly MifareDesfireAppModel _appID;
+		public MifareClassicSectorTreeViewModel _sectorModel { get; set; }
+		private readonly MifareDesfireAppIdTreeViewModel _appID;
 		private readonly CARD_TYPE _cardType;
 		private readonly RelayCommand _cmdReadSectorWithDefaults;
 		private readonly RelayCommand _cmdEditAuthAndModifySector;
@@ -40,7 +40,7 @@ namespace RFiDGear.ViewModel
 
 		private bool? isAuth;
 		
-		public TreeViewChildNodeViewModel(MifareClassicSectorModel sectorModel, TreeViewParentNodeViewModel parent, CARD_TYPE cardType, int sectorNumber)
+		public TreeViewChildNodeViewModel(MifareClassicSectorTreeViewModel sectorModel, TreeViewParentNodeViewModel parent, CARD_TYPE cardType, int sectorNumber)
 		{
 			_sectorModel = sectorModel;
 			_sectorModel.mifareClassicSectorNumber = sectorNumber;
@@ -66,7 +66,7 @@ namespace RFiDGear.ViewModel
 			LoadChildren();
 		}
 
-		public TreeViewChildNodeViewModel(MifareDesfireAppModel appID, TreeViewParentNodeViewModel parentUID, CARD_TYPE cardType)
+		public TreeViewChildNodeViewModel(MifareDesfireAppIdTreeViewModel appID, TreeViewParentNodeViewModel parentUID, CARD_TYPE cardType)
 		{
 			_appID = appID;
 			_cardType = cardType;
@@ -210,7 +210,7 @@ namespace RFiDGear.ViewModel
 				case CARD_TYPE.CT_CLASSIC_1K:
 					{
 						for (int i = 0; i < 4; i++) {
-							_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
+							_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockTreeViewModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
 						}
 					}
 					break;
@@ -218,7 +218,7 @@ namespace RFiDGear.ViewModel
 				case CARD_TYPE.CT_CLASSIC_2K:
 					{
 						for (int i = 0; i < 4; i++) {
-							_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
+							_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockTreeViewModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
 						}
 					}
 					break;
@@ -227,12 +227,12 @@ namespace RFiDGear.ViewModel
 					{
 						if (SectorNumber < 32) {
 							for (int i = 0; i < 4; i++) {
-								_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
+								_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockTreeViewModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
 							}
 						} else {
 							
 							for (int i = 0; i < 16; i++) {
-								_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
+								_children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockTreeViewModel(i), this, _cardType, _sectorModel.mifareClassicSectorNumber));
 							}
 						}
 					}

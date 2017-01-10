@@ -9,19 +9,30 @@ namespace RFiDGear
 	/// </summary>
 	public class MifareClassicAccessBitsModel
 	{
-		private SectorAccessBits sab;
-		
-		public string sectorKeyAKey {get; set; }
-		public string sectorKeyBKey {get; set; }
-		
+
 		private string[] accessConditionDisplayItem = {"using Key A","using Key B","Key A or B","not Allowed"};
-		private string sectorTrailerString;
-		private byte[] sectorTrailerByte;
+		
+		private SectorAccessBits sab;
 		
 		private string decodedSectorTrailerAccessBits;
 		private string decodedBlock0AccessBits;
 		private string decodedBlock1AccessBits;
 		private string decodedBlock2AccessBits;
+		
+		private uint C1;
+		private uint C2;
+		private uint C3;
+		
+		private uint _C1;
+		private uint _C2;
+		private uint _C3;
+		
+		private byte[] st;
+		
+		public string sectorKeyAKey {get; set; }
+		public string sectorKeyBKey {get; set; }
+		public string sectorAccessBitsAsString {get; set; }
+		public byte[] sectorAccessBitsAsByte {get; set; }
 		
 		public static readonly string[] dataBlockABs = new string[8] {
 			"A,A,A,A",
@@ -56,16 +67,32 @@ namespace RFiDGear
 			"N,N,AB,N,N,N"
 		};
 		
-		private uint C1;
-		private uint C2;
-		private uint C3;
-		
-		private uint _C1;
-		private uint _C2;
-		private uint _C3;
-		
-		private byte[] st;
-		
+		public string DecodedSectorTrailerAccessBits {
+			get{ return decodedSectorTrailerAccessBits; }
+			set{ decodedSectorTrailerAccessBits = value; }
+		}
+		public string SectorTrailerAccessBits {
+			get{ return sectorAccessBitsAsString; }
+			set{ sectorAccessBitsAsString = value;}
+		}
+		public string DecodedDataBlock0AccessBits {
+			get{ return decodedBlock0AccessBits; }
+			set{ decodedBlock0AccessBits = value; }
+		}
+		public string DecodedDataBlock1AccessBits {
+			get{ return decodedBlock1AccessBits; }
+			set{ decodedBlock1AccessBits = value; }
+		}
+		public string DecodedDataBlock2AccessBits {
+			get{ return decodedBlock2AccessBits; }
+			set{ decodedBlock2AccessBits = value; }
+		}
+		public SectorAccessBits LibLogicalAccessAB{
+			get {return sab;}
+			set {sab = value;}
+		}
+				
+		#region methods and constructor
 		public MifareClassicAccessBitsModel()
 		{
 			st = new byte[4] { 0x00, 0x00, 0x00, 0xC3 };
@@ -332,10 +359,10 @@ namespace RFiDGear
 					}
 					break;
 					
-				default:			// CheckSum
+				default:		// CheckSum
 					{
-						sectorTrailerByte = buildSectorTrailerInvNibble(st);
-						sectorTrailerString = convert.HexToString(sectorTrailerByte);
+						sectorAccessBitsAsByte = buildSectorTrailerInvNibble(st);
+						sectorAccessBitsAsString = convert.HexToString(sectorAccessBitsAsByte);
 					}
 					break;
 			}
@@ -419,9 +446,7 @@ namespace RFiDGear
 						return false;
 				}
 			}
-			
 		}
-		
 		public bool checkSectorTrailerCorrectness(string stString)
 		{
 			CustomConverter convert = new CustomConverter();
@@ -436,29 +461,6 @@ namespace RFiDGear
 				return true;
 		}
 		
-		public string DecodedSectorTrailerAccessBits {
-			get{ return decodedSectorTrailerAccessBits; }
-			set{ decodedSectorTrailerAccessBits = value; }
-		}
-		public string SectorTrailerAccessBits {
-			get{ return sectorTrailerString; }
-			set{ sectorTrailerString = value;}
-		}
-		public string DecodedDataBlock0AccessBits {
-			get{ return decodedBlock0AccessBits; }
-			set{ decodedBlock0AccessBits = value; }
-		}
-		public string DecodedDataBlock1AccessBits {
-			get{ return decodedBlock1AccessBits; }
-			set{ decodedBlock1AccessBits = value; }
-		}
-		public string DecodedDataBlock2AccessBits {
-			get{ return decodedBlock2AccessBits; }
-			set{ decodedBlock2AccessBits = value; }
-		}
-		public SectorAccessBits LibLogicalAccessAB{
-			get {return sab;}
-			set {sab = value;}
-		}
+		#endregion
 	}
 }

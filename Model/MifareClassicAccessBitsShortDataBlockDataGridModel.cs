@@ -4,9 +4,9 @@ using System.ComponentModel;
 namespace RFiDGear.DataSource
 {
 	/// <summary>
-	/// Description of SourceForLongDataBlockDataGrid.
+	/// Description of MifareClassicAccessBitsShortDataBlockDataGridModel.
 	/// </summary>
-	public class SourceForLongDataBlockDataGrid
+	public class MifareClassicAccessBitsShortDataBlockDataGridModel
 	{
 		readonly string read;
 		readonly string write;
@@ -27,7 +27,7 @@ namespace RFiDGear.DataSource
 					return null;
 			}
 		}
-	
+		
 		private string convertCondFromHumanReadableFormat(string cond){
 			switch(cond){
 				case "not Allowed":
@@ -43,7 +43,7 @@ namespace RFiDGear.DataSource
 			}
 		}
 		
-		public SourceForLongDataBlockDataGrid(string accessBits)
+		public MifareClassicAccessBitsShortDataBlockDataGridModel(string accessBits)
 		{
 			string[] temp = accessBits.Split(',');
 			
@@ -65,7 +65,7 @@ namespace RFiDGear.DataSource
 			}
 		}
 
-		public string GetLongDataBlockAccessBitsFromHumanReadableFormat(){
+		public string GetShortDataBlockAccessBitsFromHumanReadableFormat(){
 			return String.Format("{0},{1},{2},{3}",
 			                     convertCondFromHumanReadableFormat(read),
 			                     convertCondFromHumanReadableFormat(write),

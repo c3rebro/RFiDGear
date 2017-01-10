@@ -8,15 +8,15 @@ namespace RFiDGear.Model
 	/// Description of chipMifareClassicUid.
 	/// </summary>
 	
-	public class MifareClassicUidModel
+	public class MifareClassicUidTreeViewModel
 	{
-		readonly List<MifareClassicSectorModel> _sectorList = new List<MifareClassicSectorModel>();
+		readonly List<MifareClassicSectorTreeViewModel> _sectorList = new List<MifareClassicSectorTreeViewModel>();
 
-		public List<MifareClassicSectorModel> SectorList {
+		public List<MifareClassicSectorTreeViewModel> SectorList {
 			get { return _sectorList; }
 		}
 		
-		public MifareClassicUidModel(string uid, CARD_TYPE cardType)
+		public MifareClassicUidTreeViewModel(string uid, CARD_TYPE cardType)
 		{
 			this.CardType = cardType;
 			this.UidNumber = uid;

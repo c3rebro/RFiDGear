@@ -110,21 +110,20 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="CustomConverter.cs" />
-    <Compile Include="DataSource\SourceForDESFireFileData.cs" />
-    <Compile Include="DataSource\SourceForLongDataBlockDataGrid.cs" />
-    <Compile Include="DataSource\SourceForMifareDataBlocks.cs" />
-    <Compile Include="DataSource\SourceForSectorTrailerDataGrid.cs" />
-    <Compile Include="DataSource\SourceForShortDataBlockDataGrid.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Model\MifareClassicDataBlockModel.cs" />
-    <Compile Include="Model\MifareClassicSectorModel.cs" />
-    <Compile Include="Model\MifareClassicUidModel.cs" />
-    <Compile Include="Model\MifareDesfireAppModel.cs" />
-    <Compile Include="Model\MifareDesfireFileModel.cs" />
-    <Compile Include="Model\MifareDesfireUidModel.cs" />
-    <Compile Include="Model\MifareClassicAccessBitsModel.cs" />
+    <Compile Include="Model\MifareClassicAccessBitsLongDataBlockDataGridModel.cs" />
+    <Compile Include="Model\MifareClassicAccessBitsSectorTrailerDataGridModel.cs" />
+    <Compile Include="Model\MifareClassicAccessBitsShortDataBlockDataGridModel.cs" />
+    <Compile Include="Model\MifareClassicDataBlockDataGridModel.cs" />
+    <Compile Include="Model\MifareClassicDataBlockTreeViewModel.cs" />
+    <Compile Include="Model\MifareClassicSectorTreeViewModel.cs" />
+    <Compile Include="Model\MifareClassicUidTreeViewModel.cs" />
+    <Compile Include="Model\MifareDesfireAppIdTreeViewModel.cs" />
+    <Compile Include="Model\MifareDesfireFileTreeViewModel.cs" />
+    <Compile Include="Model\MifareDesfireUidTreeViewModel.cs" />
+    <Compile Include="Model\MifareClassicAccessBitsBaseModel.cs" />
     <Compile Include="Model\ReaderSetupModel.cs" />
     <Compile Include="MVVMDialogs\Behaviors\DialogBehavior.cs" />
     <Compile Include="MVVMDialogs\Presenters\IDialogBoxPresenter.cs" />
@@ -188,7 +187,6 @@
     <Folder Include="MVVMDialogs\Behaviors" />
     <Folder Include="MVVMDialogs\Presenters" />
     <Folder Include="MVVMDialogs\ViewModels" />
-    <Folder Include="DataSource" />
     <Folder Include="GitPages" />
     <Folder Include="Presenters" />
     <Folder Include="Resources" />

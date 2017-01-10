@@ -5,10 +5,10 @@ namespace RFiDGear.Model
 	/// <summary>
 	/// Description of chipMifareClassicDataBlock.
 	/// </summary>
-	public class MifareClassicDataBlockModel
+	public class MifareClassicDataBlockTreeViewModel
 	{
 	
-		public MifareClassicDataBlockModel(int blockNumberDisplayItem)
+		public MifareClassicDataBlockTreeViewModel(int blockNumberDisplayItem)
 		{
 			this.dataBlockNumber = blockNumberDisplayItem;
 		}

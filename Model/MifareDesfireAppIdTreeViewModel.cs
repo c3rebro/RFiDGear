@@ -5,10 +5,10 @@ namespace RFiDGear.Model
 	/// <summary>
 	/// Description of chipMifareDesfireAppID.
 	/// </summary>
-	public class MifareDesfireAppModel
+	public class MifareDesfireAppIdTreeViewModel
 	{
 		
-		public MifareDesfireAppModel()
+		public MifareDesfireAppIdTreeViewModel()
 		{
 		}
 	}

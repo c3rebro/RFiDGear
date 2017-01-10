@@ -4,9 +4,9 @@ using System.ComponentModel;
 namespace RFiDGear.DataSource
 {
 	/// <summary>
-	/// Description of SourceForMifareDataBlocks.
+	/// Description of MifareClassicDataBlockDataGridModel.
 	/// </summary>
-	public class SourceForMifareDataBlocks
+	public class MifareClassicDataBlockDataGridModel
 	{
 
 		byte[] currentMifareClassicSector;
@@ -16,7 +16,7 @@ namespace RFiDGear.DataSource
 		byte blocknSectorData;
 		int discarded;
 		
-		public SourceForMifareDataBlocks(byte[] dataBlock, int indexByte)
+		public MifareClassicDataBlockDataGridModel(byte[] dataBlock, int indexByte)
 		{
 			currentMifareClassicSector = dataBlock;
 			blocknSectorData = currentMifareClassicSector[indexByte];

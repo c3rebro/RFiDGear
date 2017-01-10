@@ -4,9 +4,9 @@ using System.ComponentModel;
 namespace RFiDGear.DataSource
 {
 	/// <summary>
-	/// Description of SourceForSectorTrailerDataGrid.
+	/// Description of MifareClassicAccessBitsSectorTrailerDataGridModel.
 	/// </summary>
-	public class SourceForSectorTrailerDataGrid
+	public class MifareClassicAccessBitsSectorTrailerDataGridModel
 	{
 		readonly string readKeyA;
 		readonly string writeKeyA;
@@ -49,7 +49,7 @@ namespace RFiDGear.DataSource
 			}
 		}
 
-		public SourceForSectorTrailerDataGrid(string _accessBits)
+		public MifareClassicAccessBitsSectorTrailerDataGridModel(string _accessBits)
 		{
 			abModel = new MifareClassicAccessBitsModel();
 			
