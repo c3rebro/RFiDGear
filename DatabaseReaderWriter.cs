@@ -71,7 +71,6 @@ namespace RFiDGear
 		
 		public void WriteDatabase(object mifareClassicChip)
 		{
-			// TODO improve communication between database, viewmodel and model
 			try {
 				XmlDocument doc = new XmlDocument();
 				doc.Load(Path.Combine(appDataPath,databaseFileName));

@@ -91,7 +91,7 @@ namespace RFiDGear
 			get {return sab;}
 			set {sab = value;}
 		}
-				
+		
 		#region methods and constructor
 		public MifareClassicAccessBitsBaseModel()
 		{
@@ -119,7 +119,6 @@ namespace RFiDGear
 			
 			sab.d_sector_trailer_access_bits.c1 = (short)C1;
 			
-			C2 &= 0x88;
 			C2 >>= 2;
 			
 			tmpAccessBitCx = C2;
