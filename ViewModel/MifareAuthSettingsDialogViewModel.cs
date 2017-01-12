@@ -17,7 +17,6 @@ namespace RFiDGear.ViewModel
 	public class MifareAuthSettingsDialogViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		private DatabaseReaderWriter databaseReaderWriter;
-		private object selectedTreeViewViewModel;
 		
 		private readonly string[] cmbbxItems = {
 			"DataBlock 0",
@@ -49,114 +48,125 @@ namespace RFiDGear.ViewModel
 		
 		private bool isClassicAuthInfo = true;
 		
-		private readonly ObservableCollection<SourceForSectorTrailerDataGrid> displaySourceForSectorTrailerDataGrid;
-		private readonly ObservableCollection<SourceForLongDataBlockDataGrid> displaySourceForLongDataBlockDataGrid;
-		private readonly ObservableCollection<SourceForShortDataBlockDataGrid> displaySourceForShortDataBlockDataGrid;
+		private readonly ObservableCollection<MifareClassicAccessBitsSectorTrailerDataGridModel> displaySourceForSectorTrailerDataGrid;
+		private readonly ObservableCollection<MifareClassicAccessBitsLongDataBlockDataGridModel> displaySourceForLongDataBlockDataGrid;
+		private readonly ObservableCollection<MifareClassicAccessBitsShortDataBlockDataGridModel> displaySourceForShortDataBlockDataGrid;
 		
-		private ObservableCollection<object> displaySourceForDataBlock0DataGrid;
-		private ObservableCollection<object> displaySourceForDataBlock1DataGrid;
-		private ObservableCollection<object> displaySourceForDataBlock2DataGrid;
 		private ObservableCollection<object> displaySourceForCombinedDataBlockDataGrid;
 		
-		private SourceForSectorTrailerDataGrid _selectedSectorTrailerAccessBitsItem;
-		private object _selectedDataBlockAccessBitsItem;
+		private MifareClassicAccessBitsSectorTrailerDataGridModel selectedSectorTrailerAccessBitsItem;
+		private object selectedCombinedDataBlockAccessBitsDataGridItem;
+		private object selectedDataBlock0AccessBitsDataGridItem;
+		private object selectedDataBlock1AccessBitsDataGridItem;
+		private object selectedDataBlock2AccessBitsDataGridItem;
+		
+		public object ViewModelContext { get; set; }
 		
 		public MifareAuthSettingsDialogViewModel(object treeViewViewModel, bool isModal = true)
 		{
 			databaseReaderWriter = new DatabaseReaderWriter();
-			selectedTreeViewViewModel = treeViewViewModel;
+			ViewModelContext = treeViewViewModel;
 			
-			displaySourceForSectorTrailerDataGrid = new ObservableCollection<SourceForSectorTrailerDataGrid>();
-			displaySourceForLongDataBlockDataGrid = new ObservableCollection<SourceForLongDataBlockDataGrid>();
-			displaySourceForShortDataBlockDataGrid = new ObservableCollection<SourceForShortDataBlockDataGrid>();
+			displaySourceForSectorTrailerDataGrid = new ObservableCollection<MifareClassicAccessBitsSectorTrailerDataGridModel>();
+			displaySourceForLongDataBlockDataGrid = new ObservableCollection<MifareClassicAccessBitsLongDataBlockDataGridModel>();
+			displaySourceForShortDataBlockDataGrid = new ObservableCollection<MifareClassicAccessBitsShortDataBlockDataGridModel>();
 			
-			foreach (string accessConditions in MifareClassicAccessBitsModel.sectorTrailerAB) {
-				displaySourceForSectorTrailerDataGrid.Add(new SourceForSectorTrailerDataGrid(accessConditions));
+			foreach (string accessConditions in MifareClassicAccessBitsBaseModel.sectorTrailerAB) {
+				displaySourceForSectorTrailerDataGrid.Add(new MifareClassicAccessBitsSectorTrailerDataGridModel(accessConditions));
 			}
 
-			foreach (string accessConditions in MifareClassicAccessBitsModel.dataBlockAB) {
-				displaySourceForLongDataBlockDataGrid.Add(new SourceForLongDataBlockDataGrid(accessConditions));
+			foreach (string accessConditions in MifareClassicAccessBitsBaseModel.dataBlockAB) {
+				displaySourceForLongDataBlockDataGrid.Add(new MifareClassicAccessBitsLongDataBlockDataGridModel(accessConditions));
 			}
 			
 
-			foreach (string accessConditions in MifareClassicAccessBitsModel.dataBlockABs) {
+			foreach (string accessConditions in MifareClassicAccessBitsBaseModel.dataBlockABs) {
 				if (!String.IsNullOrEmpty(accessConditions))
-					displaySourceForShortDataBlockDataGrid.Add(new SourceForShortDataBlockDataGrid(accessConditions));
+					displaySourceForShortDataBlockDataGrid.Add(new MifareClassicAccessBitsShortDataBlockDataGridModel(accessConditions));
 			}
 			
-			// select the default items from Database
+			// select the default items from xml-file based Database
 			displaySourceForCombinedDataBlockDataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
 			
-			foreach (SourceForSectorTrailerDataGrid item in displaySourceForSectorTrailerDataGrid) {
+			foreach (MifareClassicAccessBitsSectorTrailerDataGridModel item in displaySourceForSectorTrailerDataGrid) {
 				if (item.GetSectorAccessBitsFromHumanReadableFormat() ==
-				    (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedSectorTrailerAccessBits ) //"N,A,A,A,A,A"
-					_selectedSectorTrailerAccessBitsItem = item;
+				    (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedSectorTrailerAccessBits) //"N,A,A,A,A,A"
+					selectedSectorTrailerAccessBitsItem = item;
+				
 			}
 			
-			foreach (SourceForShortDataBlockDataGrid item in displaySourceForCombinedDataBlockDataGrid) {
+			foreach (MifareClassicAccessBitsShortDataBlockDataGridModel item in displaySourceForCombinedDataBlockDataGrid) {
 				if (item.GetShortDataBlockAccessBitsFromHumanReadableFormat() ==
-				    (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedDataBlock0AccessBits ) //"A,A,A,A"
-					_selectedDataBlockAccessBitsItem = item;
+				    (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedDataBlock0AccessBits) //"A,A,A,A"
+					selectedCombinedDataBlockAccessBitsDataGridItem = item;
 			}
 			this.IsModal = isModal;
 		}
 
 		#region SelectedItem
 		
-		public SourceForSectorTrailerDataGrid SelectedSectorTrailerAccessBitsRow {
+		public MifareClassicAccessBitsSectorTrailerDataGridModel SelectedSectorTrailerAccessBitsRow {
 			get {
-				if (_selectedSectorTrailerAccessBitsItem.getReadAccessCond == "Key A or B") {
+				if (selectedSectorTrailerAccessBitsItem.getReadAccessCond == "Key A or B") {
 					displaySourceForCombinedDataBlockDataGrid = null;
-					displaySourceForDataBlock0DataGrid = null;
-					displaySourceForDataBlock1DataGrid = null;
-					displaySourceForDataBlock2DataGrid = null;
 					displaySourceForCombinedDataBlockDataGrid = new ObservableCollection<object>(displaySourceForLongDataBlockDataGrid);
-					displaySourceForDataBlock0DataGrid = new ObservableCollection<object>(displaySourceForLongDataBlockDataGrid);
-					displaySourceForDataBlock1DataGrid = new ObservableCollection<object>(displaySourceForLongDataBlockDataGrid);
-					displaySourceForDataBlock2DataGrid = new ObservableCollection<object>(displaySourceForLongDataBlockDataGrid);
+					;
 				} else {
 					displaySourceForCombinedDataBlockDataGrid = null;
-					displaySourceForDataBlock0DataGrid = null;
-					displaySourceForDataBlock1DataGrid = null;
-					displaySourceForDataBlock2DataGrid = null;
 					displaySourceForCombinedDataBlockDataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
-					displaySourceForDataBlock0DataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
-					displaySourceForDataBlock1DataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
-					displaySourceForDataBlock2DataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
 				}
 				
-				return _selectedSectorTrailerAccessBitsItem;
+				return selectedSectorTrailerAccessBitsItem;
 			}
 			
 			set {
-				_selectedSectorTrailerAccessBitsItem = value;
-				if (_selectedSectorTrailerAccessBitsItem.getReadAccessCond == "Key A or B") {
+				selectedSectorTrailerAccessBitsItem = value;
+				if (selectedSectorTrailerAccessBitsItem.getReadAccessCond == "Key A or B") {
 					displaySourceForCombinedDataBlockDataGrid = null;
-					displaySourceForDataBlock0DataGrid = null;
-					displaySourceForDataBlock1DataGrid = null;
-					displaySourceForDataBlock2DataGrid = null;
 					displaySourceForCombinedDataBlockDataGrid = new ObservableCollection<object>(displaySourceForLongDataBlockDataGrid);
-					displaySourceForDataBlock0DataGrid = new ObservableCollection<object>(displaySourceForLongDataBlockDataGrid);
-					displaySourceForDataBlock1DataGrid = new ObservableCollection<object>(displaySourceForLongDataBlockDataGrid);
-					displaySourceForDataBlock2DataGrid = new ObservableCollection<object>(displaySourceForLongDataBlockDataGrid);
 				} else {
 					displaySourceForCombinedDataBlockDataGrid = null;
-					displaySourceForDataBlock0DataGrid = null;
-					displaySourceForDataBlock1DataGrid = null;
-					displaySourceForDataBlock2DataGrid = null;
 					displaySourceForCombinedDataBlockDataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
-					displaySourceForDataBlock0DataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
-					displaySourceForDataBlock1DataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
-					displaySourceForDataBlock2DataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
 				}
 
 				RaisePropertyChanged("DataBlockSource");
+				RaisePropertyChanged("SectorTrailerTextBoxText");
 			}
 		}
 		
 		public object SelectedDataBlockAccessBitsRow {
-			get { return _selectedDataBlockAccessBitsItem; }
-			set	{ _selectedDataBlockAccessBitsItem = value; }
+			get {
+				switch (selectionIndex) {
+					case 0:
+						return selectedDataBlock0AccessBitsDataGridItem;
+					case 1:
+						return selectedDataBlock1AccessBitsDataGridItem;
+					case 2:
+						return selectedDataBlock2AccessBitsDataGridItem;
+					case 3:
+						return selectedCombinedDataBlockAccessBitsDataGridItem;
+				}
+				return null;
+			}
+			set {
+				switch (selectionIndex) {
+					case 0:
+						selectedDataBlock0AccessBitsDataGridItem = value;
+						break;
+					case 1:
+						selectedDataBlock1AccessBitsDataGridItem = value;
+						break;
+					case 2:
+						selectedDataBlock2AccessBitsDataGridItem = value;
+						break;
+					case 3:
+						selectedCombinedDataBlockAccessBitsDataGridItem = value;
+						break;
+				}
+				
+				RaisePropertyChanged("DataBlockSource");
+				RaisePropertyChanged("SectorTrailerTextBoxText");
+			}
 		}
 
 
@@ -165,6 +175,8 @@ namespace RFiDGear.ViewModel
 			set {
 				selectionIndex = Array.IndexOf(cmbbxItems, value);
 				RaisePropertyChanged("DataBlockSource");
+				RaisePropertyChanged("SelectedDataBlockAccessBitsRow");
+				RaisePropertyChanged("SectorTrailerTextBoxText");
 			}
 		}
 		
@@ -238,7 +250,7 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		
-		public ObservableCollection<SourceForSectorTrailerDataGrid> SectorTrailerSource {
+		public ObservableCollection<MifareClassicAccessBitsSectorTrailerDataGridModel> SectorTrailerSource {
 			get { return displaySourceForSectorTrailerDataGrid; }
 		}
 		
@@ -262,13 +274,34 @@ namespace RFiDGear.ViewModel
 			get {
 				switch (selectionIndex) {
 					case 3:
+						(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits = (selectedSectorTrailerAccessBitsItem as MifareClassicAccessBitsSectorTrailerDataGridModel)
+							.ProcessSectorTrailerEncoding((selectedCombinedDataBlockAccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
+							                              , (selectedCombinedDataBlockAccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
+							                              , (selectedCombinedDataBlockAccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()).SectorTrailerAccessBits;
+						RaisePropertyChanged("SectorTrailerTextBoxText");
 						return displaySourceForCombinedDataBlockDataGrid;
 					case 2:
-						return displaySourceForDataBlock2DataGrid;
+						if(selectedDataBlock0AccessBitsDataGridItem != null && selectedDataBlock1AccessBitsDataGridItem != null && selectedDataBlock2AccessBitsDataGridItem != null)
+							(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits = (selectedSectorTrailerAccessBitsItem as MifareClassicAccessBitsSectorTrailerDataGridModel)
+								.ProcessSectorTrailerEncoding((selectedDataBlock0AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
+								                              , (selectedDataBlock1AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
+								                              , (selectedDataBlock2AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()).SectorTrailerAccessBits;
+						RaisePropertyChanged("SectorTrailerTextBoxText");
+						return displaySourceForCombinedDataBlockDataGrid;
 					case 1:
-						return displaySourceForDataBlock1DataGrid;
+						(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits = (selectedSectorTrailerAccessBitsItem as MifareClassicAccessBitsSectorTrailerDataGridModel)
+							.ProcessSectorTrailerEncoding((selectedDataBlock0AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
+							                              , (selectedDataBlock1AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
+							                              , (selectedDataBlock2AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()).SectorTrailerAccessBits;
+						RaisePropertyChanged("SectorTrailerTextBoxText");
+						return displaySourceForCombinedDataBlockDataGrid;
 					case 0:
-						return displaySourceForDataBlock0DataGrid;
+						(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits = (selectedSectorTrailerAccessBitsItem as MifareClassicAccessBitsSectorTrailerDataGridModel)
+							.ProcessSectorTrailerEncoding((selectedDataBlock0AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
+							                              , (selectedDataBlock1AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
+							                              , (selectedDataBlock2AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()).SectorTrailerAccessBits;
+						RaisePropertyChanged("SectorTrailerTextBoxText");
+						return displaySourceForCombinedDataBlockDataGrid;
 					default:
 						return null;
 				}
@@ -284,38 +317,43 @@ namespace RFiDGear.ViewModel
 		}
 		
 		public int KeySelectionComboboxIndex {
-			get { if(selectedTreeViewViewModel is TreeViewChildNodeViewModel)
-					return (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.mifareClassicSectorNumber;
+			get {
+				if (ViewModelContext is TreeViewChildNodeViewModel)
+					return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.mifareClassicSectorNumber;
 				else
-					return 0;}
+					return 0;
+			}
 		}
 		
 		public bool? IsFixedKeyNumber {
-			get { if(selectedTreeViewViewModel is TreeViewChildNodeViewModel)
+			get {
+				if (ViewModelContext is TreeViewChildNodeViewModel)
 					return false;
 				else
-					return true; }
+					return true;
+			}
 		}
 		
+		public string SectorTrailerTextBoxText {
+			get { return String.Format("{0},{1},{2}"
+			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey
+			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits
+			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey);}
+		}
 		// TODO Add Keys to KeySetup Dialog. Keys are published as follows: 1. add sector trailer to db. 2. add st to model in databasereaderwriter class
 		public string selectedClassicKeyAKey {
-			get { return (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey; }
-			set { (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey = value; }
+			get { return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey; }
+			set { (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey = value; }
 		}
 		
 		public string selectedClassicKeyBKey {
-			get { return (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey; }
-			set { (selectedTreeViewViewModel as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey = value; }
+			get { return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey; }
+			set { (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey = value; }
 		}
 		
-		public object ViewModelContext{
-			get {return selectedTreeViewViewModel;}
-			set { selectedTreeViewViewModel=value;}
-		}
-		
-		public SourceForSectorTrailerDataGrid SelectedSectorTrailerAccessBitsItem {
-			get { return _selectedSectorTrailerAccessBitsItem; }
-			set { _selectedSectorTrailerAccessBitsItem = value; }
+		public MifareClassicAccessBitsSectorTrailerDataGridModel SelectedSectorTrailerAccessBitsItem {
+			get { return selectedSectorTrailerAccessBitsItem; }
+			set { selectedSectorTrailerAccessBitsItem = value; }
 		}
 	}
 }

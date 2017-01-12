@@ -20,7 +20,7 @@ namespace RFiDGear
 		private string appDataPath;
 		
 		public List<string> databaseUIDs { get; set; }
-		public List<MifareClassicAccessBitsModel> databaseAccessBits { get; set; }
+		public List<MifareClassicAccessBitsBaseModel> databaseAccessBits { get; set; }
 		#endregion
 		
 		public DatabaseReaderWriter()
@@ -33,7 +33,7 @@ namespace RFiDGear
 				Directory.CreateDirectory(appDataPath);
 			
 			databaseUIDs = new List<string>();
-			databaseAccessBits = new List<MifareClassicAccessBitsModel>();
+			databaseAccessBits = new List<MifareClassicAccessBitsBaseModel>();
 			
 			ReadDatabase();
 		}
@@ -56,12 +56,10 @@ namespace RFiDGear
 				doc.Load(@Path.Combine(appDataPath,databaseFileName));
 				
 				try {
-					/* TODO Read out Sector Trailer to add keys and access bits to "mifareClassicSectorModel". Access Bits
-					 * will be modified by Dialog Window later */
 					foreach(XmlNode node in doc.SelectNodes("//UidNode"))
 					{
 						databaseUIDs.Add(node.Attributes["ChipUid"].Value);
-						databaseAccessBits.Add(new MifareClassicAccessBitsModel());
+						databaseAccessBits.Add(new MifareClassicAccessBitsBaseModel());
 					}
 					
 					
@@ -73,24 +71,22 @@ namespace RFiDGear
 		
 		public void WriteDatabase(object mifareClassicChip)
 		{
-			// TODO implement communication between database, viewmodel and model
+			// TODO improve communication between database, viewmodel and model
 			try {
-
 				XmlDocument doc = new XmlDocument();
 				doc.Load(Path.Combine(appDataPath,databaseFileName));
 				
 				if (doc.SelectSingleNode("//UidNodesDatabase") != null) {
 					XmlNode root = doc.SelectSingleNode("//UidNodesDatabase");
-					//XmlElement root = doc.DocumentElement;
 					
 					if(doc.SelectSingleNode("//UidNode") == null)
 					{
 						XmlElement chipUidNode = doc.CreateElement("UidNode");
 						XmlElement sectorTrailer = doc.CreateElement("SectorTrailerNode");
 						
-						if(mifareClassicChip is MifareClassicUidModel){
-							chipUidNode.SetAttribute("ChipUid",(mifareClassicChip as MifareClassicUidModel).UidNumber);
-							chipUidNode.SetAttribute("ChipType",converter._constCardType[(int)(mifareClassicChip as MifareClassicUidModel).CardType]);
+						if(mifareClassicChip is MifareClassicUidTreeViewModel){
+							chipUidNode.SetAttribute("ChipUid",(mifareClassicChip as MifareClassicUidTreeViewModel).UidNumber);
+							chipUidNode.SetAttribute("ChipType",converter._constCardType[(int)(mifareClassicChip as MifareClassicUidTreeViewModel).CardType]);
 						}
 						
 						
@@ -109,11 +105,11 @@ namespace RFiDGear
 					foreach(XmlNode node in doc.SelectNodes("//SectorTrailerNode"))
 					{
 						//create List of gotten viewmodels with models as accessable properties
-						List<MifareClassicSectorModel> sectorModels;
-						if(mifareClassicChip is MifareClassicUidModel)
-							sectorModels = new List<MifareClassicSectorModel>((mifareClassicChip as MifareClassicUidModel).SectorList);
+						List<MifareClassicSectorTreeViewModel> sectorModels;
+						if(mifareClassicChip is MifareClassicUidTreeViewModel)
+							sectorModels = new List<MifareClassicSectorTreeViewModel>((mifareClassicChip as MifareClassicUidTreeViewModel).SectorList);
 						else
-							sectorModels = new List<MifareClassicSectorModel>() {mifareClassicChip as MifareClassicSectorModel};
+							sectorModels = new List<MifareClassicSectorTreeViewModel>() {mifareClassicChip as MifareClassicSectorTreeViewModel};
 						
 						// TODO dont need to iterate through all elem when saving single sectoraccessbits object. add if statement here
 						foreach(XmlNode innerNode in node.Attributes)
@@ -121,15 +117,15 @@ namespace RFiDGear
 							string[] stCombined = innerNode.Value.Split(';');
 							string[] stSeparated = stCombined[1].Split(',');
 							
-							if((mifareClassicChip is MifareClassicUidModel) &&
-							   (Convert.ToInt32(stCombined[0]) > (mifareClassicChip as MifareClassicUidModel).SectorList.Count))
+							if((mifareClassicChip is MifareClassicUidTreeViewModel) &&
+							   (Convert.ToInt32(stCombined[0]) > (mifareClassicChip as MifareClassicUidTreeViewModel).SectorList.Count))
 								return;
 							
-							foreach(MifareClassicSectorModel sectorModel in sectorModels)
+							foreach(MifareClassicSectorTreeViewModel sectorModel in sectorModels)
 							{
 								if(Convert.ToInt32(stCombined[0]) == sectorModel.mifareClassicSectorNumber)
 								{
-									if(mifareClassicChip is MifareClassicUidModel){
+									if(mifareClassicChip is MifareClassicUidTreeViewModel){
 										//add sector access bits from db string e.g. "FF0780C3" to the current selected model add decode to
 										// match datagrid source for accessBit modify dialog as well as encoding for liblogicalaccess sectoraccessbits
 										sectorModel.sectorAccessBits.sectorKeyAKey = stSeparated[0];
@@ -137,12 +133,13 @@ namespace RFiDGear
 										sectorModel.sectorAccessBits.sectorKeyBKey = stSeparated[2];
 									}
 									else{
-										innerNode.Value = String.Format("{0}{1}{2}"
+										innerNode.Value = String.Format("{0};{1},{2},{3}"
+										                                ,sectorModel.mifareClassicSectorNumber
 										                                ,sectorModel.sectorAccessBits.sectorKeyAKey
-										                                ,sectorModel.sectorAccessBits.SectorTrailerAccessBits
+										                                ,sectorModel.sectorAccessBits.sectorAccessBitsAsString
 										                                ,sectorModel.sectorAccessBits.sectorKeyBKey);
+										doc.Save(Path.Combine(appDataPath,databaseFileName));
 									}
-
 								}
 							}
 						}

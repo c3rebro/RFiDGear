@@ -28,13 +28,13 @@ namespace RFiDGear.ViewModel
 		private ObservableCollection<IDialogViewModel> _Dialogs = new ObservableCollection<IDialogViewModel>();
 		public ObservableCollection<IDialogViewModel> Dialogs { get { return _Dialogs; } }
 		
-		private SourceForMifareDataBlocks currentBlock;
-		private ObservableCollection<SourceForMifareDataBlocks> DataSourceForMifareClassicDataBlock = new ObservableCollection<SourceForMifareDataBlocks>();
+		private MifareClassicDataBlockDataGridModel currentBlock;
+		private ObservableCollection<MifareClassicDataBlockDataGridModel> DataSourceForMifareClassicDataBlock = new ObservableCollection<MifareClassicDataBlockDataGridModel>();
 		private ObservableCollection<object> gridSource;
 		private ObservableCollection<TreeViewParentNodeViewModel> _uids = new ObservableCollection<TreeViewParentNodeViewModel>();
 		
-		private List<MifareClassicUidModel> mifareClassicUidModels = new List<MifareClassicUidModel>();
-		private List<MifareDesfireUidModel> mifareDesfireViewModels = new List<MifareDesfireUidModel>();
+		private List<MifareClassicUidTreeViewModel> mifareClassicUidModels = new List<MifareClassicUidTreeViewModel>();
+		private List<MifareDesfireUidTreeViewModel> mifareDesfireViewModels = new List<MifareDesfireUidTreeViewModel>();
 		
 		private Updater updater = new Updater();
 		
@@ -101,7 +101,7 @@ namespace RFiDGear.ViewModel
 		{
 			DataSourceForMifareClassicDataBlock.Clear();
 			for (int i = 0; i < selectedGCN.DataBlockContent.Length; i++) {
-				DataSourceForMifareClassicDataBlock.Add(new SourceForMifareDataBlocks(selectedGCN.DataBlockContent, i));
+				DataSourceForMifareClassicDataBlock.Add(new MifareClassicDataBlockDataGridModel(selectedGCN.DataBlockContent, i));
 			}
 			gridSource = new ObservableCollection<object>(DataSourceForMifareClassicDataBlock);
 			RaisePropertyChanged("DataGridSource");
@@ -127,7 +127,7 @@ namespace RFiDGear.ViewModel
 			                 	ViewModelContext = sectorVM,
 			                 	IsClassicAuthInfoEnabled = isClassicCard,
 
-			                 	OnOk = (sender) => {
+			                 	OnOk = (sender) => {			                 		
 			                 		databaseReaderWriter.WriteDatabase((sender.ViewModelContext as TreeViewChildNodeViewModel)._sectorModel);
 			                 		sender.Close();
 			                 	},
@@ -393,7 +393,7 @@ namespace RFiDGear.ViewModel
 		
 		public object SelectedDataGridItem {
 			get { return currentBlock; }
-			set { currentBlock = (SourceForMifareDataBlocks)value;
+			set { currentBlock = (MifareClassicDataBlockDataGridModel)value;
 			}
 		}
 		public ObservableCollection<TreeViewParentNodeViewModel> TreeViewParentNode {
@@ -410,19 +410,19 @@ namespace RFiDGear.ViewModel
 					// fill treeview with dummy models and viewmodels
 					switch (readerSetup.GetChipType) {
 						case "Mifare1K":
-							_uids.Add(new TreeViewParentNodeViewModel(new MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_1K), CARD_TYPE.CT_CLASSIC_1K));
+							_uids.Add(new TreeViewParentNodeViewModel(new MifareClassicUidTreeViewModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_1K), CARD_TYPE.CT_CLASSIC_1K));
 							break;
 							
 						case "Mifare2K":
-							_uids.Add(new TreeViewParentNodeViewModel(new MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_2K), CARD_TYPE.CT_CLASSIC_2K));
+							_uids.Add(new TreeViewParentNodeViewModel(new MifareClassicUidTreeViewModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_2K), CARD_TYPE.CT_CLASSIC_2K));
 							break;
 							
 						case "Mifare4K":
-							_uids.Add(new TreeViewParentNodeViewModel(new MifareClassicUidModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_4K), CARD_TYPE.CT_CLASSIC_4K));
+							_uids.Add(new TreeViewParentNodeViewModel(new MifareClassicUidTreeViewModel(readerSetup.GetChipUID, CARD_TYPE.CT_CLASSIC_4K), CARD_TYPE.CT_CLASSIC_4K));
 							break;
 							
 						case "DESFireEV1":
-							_uids.Add(new TreeViewParentNodeViewModel(new MifareDesfireUidModel(readerSetup.GetChipUID), CARD_TYPE.CT_DESFIRE_EV1));
+							_uids.Add(new TreeViewParentNodeViewModel(new MifareDesfireUidTreeViewModel(readerSetup.GetChipUID), CARD_TYPE.CT_DESFIRE_EV1));
 							break;
 					}
 					

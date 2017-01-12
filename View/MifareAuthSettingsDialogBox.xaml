@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Controls:MetroWindow
-	x:Class="RFiDGear.View.MifareAuthSettingsDialogBox" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+	x:Class="RFiDGear.View.MifareAuthSettingsDialogBox" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro" xmlns:Controls0="http://metro.mahapps.com/winfx/xaml/controls"
 	Title="RFiDGear.View"
 	WindowStartupLocation="CenterOwner"
 	BorderThickness="0"
 	GlowBrush="Black"
 	ResizeMode="CanResizeWithGrip"
-	Height="506"
-	Width="988">
+	Width="988"
+	Height="506">
 	<Grid
 		Margin="0,0,0,0"
 		HorizontalAlignment="Stretch"
@@ -19,8 +19,64 @@
 			HorizontalAlignment="Stretch"
 			VerticalAlignment="Top"
 			Margin="0,0,0,0">
+			<!-- <TabItem
+				Header="General Setup">
+				<Grid
+					Grid.Column="0"
+					Grid.Row="0"
+					Margin="0,0,0,0"
+					HorizontalAlignment="Stretch"
+					VerticalAlignment="Stretch"
+					Height="378">
+					<GroupBox
+						Header="Setup"
+						Height="362"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Top"
+						Margin="8,8,8,0">
+						<Canvas>
+							<Controls0:ToggleSwitchButton
+								Height="26"
+								Width="52"
+								Canvas.Top="8"
+								Canvas.Left="194">
+								<Controls0:ToggleSwitchButton
+									Height="26"
+									Width="52"
+									Canvas.Top="8"
+									Canvas.Left="183" />
+							</Controls0:ToggleSwitchButton>
+							<Label
+								Content="Allow SectorTrailer Changes"
+								Height="26"
+								Width="172"
+								Canvas.Top="8"
+								Canvas.Left="8" />
+							<Label
+								Content="Combine DataBlock AccessBits"
+								Height="26"
+								Canvas.Left="8"
+								Canvas.Top="41"
+								Width="173" />
+							<Controls0:ToggleSwitchButton
+								Height="26"
+								Width="52"
+								Canvas.Top="42"
+								Canvas.Left="194">
+								<Controls0:ToggleSwitchButton
+									Height="26"
+									Width="52"
+									Canvas.Top="8"
+									Canvas.Left="183" />
+							</Controls0:ToggleSwitchButton>
+						</Canvas>
+					</GroupBox>
+				</Grid>
+			</TabItem>  -->
 			<TabItem
-				Header="Mifare Classic &amp; Desfire Key Setup">
+				Header="Mifare Classic &amp; Desfire Keys">
 				<Grid
 					Grid.Column="0"
 					Grid.Row="0"
@@ -64,8 +120,8 @@
 								Canvas.Top="39"
 								Canvas.Left="273"
 								Width="222"
-								Text="{Binding selectedClassicKeyBKey, Mode=TwoWay}" 
-								FontFamily="Lucida Console"/>
+								Text="{Binding selectedClassicKeyBKey, Mode=TwoWay}"
+								FontFamily="Lucida Console" />
 							<Label
 								Content="Key B Nr."
 								Height="26"
@@ -92,8 +148,8 @@
 								Canvas.Top="8"
 								Canvas.Left="273"
 								Width="222"
-								Text="{Binding selectedClassicKeyAKey, Mode=TwoWay}"  
-								FontFamily="Lucida Console"/>
+								Text="{Binding selectedClassicKeyAKey, Mode=TwoWay}"
+								FontFamily="Lucida Console" />
 						</Canvas>
 					</GroupBox>
 					<GroupBox
@@ -231,21 +287,47 @@
 					Height="378">
 					<GroupBox
 						Header="Sector Trailer | Access Bits"
-						Width="549"
+						Width="575"
 						Height="360"
 						Grid.Column="0"
 						Grid.Row="0"
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
 						Margin="8,8,0,0">
-						<DataGrid
-							ItemsSource="{Binding SectorTrailerSource}"
-							AutoGenerateColumns="True"
-							AutoGeneratingColumn="OnAutoGeneratingColumn"
-							SelectedItem="{Binding SelectedSectorTrailerAccessBitsRow, Mode=TwoWay}"
-							HorizontalAlignment="Stretch"
+						<Grid
 							VerticalAlignment="Stretch"
-							Margin="8,8,8,8"></DataGrid>
+							Margin="0,0,0,0"
+							HorizontalAlignment="Stretch">
+							<DataGrid
+								ItemsSource="{Binding SectorTrailerSource}"
+								AutoGenerateColumns="True"
+								AutoGeneratingColumn="OnAutoGeneratingColumn"
+								SelectedItem="{Binding SelectedSectorTrailerAccessBitsRow, Mode=TwoWay}"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Stretch"
+								Margin="8,42,8,8" />
+							<Label
+								Content="Sector Trailer (KeyA, Access Bits, KeyB):"
+								Height="27"
+								Width="227"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Left"
+								VerticalAlignment="Top"
+								Margin="8,8,0,0" />
+							<TextBox
+								Text="{Binding SectorTrailerTextBoxText}"
+								IsReadOnly="True"
+								BorderThickness="0"
+								Height="20"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="235,8,8,0" />
+						</Grid>
 					</GroupBox>
 					<GroupBox
 						Header="Data Block | Access Bits"
@@ -254,7 +336,7 @@
 						Grid.Row="0"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Top"
-						Margin="564,9,8,0">
+						Margin="588,9,8,0">
 						<Grid
 							VerticalAlignment="Stretch"
 							Margin="0,0,0,0"
@@ -268,10 +350,10 @@
 								Grid.Row="0"
 								HorizontalAlignment="Stretch"
 								VerticalAlignment="Stretch"
-								Margin="8,41,8,8" />
+								Margin="8,41,8,8"></DataGrid>
 							<Label
 								Content="DataBlock Selection"
-								Width="132"
+								Width="119"
 								Grid.Column="0"
 								Grid.Row="0"
 								HorizontalAlignment="Left"
@@ -280,13 +362,32 @@
 							<ComboBox
 								ItemsSource="{Binding DataBlockSelection}"
 								SelectedItem="{Binding SelectedDataBlockItem, Mode=TwoWay}"
+								Width="100"
 								Height="20"
-								Width="230"
 								Grid.Column="0"
 								Grid.Row="0"
 								HorizontalAlignment="Left"
 								VerticalAlignment="Top"
-								Margin="156,8,0,0" />
+								Margin="125,8,0,0" />
+							<Label
+								Content="Combine"
+								Canvas.Top="8"
+								Canvas.Left="8"
+								Height="26"
+								Grid.Column="0"
+								Grid.Row="0"
+								VerticalAlignment="Top"
+								Margin="237,8,74,0" />
+							<Controls0:ToggleSwitchButton
+								Canvas.Top="8"
+								Canvas.Left="194"
+								Width="52"
+								Height="26"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Left"
+								VerticalAlignment="Top"
+								Margin="310,8,0,0" />
 						</Grid>
 					</GroupBox>
 				</Grid>
@@ -318,12 +419,14 @@
 				Height="23" />
 		</DockPanel>
 		<TextBox
+			IsReadOnly="True"
 			Width="473"
 			Height="25"
 			Grid.Column="0"
 			Grid.Row="0"
+			BorderThickness="0"
 			HorizontalAlignment="Right"
 			VerticalAlignment="Bottom"
-			Margin="0,0,8,13" />
+			Margin="0,0,8,12.5" />
 	</Grid>
 </Controls:MetroWindow>

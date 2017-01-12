@@ -84,7 +84,7 @@ namespace MvvmDialogs.Behaviors
 						}
 						else if (args.Action == NotifyCollectionChangedAction.Reset)
 						{
-							// a reset event is typically generated in response to clearing the collection.
+							// a Reset event is typically generated in response to clearing the collection.
 							// unfortunately the framework doesn't provide us with the list of items being
 							// removed which is why we have to keep a mirror in DialogBoxViewModels
 							if (DialogBoxViewModels.ContainsKey(collection))

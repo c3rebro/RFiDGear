@@ -1,0 +1,1297 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=iso-8859-1">
+
+<title>RFIDGear</title>
+
+<link rel=Stylesheet type="text/css" media=all href="style.css">
+
+</head>
+
+<body>
+
+<div id=container>
+
+<div id=header>
+
+<h1>RFIDGear</h1>
+
+</div>
+
+<div id=menu>
+
+<h3><span style='font-family:Arial'>Content:</span></h3>
+
+<ul>
+<li> <a href="#_Description"><span class=hyperlink1>Description</span></a></li>
+<li> <a href="#_Supported_Readers,_Manufacturers_an"><span class=hyperlink1>Supported Hardware</span></a></li>
+<li> <a href="#_Rescent_Updates"><span class=hyperlink1>Rescent Updates</span></a></li>
+<li> <a href="#_Screenshots"><span class=hyperlink1>Screenshots</span></a></li>
+<li> <a href="#_Download_Software"><span class=hyperlink1>Download</span></a></li>
+</ul>
+
+</div>
+
+<div id=content>
+
+<h2><a name="_Description"></a>Description</h2>
+
+<p>RFiDGear is a RFID / NFC frontend for 
+Microsoft Windows 7/8/8.1/ and Windows 10 to Read / Modify / Write RFiD / NFC Tags.
+It&#8217;s written in C# using the MVVM Pattern. Up to now, it&#8217;s in the developing process. 
+Check out this Page later to get the first beta release.</p>
+
+<p>&nbsp;</p>
+
+<h2><a name="_Supported_Readers,_Manufacturers_an"></a>Supported Readers and Chips</h2>
+
+<p>Because the application uses the
+LibLogicalAccess Library from ISLog, various Readers are Supported. Each Reader
+Device is encapsulated within a List of &#8220;Providers&#8221;. Each Provider
+may Contain Various Manufacturers.</p>
+
+<p>&nbsp;</p>
+
+<p >A List of Providers is shown below.
+The most Common Provider might be the &#8220;PCSC&#8221; Reader Provider. For
+Development, only the Omnikey 5x21 were available as well as the SCL3711.
+Therefore, other readers may, or may not work.</p>
+
+<p>&nbsp;</p>
+
+<table class=MsoNormalTable border=1 cellpadding=0 style='border:solid windowtext 1.0pt'>
+<thead>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+lang=EN-GB style='font-size:9.5pt;font-family:Arial'>Reader</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+lang=EN-GB style='font-size:9.5pt;font-family:Arial'>Manufacturer</span></b></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+lang=EN-GB style='font-size:9.5pt;font-family:Arial'>Reader</span></b></p>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+lang=EN-GB style='font-size:9.5pt;font-family:Arial'>Provider </span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+lang=EN-GB style='font-size:9.5pt;font-family:Arial'>Storage </span></b></p>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+lang=EN-GB style='font-size:9.5pt;font-family:Arial'>card </span></b></p>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+lang=EN-GB style='font-size:9.5pt;font-family:Arial'>service</span></b></p>
+</td>
+</tr>
+</thead>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>Omnikey
+5x25</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>HID
+Global</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>PCSC</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+lang=EN-GB style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>Omnikey
+5x21</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>HID
+Globa</span><span style='font-size:9.5pt;font-family:Arial'>l</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>PCSC</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Omnikey
+6x21</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>HID Global</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>PCSC</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Omnikey
+5x27</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>HID Global</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>PCSC</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Prox'N'Roll</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>SpringCard</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>PCSC</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>SDI010</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>SCM</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>PCSC</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>SCL011</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>SCM</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>PCSC</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>SCL3711</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>SCM</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>PCSC</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>CLOUD 4700
+F</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Identive</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>PCSC</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>ST-1200-C3R</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Cherry</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span
+style='font-size:9.5pt;font-family:Arial'>Keyboard</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>RC-S380</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Sony</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>PCSC</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span class=st><span style='font-size:9.5pt;font-family:
+Arial'>PC USB TR</span></span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Gemalto</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span
+style='font-size:9.5pt;font-family:Arial'>Gemalto</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>ACR122</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>ACS</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>PCSC</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>SmartID
+(S10)</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>HID Global</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span
+style='font-size:9.5pt;font-family:Arial'>SmartID</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>STR</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>STid</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span
+style='font-size:9.5pt;font-family:Arial'>STidPRG</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>AxessTMC
+13Mhz</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>AxessTMC</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>AxessTMC13</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>AxessTMC
+Legic</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>AxessTMC</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>AxessTMC13</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Admitto
+10x</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Phg</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>Admitto</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>PCR300MU</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Promag</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span
+style='font-size:9.5pt;font-family:Arial'>Promag</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>RDL5 RFID
+Mouse</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Deister</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:9.5pt;font-family:Arial'>De</span><span style='font-size:
+9.5pt;font-family:Arial'>ister</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>SCIBT 13</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>ELA</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span
+style='font-size:9.5pt;font-family:Arial'>SCIEL</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>pcProx 82
+Series</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>RFIDeas</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span
+style='font-size:9.5pt;font-family:Arial'>RFIDeas</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>TouchSecure</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>IdOnDemand</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span
+style='font-size:9.5pt;font-family:Arial'>IdOnDemand</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>3.25
+desktop reader</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Gunnebo</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span
+style='font-size:9.5pt;font-family:Arial'>Gunnebo</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Rpleth</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>ISLOG</span></p>
+</td>
+<td width=80 valign=top style='width:60.0pt;border:solid windowtext 1.0pt;
+padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><span
+style='font-size:9.5pt;font-family:Arial'>Rpleth</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+</table>
+
+<p class=MsoNormal><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>The
+following chips are supported. Data Contents of Chips without a cross in the
+&#8220;Storage Card Service&#8221; Column is not Supported by the Library. Only
+reading the UID is supported.</span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></p>
+
+<table class=MsoNormalTable border=1 cellpadding=0 style='border:solid windowtext 1.0pt'>
+<thead>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>Chip</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&lt; 125Khz</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>125Khz</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>13.56Mhz</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>433Mhz</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>Storage</span></b></p>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>Card</span></b></p>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>Service</span></b></p>
+</td>
+</tr>
+</thead>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>HID Prox</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>EM 4102</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Deister</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Indala</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Pyramid</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>HiTag</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>HID iClass</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Mifare
+Classic</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Mifare
+DESFire</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Mifare
+DESFire EV1</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Mifare SAM
+AV1</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Mifare SAM
+AV2</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Tag-It</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>iCode</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Mifare
+UltraLight</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Mifare
+UltraLight C</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Mifare
+Plus (partial)</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>STM LRI
+512</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Infineon
+My-D</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>NTAG203</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>NTAG213C</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Topaz 512</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Sony
+FeliCa Lite-S</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>EM 4135
+(partial)</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Legic
+Advant (partial)</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>Legic
+Prime</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+<tr>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><span style='font-size:9.5pt;font-family:Arial'>ELA
+IDF1034</span></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal><b><span style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>X</span></b></p>
+</td>
+<td style='border:solid windowtext 1.0pt;padding:.75pt .75pt .75pt .75pt'>
+<p class=MsoNormal align=center style='text-align:center'><b><span
+style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></b></p>
+</td>
+</tr>
+</table>
+
+<h2><a name="_Rescent_Updates"></a><span style='font-size:11.5pt;font-family:
+Arial'>Rescent Updates</span></h2>
+
+<p><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>No RFIDGear Update
+available yet. Please come back later.</span></p>
+
+<p><span lang=EN-GB>&nbsp;</span></p>
+
+<h2><a name="_Screenshots"></a><span lang=EN-GB style='font-size:11.5pt;
+font-family:Arial'>Screenshots</span></h2>
+
+<p><span lang=EN-GB>Some Impressions:</span></p>
+
+<p><span lang=EN-GB>&nbsp;</span></p>
+
+<p align=left style='text-align:left;page-break-after:avoid'><span lang=EN-GB><img
+border=0 width=715 height=461 src="images/image001.jpg"></span></p>
+
+<p class=MsoCaption><span lang=EN-GB>Main Window 1: Successfully authenticated
+to all Sectors</span></p>
+
+<p><span lang=EN-GB>&nbsp;</span></p>
+
+<p style='page-break-after:avoid'><span lang=EN-GB><img border=0 width=988
+height=506 src="images/image002.jpg"></span></p>
+
+<p class=MsoCaption style='text-align:justify;text-justify:inter-ideograph'>Key
+Setup Dialog 1: Keys</p>
+
+<p><span lang=EN-GB>&nbsp;</span></p>
+
+<p style='page-break-after:avoid'><span lang=EN-GB><img border=0 width=988
+height=506 src="images/image003.jpg"></span></p>
+
+<p class=MsoCaption style='text-align:justify;text-justify:inter-ideograph'><span
+lang=EN-GB>Key Setup Dialog 2: Access Bits for the Mifare Classic Card</span></p>
+
+<p><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></p>
+
+<p><span lang=EN-GB>&nbsp;</span></p>
+
+<h2><a name="_Download_Software"></a><span lang=EN-GB style='font-size:11.5pt;
+font-family:Arial'>Download Software</span></h2>
+
+<p><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>No RFIDGear
+Download available yet. Please come back later.</span></p>
+
+<p><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></p>
+
+</div>
+
+</div>
+
+</body>
+
+</html>
