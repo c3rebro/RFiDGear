@@ -194,4 +194,7 @@ Informationen in der Kartenleser. ("SCardEstablishContext" Funktion - WinSCard.d
   <data name="menuItemReaderSettingsHeader" xml:space="preserve">
     <value>_Kartenleser...</value>
   </data>
+  <data name="mifareAuthSettingsDialogCaption" xml:space="preserve">
+    <value>Authentifizierungsdialog</value>
+  </data>
 </root>

@@ -123,7 +123,7 @@ namespace RFiDGear.ViewModel
 			
 			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel(sectorVM) {
 			                 	
-			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
+			                 	Caption = String.Format("{0} UID:[{1}] Type:[{2}]",ResourceLoader.getResource("mifareAuthSettingsDialogCaption"),sectorVM.Parent.UidNumber,sectorVM.Parent.CardType),
 			                 	ViewModelContext = sectorVM,
 			                 	IsClassicAuthInfoEnabled = isClassicCard,
 
@@ -156,7 +156,7 @@ namespace RFiDGear.ViewModel
 			
 			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel(uidVM) {
 			                 	
-			                 	Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
+			                 	Caption = String.Format("{0}{1}{2}",ResourceLoader.getResource("mifareAuthSettingsDialogCaption"),uidVM.CardType,uidVM.UidNumber),
 			                 	IsClassicAuthInfoEnabled = isClassicCard,
 
 			                 	OnOk = (sender) => {
@@ -203,7 +203,7 @@ namespace RFiDGear.ViewModel
 		{
 			if (!String.IsNullOrEmpty(new ReaderSetupModel(null).GetChipUID)) {
 				if (readerSetup.SelectedReader != "N/A") {
-					if (!databaseReaderWriter.databaseUIDs.Contains(readerSetup.GetChipUID)) {
+					if (!databaseReaderWriter.databaseUIDs.Contains(readerSetup.GetChipUID) || (_uids.Count == 0 )) {
 						databaseReaderWriter.databaseUIDs.Add(readerSetup.GetChipUID);
 						RaisePropertyChanged("TreeViewParentNode");
 					}

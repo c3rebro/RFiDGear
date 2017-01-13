@@ -194,4 +194,7 @@ slot of an available reader</value>
   <data name="menuItemReaderSettingsHeader" xml:space="preserve">
     <value>_Reader Settings...</value>
   </data>
+  <data name="mifareAuthSettingsDialogCaption" xml:space="preserve">
+    <value>Authenticationdialog</value>
+  </data>
 </root>
