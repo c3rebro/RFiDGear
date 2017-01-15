@@ -431,6 +431,7 @@
 				Width="130" />
 			<Button
 				Content="Try to Authenticate"
+				Command="{Binding AuthCommand}"
 				Width="130"
 				Height="23"
 				DockPanel.Dock="Right" />

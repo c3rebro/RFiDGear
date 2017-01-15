@@ -12,10 +12,20 @@ namespace RFiDGear
 	{
 		
 		public string desFireKeyToEdit { get; set; }
+		public string classicKeyToEdit { get; set; }
 		// 0 = 3DES, 1 = AES, 2 = DES
 		public int[] libLogicalAccessKeyTypeEnumConverter = { 64, 128, 0 };
 		public string[] _constDesfireCardKeyType = { "3DES", "AES", "DES" };
 		public string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
+		
+		public bool KeyFormatQuickCheck(string keyToCheck)
+		{
+			foreach(char c in keyToCheck.ToCharArray()){
+				if(c == ' ')
+					return true;
+			}
+			return false;
+		}
 		
 		public int GetByteCount(string hexString)
 		{
@@ -142,10 +152,39 @@ namespace RFiDGear
 			for (int i = (Str.Length) - 2; i > 0; i -= 2)
 				temp = temp.Insert(i, " ");
 			
-			desFireKeyToEdit = temp;
+			desFireKeyToEdit = temp.ToUpper();
 			
 			return KEY_ERROR.NO_ERROR;
-		}		
+		}
+
+		public KEY_ERROR FormatMifareClassicKeyStringWithSpacesEachByte(string Str)
+		{
+			string temp = Str;
+			
+			if (string.IsNullOrEmpty(temp))
+				return KEY_ERROR.KEY_IS_EMPTY;
+			if (!InHexFormat(temp))
+				return KEY_ERROR.KEY_HAS_WRONG_FORMAT;
+			if (temp.Length != 12)
+				return KEY_ERROR.KEY_HAS_WRONG_LENGTH;
+			
+			for (int i = (Str.Length) - 2; i > 0; i -= 2)
+				temp = temp.Insert(i, " ");
+			
+			classicKeyToEdit = temp.ToUpper();
+			
+			return KEY_ERROR.NO_ERROR;
+		}	
+
+		public string NormalizeKey(string keyToNormalize)
+		{
+			char[] c = keyToNormalize.ToCharArray();
+			
+			for(int i=0; i< keyToNormalize.Length; i++)
+				if(c[i] == ' ')
+					c[i] = '\0';
+			return new string(c);
+		}
 		
 		byte HexToByte(string hex)
 		{

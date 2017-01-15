@@ -127,7 +127,7 @@ namespace RFiDGear.ViewModel
 			                 	ViewModelContext = sectorVM,
 			                 	IsClassicAuthInfoEnabled = isClassicCard,
 
-			                 	OnOk = (sender) => {			                 		
+			                 	OnOk = (sender) => {
 			                 		// TODO build sectortrailer
 			                 		
 			                 		databaseReaderWriter.WriteDatabase((sender.ViewModelContext as TreeViewChildNodeViewModel)._sectorModel);
@@ -139,6 +139,17 @@ namespace RFiDGear.ViewModel
 
 			                 	},
 
+			                 	OnAuth = (sender) => {
+
+			                 		readerSetup.readMiFareClassicSingleSector(sectorVM.SectorNumber, sender.selectedClassicKeyAKey, sender.selectedClassicKeyBKey);
+			                 		sectorVM.IsAuthenticated = readerSetup.sectorSuccesfullyAuth;
+			                 		foreach (TreeViewGrandChildNodeViewModel gcVM in sectorVM.Children) {
+			                 			gcVM.IsAuthenticated = readerSetup.dataBlockSuccesfullyAuth[(((sectorVM.SectorNumber + 1) * sectorVM.BlockCount) - (sectorVM.BlockCount - gcVM.DataBlockNumber))];
+			                 			gcVM.DataBlockContent = readerSetup.currentSector[gcVM.DataBlockNumber];
+			                 		}
+
+			                 	},
+			                 	
 			                 	OnCloseRequest = (sender) => {
 			                 		sender.Close();
 			                 	}
@@ -166,6 +177,17 @@ namespace RFiDGear.ViewModel
 			                 	OnCancel = (sender) => {
 			                 		sender.Close();
 
+			                 	},
+			                 	
+			                 	OnAuth = (sender) => {
+			                 		foreach (TreeViewChildNodeViewModel cnVM in uidVM.Children) {
+			                 			readerSetup.readMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber);
+			                 			cnVM.IsAuthenticated = readerSetup.sectorSuccesfullyAuth;
+			                 			foreach (TreeViewGrandChildNodeViewModel gcVM in cnVM.Children) {
+			                 				gcVM.IsAuthenticated = readerSetup.dataBlockSuccesfullyAuth[(((cnVM.SectorNumber + 1) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
+			                 				gcVM.DataBlockContent = readerSetup.currentSector[gcVM.DataBlockNumber];
+			                 			}
+			                 		}
 			                 	},
 
 			                 	OnCloseRequest = (sender) => {
@@ -431,7 +453,10 @@ namespace RFiDGear.ViewModel
 					//fill the models with data from db
 					foreach(TreeViewParentNodeViewModel pnVM in _uids)
 					{
-						databaseReaderWriter.WriteDatabase(pnVM.mifareClassicUidModel);
+						if(pnVM.mifareClassicUidModel != null)
+							databaseReaderWriter.WriteDatabase(pnVM.mifareClassicUidModel);
+						//else
+							//databaseReaderWriter.WriteDatabase(pnVM.mifareDesfireUidModel);
 					}
 					return _uids;
 				}

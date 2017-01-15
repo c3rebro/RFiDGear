@@ -243,7 +243,108 @@ namespace RFiDGear
 			}
 			return true;
 		}
-		
+
+		public bool readMiFareClassicSingleSector(int sectorNumber,string aKey, string bKey)
+		{
+			SettingsReaderWriter settings = new SettingsReaderWriter();
+			
+			settings.readSettings();
+			
+			MifareKey keyA = new MifareKey() { Value = new CustomConverter().KeyFormatQuickCheck(aKey) ? aKey : new CustomConverter().FormatSectorStringWithSpacesEachByte(aKey)};
+			MifareKey keyB = new MifareKey() { Value = new CustomConverter().KeyFormatQuickCheck(bKey) ? bKey : new CustomConverter().FormatSectorStringWithSpacesEachByte(bKey)};
+			
+			int blockCount = 0, sectorCount = 0; sectorIsAuth = true; sectorCanRead = true;
+			
+			try {
+				readerProvider = new LibraryManagerClass().GetReaderProvider(new SettingsReaderWriter()._defaultReaderProvider);
+				readerUnit = readerProvider.CreateReaderUnit();
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(200)) {
+						if (readerUnit.Connect()) {
+							
+							readerUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.ChipIdentifier != chipUID && card.ChipIdentifier.Length != 0) {
+
+								chipUID = card.ChipIdentifier;
+								chipType = card.Type;
+							}
+							
+							
+							if (card.Type == "Mifare1K") {
+								
+								blockAuthSuccessful = new bool[64];
+								blockReadSuccessful = new bool[64];
+								
+								blockCount = 4;
+								sectorCount = 16;
+								
+								cardDataBlock = new byte[16];
+								cardDataSector = new byte[4][];
+								
+							}
+							if (card.Type == "Mifare4K") {
+								
+								blockAuthSuccessful = new bool[256];
+								blockReadSuccessful = new bool[256];
+								
+								blockCount = 4;
+								sectorCount = 40;
+								
+								cardDataBlock = new byte[16];
+								cardDataSector = new byte[16][];
+								
+							}
+							
+
+							IMifareCommands cmd = card.Commands as IMifareCommands;
+
+							try {
+								cmd.LoadKeyNo((byte)sectorNumber, keyA, MifareKeyType.KT_KEY_A);
+								
+								for (int k = blockCount; k > 0; k--) {
+
+									try {
+										cmd.AuthenticateKeyNo((byte)(((sectorNumber+1)*blockCount)-k), (byte)sectorNumber, MifareKeyType.KT_KEY_A);
+										blockAuthSuccessful[(((sectorNumber+1)*blockCount)-k)] = true;
+										
+										try {
+											object data = cmd.ReadBinary((byte)(((sectorNumber+1)*blockCount)-k), 48);
+											
+											cardDataBlock = (byte[])data;
+											cardDataSector[blockCount-k] = cardDataBlock;
+											
+											blockReadSuccessful[(((sectorNumber+1)*blockCount)-k)] = true;
+										} catch (Exception a) {
+											blockReadSuccessful[(((sectorNumber+1)*blockCount)-k)] = false;
+											sectorCanRead = false;
+										}
+									} catch (Exception b) {
+										blockAuthSuccessful[(((sectorNumber+1)*blockCount)-k)] = false;
+										sectorIsAuth = false;
+									}
+								}
+							} catch (Exception c) {
+								return true;
+								
+							}
+							return false;
+						}
+
+					} else {
+						readerUnit.DisconnectFromReader();
+					}
+				}
+				readerProvider.ReleaseInstance();
+			} catch {
+				throw new Exception("Uuups");
+			}
+			return true;
+		}		
 		
 		public bool getMiFareDESFireChipAppIDs()
 		{

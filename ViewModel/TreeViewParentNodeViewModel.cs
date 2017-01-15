@@ -27,8 +27,8 @@ namespace RFiDGear.ViewModel
 
 		#endregion // Data
 		
-		public MifareClassicUidTreeViewModel mifareClassicUidModel { get; set; } 
-		readonly MifareDesfireUidTreeViewModel _chipMifareDesfireUid;
+		public MifareClassicUidTreeViewModel mifareClassicUidModel { get; set; }
+		public MifareDesfireUidTreeViewModel mifareDesfireUidModel { get; set; }
 		readonly CARD_TYPE _cardType;
 		readonly List<MenuItem> ContextMenuItems;
 		readonly RelayCommand _cmdReadAllSectorsWithDefaultKeys;
@@ -68,7 +68,7 @@ namespace RFiDGear.ViewModel
 		
 		public TreeViewParentNodeViewModel(Model.MifareDesfireUidTreeViewModel uid, CARD_TYPE cardType)
 		{
-			_chipMifareDesfireUid = uid;
+			mifareDesfireUidModel = uid;
 			_cardType = cardType;
 			/*
 			_cmd = new ViewModel.RelayCommand(RFiDAccess.authToMifareDesfireCard);
@@ -79,6 +79,9 @@ namespace RFiDGear.ViewModel
 			                     	Command = _cmd
 			                     });
 			 */
+			_children = new ObservableCollection<TreeViewChildNodeViewModel>();
+			
+			LoadChildren();
 		}
 		
 		void ReadSectorsWithDefaultConfig() {
@@ -186,11 +189,19 @@ namespace RFiDGear.ViewModel
 		}
 		
 		public string ParentNodeDisplayItem {
-			get { return String.Format("[{0} Type: {1}]", mifareClassicUidModel.UidNumber, _constCardType[(int)_cardType]); }
+			get { if(mifareClassicUidModel != null)
+					return String.Format("[{0} Type: {1}]", mifareClassicUidModel.UidNumber, _constCardType[(int)_cardType]);
+				else
+					return String.Format("[{0} Type: {1}]",mifareDesfireUidModel.uidNumber, _constCardType[(int)_cardType]);
+			}
 		}
 		
 		public string UidNumber {
-			get { return mifareClassicUidModel.UidNumber; }
+			get { if(mifareClassicUidModel != null)
+					return mifareClassicUidModel.UidNumber;
+				else
+					return mifareDesfireUidModel.uidNumber;
+			}
 		}
 		
 		public CARD_TYPE CardType {
@@ -204,7 +215,7 @@ namespace RFiDGear.ViewModel
 				case CARD_TYPE.CT_CLASSIC_1K:
 					{
 						for (int i = 0; i < 16; i++) {
-							_children.Add(new ViewModel.TreeViewChildNodeViewModel(new Model.MifareClassicSectorTreeViewModel(i), this, _cardType, i));
+							_children.Add(new TreeViewChildNodeViewModel(new MifareClassicSectorTreeViewModel(i), this, _cardType, i));
 						}
 
 					}
@@ -213,7 +224,7 @@ namespace RFiDGear.ViewModel
 				case CARD_TYPE.CT_CLASSIC_2K:
 					{
 						for (int i = 0; i < 32; i++) {
-							_children.Add(new ViewModel.TreeViewChildNodeViewModel(new Model.MifareClassicSectorTreeViewModel(i), this, _cardType, i));
+							_children.Add(new TreeViewChildNodeViewModel(new MifareClassicSectorTreeViewModel(i), this, _cardType, i));
 						}
 
 					}
@@ -222,7 +233,7 @@ namespace RFiDGear.ViewModel
 				case CARD_TYPE.CT_CLASSIC_4K:
 					{
 						for (int i = 0; i < 40; i++) {
-							_children.Add(new ViewModel.TreeViewChildNodeViewModel(new Model.MifareClassicSectorTreeViewModel(i), this, _cardType, i));
+							_children.Add(new TreeViewChildNodeViewModel(new MifareClassicSectorTreeViewModel(i), this, _cardType, i));
 						}
 
 					}
@@ -230,13 +241,14 @@ namespace RFiDGear.ViewModel
 					
 				case CARD_TYPE.CT_DESFIRE_EV1:
 					{
-						_children.Add(new ViewModel.TreeViewChildNodeViewModel(new Model.MifareDesfireAppIdTreeViewModel(),this, _cardType));
+						_children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppIdTreeViewModel(new string[1] {"00001"}),this, _cardType));
 					}
 					break;
 			}
 			
 			foreach(TreeViewChildNodeViewModel item in _children){
-				mifareClassicUidModel.SectorList.Add(item._sectorModel);
+				if(mifareClassicUidModel != null)
+					mifareClassicUidModel.SectorList.Add(item._sectorModel);
 			}
 		}
 	}
