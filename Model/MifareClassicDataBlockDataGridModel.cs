@@ -52,5 +52,12 @@ namespace RFiDGear.DataSource
 			}
 			
 		}
+		
+		[DisplayName("Binary")]
+		public string singleByteBlock0AsBinary {
+			get { return Convert.ToString(blocknSectorData, 2).PadLeft(8, '0'); }
+			set { blocknSectorData = Convert.ToByte(value); }
+		
+		}
 	}
 }

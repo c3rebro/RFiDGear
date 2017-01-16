@@ -415,9 +415,9 @@ namespace RFiDGear.ViewModel
 		
 		public string SectorTrailerTextBoxText {
 			get { return String.Format("{0},{1},{2}"
-			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey
+			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ","")
 			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits
-			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey);}
+			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ",""));}
 		}
 		// TODO Add Keys to KeySetup Dialog. Keys are published as follows: 1. add sector trailer to db. 2. add st to model in databasereaderwriter class
 		public string selectedClassicKeyAKey {

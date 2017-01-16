@@ -47,17 +47,27 @@ namespace RFiDGear.ViewModel
 			
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Read all Sectors using default Configuration",
+			                     	Header = "Read Card with default Keys",
 			                     	Command = _cmdReadAllSectorsWithDefaultKeys
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Edit Authentication Info and Read all Sectors",
+			                     	Header = "Read Card with custom Keys...",
+			                     	Command = _cmdEditAuthInfoAndReadAllSectors
+			                     });
+
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Format Card...",
 			                     	Command = _cmdEditAuthInfoAndReadAllSectors
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Delete Node",
+			                     	Header = "Read Card and Dump to File...",
+			                     	Command = _cmdEditAuthInfoAndReadAllSectors
+			                     });
+			
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Delete this Node",
 			                     	Command = _cmdDeleteThisNode
 			                     });
 			
@@ -70,15 +80,25 @@ namespace RFiDGear.ViewModel
 		{
 			mifareDesfireUidModel = uid;
 			_cardType = cardType;
-			/*
-			_cmd = new ViewModel.RelayCommand(RFiDAccess.authToMifareDesfireCard);
+			
+			RelayCommand _cmd = new RelayCommand(EditAuthInfoAndReadAllSectors);
 			
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "auth to DesfireCard",
+			                     	Header = "Read Application IDs",
 			                     	Command = _cmd
 			                     });
-			 */
+
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Create a new Application...",
+			                     	Command = _cmd
+			                     });
+			
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Authenticate with Card Master Key...",
+			                     	Command = _cmd
+			                     });
+			
 			_children = new ObservableCollection<TreeViewChildNodeViewModel>();
 			
 			LoadChildren();

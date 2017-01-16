@@ -52,12 +52,27 @@ namespace RFiDGear.ViewModel
 			
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Read Sector using default Configuration",
+			                     	Header = "Read Sector with default Keys",
 			                     	Command = _cmdReadSectorWithDefaults
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Edit Authentication Settings and Modify Sector",
+			                     	Header = "Read Sector with custom Keys...",
+			                     	Command = _cmdEditAuthAndModifySector
+			                     });
+			
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Copy Sector to Clipboard",
+			                     	Command = _cmdEditAuthAndModifySector
+			                     });
+
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Paste from Clipboard",
+			                     	Command = _cmdEditAuthAndModifySector
+			                     });
+			
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Modify Sector Access Rights...",
 			                     	Command = _cmdEditAuthAndModifySector
 			                     });
 			
@@ -71,6 +86,24 @@ namespace RFiDGear.ViewModel
 			_appID = appID;
 			_cardType = cardType;
 			_parentUid = parentUID.UidNumber;
+			
+			_cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
+			_cmdEditAuthAndModifySector = new RelayCommand(EditAuthAndModifySector);
+			
+			ContextMenuItems = new List<MenuItem>();
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Read Sector using default Configuration",
+			                     	Command = _cmdReadSectorWithDefaults
+			                     });
+			
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Edit Authentication Settings and Modify Sector",
+			                     	Command = _cmdEditAuthAndModifySector
+			                     });
+			
+			_children = new ObservableCollection<TreeViewGrandChildNodeViewModel>();
+			
+			LoadChildren();
 		}
 
 		
@@ -239,7 +272,7 @@ namespace RFiDGear.ViewModel
 					break;
 			}
 			foreach(TreeViewGrandChildNodeViewModel item in _children){
-				_sectorModel.dataBlock.Add(item._dataBlock);			                           
+				_sectorModel.dataBlock.Add(item._dataBlock);
 			}
 		}
 	}

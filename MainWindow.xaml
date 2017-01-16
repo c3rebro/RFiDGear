@@ -180,7 +180,8 @@
 				ItemsSource="{Binding DataGridSource}"
 				SelectedItem="{Binding SelectedDataGridItem}"
 				Background="{x:Null}"
-				BorderBrush="#FF020202" />
+				BorderBrush="#FF020202">
+			</DataGrid>
 		</Grid>
 		<DockPanel
 			RenderTransformOrigin="0.5,0.5">
