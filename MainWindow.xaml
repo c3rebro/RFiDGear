@@ -42,7 +42,7 @@
 				VerticalContentAlignment="Top"
 				Margin="0,0,7,0"
 				x:Name="treeView"
-				ItemsSource="{Binding TreeViewParentNode}"
+				ItemsSource="{Binding TreeViewParentNodes}"
 				Background="{x:Null}"
 				BorderThickness="1,1,1,1">
 				<TreeView.ItemContainerStyle>
@@ -114,7 +114,7 @@
 						</HierarchicalDataTemplate.Resources>
 						<!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\State.png" /> -->
 						<TextBlock
-							Text="{Binding SectorNumberDisplayItem}">
+							Text="{Binding ChildNodeDisplayItem}">
 							<TextBlock.ContextMenu>
 								<ContextMenu
 									ItemsSource="{Binding ContextMenu}"></ContextMenu>
@@ -130,7 +130,7 @@
 						DataType="{x:Type local:ViewModel.TreeViewGrandChildNodeViewModel}">
 						<!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\City.png" /> -->
 						<TextBlock
-							Text="{Binding DataBlockDisplayItem}">
+							Text="{Binding GrandChildNodeDisplayItem}">
 							<TextBlock.Resources>
 								<Style
 									TargetType="TextBlock">
@@ -337,8 +337,10 @@
 						<SolidColorBrush
 							Color="Black" />
 					</MenuItem.Foreground>
-					<MenuItem
-						Header="_Check for Updates">
+					<MenuItem 
+						IsCheckable="True"
+						Header="_Check for Updates"
+						IsChecked="{Binding IsCheckForUpdatesChecked, Mode=TwoWay}">
 						<MenuItem.Foreground>
 							<SolidColorBrush
 								Color="Black" />

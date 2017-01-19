@@ -223,8 +223,13 @@ namespace RFiDGear.ViewModel
 			get { return ContextMenuItems; }
 		}
 		
-		public string SectorNumberDisplayItem {
-			get { return String.Format("Sector: [{0}]", _sectorModel.mifareClassicSectorNumber); }
+		public string ChildNodeDisplayItem {
+			get {
+				if(_cardType == CARD_TYPE.CT_CLASSIC_1K || _cardType == CARD_TYPE.CT_CLASSIC_2K || _cardType == CARD_TYPE.CT_CLASSIC_4K)
+					return String.Format("Sector: [{0}]", _sectorModel.mifareClassicSectorNumber);
+				else
+					return String.Format("AppID: {0}", _appID.appID);
+			}
 		}
 		
 		public int SectorNumber {

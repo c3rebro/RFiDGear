@@ -106,7 +106,7 @@
 								Canvas.Top="8"
 								Canvas.Left="89"
 								ItemsSource="{Binding KeySelection}"
-								SelectedIndex="{Binding KeySelectionComboboxIndex, Mode=OneWay}"
+								SelectedIndex="{Binding KeySelectionComboboxIndex, Mode=TwoWay}"
 								IsEnabled="{Binding IsFixedKeyNumber}"
 								Width="81" />
 							<Label
@@ -134,7 +134,7 @@
 								Canvas.Left="89"
 								Canvas.Top="39"
 								ItemsSource="{Binding KeySelection}"
-								SelectedIndex="{Binding KeySelectionComboboxIndex, Mode=OneWay}"
+								SelectedIndex="{Binding KeySelectionComboboxIndex, Mode=TwoWay}"
 								IsEnabled="{Binding IsFixedKeyNumber}"
 								Width="81" />
 							<Label

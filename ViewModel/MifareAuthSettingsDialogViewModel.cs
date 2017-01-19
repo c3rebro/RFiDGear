@@ -25,26 +25,43 @@ namespace RFiDGear.ViewModel
 			"DataBlock 2",
 		};
 		
-		private readonly string[] keyCmbbxItems = {
-			"No. 0",
-			"No. 1",
-			"No. 2",
-			"No. 3",
-			"No. 4",
-			"No. 5",
-			"No. 6",
-			"No. 7",
-			"No. 8",
-			"No. 9",
+		private readonly string[] keyIndexComboBoxItems = {
+			"No. 00",
+			"No. 01",
+			"No. 02",
+			"No. 03",
+			"No. 04",
+			"No. 05",
+			"No. 06",
+			"No. 07",
+			"No. 08",
+			"No. 09",
 			"No. 10",
 			"No. 11",
 			"No. 12",
 			"No. 13",
 			"No. 14",
-			"No. 15"
+			"No. 15",
+			"No. 16",
+			"No. 17",
+			"No. 18",
+			"No. 19",
+			"No. 20",
+			"No. 21",
+			"No. 22",
+			"No. 23",
+			"No. 24",
+			"No. 25",
+			"No. 26",
+			"No. 27",
+			"No. 28",
+			"No. 29",
+			"No. 30",
+			"No. 31"
 		};
 		
-		private int selectionIndex;
+		private int selectedDataBlockRow;
+		private int selectedKeyNumber;
 		
 		private bool isClassicAuthInfo = true;
 		private bool isAccessBitsEnabled = false;
@@ -91,16 +108,15 @@ namespace RFiDGear.ViewModel
 			displaySourceForCombinedDataBlockDataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
 			
 			foreach (MifareClassicAccessBitsSectorTrailerDataGridModel item in displaySourceForSectorTrailerDataGrid) {
-				if (item.GetSectorAccessBitsFromHumanReadableFormat() ==
+
+				if (ViewModelContext is TreeViewChildNodeViewModel && item.GetSectorAccessBitsFromHumanReadableFormat() ==
 				    (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedSectorTrailerAccessBits) //"N,A,A,A,A,A"
 					selectedSectorTrailerAccessBitsItem = item;
-				
 			}
 			
 			foreach (MifareClassicAccessBitsShortDataBlockDataGridModel item in displaySourceForCombinedDataBlockDataGrid) {
-				if (item.GetShortDataBlockAccessBitsFromHumanReadableFormat() ==
-				    (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedDataBlock0AccessBits) //"A,A,A,A"
-				{
+				if (ViewModelContext is TreeViewChildNodeViewModel && item.GetShortDataBlockAccessBitsFromHumanReadableFormat() ==
+				    (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedDataBlock0AccessBits) { //"A,A,A,A"
 					selectedCombinedDataBlockAccessBitsDataGridItem = item;
 					selectedDataBlock0AccessBitsDataGridItem = item;
 					selectedDataBlock1AccessBitsDataGridItem = item;
@@ -142,10 +158,10 @@ namespace RFiDGear.ViewModel
 		
 		public object SelectedDataBlockAccessBitsRow {
 			get {
-				if(_dataBlockIsCombinedToggleButtonIsChecked)
+				if (_dataBlockIsCombinedToggleButtonIsChecked)
 					return selectedCombinedDataBlockAccessBitsDataGridItem;
 				
-				switch (selectionIndex) {
+				switch (selectedDataBlockRow) {
 					case 0:
 						return selectedDataBlock0AccessBitsDataGridItem;
 					case 1:
@@ -156,12 +172,10 @@ namespace RFiDGear.ViewModel
 				return null;
 			}
 			set {
-				if(_dataBlockIsCombinedToggleButtonIsChecked)
+				if (_dataBlockIsCombinedToggleButtonIsChecked)
 					selectedCombinedDataBlockAccessBitsDataGridItem = value;
-				
-				else
-				{
-					switch (selectionIndex) {
+				else {
+					switch (selectedDataBlockRow) {
 						case 0:
 							selectedDataBlock0AccessBitsDataGridItem = value;
 							break;
@@ -180,17 +194,17 @@ namespace RFiDGear.ViewModel
 		}
 		
 		public string SelectedDataBlockItem {
-			get { return _dataBlockIsCombinedToggleButtonIsChecked ? "Combined" : datablockSelectorSeparatedCmbbxItems[selectionIndex]; }
+			get { return _dataBlockIsCombinedToggleButtonIsChecked ? "Combined" : datablockSelectorSeparatedCmbbxItems[selectedDataBlockRow]; }
 			set {
-				if(value != "Combined")
-					selectionIndex = Array.IndexOf(datablockSelectorSeparatedCmbbxItems, value);
+				if (value != "Combined")
+					selectedDataBlockRow = Array.IndexOf(datablockSelectorSeparatedCmbbxItems, value);
 				RaisePropertyChanged("DataBlockSource");
 				RaisePropertyChanged("SelectedDataBlockAccessBitsRow");
 				RaisePropertyChanged("SectorTrailerTextBoxText");
 			}
 		}
 		
-		#endregion //SelectedItem
+		#endregion
 		
 		#region IUserDialogViewModel Implementation
 
@@ -233,7 +247,7 @@ namespace RFiDGear.ViewModel
 		
 		public Action<MifareAuthSettingsDialogViewModel> OnOk { get; set; }
 		public Action<MifareAuthSettingsDialogViewModel> OnCancel { get; set; }
-		public Action<MifareAuthSettingsDialogViewModel> OnAuth {get; set; }
+		public Action<MifareAuthSettingsDialogViewModel> OnAuth { get; set; }
 		public Action<MifareAuthSettingsDialogViewModel> OnCloseRequest { get; set; }
 
 		public void Close()
@@ -259,7 +273,7 @@ namespace RFiDGear.ViewModel
 				this.KeySettingsPropertyChanged(this, new PropertyChangedEventArgs(propertyName));
 		}
 
-		#endregion // INotifyPropertyChanged Members
+		#endregion
 		
 		private string _Caption;
 		public string Caption {
@@ -284,16 +298,25 @@ namespace RFiDGear.ViewModel
 		
 		public bool IsAccessBitsEditTabEnabled {
 			get { return isAccessBitsEnabled; }
-			set { isAccessBitsEnabled = value; RaisePropertyChanged("IsAccessBitsEditTabEnabled"); }
+			set {
+				isAccessBitsEnabled = value;
+				RaisePropertyChanged("IsAccessBitsEditTabEnabled");
+			}
 		}
 		
 		private bool _dataBlockIsCombinedToggleButtonIsChecked;
-		public bool DataBlockIsCombinedToggleButtonIsChecked{
+		public bool DataBlockIsCombinedToggleButtonIsChecked {
 			get { return _dataBlockIsCombinedToggleButtonIsChecked; }
-			set { _dataBlockIsCombinedToggleButtonIsChecked = value; selectionIndex=0; RaisePropertyChanged("SelectedDataBlockItem"); RaisePropertyChanged("DataBlockSelectionComboBoxIsEnabled"); RaisePropertyChanged("DataBlockSelection");}
+			set {
+				_dataBlockIsCombinedToggleButtonIsChecked = value;
+				selectedDataBlockRow = 0;
+				RaisePropertyChanged("SelectedDataBlockItem");
+				RaisePropertyChanged("DataBlockSelectionComboBoxIsEnabled");
+				RaisePropertyChanged("DataBlockSelection");
+			}
 		}
 		
-		public bool DataBlockSelectionComboBoxIsEnabled{
+		public bool DataBlockSelectionComboBoxIsEnabled {
 			get { return !_dataBlockIsCombinedToggleButtonIsChecked; }
 		}
 		
@@ -308,17 +331,15 @@ namespace RFiDGear.ViewModel
 		public ObservableCollection<object> DataBlockSource {
 			get {
 				
-				if(_dataBlockIsCombinedToggleButtonIsChecked)
-				{
-					if(ViewModelContext is TreeViewChildNodeViewModel){
-						if(selectedCombinedDataBlockAccessBitsDataGridItem is MifareClassicAccessBitsShortDataBlockDataGridModel){
+				if (_dataBlockIsCombinedToggleButtonIsChecked) {
+					if (ViewModelContext is TreeViewChildNodeViewModel) {
+						if (selectedCombinedDataBlockAccessBitsDataGridItem is MifareClassicAccessBitsShortDataBlockDataGridModel) {
 							(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits = (selectedSectorTrailerAccessBitsItem as MifareClassicAccessBitsSectorTrailerDataGridModel)
 								.ProcessSectorTrailerEncoding((selectedCombinedDataBlockAccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
 								                              , (selectedCombinedDataBlockAccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
 								                              , (selectedCombinedDataBlockAccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()).SectorTrailerAccessBits;
 							RaisePropertyChanged("SectorTrailerTextBoxText");
-						}
-						else if(selectedCombinedDataBlockAccessBitsDataGridItem is MifareClassicAccessBitsLongDataBlockDataGridModel){
+						} else if (selectedCombinedDataBlockAccessBitsDataGridItem is MifareClassicAccessBitsLongDataBlockDataGridModel) {
 							(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits = (selectedSectorTrailerAccessBitsItem as MifareClassicAccessBitsSectorTrailerDataGridModel)
 								.ProcessSectorTrailerEncoding((selectedCombinedDataBlockAccessBitsDataGridItem as MifareClassicAccessBitsLongDataBlockDataGridModel).GetLongDataBlockAccessBitsFromHumanReadableFormat()
 								                              , (selectedCombinedDataBlockAccessBitsDataGridItem as MifareClassicAccessBitsLongDataBlockDataGridModel).GetLongDataBlockAccessBitsFromHumanReadableFormat()
@@ -329,15 +350,12 @@ namespace RFiDGear.ViewModel
 					}
 
 					return displaySourceForCombinedDataBlockDataGrid;
-				}
-				else
-				{
-					switch (selectionIndex) {
+				} else {
+					switch (selectedDataBlockRow) {
 
 						case 2:
-							if(selectedDataBlock0AccessBitsDataGridItem != null && selectedDataBlock1AccessBitsDataGridItem != null && selectedDataBlock2AccessBitsDataGridItem != null)
-							{
-								if(selectedDataBlock2AccessBitsDataGridItem is MifareClassicAccessBitsShortDataBlockDataGridModel)
+							if (selectedDataBlock0AccessBitsDataGridItem != null && selectedDataBlock1AccessBitsDataGridItem != null && selectedDataBlock2AccessBitsDataGridItem != null) {
+								if (selectedDataBlock2AccessBitsDataGridItem is MifareClassicAccessBitsShortDataBlockDataGridModel)
 									(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits = (selectedSectorTrailerAccessBitsItem as MifareClassicAccessBitsSectorTrailerDataGridModel)
 										.ProcessSectorTrailerEncoding((selectedDataBlock0AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
 										                              , (selectedDataBlock1AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
@@ -353,9 +371,8 @@ namespace RFiDGear.ViewModel
 							return displaySourceForCombinedDataBlockDataGrid;
 							
 						case 1:
-							if(selectedDataBlock0AccessBitsDataGridItem != null && selectedDataBlock1AccessBitsDataGridItem != null && selectedDataBlock2AccessBitsDataGridItem != null)
-							{
-								if(selectedDataBlock1AccessBitsDataGridItem is MifareClassicAccessBitsShortDataBlockDataGridModel)
+							if (selectedDataBlock0AccessBitsDataGridItem != null && selectedDataBlock1AccessBitsDataGridItem != null && selectedDataBlock2AccessBitsDataGridItem != null) {
+								if (selectedDataBlock1AccessBitsDataGridItem is MifareClassicAccessBitsShortDataBlockDataGridModel)
 									(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits = (selectedSectorTrailerAccessBitsItem as MifareClassicAccessBitsSectorTrailerDataGridModel)
 										.ProcessSectorTrailerEncoding((selectedDataBlock0AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
 										                              , (selectedDataBlock1AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
@@ -370,9 +387,8 @@ namespace RFiDGear.ViewModel
 							return displaySourceForCombinedDataBlockDataGrid;
 							
 						case 0:
-							if(selectedDataBlock0AccessBitsDataGridItem != null && selectedDataBlock1AccessBitsDataGridItem != null && selectedDataBlock2AccessBitsDataGridItem != null)
-							{
-								if(selectedDataBlock0AccessBitsDataGridItem is MifareClassicAccessBitsShortDataBlockDataGridModel)
+							if (selectedDataBlock0AccessBitsDataGridItem != null && selectedDataBlock1AccessBitsDataGridItem != null && selectedDataBlock2AccessBitsDataGridItem != null) {
+								if (selectedDataBlock0AccessBitsDataGridItem is MifareClassicAccessBitsShortDataBlockDataGridModel)
 									(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits = (selectedSectorTrailerAccessBitsItem as MifareClassicAccessBitsSectorTrailerDataGridModel)
 										.ProcessSectorTrailerEncoding((selectedDataBlock0AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
 										                              , (selectedDataBlock1AccessBitsDataGridItem as MifareClassicAccessBitsShortDataBlockDataGridModel).GetShortDataBlockAccessBitsFromHumanReadableFormat()
@@ -394,11 +410,11 @@ namespace RFiDGear.ViewModel
 		}
 		
 		public ObservableCollection<string> DataBlockSelection {
-			get { return _dataBlockIsCombinedToggleButtonIsChecked ? new ObservableCollection<string>(new string[1] {"Combined"}) : new ObservableCollection<string>(datablockSelectorSeparatedCmbbxItems); }
+			get { return _dataBlockIsCombinedToggleButtonIsChecked ? new ObservableCollection<string>(new string[1] { "Combined" }) : new ObservableCollection<string>(datablockSelectorSeparatedCmbbxItems); }
 		}
 		
 		public ObservableCollection<string> KeySelection {
-			get { return new ObservableCollection<string>(keyCmbbxItems); }
+			get { return new ObservableCollection<string>(keyIndexComboBoxItems); }
 		}
 		
 		public int KeySelectionComboboxIndex {
@@ -406,7 +422,13 @@ namespace RFiDGear.ViewModel
 				if (ViewModelContext is TreeViewChildNodeViewModel)
 					return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.mifareClassicSectorNumber;
 				else
-					return 0;
+					return selectedKeyNumber;
+			}
+			set {
+				selectedKeyNumber = value;
+				RaisePropertyChanged("KeySelectionComboboxIndex");
+				RaisePropertyChanged("selectedClassicKeyAKey");
+				RaisePropertyChanged("selectedClassicKeyBKey");
 			}
 		}
 		
@@ -420,26 +442,50 @@ namespace RFiDGear.ViewModel
 		}
 		
 		public string SectorTrailerTextBoxText {
-			get { return String.Format("{0},{1},{2}"
-			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ","").ToUpper()
-			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits
-			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ","").ToUpper());}
+			get {
+				return String.Format("{0},{1},{2}"
+			                           , (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ", "").ToUpper()
+			                           , (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits
+			                           , (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ", "").ToUpper());
+			}
 		}
 		// TODO Add Keys to KeySetup Dialog. Keys are published as follows: 1. add sector trailer to db. 2. add st to model in databasereaderwriter class
 		public string selectedClassicKeyAKey {
-			get { return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ",""); }
-			set { CustomConverter conv = new CustomConverter();
+			get {
+				if (ViewModelContext is TreeViewChildNodeViewModel)
+					return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ", "");
+				else {
+					return (ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ", "");
+				}
+			}
+			
+			set {
+				CustomConverter conv = new CustomConverter();
 				conv.classicKeyToEdit = value;
-				if(conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
-					(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey = conv.classicKeyToEdit; }
+				if (ViewModelContext is TreeViewChildNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
+					(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey = conv.classicKeyToEdit;
+				else if (ViewModelContext is TreeViewParentNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
+					(ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyAKey = conv.classicKeyToEdit;
+			}
 		}
 		
 		public string selectedClassicKeyBKey {
-			get { return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ",""); }
-			set { CustomConverter conv = new CustomConverter();
+			get {
+				if (ViewModelContext is TreeViewChildNodeViewModel)
+					return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ", "");
+				else {
+					return (ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ", "");
+				}
+			}
+			
+			set {
+				CustomConverter conv = new CustomConverter();
 				conv.classicKeyToEdit = value;
-				if(conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
-					(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey = conv.classicKeyToEdit; }
+				if (ViewModelContext is TreeViewChildNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
+					(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey = conv.classicKeyToEdit;
+				else if (ViewModelContext is TreeViewParentNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
+					(ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyBKey = conv.classicKeyToEdit;
+			}
 		}
 		
 		public MifareClassicAccessBitsSectorTrailerDataGridModel SelectedSectorTrailerAccessBitsItem {

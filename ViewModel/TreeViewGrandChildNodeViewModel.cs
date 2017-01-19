@@ -128,7 +128,7 @@ namespace RFiDGear.ViewModel
 
 		#endregion // INotifyPropertyChanged Members
 		
-		public string DataBlockDisplayItem {
+		public string GrandChildNodeDisplayItem {
 			get { return String.Format("Block: [{0}]", _dataBlock.dataBlockNumber); }
 		}
 		

@@ -5,9 +5,11 @@ namespace RFiDGear
 	/// <summary>
 	/// Description of RFiDReaderSetup.
 	/// </summary>
-	public class ReaderSetupModel : RFiDAccess
+	/// 
+	
+	public class ReaderSetupModel
 	{
-		private RFiDAccess chipReaderWriter;
+		private RFiDDevice rfidDevice;
 		
 		readonly static string[] readerProviderList = {
 			"Admitto","AxessTMC13", "Deister",
@@ -18,15 +20,14 @@ namespace RFiDGear
 		};
 		
 		public ReaderSetupModel(string readerProviderByName)
-			: base(null)
 		{
 			if ((!String.IsNullOrEmpty(new SettingsReaderWriter()._defaultReaderProvider)) && String.IsNullOrEmpty(readerProviderByName)) {
-				chipReaderWriter = new RFiDAccess(new SettingsReaderWriter()._defaultReaderProvider);
+				rfidDevice = new RFiDDevice(new SettingsReaderWriter()._defaultReaderProvider);
 			} else if (!String.IsNullOrEmpty(readerProviderByName)) {
-				chipReaderWriter = new RFiDAccess(readerProviderByName);
+				rfidDevice = new RFiDDevice(readerProviderByName);
 			}
 			else {
-				chipReaderWriter = new RFiDAccess("PCSC");
+				rfidDevice = new RFiDDevice("PCSC");
 			}
 		}
 		
@@ -44,13 +45,13 @@ namespace RFiDGear
 			}
 			set {
 				if (new SettingsReaderWriter()._defaultReaderProvider != value && value != "N/A") {
-					if (chipReaderWriter == null)
-						chipReaderWriter = new RFiDAccess(value);
+					if (rfidDevice == null)
+						rfidDevice = new RFiDDevice(value);
 					else {
-						chipReaderWriter = null;
-						chipReaderWriter = new RFiDAccess(value);
+						rfidDevice = null;
+						rfidDevice = new RFiDDevice(value);
 					}
-					new SettingsReaderWriter().saveSettings(currentReaderUnitName, value);
+					new SettingsReaderWriter().saveSettings(rfidDevice.currentReaderUnitName, value);
 				}
 			}
 		}
@@ -58,24 +59,26 @@ namespace RFiDGear
 		public string GetChipUID {
 			get {
 
-				if (!chipReaderWriter.readChipPublic() && !String.IsNullOrEmpty(chipReaderWriter.currentChipUID))
-					return chipReaderWriter.currentChipUID;
+				if (!rfidDevice.IsChipPresent && !String.IsNullOrEmpty(rfidDevice.currentChipUID))
+					return rfidDevice.currentChipUID;
 				return null;
 			}
 		}
 		
 		public string GetChipType {
 			get {
-				if (!chipReaderWriter.readChipPublic() && !String.IsNullOrEmpty(chipReaderWriter.currentChipType))
-					return chipReaderWriter.currentChipType;
+				if (!rfidDevice.IsChipPresent && !String.IsNullOrEmpty(rfidDevice.currentChipType))
+					return rfidDevice.currentChipType;
 				return null;
 			}
 		}
 		
 		public string GetReaderName {
 			get {
-				chipReaderWriter.readChipPublic();
-				return chipReaderWriter.currentReaderUnitName ?? "not connected";
+				if(rfidDevice.IsChipPresent)
+					return rfidDevice.currentReaderUnitName;
+				else
+					return "not connected";
 			}
 		}
 	}

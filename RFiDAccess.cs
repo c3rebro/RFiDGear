@@ -40,65 +40,52 @@ namespace RFiDGear
 
 	;
 	
-	public class RFiDAccess
+	public class RFiDDevice
 	{
 		// global (cross-class) Instances go here ->
-		IReaderProvider readerProvider;
-		IReaderUnit readerUnit;
-		chip card;
-		List<object> readerList;
+		private IReaderProvider readerProvider;
+		private IReaderUnit readerUnit;
+		private chip card;
 		
-		string readerProviderName;
-		string readerUnitName;
-		string readerSerialNumber;
-		string chipType;
-		string chipUID;
+		private string readerProviderName;
+		private string readerUnitName;
+		private string readerSerialNumber;
+		private string chipType;
+		private string chipUID;
 		
-		string classicCardKeyA;
-		string classicCardKeyB;
+		private string classicCardKeyA;
+		private string classicCardKeyB;
 		
-		byte[] cardDataBlock;
-		byte[][] cardDataSector;
-		bool[] blockAuthSuccessful;
-		bool[] blockReadSuccessful;
-		bool sectorIsAuth;
-		bool sectorCanRead;
+		private byte[] cardDataBlock;
+		private byte[][] cardDataSector;
+		private bool[] blockAuthSuccessful;
+		private bool[] blockReadSuccessful;
+		private bool sectorIsAuth;
+		private bool sectorCanRead;
 		
-		int blockCounter = 0;
+		private int blockCounter = 0;
 		
-		byte[] desFireFileData;
+		private byte[] desFireFileData;
 
-		UInt32[] appIDs;
+		private UInt32[] appIDs;
 		
-		public RFiDAccess(string _readerProviderName)
+		public RFiDDevice(string _readerProviderName)
 		{
 			readerProviderName = _readerProviderName;
 		}
 		
-		//********************************************************
-		//Function Name:
-		//Input(Parameter) :-------
-		//OutPutParameter:-------
-		//Description:
-		//********************************************************
-		public void authToMifareDesfireCard()
+		private void authToMifareDesfireCard()
 		{
 			CustomConverter converter = new CustomConverter();
 			
 		}
 		
-		public void setCurrentReaderProvider(IReaderProvider readerProvider)
+		private void setCurrentReaderProvider(IReaderProvider readerProvider)
 		{
 			readChipPublic();
 		}
 		
-		//********************************************************
-		//Function Name: readChip
-		//Input Parameter:-------
-		//OutPutParameter:-------
-		//Description:Perform action after time interval passed
-		//********************************************************
-		public bool readChipPublic()
+		private bool readChipPublic()
 		{
 			try {
 				readerProvider = new LibraryManagerClass().GetReaderProvider(readerProviderName);
@@ -136,12 +123,6 @@ namespace RFiDGear
 			return false;
 		}
 
-		//********************************************************
-		//Function Name: readChip
-		//Input Parameter:-------
-		//OutPutParameter:-------
-		//Description:Perform action after time interval passed
-		//********************************************************
 		public bool readMiFareClassicSingleSector(int sectorNumber,int keyNumber)
 		{
 			SettingsReaderWriter settings = new SettingsReaderWriter();
@@ -344,50 +325,66 @@ namespace RFiDGear
 				throw new Exception("Uuups");
 			}
 			return true;
-		}		
+		}
 		
-		public bool getMiFareDESFireChipAppIDs()
+		private bool getMiFareDESFireChipAppIDs()
 		{
-			
-			// The excepted memory tree
-			IDESFireLocation location = new DESFireLocation();
-			// File communication requires encryption
-			location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
-			
-			
-			IDESFireEV1Commands cmd;
-			// Keys to use for authentication
-			IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
-			aiToUse.MasterCardKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
+			try {
+				readerProvider = new LibraryManagerClass().GetReaderProvider(readerProviderName);
+				readerUnit = readerProvider.CreateReaderUnit();
+				
+				// The excepted memory tree
+				IDESFireLocation location = new DESFireLocation();
+				// File communication requires encryption
+				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				
+				
+				IDESFireEV1Commands cmd;
+				// Keys to use for authentication
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				aiToUse.MasterCardKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
 
-			CustomConverter converter = new CustomConverter();
-			
-			if (readerUnit.ConnectToReader()) {
-				if (readerUnit.WaitInsertion(100)) {
-					if (readerUnit.Connect()) {
-						
-						if (card.Type == "DESFireEV1") {
-							cmd = card.Commands as IDESFireEV1Commands;
+				CustomConverter converter = new CustomConverter();
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(100)) {
+						if (readerUnit.Connect()) {
 							
-							object appIDsObject = cmd.GetApplicationIDs();
-							appIDs = (appIDsObject as UInt32[]);
+							readerUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.Type == "DESFireEV1") {
+								cmd = card.Commands as IDESFireEV1Commands;
+								
+								object appIDsObject = cmd.GetApplicationIDs();
+								appIDs = (appIDsObject as UInt32[]);
+								
+							}
+							if (card.Type == "DESFireEV2") {
+								
+							}
+							
+							readerUnit.Disconnect();
+							readerUnit.DisconnectFromReader();
+							readerProvider.ReleaseInstance();
+							return false;
 						}
-						if (card.Type == "DESFireEV2") {
-							
-						}
-						
-						readerUnit.Disconnect();
-						readerUnit.DisconnectFromReader();
-						return false;
 					}
+					readerUnit.DisconnectFromReader();
 				}
-				readerUnit.DisconnectFromReader();
+				readerProvider.ReleaseInstance();
+				return true;
+			}
+
+			catch (Exception e){
+				
 			}
 			return true;
 		}
 		
-		public bool readMiFareDESFireChipFile(int fileNo, int appid)
+		private bool readMiFareDESFireChipFile(int fileNo, int appid)
 		{
 			
 			// The excepted memory tree
@@ -462,7 +459,7 @@ namespace RFiDGear
 			return true;
 		}
 		
-		public bool writeMiFareDESFireChipFile(int fileNo, int appid)
+		private bool writeMiFareDESFireChipFile(int fileNo, int appid)
 		{
 			
 			// The excepted memory tree
@@ -542,7 +539,7 @@ namespace RFiDGear
 			return true;
 		}
 		
-		public bool authToMifareDesfireMasterApplication(string cardMasterKey, DESFireKeyType keyType)
+		private bool authToMifareDesfireMasterApplication(string cardMasterKey, DESFireKeyType keyType)
 		{
 			
 			// The excepted memory tree
@@ -585,12 +582,6 @@ namespace RFiDGear
 			return true;
 		}
 		
-		//********************************************************
-		//Function Name: writeChip
-		//Input Parameter:-------
-		//OutPutParameter:-------
-		//Description:Perform action after time interval passed
-		//********************************************************
 		/*
  		public bool writeChipData()
 		{
@@ -666,6 +657,10 @@ namespace RFiDGear
 		 */
 		
 		#region properties
+		public bool IsChipPresent {
+			get { return readChipPublic(); }
+		}
+		
 		public string currentReaderUnitName {
 			get { return readerUnitName; }
 		}
@@ -704,23 +699,23 @@ namespace RFiDGear
 			get { return blockReadSuccessful; }
 		}
 		
-		public bool[] dataBlockSuccesfullyAuth {
+		public bool[] DataBlockSuccesfullyAuth {
 			get{ return blockAuthSuccessful; }
 		}
 		
-		public bool? sectorSuccessfullyRead {
+		public bool? SectorSuccessfullyRead {
 			get { return sectorCanRead; }
 		}
 		
-		public bool? sectorSuccesfullyAuth {
+		public bool? SectorSuccesfullyAuth {
 			get{ return sectorIsAuth; }
 		}
 		
-		public UInt32[] getAppIDs {
-			get{ return appIDs; }
+		public UInt32[] GetAppIDList {
+			get{ return !getMiFareDESFireChipAppIDs() ? appIDs : null; }
 		}
 		
-		public byte[] getDESFireFileData {
+		public byte[] GetDESFireFileData {
 			get { return desFireFileData; }
 		}
 		#endregion

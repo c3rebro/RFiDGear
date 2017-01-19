@@ -7,11 +7,11 @@ namespace RFiDGear.Model
 	/// </summary>
 	public class MifareDesfireAppIdTreeViewModel
 	{
-		public string[] appIDs { get; set; }
+		public string appID { get; set; }
 		
-		public MifareDesfireAppIdTreeViewModel(string[] _appIDs)
+		public MifareDesfireAppIdTreeViewModel(string _appID)
 		{
-			appIDs = _appIDs;
+			appID = _appID;
 		}
 	}
 }

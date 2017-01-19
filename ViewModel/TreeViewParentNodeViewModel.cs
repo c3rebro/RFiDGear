@@ -33,7 +33,7 @@ namespace RFiDGear.ViewModel
 		readonly List<MenuItem> ContextMenuItems;
 		readonly RelayCommand _cmdReadAllSectorsWithDefaultKeys;
 		readonly RelayCommand _cmdDeleteThisNode;
-		readonly RelayCommand _cmdEditAuthInfoAndReadAllSectors;
+		readonly RelayCommand _cmdEditDefaultKeys;
 		readonly string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 		
 		public TreeViewParentNodeViewModel(MifareClassicUidTreeViewModel uidModel, CARD_TYPE cardType)
@@ -43,7 +43,7 @@ namespace RFiDGear.ViewModel
 			
 			_cmdReadAllSectorsWithDefaultKeys = new ViewModel.RelayCommand(ReadSectorsWithDefaultConfig);
 			_cmdDeleteThisNode = new ViewModel.RelayCommand(DeleteMeCommand);
-			_cmdEditAuthInfoAndReadAllSectors = new RelayCommand(EditAuthInfoAndReadAllSectors);
+			_cmdEditDefaultKeys = new RelayCommand(EditDefaultKeys);
 			
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
@@ -52,18 +52,18 @@ namespace RFiDGear.ViewModel
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Read Card with custom Keys...",
-			                     	Command = _cmdEditAuthInfoAndReadAllSectors
+			                     	Header = "Edit default Keys...",
+			                     	Command = _cmdEditDefaultKeys
 			                     });
 
 			ContextMenuItems.Add(new MenuItem() {
 			                     	Header = "Format Card...",
-			                     	Command = _cmdEditAuthInfoAndReadAllSectors
+			                     	Command = _cmdEditDefaultKeys
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
 			                     	Header = "Read Card and Dump to File...",
-			                     	Command = _cmdEditAuthInfoAndReadAllSectors
+			                     	Command = _cmdEditDefaultKeys
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
@@ -81,12 +81,13 @@ namespace RFiDGear.ViewModel
 			mifareDesfireUidModel = uid;
 			_cardType = cardType;
 			
-			RelayCommand _cmd = new RelayCommand(EditAuthInfoAndReadAllSectors);
+			RelayCommand _cmd = new RelayCommand(EditDefaultKeys);
+			RelayCommand _cmdReadAppIds = new RelayCommand(ReadAppIDs);
 			
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
 			                     	Header = "Read Application IDs",
-			                     	Command = _cmd
+			                     	Command = _cmdReadAppIds
 			                     });
 
 			ContextMenuItems.Add(new MenuItem() {
@@ -101,22 +102,28 @@ namespace RFiDGear.ViewModel
 			
 			_children = new ObservableCollection<TreeViewChildNodeViewModel>();
 			
-			LoadChildren();
+			_children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppIdTreeViewModel("[0] (Master App)"),this, _cardType));
 		}
 		
-		void ReadSectorsWithDefaultConfig() {
+		private void ReadSectorsWithDefaultConfig() {
 			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewParentNode", "ReadAllSectors")
+				new NotificationMessage<string>(this, "TreeViewParentNodes", "ReadAllSectors")
 			);
 		}
 
-		void EditAuthInfoAndReadAllSectors() {
+		private void EditDefaultKeys() {
 			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewParentNode", "EditAuthInfoAndReadAllSectors")
+				new NotificationMessage<string>(this, "TreeViewParentNodes", "EditDefaultKeys")
 			);
 		}
 		
-		void DeleteMeCommand() {
+		private void ReadAppIDs() {
+			Messenger.Default.Send<NotificationMessage<string>>(
+				new NotificationMessage<string>(this, "TreeViewParentNodes", "ReadAppIDs")
+			);
+		}
+		
+		private void DeleteMeCommand() {
 			Messenger.Default.Send<NotificationMessage<string>>(
 				new NotificationMessage<string>(this, mifareClassicUidModel.UidNumber, "DeleteMe")
 			);
@@ -212,7 +219,7 @@ namespace RFiDGear.ViewModel
 			get { if(mifareClassicUidModel != null)
 					return String.Format("[{0} Type: {1}]", mifareClassicUidModel.UidNumber, _constCardType[(int)_cardType]);
 				else
-					return String.Format("[{0} Type: {1}]",mifareDesfireUidModel.uidNumber, _constCardType[(int)_cardType]);
+					return String.Format("[{0} Type: {1}]", mifareDesfireUidModel.uidNumber, _constCardType[(int)_cardType]);
 			}
 		}
 		
@@ -261,7 +268,7 @@ namespace RFiDGear.ViewModel
 					
 				case CARD_TYPE.CT_DESFIRE_EV1:
 					{
-						_children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppIdTreeViewModel(new string[1] {"00001"}),this, _cardType));
+						_children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppIdTreeViewModel("00001"),this, _cardType));
 					}
 					break;
 			}
