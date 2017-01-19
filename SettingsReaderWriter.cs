@@ -39,15 +39,17 @@ namespace RFiDGear
 		public string _defaultReader { get; set; }
 		public string _defaultReaderProvider { get; set; }
 		public string _defaultLanguage { get; set; }
-		string _oldReader;
-		string _oldReaderProvider;
-		string _oldDesfireCardCardMasterKey;
-		string _oldDesfireCardApplicationMasterKey;
-		string _oldDesfireCardReadKey;
-		string _oldDesfireCardWriteKey;
-		string _oldKeyA;
-		string _oldKeyB;
-		string _oldLanguage;
+		
+		private string _oldReader;
+		private string _oldReaderProvider;
+		private string _oldDesfireCardCardMasterKey;
+		private string _oldDesfireCardApplicationMasterKey;
+		private string _oldDesfireCardReadKey;
+		private string _oldDesfireCardWriteKey;
+		private string _oldKeyA;
+		private string _oldKeyB;
+		private string _oldLanguage;
+		private string appDataPath;
 		bool _loadKeysAuto = false;
 		bool _oldLoadKeysAuto;
 
@@ -60,6 +62,13 @@ namespace RFiDGear
 		public SettingsReaderWriter()
 		{
 			converter = new CustomConverter();
+			
+			appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RFiDGear");
+
+			// Check if folder exists and if not, create it
+			if(!Directory.Exists(appDataPath))
+				Directory.CreateDirectory(appDataPath);
+			
 			this.readSettings();
 		}
 		#endregion
@@ -70,7 +79,7 @@ namespace RFiDGear
 			try {
 				
 				XmlDocument doc = new XmlDocument();
-				doc.Load(settingsFileName);
+				doc.Load(Path.Combine(appDataPath,settingsFileName));
 				
 				if (doc.SelectSingleNode("//defaultClassicCardKeys") == null) {
 					XmlElement classicCardKey = doc.CreateElement("defaultClassicCardKeys");
@@ -83,7 +92,7 @@ namespace RFiDGear
 						classicCardKey.Attributes.Append(classicCardKeyBKeyID);
 					}
 					doc.DocumentElement.AppendChild(classicCardKey);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				if (doc.SelectSingleNode("//defaultReader") == null) {
@@ -94,7 +103,7 @@ namespace RFiDGear
 					defaultReader.Attributes.Append(defaultReaderID);
 					defaultReader.Attributes.Append(defaultReaderProvider);
 					doc.DocumentElement.AppendChild(defaultReader);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				if (doc.SelectSingleNode("//defaultLanguage") == null) {
@@ -103,7 +112,7 @@ namespace RFiDGear
 					defaultLanguageID.Value = _constDefaultLanguage;
 					defaultLanguage.Attributes.Append(defaultLanguageID);
 					doc.DocumentElement.AppendChild(defaultLanguage);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				if (doc.SelectSingleNode("//autoLoadKeys") == null) {
@@ -112,7 +121,7 @@ namespace RFiDGear
 					autoLoadKeysID.Value = Convert.ToString(_loadKeysAuto);
 					autoLoadKeys.Attributes.Append(autoLoadKeysID);
 					doc.DocumentElement.AppendChild(autoLoadKeys);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 
 				if (doc.SelectSingleNode("//defaultDesfireKeys") == null) {
@@ -156,7 +165,7 @@ namespace RFiDGear
 					defaultDesfireKeys.Attributes.Append(desFireCardWriteKeyTypeKeyID);
 					
 					doc.DocumentElement.AppendChild(defaultDesfireKeys);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				XmlNode node = doc.SelectSingleNode("//defaultClassicCardKeys");
@@ -171,7 +180,7 @@ namespace RFiDGear
 							if (_oldKeyA != _defaultClassicCardKeysAKeys[i]) {
 								node.Attributes[string.Format("keyA{0:d2}", i)].Value = _defaultClassicCardKeysAKeys[i];
 
-								doc.Save(settingsFileName);
+								doc.Save(Path.Combine(appDataPath,settingsFileName));
 							}
 						}
 						
@@ -179,7 +188,7 @@ namespace RFiDGear
 							if (_oldKeyB != _defaultClassicCardKeysBKeys[i]) {
 								node.Attributes[string.Format("keyB{0:d2}", i)].Value = _defaultClassicCardKeysBKeys[i];
 
-								doc.Save(settingsFileName);
+								doc.Save(Path.Combine(appDataPath,settingsFileName));
 							}
 						}
 					}
@@ -193,7 +202,7 @@ namespace RFiDGear
 					node.Attributes["readerName"].Value = _oldReader;
 					node.Attributes["readerProvider"].Value = _oldReaderProvider;
 
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				node = doc.SelectSingleNode("//defaultLanguage");
@@ -202,7 +211,7 @@ namespace RFiDGear
 					
 					node.Attributes["lang"].Value = _oldLanguage;
 
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				node = doc.SelectSingleNode("//autoLoadKeys");
@@ -211,11 +220,11 @@ namespace RFiDGear
 					
 					node.Attributes["auto"].Value = Convert.ToString(_loadKeysAuto);
 
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 			} catch (XmlException e) {
-				MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", settingsFileName, e), "Fehler",
+				MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", Path.Combine(appDataPath,settingsFileName), e), "Fehler",
 				                MessageBoxButton.OK, MessageBoxImage.Error);
 				Environment.Exit(0);
 			}
@@ -227,7 +236,7 @@ namespace RFiDGear
 			try {
 				
 				XmlDocument doc = new XmlDocument();
-				doc.Load(settingsFileName);
+				doc.Load(Path.Combine(appDataPath,Path.Combine(appDataPath,settingsFileName)));
 				
 				if (doc.SelectSingleNode("//defaultClassicCardKeys") == null) {
 					XmlElement defaultClassicCardKey = doc.CreateElement("defaultClassicCardKeys");
@@ -240,7 +249,7 @@ namespace RFiDGear
 						defaultClassicCardKey.Attributes.Append(classicCardKeyBKeyID);
 					}
 					doc.DocumentElement.AppendChild(defaultClassicCardKey);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				if (doc.SelectSingleNode("//defaultReader") == null) {
@@ -251,7 +260,7 @@ namespace RFiDGear
 					defaultReader.Attributes.Append(defaultReaderID);
 					defaultReader.Attributes.Append(defaultReaderProvider);
 					doc.DocumentElement.AppendChild(defaultReader);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				if (doc.SelectSingleNode("//defaultLanguage") == null) {
@@ -260,7 +269,7 @@ namespace RFiDGear
 					defaultLanguageID.Value = _constDefaultLanguage;
 					defaultLanguage.Attributes.Append(defaultLanguageID);
 					doc.DocumentElement.AppendChild(defaultLanguage);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				if (doc.SelectSingleNode("//autoLoadKeys") == null) {
@@ -269,7 +278,7 @@ namespace RFiDGear
 					autoLoadKeysID.Value = Convert.ToString(_loadKeysAuto);
 					autoLoadKeys.Attributes.Append(autoLoadKeysID);
 					doc.DocumentElement.AppendChild(autoLoadKeys);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				if (doc.SelectSingleNode("//defaultDesfireKeys") == null) {
@@ -313,7 +322,7 @@ namespace RFiDGear
 					defaultDesfireKeys.Attributes.Append(desFireCardWriteKeyTypeKeyID);
 					
 					doc.DocumentElement.AppendChild(defaultDesfireKeys);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				XmlNode node = doc.SelectSingleNode("//defaultClassicCardKeys");
@@ -327,7 +336,7 @@ namespace RFiDGear
 							if (_oldKeyA != aKeys[i]) {
 								node.Attributes[string.Format("keyA{0:d2}", i)].Value = aKeys[i];
 
-								doc.Save(settingsFileName);
+								doc.Save(Path.Combine(appDataPath,settingsFileName));
 							}
 						}
 						
@@ -335,7 +344,7 @@ namespace RFiDGear
 							if (_oldKeyB != bKeys[i]) {
 								node.Attributes[string.Format("keyB{0:d2}", i)].Value = bKeys[i];
 
-								doc.Save(settingsFileName);
+								doc.Save(Path.Combine(appDataPath,settingsFileName));
 							}
 						}
 					}
@@ -349,7 +358,7 @@ namespace RFiDGear
 					node.Attributes["readerName"].Value = _oldReader;
 					node.Attributes["readerProvider"].Value = _oldReaderProvider;
 
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				node = doc.SelectSingleNode("//defaultLanguage");
@@ -358,7 +367,7 @@ namespace RFiDGear
 					
 					node.Attributes["lang"].Value = language;
 
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				node = doc.SelectSingleNode("//autoLoadKeys");
@@ -367,11 +376,11 @@ namespace RFiDGear
 					
 					node.Attributes["auto"].Value = Convert.ToString(_loadKeysAuto);
 
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 			} catch (XmlException e) {
-				MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", settingsFileName, e), "Fehler",
+				MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", Path.Combine(appDataPath,settingsFileName), e), "Fehler",
 				                MessageBoxButton.OK, MessageBoxImage.Error);
 				Environment.Exit(0);
 			}
@@ -384,7 +393,7 @@ namespace RFiDGear
 				
 				XmlDocument doc = new XmlDocument();
 				XmlNode node = doc.SelectSingleNode("//defaultClassicCardKeys");
-				doc.Load(settingsFileName);
+				doc.Load(Path.Combine(appDataPath,settingsFileName));
 				
 				if (doc.SelectSingleNode("//defaultClassicCardKeys") == null) {
 					XmlElement classicCardKey = doc.CreateElement("defaultClassicCardKeys");
@@ -397,7 +406,7 @@ namespace RFiDGear
 						classicCardKey.Attributes.Append(classicCardKeyBKeyID);
 					}
 					doc.DocumentElement.AppendChild(classicCardKey);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				if (doc.SelectSingleNode("//defaultLanguage") == null) {
@@ -406,7 +415,7 @@ namespace RFiDGear
 					defaultLanguageID.Value = _constDefaultLanguage;
 					defaultLanguage.Attributes.Append(defaultLanguageID);
 					doc.DocumentElement.AppendChild(defaultLanguage);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				node = doc.SelectSingleNode("//defaultLanguage");
@@ -415,11 +424,11 @@ namespace RFiDGear
 					
 					node.Attributes["lang"].Value = language;
 
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 			} catch (XmlException e) {
-				MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", settingsFileName, e), "Fehler",
+				MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", Path.Combine(appDataPath,settingsFileName), e), "Fehler",
 				                MessageBoxButton.OK, MessageBoxImage.Error);
 				Environment.Exit(0);
 			}
@@ -431,7 +440,7 @@ namespace RFiDGear
 			try {
 				
 				XmlDocument doc = new XmlDocument();
-				doc.Load(settingsFileName);
+				doc.Load(Path.Combine(appDataPath,settingsFileName));
 				
 				if (doc.SelectSingleNode("//defaultReader") == null) {
 					XmlElement defaultReader = doc.CreateElement("defaultReader");
@@ -441,7 +450,7 @@ namespace RFiDGear
 					defaultReader.Attributes.Append(defaultReaderID);
 					defaultReader.Attributes.Append(defaultReaderProvider);
 					doc.DocumentElement.AppendChild(defaultReader);
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 				XmlNode node = doc.SelectSingleNode("//defaultReader");
@@ -452,20 +461,20 @@ namespace RFiDGear
 					node.Attributes["readerName"].Value = readerName;
 					node.Attributes["readerProvider"].Value = readerProviderByName;
 
-					doc.Save(settingsFileName);
+					doc.Save(Path.Combine(appDataPath,settingsFileName));
 				}
 				
 			} catch (XmlException e) {
-				MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", settingsFileName, e), "Fehler",
+				MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", Path.Combine(appDataPath,settingsFileName), e), "Fehler",
 				                MessageBoxButton.OK, MessageBoxImage.Error);
 				Environment.Exit(0);
 			}
 		}
-			
+		
 		public void readSettings()
 		{
-			if (!File.Exists(settingsFileName)) {
-				XmlWriter writer = XmlWriter.Create(@settingsFileName);
+			if (!File.Exists(Path.Combine(appDataPath,settingsFileName))) {
+				XmlWriter writer = XmlWriter.Create(Path.Combine(appDataPath,settingsFileName));
 				writer.WriteStartDocument();
 				writer.WriteStartElement("RFIDGearSettings");
 				
@@ -474,10 +483,10 @@ namespace RFiDGear
 				
 				saveSettings();
 				
-			} else if (File.Exists(settingsFileName)) {
+			} else if (File.Exists(Path.Combine(appDataPath,settingsFileName))) {
 				
 				XmlDocument doc = new XmlDocument();
-				doc.Load(@settingsFileName);
+				doc.Load(Path.Combine(appDataPath,settingsFileName));
 				
 				try {
 					XmlNode node = doc.SelectSingleNode("//defaultClassicCardKeys");
@@ -517,7 +526,7 @@ namespace RFiDGear
 					
 					
 				} catch (XmlException e) {
-					MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", settingsFileName, e), "Fehler",
+					MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", Path.Combine(appDataPath,settingsFileName), e), "Fehler",
 					                MessageBoxButton.OK, MessageBoxImage.Error);
 					Environment.Exit(0);
 				}

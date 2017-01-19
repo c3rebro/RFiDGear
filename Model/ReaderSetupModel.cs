@@ -25,6 +25,9 @@ namespace RFiDGear
 			} else if (!String.IsNullOrEmpty(readerProviderByName)) {
 				chipReaderWriter = new RFiDAccess(readerProviderByName);
 			}
+			else {
+				chipReaderWriter = new RFiDAccess("PCSC");
+			}
 		}
 		
 		public string[] ReaderList {

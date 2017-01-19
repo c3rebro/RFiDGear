@@ -277,7 +277,7 @@
 			</TabItem>
 			<TabItem
 				Header="Mifare Classic Access Bits"
-				IsEnabled="{Binding IsClassicAuthInfoEnabled}">
+				IsEnabled="{Binding IsAccessBitsEditTabEnabled}">
 				<Grid
 					Grid.Column="0"
 					Grid.Row="0"

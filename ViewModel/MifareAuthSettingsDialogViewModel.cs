@@ -47,6 +47,7 @@ namespace RFiDGear.ViewModel
 		private int selectionIndex;
 		
 		private bool isClassicAuthInfo = true;
+		private bool isAccessBitsEnabled = false;
 		
 		private readonly ObservableCollection<MifareClassicAccessBitsSectorTrailerDataGridModel> displaySourceForSectorTrailerDataGrid;
 		private readonly ObservableCollection<MifareClassicAccessBitsLongDataBlockDataGridModel> displaySourceForLongDataBlockDataGrid;
@@ -281,6 +282,11 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		
+		public bool IsAccessBitsEditTabEnabled {
+			get { return isAccessBitsEnabled; }
+			set { isAccessBitsEnabled = value; RaisePropertyChanged("IsAccessBitsEditTabEnabled"); }
+		}
+		
 		private bool _dataBlockIsCombinedToggleButtonIsChecked;
 		public bool DataBlockIsCombinedToggleButtonIsChecked{
 			get { return _dataBlockIsCombinedToggleButtonIsChecked; }
@@ -415,9 +421,9 @@ namespace RFiDGear.ViewModel
 		
 		public string SectorTrailerTextBoxText {
 			get { return String.Format("{0},{1},{2}"
-			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ","")
+			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ","").ToUpper()
 			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits
-			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ",""));}
+			                           ,(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ","").ToUpper());}
 		}
 		// TODO Add Keys to KeySetup Dialog. Keys are published as follows: 1. add sector trailer to db. 2. add st to model in databasereaderwriter class
 		public string selectedClassicKeyAKey {

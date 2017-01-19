@@ -31,6 +31,7 @@ namespace RFiDGear.ViewModel
 		public MifareClassicSectorTreeViewModel _sectorModel { get; set; }
 		private readonly MifareDesfireAppIdTreeViewModel _appID;
 		private readonly CARD_TYPE _cardType;
+		private readonly RelayCommand _cmdEditAccessBits;
 		private readonly RelayCommand _cmdReadSectorWithDefaults;
 		private readonly RelayCommand _cmdEditAuthAndModifySector;
 		
@@ -48,7 +49,8 @@ namespace RFiDGear.ViewModel
 			_parent = parent;
 			
 			_cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
-			_cmdEditAuthAndModifySector = new RelayCommand(EditAuthAndModifySector);
+			_cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithSpecificKey);
+			_cmdEditAccessBits = new RelayCommand(EditAccessBits);
 			
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
@@ -73,7 +75,7 @@ namespace RFiDGear.ViewModel
 			
 			ContextMenuItems.Add(new MenuItem() {
 			                     	Header = "Modify Sector Access Rights...",
-			                     	Command = _cmdEditAuthAndModifySector
+			                     	Command = _cmdEditAccessBits
 			                     });
 			
 			_children = new ObservableCollection<TreeViewGrandChildNodeViewModel>();
@@ -88,7 +90,7 @@ namespace RFiDGear.ViewModel
 			_parentUid = parentUID.UidNumber;
 			
 			_cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
-			_cmdEditAuthAndModifySector = new RelayCommand(EditAuthAndModifySector);
+			_cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithSpecificKey);
 			
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
@@ -205,9 +207,15 @@ namespace RFiDGear.ViewModel
 			);
 		}
 
-		public void EditAuthAndModifySector() {
+		public void ReadSectorWithSpecificKey() {
 			Messenger.Default.Send<NotificationMessage<string>>(
 				new NotificationMessage<string>(this, "TreeViewChildNode", "EditAuthAndModifySector")
+			);
+		}
+		
+		public void EditAccessBits() {
+			Messenger.Default.Send<NotificationMessage<string>>(
+				new NotificationMessage<string>(this, "TreeViewChildNode", "EditAccessBits")
 			);
 		}
 		
