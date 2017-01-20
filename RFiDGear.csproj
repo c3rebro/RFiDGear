@@ -73,12 +73,6 @@
     <Reference Include="PresentationFramework">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
     </Reference>
-    <Reference Include="RedCell.Diagnostics.Update">
-      <HintPath>lib\RedCell.Diagnostics.Update.dll</HintPath>
-    </Reference>
-    <Reference Include="RedCell.Net">
-      <HintPath>lib\RedCell.Net.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -134,6 +128,12 @@
     <Compile Include="DatabaseReaderWriter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\WPFAssemblyInfo.cs" />
+    <Compile Include="RedCell\RedCell.Diagnostics.Update\Log.cs" />
+    <Compile Include="RedCell\RedCell.Diagnostics.Update\LogEventArgs.cs" />
+    <Compile Include="RedCell\RedCell.Diagnostics.Update\Manifest.cs" />
+    <Compile Include="RedCell\RedCell.Diagnostics.Update\Updater.cs" />
+    <Compile Include="RedCell\RedCell.Net\Fetch.cs" />
+    <Compile Include="RedCell\RedCell.Net\FetchStream.cs" />
     <Compile Include="RelayCommand.cs" />
     <Compile Include="ResourceLoader.cs" />
     <Compile Include="RFiDAccess.cs" />
@@ -173,6 +173,7 @@
     <None Include="docs\images\image003.jpg" />
     <None Include="packages.config" />
     <None Include="README.md" />
+    <None Include="RedCell\RedCell.Diagnostics.Update\Update.cd" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="MainWindow.xaml" />
@@ -188,7 +189,10 @@
     <Folder Include="MVVMDialogs\Presenters" />
     <Folder Include="MVVMDialogs\ViewModels" />
     <Folder Include="docs" />
+    <Folder Include="RedCell" />
     <Folder Include="Presenters" />
+    <Folder Include="RedCell\RedCell.Diagnostics.Update" />
+    <Folder Include="RedCell\RedCell.Net" />
     <Folder Include="Resources" />
     <Folder Include="View" />
     <Folder Include="ViewModel" />

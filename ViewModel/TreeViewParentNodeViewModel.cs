@@ -83,6 +83,7 @@ namespace RFiDGear.ViewModel
 			
 			RelayCommand _cmd = new RelayCommand(EditDefaultKeys);
 			RelayCommand _cmdReadAppIds = new RelayCommand(ReadAppIDs);
+			RelayCommand _cmdCreateApp = new RelayCommand(CreateApp);
 			
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
@@ -92,7 +93,7 @@ namespace RFiDGear.ViewModel
 
 			ContextMenuItems.Add(new MenuItem() {
 			                     	Header = "Create a new Application...",
-			                     	Command = _cmd
+			                     	Command = _cmdCreateApp
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
@@ -120,6 +121,12 @@ namespace RFiDGear.ViewModel
 		private void ReadAppIDs() {
 			Messenger.Default.Send<NotificationMessage<string>>(
 				new NotificationMessage<string>(this, "TreeViewParentNodes", "ReadAppIDs")
+			);
+		}
+		
+		private void CreateApp() {
+			Messenger.Default.Send<NotificationMessage<string>>(
+				new NotificationMessage<string>(this, "TreeViewParentNodes", "CreateAppID")
 			);
 		}
 		

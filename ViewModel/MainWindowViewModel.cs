@@ -60,6 +60,9 @@ namespace RFiDGear.ViewModel
 								case "ReadAppIDs":
 									ReadAppIDs((TreeViewParentNodeViewModel)nm.Sender, nm.Notification);
 									break;
+								case "CreateAppID":
+									CreateApp((TreeViewParentNodeViewModel)nm.Sender, nm.Notification);
+									break;
 							}
 							break;
 							
@@ -81,7 +84,6 @@ namespace RFiDGear.ViewModel
 			
 			//Messenger.Default.Register<TreeViewChildNodeViewModel>(this, NewSectorTrailerEditDialog);
 			Messenger.Default.Register<TreeViewGrandChildNodeViewModel>(this, ShowDataBlockInDataGrid);
-			
 			//any dialog boxes added in the constructor won't appear until DialogBehavior.DialogViewModels gets bound to the Dialogs collection.
 		}
 		
@@ -94,6 +96,9 @@ namespace RFiDGear.ViewModel
 
 		}
 		
+		private void CreateApp(TreeViewParentNodeViewModel selectedPNVM, string content) {
+			
+		}
 		#endregion
 		
 		#region MifareClassic Communication
