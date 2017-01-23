@@ -17,55 +17,9 @@ namespace RFiDGear.ViewModel
 	public class MifareAuthSettingsDialogViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		private DatabaseReaderWriter databaseReaderWriter;
-		
-		
-		private readonly string[] datablockSelectorSeparatedCmbbxItems = {
-			"DataBlock 0",
-			"DataBlock 1",
-			"DataBlock 2",
-		};
-		
-		private readonly string[] keyIndexComboBoxItems = {
-			"No. 00",
-			"No. 01",
-			"No. 02",
-			"No. 03",
-			"No. 04",
-			"No. 05",
-			"No. 06",
-			"No. 07",
-			"No. 08",
-			"No. 09",
-			"No. 10",
-			"No. 11",
-			"No. 12",
-			"No. 13",
-			"No. 14",
-			"No. 15",
-			"No. 16",
-			"No. 17",
-			"No. 18",
-			"No. 19",
-			"No. 20",
-			"No. 21",
-			"No. 22",
-			"No. 23",
-			"No. 24",
-			"No. 25",
-			"No. 26",
-			"No. 27",
-			"No. 28",
-			"No. 29",
-			"No. 30",
-			"No. 31"
-		};
-		
+
 		private int selectedDataBlockRow;
-		private int selectedKeyNumber;
-		
-		private bool isClassicAuthInfo = true;
-		private bool isAccessBitsEnabled = false;
-		
+
 		private readonly ObservableCollection<MifareClassicAccessBitsSectorTrailerDataGridModel> displaySourceForSectorTrailerDataGrid;
 		private readonly ObservableCollection<MifareClassicAccessBitsLongDataBlockDataGridModel> displaySourceForLongDataBlockDataGrid;
 		private readonly ObservableCollection<MifareClassicAccessBitsShortDataBlockDataGridModel> displaySourceForShortDataBlockDataGrid;
@@ -80,6 +34,8 @@ namespace RFiDGear.ViewModel
 		
 		public object ViewModelContext { get; set; }
 		
+		#region Constructors
+
 		public MifareAuthSettingsDialogViewModel(object treeViewViewModel, bool isModal = true)
 		{
 			_dataBlockIsCombinedToggleButtonIsChecked = true;
@@ -126,8 +82,87 @@ namespace RFiDGear.ViewModel
 			}
 			this.IsModal = isModal;
 		}
+		
+		#endregion
+		
+		#region Text Boxes
+		
+		public string SectorTrailerTextBoxText {
+			get {
+				return String.Format("{0},{1},{2}"
+				                     , (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ", "").ToUpper()
+				                     , (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits
+				                     , (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ", "").ToUpper());
+			}
+		}
 
-		#region SelectedItem
+		public string selectedClassicKeyAKey {
+			get {
+				if (ViewModelContext is TreeViewChildNodeViewModel)
+					return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ", "");
+				else {
+					return (ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ", "");
+				}
+			}
+			
+			set {
+				CustomConverter conv = new CustomConverter();
+				conv.classicKeyToEdit = value;
+				if (ViewModelContext is TreeViewChildNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
+					(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey = conv.classicKeyToEdit;
+				else if (ViewModelContext is TreeViewParentNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
+					(ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyAKey = conv.classicKeyToEdit;
+				
+				RaisePropertyChanged("SectorTrailerTextBoxText");
+			}
+		}
+		
+		public string selectedClassicKeyBKey {
+			get {
+				if (ViewModelContext is TreeViewChildNodeViewModel)
+					return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ", "");
+				else {
+					return (ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ", "");
+				}
+			}
+			
+			set {
+				CustomConverter conv = new CustomConverter();
+				conv.classicKeyToEdit = value;
+				if (ViewModelContext is TreeViewChildNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
+					(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey = conv.classicKeyToEdit;
+				else if (ViewModelContext is TreeViewParentNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
+					(ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyBKey = conv.classicKeyToEdit;
+				
+				RaisePropertyChanged("SectorTrailerTextBoxText");
+			}
+		}
+		
+		#endregion
+		
+		#region Switches and Toggles
+		
+		private bool _dataBlockIsCombinedToggleButtonIsChecked;
+		public bool DataBlockIsCombinedToggleButtonIsChecked {
+			get { return _dataBlockIsCombinedToggleButtonIsChecked; }
+			set {
+				_dataBlockIsCombinedToggleButtonIsChecked = value;
+				selectedDataBlockRow = 0;
+				RaisePropertyChanged("SelectedDataBlockItem");
+				RaisePropertyChanged("DataBlockSelectionComboBoxIsEnabled");
+				RaisePropertyChanged("DataBlockSelection");
+			}
+		}
+		
+		#endregion
+
+		#region Selected Items
+		
+		public MifareClassicAccessBitsSectorTrailerDataGridModel SelectedSectorTrailerAccessBitsItem {
+			get { return selectedSectorTrailerAccessBitsItem; }
+			set { selectedSectorTrailerAccessBitsItem = value; }
+			
+		}
 		
 		public MifareClassicAccessBitsSectorTrailerDataGridModel SelectedSectorTrailerAccessBitsRow {
 			get {
@@ -204,128 +239,77 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		
-		#endregion
-		
-		#region IUserDialogViewModel Implementation
-
-		public bool IsModal { get; private set; }
-		public virtual void RequestClose()
-		{
-			if (this.OnCloseRequest != null)
-				OnCloseRequest(this);
-			else
-				Close();
-		}
-		public event EventHandler DialogClosing;
-
-		public ICommand ApplyCommand { get { return new RelayCommand(Ok); } }
-		protected virtual void Ok()
-		{
-			if (this.OnOk != null)
-				this.OnOk(this);
-			else
-				Close();
-		}
-		
-		public ICommand ExitCommand { get { return new RelayCommand(Cancel); } }
-		protected virtual void Cancel()
-		{
-			if (this.OnCancel != null)
-				this.OnCancel(this);
-			else
-				Close();
-		}
-		
-		public ICommand AuthCommand { get { return new RelayCommand(Auth); } }
-		protected virtual void Auth()
-		{
-			if (this.OnAuth != null)
-				this.OnAuth(this);
-			else
-				Close();
-		}
-		
-		public Action<MifareAuthSettingsDialogViewModel> OnOk { get; set; }
-		public Action<MifareAuthSettingsDialogViewModel> OnCancel { get; set; }
-		public Action<MifareAuthSettingsDialogViewModel> OnAuth { get; set; }
-		public Action<MifareAuthSettingsDialogViewModel> OnCloseRequest { get; set; }
-
-		public void Close()
-		{
-			if (this.DialogClosing != null)
-				this.DialogClosing(this, new EventArgs());
-		}
-
-		public void Show(IList<IDialogViewModel> collection)
-		{
-			collection.Add(this);
-		}
-		
-		#endregion IUserDialogViewModel Implementation
-		
-		#region INotifyPropertyChanged Members
-
-		public event PropertyChangedEventHandler KeySettingsPropertyChanged;
-
-		protected virtual void OnPropertyChanged(string propertyName)
-		{
-			if (this.KeySettingsPropertyChanged != null)
-				this.KeySettingsPropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-		}
-
-		#endregion
-		
-		private string _Caption;
-		public string Caption {
-			get { return _Caption; }
-			set {
-				_Caption = value;
-				RaisePropertyChanged("Caption");
+		private int selectedKeyNumber;
+		public int KeySelectionComboboxIndex {
+			get {
+				if (ViewModelContext is TreeViewChildNodeViewModel)
+					return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.mifareClassicSectorNumber;
+				else
+					return selectedKeyNumber;
 			}
+			set {
+				selectedKeyNumber = value;
+				RaisePropertyChanged("KeySelectionComboboxIndex");
+				RaisePropertyChanged("selectedClassicKeyAKey");
+				RaisePropertyChanged("selectedClassicKeyBKey");
+			}
+		}
+		
+		#endregion
+		
+		#region Items Sources
+		
+		private readonly string[] datablockSelectorSeparatedCmbbxItems = {
+			"DataBlock 0",
+			"DataBlock 1",
+			"DataBlock 2",
+		};
+		
+		public ObservableCollection<string> DataBlockSelection {
+			get { return _dataBlockIsCombinedToggleButtonIsChecked ? new ObservableCollection<string>(new string[1] { "Combined" }) : new ObservableCollection<string>(datablockSelectorSeparatedCmbbxItems); }
+		}
+		
+		private readonly string[] keyIndexComboBoxItems = {
+			"No. 00",
+			"No. 01",
+			"No. 02",
+			"No. 03",
+			"No. 04",
+			"No. 05",
+			"No. 06",
+			"No. 07",
+			"No. 08",
+			"No. 09",
+			"No. 10",
+			"No. 11",
+			"No. 12",
+			"No. 13",
+			"No. 14",
+			"No. 15",
+			"No. 16",
+			"No. 17",
+			"No. 18",
+			"No. 19",
+			"No. 20",
+			"No. 21",
+			"No. 22",
+			"No. 23",
+			"No. 24",
+			"No. 25",
+			"No. 26",
+			"No. 27",
+			"No. 28",
+			"No. 29",
+			"No. 30",
+			"No. 31"
+		};
+		
+		public ObservableCollection<string> KeySelection {
+			get { return new ObservableCollection<string>(keyIndexComboBoxItems); }
 		}
 		
 		public ObservableCollection<MifareClassicAccessBitsSectorTrailerDataGridModel> SectorTrailerSource {
 			get { return displaySourceForSectorTrailerDataGrid; }
-		}
-		
-		public bool IsClassicAuthInfoEnabled {
-			get { return isClassicAuthInfo; }
-			set {
-				isClassicAuthInfo = value;
-				RaisePropertyChanged("IsClassicAuthInfoEnabled");
-			}
-		}
-		
-		public bool IsAccessBitsEditTabEnabled {
-			get { return isAccessBitsEnabled; }
-			set {
-				isAccessBitsEnabled = value;
-				RaisePropertyChanged("IsAccessBitsEditTabEnabled");
-			}
-		}
-		
-		private bool _dataBlockIsCombinedToggleButtonIsChecked;
-		public bool DataBlockIsCombinedToggleButtonIsChecked {
-			get { return _dataBlockIsCombinedToggleButtonIsChecked; }
-			set {
-				_dataBlockIsCombinedToggleButtonIsChecked = value;
-				selectedDataBlockRow = 0;
-				RaisePropertyChanged("SelectedDataBlockItem");
-				RaisePropertyChanged("DataBlockSelectionComboBoxIsEnabled");
-				RaisePropertyChanged("DataBlockSelection");
-			}
-		}
-		
-		public bool DataBlockSelectionComboBoxIsEnabled {
-			get { return !_dataBlockIsCombinedToggleButtonIsChecked; }
-		}
-		
-		public bool IsDesfireAuthInfoEnabled {
-			get { return !isClassicAuthInfo; }
-			set {
-				isClassicAuthInfo = !value;
-				RaisePropertyChanged("IsDesfireAuthInfoEnabled");
-			}
 		}
 		
 		public ObservableCollection<object> DataBlockSource {
@@ -409,27 +393,12 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		
-		public ObservableCollection<string> DataBlockSelection {
-			get { return _dataBlockIsCombinedToggleButtonIsChecked ? new ObservableCollection<string>(new string[1] { "Combined" }) : new ObservableCollection<string>(datablockSelectorSeparatedCmbbxItems); }
-		}
+		#endregion
 		
-		public ObservableCollection<string> KeySelection {
-			get { return new ObservableCollection<string>(keyIndexComboBoxItems); }
-		}
+		#region View Switchers
 		
-		public int KeySelectionComboboxIndex {
-			get {
-				if (ViewModelContext is TreeViewChildNodeViewModel)
-					return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.mifareClassicSectorNumber;
-				else
-					return selectedKeyNumber;
-			}
-			set {
-				selectedKeyNumber = value;
-				RaisePropertyChanged("KeySelectionComboboxIndex");
-				RaisePropertyChanged("selectedClassicKeyAKey");
-				RaisePropertyChanged("selectedClassicKeyBKey");
-			}
+		public bool DataBlockSelectionComboBoxIsEnabled {
+			get { return !_dataBlockIsCombinedToggleButtonIsChecked; }
 		}
 		
 		public bool? IsFixedKeyNumber {
@@ -440,57 +409,115 @@ namespace RFiDGear.ViewModel
 					return true;
 			}
 		}
-		
-		public string SectorTrailerTextBoxText {
-			get {
-				return String.Format("{0},{1},{2}"
-			                           , (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ", "").ToUpper()
-			                           , (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.SectorTrailerAccessBits
-			                           , (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ", "").ToUpper());
-			}
-		}
-		// TODO Add Keys to KeySetup Dialog. Keys are published as follows: 1. add sector trailer to db. 2. add st to model in databasereaderwriter class
-		public string selectedClassicKeyAKey {
-			get {
-				if (ViewModelContext is TreeViewChildNodeViewModel)
-					return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ", "");
-				else {
-					return (ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyAKey.Replace(" ", "");
-				}
-			}
-			
+
+		private bool isClassicAuthInfo = true;
+		public bool IsClassicAuthInfoEnabled {
+			get { return isClassicAuthInfo; }
 			set {
-				CustomConverter conv = new CustomConverter();
-				conv.classicKeyToEdit = value;
-				if (ViewModelContext is TreeViewChildNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
-					(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyAKey = conv.classicKeyToEdit;
-				else if (ViewModelContext is TreeViewParentNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
-					(ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyAKey = conv.classicKeyToEdit;
+				isClassicAuthInfo = value;
+				RaisePropertyChanged("IsClassicAuthInfoEnabled");
 			}
 		}
 		
-		public string selectedClassicKeyBKey {
-			get {
-				if (ViewModelContext is TreeViewChildNodeViewModel)
-					return (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ", "");
-				else {
-					return (ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyBKey.Replace(" ", "");
-				}
-			}
-			
+		private bool isAccessBitsEnabled = false;
+		public bool IsAccessBitsEditTabEnabled {
+			get { return isAccessBitsEnabled; }
 			set {
-				CustomConverter conv = new CustomConverter();
-				conv.classicKeyToEdit = value;
-				if (ViewModelContext is TreeViewChildNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
-					(ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.sectorKeyBKey = conv.classicKeyToEdit;
-				else if (ViewModelContext is TreeViewParentNodeViewModel && conv.FormatMifareClassicKeyStringWithSpacesEachByte(value) == KEY_ERROR.NO_ERROR)
-					(ViewModelContext as TreeViewParentNodeViewModel).Children[selectedKeyNumber]._sectorModel.sectorAccessBits.sectorKeyBKey = conv.classicKeyToEdit;
+				isAccessBitsEnabled = value;
+				RaisePropertyChanged("IsAccessBitsEditTabEnabled");
 			}
 		}
 		
-		public MifareClassicAccessBitsSectorTrailerDataGridModel SelectedSectorTrailerAccessBitsItem {
-			get { return selectedSectorTrailerAccessBitsItem; }
-			set { selectedSectorTrailerAccessBitsItem = value; }
+		public bool IsDesfireAuthInfoEnabled {
+			get { return !isClassicAuthInfo; }
+			set {
+				isClassicAuthInfo = !value;
+				RaisePropertyChanged("IsDesfireAuthInfoEnabled");
+			}
 		}
+		
+		#endregion
+		
+		#region IUserDialogViewModel Implementation
+
+		public bool IsModal { get; private set; }
+		public virtual void RequestClose()
+		{
+			if (this.OnCloseRequest != null)
+				OnCloseRequest(this);
+			else
+				Close();
+		}
+		public event EventHandler DialogClosing;
+
+		public ICommand ApplyCommand { get { return new RelayCommand(Ok); } }
+		protected virtual void Ok()
+		{
+			if (this.OnOk != null)
+				this.OnOk(this);
+			else
+				Close();
+		}
+		
+		public ICommand ExitCommand { get { return new RelayCommand(Cancel); } }
+		protected virtual void Cancel()
+		{
+			if (this.OnCancel != null)
+				this.OnCancel(this);
+			else
+				Close();
+		}
+		
+		public ICommand AuthCommand { get { return new RelayCommand(Auth); } }
+		protected virtual void Auth()
+		{
+			if (this.OnAuth != null)
+				this.OnAuth(this);
+			else
+				Close();
+		}
+		
+		public Action<MifareAuthSettingsDialogViewModel> OnOk { get; set; }
+		public Action<MifareAuthSettingsDialogViewModel> OnCancel { get; set; }
+		public Action<MifareAuthSettingsDialogViewModel> OnAuth { get; set; }
+		public Action<MifareAuthSettingsDialogViewModel> OnCloseRequest { get; set; }
+
+		public void Close()
+		{
+			if (this.DialogClosing != null)
+				this.DialogClosing(this, new EventArgs());
+		}
+
+		public void Show(IList<IDialogViewModel> collection)
+		{
+			collection.Add(this);
+		}
+		
+		#endregion IUserDialogViewModel Implementation
+		
+		#region INotifyPropertyChanged Members
+
+		public event PropertyChangedEventHandler KeySettingsPropertyChanged;
+
+		protected virtual void OnPropertyChanged(string propertyName)
+		{
+			if (this.KeySettingsPropertyChanged != null)
+				this.KeySettingsPropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+		}
+
+		#endregion
+		
+		#region Localization
+
+		private string _Caption;
+		public string Caption {
+			get { return _Caption; }
+			set {
+				_Caption = value;
+				RaisePropertyChanged("Caption");
+			}
+		}
+		
+		#endregion
 	}
 }

@@ -51,7 +51,7 @@ namespace RFiDGear
 						rfidDevice = null;
 						rfidDevice = new RFiDDevice(value);
 					}
-					new SettingsReaderWriter().saveSettings(rfidDevice.currentReaderUnitName, value);
+					new SettingsReaderWriter().saveSettings(rfidDevice.CurrentReaderUnitName, value);
 				}
 			}
 		}
@@ -76,7 +76,7 @@ namespace RFiDGear
 		public string GetReaderName {
 			get {
 				if(rfidDevice.IsChipPresent)
-					return rfidDevice.currentReaderUnitName;
+					return rfidDevice.CurrentReaderUnitName;
 				else
 					return "not connected";
 			}

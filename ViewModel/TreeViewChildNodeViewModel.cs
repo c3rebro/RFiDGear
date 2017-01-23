@@ -15,31 +15,17 @@ namespace RFiDGear.ViewModel
 	/// </summary>
 	public class TreeViewChildNodeViewModel : INotifyPropertyChanged
 	{
-		
-		#region Data
-
-		private readonly ObservableCollection<TreeViewGrandChildNodeViewModel> _children;
 		private readonly TreeViewParentNodeViewModel _parent;
-		
-		private static object _selectedItem;
-
-		private bool _isExpanded;
-		private bool _isSelected;
-
-		#endregion // Data
-		
-		public MifareClassicSectorTreeViewModel _sectorModel { get; set; }
 		private readonly MifareDesfireAppIdTreeViewModel _appID;
 		private readonly CARD_TYPE _cardType;
 		private readonly RelayCommand _cmdEditAccessBits;
 		private readonly RelayCommand _cmdReadSectorWithDefaults;
 		private readonly RelayCommand _cmdEditAuthAndModifySector;
-		
 		private readonly string _parentUid;
 		
-		private readonly List<MenuItem> ContextMenuItems;
-
-		private bool? isAuth;
+		public MifareClassicSectorTreeViewModel _sectorModel { get; set; }
+		
+		#region Constructors
 		
 		public TreeViewChildNodeViewModel(MifareClassicSectorTreeViewModel sectorModel, TreeViewParentNodeViewModel parent, CARD_TYPE cardType, int sectorNumber)
 		{
@@ -107,15 +93,44 @@ namespace RFiDGear.ViewModel
 			
 			LoadChildren();
 		}
-
 		
-		public ObservableCollection<TreeViewGrandChildNodeViewModel> Children
-		{
-			get { return _children; }
+		#endregion
+		
+		#region Context Menu Items
+
+		private readonly List<MenuItem> ContextMenuItems;
+		public List<MenuItem> ContextMenu {
+			get { return ContextMenuItems; }
 		}
 		
-		#region SelectedItem
+		public void ReadSectorWithSpecificKey() {
+			Messenger.Default.Send<NotificationMessage<string>>(
+				new NotificationMessage<string>(this, "TreeViewChildNode", "EditAuthAndModifySector")
+			);
+		}
 		
+		public void EditAccessBits() {
+			Messenger.Default.Send<NotificationMessage<string>>(
+				new NotificationMessage<string>(this, "TreeViewChildNode", "EditAccessBits")
+			);
+		}
+		
+		#endregion
+		
+		#region Commands
+		
+		public ICommand ReadSectorCommand {get { return new RelayCommand(ReadSectorWithDefaults); }}
+		public void ReadSectorWithDefaults() {
+			Messenger.Default.Send<NotificationMessage<string>>(
+				new NotificationMessage<string>(this, "TreeViewChildNode", "ReadSectorWithDefaults")
+			);
+		}
+		
+		#endregion
+		
+		#region Selected Items
+
+		private object _selectedItem;
 		public object SelectedItem
 		{
 			get { return _selectedItem; }
@@ -128,14 +143,46 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		
-		#endregion //SelectedItem
+		#endregion
 		
-		#region IsExpanded
+		#region Items Sources
+		
+		private readonly ObservableCollection<TreeViewGrandChildNodeViewModel> _children;
+		public ObservableCollection<TreeViewGrandChildNodeViewModel> Children
+		{
+			get { return _children; }
+		}
+		
+		#endregion
 
-		/// <summary>
-		/// Gets/sets whether the TreeViewItem
-		/// associated with this object is expanded.
-		/// </summary>
+		#region Parent
+
+		public TreeViewParentNodeViewModel Parent
+		{
+			get { return _parent; }
+		}
+
+		#endregion
+
+		#region View Switchers
+
+		private bool _isSelected;
+		public bool IsSelected
+		{
+			get { return _isSelected; }
+			set
+			{
+				if (value != _isSelected)
+				{
+					_isSelected = value;
+					OnPropertyChanged("IsSelected");
+					
+					SelectedItem = this;
+				}
+			}
+		}
+		
+		private bool _isExpanded;
 		public bool IsExpanded
 		{
 			get { return _isExpanded; }
@@ -152,42 +199,21 @@ namespace RFiDGear.ViewModel
 					_parent.IsExpanded = true;
 			}
 		}
-
-		#endregion // IsExpanded
-
-		#region IsSelected
-
-		/// <summary>
-		/// Gets/sets whether the TreeViewItem
-		/// associated with this object is selected.
-		/// </summary>
-		public bool IsSelected
-		{
-			get { return _isSelected; }
-			set
-			{
-				if (value != _isSelected)
-				{
-					_isSelected = value;
-					OnPropertyChanged("IsSelected");
-					
-					SelectedItem = this;
-				}
-			}
+		
+		private bool hasChanged = false;
+		public bool HasChanged{
+			get { return hasChanged; }
+			set { hasChanged = value; OnPropertyChanged("HasChanged"); }
 		}
 
-		#endregion // IsSelected
-
-		#region Parent
-
-		public TreeViewParentNodeViewModel Parent
-		{
-			get { return _parent; }
+		private bool? isAuth;
+		public bool? IsAuthenticated {
+			get {return isAuth;}
+			set { isAuth = value; OnPropertyChanged("IsAuthenticated");}
 		}
-
-		#endregion // Parent
-
-
+		
+		#endregion
+		
 		#region INotifyPropertyChanged Members
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -198,40 +224,10 @@ namespace RFiDGear.ViewModel
 				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
 		}
 
-		#endregion // INotifyPropertyChanged Members
+		#endregion
 		
-		public ICommand ReadSectorCommand {get { return new RelayCommand(ReadSectorWithDefaults); }}
-		public void ReadSectorWithDefaults() {
-			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewChildNode", "ReadSectorWithDefaults")
-			);
-		}
+		#region Properties
 
-		public void ReadSectorWithSpecificKey() {
-			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewChildNode", "EditAuthAndModifySector")
-			);
-		}
-		
-		public void EditAccessBits() {
-			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewChildNode", "EditAccessBits")
-			);
-		}
-		
-		public List<MenuItem> ContextMenu {
-			get { return ContextMenuItems; }
-		}
-		
-		public string ChildNodeDisplayItem {
-			get {
-				if(_cardType == CARD_TYPE.CT_CLASSIC_1K || _cardType == CARD_TYPE.CT_CLASSIC_2K || _cardType == CARD_TYPE.CT_CLASSIC_4K)
-					return String.Format("Sector: [{0}]", _sectorModel.mifareClassicSectorNumber);
-				else
-					return String.Format("AppID: {0}", _appID.appID);
-			}
-		}
-		
 		public int SectorNumber {
 			get { return _sectorModel.mifareClassicSectorNumber; }
 			set { _sectorModel.mifareClassicSectorNumber = value; }
@@ -241,15 +237,30 @@ namespace RFiDGear.ViewModel
 			get { return _sectorModel.mifareClassicSectorNumber > 31 ? 16 : 4; }
 		}
 
-		public bool? IsAuthenticated {
-			get {return isAuth;}
-			set { isAuth = value; OnPropertyChanged("IsAuthenticated");}
-		}
-		
 		public string ParentUid {
 			get { return _parentUid; }
 		}
 
+		#endregion
+
+		public string ChildNodeDisplayItem {
+			get {
+				if(_cardType == CARD_TYPE.CT_CLASSIC_1K || _cardType == CARD_TYPE.CT_CLASSIC_2K || _cardType == CARD_TYPE.CT_CLASSIC_4K){
+					if(hasChanged)
+						return String.Format("*Sector: [{0}]", _sectorModel.mifareClassicSectorNumber);
+					else
+						return String.Format("Sector: [{0}]", _sectorModel.mifareClassicSectorNumber);
+				}
+
+				else{
+					if(hasChanged)
+						return String.Format("*AppID: {0}", _appID.appID);
+					else
+						return String.Format("AppID: {0}", _appID.appID);
+				}
+			}
+		}
+		
 		public void LoadChildren()
 		{
 			switch (_cardType) {

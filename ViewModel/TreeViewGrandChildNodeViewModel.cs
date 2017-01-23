@@ -32,6 +32,7 @@ namespace RFiDGear.ViewModel
 		public TreeViewGrandChildNodeViewModel(Model.MifareClassicDataBlockTreeViewModel dataBlock, TreeViewChildNodeViewModel parentSector, CARD_TYPE cardType, int sectorNumber)
 		{
 			_dataBlock = dataBlock;
+			_parent = parentSector;
 			_dataBlock.dataBlockNumber = dataBlock.dataBlockNumber;
 			_dataBlock.dataBlockContent = new byte[16];
 			

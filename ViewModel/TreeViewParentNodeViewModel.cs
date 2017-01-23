@@ -132,7 +132,7 @@ namespace RFiDGear.ViewModel
 		
 		private void DeleteMeCommand() {
 			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, mifareClassicUidModel.UidNumber, "DeleteMe")
+				new NotificationMessage<string>(this, "TreeViewParentNodes", "DeleteMe")
 			);
 		}
 		

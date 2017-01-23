@@ -32,6 +32,8 @@ namespace RFiDGear.ViewModel
 		private List<MifareClassicUidTreeViewModel> mifareClassicUidModels = new List<MifareClassicUidTreeViewModel>();
 		private List<MifareDesfireUidTreeViewModel> mifareDesfireViewModels = new List<MifareDesfireUidTreeViewModel>();
 		
+		#region Constructors
+		
 		public MainWindowViewModel()
 		{
 			readerSetupModel = new ReaderSetupModel("PCSC");
@@ -87,6 +89,82 @@ namespace RFiDGear.ViewModel
 			//any dialog boxes added in the constructor won't appear until DialogBehavior.DialogViewModels gets bound to the Dialogs collection.
 		}
 		
+		#endregion
+		
+		#region Dialogs
+		
+		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+		public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
+		
+		#endregion
+		
+		#region Selected Items
+		
+		private MifareClassicDataBlockDataGridModel selectedDataGridItem;
+		public MifareClassicDataBlockDataGridModel SelectedDataGridItem {
+			get { return selectedDataGridItem; }
+			set { selectedDataGridItem = value; RaisePropertyChanged("SelectedDataGridItem"); }
+		}
+		
+		#endregion
+		
+		#region Items Sources
+		
+		private ObservableCollection<MifareClassicDataBlockDataGridModel> dataGridSource;
+		public ObservableCollection<MifareClassicDataBlockDataGridModel> DataGridSource {
+			get { return dataGridSource; }
+		}
+		
+
+
+		private ObservableCollection<TreeViewParentNodeViewModel> treeViewParentNodes = new ObservableCollection<TreeViewParentNodeViewModel>();
+		public ObservableCollection<TreeViewParentNodeViewModel> TreeViewParentNodes {
+			get {
+				CustomConverter converter = new CustomConverter();
+				if (!String.IsNullOrEmpty(readerSetupModel.GetChipUID)) {
+					
+					//add chip to database if it is a new uid
+
+					databaseReaderWriter.ReadDatabase();
+					
+					if ((!databaseReaderWriter.databaseUIDs.Contains(readerSetupModel.GetChipUID)))
+						databaseReaderWriter.databaseUIDs.Add(readerSetupModel.GetChipUID);
+					
+					// fill treeview with dummy models and viewmodels
+					switch (readerSetupModel.GetChipType) {
+						case "Mifare1K":
+							treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicUidTreeViewModel(readerSetupModel.GetChipUID, CARD_TYPE.CT_CLASSIC_1K), CARD_TYPE.CT_CLASSIC_1K));
+							break;
+							
+						case "Mifare2K":
+							treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicUidTreeViewModel(readerSetupModel.GetChipUID, CARD_TYPE.CT_CLASSIC_2K), CARD_TYPE.CT_CLASSIC_2K));
+							break;
+							
+						case "Mifare4K":
+							treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicUidTreeViewModel(readerSetupModel.GetChipUID, CARD_TYPE.CT_CLASSIC_4K), CARD_TYPE.CT_CLASSIC_4K));
+							break;
+							
+						case "DESFireEV1":
+							treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareDesfireUidTreeViewModel(readerSetupModel.GetChipUID), CARD_TYPE.CT_DESFIRE_EV1));
+							break;
+					}
+					
+					//fill the models with data from db
+					foreach (TreeViewParentNodeViewModel pnVM in treeViewParentNodes) {
+						if (pnVM.mifareClassicUidModel != null)
+							databaseReaderWriter.WriteDatabase(pnVM.mifareClassicUidModel);
+						//else
+						//databaseReaderWriter.WriteDatabase(pnVM.mifareDesfireUidModel);
+					}
+					
+					return treeViewParentNodes;
+				}
+				return null;
+			}
+		}
+		
+		#endregion
+		
 		#region MifareDesFIRE Communication
 		
 		private void ReadAppIDs(TreeViewParentNodeViewModel selectedPNVM, string content) {
@@ -115,7 +193,7 @@ namespace RFiDGear.ViewModel
 				if (treeViewPnVM.UidNumber == selectedPnVM.UidNumber) {
 					selectedPnVM.IsExpanded = true;
 					foreach (TreeViewChildNodeViewModel cnVM in treeViewPnVM.Children) {
-						rfidDevice.readMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber);
+						rfidDevice.ReadMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber);
 						cnVM.IsAuthenticated = rfidDevice.SectorSuccesfullyAuth;
 						foreach (TreeViewGrandChildNodeViewModel gcVM in cnVM.Children) {
 							gcVM.IsAuthenticated = rfidDevice.DataBlockSuccesfullyAuth[(((cnVM.SectorNumber + 1) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
@@ -135,7 +213,7 @@ namespace RFiDGear.ViewModel
 			
 			TreeViewChildNodeViewModel vm = selectedCnVM;
 
-			rfidDevice.readMiFareClassicSingleSector(selectedCnVM.SectorNumber, selectedCnVM.SectorNumber);
+			rfidDevice.ReadMiFareClassicSingleSector(selectedCnVM.SectorNumber, selectedCnVM.SectorNumber);
 			selectedCnVM.IsAuthenticated = rfidDevice.SectorSuccesfullyAuth;
 			foreach (TreeViewGrandChildNodeViewModel gcVM in selectedCnVM.Children) {
 				gcVM.IsAuthenticated = rfidDevice.DataBlockSuccesfullyAuth[(((selectedCnVM.SectorNumber + 1) * selectedCnVM.BlockCount) - (selectedCnVM.BlockCount - gcVM.DataBlockNumber))];
@@ -175,13 +253,14 @@ namespace RFiDGear.ViewModel
 			                 	},
 
 			                 	OnCancel = (sender) => {
+			                 		
 			                 		sender.Close();
 
 			                 	},
 			                 	
 			                 	OnAuth = (sender) => {
 			                 		foreach (TreeViewChildNodeViewModel cnVM in uidVM.Children) {
-			                 			rfidDevice.readMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber);
+			                 			rfidDevice.ReadMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber);
 			                 			cnVM.IsAuthenticated = rfidDevice.SectorSuccesfullyAuth;
 			                 			foreach (TreeViewGrandChildNodeViewModel gcVM in cnVM.Children) {
 			                 				gcVM.IsAuthenticated = rfidDevice.DataBlockSuccesfullyAuth[(((cnVM.SectorNumber + 1) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
@@ -214,7 +293,9 @@ namespace RFiDGear.ViewModel
 
 			                 	OnOk = (sender) => {
 			                 		databaseReaderWriter.WriteDatabase((sender.ViewModelContext as TreeViewChildNodeViewModel)._sectorModel);
-			                 	},
+			                 		Messenger.Default.Send<NotificationMessage<string>>(
+			                 			new NotificationMessage<string>(this, "TreeViewChildNodeHasChanged", "ReadSectorWithDefaults"));
+			                 		},
 
 			                 	OnCancel = (sender) => {
 			                 		sender.Close();
@@ -222,7 +303,7 @@ namespace RFiDGear.ViewModel
 
 			                 	OnAuth = (sender) => {
 
-			                 		rfidDevice.readMiFareClassicSingleSector(sectorVM.SectorNumber, sender.selectedClassicKeyAKey, sender.selectedClassicKeyBKey);
+			                 		rfidDevice.ReadMiFareClassicSingleSector(sectorVM.SectorNumber, sender.selectedClassicKeyAKey, sender.selectedClassicKeyBKey);
 			                 		sectorVM.IsAuthenticated = rfidDevice.SectorSuccesfullyAuth;
 			                 		foreach (TreeViewGrandChildNodeViewModel gcVM in sectorVM.Children) {
 			                 			gcVM.IsAuthenticated = rfidDevice.DataBlockSuccesfullyAuth[(((sectorVM.SectorNumber + 1) * sectorVM.BlockCount) - (sectorVM.BlockCount - gcVM.DataBlockNumber))];
@@ -239,7 +320,7 @@ namespace RFiDGear.ViewModel
 		
 		#endregion
 		
-		#region Resource getters
+		#region Localization
 		
 		public string MenuItem_FileHeader {
 			get { return ResourceLoader.getResource("menuItemFileHeader"); }
@@ -442,64 +523,8 @@ namespace RFiDGear.ViewModel
 		}
 		
 		#endregion
-
 		
-		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
-		public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
-		
-		private ObservableCollection<MifareClassicDataBlockDataGridModel> dataGridSource;
-		public ObservableCollection<MifareClassicDataBlockDataGridModel> DataGridSource {
-			get { return dataGridSource; }
-		}
-		
-		private MifareClassicDataBlockDataGridModel selectedDataGridItem;
-		public MifareClassicDataBlockDataGridModel SelectedDataGridItem {
-			get { return selectedDataGridItem; }
-			set { selectedDataGridItem = value; RaisePropertyChanged("SelectedDataGridItem"); }
-		}
-
-		private ObservableCollection<TreeViewParentNodeViewModel> treeViewParentNodes = new ObservableCollection<TreeViewParentNodeViewModel>();
-		public ObservableCollection<TreeViewParentNodeViewModel> TreeViewParentNodes {
-			get {
-				CustomConverter converter = new CustomConverter();
-				if (!String.IsNullOrEmpty(readerSetupModel.GetChipUID)) {
-					
-					//add chip to database if it is a new uid
-					if (!databaseReaderWriter.databaseUIDs.Contains(readerSetupModel.GetChipUID)) {
-						databaseReaderWriter.databaseUIDs.Add(readerSetupModel.GetChipUID);
-						
-						// fill treeview with dummy models and viewmodels
-						switch (readerSetupModel.GetChipType) {
-							case "Mifare1K":
-								treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicUidTreeViewModel(readerSetupModel.GetChipUID, CARD_TYPE.CT_CLASSIC_1K), CARD_TYPE.CT_CLASSIC_1K));
-								break;
-								
-							case "Mifare2K":
-								treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicUidTreeViewModel(readerSetupModel.GetChipUID, CARD_TYPE.CT_CLASSIC_2K), CARD_TYPE.CT_CLASSIC_2K));
-								break;
-								
-							case "Mifare4K":
-								treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicUidTreeViewModel(readerSetupModel.GetChipUID, CARD_TYPE.CT_CLASSIC_4K), CARD_TYPE.CT_CLASSIC_4K));
-								break;
-								
-							case "DESFireEV1":
-								treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareDesfireUidTreeViewModel(readerSetupModel.GetChipUID), CARD_TYPE.CT_DESFIRE_EV1));
-								break;
-						}
-						
-						//fill the models with data from db
-						foreach (TreeViewParentNodeViewModel pnVM in treeViewParentNodes) {
-							if (pnVM.mifareClassicUidModel != null)
-								databaseReaderWriter.WriteDatabase(pnVM.mifareClassicUidModel);
-							//else
-							//databaseReaderWriter.WriteDatabase(pnVM.mifareDesfireUidModel);
-						}
-					}
-					return treeViewParentNodes;
-				}
-				return null;
-			}
-		}
+		#region View Switchers
 		
 		private bool isCheckedForUpdatesChecked;
 		public bool IsCheckForUpdatesChecked {
@@ -542,6 +567,7 @@ namespace RFiDGear.ViewModel
 				RaisePropertyChanged("RadioButtonEnglishLanguageSelectedState");
 			}
 		}
-
+		
+		#endregion
 	}
 }

@@ -34,8 +34,6 @@ namespace RFiDGear
 			
 			databaseUIDs = new List<string>();
 			databaseAccessBits = new List<MifareClassicAccessBitsBaseModel>();
-			
-			ReadDatabase();
 		}
 		
 		public void ReadDatabase()
@@ -63,7 +61,8 @@ namespace RFiDGear
 					}
 					
 					
-				} catch (XmlException e) {
+				} catch(XmlException e) {
+					throw new Exception(String.Format("Uuups: {0}",e));
 				}
 				
 			}
@@ -146,8 +145,7 @@ namespace RFiDGear
 					
 				}
 			} catch (XmlException e) {
-
-				Environment.Exit(0);
+				throw new Exception(String.Format("Uuups: {0}",e));
 			}
 		}
 		

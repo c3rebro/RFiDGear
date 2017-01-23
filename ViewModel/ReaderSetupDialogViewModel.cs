@@ -15,23 +15,9 @@ namespace RFiDGear.ViewModel
 	public class ReaderSetupDialogViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		
-		#region IUserDialogViewModel Implementation
-
-		public bool IsModal { get; private set; }
-		public virtual void RequestClose()
+		public ReaderSetupDialogViewModel(bool isModal = true)
 		{
-			if (this.OnCloseRequest != null)
-				this.OnCloseRequest(this);
-			else
-				Close();
-		}
-		public event EventHandler DialogClosing;
-		
-
-		#endregion IUserDialogViewModel Implementation
-		
-		public ReaderSetupDialogViewModel()  {
-			//currentReader = new RFiDReaderSetup(null);
+			this.IsModal = isModal;
 		}
 		
 		#region Commands
@@ -94,6 +80,39 @@ namespace RFiDGear.ViewModel
 			get { return new ReaderSetupModel(null).GetReaderName;}
 		}
 		
+		public string ConnectButtonText {
+			get { return ResourceLoader.getResource("buttonConnectToReaderText"); }
+		}
+
+		#region IUserDialogViewModel Implementation
+		
+		public Action<ReaderSetupDialogViewModel> OnOk { get; set; }
+		public Action<ReaderSetupDialogViewModel> OnCancel { get; set; }
+		public Action<ReaderSetupDialogViewModel> OnCloseRequest { get; set; }
+
+		public bool IsModal { get; private set; }
+		public virtual void RequestClose()
+		{
+			if (this.OnCloseRequest != null)
+				this.OnCloseRequest(this);
+			else
+				Close();
+		}
+		public event EventHandler DialogClosing;
+		
+		public void Close()
+		{
+			if (this.DialogClosing != null)
+				this.DialogClosing(this, new EventArgs());
+		}
+
+		public void Show(IList<IDialogViewModel> collection)
+		{
+			collection.Add(this);
+		}
+
+		#endregion IUserDialogViewModel Implementation
+		
 		#region ResourceLoader
 		public string ButtonSaveAndExitReaderSetupText {
 			
@@ -107,7 +126,7 @@ namespace RFiDGear.ViewModel
 		public string ButtonCancelReaderSetupText {
 			get { return ResourceLoader.getResource("buttonCancelReaderSetupText");}
 		}
-		#endregion
+		
 		private string _Caption;
 		public string Caption {
 			get { return _Caption; }
@@ -117,28 +136,6 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		
-		public Action<ReaderSetupDialogViewModel> OnOk { get; set; }
-		public Action<ReaderSetupDialogViewModel> OnCancel { get; set; }
-		public Action<ReaderSetupDialogViewModel> OnCloseRequest { get; set; }
-
-		public ReaderSetupDialogViewModel(bool isModal = true)
-		{
-			this.IsModal = isModal;
-		}
-		
-		public string ConnectButtonText {
-			get { return ResourceLoader.getResource("buttonConnectToReaderText"); }
-		}
-
-		public void Close()
-		{
-			if (this.DialogClosing != null)
-				this.DialogClosing(this, new EventArgs());
-		}
-
-		public void Show(IList<IDialogViewModel> collection)
-		{
-			collection.Add(this);
-		}
+		#endregion
 	}
 }

@@ -78,7 +78,8 @@
 							Text="{Binding ParentNodeDisplayItem}">
 							<TextBlock.ContextMenu>
 								<ContextMenu
-									ItemsSource="{Binding ContextMenu}"></ContextMenu>
+									ItemsSource="{Binding ContextMenu}">
+								</ContextMenu>
 							</TextBlock.ContextMenu>
 						</TextBlock>
 					</HierarchicalDataTemplate>
@@ -108,6 +109,27 @@
 										<Setter
 											Property="FontWeight"
 											Value="Normal" />
+									</DataTrigger>
+									
+									<DataTrigger
+										Binding="{Binding HasChanged}"
+										Value="True">
+										<Setter
+											Property="Foreground"
+											Value="Yellow" />
+										<Setter
+											Property="FontWeight"
+											Value="Bold" />
+									</DataTrigger>
+									<DataTrigger
+										Binding="{Binding HasChanged}"
+										Value="False">
+										<Setter
+											Property="Foreground"
+											Value="Green" />
+										<Setter
+											Property="FontWeight"
+											Value="Bold" />
 									</DataTrigger>
 								</Style.Triggers>
 							</Style>
@@ -180,8 +202,7 @@
 				ItemsSource="{Binding DataGridSource, Mode=OneWay}"
 				SelectedItem="{Binding SelectedDataGridItem}"
 				Background="{x:Null}"
-				BorderBrush="#FF020202">
-			</DataGrid>
+				BorderBrush="#FF020202"></DataGrid>
 		</Grid>
 		<DockPanel
 			RenderTransformOrigin="0.5,0.5">
@@ -237,7 +258,6 @@
 								Color="Black" />
 						</MenuItem.Foreground>
 					</MenuItem>
-					
 					<MenuItem
 						Header="_Paste Clipboard to Selection">
 						<MenuItem.Foreground>
@@ -245,7 +265,7 @@
 								Color="Black" />
 						</MenuItem.Foreground>
 					</MenuItem>
-					<Separator/>
+					<Separator />
 					<MenuItem
 						Header="_Edit Keys...">
 						<MenuItem.Foreground>
@@ -257,7 +277,8 @@
 				<MenuItem
 					Header="_Programming"
 					VerticalContentAlignment="Center"
-					VerticalAlignment="Top">
+					VerticalAlignment="Top"
+					RenderTransformOrigin="0.5,0.5">
 					<MenuItem.Foreground>
 						<SolidColorBrush
 							Color="Black" />
@@ -277,18 +298,16 @@
 								Color="Black" />
 						</MenuItem.Foreground>
 					</MenuItem>
-					<Separator/>
+					<Separator />
 					<MenuItem
-						Header="Read _from Selection"
-						Command="{Binding GetTreeViewSelection}">
+						Header="Read _from Selection">
 						<MenuItem.Foreground>
 							<SolidColorBrush
 								Color="Black" />
 						</MenuItem.Foreground>
 					</MenuItem>
 					<MenuItem
-						Header="Write _to Selection"
-						Command="{Binding GetTreeViewSelection}">
+						Header="Write _to Selection">
 						<MenuItem.Foreground>
 							<SolidColorBrush
 								Color="Black" />
@@ -298,7 +317,8 @@
 				<MenuItem
 					Header="{Binding MenuItem_OptionsHeader}"
 					VerticalContentAlignment="Center"
-					VerticalAlignment="Top">
+					VerticalAlignment="Top"
+					RenderTransformOrigin="0.5,0.5">
 					<MenuItem.Foreground>
 						<SolidColorBrush
 							Color="Black" />
@@ -337,7 +357,7 @@
 						<SolidColorBrush
 							Color="Black" />
 					</MenuItem.Foreground>
-					<MenuItem 
+					<MenuItem
 						IsCheckable="True"
 						Header="_Check for Updates"
 						IsChecked="{Binding IsCheckForUpdatesChecked, Mode=TwoWay}">
