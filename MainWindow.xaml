@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Controls:MetroWindow
 	x:Class="RFiDGear.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors" xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
 	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}" xmlns:local="clr-namespace:RFiDGear"
@@ -78,8 +78,7 @@
 							Text="{Binding ParentNodeDisplayItem}">
 							<TextBlock.ContextMenu>
 								<ContextMenu
-									ItemsSource="{Binding ContextMenu}">
-								</ContextMenu>
+									ItemsSource="{Binding ContextMenu}"></ContextMenu>
 							</TextBlock.ContextMenu>
 						</TextBlock>
 					</HierarchicalDataTemplate>
@@ -110,7 +109,6 @@
 											Property="FontWeight"
 											Value="Normal" />
 									</DataTrigger>
-									
 									<DataTrigger
 										Binding="{Binding HasChanged}"
 										Value="True">
@@ -315,10 +313,10 @@
 					</MenuItem>
 				</MenuItem>
 				<MenuItem
-					Header="{Binding MenuItem_OptionsHeader}"
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top"
-					RenderTransformOrigin="0.5,0.5">
+					RenderTransformOrigin="0.5,0.5"
+					Header="{Binding MenuItem_OptionsHeader}">
 					<MenuItem.Foreground>
 						<SolidColorBrush
 							Color="Black" />

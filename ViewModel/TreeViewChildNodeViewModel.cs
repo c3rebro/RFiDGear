@@ -200,8 +200,8 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		
-		private bool hasChanged = false;
-		public bool HasChanged{
+		private bool? hasChanged;
+		public bool? HasChanged{
 			get { return hasChanged; }
 			set { hasChanged = value; OnPropertyChanged("HasChanged"); }
 		}
@@ -246,14 +246,14 @@ namespace RFiDGear.ViewModel
 		public string ChildNodeDisplayItem {
 			get {
 				if(_cardType == CARD_TYPE.CT_CLASSIC_1K || _cardType == CARD_TYPE.CT_CLASSIC_2K || _cardType == CARD_TYPE.CT_CLASSIC_4K){
-					if(hasChanged)
+					if(hasChanged == true)
 						return String.Format("*Sector: [{0}]", _sectorModel.mifareClassicSectorNumber);
 					else
 						return String.Format("Sector: [{0}]", _sectorModel.mifareClassicSectorNumber);
 				}
 
 				else{
-					if(hasChanged)
+					if(hasChanged == true)
 						return String.Format("*AppID: {0}", _appID.appID);
 					else
 						return String.Format("AppID: {0}", _appID.appID);
