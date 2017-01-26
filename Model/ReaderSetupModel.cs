@@ -21,8 +21,8 @@ namespace RFiDGear
 		
 		public ReaderSetupModel(string readerProviderByName)
 		{
-			if ((!String.IsNullOrEmpty(new SettingsReaderWriter()._defaultReaderProvider)) && String.IsNullOrEmpty(readerProviderByName)) {
-				rfidDevice = new RFiDDevice(new SettingsReaderWriter()._defaultReaderProvider);
+			if ((!String.IsNullOrEmpty(new SettingsReaderWriter().DefaultReaderProvider)) && String.IsNullOrEmpty(readerProviderByName)) {
+				rfidDevice = new RFiDDevice(new SettingsReaderWriter().DefaultReaderProvider);
 			} else if (!String.IsNullOrEmpty(readerProviderByName)) {
 				rfidDevice = new RFiDDevice(readerProviderByName);
 			}
@@ -37,14 +37,14 @@ namespace RFiDGear
 		
 		public string SelectedReader {
 			get {
-				if (!String.IsNullOrEmpty(new SettingsReaderWriter()._defaultReaderProvider)) {
-					return new SettingsReaderWriter()._defaultReaderProvider;
+				if (!String.IsNullOrEmpty(new SettingsReaderWriter().DefaultReaderProvider)) {
+					return new SettingsReaderWriter().DefaultReaderProvider;
 				}
 
 				return "N/A";
 			}
 			set {
-				if (new SettingsReaderWriter()._defaultReaderProvider != value && value != "N/A") {
+				if (new SettingsReaderWriter().DefaultReaderProvider != value && value != "N/A") {
 					if (rfidDevice == null)
 						rfidDevice = new RFiDDevice(value);
 					else {

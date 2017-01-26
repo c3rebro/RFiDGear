@@ -347,7 +347,7 @@ namespace RFiDGear.ViewModel
 		public ICommand ReadChipCommand { get { return new RelayCommand(OnNewReadChipCommand); } }
 		public void OnNewReadChipCommand()
 		{
-			if (!String.IsNullOrEmpty(new ReaderSetupModel(new SettingsReaderWriter()._defaultReaderProvider).GetChipUID)) {
+			if (!String.IsNullOrEmpty(new ReaderSetupModel(new SettingsReaderWriter().DefaultReaderProvider).GetChipUID)) {
 				if (readerSetupModel.SelectedReader != "N/A") {
 					if (!databaseReaderWriter.databaseUIDs.Contains(readerSetupModel.GetChipUID) || (treeViewParentNodes.Count == 0)) {
 						//databaseReaderWriter.databaseUIDs.Add(readerSetupModel.GetChipUID);

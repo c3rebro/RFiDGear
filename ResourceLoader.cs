@@ -21,7 +21,7 @@ namespace RFiDGear.ViewModel
 			resManager = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
 			settings.readSettings();
 			
-			cultureInfo = (settings._defaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
+			cultureInfo = (settings.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
 		}
 		
 		public static string getResource(string resName){
@@ -33,7 +33,7 @@ namespace RFiDGear.ViewModel
 		}
 		
 		public static string getLanguage(){
-			return settings._defaultLanguage;
+			return settings.DefaultLanguage;
 		}
 	}
 }

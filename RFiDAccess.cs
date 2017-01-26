@@ -124,15 +124,15 @@ namespace RFiDGear
 			
 			settings.readSettings();
 			
-			MifareKey keyA = new MifareKey() { Value = new CustomConverter().FormatSectorStringWithSpacesEachByte(new SettingsReaderWriter()._defaultClassicCardKeysAKeys[keyNumber]) };
-			MifareKey keyB = new MifareKey() { Value = new CustomConverter().FormatSectorStringWithSpacesEachByte(new SettingsReaderWriter()._defaultClassicCardKeysBKeys[keyNumber]) };
+			MifareKey keyA = new MifareKey() { Value = new CustomConverter().FormatSectorStringWithSpacesEachByte(new SettingsReaderWriter().DefaultClassicCardKeysAKeys[keyNumber]) };
+			MifareKey keyB = new MifareKey() { Value = new CustomConverter().FormatSectorStringWithSpacesEachByte(new SettingsReaderWriter().DefaultClassicCardKeysBKeys[keyNumber]) };
 			
 			int blockCount = 0;
 			sectorIsAuth = true;
 			sectorCanRead = true;
 			
 			try {
-				readerProvider = new LibraryManagerClass().GetReaderProvider(new SettingsReaderWriter()._defaultReaderProvider);
+				readerProvider = new LibraryManagerClass().GetReaderProvider(new SettingsReaderWriter().DefaultReaderProvider);
 				readerUnit = readerProvider.CreateReaderUnit();
 				
 				if (readerUnit.ConnectToReader()) {
@@ -234,7 +234,7 @@ namespace RFiDGear
 			sectorCanRead = true;
 			
 			try {
-				readerProvider = new LibraryManagerClass().GetReaderProvider(new SettingsReaderWriter()._defaultReaderProvider);
+				readerProvider = new LibraryManagerClass().GetReaderProvider(new SettingsReaderWriter().DefaultReaderProvider);
 				readerUnit = readerProvider.CreateReaderUnit();
 				
 				if (readerUnit.ConnectToReader()) {
@@ -336,7 +336,7 @@ namespace RFiDGear
 			sectorCanRead = true;
 			
 			try {
-				readerProvider = new LibraryManagerClass().GetReaderProvider(new SettingsReaderWriter()._defaultReaderProvider);
+				readerProvider = new LibraryManagerClass().GetReaderProvider(new SettingsReaderWriter().DefaultReaderProvider);
 				readerUnit = readerProvider.CreateReaderUnit();
 				
 				if (readerUnit.ConnectToReader()) {
