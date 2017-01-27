@@ -47,7 +47,7 @@ namespace RFiDGear.ViewModel
 			
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Read Card with default Keys",
+			                     	Header = "QuickCheck",
 			                     	Command = _cmdReadAllSectorsWithDefaultKeys
 			                     });
 			

@@ -31,10 +31,10 @@ namespace RFiDGear
 		
 		private string oldReaderName;
 		private string oldReaderProvider;
-		private string _oldDesfireCardCardMasterKey;
-		private string _oldDesfireCardApplicationMasterKey;
-		private string _oldDesfireCardReadKey;
-		private string _oldDesfireCardWriteKey;
+		private string oldDesfireCardCardMasterKey;
+		private string oldDesfireCardApplicationMasterKey;
+		private string oldDesfireCardReadKey;
+		private string oldDesfireCardWriteKey;
 		private string oldKeyA;
 		private string oldAccessBits;
 		private string oldKeyB;
@@ -176,27 +176,6 @@ namespace RFiDGear
 					doc.DocumentElement.AppendChild(defaultDesfireKeysElem);
 					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
 				}
-
-				if(doc.SelectSingleNode("//defaultReader") == null) {
-					XmlElement defaultReaderElem = doc.CreateElement("defaultReader");
-					XmlAttribute defaultReaderNameAttr = doc.CreateAttribute("readerName");
-					XmlAttribute defaultReaderProviderAttr = doc.CreateAttribute("readerProvider");
-					defaultReaderNameAttr.Value = _defaultReaderName;
-					defaultReaderProviderAttr.Value = _defaultReaderProvider;
-					defaultReaderElem.Attributes.Append(defaultReaderNameAttr);
-					defaultReaderElem.Attributes.Append(defaultReaderProviderAttr);
-					doc.DocumentElement.AppendChild(defaultReaderElem);
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-				}
-				
-				if(doc.SelectSingleNode("//defaultLanguage") == null) {
-					XmlElement defaultLanguageElem = doc.CreateElement("defaultLanguage");
-					XmlAttribute defaultLanguageAttr = doc.CreateAttribute("lang");
-					defaultLanguageAttr.Value = _defaultLanguage;
-					defaultLanguageElem.Attributes.Append(defaultLanguageAttr);
-					doc.DocumentElement.AppendChild(defaultLanguageElem);
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-				}
 				
 				readSettings();
 				
@@ -207,131 +186,22 @@ namespace RFiDGear
 			}
 		}
 		
-		public void saveSettings(string reader, string[] aKeys, string[] bKeys, string language)
+		public void saveSettings(string sectorTrailer, int sectorNumber)
 		{
 			
 			try {
 				
 				XmlDocument doc = new XmlDocument();
-				doc.Load(Path.Combine(appDataPath,Path.Combine(appDataPath,_settingsFileFileName)));
+				doc.Load(Path.Combine(appDataPath,_settingsFileFileName));
 				
-				if (doc.SelectSingleNode("//defaultClassicCardSectorTrailers") == null) {
-					XmlElement classicCardKey = doc.CreateElement("defaultClassicCardSectorTrailers");
-					for (int i = 0; i <= 31; i++) {
-						XmlAttribute classicCardSectorTrailer = doc.CreateAttribute(string.Format("SectorTrailer{0:d2}", i));
-						classicCardSectorTrailer.Value = _classicCardDefaultSectorTrailer;
-						classicCardKey.Attributes.Append(classicCardSectorTrailer);
-					}
-					doc.DocumentElement.AppendChild(classicCardKey);
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-				}
-				
-				if (doc.SelectSingleNode("//defaultReader") == null) {
-					XmlElement defaultReader = doc.CreateElement("defaultReader");
-					XmlAttribute defaultReaderID = doc.CreateAttribute("readerName");
-					XmlAttribute defaultReaderProvider = doc.CreateAttribute("readerProvider");
-					defaultReaderID.Value = _defaultReaderName;
-					defaultReader.Attributes.Append(defaultReaderID);
-					defaultReader.Attributes.Append(defaultReaderProvider);
-					doc.DocumentElement.AppendChild(defaultReader);
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-				}
-				
-				if (doc.SelectSingleNode("//defaultLanguage") == null) {
-					XmlElement defaultLanguage = doc.CreateElement("defaultLanguage");
-					XmlAttribute defaultLanguageID = doc.CreateAttribute("lang");
-					defaultLanguageID.Value = _defaultLanguage;
-					defaultLanguage.Attributes.Append(defaultLanguageID);
-					doc.DocumentElement.AppendChild(defaultLanguage);
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-				}
-				
-				if (doc.SelectSingleNode("//defaultDesfireKeys") == null) {
-					XmlElement defaultDesfireKeys = doc.CreateElement("defaultDesfireKeys");
+				if (doc.SelectSingleNode("//defaultClassicCardSectorTrailers") != null) {
+					XmlNode node = doc.SelectSingleNode("//defaultClassicCardSectorTrailers");
 					
-					
-					XmlAttribute desFireCardCardMasterKeyKeyID = doc.CreateAttribute("defaultDesfireCard_CardMasterKey");
-					XmlAttribute desFireCardCardMasterKeyTypeKeyID = doc.CreateAttribute("defaultDesfireCard_CardMasterKeyType");
-					
-					XmlAttribute desFireCardApplicationMasterKeyKeyID = doc.CreateAttribute("defaultDesfireCard_ApplicationMasterKey");
-					XmlAttribute desFireCardApplicationMasterKeyTypeKeyID = doc.CreateAttribute("defaultDesfireCard_ApplicationMasterKeyType");
-					
-					XmlAttribute desFireCardReadKeyKeyID = doc.CreateAttribute("defaultDesfireCard_ReadKey");
-					XmlAttribute desFireCardReadKeyTypeKeyID = doc.CreateAttribute("defaultDesfireCard_ReadKeyType");
-					
-					XmlAttribute desFireCardWriteKeyKeyID = doc.CreateAttribute("defaultDesfireCard_WriteKey");
-					XmlAttribute desFireCardWriteKeyTypeKeyID = doc.CreateAttribute("defaultDesfireCard_WriteKeyType");
-					
-					desFireCardCardMasterKeyKeyID.Value = _desfireCardCardMasterKey;
-					desFireCardCardMasterKeyTypeKeyID.Value = converter._constDesfireCardKeyType[Array.IndexOf(converter.libLogicalAccessKeyTypeEnumConverter,(int)DESFireKeyType.DF_KEY_AES)];
-					
-					desFireCardApplicationMasterKeyKeyID.Value = _desfireCardApplicationMasterKey;
-					desFireCardApplicationMasterKeyTypeKeyID.Value = converter._constDesfireCardKeyType[Array.IndexOf(converter.libLogicalAccessKeyTypeEnumConverter,(int)DESFireKeyType.DF_KEY_AES)];
-					
-					desFireCardReadKeyKeyID.Value = _desfireCardReadKey;
-					desFireCardReadKeyTypeKeyID.Value = converter._constDesfireCardKeyType[Array.IndexOf(converter.libLogicalAccessKeyTypeEnumConverter,(int)DESFireKeyType.DF_KEY_AES)];
-					
-					desFireCardWriteKeyKeyID.Value = _desfireCardWriteKey;
-					desFireCardWriteKeyTypeKeyID.Value = converter._constDesfireCardKeyType[Array.IndexOf(converter.libLogicalAccessKeyTypeEnumConverter,(int)DESFireKeyType.DF_KEY_AES)];
-					
-					defaultDesfireKeys.Attributes.Append(desFireCardCardMasterKeyKeyID);
-					defaultDesfireKeys.Attributes.Append(desFireCardCardMasterKeyTypeKeyID);
-					
-					defaultDesfireKeys.Attributes.Append(desFireCardApplicationMasterKeyKeyID);
-					defaultDesfireKeys.Attributes.Append(desFireCardApplicationMasterKeyTypeKeyID);
-					
-					defaultDesfireKeys.Attributes.Append(desFireCardReadKeyKeyID);
-					defaultDesfireKeys.Attributes.Append(desFireCardReadKeyTypeKeyID);
-					
-					defaultDesfireKeys.Attributes.Append(desFireCardWriteKeyKeyID);
-					defaultDesfireKeys.Attributes.Append(desFireCardWriteKeyTypeKeyID);
-					
-					doc.DocumentElement.AppendChild(defaultDesfireKeys);
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-				}
-				
-				XmlNode node = doc.SelectSingleNode("//defaultClassicCardSectorTrailers");
-				if ((aKeys != null) && (bKeys != null)) {
-					
-					for (int i = 0; i < aKeys.Length; i++) {
-						oldKeyA = node.Attributes[string.Format("keyA{0:d2}", i)].Value;
-						oldKeyB = node.Attributes[string.Format("keyB{0:d2}", i)].Value;
-						
-						if (aKeys != null) {
-							if (oldKeyA != aKeys[i]) {
-								node.Attributes[string.Format("keyA{0:d2}", i)].Value = aKeys[i];
-
-								doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-							}
-						}
-						
-						if (bKeys != null) {
-							if (oldKeyB != bKeys[i]) {
-								node.Attributes[string.Format("keyB{0:d2}", i)].Value = bKeys[i];
-
-								doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-							}
+					foreach(XmlAttribute atr in node.Attributes) {
+						if(atr[string.Format("SectorTrailer{0:d2}", sectorNumber)] != null)	{
+							atr.Value = sectorTrailer;
 						}
 					}
-				}
-
-				node = doc.SelectSingleNode("//defaultReader");
-				oldReaderName = node.Attributes["readerName"].Value;
-				oldReaderProvider = node.Attributes["readerProvider"].Value;
-				if (! (String.IsNullOrEmpty(oldReaderName) || String.IsNullOrEmpty(oldReaderProvider))) {
-					
-					node.Attributes["readerName"].Value = oldReaderName;
-					node.Attributes["readerProvider"].Value = oldReaderProvider;
-
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-				}
-				
-				node = doc.SelectSingleNode("//defaultLanguage");
-				oldLanguage = node.Attributes["lang"].Value;
-				if ((oldLanguage != language) & language != null) {
-					
-					node.Attributes["lang"].Value = language;
-
 					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
 				}
 				
@@ -348,40 +218,19 @@ namespace RFiDGear
 			try {
 				
 				XmlDocument doc = new XmlDocument();
-				XmlNode node = doc.SelectSingleNode("//defaultClassicCardSectorTrailers");
 				doc.Load(Path.Combine(appDataPath,_settingsFileFileName));
 				
-				if (doc.SelectSingleNode("//defaultClassicCardSectorTrailers") == null) {
-					XmlElement classicCardKey = doc.CreateElement("defaultClassicCardSectorTrailers");
-					for (int i = 0; i <= 31; i++) {
-						XmlAttribute classicCardKeyAKeyID = doc.CreateAttribute(string.Format("keyA{0:d2}", i));
+				if(doc.SelectSingleNode("//defaultLanguage") != null) {
+					XmlNode node = doc.SelectSingleNode("//defaultLanguage");
+					oldLanguage = node.Attributes["lang"].Value;
+					if ((oldLanguage != language) & language != null) {
 						
-						classicCardKeyAKeyID.Value = _classicCardDefaultSectorTrailer;
+						node.Attributes["lang"].Value = language;
 
-						classicCardKey.Attributes.Append(classicCardKeyAKeyID);
-
+						doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
 					}
-					doc.DocumentElement.AppendChild(classicCardKey);
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
 				}
-				
-				if (doc.SelectSingleNode("//defaultLanguage") == null) {
-					XmlElement defaultLanguage = doc.CreateElement("defaultLanguage");
-					XmlAttribute defaultLanguageID = doc.CreateAttribute("lang");
-					defaultLanguageID.Value = _defaultLanguage;
-					defaultLanguage.Attributes.Append(defaultLanguageID);
-					doc.DocumentElement.AppendChild(defaultLanguage);
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-				}
-				
-				node = doc.SelectSingleNode("//defaultLanguage");
-				oldLanguage = node.Attributes["lang"].Value;
-				if ((oldLanguage != language) & language != null) {
-					
-					node.Attributes["lang"].Value = language;
 
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-				}
 				
 			} catch (XmlException e) {
 				MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", Path.Combine(appDataPath,_settingsFileFileName), e), "Fehler",
@@ -398,27 +247,23 @@ namespace RFiDGear
 				XmlDocument doc = new XmlDocument();
 				doc.Load(Path.Combine(appDataPath,_settingsFileFileName));
 				
-				if (doc.SelectSingleNode("//defaultReader") == null) {
-					XmlElement defaultReader = doc.CreateElement("defaultReader");
-					XmlAttribute defaultReaderID = doc.CreateAttribute("readerName");
-					XmlAttribute defaultReaderProvider = doc.CreateAttribute("readerProvider");
-					defaultReaderID.Value = _defaultReaderName;
-					defaultReader.Attributes.Append(defaultReaderID);
-					defaultReader.Attributes.Append(defaultReaderProvider);
-					doc.DocumentElement.AppendChild(defaultReader);
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
+				if (doc.SelectSingleNode("//defaultReader") != null) {
+					XmlNode node = doc.SelectSingleNode("//defaultReader");
+					oldReaderName = node.Attributes["readerName"].Value;
+					oldReaderProvider = node.Attributes["readerProvider"].Value;
+					if ((! (String.IsNullOrEmpty(readerName) || String.IsNullOrEmpty(readerProviderByName)))
+					    && oldReaderName != node.Attributes["readerName"].Value
+					    && oldReaderProvider != node.Attributes["readerProvider"].Value) {
+						
+						node.Attributes["readerName"].Value = readerName;
+						node.Attributes["readerProvider"].Value = readerProviderByName;
+
+						doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
+					}
+
 				}
 				
-				XmlNode node = doc.SelectSingleNode("//defaultReader");
-				oldReaderName = node.Attributes["readerName"].Value;
-				oldReaderProvider = node.Attributes["readerProvider"].Value;
-				if (! (String.IsNullOrEmpty(readerName) && String.IsNullOrEmpty(readerProviderByName))) {
-					
-					node.Attributes["readerName"].Value = readerName;
-					node.Attributes["readerProvider"].Value = readerProviderByName;
 
-					doc.Save(Path.Combine(appDataPath,_settingsFileFileName));
-				}
 				
 			} catch (XmlException e) {
 				MessageBox.Show(string.Format("Fehler: Kann die {0}-Datei nicht lesen:\n\n{1}", Path.Combine(appDataPath,_settingsFileFileName), e), "Fehler",
