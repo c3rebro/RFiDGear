@@ -124,10 +124,11 @@ namespace RFiDGear
 			
 			settings.readSettings();
 			
-			MifareKey keyA = new MifareKey() { Value = new CustomConverter().FormatSectorStringWithSpacesEachByte(new SettingsReaderWriter().DefaultClassicCardKeysAKeys[keyNumber]) };
-			MifareKey keyB = new MifareKey() { Value = new CustomConverter().FormatSectorStringWithSpacesEachByte(new SettingsReaderWriter().DefaultClassicCardKeysBKeys[keyNumber]) };
+			MifareKey keyA = new MifareKey() { Value = new CustomConverter().FormatSectorStringWithSpacesEachByte(settings.DefaultClassicCardKeysAKeys[keyNumber]) };
+			MifareKey keyB = new MifareKey() { Value = new CustomConverter().FormatSectorStringWithSpacesEachByte(settings.DefaultClassicCardKeysBKeys[keyNumber]) };
 			
 			int blockCount = 0;
+			int dataBlockNumber = 0;
 			sectorIsAuth = true;
 			sectorCanRead = true;
 			
@@ -167,7 +168,10 @@ namespace RFiDGear
 								blockAuthSuccessful = new bool[256];
 								blockReadSuccessful = new bool[256];
 								
-								blockCount = 4;
+								if(sectorNumber <= 31)
+									blockCount = 4;
+								else
+									blockCount = 16;
 								
 								cardDataBlock = new byte[16];
 								cardDataSector = new byte[16][];
@@ -177,28 +181,34 @@ namespace RFiDGear
 
 							IMifareCommands cmd = card.Commands as IMifareCommands;
 
+							if(sectorNumber <= 31)
+								dataBlockNumber = (((sectorNumber + 1) * blockCount) - (blockCount - dataBlockNumber));
+							else
+								dataBlockNumber = ((128 + (sectorNumber - 31) * blockCount) - (blockCount - dataBlockNumber));
+							
 							try {
 								cmd.LoadKeyNo((byte)keyNumber, keyA, MifareKeyType.KT_KEY_A);
 								
-								for (int k = blockCount; k > 0; k--) {
+								for (int k = 0; k < blockCount; k++) {
 
 									try {
-										cmd.AuthenticateKeyNo((byte)(((sectorNumber + 1) * blockCount) - k), (byte)keyNumber, MifareKeyType.KT_KEY_A);
-										blockAuthSuccessful[(((sectorNumber + 1) * blockCount) - k)] = true;
+										
+										cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)keyNumber, MifareKeyType.KT_KEY_A); // change "keyNumber" to 0
+										blockAuthSuccessful[dataBlockNumber + k] = true;
 										
 										try {
-											object data = cmd.ReadBinary((byte)(((sectorNumber + 1) * blockCount) - k), 48);
+											object data = cmd.ReadBinary((byte)(dataBlockNumber + k), 48);
 											
 											cardDataBlock = (byte[])data;
-											cardDataSector[blockCount - k] = cardDataBlock;
+											cardDataSector[k] = cardDataBlock;
 											
-											blockReadSuccessful[(((sectorNumber + 1) * blockCount) - k)] = true;
+											blockReadSuccessful[dataBlockNumber + k] = true;
 										} catch {
-											blockReadSuccessful[(((sectorNumber + 1) * blockCount) - k)] = false;
+											blockReadSuccessful[dataBlockNumber + k] = false;
 											sectorCanRead = false;
 										}
 									} catch {
-										blockAuthSuccessful[(((sectorNumber + 1) * blockCount) - k)] = false;
+										blockAuthSuccessful[dataBlockNumber + k] = false;
 										sectorIsAuth = false;
 									}
 								}
@@ -230,6 +240,7 @@ namespace RFiDGear
 			MifareKey keyB = new MifareKey() { Value = new CustomConverter().KeyFormatQuickCheck(bKey) ? bKey : new CustomConverter().FormatSectorStringWithSpacesEachByte(bKey) };
 			
 			int blockCount = 0;
+			int dataBlockNumber = 0;
 			sectorIsAuth = true;
 			sectorCanRead = true;
 			
@@ -269,7 +280,10 @@ namespace RFiDGear
 								blockAuthSuccessful = new bool[256];
 								blockReadSuccessful = new bool[256];
 								
-								blockCount = 4;
+								if(sectorNumber <= 31)
+									blockCount = 4;
+								else
+									blockCount = 16;
 								
 								cardDataBlock = new byte[16];
 								cardDataSector = new byte[16][];
@@ -279,28 +293,34 @@ namespace RFiDGear
 
 							IMifareCommands cmd = card.Commands as IMifareCommands;
 
+							if(sectorNumber <= 31)
+								dataBlockNumber = (((sectorNumber + 1) * blockCount) - (blockCount - dataBlockNumber));
+							else
+								dataBlockNumber = ((128 + (sectorNumber - 31) * blockCount) - (blockCount - dataBlockNumber));
+							
 							try {
 								cmd.LoadKeyNo((byte)sectorNumber, keyA, MifareKeyType.KT_KEY_A);
 								
-								for (int k = blockCount; k > 0; k--) {
+								for (int k = 0; k < blockCount; k++) {
 
 									try {
-										cmd.AuthenticateKeyNo((byte)(((sectorNumber + 1) * blockCount) - k), (byte)sectorNumber, MifareKeyType.KT_KEY_A);
-										blockAuthSuccessful[(((sectorNumber + 1) * blockCount) - k)] = true;
+										
+										cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)sectorNumber, MifareKeyType.KT_KEY_A); // change "keyNumber" to 0
+										blockAuthSuccessful[dataBlockNumber + k] = true;
 										
 										try {
-											object data = cmd.ReadBinary((byte)(((sectorNumber + 1) * blockCount) - k), 48);
+											object data = cmd.ReadBinary((byte)(dataBlockNumber + k), 48);
 											
 											cardDataBlock = (byte[])data;
-											cardDataSector[blockCount - k] = cardDataBlock;
+											cardDataSector[k] = cardDataBlock;
 											
-											blockReadSuccessful[(((sectorNumber + 1) * blockCount) - k)] = true;
+											blockReadSuccessful[dataBlockNumber + k] = true;
 										} catch {
-											blockReadSuccessful[(((sectorNumber + 1) * blockCount) - k)] = false;
+											blockReadSuccessful[dataBlockNumber + k] = false;
 											sectorCanRead = false;
 										}
 									} catch {
-										blockAuthSuccessful[(((sectorNumber + 1) * blockCount) - k)] = false;
+										blockAuthSuccessful[dataBlockNumber + k] = false;
 										sectorIsAuth = false;
 									}
 								}
@@ -720,11 +740,11 @@ namespace RFiDGear
 			get{ return blockAuthSuccessful; }
 		}
 		
-		public bool? SectorSuccessfullyRead {
+		public bool SectorSuccessfullyRead {
 			get { return sectorCanRead; }
 		}
 		
-		public bool? SectorSuccesfullyAuth {
+		public bool SectorSuccesfullyAuth {
 			get{ return sectorIsAuth; }
 		}
 		

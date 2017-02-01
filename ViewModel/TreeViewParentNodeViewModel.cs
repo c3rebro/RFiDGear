@@ -16,26 +16,21 @@ namespace RFiDGear.ViewModel
 	/// </summary>
 	public class TreeViewParentNodeViewModel : INotifyPropertyChanged
 	{
-		#region Data
 
-		readonly ObservableCollection<TreeViewChildNodeViewModel> _children;
+		private static object _selectedItem;
 		
-		static object _selectedItem;
-
-		bool _isExpanded;
-		bool _isSelected;
-
-		#endregion // Data
+		private readonly CARD_TYPE _cardType;
+		private readonly List<MenuItem> ContextMenuItems;
+		private readonly RelayCommand _cmdReadAllSectorsWithDefaultKeys;
+		private readonly RelayCommand _cmdDeleteThisNode;
+		private readonly RelayCommand _cmdEditDefaultKeys;
+		private readonly string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 		
 		public MifareClassicUidTreeViewModel mifareClassicUidModel { get; set; }
 		public MifareDesfireUidTreeViewModel mifareDesfireUidModel { get; set; }
-		readonly CARD_TYPE _cardType;
-		readonly List<MenuItem> ContextMenuItems;
-		readonly RelayCommand _cmdReadAllSectorsWithDefaultKeys;
-		readonly RelayCommand _cmdDeleteThisNode;
-		readonly RelayCommand _cmdEditDefaultKeys;
-		readonly string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 		
+		#region Constructors
+
 		public TreeViewParentNodeViewModel(MifareClassicUidTreeViewModel uidModel, CARD_TYPE cardType)
 		{
 			mifareClassicUidModel = uidModel;
@@ -105,6 +100,15 @@ namespace RFiDGear.ViewModel
 			
 			_children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppIdTreeViewModel("[0] (Master App)"),this, _cardType));
 		}
+
+		#endregion
+		
+		#region Context Menu Items
+		
+		public List<MenuItem> ContextMenu {
+			get { return ContextMenuItems; }
+		}
+
 		
 		private void ReadSectorsWithDefaultConfig() {
 			Messenger.Default.Send<NotificationMessage<string>>(
@@ -136,12 +140,19 @@ namespace RFiDGear.ViewModel
 			);
 		}
 		
+		#endregion
+		
+		#region Items Sources
+		
+		private readonly ObservableCollection<TreeViewChildNodeViewModel> _children;
 		public ObservableCollection<TreeViewChildNodeViewModel> Children
 		{
 			get { return _children; }
 		}
 		
-		#region SelectedItem
+		#endregion
+		
+		#region Selected Items
 		
 		public object SelectedItem
 		{
@@ -151,76 +162,14 @@ namespace RFiDGear.ViewModel
 				if (_selectedItem != value)
 				{
 					_selectedItem = value;
-					OnSelectedItemChanged();
-				}
-			}
-		}
-		
-		#endregion //SelectedItem
-
-		
-		void OnSelectedItemChanged(){
-			//Messenger.Default.Send(this);
-		}
-		#region IsExpanded
-
-		/// <summary>
-		/// Gets/sets whether the TreeViewItem
-		/// associated with this object is expanded.
-		/// </summary>
-		public bool IsExpanded
-		{
-			get { return _isExpanded; }
-			set
-			{
-				if (value != _isExpanded)
-				{
-					_isExpanded = value;
-					this.OnPropertyChanged("IsExpanded");
+					OnPropertyChanged("SelectedItem");
 				}
 			}
 		}
 
-		#endregion // IsExpanded
-
-		#region IsSelected
-
-		/// <summary>
-		/// Gets/sets whether the TreeViewItem
-		/// associated with this object is selected.
-		/// </summary>
-		public bool IsSelected
-		{
-			get { return _isSelected; }
-			set
-			{
-				if (value != _isSelected)
-				{
-					_isSelected = value;
-					OnPropertyChanged("IsSelected");
-					
-					SelectedItem = this;
-				}
-			}
-		}
-
-		#endregion // IsSelected
-
-		#region INotifyPropertyChanged Members
-
-		public event PropertyChangedEventHandler PropertyChanged;
-
-		protected virtual void OnPropertyChanged(string propertyName)
-		{
-			if (this.PropertyChanged != null)
-				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-		}
-
-		#endregion // INotifyPropertyChanged Members
+		#endregion
 		
-		public List<MenuItem> ContextMenu {
-			get { return ContextMenuItems; }
-		}
+		#region Properties
 		
 		public string ParentNodeDisplayItem {
 			get { if(mifareClassicUidModel != null)
@@ -242,7 +191,55 @@ namespace RFiDGear.ViewModel
 			get { return _cardType; }
 		}
 		
-		void LoadChildren()
+		#endregion
+		
+		#region View Switches
+		
+		private bool _isExpanded;
+		public bool IsExpanded
+		{
+			get { return _isExpanded; }
+			set
+			{
+				if (value != _isExpanded)
+				{
+					_isExpanded = value;
+					this.OnPropertyChanged("IsExpanded");
+				}
+			}
+		}
+
+		private bool _isSelected;
+		public bool IsSelected
+		{
+			get { return _isSelected; }
+			set
+			{
+				if (value != _isSelected)
+				{
+					_isSelected = value;
+					OnPropertyChanged("IsSelected");
+					
+					SelectedItem = this;
+				}
+			}
+		}
+		
+		#endregion
+
+		#region INotifyPropertyChanged Members
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		protected virtual void OnPropertyChanged(string propertyName)
+		{
+			if (this.PropertyChanged != null)
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+		}
+
+		#endregion
+		
+		private void LoadChildren()
 		{
 
 			switch (_cardType) {

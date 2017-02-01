@@ -11,24 +11,10 @@ namespace RFiDGear.ViewModel
 	/// </summary>
 	public class TreeViewGrandChildNodeViewModel : INotifyPropertyChanged
 	{
-		
-		#region Data
-
-		readonly TreeViewChildNodeViewModel _parent;
-		
-		static object _selectedItem;
-
-		bool _isExpanded;
-		bool _isSelected;
-		
-		bool? isAuth;
-
-		#endregion // Data
-		
 		public Model.MifareClassicDataBlockTreeViewModel _dataBlock {get; set;}
-		readonly string _tag;
-		
 
+		#region Constructors
+		
 		public TreeViewGrandChildNodeViewModel(Model.MifareClassicDataBlockTreeViewModel dataBlock, TreeViewChildNodeViewModel parentSector, CARD_TYPE cardType, int sectorNumber)
 		{
 			_dataBlock = dataBlock;
@@ -39,9 +25,17 @@ namespace RFiDGear.ViewModel
 			_tag = String.Format("{0}:{1}",parentSector.ParentUid,parentSector.SectorNumber);
 			
 		}
-
+		
+		public TreeViewGrandChildNodeViewModel(string displayItem) {
+			_displayItem = displayItem;
+			isVisible=false;
+		}
+		
+		#endregion
+		
 		#region SelectedItem
 		
+		private object _selectedItem;
 		public object SelectedItem
 		{
 			get { return _selectedItem; }
@@ -55,16 +49,60 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		
-		#endregion //SelectedItem
+		#endregion
 
+		#region Parent
+
+		private readonly TreeViewChildNodeViewModel _parent;
+		public TreeViewChildNodeViewModel Parent
+		{
+			get { return _parent; }
+		}
+
+		#endregion
+
+		#region Properties
 		
+		public byte[] DataBlockContent {
+			get { return _dataBlock.dataBlockContent; }
+			set { _dataBlock.dataBlockContent = value; }
+		}
+		
+		private readonly string _tag;
+		public string Tag {
+			get {return _tag;}
+		}
+		
+		private string _displayItem;
+		public string GrandChildNodeDisplayItem {
+			get { if(_dataBlock != null)
+					return String.Format("Block: [{0}]", _dataBlock.dataBlockNumber);
+				return _displayItem;
+			}
+		}
+		
+		public int DataBlockNumber {
+			get { return _dataBlock.dataBlockNumber; }
+			set { _dataBlock.dataBlockNumber = value; }
+		}
+		
+		#endregion
+		
+		#region INotifyPropertyChanged Members
 
-		#region IsExpanded
+		public event PropertyChangedEventHandler PropertyChanged;
 
-		/// <summary>
-		/// Gets/sets whether the TreeViewItem
-		/// associated with this object is expanded.
-		/// </summary>
+		protected virtual void OnPropertyChanged(string propertyName)
+		{
+			if (this.PropertyChanged != null)
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+		}
+
+		#endregion
+		
+		#region View Switches
+		
+		private bool _isExpanded;
 		public bool IsExpanded
 		{
 			get { return _isExpanded; }
@@ -82,14 +120,7 @@ namespace RFiDGear.ViewModel
 			}
 		}
 
-		#endregion // IsExpanded
-
-		#region IsSelected
-
-		/// <summary>
-		/// Gets/sets whether the TreeViewItem
-		/// associated with this object is selected.
-		/// </summary>
+		private bool _isSelected;
 		public bool IsSelected
 		{
 			get { return _isSelected; }
@@ -104,52 +135,20 @@ namespace RFiDGear.ViewModel
 				}
 			}
 		}
-
-		#endregion // IsSelected
-
-		#region Parent
-
-		public TreeViewChildNodeViewModel Parent
-		{
-			get { return _parent; }
-		}
-
-		#endregion // Parent
-
-
-		#region INotifyPropertyChanged Members
-
-		public event PropertyChangedEventHandler PropertyChanged;
-
-		protected virtual void OnPropertyChanged(string propertyName)
-		{
-			if (this.PropertyChanged != null)
-				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-		}
-
-		#endregion // INotifyPropertyChanged Members
 		
-		public string GrandChildNodeDisplayItem {
-			get { return String.Format("Block: [{0}]", _dataBlock.dataBlockNumber); }
-		}
-		
-		public int DataBlockNumber {
-			get { return _dataBlock.dataBlockNumber; }
-			set { _dataBlock.dataBlockNumber = value; }
-		}
-		
+		private bool? isAuth;
 		public bool? IsAuthenticated {
 			get {return isAuth;}
 			set { isAuth = value; OnPropertyChanged("IsAuthenticated");}
 		}
 		
-		public byte[] DataBlockContent {
-			get { return _dataBlock.dataBlockContent; }
-			set { _dataBlock.dataBlockContent = value; }
+		private bool isVisible = true;
+		public bool IsVisible {
+			get { return isVisible; }
+			set { isVisible = value;
+				OnPropertyChanged("IsVisible"); }
 		}
 		
-		public string Tag {
-			get {return _tag;}
-		}
+		#endregion
 	}
 }

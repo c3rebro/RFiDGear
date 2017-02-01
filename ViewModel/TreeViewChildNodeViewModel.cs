@@ -119,7 +119,7 @@ namespace RFiDGear.ViewModel
 		
 		#region Commands
 		
-		public ICommand ReadSectorCommand {get { return new RelayCommand(ReadSectorWithDefaults); }}
+		public ICommand ReadSectorCommand { get { return new RelayCommand(ReadSectorWithDefaults); }}
 		public void ReadSectorWithDefaults() {
 			Messenger.Default.Send<NotificationMessage<string>>(
 				new NotificationMessage<string>(this, "TreeViewChildNode", "ReadSectorWithDefaults")
@@ -151,6 +151,7 @@ namespace RFiDGear.ViewModel
 		public ObservableCollection<TreeViewGrandChildNodeViewModel> Children
 		{
 			get { return _children; }
+			set { Children = value; OnPropertyChanged("Children"); }
 		}
 		
 		#endregion
@@ -240,9 +241,7 @@ namespace RFiDGear.ViewModel
 		public string ParentUid {
 			get { return _parentUid; }
 		}
-
-		#endregion
-
+		
 		public string ChildNodeDisplayItem {
 			get {
 				if(_cardType == CARD_TYPE.CT_CLASSIC_1K || _cardType == CARD_TYPE.CT_CLASSIC_2K || _cardType == CARD_TYPE.CT_CLASSIC_4K){
@@ -260,9 +259,11 @@ namespace RFiDGear.ViewModel
 				}
 			}
 		}
+
+		#endregion
 		
-		public void LoadChildren()
-		{
+		private void LoadChildren()
+		{			
 			switch (_cardType) {
 				case CARD_TYPE.CT_CLASSIC_1K:
 					{

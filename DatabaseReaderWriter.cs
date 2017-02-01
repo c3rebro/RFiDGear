@@ -90,7 +90,7 @@ namespace RFiDGear
 						
 						for(int i = 0; i< 31; i++)
 						{
-							sectorTrailer.SetAttribute(String.Format("SectorTrailer{0:d2}",i),String.Format("{0:d2};000000000000,FF0780C3,FFFFFFFFFFFF",i));
+							sectorTrailer.SetAttribute(String.Format("SectorTrailer{0:d2}",i),String.Format("{0:d2};FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF",i));
 						}
 
 						root.AppendChild(chipUidNode);

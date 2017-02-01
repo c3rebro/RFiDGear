@@ -92,7 +92,7 @@ namespace RFiDGear
 				
 				if (doc.SelectSingleNode("//defaultClassicCardSectorTrailers") == null) {
 					XmlElement classicCardKey = doc.CreateElement("defaultClassicCardSectorTrailers");
-					for (int i = 0; i <= 31; i++) {
+					for (int i = 0; i <= 39; i++) {
 						XmlAttribute classicCardSectorTrailer = doc.CreateAttribute(string.Format("SectorTrailer{0:d2}", i));
 						classicCardSectorTrailer.Value = _classicCardDefaultSectorTrailer;
 						classicCardKey.Attributes.Append(classicCardSectorTrailer);

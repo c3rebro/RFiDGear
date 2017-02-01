@@ -23,6 +23,7 @@ namespace RFiDGear.ViewModel
 	public class MainWindowViewModel : ViewModelBase
 	{
 		private ReaderSetupModel readerSetupModel;
+		private SettingsReaderWriter settingsReaderWriter;
 		private RFiDDevice rfidDevice;
 		private Updater updater = new Updater();
 		private DatabaseReaderWriter databaseReaderWriter;
@@ -39,6 +40,7 @@ namespace RFiDGear.ViewModel
 			readerSetupModel = new ReaderSetupModel("PCSC");
 			rfidDevice = new RFiDDevice("PCSC");
 			databaseReaderWriter = new DatabaseReaderWriter();
+			settingsReaderWriter = new SettingsReaderWriter();
 
 			Messenger.Default.Register<NotificationMessage<string>>(
 				this, nm => {
@@ -193,11 +195,26 @@ namespace RFiDGear.ViewModel
 				if (treeViewPnVM.UidNumber == selectedPnVM.UidNumber) {
 					selectedPnVM.IsExpanded = true;
 					foreach (TreeViewChildNodeViewModel cnVM in treeViewPnVM.Children) {
-						rfidDevice.ReadMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber);
+						
+						foreach(string keys in settingsReaderWriter.DefaultClassicCardQuickCheckKeys) {
+							//TODO Try all Keys and add the result somewhere in the treeview
+							rfidDevice.ReadMiFareClassicSingleSector(cnVM.SectorNumber, keys, keys);
+							
+							if(rfidDevice.SectorSuccesfullyAuth) {
+								cnVM.Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Key: {0}",keys)));
+								break;
+							}
+						}
 						cnVM.IsAuthenticated = rfidDevice.SectorSuccesfullyAuth;
 						foreach (TreeViewGrandChildNodeViewModel gcVM in cnVM.Children) {
-							gcVM.IsAuthenticated = rfidDevice.DataBlockSuccesfullyAuth[(((cnVM.SectorNumber + 1) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
-							gcVM.DataBlockContent = rfidDevice.currentSector[gcVM.DataBlockNumber];
+							if(gcVM._dataBlock != null) {
+								if(cnVM.SectorNumber <= 31)
+									gcVM.IsAuthenticated = rfidDevice.DataBlockSuccesfullyAuth[(((cnVM.SectorNumber + 1) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
+								else
+									gcVM.IsAuthenticated = rfidDevice.DataBlockSuccesfullyAuth[((128 + (cnVM.SectorNumber - 31) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
+								
+								gcVM.DataBlockContent = rfidDevice.currentSector[gcVM.DataBlockNumber];
+							}
 						}
 					}
 				}
@@ -208,6 +225,7 @@ namespace RFiDGear.ViewModel
 		
 		private void ReadSectorsWithDefaultConfig(TreeViewChildNodeViewModel selectedCnVM, string content)
 		{
+			selectedCnVM.IsSelected = true;
 			
 			Mouse.OverrideCursor = Cursors.Wait;
 			
@@ -216,7 +234,11 @@ namespace RFiDGear.ViewModel
 			rfidDevice.ReadMiFareClassicSingleSector(selectedCnVM.SectorNumber, selectedCnVM.SectorNumber);
 			selectedCnVM.IsAuthenticated = rfidDevice.SectorSuccesfullyAuth;
 			foreach (TreeViewGrandChildNodeViewModel gcVM in selectedCnVM.Children) {
-				gcVM.IsAuthenticated = rfidDevice.DataBlockSuccesfullyAuth[(((selectedCnVM.SectorNumber + 1) * selectedCnVM.BlockCount) - (selectedCnVM.BlockCount - gcVM.DataBlockNumber))];
+				if(selectedCnVM.SectorNumber <= 31)
+					gcVM.IsAuthenticated = rfidDevice.DataBlockSuccesfullyAuth[(((selectedCnVM.SectorNumber + 1) * selectedCnVM.BlockCount) - (selectedCnVM.BlockCount - gcVM.DataBlockNumber))];
+				else
+					gcVM.IsAuthenticated = rfidDevice.DataBlockSuccesfullyAuth[((128 + (selectedCnVM.SectorNumber - 31) * selectedCnVM.BlockCount) - (selectedCnVM.BlockCount - gcVM.DataBlockNumber))];
+				
 				gcVM.DataBlockContent = rfidDevice.currentSector[gcVM.DataBlockNumber];
 			}
 			
@@ -295,7 +317,7 @@ namespace RFiDGear.ViewModel
 			                 		databaseReaderWriter.WriteDatabase((sender.ViewModelContext as TreeViewChildNodeViewModel)._sectorModel);
 			                 		Messenger.Default.Send<NotificationMessage<string>>(
 			                 			new NotificationMessage<string>(this, "TreeViewChildNodeHasChanged", "ReadSectorWithDefaults"));
-			                 		},
+			                 	},
 
 			                 	OnCancel = (sender) => {
 			                 		sender.Close();
@@ -347,7 +369,7 @@ namespace RFiDGear.ViewModel
 		public ICommand ReadChipCommand { get { return new RelayCommand(OnNewReadChipCommand); } }
 		public void OnNewReadChipCommand()
 		{
-			if (!String.IsNullOrEmpty(new ReaderSetupModel(new SettingsReaderWriter().DefaultReaderProvider).GetChipUID)) {
+			if (!String.IsNullOrEmpty(new ReaderSetupModel(settingsReaderWriter.DefaultReaderProvider).GetChipUID)) {
 				if (readerSetupModel.SelectedReader != "N/A") {
 					if (!databaseReaderWriter.databaseUIDs.Contains(readerSetupModel.GetChipUID) || (treeViewParentNodes.Count == 0)) {
 						//databaseReaderWriter.databaseUIDs.Add(readerSetupModel.GetChipUID);
