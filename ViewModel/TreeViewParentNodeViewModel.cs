@@ -43,26 +43,49 @@ namespace RFiDGear.ViewModel
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
 			                     	Header = "QuickCheck",
-			                     	Command = _cmdReadAllSectorsWithDefaultKeys
+			                     	Command = _cmdReadAllSectorsWithDefaultKeys,
+			                     	ToolTip= new ToolTip() {
+			                     		Content="Try to get read access to all DataBlocks on the Card\n" +
+			                     			"Place the Result in a Database including SectorTrailer (Block 3)\n" +
+			                     			"Use a csv file to acuire default keys for authentication"
+			                     	}
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Edit default Keys...",
-			                     	Command = _cmdEditDefaultKeys
+			                     	Header = "Preformat Card...",
+			                     	Command = _cmdEditDefaultKeys,
+			                     	ToolTip= new ToolTip() {
+			                     		Content="Use defaults from settings file to write sectoraccessbits and keys to every card"
+			                     	}
 			                     });
 
 			ContextMenuItems.Add(new MenuItem() {
 			                     	Header = "Format Card...",
+			                     	Command = _cmdEditDefaultKeys,
+			                     	ToolTip= new ToolTip() {
+			                     		Content="Use QuickCheck Keys and try to write 0's to all Blocks except sectoraccessbits\n" +
+			                     			"If Auth fails, ask what to do or for a different key\n" +
+			                     			"Try to set transport configuration"
+			                     	}
+			                     });
+			
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Dump to File...",
 			                     	Command = _cmdEditDefaultKeys
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Read Card and Dump to File...",
+			                     	Header = "Copy...",
 			                     	Command = _cmdEditDefaultKeys
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Delete this Node",
+			                     	Header = "Paste...",
+			                     	Command = _cmdEditDefaultKeys
+			                     });
+			
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Delete Node",
 			                     	Command = _cmdDeleteThisNode
 			                     });
 			

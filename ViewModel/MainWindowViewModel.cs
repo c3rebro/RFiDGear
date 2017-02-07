@@ -42,6 +42,7 @@ namespace RFiDGear.ViewModel
 			databaseReaderWriter = new DatabaseReaderWriter();
 			settingsReaderWriter = new SettingsReaderWriter();
 
+			progressBarValue = 50;
 			Messenger.Default.Register<NotificationMessage<string>>(
 				this, nm => {
 					// Processing the Message
@@ -105,20 +106,45 @@ namespace RFiDGear.ViewModel
 		private MifareClassicDataBlockDataGridModel selectedDataGridItem;
 		public MifareClassicDataBlockDataGridModel SelectedDataGridItem {
 			get { return selectedDataGridItem; }
-			set { selectedDataGridItem = value; RaisePropertyChanged("SelectedDataGridItem"); }
+			set { selectedDataGridItem = value;
+				
+				foreach(TreeViewParentNodeViewModel PNVM in treeViewParentNodes)
+				{
+					foreach(TreeViewChildNodeViewModel CNVM in PNVM.Children)
+					{
+						foreach(TreeViewGrandChildNodeViewModel GCNVM in CNVM.Children)
+						{
+							if(GCNVM.IsSelected)
+							{
+								CNVM.HasChanged = true;
+								
+								for(int i = 0; i < DataSourceForMifareClassicDataBlock.Count; i++)
+									GCNVM.DataBlockContent[i] = DataSourceForMifareClassicDataBlock[i].singleByteBlock0AsByte;
+							}
+						}
+					}
+				}
+				
+				RaisePropertyChanged("SelectedDataGridItem"); }
 		}
 		
 		#endregion
 		
 		#region Items Sources
 		
+		private int progressBarValue;
+		public int ProgressBarValue {
+			get { return progressBarValue; }
+			set { progressBarValue = value;
+				RaisePropertyChanged("ProgressBarValue");
+			}
+		}
+		
 		private ObservableCollection<MifareClassicDataBlockDataGridModel> dataGridSource;
 		public ObservableCollection<MifareClassicDataBlockDataGridModel> DataGridSource {
 			get { return dataGridSource; }
 		}
 		
-
-
 		private ObservableCollection<TreeViewParentNodeViewModel> treeViewParentNodes = new ObservableCollection<TreeViewParentNodeViewModel>();
 		public ObservableCollection<TreeViewParentNodeViewModel> TreeViewParentNodes {
 			get {
@@ -385,6 +411,36 @@ namespace RFiDGear.ViewModel
 				}
 			}
 		}
+		
+		public ICommand WriteChipCommand { get { return new RelayCommand(OnWriteChipCommand); } }
+		public void OnWriteChipCommand()
+		{
+			foreach(TreeViewParentNodeViewModel PNVM in treeViewParentNodes)
+			{
+				foreach(TreeViewChildNodeViewModel CNVM in PNVM.Children)
+				{
+					if (CNVM.IsSelected)
+					{
+						foreach(TreeViewGrandChildNodeViewModel GCNVM in CNVM.Children)
+						{
+							for(int i = 0; i < DataSourceForMifareClassicDataBlock.Count; i++)
+							{
+								if(GCNVM.DataBlockContent[i] != DataSourceForMifareClassicDataBlock[i].singleByteBlock0AsByte)
+									CNVM.HasChanged = true;
+								
+								GCNVM.DataBlockContent[i] = DataSourceForMifareClassicDataBlock[i].singleByteBlock0AsByte;
+							}
+							
+							//rfidDevice.WriteMiFareClassicSingleSector(CNVM.SectorNumber,
+							//                                          settingsReaderWriter.DefaultClassicCardKeysAKeys[CNVM.SectorNumber],
+							//                                          settingsReaderWriter.DefaultClassicCardKeysBKeys[CNVM.SectorNumber],
+							//                                          GCNVM.DataBlockContent);
+						}
+					}
+				}
+			}
+		}
+		
 		
 		public ICommand CloseAllCommand { get { return new RelayCommand(OnCloseAll); } }
 		public void OnCloseAll()

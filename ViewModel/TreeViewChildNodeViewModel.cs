@@ -104,12 +104,14 @@ namespace RFiDGear.ViewModel
 		}
 		
 		public void ReadSectorWithSpecificKey() {
+			IsSelected = true;
 			Messenger.Default.Send<NotificationMessage<string>>(
 				new NotificationMessage<string>(this, "TreeViewChildNode", "EditAuthAndModifySector")
 			);
 		}
 		
 		public void EditAccessBits() {
+			IsSelected = true;
 			Messenger.Default.Send<NotificationMessage<string>>(
 				new NotificationMessage<string>(this, "TreeViewChildNode", "EditAccessBits")
 			);
@@ -121,6 +123,7 @@ namespace RFiDGear.ViewModel
 		
 		public ICommand ReadSectorCommand { get { return new RelayCommand(ReadSectorWithDefaults); }}
 		public void ReadSectorWithDefaults() {
+			IsSelected = true;
 			Messenger.Default.Send<NotificationMessage<string>>(
 				new NotificationMessage<string>(this, "TreeViewChildNode", "ReadSectorWithDefaults")
 			);
@@ -263,7 +266,7 @@ namespace RFiDGear.ViewModel
 		#endregion
 		
 		private void LoadChildren()
-		{			
+		{
 			switch (_cardType) {
 				case CARD_TYPE.CT_CLASSIC_1K:
 					{

@@ -130,8 +130,8 @@ namespace RFiDGear.ViewModel
 				{
 					_isSelected = value;
 					OnPropertyChanged("IsSelected");
-					
-					SelectedItem = this;
+					Messenger.Default.Send(this);
+					//SelectedItem = this; //FIXME Weird behavior with selected item above
 				}
 			}
 		}

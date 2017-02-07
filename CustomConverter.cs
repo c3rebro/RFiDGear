@@ -120,7 +120,7 @@ namespace RFiDGear
 			return false;
 		}
 		
-		public string FormatSectorStringWithSpacesEachByte(string Str)
+		public string FormatMifareClassicKeyWithSpacesEachByte(string Str)
 		{
 			string temp = Str;
 			

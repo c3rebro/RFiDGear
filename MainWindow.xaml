@@ -17,7 +17,7 @@
 	WindowStartupLocation="CenterScreen"
 	FontWeight="Normal"
 	MouseLeftButtonDown="WindowMouseLeftButtonDown"
-	DataContext="{Binding Source={StaticResource Locator}, Path=Main}">
+	DataContext="{Binding Source={StaticResource Locator}, Path=Main}" xmlns:Controls0="http://metro.mahapps.com/winfx/xaml/controls">
 	<Grid>
 		<Grid
 			Grid.Column="0"
@@ -114,7 +114,7 @@
 										Value="True">
 										<Setter
 											Property="Foreground"
-											Value="Yellow" />
+											Value="DarkViolet" />
 										<Setter
 											Property="FontWeight"
 											Value="Bold" />
@@ -139,11 +139,6 @@
 								<ContextMenu
 									ItemsSource="{Binding ContextMenu}"></ContextMenu>
 							</TextBlock.ContextMenu>
-							<!--  <TextBlock.InputBindings>
-								<MouseBinding
-									Command="{Binding ReadSectorCommand}"
-									MouseAction="LeftDoubleClick" />
-							</TextBlock.InputBindings> -->
 						</TextBlock>
 					</HierarchicalDataTemplate>
 					<DataTemplate
@@ -306,7 +301,8 @@
 						</MenuItem.Foreground>
 					</MenuItem>
 					<MenuItem
-						Header="_Write RFiD Chip">
+						Header="_Write RFiD Chip"
+						Command="{Binding WriteChipCommand}">
 						<MenuItem.Foreground>
 							<SolidColorBrush
 								Color="Black" />
@@ -389,6 +385,14 @@
 					</MenuItem>
 				</MenuItem>
 			</Menu>
+			<ProgressBar
+				Width="519"
+				Height="34"
+				Minimum="0"
+				Maximum="100"
+				Value="{Binding ProgressBarValue}"
+				Visibility="Hidden"
+				Foreground="#FF1CE006" />
 		</DockPanel>
 	</Grid>
 </Controls:MetroWindow>
