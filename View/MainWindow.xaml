@@ -1,6 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Controls:MetroWindow
-	x:Class="RFiDGear.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors" xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+<Window
+	x:Class="RFiDGear.MainWindow"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors"
 	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}" xmlns:local="clr-namespace:RFiDGear"
 	x:Name="homeWindow"
 	mc:Ignorable="d"
@@ -11,9 +16,7 @@
 	FontFamily="Segoe UI"
 	HorizontalContentAlignment="Left"
 	SizeToContent="Manual"
-	GlowBrush="Black"
 	Topmost="False"
-	WindowTransitionsEnabled="False"
 	WindowStartupLocation="CenterScreen"
 	FontWeight="Normal"
 	MouseLeftButtonDown="WindowMouseLeftButtonDown"
@@ -395,4 +398,4 @@
 				Foreground="#FF1CE006" />
 		</DockPanel>
 	</Grid>
-</Controls:MetroWindow>
+</Window>

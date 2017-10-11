@@ -1,5 +1,6 @@
 ﻿using RFiDGear.Model;
 
+using GalaSoft.MvvmLight.Command;
 using GalaSoft.MvvmLight.Messaging;
 
 using System;
@@ -24,6 +25,10 @@ namespace RFiDGear.ViewModel
 		private readonly RelayCommand _cmdReadAllSectorsWithDefaultKeys;
 		private readonly RelayCommand _cmdDeleteThisNode;
 		private readonly RelayCommand _cmdEditDefaultKeys;
+		
+		
+		private readonly RelayCommand _cmdCreateApp;
+		private readonly RelayCommand _cmdEraseDesfireCard;
 		private readonly string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 		
 		public MifareClassicUidTreeViewModel mifareClassicUidModel { get; set; }
@@ -36,8 +41,8 @@ namespace RFiDGear.ViewModel
 			mifareClassicUidModel = uidModel;
 			_cardType = cardType;
 			
-			_cmdReadAllSectorsWithDefaultKeys = new ViewModel.RelayCommand(ReadSectorsWithDefaultConfig);
-			_cmdDeleteThisNode = new ViewModel.RelayCommand(DeleteMeCommand);
+			_cmdReadAllSectorsWithDefaultKeys = new RelayCommand(ReadSectorsWithDefaultConfig);
+			_cmdDeleteThisNode = new RelayCommand(DeleteMeCommand);
 			_cmdEditDefaultKeys = new RelayCommand(EditDefaultKeys);
 			
 			ContextMenuItems = new List<MenuItem>();
@@ -99,24 +104,55 @@ namespace RFiDGear.ViewModel
 			mifareDesfireUidModel = uid;
 			_cardType = cardType;
 			
-			RelayCommand _cmd = new RelayCommand(EditDefaultKeys);
+			RelayCommand _cmdEditDefaultKeys = new RelayCommand(EditDefaultKeys);
 			RelayCommand _cmdReadAppIds = new RelayCommand(ReadAppIDs);
-			RelayCommand _cmdCreateApp = new RelayCommand(CreateApp);
+			_cmdCreateApp = new RelayCommand(CreateApp);
+			_cmdEraseDesfireCard = new RelayCommand(EraseDesfireCard);
 			
 			ContextMenuItems = new List<MenuItem>();
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Read Application IDs",
-			                     	Command = _cmdReadAppIds
+			                     	Header = "QuickCheck",
+			                     	Command = _cmdReadAppIds,
+			                     	ToolTip = new ToolTip() {
+			                     		Content="Try to get all Application IDs on the Card"
+			                     	}});
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Preformat Card...",
+			                     	Command = _cmdCreateApp,
+			                     	ToolTip= new ToolTip() {
+			                     		Content="Use defaults from settings file to write sectoraccessbits and keys to every card"
+			                     	}
 			                     });
-
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Format Card...",
+			                     	Command = _cmdEraseDesfireCard,
+			                     	ToolTip= new ToolTip() {
+			                     		Content="Use default CardMasterKey from settings file to erase all Applications on the Card"
+			                     	}
+			                     });
 			ContextMenuItems.Add(new MenuItem() {
 			                     	Header = "Create a new Application...",
 			                     	Command = _cmdCreateApp
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Authenticate with Card Master Key...",
-			                     	Command = _cmd
+			                     	Header = "Dump to File...",
+			                     	Command = _cmdEditDefaultKeys
+			                     });
+			
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Copy...",
+			                     	Command = _cmdEditDefaultKeys
+			                     });
+			
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Paste...",
+			                     	Command = _cmdEditDefaultKeys
+			                     });
+			
+			ContextMenuItems.Add(new MenuItem() {
+			                     	Header = "Delete Node",
+			                     	Command = _cmdDeleteThisNode
 			                     });
 			
 			_children = new ObservableCollection<TreeViewChildNodeViewModel>();
@@ -148,6 +184,12 @@ namespace RFiDGear.ViewModel
 		private void ReadAppIDs() {
 			Messenger.Default.Send<NotificationMessage<string>>(
 				new NotificationMessage<string>(this, "TreeViewParentNodes", "ReadAppIDs")
+			);
+		}
+		
+		private void EraseDesfireCard() {
+			Messenger.Default.Send<NotificationMessage<string>>(
+				new NotificationMessage<string>(this, "TreeViewParentNodes", "EraseDesfireCard")
 			);
 		}
 		

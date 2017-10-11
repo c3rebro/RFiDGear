@@ -1,4 +1,6 @@
-﻿using GalaSoft.MvvmLight;
+﻿using GalaSoft.MvvmLight.Command;
+using GalaSoft.MvvmLight;
+
 using MvvmDialogs.ViewModels;
 using System;
 using System.Collections.Generic;

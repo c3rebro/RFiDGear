@@ -1,4 +1,10 @@
-﻿using GalaSoft.MvvmLight;
+﻿/*
+ * Created by SharpDevelop.
+ * Date: 10/11/2017
+ * Time: 22:15
+ * 
+ */
+using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 
 using MvvmDialogs.ViewModels;
@@ -16,20 +22,81 @@ using System.Windows.Input;
 namespace RFiDGear.ViewModel
 {
 	/// <summary>
-	/// Description of KeySettingsMifareClassicDialogViewModel.
+	/// Description of MifareClassicSetupViewModel.
 	/// </summary>
-	public class MifareAuthSettingsDialogViewModel : ViewModelBase, IUserDialogViewModel
+	public class MifareClassicSetupViewModel : ViewModelBase, IUserDialogViewModel
 	{
-
 		
-		#region Constructors
+		#region fields
+		
+		private DatabaseReaderWriter databaseReaderWriter;
 
-		public MifareAuthSettingsDialogViewModel(object treeViewViewModel, bool isModal = true)
-		{
+		private int selectedDataBlockRow;
 
-		}
+		private readonly ObservableCollection<MifareClassicAccessBitsSectorTrailerDataGridModel> displaySourceForSectorTrailerDataGrid;
+		private readonly ObservableCollection<MifareClassicAccessBitsLongDataBlockDataGridModel> displaySourceForLongDataBlockDataGrid;
+		private readonly ObservableCollection<MifareClassicAccessBitsShortDataBlockDataGridModel> displaySourceForShortDataBlockDataGrid;
+		
+		private ObservableCollection<object> displaySourceForCombinedDataBlockDataGrid;
+		
+		private MifareClassicAccessBitsSectorTrailerDataGridModel selectedSectorTrailerAccessBitsItem;
+		private object selectedCombinedDataBlockAccessBitsDataGridItem;
+		private object selectedDataBlock0AccessBitsDataGridItem;
+		private object selectedDataBlock1AccessBitsDataGridItem;
+		private object selectedDataBlock2AccessBitsDataGridItem;
+		
+		public object ViewModelContext { get; set; }
 		
 		#endregion
+		
+		public MifareClassicSetupViewModel(object treeViewViewModel)
+		{
+			
+			_dataBlockIsCombinedToggleButtonIsChecked = true;
+			databaseReaderWriter = new DatabaseReaderWriter();
+			ViewModelContext = treeViewViewModel;
+			
+			displaySourceForSectorTrailerDataGrid = new ObservableCollection<MifareClassicAccessBitsSectorTrailerDataGridModel>();
+			displaySourceForLongDataBlockDataGrid = new ObservableCollection<MifareClassicAccessBitsLongDataBlockDataGridModel>();
+			displaySourceForShortDataBlockDataGrid = new ObservableCollection<MifareClassicAccessBitsShortDataBlockDataGridModel>();
+			
+			foreach (string accessConditions in MifareClassicAccessBitsBaseModel.sectorTrailerAB) {
+				displaySourceForSectorTrailerDataGrid.Add(new MifareClassicAccessBitsSectorTrailerDataGridModel(accessConditions));
+			}
+
+			foreach (string accessConditions in MifareClassicAccessBitsBaseModel.dataBlockAB) {
+				displaySourceForLongDataBlockDataGrid.Add(new MifareClassicAccessBitsLongDataBlockDataGridModel(accessConditions));
+			}
+			
+
+			foreach (string accessConditions in MifareClassicAccessBitsBaseModel.dataBlockABs) {
+				if (!String.IsNullOrEmpty(accessConditions))
+					displaySourceForShortDataBlockDataGrid.Add(new MifareClassicAccessBitsShortDataBlockDataGridModel(accessConditions));
+			}
+			
+			// select the default items from xml-file based Database
+			displaySourceForCombinedDataBlockDataGrid = new ObservableCollection<object>(displaySourceForShortDataBlockDataGrid);
+			
+			foreach (MifareClassicAccessBitsSectorTrailerDataGridModel item in displaySourceForSectorTrailerDataGrid) {
+
+				if (ViewModelContext is TreeViewChildNodeViewModel && item.GetSectorAccessBitsFromHumanReadableFormat() ==
+				    (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedSectorTrailerAccessBits) //"N,A,A,A,A,A"
+					selectedSectorTrailerAccessBitsItem = item;
+			}
+			
+			foreach (MifareClassicAccessBitsShortDataBlockDataGridModel item in displaySourceForCombinedDataBlockDataGrid) {
+				if (ViewModelContext is TreeViewChildNodeViewModel && item.GetShortDataBlockAccessBitsFromHumanReadableFormat() ==
+				    (ViewModelContext as TreeViewChildNodeViewModel)._sectorModel.sectorAccessBits.DecodedDataBlock0AccessBits) { //"A,A,A,A"
+					selectedCombinedDataBlockAccessBitsDataGridItem = item;
+					selectedDataBlock0AccessBitsDataGridItem = item;
+					selectedDataBlock1AccessBitsDataGridItem = item;
+					selectedDataBlock2AccessBitsDataGridItem = item;
+				}
+
+			}
+			this.IsModal = true;
+		}
+		
 		
 		#region Text Boxes
 		
@@ -384,6 +451,7 @@ namespace RFiDGear.ViewModel
 		
 		#endregion
 		
+		
 		#region IUserDialogViewModel Implementation
 
 		public bool IsModal { get; private set; }
@@ -423,10 +491,10 @@ namespace RFiDGear.ViewModel
 				Close();
 		}
 		
-		public Action<MifareAuthSettingsDialogViewModel> OnOk { get; set; }
-		public Action<MifareAuthSettingsDialogViewModel> OnCancel { get; set; }
-		public Action<MifareAuthSettingsDialogViewModel> OnAuth { get; set; }
-		public Action<MifareAuthSettingsDialogViewModel> OnCloseRequest { get; set; }
+		public Action<MifareClassicSetupViewModel> OnOk { get; set; }
+		public Action<MifareClassicSetupViewModel> OnCancel { get; set; }
+		public Action<MifareClassicSetupViewModel> OnAuth { get; set; }
+		public Action<MifareClassicSetupViewModel> OnCloseRequest { get; set; }
 
 		public void Close()
 		{

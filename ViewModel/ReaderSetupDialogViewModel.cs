@@ -1,5 +1,8 @@
 ﻿using GalaSoft.MvvmLight;
+using GalaSoft.MvvmLight.Command;
+
 using MvvmDialogs.ViewModels;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,69 +23,7 @@ namespace RFiDGear.ViewModel
 			this.IsModal = isModal;
 		}
 		
-		#region Commands
-		
-		public ICommand ReaderSeletedCommand { get { return new RelayCommand(ReaderSelected); } }
-		protected virtual void ReaderSelected()
-		{
-			
-		}
-		
-		public ICommand ConnectToReaderCommand { get { return new RelayCommand(ConnectToReader); } }
-		protected virtual void ConnectToReader()
-		{
-			RaisePropertyChanged("DefaultReader");
-			RaisePropertyChanged("ReaderStatus");
-		}
-		
-		public ICommand ApplyAndExitCommand { get { return new RelayCommand(Ok); } }
-		protected virtual void Ok()
-		{
-			if (this.OnOk != null)
-				this.OnOk(this);
-			else
-				Close();
-		}
-		
-		public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
-		protected virtual void Cancel()
-		{
-			if (this.OnCancel != null)
-				this.OnCancel(this);
-			else
-				Close();
-		}
 
-		#endregion Commands
-		
-		public string[] ReaderProviderList {
-			get {
-				return new ReaderSetupModel(null).ReaderList;
-			}
-		}
-
-		public string SelectedReader {
-			get { return new ReaderSetupModel(null).SelectedReader; }
-			set { new ReaderSetupModel(null).SelectedReader = value; }
-		}
-		
-		public string ReaderStatus {
-			get { return !String.IsNullOrWhiteSpace(new ReaderSetupModel(null).GetChipUID)
-					? String.Format("Connected to Card:"
-					                + '\n'
-					                +"UID: {0} "
-					                + '\n'
-					                +"Type: {1}",new ReaderSetupModel(null).GetChipUID, new ReaderSetupModel(null).GetChipType)
-					: "not Connected";}
-		}
-		
-		public string DefaultReader {
-			get { return new ReaderSetupModel(null).GetReaderName;}
-		}
-		
-		public string ConnectButtonText {
-			get { return ResourceLoader.getResource("buttonConnectToReaderText"); }
-		}
 
 		#region IUserDialogViewModel Implementation
 		

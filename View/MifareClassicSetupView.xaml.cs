@@ -1,16 +1,21 @@
-﻿using System;
+﻿/*
+ * Created by SharpDevelop.
+ * Date: 10.10.2017
+ * Time: 22:11
+ * 
+ */
+using System;
 using System.ComponentModel;
 using System.Windows.Controls;
-
 
 namespace RFiDGear.View
 {
 	/// <summary>
-	/// Interaction logic for MifareAuthSettingsDialogBox.xaml
+	/// Interaction logic for MifareClassicSetupView.xaml
 	/// </summary>
-	public partial class MifareAuthSettingsDialogBox
+	public partial class MifareClassicSetupView
 	{
-		public MifareAuthSettingsDialogBox()
+		public MifareClassicSetupView()
 		{
 			InitializeComponent();
 		}

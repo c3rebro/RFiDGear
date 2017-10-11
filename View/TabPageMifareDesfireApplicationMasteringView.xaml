@@ -1,0 +1,245 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+	x:Class="RFiDGear.View.TabPageMifareDesfireApplicationMasteringView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	mc:Ignorable="d"
+	VerticalAlignment="Stretch"
+	HorizontalAlignment="Stretch">
+	<Grid>
+		<Grid
+			Height="76.000000000000014"
+			Grid.Column="0"
+			Grid.Row="0"
+			VerticalAlignment="Top"
+			Margin="8,8,8,8"
+			HorizontalAlignment="Stretch">
+			<Label
+				Content="Configuration Type"
+				Height="26"
+				Grid.Column="0"
+				Grid.Row="0"
+				HorizontalAlignment="Stretch"
+				VerticalAlignment="Top"
+				Margin="8,8,744,0" />
+			<ComboBox
+				Width="252"
+				Grid.Column="0"
+				Grid.Row="0"
+				HorizontalAlignment="Left"
+				Height="26"
+				VerticalAlignment="Top"
+				Margin="149,8,0,0" />
+			<Label
+				Content="Task Description"
+				RenderTransformOrigin="0.5085,0.4231"
+				Height="26"
+				Grid.Column="0"
+				Grid.Row="0"
+				VerticalAlignment="Top"
+				Width="109.00000000000023"
+				HorizontalAlignment="Left"
+				Margin="429,42,0,0" />
+			<TextBox
+				Height="26"
+				Grid.Column="0"
+				Grid.Row="0"
+				VerticalAlignment="Top"
+				Margin="546,42,8,0" />
+			<Label
+				Content="Task Index"
+				RenderTransformOrigin="0.5085,0.4231"
+				Height="26"
+				Grid.Column="0"
+				Grid.Row="0"
+				VerticalAlignment="Top"
+				Width="109.00000000000023"
+				HorizontalAlignment="Left"
+				Margin="429,8,0,0" />
+			<TextBox
+				Height="26"
+				Grid.Column="0"
+				Grid.Row="0"
+				VerticalAlignment="Top"
+				Margin="546,8,8,0" />
+		</Grid>
+		<Grid
+			Grid.Column="0"
+			Grid.Row="0"
+			HorizontalAlignment="Stretch"
+			VerticalAlignment="Stretch"
+			Margin="8,100,8,8">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition
+					Width="430" />
+				<ColumnDefinition
+					Width="5" />
+				<ColumnDefinition
+					Width="*" />
+			</Grid.ColumnDefinitions>
+			<GroupBox
+				IsEnabled="{Binding IsDesfireAuthInfoEnabled}"
+				Header="Mifare DESFire Card Master Settings - Target"
+				Margin="8,0,8,0"
+				VerticalAlignment="Stretch"
+				Grid.Row="0"
+				Grid.Column="2">
+				<Grid>
+					<Button
+						Content="Change Key"
+						Height="23"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Bottom"
+						Margin="8,0,8,8" />
+					<Label
+						Content="Application Master Key"
+						Height="26"
+						Width="141"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,37,0,0" />
+					<TextBox
+						Height="20"
+						Grid.Column="0"
+						Grid.Row="0"
+						VerticalAlignment="Top"
+						Margin="179,43,9,0" />
+					<Label
+						Content="Application Master Key"
+						Width="153"
+						Height="26"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,69,0,0" />
+					<TextBox
+						Height="20"
+						Grid.Column="0"
+						Grid.Row="0"
+						VerticalAlignment="Top"
+						Margin="179,70,8,0" />
+					<Label
+						Content="Change Key Type"
+						Width="110"
+						Height="26"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,95,0,0" />
+					<ComboBox
+						Height="26"
+						Grid.Column="0"
+						Grid.Row="0"
+						VerticalAlignment="Top"
+						Width="144"
+						HorizontalAlignment="Right"
+						Margin="0,95,8,0" />
+					<Button
+						Content="Create Application"
+						Height="23"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Bottom"
+						Margin="8,0,8,37" />
+					<Label
+						Content="Application ID"
+						Width="91"
+						Height="26"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,8,0,0" />
+					<TextBox
+						Text="T1"
+						Height="20"
+						Width="195"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Right"
+						VerticalAlignment="Top"
+						Margin="0,15,8,0" />
+				</Grid>
+			</GroupBox>
+			<GridSplitter
+				Background="#FFD9D9DB"
+				Grid.Column="0"
+				Grid.Row="0"
+				HorizontalAlignment="Stretch"
+				VerticalAlignment="Stretch"
+				Margin="432,0,-4,0" />
+			<GroupBox
+				IsEnabled="{Binding IsDesfireAuthInfoEnabled}"
+				Header="Mifare DESFire Card Master Settings - Current"
+				Grid.Column="0"
+				Grid.Row="0"
+				Margin="0,0,8,0"
+				HorizontalAlignment="Stretch"
+				VerticalAlignment="Stretch">
+				<Grid>
+					<Button
+						Content="Authenticate with Current Key"
+						HorizontalAlignment="Stretch"
+						Height="23"
+						VerticalAlignment="Bottom"
+						Margin="8.25,0,7.75,8" />
+					<Label
+						Content="Current Key Type"
+						Width="116"
+						Height="26"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8.5,99,0,0" />
+					<ComboBox
+						Height="26"
+						Grid.Column="0"
+						Grid.Row="0"
+						VerticalAlignment="Top"
+						Width="104"
+						HorizontalAlignment="Left"
+						Margin="154,99,0,0" />
+					<Label
+						Content="Application Master Key"
+						Height="26"
+						Width="141"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="5.5,61.9999999999999,0,0" />
+					<TextBox
+						Height="20"
+						Grid.Column="0"
+						Grid.Row="0"
+						VerticalAlignment="Top"
+						Margin="154,61.9999999999999,5.5,0" />
+					<Label
+						Content="Application ID"
+						Height="26"
+						Width="88"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,8,0,0" />
+					<TextBox
+						Text="T1"
+						Height="20"
+						Width="116"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="286,8,0,0" />
+				</Grid>
+			</GroupBox>
+		</Grid>
+	</Grid>
+</UserControl>

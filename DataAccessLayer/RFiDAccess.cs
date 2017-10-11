@@ -373,20 +373,27 @@ namespace RFiDGear
 			return true;
 		}
 		
-		public bool WriteMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
+		public bool WriteMiFareClassicSingleSector(int sectorNumber, string sectorTrailer, byte[] buffer)
 		{
 			SettingsReaderWriter settings = new SettingsReaderWriter();
 			
 			settings.readSettings();
 			
-			MifareKey keyA = new MifareKey() { Value = new CustomConverter().KeyFormatQuickCheck(aKey) ? aKey : new CustomConverter().FormatMifareClassicKeyWithSpacesEachByte(aKey) };
-			MifareKey keyB = new MifareKey() { Value = new CustomConverter().KeyFormatQuickCheck(bKey) ? bKey : new CustomConverter().FormatMifareClassicKeyWithSpacesEachByte(bKey) };
+			string[] keys = sectorTrailer.Split(',');
+			
+			string accessBits = keys[1];
+			
+			MifareKey keyA = new MifareKey() { Value = new CustomConverter().FormatMifareClassicKeyWithSpacesEachByte(keys[0]) };
+			MifareKey keyB = new MifareKey() { Value = new CustomConverter().FormatMifareClassicKeyWithSpacesEachByte(keys[2]) };
 			
 			int blockCount = 0;
 			int dataBlockNumber = 0;
 			sectorIsKeyAAuthSuccessful = true;
 			sectorIsKeyBAuthSuccessful = false;
 			sectorCanRead = true;
+			
+			
+			byte[] test;
 			
 			try {
 				readerProvider = new LibraryManagerClass().GetReaderProvider(new SettingsReaderWriter().DefaultReaderProvider);
@@ -413,7 +420,7 @@ namespace RFiDGear
 								blockAuthSuccessful = new bool[64];
 								blockReadSuccessful = new bool[64];
 								
-								blockCount = 3;
+								blockCount = 4;
 								
 								cardDataBlock = new byte[16];
 								cardDataSector = new byte[4][];
@@ -425,7 +432,7 @@ namespace RFiDGear
 								blockReadSuccessful = new bool[256];
 								
 								if(sectorNumber <= 31)
-									blockCount = 3;
+									blockCount = 4;
 								else
 									blockCount = 16;
 								
@@ -455,7 +462,14 @@ namespace RFiDGear
 										blockAuthSuccessful[dataBlockNumber + k] = true;
 										
 										try {
-											cmd.WriteBinary((byte)(dataBlockNumber + k), buffer);
+											if(k <= 3)
+												cmd.WriteBinary((byte)(dataBlockNumber + k), buffer);
+											else
+											{
+												test = new ByteConverter().ConvertFrom(keys) as byte[];
+												cmd.WriteBinary((byte)(dataBlockNumber + k), new ByteConverter().ConvertFrom(keys) as byte[]);
+											}
+
 											
 											//cardDataBlock = (byte[])data;
 											//cardDataSector[k] = cardDataBlock;
@@ -768,6 +782,67 @@ namespace RFiDGear
 			return true;
 		}
 		
+		private bool FormatDesFireCard(string cardMasterKey, DESFireKeyType keyType)
+		{
+			try {
+				readerProvider = new LibraryManagerClass().GetReaderProvider(readerProviderName);
+				readerUnit = readerProvider.CreateReaderUnit();
+				
+				// The excepted memory tree
+				IDESFireLocation location = new DESFireLocation();
+				// File communication requires encryption
+				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				
+				
+				IDESFireEV1Commands cmd;
+				// Keys to use for authentication
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				aiToUse.MasterCardKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
+				//aiToUse.MasterCardKey.Value = "ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff";
+				aiToUse.MasterCardKey.KeyType = keyType;
+
+				CustomConverter converter = new CustomConverter();
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(100)) {
+						if (readerUnit.Connect()) {
+							
+							readerUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.Type == "DESFireEV1") {
+								cmd = card.Commands as IDESFireEV1Commands;
+								
+								object appIDsObject = cmd.GetApplicationIDs();
+								appIDs = (appIDsObject as UInt32[]);
+								cmd.SelectApplication(0);
+
+								cmd.Authenticate(0, aiToUse.MasterCardKey);
+								cmd.DeleteApplication(1);
+								cmd.Erase();
+								
+							}
+							if (card.Type == "DESFireEV2") {
+								
+							}
+							
+							readerUnit.Disconnect();
+							readerUnit.DisconnectFromReader();
+							readerProvider.ReleaseInstance();
+							return false;
+						}
+					}
+					readerUnit.DisconnectFromReader();
+				}
+				readerProvider.ReleaseInstance();
+				return true;
+			} catch (Exception e) {
+				throw new Exception(String.Format("Uuups: {0}", e));
+			}
+		}
+		
 		#region properties
 		public bool IsChipPresent {
 			get { return ReadChipPublic(); }
@@ -825,6 +900,10 @@ namespace RFiDGear
 		
 		public byte[] GetDESFireFileData {
 			get { return desFireFileData; }
+		}
+		
+		public bool EraseDesfireCard {
+			get { return FormatDesFireCard(null, DESFireKeyType.DF_KEY_AES); }
 		}
 		#endregion
 	}

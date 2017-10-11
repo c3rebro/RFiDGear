@@ -41,7 +41,6 @@ namespace RFiDGear.ViewModel
 
 			SimpleIoc.Default.Register<MainWindowViewModel>();
 			//SimpleIoc.Default.Register<Messenger, MainWindowViewModel>(true);
-			SimpleIoc.Default.Register<MifareAuthSettingsDialogViewModel>();
 			
 		}
 
@@ -50,15 +49,6 @@ namespace RFiDGear.ViewModel
 			get
 			{
 				return ServiceLocator.Current.GetInstance<MainWindowViewModel>();
-			}
-		}
-
-
-		public MifareAuthSettingsDialogViewModel ClassicKeySettings
-		{
-			get
-			{
-				return ServiceLocator.Current.GetInstance<MifareAuthSettingsDialogViewModel>();
 			}
 		}
 		

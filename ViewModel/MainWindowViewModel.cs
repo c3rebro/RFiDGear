@@ -2,6 +2,7 @@
 using RFiDGear.Model;
 
 using GalaSoft.MvvmLight;
+using GalaSoft.MvvmLight.Command;
 using GalaSoft.MvvmLight.Messaging;
 
 using MvvmDialogs.ViewModels;
@@ -67,6 +68,9 @@ namespace RFiDGear.ViewModel
 									break;
 								case "CreateAppID":
 									CreateApp((TreeViewParentNodeViewModel)nm.Sender, nm.Notification);
+									break;
+								case "EraseDesfireCard":
+									EraseDesfireCard((TreeViewParentNodeViewModel)nm.Sender, nm.Notification);
 									break;
 							}
 							break;
@@ -199,11 +203,48 @@ namespace RFiDGear.ViewModel
 			foreach(uint appID in rfidDevice.GetAppIDList){
 				selectedPNVM.Children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppIdTreeViewModel(String.Format("{0:d2}",appID)),selectedPNVM, CARD_TYPE.CT_DESFIRE_EV1));
 			}
-
+		}
+		
+		private void EraseDesfireCard(TreeViewParentNodeViewModel selectedPNVM, string content) {
+			if(!rfidDevice.EraseDesfireCard)
+			{
+				selectedPNVM.Children.Clear();
+				foreach(uint appID in rfidDevice.GetAppIDList){
+					selectedPNVM.Children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppIdTreeViewModel(String.Format("{0:d2}",appID)),selectedPNVM, CARD_TYPE.CT_DESFIRE_EV1));
+				}
+			}
 		}
 		
 		private void CreateApp(TreeViewParentNodeViewModel selectedPNVM, string content) {
 			
+			this.Dialogs.Add(new MifareDesfireSetupViewModel(selectedPNVM) {
+			                 	
+			                 	
+			                 	OnOk = (sender) => {
+			                 		
+			                 	},
+
+			                 	OnCancel = (sender) => {
+			                 		
+			                 		sender.Close();
+
+			                 	},
+			                 	
+			                 	OnAuth = (sender) => {
+			                 		foreach (TreeViewChildNodeViewModel cnVM in selectedPNVM.Children) {
+			                 			rfidDevice.ReadMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber);
+			                 			cnVM.IsAuthenticated = rfidDevice.SectorSuccesfullyAuth;
+			                 			foreach (TreeViewGrandChildNodeViewModel gcVM in cnVM.Children) {
+			                 				gcVM.IsAuthenticated = rfidDevice.DataBlockSuccesfullyAuth[(((cnVM.SectorNumber + 1) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
+			                 				gcVM.DataBlockContent = rfidDevice.currentSector[gcVM.DataBlockNumber];
+			                 			}
+			                 		}
+			                 	},
+
+			                 	OnCloseRequest = (sender) => {
+			                 		sender.Close();
+			                 	}
+			                 });
 		}
 		#endregion
 		
@@ -290,7 +331,7 @@ namespace RFiDGear.ViewModel
 			else
 				isClassicCard = false;
 			
-			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel(uidVM) {
+			this.Dialogs.Add(new MifareClassicSetupViewModel(uidVM) {
 			                 	
 			                 	Caption = String.Format("{0}{1}{2}", ResourceLoader.getResource("mifareAuthSettingsDialogCaption"), uidVM.CardType, uidVM.UidNumber),
 			                 	IsClassicAuthInfoEnabled = isClassicCard,
@@ -332,7 +373,7 @@ namespace RFiDGear.ViewModel
 			else
 				isClassicCard = false;
 			
-			this.Dialogs.Add(new MifareAuthSettingsDialogViewModel(sectorVM) {
+			this.Dialogs.Add(new MifareClassicSetupViewModel(sectorVM) {
 			                 	
 			                 	Caption = String.Format("{0} UID:[{1}] Type:[{2}]", ResourceLoader.getResource("mifareAuthSettingsDialogCaption"), sectorVM.Parent.UidNumber, sectorVM.Parent.CardType),
 			                 	ViewModelContext = sectorVM,
@@ -431,10 +472,9 @@ namespace RFiDGear.ViewModel
 								GCNVM.DataBlockContent[i] = DataSourceForMifareClassicDataBlock[i].singleByteBlock0AsByte;
 							}
 							
-							//rfidDevice.WriteMiFareClassicSingleSector(CNVM.SectorNumber,
-							//                                          settingsReaderWriter.DefaultClassicCardKeysAKeys[CNVM.SectorNumber],
-							//                                          settingsReaderWriter.DefaultClassicCardKeysBKeys[CNVM.SectorNumber],
-							//                                          GCNVM.DataBlockContent);
+							rfidDevice.WriteMiFareClassicSingleSector(CNVM.SectorNumber,
+							                                          null,
+							                                          GCNVM.DataBlockContent);
 						}
 					}
 				}
@@ -493,7 +533,7 @@ namespace RFiDGear.ViewModel
 		public ICommand NewReaderSetupDialogCommand { get { return new RelayCommand(OnNewReaderSetupDialog); } }
 		public void OnNewReaderSetupDialog()
 		{
-			this.Dialogs.Add(new ReaderSetupDialogViewModel {
+			this.Dialogs.Add(new SetupViewModel {
 			                 	Caption = "RFiDGear Reader Setup",
 			                 	
 			                 	OnOk = (sender) => {
@@ -647,5 +687,8 @@ namespace RFiDGear.ViewModel
 		}
 		
 		#endregion
+		
+
+		
 	}
 }

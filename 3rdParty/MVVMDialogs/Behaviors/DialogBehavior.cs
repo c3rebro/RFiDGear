@@ -138,7 +138,7 @@ namespace MvvmDialogs.Behaviors
 				var userViewModel = viewModel as IUserDialogViewModel;
 				if (userViewModel == null)
 					return;
-				var dialog = resource as MetroWindow;
+				var dialog = resource as Window;
 				dialog.DataContext = userViewModel;
 				DialogBoxes[userViewModel] = dialog;
 				userViewModel.DialogClosing += (sender, args) =>

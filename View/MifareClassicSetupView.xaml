@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+	x:Class="RFiDGear.View.MifareClassicSetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:v="clr-namespace:RFiDGear.View"
+	Title="RFiDGear.View"
+	Width="998"
+	Height="538">
+	<Grid>
+		<Grid
+			Grid.Column="0"
+			Grid.Row="0"
+			HorizontalAlignment="Stretch"
+			Margin="0,0,0,40"
+			VerticalAlignment="Stretch">
+			<TabControl
+				Grid.Column="0"
+				Grid.Row="0"
+				HorizontalAlignment="Stretch"
+				VerticalAlignment="Stretch"
+				Margin="0,0,0,-1">
+				<TabItem
+					Header="Mifare Classic Keys">
+					<v:TabPageMifareClassicKeySetupView />
+				</TabItem>
+				<TabItem
+					Header="Sector Trailer Editor">
+					<v:TabPageMifareClassicSectorAccessBitsView />
+				</TabItem>
+			</TabControl>
+		</Grid>
+		<Button
+			Content="OK"
+			Height="23"
+			Width="140"
+			Grid.Column="0"
+			Grid.Row="0"
+			HorizontalAlignment="Left"
+			VerticalAlignment="Bottom"
+			Margin="9,0,0,8" />
+		<Button
+			Content="Cancel"
+			Height="23"
+			Width="140"
+			Grid.Column="0"
+			Grid.Row="0"
+			HorizontalAlignment="Left"
+			VerticalAlignment="Bottom"
+			Margin="157,0,0,8" />
+	</Grid>
+</Window>
