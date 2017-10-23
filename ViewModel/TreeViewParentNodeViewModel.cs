@@ -1,7 +1,11 @@
 ﻿using RFiDGear.Model;
+using RFiDGear.DataAccessLayer;
 
+using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using GalaSoft.MvvmLight.Messaging;
+
+using MvvmDialogs.ViewModels;
 
 using System;
 using System.ComponentModel;
@@ -9,16 +13,26 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Reflection;
+using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
 {
 	/// <summary>
 	/// Description of MifareClassic1KContentViewModel.
 	/// </summary>
-	public class TreeViewParentNodeViewModel : INotifyPropertyChanged
+	[XmlRootAttribute("TreeViewParentNode", IsNullable = false)]
+	public class TreeViewParentNodeViewModel : ViewModelBase
 	{
-
+		
+		private Version Version = Assembly.GetExecutingAssembly().GetName().Version;
+		
+		private SettingsReaderWriter settings;
+		
 		private static object _selectedItem;
+		
+		private ObservableCollection<IDialogViewModel> dialogs;
 		
 		private readonly CARD_TYPE _cardType;
 		private readonly List<MenuItem> ContextMenuItems;
@@ -31,15 +45,24 @@ namespace RFiDGear.ViewModel
 		private readonly RelayCommand _cmdEraseDesfireCard;
 		private readonly string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 		
-		public MifareClassicUidTreeViewModel mifareClassicUidModel { get; set; }
-		public MifareDesfireUidTreeViewModel mifareDesfireUidModel { get; set; }
+		private MifareClassicUidTreeViewModel mifareClassicUidModel { get; set; }
+		private MifareDesfireUidTreeViewModel mifareDesfireUidModel { get; set; }
 		
 		#region Constructors
 
-		public TreeViewParentNodeViewModel(MifareClassicUidTreeViewModel uidModel, CARD_TYPE cardType)
+		public TreeViewParentNodeViewModel()
 		{
+
+		}
+		
+		public TreeViewParentNodeViewModel(MifareClassicUidTreeViewModel uidModel, ObservableCollection<IDialogViewModel> _dialogs)
+		{
+			if(_dialogs != null)
+				dialogs = _dialogs;
+			
+			settings = new SettingsReaderWriter();
 			mifareClassicUidModel = uidModel;
-			_cardType = cardType;
+			_cardType = mifareClassicUidModel.CardType;
 			
 			_cmdReadAllSectorsWithDefaultKeys = new RelayCommand(ReadSectorsWithDefaultConfig);
 			_cmdDeleteThisNode = new RelayCommand(DeleteMeCommand);
@@ -57,39 +80,6 @@ namespace RFiDGear.ViewModel
 			                     });
 			
 			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Preformat Card...",
-			                     	Command = _cmdEditDefaultKeys,
-			                     	ToolTip= new ToolTip() {
-			                     		Content="Use defaults from settings file to write sectoraccessbits and keys to every card"
-			                     	}
-			                     });
-
-			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Format Card...",
-			                     	Command = _cmdEditDefaultKeys,
-			                     	ToolTip= new ToolTip() {
-			                     		Content="Use QuickCheck Keys and try to write 0's to all Blocks except sectoraccessbits\n" +
-			                     			"If Auth fails, ask what to do or for a different key\n" +
-			                     			"Try to set transport configuration"
-			                     	}
-			                     });
-			
-			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Dump to File...",
-			                     	Command = _cmdEditDefaultKeys
-			                     });
-			
-			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Copy...",
-			                     	Command = _cmdEditDefaultKeys
-			                     });
-			
-			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Paste...",
-			                     	Command = _cmdEditDefaultKeys
-			                     });
-			
-			ContextMenuItems.Add(new MenuItem() {
 			                     	Header = "Delete Node",
 			                     	Command = _cmdDeleteThisNode
 			                     });
@@ -99,10 +89,17 @@ namespace RFiDGear.ViewModel
 			LoadChildren();
 		}
 		
-		public TreeViewParentNodeViewModel(Model.MifareDesfireUidTreeViewModel uid, CARD_TYPE cardType)
+		public TreeViewParentNodeViewModel(Model.MifareDesfireUidTreeViewModel uid, ObservableCollection<IDialogViewModel> _dialogs)
 		{
+			if(_dialogs != null)
+				dialogs = _dialogs;
+			
+			settings = new SettingsReaderWriter();
+			
 			mifareDesfireUidModel = uid;
-			_cardType = cardType;
+			_cardType = mifareDesfireUidModel.CardType;
+			
+			//device = _device;
 			
 			RelayCommand _cmdEditDefaultKeys = new RelayCommand(EditDefaultKeys);
 			RelayCommand _cmdReadAppIds = new RelayCommand(ReadAppIDs);
@@ -116,104 +113,111 @@ namespace RFiDGear.ViewModel
 			                     	ToolTip = new ToolTip() {
 			                     		Content="Try to get all Application IDs on the Card"
 			                     	}});
-			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Preformat Card...",
-			                     	Command = _cmdCreateApp,
-			                     	ToolTip= new ToolTip() {
-			                     		Content="Use defaults from settings file to write sectoraccessbits and keys to every card"
-			                     	}
-			                     });
-			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Format Card...",
-			                     	Command = _cmdEraseDesfireCard,
-			                     	ToolTip= new ToolTip() {
-			                     		Content="Use default CardMasterKey from settings file to erase all Applications on the Card"
-			                     	}
-			                     });
-			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Create a new Application...",
-			                     	Command = _cmdCreateApp
-			                     });
-			
-			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Dump to File...",
-			                     	Command = _cmdEditDefaultKeys
-			                     });
-			
-			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Copy...",
-			                     	Command = _cmdEditDefaultKeys
-			                     });
-			
-			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Paste...",
-			                     	Command = _cmdEditDefaultKeys
-			                     });
-			
-			ContextMenuItems.Add(new MenuItem() {
-			                     	Header = "Delete Node",
-			                     	Command = _cmdDeleteThisNode
-			                     });
-			
+
 			_children = new ObservableCollection<TreeViewChildNodeViewModel>();
 			
-			_children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppIdTreeViewModel("[0] (Master App)"),this, _cardType));
+			_children.Add(
+				new TreeViewChildNodeViewModel(
+					new MifareDesfireAppIdTreeViewModel("[0] (Master App)"),this, _cardType));
 		}
 
 		#endregion
 		
 		#region Context Menu Items
 		
+		/// <summary>
+		/// 
+		/// </summary>
+		[XmlIgnore]
 		public List<MenuItem> ContextMenu {
 			get { return ContextMenuItems; }
 		}
 
 		
 		private void ReadSectorsWithDefaultConfig() {
-			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewParentNodes", "ReadAllSectors")
-			);
+			
+			using ( RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
+			{
+				//private void ReadSectorsWithDefaultConfig(TreeViewParentNodeViewModel selectedPnVM, string content)
+				
+				
+				Mouse.OverrideCursor = Cursors.Wait;
+				
+				//TreeViewParentNodeViewModel vm = this;
+
+				foreach (TreeViewChildNodeViewModel cnVM in this.Children) {
+					
+					foreach(string keys in settings.DefaultSpecification.MifareClassicDefaultQuickCheckKeys) {
+						//TODO Try all Keys and add the result somewhere in the treeview
+						//rfidDevice.ReadMiFareClassicSingleSector(cnVM.SectorNumber, keys, keys);
+						device.ReadMiFareClassicSingleSector(cnVM.SectorNumber, keys, keys);
+						
+						if(device.SectorSuccesfullyAuth) {
+							cnVM.Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Key: {0}",keys)));
+							break;
+						}
+					}
+					cnVM.IsAuthenticated = device.SectorSuccesfullyAuth;
+					foreach (TreeViewGrandChildNodeViewModel gcVM in cnVM.Children) {
+						if(gcVM._dataBlock != null) {
+							if(cnVM.SectorNumber <= 31)
+								gcVM.IsAuthenticated = device.DataBlockSuccesfullyAuth[(((cnVM.SectorNumber + 1) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
+							else
+								gcVM.IsAuthenticated = device.DataBlockSuccesfullyAuth[((128 + (cnVM.SectorNumber - 31) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
+							
+							gcVM.DataBlockContent = device.currentSector[gcVM.DataBlockNumber];
+						}
+					}
+				}
+				
+				this.IsExpanded = true;
+				
+				Mouse.OverrideCursor = Cursors.Arrow;
+			}			
 		}
 
 		private void EditDefaultKeys() {
-			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewParentNodes", "EditDefaultKeys")
-			);
+
 		}
 		
 		private void ReadAppIDs() {
-			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewParentNodes", "ReadAppIDs")
-			);
+
 		}
 		
 		private void EraseDesfireCard() {
-			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewParentNodes", "EraseDesfireCard")
-			);
+
 		}
 		
 		private void CreateApp() {
-			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewParentNodes", "CreateAppID")
-			);
+
 		}
 		
 		private void DeleteMeCommand() {
-			Messenger.Default.Send<NotificationMessage<string>>(
-				new NotificationMessage<string>(this, "TreeViewParentNodes", "DeleteMe")
-			);
+
 		}
 		
 		#endregion
 		
 		#region Items Sources
 		
-		private readonly ObservableCollection<TreeViewChildNodeViewModel> _children;
+		/// <summary>
+		/// 
+		/// </summary>
+		public string ManifestVersion
+		{
+			get {
+				return string.Format("{0}.{1}.{2}",Version.Major,Version.Minor,Version.Build);
+			}
+		}
+		
+		/// <summary>
+		/// 
+		/// </summary>
 		public ObservableCollection<TreeViewChildNodeViewModel> Children
 		{
 			get { return _children; }
-		}
+			set { _children = value; }
+		} private ObservableCollection<TreeViewChildNodeViewModel> _children;
 		
 		#endregion
 		
@@ -222,7 +226,7 @@ namespace RFiDGear.ViewModel
 		public object SelectedItem
 		{
 			get { return _selectedItem; }
-			private set
+			set
 			{
 				if (_selectedItem != value)
 				{
@@ -235,15 +239,22 @@ namespace RFiDGear.ViewModel
 		#endregion
 		
 		#region Properties
-		
+		/// <summary>
+		/// 
+		/// </summary>
+		[XmlIgnore]
 		public string ParentNodeDisplayItem {
 			get { if(mifareClassicUidModel != null)
-					return String.Format("[{0} Type: {1}]", mifareClassicUidModel.UidNumber, _constCardType[(int)_cardType]);
+					return String.Format("[{0} Type: {1}]", mifareClassicUidModel.UidNumber, Enum.GetName(typeof(CARD_TYPE),_cardType));
 				else
-					return String.Format("[{0} Type: {1}]", mifareDesfireUidModel.uidNumber, _constCardType[(int)_cardType]);
+					return String.Format("[{0} Type: {1}]", mifareDesfireUidModel.uidNumber, Enum.GetName(typeof(CARD_TYPE),_cardType));
 			}
 		}
 		
+		/// <summary>
+		/// 
+		/// </summary>
+		[XmlIgnore]
 		public string UidNumber {
 			get { if(mifareClassicUidModel != null)
 					return mifareClassicUidModel.UidNumber;
@@ -252,6 +263,10 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		
+		/// <summary>
+		/// 
+		/// </summary>
+		[XmlIgnore]
 		public CARD_TYPE CardType {
 			get { return _cardType; }
 		}
@@ -266,11 +281,8 @@ namespace RFiDGear.ViewModel
 			get { return _isExpanded; }
 			set
 			{
-				if (value != _isExpanded)
-				{
-					_isExpanded = value;
-					this.OnPropertyChanged("IsExpanded");
-				}
+				_isExpanded = value;
+				RaisePropertyChanged("IsExpanded");
 			}
 		}
 
@@ -308,43 +320,53 @@ namespace RFiDGear.ViewModel
 		{
 
 			switch (_cardType) {
-				case CARD_TYPE.CT_CLASSIC_1K:
+				case CARD_TYPE.Mifare1K:
 					{
 						for (int i = 0; i < 16; i++) {
-							_children.Add(new TreeViewChildNodeViewModel(new MifareClassicSectorTreeViewModel(i), this, _cardType, i));
+							_children.Add(
+								new TreeViewChildNodeViewModel(
+									new MifareClassicSectorTreeViewModel(i), this, _cardType, i, dialogs));
 						}
 
 					}
 					break;
 					
-				case CARD_TYPE.CT_CLASSIC_2K:
+				case CARD_TYPE.Mifare2K:
 					{
 						for (int i = 0; i < 32; i++) {
-							_children.Add(new TreeViewChildNodeViewModel(new MifareClassicSectorTreeViewModel(i), this, _cardType, i));
+							_children.Add(
+								new TreeViewChildNodeViewModel(
+									new MifareClassicSectorTreeViewModel(i), this, _cardType, i, dialogs));
 						}
 
 					}
 					break;
 					
-				case CARD_TYPE.CT_CLASSIC_4K:
+				case CARD_TYPE.Mifare4K:
 					{
 						for (int i = 0; i < 40; i++) {
-							_children.Add(new TreeViewChildNodeViewModel(new MifareClassicSectorTreeViewModel(i), this, _cardType, i));
+							_children.Add(
+								new TreeViewChildNodeViewModel(
+									new MifareClassicSectorTreeViewModel(i), this, _cardType, i, dialogs));
 						}
 
 					}
 					break;
 					
-				case CARD_TYPE.CT_DESFIRE_EV1:
+				case CARD_TYPE.DESFire:
+				case CARD_TYPE.DESFireEV1:
+				case CARD_TYPE.DESFireEV2:
 					{
-						_children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppIdTreeViewModel("00001"),this, _cardType));
+						_children.Add(
+							new TreeViewChildNodeViewModel(
+								new MifareDesfireAppIdTreeViewModel("00001"),this, _cardType, dialogs));
 					}
 					break;
 			}
 			
 			foreach(TreeViewChildNodeViewModel item in _children){
 				if(mifareClassicUidModel != null)
-					mifareClassicUidModel.SectorList.Add(item._sectorModel);
+					mifareClassicUidModel.SectorList.Add(item.sectorModel);
 			}
 		}
 	}

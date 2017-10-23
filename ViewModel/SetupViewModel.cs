@@ -4,6 +4,10 @@
  * Time: 20:31
  * 
  */
+using RFiDGear;
+using RFiDGear.DataAccessLayer;
+using RFiDGear.Model;
+
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 
@@ -21,11 +25,26 @@ namespace RFiDGear.ViewModel
 	/// </summary>
 	public class SetupViewModel : ViewModelBase, IUserDialogViewModel
 	{
+		private RFiDDevice device;
+		private SettingsReaderWriter settings;
+		
 		public SetupViewModel()
 		{
+			
 		}
 		
-			#region Commands
+		public SetupViewModel(SettingsReaderWriter _settings, RFiDDevice _device)
+		{
+			device = _device;
+			settings = _settings;
+			
+			if(device != null)
+				device.ReadChipPublic();
+			
+			selectedReader = settings.DefaultSpecification.DefaultReaderProvider;
+		}
+		
+		#region Commands
 		
 		public ICommand ReaderSeletedCommand { get { return new RelayCommand(ReaderSelected); } }
 		protected virtual void ReaderSelected()
@@ -36,6 +55,9 @@ namespace RFiDGear.ViewModel
 		public ICommand ConnectToReaderCommand { get { return new RelayCommand(ConnectToReader); } }
 		protected virtual void ConnectToReader()
 		{
+			device.ReaderProvider = SelectedReader;
+			device.ReadChipPublic();
+			
 			RaisePropertyChanged("DefaultReader");
 			RaisePropertyChanged("ReaderStatus");
 		}
@@ -60,33 +82,31 @@ namespace RFiDGear.ViewModel
 
 		#endregion Commands
 		
-		public string[] ReaderProviderList {
-			get {
-				return new ReaderSetupModel(null).ReaderList;
-			}
-		}
-
-		public string SelectedReader {
-			get { return new ReaderSetupModel(null).SelectedReader; }
-			set { new ReaderSetupModel(null).SelectedReader = value; }
-		}
+		public ReaderTypes SelectedReader {
+			get { return selectedReader; }
+			set { selectedReader = value; }
+		} ReaderTypes selectedReader;
 		
 		public string ReaderStatus {
-			get { return !String.IsNullOrWhiteSpace(new ReaderSetupModel(null).GetChipUID)
-					? String.Format("Connected to Card:"
-					                + '\n'
-					                +"UID: {0} "
-					                + '\n'
-					                +"Type: {1}",new ReaderSetupModel(null).GetChipUID, new ReaderSetupModel(null).GetChipType)
-					: "not Connected";}
+			get {
+				if(device != null)
+					device.ReadChipPublic();
+				
+				return device != null ? (!String.IsNullOrWhiteSpace(device.CardInfo.uid)
+				                         ? String.Format("Connected to Card:"
+				                                         + '\n'
+				                                         +"UID: {0} "
+				                                         + '\n'
+				                                         +"Type: {1}",device.CardInfo.uid, Enum.GetName(typeof(CARD_TYPE), device.CardInfo.cardType))
+				                         : "not Connected") : "no Reader detected" ;}
 		}
 		
 		public string DefaultReader {
-			get { return new ReaderSetupModel(null).GetReaderName;}
+			get { return Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider);}
 		}
 		
 		public string ConnectButtonText {
-			get { return ResourceLoader.getResource("buttonConnectToReaderText"); }
+			get { return "buttonConnectToReaderText"; }
 		}
 		
 		#region IUserDialogViewModel Implementation
@@ -118,19 +138,30 @@ namespace RFiDGear.ViewModel
 
 		#endregion IUserDialogViewModel Implementation
 		
-		#region ResourceLoader
+		#region resLoader
 		public string ButtonSaveAndExitReaderSetupText {
 			
-			get { return ResourceLoader.getResource("buttonSaveAndExitReaderSetupText");}
+			get { return "buttonSaveAndExitReaderSetupText";}
 		}
 		
 		public string ButtonConnectToReaderText {
-			get { return ResourceLoader.getResource("buttonConnectToReaderText");}
+			get { return "buttonConnectToReaderText";}
 		}
 		
 		public string ButtonCancelReaderSetupText {
-			get { return ResourceLoader.getResource("buttonCancelReaderSetupText");}
+			get { return "buttonCancelReaderSetupText";}
 		}
+		
+
+		
+		#endregion
+		
+		#region Localization
+
+		/// <summary>
+		/// Act as a proxy between RessourceLoader and View directly.
+		/// </summary>
+		public string LocalizationResourceSet { get; set; }
 		
 		private string _Caption;
 		public string Caption {

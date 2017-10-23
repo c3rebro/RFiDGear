@@ -1,4 +1,7 @@
-﻿using System;
+﻿using RFiDGear.DataAccessLayer;
+using RFiDGear.Model;
+
+using System;
 using LibLogicalAccess;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -13,43 +16,18 @@ namespace RFiDGear
 	/// </summary>
 	/// 
 	
-	public enum CARD_TYPE
-	{
-		CT_CLASSIC_1K,
-		CT_CLASSIC_2K,
-		CT_CLASSIC_4K,
-		CT_DESFIRE_EV1,
-		CT_DESFIRE_EV2}
 
-	;
 	
-	public enum KEY_ERROR
-	{
-		KEY_IS_EMPTY,
-		KEY_HAS_WRONG_LENGTH,
-		KEY_HAS_WRONG_FORMAT,
-		NO_ERROR}
-
-	;
-	
-	public enum AUTH_ERROR
-	{
-		DESFIRE_WRONG_CARD_MASTER_KEY,
-		DESFIRE_WRONG_APPLICATION_MASTER_KEY,
-		DESFIRE_WRONG_READ_KEY,
-		DESFIRE_WRONG_WRITE_KEY}
-
-	;
-	
-	public class RFiDDevice
+	public class RFiDDevice : IDisposable
 	{
 		// global (cross-class) Instances go here ->
 		private IReaderProvider readerProvider;
 		private IReaderUnit readerUnit;
 		private chip card;
+		private SettingsReaderWriter defaultSettings;
 		
 		private string readerProviderName;
-		private string readerUnitName;
+
 		//private string readerSerialNumber;
 		private string chipType;
 		private string chipUID;
@@ -68,65 +46,141 @@ namespace RFiDGear
 		private byte[] desFireFileData;
 
 		private UInt32[] appIDs;
-		
-		public RFiDDevice(string _readerProviderName)
-		{
-			readerProviderName = _readerProviderName;
+
+		#region properties
+		public bool IsChipPresent {
+			get { return ReadChipPublic(); }
 		}
 		
-		private void SetCurrentReaderProvider(IReaderProvider _readerProvider)
-		{
-			ReadChipPublic();
+		public ReaderTypes ReaderProvider { get; set; }
+		
+		public string CurrentReaderUnitName {
+			get { return readerUnitName; }
+		} private string readerUnitName;
+		
+		public CARD_INFO CardInfo {
+			get; private set;
 		}
 		
-		private bool ReadChipPublic()
+		public byte[][] currentSector {
+			get { return cardDataSector; }
+		}
+		
+		public byte[] currentDataBlock {
+			get { return cardDataBlock; }
+		}
+		
+		public string usedClassicCardKeyA {
+			get { return classicCardKeyA; }
+			set { classicCardKeyA = value; }
+		}
+		
+		public string usedClassicCardKeyB {
+			get { return classicCardKeyB; }
+			set { classicCardKeyB = value; }
+		}
+		
+		public bool[] DataBlockSuccessfullyRead {
+			get { return blockReadSuccessful; }
+		}
+		
+		public bool[] DataBlockSuccesfullyAuth {
+			get{ return blockAuthSuccessful; }
+		}
+		
+		public bool SectorSuccessfullyRead {
+			get { return sectorCanRead; }
+		}
+		
+		public bool SectorSuccesfullyAuth {
+			get{ return sectorIsKeyAAuthSuccessful; }
+		}
+		
+		public byte[] GetDESFireFileData {
+			get { return desFireFileData; }
+		}
+		
+		public bool EraseDesfireCard {
+			get { return FormatDesFireCard(null, DESFireKeyType.DF_KEY_AES); }
+		}
+		
+		public UInt32[] GetAppIDList {
+			get{ return !GetMiFareDESFireChipAppIDs() ? appIDs : null; }
+		}
+		#endregion
+		
+		public RFiDDevice()
+		{
+		}
+		
+		public RFiDDevice(ReaderTypes _readerType = ReaderTypes.None)
+		{
+			try{
+				defaultSettings = new SettingsReaderWriter();
+				
+				if(_readerType != ReaderTypes.None)
+					ReaderProvider = _readerType;
+				else
+					ReaderProvider = defaultSettings.DefaultSpecification.DefaultReaderProvider;
+				
+				
+				readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
+				readerUnit = readerProvider.CreateReaderUnit();
+			}
+
+			catch(Exception e)
+			{
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+			}
+
+		}
+		
+		/// <summary>
+		/// Test reader connection. A chip with matching technology  (e.g. mifare card - omnikey reader) must be present on the reader
+		/// </summary>
+		/// <returns></returns>
+		public bool ReadChipPublic()
 		{
 			try {
-				readerProvider = new LibraryManagerClass().GetReaderProvider(readerProviderName);
-				readerUnit = readerProvider.CreateReaderUnit();
 
 				if (readerUnit.ConnectToReader()) {
-					if (readerUnit.WaitInsertion(200)) {
+					if (readerUnit.WaitInsertion(2000)) {
 						if (readerUnit.Connect()) {
 							
 							readerUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber(); -> ERROR with Reader!
+							//string readerSerialNumber = readerUnit.GetReaderSerialNumber(); //-> ERROR with OmniKey (and some others?) Reader when card isnt removed before recalling!
 							
 							card = readerUnit.GetSingleChip();
 							
 							if (card.ChipIdentifier != chipUID && card.ChipIdentifier.Length != 0) {
-
-								chipUID = card.ChipIdentifier;
-								chipType = card.Type;
+								
+								CARD_TYPE type;
+								
+								Enum.TryParse(card.Type, out type);
+								
+								CardInfo = new CARD_INFO(type, card.ChipIdentifier);
 							}
-							
-							readerUnit.Disconnect();
-							readerUnit.DisconnectFromReader();
-							
-							readerProvider.ReleaseInstance();
-							
 							return false;
 						}
-
-					} else {
-						readerUnit.DisconnectFromReader();
 					}
 				}
-				readerProvider.ReleaseInstance();
 			} catch (Exception e) {
-				throw new Exception("Uuups");
+				if(readerProvider != null)
+					readerProvider.ReleaseInstance();
+				
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 			}
 			return false;
 		}
 
-		public bool ReadMiFareClassicSingleSector(int sectorNumber, int keyNumber)
+		protected bool ReadMiFareClassicSingleSector(int sectorNumber, int keyNumber)
 		{
 			SettingsReaderWriter settings = new SettingsReaderWriter();
 			
-			settings.readSettings();
+			settings.ReadSettings();
 			
-			MifareKey keyA = new MifareKey() { Value = new CustomConverter().FormatMifareClassicKeyWithSpacesEachByte(settings.DefaultClassicCardKeysAKeys[keyNumber]) };
-			MifareKey keyB = new MifareKey() { Value = new CustomConverter().FormatMifareClassicKeyWithSpacesEachByte(settings.DefaultClassicCardKeysBKeys[keyNumber]) };
+			//MifareKey keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(settings.DefaultSpecification.SecurityInfo.Where(x => x.Key == DefaultClassicCardKeysAKeys[keyNumber]) };
+			//MifareKey keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(settings.DefaultClassicCardKeysBKeys[keyNumber]) };
 			
 			int blockCount = 0;
 			int dataBlockNumber = 0;
@@ -134,9 +188,7 @@ namespace RFiDGear
 			sectorCanRead = true;
 			
 			try {
-				readerProvider = new LibraryManagerClass().GetReaderProvider(new SettingsReaderWriter().DefaultReaderProvider);
-				readerUnit = readerProvider.CreateReaderUnit();
-				
+
 				if (readerUnit.ConnectToReader()) {
 					if (readerUnit.WaitInsertion(200)) {
 						if (readerUnit.Connect()) {
@@ -188,7 +240,7 @@ namespace RFiDGear
 								dataBlockNumber = ((128 + (sectorNumber - 31) * blockCount) - (blockCount - dataBlockNumber));
 							
 							try {
-								cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME changed "keyNumber" to 0: for whatever reason some readers can contain more keys than others
+								//cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME changed "keyNumber" to 0: for whatever reason some readers can contain more keys than others
 								
 								for (int k = 0; k < blockCount; k++) {
 
@@ -219,26 +271,22 @@ namespace RFiDGear
 							}
 							return false;
 						}
-
-					} else {
-						readerUnit.DisconnectFromReader();
 					}
 				}
-				readerProvider.ReleaseInstance();
-			} catch {
-				throw new Exception("Uuups");
+			} catch(Exception e) {
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 			}
 			return true;
 		}
 
-		public bool ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+		public ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey)
 		{
 			SettingsReaderWriter settings = new SettingsReaderWriter();
 			
-			settings.readSettings();
+			settings.ReadSettings();
 			
-			MifareKey keyA = new MifareKey() { Value = new CustomConverter().KeyFormatQuickCheck(aKey) ? aKey : new CustomConverter().FormatMifareClassicKeyWithSpacesEachByte(aKey) };
-			MifareKey keyB = new MifareKey() { Value = new CustomConverter().KeyFormatQuickCheck(bKey) ? bKey : new CustomConverter().FormatMifareClassicKeyWithSpacesEachByte(bKey) };
+			MifareKey keyA = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(aKey) ? aKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey) };
+			MifareKey keyB = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(bKey) ? bKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey) };
 			
 			int blockCount = 0;
 			int dataBlockNumber = 0;
@@ -247,9 +295,6 @@ namespace RFiDGear
 			sectorCanRead = true;
 			
 			try {
-				readerProvider = new LibraryManagerClass().GetReaderProvider(new SettingsReaderWriter().DefaultReaderProvider);
-				readerUnit = readerProvider.CreateReaderUnit();
-				
 				if (readerUnit.ConnectToReader()) {
 					if (readerUnit.WaitInsertion(200)) {
 						if (readerUnit.Connect()) {
@@ -356,35 +401,32 @@ namespace RFiDGear
 									}
 								}
 							} catch {
-								return true;
+								return ERROR.NoError;
 								
 							}
-							return false;
+							return ERROR.NoError;
 						}
-
-					} else {
-						readerUnit.DisconnectFromReader();
 					}
 				}
-				readerProvider.ReleaseInstance();
-			} catch {
-				throw new Exception("Uuups");
+			} catch(Exception e) {
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				return ERROR.AuthenticationError;
 			}
-			return true;
+			return ERROR.NoError;
 		}
 		
 		public bool WriteMiFareClassicSingleSector(int sectorNumber, string sectorTrailer, byte[] buffer)
 		{
 			SettingsReaderWriter settings = new SettingsReaderWriter();
 			
-			settings.readSettings();
+			settings.ReadSettings();
 			
 			string[] keys = sectorTrailer.Split(',');
 			
 			string accessBits = keys[1];
 			
-			MifareKey keyA = new MifareKey() { Value = new CustomConverter().FormatMifareClassicKeyWithSpacesEachByte(keys[0]) };
-			MifareKey keyB = new MifareKey() { Value = new CustomConverter().FormatMifareClassicKeyWithSpacesEachByte(keys[2]) };
+			MifareKey keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(keys[0]) };
+			MifareKey keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(keys[2]) };
 			
 			int blockCount = 0;
 			int dataBlockNumber = 0;
@@ -396,9 +438,6 @@ namespace RFiDGear
 			byte[] test;
 			
 			try {
-				readerProvider = new LibraryManagerClass().GetReaderProvider(new SettingsReaderWriter().DefaultReaderProvider);
-				readerUnit = readerProvider.CreateReaderUnit();
-				
 				if (readerUnit.ConnectToReader()) {
 					if (readerUnit.WaitInsertion(200)) {
 						if (readerUnit.Connect()) {
@@ -517,14 +556,10 @@ namespace RFiDGear
 							}
 							return false;
 						}
-
-					} else {
-						readerUnit.DisconnectFromReader();
 					}
 				}
-				readerProvider.ReleaseInstance();
-			} catch {
-				throw new Exception("Uuups");
+			} catch(Exception e) {
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 			}
 			return true;
 		}
@@ -532,21 +567,15 @@ namespace RFiDGear
 		private bool GetMiFareDESFireChipAppIDs()
 		{
 			try {
-				readerProvider = new LibraryManagerClass().GetReaderProvider(readerProviderName);
-				readerUnit = readerProvider.CreateReaderUnit();
-				
 				// The excepted memory tree
 				IDESFireLocation location = new DESFireLocation();
 				// File communication requires encryption
 				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
 				
-				
 				IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				aiToUse.MasterCardKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
-
-				CustomConverter converter = new CustomConverter();
 				
 				if (readerUnit.ConnectToReader()) {
 					if (readerUnit.WaitInsertion(100)) {
@@ -574,13 +603,11 @@ namespace RFiDGear
 							return false;
 						}
 					}
-					readerUnit.DisconnectFromReader();
 				}
-				readerProvider.ReleaseInstance();
 				return true;
 			} catch (Exception e) {
-				throw new Exception(String.Format("Uuups: {0}", e));
-				
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				return true;
 			}
 		}
 		
@@ -607,7 +634,6 @@ namespace RFiDGear
 			
 			// Change keys with the following ones
 			IDESFireAccessInfo aiToWrite = new DESFireAccessInfo();
-
 			
 			aiToWrite.MasterCardKey.Value = "11 22 33 44 55 66 77 88 99 00 11 22 33 44 55 66";
 			aiToWrite.MasterApplicationKey.Value = "c7 56 80 59 0f 31 2c 13 07 12 b6 df 8f a7 b1 dc";//"bd 9d 22 8c 06 72 14 a9 59 a3 28 91 fd bb 14 8c"; //"00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
@@ -620,8 +646,6 @@ namespace RFiDGear
 			aiToWrite.WriteKey.Value = "c7 56 80 59 0f 31 2c 13 07 12 b6 df 8f a7 b1 dc";
 			aiToWrite.WriteKey.KeyType = DESFireKeyType.DF_KEY_AES;
 			aiToWrite.WriteKeyNo = 2;
-
-			CustomConverter converter = new CustomConverter();
 			
 			DESFireKeySettings desFireKeySet;
 			byte nBNmbr;
@@ -697,8 +721,6 @@ namespace RFiDGear
 			aiToWrite.WriteKey.Value = "c7 56 80 59 0f 31 2c 13 07 12 b6 df 8f a7 b1 dc";
 			aiToWrite.WriteKey.KeyType = DESFireKeyType.DF_KEY_AES;
 			aiToWrite.WriteKeyNo = 2;
-
-			CustomConverter converter = new CustomConverter();
 			
 			DESFireKeySettings desFireKeySet;
 			byte nBNmbr;
@@ -739,7 +761,7 @@ namespace RFiDGear
 			return true;
 		}
 		
-		private bool AuthToMifareDesfireMasterApplication(string cardMasterKey, DESFireKeyType keyType)
+		public bool AuthToMifareDesfireMasterApplication(string cardMasterKey, DESFireKeyType keyType)
 		{
 			
 			// The excepted memory tree
@@ -754,8 +776,6 @@ namespace RFiDGear
 			IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 			aiToUse.MasterCardKey.Value = cardMasterKey;
 			aiToUse.MasterCardKey.KeyType = keyType;
-			
-			CustomConverter converter = new CustomConverter();
 			
 			
 			if (readerUnit.ConnectToReader()) {
@@ -785,9 +805,6 @@ namespace RFiDGear
 		private bool FormatDesFireCard(string cardMasterKey, DESFireKeyType keyType)
 		{
 			try {
-				readerProvider = new LibraryManagerClass().GetReaderProvider(readerProviderName);
-				readerUnit = readerProvider.CreateReaderUnit();
-				
 				// The excepted memory tree
 				IDESFireLocation location = new DESFireLocation();
 				// File communication requires encryption
@@ -800,8 +817,6 @@ namespace RFiDGear
 				aiToUse.MasterCardKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
 				//aiToUse.MasterCardKey.Value = "ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff";
 				aiToUse.MasterCardKey.KeyType = keyType;
-
-				CustomConverter converter = new CustomConverter();
 				
 				if (readerUnit.ConnectToReader()) {
 					if (readerUnit.WaitInsertion(100)) {
@@ -834,78 +849,42 @@ namespace RFiDGear
 							return false;
 						}
 					}
-					readerUnit.DisconnectFromReader();
 				}
-				readerProvider.ReleaseInstance();
 				return true;
 			} catch (Exception e) {
-				throw new Exception(String.Format("Uuups: {0}", e));
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+			}
+			return true;
+		}
+		
+		
+		private bool _disposed = false;
+		
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!_disposed)
+			{
+				if (disposing)
+				{
+					// Dispose any managed objects
+					// ...
+				}
+
+				readerUnit.Disconnect();
+				readerUnit.DisconnectFromReader();
+				readerProvider.ReleaseInstance();
+				// Now disposed of any unmanaged objects
+				// ...
+
+				_disposed = true;
 			}
 		}
-		
-		#region properties
-		public bool IsChipPresent {
-			get { return ReadChipPublic(); }
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
-		
-		public string CurrentReaderUnitName {
-			get { return readerUnitName; }
-		}
-		
-		public string currentChipType {
-			get { return chipType; }
-		}
-		
-		public string currentChipUID {
-			get { return chipUID; }
-		}
-		
-		public byte[][] currentSector {
-			get { return cardDataSector; }
-		}
-		
-		public byte[] currentDataBlock {
-			get { return cardDataBlock; }
-		}
-		
-		public string usedClassicCardKeyA {
-			get { return classicCardKeyA; }
-			set { classicCardKeyA = value; }
-		}
-		
-		public string usedClassicCardKeyB {
-			get { return classicCardKeyB; }
-			set { classicCardKeyB = value; }
-		}
-		
-		public bool[] DataBlockSuccessfullyRead {
-			get { return blockReadSuccessful; }
-		}
-		
-		public bool[] DataBlockSuccesfullyAuth {
-			get{ return blockAuthSuccessful; }
-		}
-		
-		public bool SectorSuccessfullyRead {
-			get { return sectorCanRead; }
-		}
-		
-		public bool SectorSuccesfullyAuth {
-			get{ return sectorIsKeyAAuthSuccessful; }
-		}
-		
-		public UInt32[] GetAppIDList {
-			get{ return !GetMiFareDESFireChipAppIDs() ? appIDs : null; }
-		}
-		
-		public byte[] GetDESFireFileData {
-			get { return desFireFileData; }
-		}
-		
-		public bool EraseDesfireCard {
-			get { return FormatDesFireCard(null, DESFireKeyType.DF_KEY_AES); }
-		}
-		#endregion
 	}
 }
 

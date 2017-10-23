@@ -1,12 +1,16 @@
-﻿using RFiDGear.Model;
-using RFiDGear.ViewModel;
+﻿using RFiDGear.ViewModel;
+using RFiDGear.DataAccessLayer;
 
 using System;
-using System.IO;
-using System.Xml;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Reflection;
+using System.Xml;
+using System.Xml.Serialization;
 
-namespace RFiDGear
+
+namespace RFiDGear.DataAccessLayer
 {
 	/// <summary>
 	/// Description of Class1.
@@ -15,137 +19,140 @@ namespace RFiDGear
 	{
 		
 		#region fields
+		private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
+		
 		private const string databaseFileName = "database.xml";
-		private CustomConverter converter = new CustomConverter();
 		private string appDataPath;
 		
-		public List<string> databaseUIDs { get; set; }
-		public List<MifareClassicAccessBitsBaseModel> databaseAccessBits { get; set; }
+		public ObservableCollection<TreeViewParentNodeViewModel> treeViewModel;
+		
 		#endregion
 		
 		public DatabaseReaderWriter()
 		{
-			// Combine the base folder with your specific folder....
-			appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RFiDGear");
+			try{
+				
+				
+				// Combine the base folder with the specific folder....
+				appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear");
 
-			// Check if folder exists and if not, create it
-			if(!Directory.Exists(appDataPath))
-				Directory.CreateDirectory(appDataPath);
-			
-			databaseUIDs = new List<string>();
-			databaseAccessBits = new List<MifareClassicAccessBitsBaseModel>();
-		}
-		
-		public void ReadDatabase()
-		{
-			if (!File.Exists(Path.Combine(appDataPath,databaseFileName))) {
-				XmlWriter writer = XmlWriter.Create(@Path.Combine(appDataPath,databaseFileName));
-				writer.WriteStartDocument();
-				writer.WriteStartElement("UidNodesDatabase");
+				// Check if folder exists and if not, create it
+				if(!Directory.Exists(appDataPath))
+					Directory.CreateDirectory(appDataPath);
 				
-				writer.WriteEndElement();
-				writer.Close();
+				treeViewModel = new ObservableCollection<TreeViewParentNodeViewModel>();
 				
-				//WriteDatabase();
-				
-			} else if (File.Exists(Path.Combine(appDataPath,databaseFileName))) {
-				
-				XmlDocument doc = new XmlDocument();
-				doc.Load(@Path.Combine(appDataPath,databaseFileName));
-				
-				try {
-					foreach(XmlNode node in doc.SelectNodes("//UidNode"))
-					{
-						databaseUIDs.Add(node.Attributes["ChipUid"].Value);
-						databaseAccessBits.Add(new MifareClassicAccessBitsBaseModel());
-					}
+				if (!File.Exists(Path.Combine(appDataPath,databaseFileName))) {
 					
+					XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<TreeViewParentNodeViewModel>));
 					
-				} catch(XmlException e) {
-					throw new Exception(String.Format("Uuups: {0}",e));
+					TextWriter writer = new StreamWriter(Path.Combine(appDataPath, databaseFileName));
+					
+					serializer.Serialize(writer, treeViewModel);
+
+					writer.Close();
 				}
-				
+			}
+			catch(Exception e)
+			{
+				LogWriter.CreateLogEntry(string.Format("{0}\n{1}",e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				return;
 			}
 		}
 		
-		public void WriteDatabase(object mifareClassicChip)
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <returns></returns>
+		public bool ReadDatabase(string _fileName = "")
+		{
+			TextReader reader;
+			int verInfo;
+			
+			if (!string.IsNullOrWhiteSpace(_fileName) && !File.Exists(_fileName)) {
+				
+				return false;
+			}
+			
+			if (File.Exists(_fileName) || (string.IsNullOrWhiteSpace(_fileName) && File.Exists(Path.Combine(appDataPath,databaseFileName)))) {
+				
+				//Path.Combine(appDataPath,databaseFileName)
+				XmlDocument doc = new XmlDocument();
+
+				
+				
+				try {
+					XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<TreeViewParentNodeViewModel>));
+					
+					if(string.IsNullOrWhiteSpace(_fileName) && File.Exists(Path.Combine(appDataPath,databaseFileName)))
+					{
+						doc.Load(@Path.Combine(appDataPath,databaseFileName));
+						
+						XmlNode node = doc.SelectSingleNode("//ManifestVersion");
+						verInfo = Convert.ToInt32(node.InnerText.Replace(".",string.Empty));
+						
+						reader = new StreamReader(Path.Combine(appDataPath,databaseFileName));
+					}
+
+					else
+					{
+						doc.Load(_fileName);
+						
+						XmlNode node = doc.SelectSingleNode("//ManifestVersion");
+						verInfo = Convert.ToInt32(node.InnerText.Replace(".",string.Empty));
+						
+						reader = new StreamReader(_fileName);
+					}
+					
+					
+					if(verInfo > Convert.ToInt32(string.Format("{0}{1}{2}",Version.Major,Version.Minor,Version.Build)))
+					{
+						throw new Exception(
+							string.Format("database that was tried to open is newer ({0}) than this version of eventmessenger ({1})"
+							              ,verInfo, Convert.ToInt32(string.Format("{0}{1}{2}",Version.Major,Version.Minor,Version.Build))
+							             )
+						);
+					}
+					
+					treeViewModel = (serializer.Deserialize(reader) as ObservableCollection<TreeViewParentNodeViewModel>);
+					
+				} catch(Exception e) {
+					LogWriter.CreateLogEntry(string.Format("{0}\n{1}",e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+					return true;
+				}
+				
+				return false;
+			}
+			
+			return true;
+		}
+		
+		public void WriteDatabase(ObservableCollection<TreeViewParentNodeViewModel> objModel, string _path = "")
 		{
 			try {
-				XmlDocument doc = new XmlDocument();
-				doc.Load(Path.Combine(appDataPath,databaseFileName));
+				TextWriter writer;
+				XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<TreeViewParentNodeViewModel>));
 				
-				if (doc.SelectSingleNode("//UidNodesDatabase") != null) {
-					XmlNode root = doc.SelectSingleNode("//UidNodesDatabase");
-					
-					if(doc.SelectSingleNode("//UidNode") == null)
-					{
-						XmlElement chipUidNode = doc.CreateElement("UidNode");
-						XmlElement sectorTrailer = doc.CreateElement("SectorTrailerNode");
-						
-						if(mifareClassicChip is MifareClassicUidTreeViewModel){
-							chipUidNode.SetAttribute("ChipUid",(mifareClassicChip as MifareClassicUidTreeViewModel).UidNumber);
-							chipUidNode.SetAttribute("ChipType",converter._constCardType[(int)(mifareClassicChip as MifareClassicUidTreeViewModel).CardType]);
-						}
-						
-						
-						for(int i = 0; i< 31; i++)
-						{
-							sectorTrailer.SetAttribute(String.Format("SectorTrailer{0:d2}",i),String.Format("{0:d2};FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF",i));
-						}
-
-						root.AppendChild(chipUidNode);
-						chipUidNode.AppendChild(sectorTrailer);
-						
-						doc.AppendChild(root);
-						doc.Save(Path.Combine(appDataPath,databaseFileName));
-					}
-					
-					foreach(XmlNode node in doc.SelectNodes("//SectorTrailerNode"))
-					{
-						//create List of gotten viewmodels with models as accessable properties
-						List<MifareClassicSectorTreeViewModel> sectorModels;
-						if(mifareClassicChip is MifareClassicUidTreeViewModel)
-							sectorModels = new List<MifareClassicSectorTreeViewModel>((mifareClassicChip as MifareClassicUidTreeViewModel).SectorList);
-						else
-							sectorModels = new List<MifareClassicSectorTreeViewModel>() {mifareClassicChip as MifareClassicSectorTreeViewModel};
-						
-						// TODO dont need to iterate through all elem when saving single sectoraccessbits object. add if statement here
-						foreach(XmlNode innerNode in node.Attributes)
-						{
-							string[] stCombined = innerNode.Value.Split(';');
-							string[] stSeparated = stCombined[1].Split(',');
-							
-							if((mifareClassicChip is MifareClassicUidTreeViewModel) &&
-							   (Convert.ToInt32(stCombined[0]) > (mifareClassicChip as MifareClassicUidTreeViewModel).SectorList.Count))
-								return;
-							
-							foreach(MifareClassicSectorTreeViewModel sectorModel in sectorModels)
-							{
-								if(Convert.ToInt32(stCombined[0]) == sectorModel.mifareClassicSectorNumber)
-								{
-									if(mifareClassicChip is MifareClassicUidTreeViewModel){
-										//add sector access bits from db string e.g. "FF0780C3" to the current selected model add decode to
-										// match datagrid source for accessBit modify dialog as well as encoding for liblogicalaccess sectoraccessbits
-										sectorModel.sectorAccessBits.sectorKeyAKey = stSeparated[0];
-										sectorModel.sectorAccessBits.decodeSectorTrailer(stSeparated[1]);
-										sectorModel.sectorAccessBits.sectorKeyBKey = stSeparated[2];
-									}
-									else{
-										innerNode.Value = String.Format("{0};{1},{2},{3}"
-										                                ,sectorModel.mifareClassicSectorNumber
-										                                ,sectorModel.sectorAccessBits.sectorKeyAKey
-										                                ,sectorModel.sectorAccessBits.sectorAccessBitsAsString
-										                                ,sectorModel.sectorAccessBits.sectorKeyBKey);
-										doc.Save(Path.Combine(appDataPath,databaseFileName));
-									}
-								}
-							}
-						}
-					}
-					
+				if(!string.IsNullOrEmpty(_path))
+				{
+					writer = new StreamWriter(@_path);
 				}
-			} catch (XmlException e) {
-				throw new Exception(String.Format("Uuups: {0}",e));
+				else
+					writer = new StreamWriter(@Path.Combine(appDataPath, databaseFileName));
+				
+				//writer.WriteStartDocument();
+				//writer.WriteStartElement("Manifest");
+				//writer.WriteAttributeString("version", string.Format("{0}.{1}.{2}",Version.Major,Version.Minor,Version.Build));
+				//writer = new StreamWriter(@Path.Combine(appDataPath,databaseFileName));
+				
+				serializer.Serialize(writer, objModel);
+
+				writer.Close();
+
+			}
+			catch (XmlException e) {
+				LogWriter.CreateLogEntry(string.Format("{0}\n{1}",e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				Environment.Exit(0);
 			}
 		}
 		

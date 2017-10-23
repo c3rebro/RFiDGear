@@ -7,10 +7,14 @@ namespace RFiDGear
 	/// </summary>
 	public class MifareDesfireFileTreeViewModel
 	{
-		CustomConverter converter = new CustomConverter();
 		
 		byte data;
 		int discarded;
+		
+		public MifareDesfireFileTreeViewModel()
+		{
+			
+		}
 		
 		public MifareDesfireFileTreeViewModel(byte[] cardContent, int arIndex)
 		{
@@ -24,7 +28,7 @@ namespace RFiDGear
 		
 		public string singleByteAsString {
 			get { return data.ToString("X2"); }
-			set { data = converter.GetBytes(value, out discarded)[0]; }
+			set { data = CustomConverter.GetBytes(value, out discarded)[0]; }
 		}
 
 		public char singleByteAsChar {

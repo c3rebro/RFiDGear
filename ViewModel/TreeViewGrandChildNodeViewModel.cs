@@ -1,19 +1,30 @@
-﻿using System;
+﻿using RFiDGear.DataAccessLayer;
+
 using GalaSoft.MvvmLight.Messaging;
+
+using System;
 using System.Linq;
 using System.ComponentModel;
-using RFiDGear;
+using System.Xml.Serialization;
+
 
 namespace RFiDGear.ViewModel
 {
 	/// <summary>
 	/// Description of TreeViewGrandChildNodeViewModel.
 	/// </summary>
+	[XmlRootAttribute("TreeViewGrandChildNode", IsNullable = false)]
 	public class TreeViewGrandChildNodeViewModel : INotifyPropertyChanged
 	{
+		private byte[] data = {0,0};
 		public Model.MifareClassicDataBlockTreeViewModel _dataBlock {get; set;}
 
 		#region Constructors
+		
+		public TreeViewGrandChildNodeViewModel()
+		{
+			
+		}
 		
 		public TreeViewGrandChildNodeViewModel(Model.MifareClassicDataBlockTreeViewModel dataBlock, TreeViewChildNodeViewModel parentSector, CARD_TYPE cardType, int sectorNumber)
 		{
@@ -39,7 +50,7 @@ namespace RFiDGear.ViewModel
 		public object SelectedItem
 		{
 			get { return _selectedItem; }
-			private set
+			set
 			{
 				if (_selectedItem != value)
 				{
@@ -64,7 +75,7 @@ namespace RFiDGear.ViewModel
 		#region Properties
 		
 		public byte[] DataBlockContent {
-			get { return _dataBlock.dataBlockContent; }
+			get { return _dataBlock != null ? _dataBlock.dataBlockContent : data; }
 			set { _dataBlock.dataBlockContent = value; }
 		}
 		
@@ -82,7 +93,7 @@ namespace RFiDGear.ViewModel
 		}
 		
 		public int DataBlockNumber {
-			get { return _dataBlock.dataBlockNumber; }
+			get { return _dataBlock != null ? _dataBlock.dataBlockNumber : 0; }
 			set { _dataBlock.dataBlockNumber = value; }
 		}
 		
@@ -130,8 +141,6 @@ namespace RFiDGear.ViewModel
 				{
 					_isSelected = value;
 					OnPropertyChanged("IsSelected");
-					Messenger.Default.Send(this);
-					//SelectedItem = this; //FIXME Weird behavior with selected item above
 				}
 			}
 		}

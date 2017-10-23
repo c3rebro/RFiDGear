@@ -1,4 +1,11 @@
-﻿using System;
+﻿using RFiDGear.DataAccessLayer;
+using RFiDGear.Model;
+
+using LibLogicalAccess;
+
+using System;
+using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace RFiDGear
@@ -6,19 +13,21 @@ namespace RFiDGear
 	
 	
 	//**************************************************************************
-	//class for Hexidecimal to Byte and Byte to Hexidecimal conversion
+	// Hexidecimal to Byte and Byte to Hexadecimal conversion
 	//**************************************************************************
-	public class CustomConverter
+	public static class CustomConverter
 	{
 		
-		public string desFireKeyToEdit { get; set; }
-		public string classicKeyToEdit { get; set; }
+		public static string desFireKeyToEdit { get; set; }
+		public static string classicKeyToEdit { get; set; }
 		// 0 = 3DES, 1 = AES, 2 = DES
-		public int[] libLogicalAccessKeyTypeEnumConverter = { 64, 128, 0 };
-		public string[] _constDesfireCardKeyType = { "3DES", "AES", "DES" };
-		public string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
+		public static int[] libLogicalAccessKeyTypeEnumConverter = { 64, 128, 0 };
+		public static string[] _constDesfireCardKeyType = { "3DES", "AES", "DES" };
+		public static string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 		
-		public bool KeyFormatQuickCheck(string keyToCheck)
+		#region parser
+		
+		public static bool KeyFormatQuickCheck(string keyToCheck)
 		{
 			foreach(char c in keyToCheck.ToCharArray()){
 				if(c == ' ')
@@ -27,7 +36,7 @@ namespace RFiDGear
 			return false;
 		}
 		
-		public int GetByteCount(string hexString)
+		public static int GetByteCount(string hexString)
 		{
 			int numHexChars = 0;
 			char c;
@@ -44,7 +53,7 @@ namespace RFiDGear
 			return numHexChars / 2; // 2 characters per byte
 		}
 		
-		public byte[] GetBytes(string hexString, out int discarded)
+		public static byte[] GetBytes(string hexString, out int discarded)
 		{
 			discarded = 0;
 			string newString = "";
@@ -75,7 +84,7 @@ namespace RFiDGear
 			return bytes;
 		}
 		
-		public string HexToString(byte[] bytes)
+		public static string HexToString(byte[] bytes)
 		{
 			string hexString = "";
 			for (int i = 0; i < bytes.Length; i++) {
@@ -84,7 +93,7 @@ namespace RFiDGear
 			return hexString;
 		}
 		
-		public string HexToString(byte bytes)
+		public static string HexToString(byte bytes)
 		{
 			string hexString = "";
 			{
@@ -93,7 +102,7 @@ namespace RFiDGear
 			return hexString;
 		}
 		
-		public bool InHexFormat(string hexString)
+		public static bool IsInHexFormat(string hexString)
 		{
 			bool hexFormat = true;
 
@@ -106,7 +115,7 @@ namespace RFiDGear
 			return hexFormat;
 		}
 
-		public bool IsHexDigit(Char c)
+		public static bool IsHexDigit(Char c)
 		{
 			int numChar;
 			int numA = Convert.ToInt32('A');
@@ -120,13 +129,13 @@ namespace RFiDGear
 			return false;
 		}
 		
-		public string FormatMifareClassicKeyWithSpacesEachByte(string Str)
+		public static string FormatMifareClassicKeyWithSpacesEachByte(string Str)
 		{
 			string temp = Str;
 			
 			if (string.IsNullOrEmpty(temp))
 				return "error 0";
-			if (!InHexFormat(temp))
+			if (!IsInHexFormat(temp))
 				return "error 1";
 			if (temp.Length != 12) {
 				return "error 2";
@@ -138,13 +147,13 @@ namespace RFiDGear
 			}
 		}
 		
-		public KEY_ERROR FormatMifareDesfireKeyStringWithSpacesEachByte(string Str)
+		public static KEY_ERROR FormatMifareDesfireKeyStringWithSpacesEachByte(string Str)
 		{
 			string temp = Str;
 			
 			if (string.IsNullOrEmpty(temp))
 				return KEY_ERROR.KEY_IS_EMPTY;
-			if (!InHexFormat(temp))
+			if (!IsInHexFormat(temp))
 				return KEY_ERROR.KEY_HAS_WRONG_FORMAT;
 			if (temp.Length != 32)
 				return KEY_ERROR.KEY_HAS_WRONG_LENGTH;
@@ -157,13 +166,13 @@ namespace RFiDGear
 			return KEY_ERROR.NO_ERROR;
 		}
 
-		public KEY_ERROR FormatMifareClassicKeyStringWithSpacesEachByte(string Str)
+		public static KEY_ERROR FormatMifareClassicKeyStringWithSpacesEachByte(string Str)
 		{
 			string temp = Str;
 			
 			if (string.IsNullOrEmpty(temp))
 				return KEY_ERROR.KEY_IS_EMPTY;
-			if (!InHexFormat(temp))
+			if (!IsInHexFormat(temp))
 				return KEY_ERROR.KEY_HAS_WRONG_FORMAT;
 			if (temp.Length != 12)
 				return KEY_ERROR.KEY_HAS_WRONG_LENGTH;
@@ -174,9 +183,9 @@ namespace RFiDGear
 			classicKeyToEdit = temp.ToUpper();
 			
 			return KEY_ERROR.NO_ERROR;
-		}	
+		}
 
-		public string NormalizeKey(string keyToNormalize)
+		public static string NormalizeKey(string keyToNormalize)
 		{
 			char[] c = keyToNormalize.ToCharArray();
 			
@@ -186,13 +195,121 @@ namespace RFiDGear
 			return new string(c);
 		}
 		
-		byte HexToByte(string hex)
+		#endregion
+
+
+		#region Converter
+		
+		
+		public static bool SectorTrailerHasWrongFormat(byte[] st)
+		{
+			uint C1x, C2x, C3x;
+			uint _C1, _C2, _C3;
+			
+			_C2 = st[0];
+			_C2 &= 0xF0;
+			_C2 >>= 4;
+			
+			C2x = st[2];
+			C2x &= 0x0F;
+			C2x |= 0xF0;
+			C2x ^= 0xFF;
+			
+			if (C2x != _C2)
+				return true;
+			else {
+				_C1 = st[0];
+				_C1 &= 0x0F;
+				
+				
+				C1x = st[1];
+				C1x &= 0xF0;
+				C1x >>= 4;
+				C1x |= 0xF0;
+				C1x ^= 0xFF;
+				
+				if (C1x != _C1)
+					return true;
+				else {
+					_C3 = st[1];
+					_C3 &= 0x0F;
+					
+					C3x = st[2];
+					C3x &= 0xF0;
+					C3x >>= 4;
+					C3x |= 0xF0;
+					C3x ^= 0xFF;
+					
+					if (C3x != _C3)
+						return true;
+					else
+						return false;
+				}
+			}
+		}
+		
+		public static bool SectorTrailerHasWrongFormat(string stString)
+		{
+			byte[] st = new byte[255];
+			int discarded = 0;
+			
+			st = CustomConverter.GetBytes(stString, out discarded);
+			
+			if(!SectorTrailerHasWrongFormat(st))
+				return false;
+			else
+				return true;
+		}
+		
+		#endregion
+		
+		#region Extensions
+		
+		private static byte HexToByte(string hex)
 		{
 			if (hex.Length > 2 || hex.Length <= 0)
 				throw new ArgumentException("hex must be 1 or 2 characters in length");
 			byte newByte = byte.Parse(hex, System.Globalization.NumberStyles.HexNumber);
 			return newByte;
 		}
+		
+		public static byte[] buildSectorTrailerInvNibble(byte[] st)
+		{
+			uint _C1, _C2, _C3;
+			
+			byte[] new_st = new byte[st.Length];
+
+			_C3 = st[2];
+			_C3 ^= 0xFF;
+			_C3 >>= 4;
+			_C3 &= 0x0F;
+			
+			new_st[1] = st[1];
+			new_st[1] &= 0xF0;
+			new_st[1] |= (byte)_C3;
+			
+			_C2 = st[2];
+			_C2 ^= 0xFF;
+			_C2 &= 0x0F;
+			
+			new_st[0] = (byte)_C2;
+			new_st[0] <<= 4;
+			
+			_C1 = st[1];
+			_C1 ^= 0xFF;
+			_C1 >>= 4;
+			_C1 &= 0x0F;
+			
+			new_st[0] &= 0xF0;
+			new_st[0] |= (byte)_C1;
+			
+			new_st[1] |= st[1];
+			new_st[2] |= st[2];
+			
+			return new_st;
+		}
+		
+		#endregion
 		
 	}
 }

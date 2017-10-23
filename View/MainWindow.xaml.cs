@@ -1,7 +1,17 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 
 namespace RFiDGear
 {
@@ -73,6 +83,64 @@ namespace RFiDGear
 			e.Column.Header = ((PropertyDescriptor)e.PropertyDescriptor).DisplayName;
 		}
 		
+		
+
+
+
+		
+		private void MainWindowTreeViewControlMouseButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			if (sender != null)
+			{
+				TreeView item = sender as TreeView;
+				
+				DependencyObject dep = (DependencyObject)e.OriginalSource;
+				while ((dep != null) && !(dep is TreeViewItem))
+				{
+					dep = VisualTreeHelper.GetParent(dep);
+				}
+				if (dep == null) 
+				{
+					//treeView..SelectedItem = null;
+					return;
+				}
+
+				if (dep is TreeViewItem)
+				{
+					TreeViewItem cell = dep as TreeViewItem;
+					cell.Focus();
+
+					while ((dep != null) && !(dep is TreeViewItem))
+					{
+						dep = VisualTreeHelper.GetParent(dep);
+					}
+					TreeViewItem row = dep as TreeViewItem;
+					//treeView.SelectedItem = row.DataContext;
+					row.IsSelected = true;
+				}
+				
+				/* if (grid != null && grid.SelectedItems != null && grid.SelectedItems.Count >= 1 && grid.SelectedCells.Count >= 1)
+				{
+					List<object> temp = new List<object>();
+					
+					temp = grid.SelectedItems.Cast<object>().ToList();
+					
+					foreach(object item in temp)
+					{
+						DataGridRow dgr = grid.ItemContainerGenerator.ContainerFromItem(item) as DataGridRow;
+						if(dgr == null)
+							grid .SelectedItem = null;
+						
+						else if (dgr != null && !dgr.IsMouseOver)
+						{
+							(dgr as DataGridRow).IsSelected = false;
+						}
+					}
+				}*/
+			}
+		}
+	
+
 		/**************************************************/
 		//////////////////Global Variables//////////////////
 		/**************************************************/

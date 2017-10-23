@@ -1,22 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Window
-	x:Class="RFiDGear.View.MifareClassicSetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:v="clr-namespace:RFiDGear.View"
+	x:Class="RFiDGear.View.MifareClassicSetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:v="clr-namespace:RFiDGear.View" xmlns:local="clr-namespace:RFiDGear" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
 	Title="RFiDGear.View"
 	Width="998"
 	Height="538">
+	<Window.Resources>
+		<local:BindingProxy
+			x:Key="proxy"
+			Data="{Binding}" />
+		<local:ResourceLoader
+			x:Key="Localization" />
+		<!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+			<ContextMenu.ItemContainerStyle>
+				<Style TargetType="MenuItem" >
+					<Setter
+						Property="HorizontalContentAlignment"
+						Value="Left" />
+					<Setter
+						Property="VerticalContentAlignment"
+						Value="Center" />
+				</Style>
+			</ContextMenu.ItemContainerStyle>
+		</ContextMenu>-->
+	</Window.Resources>
 	<Grid>
 		<Grid
-			Grid.Column="0"
-			Grid.Row="0"
-			HorizontalAlignment="Stretch"
 			Margin="0,0,0,40"
-			VerticalAlignment="Stretch">
+			VerticalAlignment="Stretch"
+			HorizontalAlignment="Stretch"
+			Grid.Row="0"
+			Grid.Column="0">
 			<TabControl
 				Grid.Column="0"
 				Grid.Row="0"
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Stretch"
-				Margin="0,0,0,-1">
+				Margin="0,112,0,-1">
 				<TabItem
 					Header="Mifare Classic Keys">
 					<v:TabPageMifareClassicKeySetupView />
@@ -26,9 +45,122 @@
 					<v:TabPageMifareClassicSectorAccessBitsView />
 				</TabItem>
 			</TabControl>
+			<Grid
+				Height="106"
+				Grid.Column="0"
+				Grid.Row="0"
+				HorizontalAlignment="Stretch"
+				VerticalAlignment="Top"
+				Margin="0,0,0,0">
+				<GroupBox
+					Header="Task Configuration"
+					Height="106"
+					Grid.Column="0"
+					Grid.Row="0"
+					HorizontalAlignment="Stretch"
+					VerticalAlignment="Top"
+					Margin="9,0,8,0">
+					<Grid
+						VerticalAlignment="Stretch"
+						HorizontalAlignment="Stretch"
+						Margin="0,0,0,0"
+						Grid.Column="0"
+						Grid.Row="0">
+						<Label
+							Content="Configuration Type"
+							Height="26"
+							Grid.Column="0"
+							Grid.Row="0"
+							VerticalAlignment="Top"
+							Width="132"
+							HorizontalAlignment="Left"
+							Margin="8,8,0,0" />
+						<ComboBox
+							ItemsSource="{local:Enumerate {x:Type dal:Task_Type}}"
+							SelectedItem="{Binding SelectedAccessBitsTaskType,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter={x:Type dal:Task_Type},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;UpdateSourceTrigger=PropertyChanged,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Mode=TwoWay}"
+							Width="252"
+							Grid.Column="0"
+							Grid.Row="0"
+							HorizontalAlignment="Left"
+							Height="26"
+							VerticalAlignment="Top"
+							Margin="149,8,0,0" />
+						<Label
+							Content="Task Description"
+							RenderTransformOrigin="0.5085,0.4231"
+							Height="26"
+							Grid.Column="0"
+							Grid.Row="0"
+							VerticalAlignment="Top"
+							Width="109.00000000000023"
+							HorizontalAlignment="Left"
+							Margin="429,42,0,0" />
+						<TextBox
+							Text="{Binding SelectedKeySetupTaskDescription}"
+							Height="26"
+							Grid.Column="0"
+							Grid.Row="0"
+							VerticalAlignment="Top"
+							Margin="546,42,8,0" />
+						<Label
+							Content="Task Index"
+							RenderTransformOrigin="0.5085,0.4231"
+							Height="26"
+							Grid.Column="0"
+							Grid.Row="0"
+							VerticalAlignment="Top"
+							Width="109.00000000000023"
+							HorizontalAlignment="Left"
+							Margin="429,8,0,0" />
+						<TextBox
+							Text="{Binding SelectedKeySetupTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+							Height="26"
+							Grid.Column="0"
+							Grid.Row="0"
+							VerticalAlignment="Top"
+							Margin="546,8,8,0">
+							<TextBox.Resources>
+								<Style
+									x:Key="IsValidSelectedKeySetupTaskIndex"
+									TargetType="TextBox">
+									<Style.Triggers>
+										<DataTrigger
+											Binding="{Binding IsValidSelectedKeySetupTaskIndex}"
+											Value="True">
+											<Setter
+												Property="Foreground"
+												Value="Green" />
+											<Setter
+												Property="Background"
+												Value="White" />
+											<Setter
+												Property="FontWeight"
+												Value="Normal" />
+										</DataTrigger>
+										<DataTrigger
+											Binding="{Binding IsValidSelectedKeySetupTaskIndex}"
+											Value="False">
+											<Setter
+												Property="Foreground"
+												Value="Black" />
+											<Setter
+												Property="Background"
+												Value="Red" />
+											<Setter
+												Property="FontWeight"
+												Value="Normal" />
+										</DataTrigger>
+									</Style.Triggers>
+								</Style>
+							</TextBox.Resources>
+						</TextBox>
+					</Grid>
+				</GroupBox>
+			</Grid>
 		</Grid>
 		<Button
 			Content="OK"
+			Command="{Binding OKCommand}"
 			Height="23"
 			Width="140"
 			Grid.Column="0"
@@ -38,6 +170,7 @@
 			Margin="9,0,0,8" />
 		<Button
 			Content="Cancel"
+			Command="{Binding CancelCommand}"
 			Height="23"
 			Width="140"
 			Grid.Column="0"

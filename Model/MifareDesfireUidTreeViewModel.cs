@@ -1,4 +1,6 @@
-﻿using System;
+﻿using RFiDGear.DataAccessLayer;
+
+using System;
 using System.Collections.Generic;
 
 namespace RFiDGear.Model
@@ -13,12 +15,20 @@ namespace RFiDGear.Model
 		public List<MifareDesfireAppIdTreeViewModel> AppList {
 			get { return _appList; }
 		}
-				
-		public MifareDesfireUidTreeViewModel(string uid)
+
+		public MifareDesfireUidTreeViewModel()
+		{
+			
+		}
+		
+		public MifareDesfireUidTreeViewModel(string uid, CARD_TYPE cardType)
 		{
 			uidNumber = uid;
+			CardType = cardType;
 		}
 		
 		public string uidNumber{ get; set;		}
+		
+		public CARD_TYPE CardType { get; set; }
 	}
 }

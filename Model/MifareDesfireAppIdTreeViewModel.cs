@@ -9,6 +9,11 @@ namespace RFiDGear.Model
 	{
 		public string appID { get; set; }
 		
+		public MifareDesfireAppIdTreeViewModel()
+		{
+			
+		}
+		
 		public MifareDesfireAppIdTreeViewModel(string _appID)
 		{
 			appID = _appID;

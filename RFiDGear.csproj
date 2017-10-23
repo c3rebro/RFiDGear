@@ -103,51 +103,46 @@
     <ApplicationDefinition Include="App.xaml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="3rdParty\MVVMDialogs\Behaviors\DialogBehavior.cs" />
+    <Compile Include="3rdParty\MVVMDialogs\Presenters\IDialogBoxPresenter.cs" />
+    <Compile Include="3rdParty\MVVMDialogs\Presenters\MessageBoxPresenter.cs" />
+    <Compile Include="3rdParty\MVVMDialogs\Presenters\OpenFileDialogPresenter.cs" />
+    <Compile Include="3rdParty\MVVMDialogs\ViewModels\IDialogViewModel.cs" />
+    <Compile Include="3rdParty\MVVMDialogs\ViewModels\IUserDialogViewModel.cs" />
+    <Compile Include="3rdParty\RedCell\RedCell.Diagnostics.Update\Log.cs" />
+    <Compile Include="3rdParty\RedCell\RedCell.Diagnostics.Update\LogEventArgs.cs" />
+    <Compile Include="3rdParty\RedCell\RedCell.Diagnostics.Update\Manifest.cs" />
+    <Compile Include="3rdParty\RedCell\RedCell.Diagnostics.Update\Updater.cs" />
+    <Compile Include="3rdParty\RedCell\RedCell.Net\Fetch.cs" />
+    <Compile Include="3rdParty\RedCell\RedCell.Net\FetchStream.cs" />
     <Compile Include="App.xaml.cs">
       <SubType>Code</SubType>
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CustomConverter.cs" />
-    <Compile Include="MainWindow.xaml.cs">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Model\MifareClassicAccessBitsLongDataBlockDataGridModel.cs" />
-    <Compile Include="Model\MifareClassicAccessBitsSectorTrailerDataGridModel.cs" />
-    <Compile Include="Model\MifareClassicAccessBitsShortDataBlockDataGridModel.cs" />
-    <Compile Include="Model\MifareClassicDataBlockDataGridModel.cs" />
-    <Compile Include="Model\MifareClassicDataBlockTreeViewModel.cs" />
-    <Compile Include="Model\MifareClassicSectorTreeViewModel.cs" />
-    <Compile Include="Model\MifareClassicUidTreeViewModel.cs" />
+    <Compile Include="DataAccessLayer\Constants.cs" />
+    <Compile Include="DataAccessLayer\CustomConverter.cs" />
+    <Compile Include="DataAccessLayer\DatabaseReaderWriter.cs" />
+    <Compile Include="DataAccessLayer\LogWriter.cs" />
+    <Compile Include="DataAccessLayer\ResourceLoader.cs" />
+    <Compile Include="DataAccessLayer\RFiDDevice.cs" />
+    <Compile Include="DataAccessLayer\SettingsReaderWriter.cs" />
+    <Compile Include="Model\MifareClassicDataBlockModel.cs" />
+    <Compile Include="Model\DefaultSpecification.cs" />
+    <Compile Include="Model\MifareClassicSectorModel.cs" />
+    <Compile Include="Model\MifareClassicUidModel.cs" />
     <Compile Include="Model\MifareDesfireAppIdTreeViewModel.cs" />
     <Compile Include="Model\MifareDesfireFileTreeViewModel.cs" />
     <Compile Include="Model\MifareDesfireUidTreeViewModel.cs" />
-    <Compile Include="Model\MifareClassicAccessBitsBaseModel.cs" />
-    <Compile Include="Model\ReaderSetupModel.cs" />
-    <Compile Include="MVVMDialogs\Behaviors\DialogBehavior.cs" />
-    <Compile Include="MVVMDialogs\Presenters\IDialogBoxPresenter.cs" />
-    <Compile Include="MVVMDialogs\ViewModels\IDialogViewModel.cs" />
-    <Compile Include="MVVMDialogs\ViewModels\IUserDialogViewModel.cs" />
-    <Compile Include="Presenters\MessageBoxPresenter.cs" />
-    <Compile Include="Presenters\OpenFileDialogPresenter.cs" />
-    <Compile Include="DatabaseReaderWriter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\WPFAssemblyInfo.cs" />
-    <Compile Include="RedCell\RedCell.Diagnostics.Update\Log.cs" />
-    <Compile Include="RedCell\RedCell.Diagnostics.Update\LogEventArgs.cs" />
-    <Compile Include="RedCell\RedCell.Diagnostics.Update\Manifest.cs" />
-    <Compile Include="RedCell\RedCell.Diagnostics.Update\Updater.cs" />
-    <Compile Include="RedCell\RedCell.Net\Fetch.cs" />
-    <Compile Include="RedCell\RedCell.Net\FetchStream.cs" />
-    <Compile Include="RelayCommand.cs" />
-    <Compile Include="ResourceLoader.cs" />
-    <Compile Include="RFiDAccess.cs" />
-    <Compile Include="SettingsReaderWriter.cs" />
     <Compile Include="ViewModel\CustomDialogViewModel.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
-    <Compile Include="ViewModel\MifareAuthSettingsDialogViewModel.cs" />
     <Compile Include="ViewModel\MessageBoxViewModel.cs" />
+    <Compile Include="ViewModel\MifareClassicSetupViewModel.cs" />
+    <Compile Include="ViewModel\MifareDesfireSetupViewModel.cs" />
     <Compile Include="ViewModel\OpenFileDialogViewModel.cs" />
-    <Compile Include="ViewModel\ReaderSetupDialogViewModel.cs" />
+    <Compile Include="ViewModel\SaveFileDialogViewModel.cs" />
+    <Compile Include="ViewModel\SetupViewModel.cs" />
     <Compile Include="ViewModel\TreeViewChildNodeViewModel.cs" />
     <Compile Include="ViewModel\TreeViewGrandChildNodeViewModel.cs" />
     <Compile Include="ViewModel\TreeViewParentNodeViewModel.cs" />
@@ -155,15 +150,52 @@
     <Compile Include="View\CustomDialogBox.xaml.cs">
       <DependentUpon>CustomDialogBox.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\MifareAuthSettingsDialogBox.xaml.cs">
-      <DependentUpon>MifareAuthSettingsDialogBox.xaml</DependentUpon>
+    <Compile Include="View\MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\MifareClassicSetupView.xaml.cs">
+      <DependentUpon>MifareClassicSetupView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="View\ReaderSetupDialogBox.xaml.cs">
-      <DependentUpon>ReaderSetupDialogBox.xaml</DependentUpon>
+    <Compile Include="View\TabPageMifareClassicKeySetupView.xaml.cs">
+      <DependentUpon>TabPageMifareClassicKeySetupView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\TabPageMifareClassicSectorAccessBitsView.xaml.cs">
+      <DependentUpon>TabPageMifareClassicSectorAccessBitsView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\TabPageMifareDesfireApplicationMasteringView.xaml.cs">
+      <DependentUpon>TabPageMifareDesfireApplicationMasteringView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\TabPageMifareDesfireCardMasteringView.xaml.cs">
+      <DependentUpon>TabPageMifareDesfireCardMasteringView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\TabPageMifareDesfireFileMasteringView.xaml.cs">
+      <DependentUpon>TabPageMifareDesfireFileMasteringView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\MifareDesfireSetupView.xaml.cs">
+      <DependentUpon>MifareDesfireSetupView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\SetupView.xaml.cs">
+      <DependentUpon>SetupView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\TabPageMifareDesfireDataExplorerView.xaml.cs">
+      <DependentUpon>TabPageMifareDesfireDataExplorerView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\TabPageReaderSettingsView.xaml.cs">
+      <DependentUpon>TabPageReaderSettingsView.xaml</DependentUpon>
+      <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="3rdParty\RedCell\RedCell.Diagnostics.Update\Update.cd" />
     <None Include="app.config" />
     <None Include="docs\bottom.gif" />
     <None Include="docs\bullet.gif" />
@@ -256,28 +288,36 @@
     <None Include="docs\images\image003.jpg" />
     <None Include="packages.config" />
     <None Include="README.md" />
-    <None Include="RedCell\RedCell.Diagnostics.Update\Update.cd" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="MainWindow.xaml" />
     <Page Include="View\CustomDialogBox.xaml" />
-    <Page Include="View\MifareAuthSettingsDialogBox.xaml" />
-    <Page Include="View\ReaderSetupDialogBox.xaml" />
+    <Page Include="View\MainWindow.xaml" />
+    <Page Include="View\MifareClassicSetupView.xaml" />
+    <Page Include="View\TabPageMifareClassicKeySetupView.xaml" />
+    <Page Include="View\TabPageMifareClassicSectorAccessBitsView.xaml" />
+    <Page Include="View\TabPageMifareDesfireApplicationMasteringView.xaml" />
+    <Page Include="View\TabPageMifareDesfireCardMasteringView.xaml" />
+    <Page Include="View\TabPageMifareDesfireFileMasteringView.xaml" />
+    <Page Include="View\MifareDesfireSetupView.xaml" />
+    <Page Include="View\SetupView.xaml" />
+    <Page Include="View\TabPageMifareDesfireDataExplorerView.xaml" />
+    <Page Include="View\TabPageReaderSettingsView.xaml" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="3rdParty" />
+    <Folder Include="3rdParty\MVVMDialogs" />
+    <Folder Include="3rdParty\MVVMDialogs\Behaviors" />
+    <Folder Include="3rdParty\MVVMDialogs\Presenters" />
+    <Folder Include="3rdParty\MVVMDialogs\ViewModels" />
+    <Folder Include="3rdParty\RedCell" />
+    <Folder Include="3rdParty\RedCell\RedCell.Diagnostics.Update" />
+    <Folder Include="3rdParty\RedCell\RedCell.Net" />
     <Folder Include="docs\images" />
     <Folder Include="docs\menustructuremindmap.html_files" />
     <Folder Include="docs\menustructuremindmap.html_files\icons" />
     <Folder Include="Model" />
-    <Folder Include="MVVMDialogs" />
-    <Folder Include="MVVMDialogs\Behaviors" />
-    <Folder Include="MVVMDialogs\Presenters" />
-    <Folder Include="MVVMDialogs\ViewModels" />
     <Folder Include="docs" />
-    <Folder Include="RedCell" />
-    <Folder Include="Presenters" />
-    <Folder Include="RedCell\RedCell.Diagnostics.Update" />
-    <Folder Include="RedCell\RedCell.Net" />
+    <Folder Include="DataAccessLayer" />
     <Folder Include="Resources" />
     <Folder Include="View" />
     <Folder Include="ViewModel" />

@@ -197,4 +197,133 @@ slot of an available reader</value>
   <data name="mifareAuthSettingsDialogCaption" xml:space="preserve">
     <value>Authenticationdialog</value>
   </data>
+  <data name="ENUM.Data_Block.Block0" xml:space="preserve">
+    <value>Block 0</value>
+  </data>
+  <data name="ENUM.Data_Block.Block1" xml:space="preserve">
+    <value>Block 1</value>
+  </data>
+  <data name="ENUM.Data_Block.Block2" xml:space="preserve">
+    <value>Block 2</value>
+  </data>
+  <data name="ENUM.Data_Block.BlockAll" xml:space="preserve">
+    <value>Combined</value>
+  </data>
+  <data name="ENUM.Access_Condition.Allowed_With_KeyA" xml:space="preserve">
+    <value>Key A</value>
+  </data>
+  <data name="ENUM.Access_Condition.NotAllowed" xml:space="preserve">
+    <value>Not Allowed</value>
+  </data>
+  <data name="ENUM.Access_Condition.NotApplicable" xml:space="preserve">
+    <value>Not Applicable</value>
+  </data>
+  <data name="ENUM.Access_Condition.Allowed_With_KeyA_Or_KeyB" xml:space="preserve">
+    <value>Key A oder B</value>
+  </data>
+  <data name="ENUM.Access_Condition.Allowed_With_KeyB" xml:space="preserve">
+    <value>Key B</value>
+  </data>
+  <data name="ENUM.ReaderTypes.Gunnebo" xml:space="preserve">
+    <value>Gunnebo</value>
+  </data>
+  <data name="ENUM.ReaderTypes.None" xml:space="preserve">
+    <value>Kein Leser ausgewählt</value>
+  </data>
+  <data name="ENUM.ReaderTypes.Promag" xml:space="preserve">
+    <value>Promag</value>
+  </data>
+  <data name="ENUM.ReaderTypes.SmartID" xml:space="preserve">
+    <value>SmartID</value>
+  </data>
+  <data name="ENUM.ReaderTypes.STidPRG" xml:space="preserve">
+    <value>STidPRG</value>
+  </data>
+  <data name="ENUM.ReaderTypes.Rpleth" xml:space="preserve">
+    <value>RPleth</value>
+  </data>
+  <data name="ENUM.ReaderTypes.SCIEL" xml:space="preserve">
+    <value>SCIEL</value>
+  </data>
+  <data name="ENUM.ReaderTypes.AxessTMC13" xml:space="preserve">
+    <value>AxessTMC13</value>
+  </data>
+  <data name="ENUM.ReaderTypes.PCSC" xml:space="preserve">
+    <value>PCSC</value>
+  </data>
+  <data name="ENUM.ReaderTypes.IdOnDemand" xml:space="preserve">
+    <value>IdOnDemand</value>
+  </data>
+  <data name="ENUM.ReaderTypes.Deister" xml:space="preserve">
+    <value>Deister</value>
+  </data>
+  <data name="ENUM.ReaderTypes.Admitto" xml:space="preserve">
+    <value>Admitto</value>
+  </data>
+  <data name="ENUM.ReaderTypes.RFIDeas" xml:space="preserve">
+    <value>RFIDeas</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key01" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key00" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key02" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key06" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key07" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key08" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key09" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key10" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key11" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key12" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key15" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key03" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key04" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key05" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key13" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key14" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="ENUM.Task_Type.Authenticate" xml:space="preserve">
+    <value>Authenticate</value>
+  </data>
+  <data name="ENUM.Task_Type.Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="ENUM.Task_Type.Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="ENUM.Task_Type.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="ENUM.Task_Type.ChangeDefault" xml:space="preserve">
+    <value>Change Default Values</value>
+  </data>
 </root>

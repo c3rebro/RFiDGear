@@ -11,7 +11,6 @@ namespace RFiDGear.DataSource
 		
 		byte[] currentMifareClassicSector;
 		
-		CustomConverter converter = new CustomConverter();
 		
 		byte blocknSectorData;
 		int discarded;
@@ -48,7 +47,7 @@ namespace RFiDGear.DataSource
 		[DisplayName("Hex")]
 		public string singleByteBlock0AsString {
 			get { return blocknSectorData.ToString("X2"); }
-			set { blocknSectorData = converter.GetBytes(value, out discarded)[0];
+			set { blocknSectorData = CustomConverter.GetBytes(value, out discarded)[0];
 				OnPropertyChanged("singleByteBlock0AsByte");
 				OnPropertyChanged("singleByteBlock0AsBinary");
 				OnPropertyChanged("singleByteBlock0AsChar");

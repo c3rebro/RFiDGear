@@ -9,8 +9,6 @@ using GalaSoft.MvvmLight.Command;
 
 using MvvmDialogs.ViewModels;
 
-using RFiDGear.DataSource;
-
 using System;
 using System.Security;
 using System.ComponentModel;
