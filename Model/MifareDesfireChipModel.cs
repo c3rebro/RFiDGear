@@ -8,7 +8,7 @@ namespace RFiDGear.Model
 	/// <summary>
 	/// Description of chipUid.
 	/// </summary>
-	public class MifareDesfireUidTreeViewModel
+	public class MifareDesfireChipModel
 	{
 		readonly List<MifareDesfireAppIdTreeViewModel> _appList = new List<MifareDesfireAppIdTreeViewModel>();
 
@@ -16,12 +16,12 @@ namespace RFiDGear.Model
 			get { return _appList; }
 		}
 
-		public MifareDesfireUidTreeViewModel()
+		public MifareDesfireChipModel()
 		{
 			
 		}
 		
-		public MifareDesfireUidTreeViewModel(string uid, CARD_TYPE cardType)
+		public MifareDesfireChipModel(string uid, CARD_TYPE cardType)
 		{
 			uidNumber = uid;
 			CardType = cardType;

@@ -6,70 +6,14 @@
 	HorizontalAlignment="Stretch">
 	<Grid>
 		<Grid
-			Height="76.000000000000014"
-			Grid.Column="0"
-			Grid.Row="0"
-			VerticalAlignment="Top"
-			Margin="8,8,8,8"
-			HorizontalAlignment="Stretch">
-			<Label
-				Content="Configuration Type"
-				Height="26"
-				Grid.Column="0"
-				Grid.Row="0"
-				HorizontalAlignment="Stretch"
-				VerticalAlignment="Top"
-				Margin="8,8,744,0" />
-			<ComboBox
-				Width="252"
-				Grid.Column="0"
-				Grid.Row="0"
-				HorizontalAlignment="Left"
-				Height="26"
-				VerticalAlignment="Top"
-				Margin="149,8,0,0" />
-			<Label
-				Content="Task Description"
-				RenderTransformOrigin="0.5085,0.4231"
-				Height="26"
-				Grid.Column="0"
-				Grid.Row="0"
-				VerticalAlignment="Top"
-				Width="109.00000000000023"
-				HorizontalAlignment="Left"
-				Margin="429,42,0,0" />
-			<TextBox
-				Height="26"
-				Grid.Column="0"
-				Grid.Row="0"
-				VerticalAlignment="Top"
-				Margin="546,42,8,0" />
-			<Label
-				Content="Task Index"
-				RenderTransformOrigin="0.5085,0.4231"
-				Height="26"
-				Grid.Column="0"
-				Grid.Row="0"
-				VerticalAlignment="Top"
-				Width="109.00000000000023"
-				HorizontalAlignment="Left"
-				Margin="429,8,0,0" />
-			<TextBox
-				Height="26"
-				Grid.Column="0"
-				Grid.Row="0"
-				VerticalAlignment="Top"
-				Margin="546,8,8,0" />
-		</Grid>
-		<Grid
 			Grid.Column="0"
 			Grid.Row="0"
 			HorizontalAlignment="Stretch"
 			VerticalAlignment="Stretch"
-			Margin="8,100,8,8">
+			Margin="0,0,0,0">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition
-					Width="430" />
+					Width="*" />
 				<ColumnDefinition
 					Width="5" />
 				<ColumnDefinition
@@ -85,13 +29,13 @@
 				<Grid>
 					<Button
 						Content="Change Key"
-						Margin="8,12,8,8"
-						VerticalAlignment="Bottom"
-						HorizontalAlignment="Stretch"
-						Grid.Row="8"
-						Grid.ColumnSpan="5"
+						Height="26"
 						Grid.Column="0"
-						Height="23" />
+						Grid.ColumnSpan="4"
+						Grid.Row="8"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Bottom"
+						Margin="8,0,8,8" />
 					<TextBox
 						Height="26"
 						Grid.Column="1"
@@ -287,17 +231,20 @@
 						<RowDefinition
 							Height="36" />
 						<RowDefinition
-							Height="7.73711834066668*" />
+							Height="*" />
 					</Grid.RowDefinitions>
 				</Grid>
 			</GroupBox>
 			<GridSplitter
+				ResizeBehavior="PreviousAndNext"
+				ResizeDirection="Auto"
 				Background="#FFD9D9DB"
-				Grid.Column="0"
-				Grid.Row="0"
-				HorizontalAlignment="Stretch"
+				Margin="0,0,0,0"
 				VerticalAlignment="Stretch"
-				Margin="432,0,-4,0" />
+				HorizontalAlignment="Stretch"
+				Grid.Row="0"
+				Grid.Column="1"
+				Width="5" />
 			<GroupBox
 				IsEnabled="{Binding IsDesfireAuthInfoEnabled}"
 				Header="Mifare DESFire File Master Settings - Target"
@@ -308,22 +255,22 @@
 				<Grid>
 					<Button
 						Content="Authenticate"
-						Margin="8,12,8,8"
-						VerticalAlignment="Bottom"
-						HorizontalAlignment="Stretch"
-						Grid.Row="8"
-						Grid.ColumnSpan="5"
+						Height="26"
 						Grid.Column="0"
-						Height="23" />
+						Grid.ColumnSpan="4"
+						Grid.Row="9"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Bottom"
+						Margin="8,0,7,7" />
 					<Button
 						Content="Create File"
-						Margin="8,12,8,36"
-						VerticalAlignment="Bottom"
-						HorizontalAlignment="Stretch"
-						Grid.Row="8"
-						Grid.ColumnSpan="5"
+						Height="26"
 						Grid.Column="0"
-						Height="23" />
+						Grid.ColumnSpan="4"
+						Grid.Row="8"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Bottom"
+						Margin="8,0,7,7" />
 					<TextBox
 						Text="Read Key"
 						Height="26"
@@ -473,7 +420,7 @@
 						<ColumnDefinition
 							Width="80" />
 						<ColumnDefinition
-							Width="0.162077890621961*" />
+							Width="*" />
 					</Grid.ColumnDefinitions>
 					<Grid.RowDefinitions>
 						<RowDefinition
@@ -493,7 +440,9 @@
 						<RowDefinition
 							Height="36" />
 						<RowDefinition
-							Height="7.73711834066668*" />
+							Height="*" />
+						<RowDefinition
+							Height="36" />
 					</Grid.RowDefinitions>
 				</Grid>
 			</GroupBox>

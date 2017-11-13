@@ -39,7 +39,7 @@ namespace RFiDGear.DataAccessLayer
 				textStream.Close();
 				textStream.Dispose();
 			}
-			catch(Exception ex)
+			catch
 			{
 				
 			}

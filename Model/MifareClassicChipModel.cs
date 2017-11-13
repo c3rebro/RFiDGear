@@ -10,21 +10,21 @@ namespace RFiDGear.Model
 	/// <summary>
 	/// Description of chipMifareClassicUid.
 	/// </summary>
-	[XmlRootAttribute("MifareClassicUIDNode", IsNullable = false)]
-	public class MifareClassicUidTreeViewModel
+	[XmlRootAttribute("MifareClassicChipNode", IsNullable = false)]
+	public class MifareClassicChipModel
 	{
-		readonly List<MifareClassicSectorTreeViewModel> _sectorList = new List<MifareClassicSectorTreeViewModel>();
+		readonly List<MifareClassicSectorModel> _sectorList = new List<MifareClassicSectorModel>();
 
-		public List<MifareClassicSectorTreeViewModel> SectorList {
+		public List<MifareClassicSectorModel> SectorList {
 			get { return _sectorList; }
 		}
 
-		public MifareClassicUidTreeViewModel()
+		public MifareClassicChipModel()
 		{
 			
 		}
 		
-		public MifareClassicUidTreeViewModel(string uid, CARD_TYPE cardType)
+		public MifareClassicChipModel(string uid, CARD_TYPE cardType)
 		{
 			this.CardType = cardType;
 			this.UidNumber = uid;

@@ -4,6 +4,8 @@
  * Time: 15:26
  * 
  */
+using LibLogicalAccess;
+
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
@@ -37,41 +39,42 @@ namespace RFiDGear.Model
 			_defaultReaderName = "";
 			_defaultReaderProvider = ReaderTypes.None;
 			_defaultLanguage = "english";
-			
+			defaultAutoPerformTasksEnabled = false;
 			
 			mifareClassicDefaultSecuritySettings = new List<MifareClassicDefaultKeys>
 			{
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key00, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key01, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key02, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key03, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key04, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key05, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key06, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key07, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key08, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key09, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key10, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key11, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key12, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key13, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key14, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-				new MifareClassicDefaultKeys(KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key15, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF")
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey00, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey01, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey02, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey03, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey04, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey05, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey06, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey07, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey08, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey09, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey10, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey11, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey12, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey13, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey14, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+				new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey15, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF")
 			};
 			
 			mifareDesfireDefaultSecuritySettings = new List<MifareDesfireDefaultKeys>
 			{
-				new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey, KeyType_EncryptionType.AES, "00000000000000000000000000000000"),
-				new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey, KeyType_EncryptionType.AES, "00000000000000000000000000000000"),
-				new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey, KeyType_EncryptionType.AES, "00000000000000000000000000000000"),
-				new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey, KeyType_EncryptionType.AES, "00000000000000000000000000000000")
+				new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000"),
+				new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000"),
+				new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000"),
+				new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000")
 			};
 
 			_classicCardDefaultSectorTrailer = "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF";
 			
 			_classicCardDefaultQuickCheckKeys = new List<string>{
 				"FFFFFFFFFFFF","A1B2C3D4E5F6","1A2B3C4D5E6F",
-				"000000000000","A0B0C0D0E0F0","A1B1C1D1E1F1",
+				"000000000000","C75680590F31","010203040506",
+				"A0B0C0D0E0F0","A1B1C1D1E1F1","987654321ABC",
 				"A0A1A2A3A4A5","B0B1B2B3B4B5","4D3A99C351DD",
 				"1A982C7E459A","D3F7D3F7D3F7","AABBCCDDEEFF"};
 		}
@@ -99,8 +102,7 @@ namespace RFiDGear.Model
 		{
 			get { return _defaultReaderProvider; }
 			set { _defaultReaderProvider = value; }
-		}
-		private ReaderTypes _defaultReaderProvider;
+		} private ReaderTypes _defaultReaderProvider;
 		
 		/// <summary>
 		/// 
@@ -109,8 +111,16 @@ namespace RFiDGear.Model
 		{
 			get { return _defaultLanguage; }
 			set { _defaultLanguage = value; }
-		}
-		private string _defaultLanguage;
+		} private string _defaultLanguage;
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool DefaultAutoPerformTasksEnabled
+		{
+			get { return defaultAutoPerformTasksEnabled; }
+			set { defaultAutoPerformTasksEnabled = value; }
+		} private bool defaultAutoPerformTasksEnabled;
 		
 		public List<MifareDesfireDefaultKeys> MifareDesfireDefaultSecuritySettings
 		{

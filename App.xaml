@@ -20,6 +20,7 @@
 			
 			<pre:MessageBoxPresenter x:Key="{x:Type vm:MessageBoxViewModel}" />
 			<pre:OpenFileDialogPresenter x:Key="{x:Type vm:OpenFileDialogViewModel}" />
+			<pre:SaveFileDialogPresenter x:Key="{x:Type vm:SaveFileDialogViewModel}" />
 		</ResourceDictionary>
 	</Application.Resources>
 </Application>

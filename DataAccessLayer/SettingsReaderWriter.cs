@@ -106,7 +106,7 @@ namespace RFiDGear
 				}
 				catch(Exception e)
 				{
-					
+					LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 				}
 			}
 			else

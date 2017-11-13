@@ -263,67 +263,175 @@ slot of an available reader</value>
   <data name="ENUM.ReaderTypes.RFIDeas" xml:space="preserve">
     <value>RFIDeas</value>
   </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key01" xml:space="preserve">
-    <value>1</value>
+  <data name="ENUM.DESFireKeyType.DF_KEY_AES" xml:space="preserve">
+    <value>AES</value>
   </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key00" xml:space="preserve">
-    <value>0</value>
+  <data name="ENUM.DESFireKeyType.DF_KEY_DES" xml:space="preserve">
+    <value>DES</value>
   </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key02" xml:space="preserve">
-    <value>2</value>
+  <data name="ENUM.DESFireKeyType.DF_KEY_3K3DES" xml:space="preserve">
+    <value>3DES</value>
   </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key06" xml:space="preserve">
-    <value>6</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key07" xml:space="preserve">
-    <value>7</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key08" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key09" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key10" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key11" xml:space="preserve">
-    <value>11</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key12" xml:space="preserve">
-    <value>12</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key15" xml:space="preserve">
-    <value>15</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key03" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key04" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key05" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key13" xml:space="preserve">
-    <value>13</value>
-  </data>
-  <data name="ENUM.KeyType_MifareClassicKeyType.DefaultClassicCardAccessBits_Key14" xml:space="preserve">
-    <value>14</value>
-  </data>
-  <data name="ENUM.Task_Type.Authenticate" xml:space="preserve">
-    <value>Authenticate</value>
-  </data>
-  <data name="ENUM.Task_Type.Add" xml:space="preserve">
-    <value>Add</value>
-  </data>
-  <data name="ENUM.Task_Type.Edit" xml:space="preserve">
-    <value>Edit</value>
-  </data>
-  <data name="ENUM.Task_Type.None" xml:space="preserve">
+  <data name="ENUM.TaskType_MifareClassicTask.None" xml:space="preserve">
     <value>None</value>
   </data>
-  <data name="ENUM.Task_Type.ChangeDefault" xml:space="preserve">
+  <data name="ENUM.TaskType_MifareClassicTask.ChangeDefault" xml:space="preserve">
     <value>Change Default Values</value>
+  </data>
+  <data name="ENUM.TaskType_MifareClassicTask.ReadData" xml:space="preserve">
+    <value>Read Data</value>
+  </data>
+  <data name="ENUM.TaskType_MifareClassicTask.WriteData" xml:space="preserve">
+    <value>Write Data</value>
+  </data>
+  <data name="ENUM.TaskType_MifareClassicTask.ChangeSecuritySettings" xml:space="preserve">
+    <value>Edit Sectortrailer and Keys</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.ReadData" xml:space="preserve">
+    <value>Read Data</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.ChangeDefault" xml:space="preserve">
+    <value>Change Default Values</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.WriteData" xml:space="preserve">
+    <value>Write Data</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.DeleteFile" xml:space="preserve">
+    <value>Delete File</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.CreateApplication" xml:space="preserve">
+    <value>Create Application</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.CreateFile" xml:space="preserve">
+    <value>Create File</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.DeleteApplication" xml:space="preserve">
+    <value>Delete Application</value>
+  </data>
+  <data name="ENUM.DESFireKeySettings.KS_FREE_LISTING_WITHOUT_MK" xml:space="preserve">
+    <value>Listing without MasterKey</value>
+  </data>
+  <data name="ENUM.DESFireKeySettings.KS_ALLOW_CHANGE_MK" xml:space="preserve">
+    <value>Allow Change MasterKey</value>
+  </data>
+  <data name="ENUM.DESFireKeySettings.KS_CHANGE_KEY_FROZEN" xml:space="preserve">
+    <value>Change Key Frozen</value>
+  </data>
+  <data name="ENUM.DESFireKeySettings.KS_CHANGE_KEY_WITH_MK" xml:space="preserve">
+    <value>Change Key using MasterKey</value>
+  </data>
+  <data name="ENUM.DESFireKeySettings.KS_CHANGE_KEY_WITH_TARGETED_KEYNO" xml:space="preserve">
+    <value>Change Key using KeyNo</value>
+  </data>
+  <data name="ENUM.DESFireKeySettings.KS_CONFIGURATION_CHANGEABLE" xml:space="preserve">
+    <value>Configuration Changeable</value>
+  </data>
+  <data name="ENUM.DESFireKeySettings.KS_DEFAULT" xml:space="preserve">
+    <value>Default Settings</value>
+  </data>
+  <data name="ENUM.DESFireKeySettings.KS_FREE_CREATE_DELETE_WITHOUT_MK" xml:space="preserve">
+    <value>Create / Delete without MasterKey</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey15" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey11" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey01" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey09" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey05" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey06" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey02" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey12" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey13" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey03" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey10" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey14" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey04" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey00" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey07" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey08" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey00" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey15" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey01" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey02" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey03" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey04" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey05" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey06" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey07" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey08" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey09" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey10" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey11" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey12" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey13" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey14" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.FormatDesfireCard" xml:space="preserve">
+    <value>Format Desfire Card</value>
   </data>
 </root>

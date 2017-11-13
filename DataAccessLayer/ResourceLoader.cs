@@ -149,7 +149,7 @@ namespace RFiDGear
 			}
 			catch(Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}\n{1}",e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 				
 				throw new Exception(
 					string.Format("parameter:{0}\nvalue:{1}",
@@ -207,7 +207,8 @@ namespace RFiDGear
 			}
 			catch(Exception e)
 			{
-				return "error";
+				LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				return string.Empty;
 			}
 
 		}

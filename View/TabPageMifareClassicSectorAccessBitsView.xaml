@@ -203,7 +203,7 @@
 						Margin="8,9,7,0" />
 					<ComboBox
 						ItemsSource="{local:Enumerate {x:Type dal:Data_Block}}"
-						SelectedItem="{Binding Selected_DataBlockType,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter={x:Type dal:Data_Block},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;UpdateSourceTrigger=PropertyChanged,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Mode=TwoWay}"
+						SelectedItem="{Binding Selected_DataBlockType,Converter={StaticResource Localization},ConverterParameter={x:Type dal:Data_Block},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
 						IsEnabled="{Binding DataBlockSelectionComboBoxIsEnabled}"
 						Height="26"
 						Width="90"

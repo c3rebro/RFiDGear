@@ -4,6 +4,8 @@
  * Time: 11:21
  * 
  */
+using LibLogicalAccess;
+ 
 using System;
 using System.Collections.ObjectModel;
 
@@ -12,12 +14,25 @@ namespace RFiDGear.DataAccessLayer
 	/// <summary>
 	/// 
 	/// </summary>
-	public enum Task_Type
+	public enum TaskType_MifareClassicTask
 	{
 		None,
-		Authenticate,
-		Add,
-		Edit,
+		ChangeSecuritySettings,
+		ReadData,
+		WriteData,
+		ChangeDefault
+	}
+	
+	public enum TaskType_MifareDesfireTask
+	{
+		None,
+		FormatDesfireCard,
+		ReadData,
+		WriteData,
+		CreateApplication,
+		CreateFile,
+		DeleteApplication,
+		DeleteFile,
 		ChangeDefault
 	}
 	
@@ -73,6 +88,7 @@ namespace RFiDGear.DataAccessLayer
 	/// </summary>
 	public enum CARD_TYPE
 	{
+		Unspecified,
 		Mifare1K,
 		Mifare2K,
 		Mifare4K,
@@ -81,7 +97,8 @@ namespace RFiDGear.DataAccessLayer
 		DESFireEV2,
 		CT_PLUS_1K,
 		CT_PLUS_2K,
-		CT_PLUS_4K
+		CT_PLUS_4K,
+		MifareUltralight
 	};
 	
 	/// <summary>
@@ -90,7 +107,8 @@ namespace RFiDGear.DataAccessLayer
 	public enum ERROR
 	{
 		NoError,
-		AuthenticationError
+		AuthenticationError,
+		IOError
 	}
 	
 	public enum KEY_ERROR
@@ -126,12 +144,12 @@ namespace RFiDGear.DataAccessLayer
 		STidPRG = 12
 	};
 	
-	public enum KeyType_EncryptionType
-	{
-		DES,
-		TrippleDES,
-		AES
-	}
+//	public enum KeyType_EncryptionType
+//	{
+//		DES,
+//		TrippleDES,
+//		AES
+//	}
 	
 	public enum KeyType_MifareDesFireKeyType
 	{
@@ -143,7 +161,7 @@ namespace RFiDGear.DataAccessLayer
 	
 	public struct MifareDesfireDefaultKeys
 	{
-		public MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType _keyType, KeyType_EncryptionType _encryptionType, string _key)
+		public MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType _keyType, DESFireKeyType _encryptionType, string _key)
 		{
 			KeyType = _keyType;
 			EncryptionType = _encryptionType;
@@ -151,13 +169,13 @@ namespace RFiDGear.DataAccessLayer
 		}
 		
 		public KeyType_MifareDesFireKeyType KeyType;
-		public KeyType_EncryptionType EncryptionType;
+		public DESFireKeyType EncryptionType;
 		public string Key;
 	}
 	
 	public struct MifareClassicDefaultKeys
 	{
-		public MifareClassicDefaultKeys(KeyType_MifareClassicKeyType _keyType, string _accessBits)
+		public MifareClassicDefaultKeys(MifareClassicKeyNumber _keyType, string _accessBits)
 		{
 			KeyType = _keyType;
 			accessBits = _accessBits;
@@ -165,28 +183,47 @@ namespace RFiDGear.DataAccessLayer
 		
 		private string accessBits;
 		
-		public KeyType_MifareClassicKeyType KeyType;
+		public MifareClassicKeyNumber KeyType;
 		public string AccessBits { get { return accessBits; } set { accessBits = value; }}
 	}
 	
-	public enum KeyType_MifareClassicKeyType
+	public enum MifareClassicKeyNumber
 	{
-		DefaultClassicCardAccessBits_Key00,
-		DefaultClassicCardAccessBits_Key01,
-		DefaultClassicCardAccessBits_Key02,
-		DefaultClassicCardAccessBits_Key03,
-		DefaultClassicCardAccessBits_Key04,
-		DefaultClassicCardAccessBits_Key05,
-		DefaultClassicCardAccessBits_Key06,
-		DefaultClassicCardAccessBits_Key07,
-		DefaultClassicCardAccessBits_Key08,
-		DefaultClassicCardAccessBits_Key09,
-		DefaultClassicCardAccessBits_Key10,
-		DefaultClassicCardAccessBits_Key11,
-		DefaultClassicCardAccessBits_Key12,
-		DefaultClassicCardAccessBits_Key13,
-		DefaultClassicCardAccessBits_Key14,
-		DefaultClassicCardAccessBits_Key15
+		MifareClassicKey00,
+		MifareClassicKey01,
+		MifareClassicKey02,
+		MifareClassicKey03,
+		MifareClassicKey04,
+		MifareClassicKey05,
+		MifareClassicKey06,
+		MifareClassicKey07,
+		MifareClassicKey08,
+		MifareClassicKey09,
+		MifareClassicKey10,
+		MifareClassicKey11,
+		MifareClassicKey12,
+		MifareClassicKey13,
+		MifareClassicKey14,
+		MifareClassicKey15
 	}
 	
+	public enum MifareDesfireKeyNumber
+	{
+		MifareDesfireKey00,
+		MifareDesfireKey01,
+		MifareDesfireKey02,
+		MifareDesfireKey03,
+		MifareDesfireKey04,
+		MifareDesfireKey05,
+		MifareDesfireKey06,
+		MifareDesfireKey07,
+		MifareDesfireKey08,
+		MifareDesfireKey09,
+		MifareDesfireKey10,
+		MifareDesfireKey11,
+		MifareDesfireKey12,
+		MifareDesfireKey13,
+		MifareDesfireKey14,
+		MifareDesfireKey15
+	}
 }

@@ -12,13 +12,13 @@ namespace RFiDGear.Model
 	/// Description of chipMifareClassicSector.
 	/// </summary>
 	[XmlRootAttribute("MifareClassicSectorNode", IsNullable = false)]
-	public class MifareClassicSectorTreeViewModel
+	public class MifareClassicSectorModel
 	{
-		private int sectorNumber = 0;
 		private string keyA;
 		//private byte[] accessBitsAsByte;
 		private string accessBitsAsString;
 		private string keyB;
+		private bool isAuthenticated;
 		
 		private uint cx;
 		
@@ -29,16 +29,16 @@ namespace RFiDGear.Model
 		private Access_Condition read_KeyB;
 		private Access_Condition write_KeyB;
 		
-		private List<MifareClassicDataBlockTreeViewModel> mifareClassicBlock;
+		private ObservableCollection<MifareClassicDataBlockModel> mifareClassicBlock;
 		
-		public MifareClassicSectorTreeViewModel()
+		public MifareClassicSectorModel()
 		{
-			mifareClassicBlock = new List<MifareClassicDataBlockTreeViewModel>();
+			mifareClassicBlock = new ObservableCollection<MifareClassicDataBlockModel>();
 		}
 		
-		public MifareClassicSectorTreeViewModel(short _c1x, short _c2x, short _c3x)
+		public MifareClassicSectorModel(short _c1x, short _c2x, short _c3x)
 		{
-			mifareClassicBlock = new List<MifareClassicDataBlockTreeViewModel>();
+			mifareClassicBlock = new ObservableCollection<MifareClassicDataBlockModel>();
 			
 			cx = 0;
 			cx |= (uint)_c3x;
@@ -56,7 +56,7 @@ namespace RFiDGear.Model
 			//this = sectorTrailer_AccessBits[(int)cx];
 		}
 		
-		public MifareClassicSectorTreeViewModel(uint _cx,
+		public MifareClassicSectorModel(uint _cx,
 			Access_Condition _readKeyA = Access_Condition.NotApplicable,
 			Access_Condition _writeKeyA = Access_Condition.Allowed_With_KeyA,
 			Access_Condition _readAccessCondition = Access_Condition.Allowed_With_KeyA,
@@ -65,7 +65,7 @@ namespace RFiDGear.Model
 			Access_Condition _writeKeyB = Access_Condition.Allowed_With_KeyA)
 		{
 			
-			mifareClassicBlock = new List<MifareClassicDataBlockTreeViewModel>();
+			mifareClassicBlock = new ObservableCollection<MifareClassicDataBlockModel>();
 			
 			cx = _cx;
 			
@@ -79,20 +79,20 @@ namespace RFiDGear.Model
 			write_KeyB = _writeKeyB;
 		}
 		
-		public MifareClassicSectorTreeViewModel(int sectorNumber)
+		public MifareClassicSectorModel(int _sectorNumber)
 		{
-			mifareClassicBlock = new List<MifareClassicDataBlockTreeViewModel>();
+			mifareClassicBlock = new ObservableCollection<MifareClassicDataBlockModel>();
 			
-			this.mifareClassicSectorNumber = sectorNumber;
+			sectorNumber = _sectorNumber;
 		}
 		
-		public MifareClassicSectorTreeViewModel(
+		public MifareClassicSectorModel(
 			int _sectorNumber = 0,
 			string _keyA = "ff ff ff ff ff ff", // optional parameter: if not specified use transport configuration
 			string _accessBitsAsString = "FF0780C3", // optional parameter: if not specified use transport configuration
 			string _keyB = "ff ff ff ff ff ff") // optional parameter: if not specified use transport configuration
 		{
-			mifareClassicBlock = new List<MifareClassicDataBlockTreeViewModel>();
+			mifareClassicBlock = new ObservableCollection<MifareClassicDataBlockModel>();
 			
 			sectorNumber = _sectorNumber;
 			keyA = _keyA;
@@ -101,22 +101,19 @@ namespace RFiDGear.Model
 			keyB = _keyB;
 		}
 		
-		public IList<MifareClassicDataBlockTreeViewModel> DataBlock {
+		public ObservableCollection<MifareClassicDataBlockModel> DataBlock {
 			get { return mifareClassicBlock; }
+			set { mifareClassicBlock = value; }
 		}
 		
-		public int mifareClassicSectorNumber
-		{
-			get { return sectorNumber; }
-			set { sectorNumber = value; }
-		}
+		private int sectorNumber;
 		
-		public int SectorNumber { get { return sectorNumber; }}
-		public string KeyA { get { return keyA; }}
+		public int SectorNumber { get { return sectorNumber; } set { sectorNumber = value; }}
+		public string KeyA { get { return keyA; } set { keyA = value; }}
 		public string AccessBitsAsString { get { return accessBitsAsString; } set { accessBitsAsString = value; }}
 
 		//public byte[] AccessBitsAsByte { get { return accessBitsAsByte; }}
-		public string KeyB { get { return keyB; }}
+		public string KeyB { get { return keyB; } set { keyB = value; }}
 				
 		public Access_Condition Read_KeyA { get { return read_KeyA; } set { read_KeyA = value; }}
 		public Access_Condition Write_KeyA { get { return write_KeyA; } set { write_KeyA = value; }}
@@ -125,6 +122,7 @@ namespace RFiDGear.Model
 		public Access_Condition Read_KeyB { get { return read_KeyB; } set { read_KeyB = value; }}
 		public Access_Condition Write_KeyB { get { return write_KeyB; } set { write_KeyB = value; }}
 		
+		public bool IsAuthenticated { get { return isAuthenticated; } set { isAuthenticated = value; }}
 		public uint Cx { get { return cx; } set { cx = value; }}
 		
 	}

@@ -23,6 +23,7 @@
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     <RunCodeAnalysis>False</RunCodeAnalysis>
     <SourceAnalysisOverrideSettingsFile>C:\Users\C3rebro\AppData\Roaming\ICSharpCode\SharpDevelop5\Settings.SourceAnalysis</SourceAnalysisOverrideSettingsFile>
+    <ApplicationIcon>Resources\logo.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -56,14 +57,8 @@
     <Reference Include="GalaSoft.MvvmLight.Extras">
       <HintPath>lib\GalaSoft.MvvmLight.Extras.dll</HintPath>
     </Reference>
-    <Reference Include="Interop.LibLogicalAccess">
-      <HintPath>lib\Interop.LibLogicalAccess.dll</HintPath>
-    </Reference>
     <Reference Include="Ionic.Zip.Reduced">
       <HintPath>lib\Ionic.Zip.Reduced.dll</HintPath>
-    </Reference>
-    <Reference Include="MahApps.Metro">
-      <HintPath>lib\MahApps.Metro.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
@@ -107,6 +102,7 @@
     <Compile Include="3rdParty\MVVMDialogs\Presenters\IDialogBoxPresenter.cs" />
     <Compile Include="3rdParty\MVVMDialogs\Presenters\MessageBoxPresenter.cs" />
     <Compile Include="3rdParty\MVVMDialogs\Presenters\OpenFileDialogPresenter.cs" />
+    <Compile Include="3rdParty\MVVMDialogs\Presenters\SaveFileDialogPresenter.cs" />
     <Compile Include="3rdParty\MVVMDialogs\ViewModels\IDialogViewModel.cs" />
     <Compile Include="3rdParty\MVVMDialogs\ViewModels\IUserDialogViewModel.cs" />
     <Compile Include="3rdParty\RedCell\RedCell.Diagnostics.Update\Log.cs" />
@@ -126,13 +122,14 @@
     <Compile Include="DataAccessLayer\ResourceLoader.cs" />
     <Compile Include="DataAccessLayer\RFiDDevice.cs" />
     <Compile Include="DataAccessLayer\SettingsReaderWriter.cs" />
+    <Compile Include="Model\ChipTaskHandlerModel.cs" />
     <Compile Include="Model\MifareClassicDataBlockModel.cs" />
     <Compile Include="Model\DefaultSpecification.cs" />
     <Compile Include="Model\MifareClassicSectorModel.cs" />
-    <Compile Include="Model\MifareClassicUidModel.cs" />
+    <Compile Include="Model\MifareClassicChipModel.cs" />
     <Compile Include="Model\MifareDesfireAppIdTreeViewModel.cs" />
     <Compile Include="Model\MifareDesfireFileTreeViewModel.cs" />
-    <Compile Include="Model\MifareDesfireUidTreeViewModel.cs" />
+    <Compile Include="Model\MifareDesfireChipModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\WPFAssemblyInfo.cs" />
     <Compile Include="ViewModel\CustomDialogViewModel.cs" />
@@ -157,12 +154,20 @@
       <DependentUpon>MifareClassicSetupView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="View\TabPageMifareClassicDataExplorerView.xaml.cs">
+      <DependentUpon>TabPageMifareClassicDataExplorerView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="View\TabPageMifareClassicKeySetupView.xaml.cs">
       <DependentUpon>TabPageMifareClassicKeySetupView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="View\TabPageMifareClassicSectorAccessBitsView.xaml.cs">
       <DependentUpon>TabPageMifareClassicSectorAccessBitsView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\TabPageMifareDesfireAppCreationView.xaml.cs">
+      <DependentUpon>TabPageMifareDesfireAppCreationView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="View\TabPageMifareDesfireApplicationMasteringView.xaml.cs">
@@ -288,13 +293,19 @@
     <None Include="docs\images\image003.jpg" />
     <None Include="packages.config" />
     <None Include="README.md" />
+    <Resource Include="Resources\wait.ico" />
+    <Resource Include="Resources\confirm.ico" />
+    <Resource Include="Resources\error.ico" />
+    <Resource Include="Resources\logo.ico" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="View\CustomDialogBox.xaml" />
     <Page Include="View\MainWindow.xaml" />
     <Page Include="View\MifareClassicSetupView.xaml" />
+    <Page Include="View\TabPageMifareClassicDataExplorerView.xaml" />
     <Page Include="View\TabPageMifareClassicKeySetupView.xaml" />
     <Page Include="View\TabPageMifareClassicSectorAccessBitsView.xaml" />
+    <Page Include="View\TabPageMifareDesfireAppCreationView.xaml" />
     <Page Include="View\TabPageMifareDesfireApplicationMasteringView.xaml" />
     <Page Include="View\TabPageMifareDesfireCardMasteringView.xaml" />
     <Page Include="View\TabPageMifareDesfireFileMasteringView.xaml" />
@@ -325,6 +336,17 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\Manifest.de.resx" />
     <EmbeddedResource Include="Resources\Manifest.en.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="LibLogicalAccess">
+      <Guid>{DFDCDD8C-B13E-465B-8982-B09FC4917EAC}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>55</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

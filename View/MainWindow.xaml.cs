@@ -1,4 +1,7 @@
-﻿using System;
+﻿using RFiDGear.ViewModel;
+using RFiDGear.Model;
+
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -99,24 +102,60 @@ namespace RFiDGear
 				{
 					dep = VisualTreeHelper.GetParent(dep);
 				}
-				if (dep == null) 
+				if (dep == null)
 				{
-					//treeView..SelectedItem = null;
-					return;
-				}
-
-				if (dep is TreeViewItem)
-				{
-					TreeViewItem cell = dep as TreeViewItem;
-					cell.Focus();
-
-					while ((dep != null) && !(dep is TreeViewItem))
+					foreach(object o in item.Items)
 					{
-						dep = VisualTreeHelper.GetParent(dep);
+						if(o is TreeViewParentNodeViewModel)
+						{
+							foreach(TreeViewChildNodeViewModel child in (o as TreeViewParentNodeViewModel).Children)
+							{
+								child.IsSelected = false;
+								
+								if(child.Children != null)
+								{
+									foreach(TreeViewGrandChildNodeViewModel grandChild in child.Children)
+										grandChild.IsSelected = false;
+								}
+							}
+							
+							(o as TreeViewParentNodeViewModel).IsSelected = false;
+							
+						}
+						
+						if(o is MifareClassicSetupViewModel)
+						{
+							foreach(TreeViewChildNodeViewModel child in (o as MifareClassicSetupViewModel).ParentNodeViewModel.Children)
+							{
+								child.IsSelected = false;
+								
+								if(child.Children != null)
+								{
+									foreach(TreeViewGrandChildNodeViewModel grandChild in child.Children)
+										grandChild.IsSelected = false;
+								}
+							}
+							
+							(o as MifareClassicSetupViewModel).ParentNodeViewModel.IsSelected = false;
+						}
+						
+						if(o is MifareDesfireSetupViewModel)
+						{
+							foreach(TreeViewChildNodeViewModel child in (o as MifareDesfireSetupViewModel).ParentNodeViewModel.Children)
+							{
+								child.IsSelected = false;
+								
+								if(child.Children != null)
+								{
+									foreach(TreeViewGrandChildNodeViewModel grandChild in child.Children)
+										grandChild.IsSelected = false;
+								}
+							}
+							
+							(o as MifareDesfireSetupViewModel).ParentNodeViewModel.IsSelected = false;
+						}
 					}
-					TreeViewItem row = dep as TreeViewItem;
-					//treeView.SelectedItem = row.DataContext;
-					row.IsSelected = true;
+					return;
 				}
 				
 				/* if (grid != null && grid.SelectedItems != null && grid.SelectedItems.Count >= 1 && grid.SelectedCells.Count >= 1)
@@ -139,7 +178,7 @@ namespace RFiDGear
 				}*/
 			}
 		}
-	
+		
 
 		/**************************************************/
 		//////////////////Global Variables//////////////////
