@@ -15,6 +15,7 @@ using System.ComponentModel;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -35,21 +36,20 @@ namespace RFiDGear.ViewModel
 		private Updater updater = new Updater();
 		private DatabaseReaderWriter databaseReaderWriter;
 		private DispatcherTimer triggerReadChip;
-		private BackgroundWorker bgWorker;
+		private DispatcherTimer taskTimeout;
 
 		private ChipTaskHandlerModel taskHandler;
 		private List<MifareClassicChipModel> mifareClassicUidModels = new List<MifareClassicChipModel>();
 		private List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
 		
 		private MifareClassicSetupViewModel defaultTask;
+		
+		int taskIndex = 0; //if programming takes too long; quit the process
+		
 		#region Constructors
 		
 		public MainWindowViewModel()
-		{
-			bgWorker = new BackgroundWorker();
-			bgWorker.DoWork += new DoWorkEventHandler(UpdateChip);
-			bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(UpdateTaskStatus);
-			
+		{			
 			triggerReadChip = new DispatcherTimer();
 			triggerReadChip.Interval = new TimeSpan(0,0,0,0,500);
 			
@@ -57,6 +57,13 @@ namespace RFiDGear.ViewModel
 			
 			triggerReadChip.Start();
 			triggerReadChip.IsEnabled = false;
+			
+			taskTimeout = new DispatcherTimer();
+			taskTimeout.Interval = new TimeSpan(0,0,0,10,0);
+			
+			taskTimeout.Tick += TaskTimeout;
+			taskTimeout.Start();
+			taskTimeout.IsEnabled = false;
 			
 			treeViewParentNodes = new ObservableCollection<TreeViewParentNodeViewModel>();
 			//treeViewParentTaskNodes = new ObservableCollection<TreeViewParentNodeViewModel>();
@@ -646,11 +653,6 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		
-		private void UpdateTaskStatus(object sender, EventArgs e)
-		{
-			
-		}
-		
 		public ICommand WriteToAllChipAutoCommand { get { return new RelayCommand(OnNewWriteToAllChipAutoCommand); } }
 		private void OnNewWriteToAllChipAutoCommand()
 		{
@@ -663,7 +665,127 @@ namespace RFiDGear.ViewModel
 		public ICommand WriteToChipOnceCommand { get { return new RelayCommand(OnNewWriteToChipOnceCommand); } }
 		private void OnNewWriteToChipOnceCommand()
 		{
+//			foreach(object chipTask in taskHandler.TaskCollection)
+//			{
+//				if (chipTask is MifareClassicSetupViewModel)
+//					(chipTask as MifareClassicSetupViewModel).IsTaskCompletedSuccessfully = null;
+//				else if(chipTask is MifareDesfireSetupViewModel)
+//					(chipTask as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = null;
+//			}
 			
+			Task thread = new Task(() =>
+			                       {
+			                       	
+			                       	CARD_INFO card;
+			                       	
+			                       	try{
+			                       		//try to get singleton instance
+			                       		using (RFiDDevice device = RFiDDevice.Instance)
+			                       		{
+			                       			//reader was ready - proceed
+			                       			if(device != null)
+			                       			{
+			                       				device.ReadChipPublic();
+			                       				
+			                       				card = device.CardInfo;
+			                       			}
+			                       			else
+			                       				card = new CARD_INFO(CARD_TYPE.Unspecified, "");
+			                       		}
+			                       		
+			                       		//only run if theres a card on the reader and its uid was previously added
+			                       		if (
+			                       			!string.IsNullOrWhiteSpace(card.uid) &&
+			                       			treeViewParentNodes.Where(x => x.UidNumber == card.uid).Any())
+			                       		{
+
+			                       			//select current parentnode (card) on reader
+			                       			treeViewParentNodes.Where(x => x.UidNumber == card.uid).First().IsSelected = true;
+			                       			treeViewParentNodes.Where(x => x.IsSelected).First().IsBeingProgrammed = true;
+			                       			
+			                       			//are there tasks present to process?
+			                       			while(taskIndex < taskHandler.TaskCollection.Count)
+			                       			{
+			                       				
+			                       				Thread.Sleep(100);
+			                       				
+			                       				taskTimeout.IsEnabled = true;
+			                       				taskTimeout.Start();
+			                       				
+			                       				//decide what type of card to process
+			                       				if(taskHandler.GetTaskType == typeof(MifareClassicSetupViewModel))
+			                       				{
+			                       					switch( (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedTaskType)
+			                       					{
+			                       						case TaskType_MifareClassicTask.ChangeSecuritySettings:
+			                       							break;
+			                       					}
+			                       				}
+			                       				if(taskHandler.GetTaskType == typeof(MifareDesfireSetupViewModel))
+			                       				{
+			                       					
+			                       					switch( (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedTaskType)
+			                       					{
+			                       						case TaskType_MifareDesfireTask.FormatDesfireCard:
+			                       							
+			                       							switch((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).taskErr)
+			                       							{
+			                       								case ERROR.AuthenticationError:
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       									break;
+			                       								case ERROR.DeviceNotReadyError:
+			                       									break;
+			                       								case ERROR.IOError:
+			                       									break;
+			                       								case ERROR.NoError:
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = true;
+			                       									taskIndex++;
+			                       									taskTimeout.IsEnabled = false;
+			                       									taskTimeout.Stop();
+			                       									break;
+			                       								case ERROR.Empty:
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
+			                       									break;
+			                       							}
+			                       							
+			                       							break;
+			                       					}
+			                       				}
+			                       			}
+			                       			
+			                       			
+			                       			
+			                       			
+			                       			
+			                       			
+			                       		}
+			                       		
+			                       		else
+			                       		{
+			                       			if(treeViewParentNodes.Where(x => x.IsSelected).Any())
+			                       				treeViewParentNodes.Where(x => x.IsSelected).First().IsSelected = false;
+			                       		}
+			                       		
+			                       		RaisePropertyChanged("TreeViewParentNodes");
+			                       		
+			                       		
+			                       	}
+			                       	catch(Exception ex)
+			                       	{
+			                       		
+			                       	}
+			                       });
+			
+			thread.ContinueWith((x) => {
+			                    	treeViewParentNodes.Where(y => y.IsSelected).First().IsBeingProgrammed = null;
+			                    });
+			thread.Start();
+
+		}
+		
+		private void TaskTimeout(object sender, EventArgs e)
+		{
+			taskIndex = int.MaxValue;
 		}
 		
 		public ICommand CloseAllCommand { get { return new RelayCommand(OnCloseAll); } }

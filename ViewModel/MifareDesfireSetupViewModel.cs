@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
+using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
@@ -34,6 +35,8 @@ namespace RFiDGear.ViewModel
 		
 		private MifareDesfireChipModel chip;
 		private MifareDesfireAppIdTreeViewModel app;
+		
+		public ERROR taskErr { get; set; }
 		
 		/// <summary>
 		/// 
@@ -865,61 +868,103 @@ namespace RFiDGear.ViewModel
 		}
 		
 		/// <summary>
-		/// 
+		/// public ICommand FormatDesfireCardCommand { get { return new RelayCommand<RFiDDevice>((_device) => OnNewFormatDesfireCardCommand(_device)); }}
 		/// </summary>
-		public ICommand FormatDesfireCardCommand { get { return new RelayCommand<RFiDDevice>((_device) => OnNewFormatDesfireCardCommand(_device)); }}
-		private void OnNewFormatDesfireCardCommand(RFiDDevice _device)
+		public ICommand FormatDesfireCardCommand { get { return new RelayCommand(OnNewFormatDesfireCardCommand); }}
+		private void OnNewFormatDesfireCardCommand()
 		{
+			Task thread = new Task(() =>
+			                       {
+			                       	using ( RFiDDevice device = RFiDDevice.Instance) //?? _device
+			                       	{
+			                       		
+			                       		if(device != null)
+			                       		{
+			                       			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+			                       			
+			                       			//Mouse.OverrideCursor = Cursors.Wait;
+			                       			//Thread.Sleep(10000);
+			                       			if(CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
+			                       			{
+			                       				if(IsValidAppNumberCurrent != false &&
+			                       				   device.AuthToMifareDesfireApplication(
+			                       				   	DesfireMasterKeyCurrent,
+			                       				   	SelectedDesfireMasterKeyEncryptionTypeCurrent,
+			                       				   	MifareDesfireKeyNumber.MifareDesfireKey00) == ERROR.NoError)
+			                       				{
+			                       					StatusText += string.Format("{0}: Successfully Authenticated to PICC Master App 0\n", DateTime.Now);
+			                       					
+			                       					foreach(uint appID in device.GetAppIDList)
+			                       					{
+			                       						StatusText += string.Format("{0}: FoundAppID {1}\n", DateTime.Now, appID);
+			                       						
+			                       						if(device.DeleteMifareDesfireApplication(
+			                       							DesfireMasterKeyCurrent,
+			                       							SelectedDesfireMasterKeyEncryptionTypeCurrent,
+			                       							(int)appID) == ERROR.NoError)
+			                       						{
+			                       							StatusText += string.Format("{0}: Successfully Deleted AppID {1}\n", DateTime.Now, appID);
+			                       						}
+			                       						else
+			                       						{
+			                       							StatusText += string.Format("{0}: Unable to Remove AppID {1}\n", DateTime.Now, appID);
+			                       							taskErr = ERROR.AuthenticationError;
+			                       							return;
+			                       						}
+			                       						
+			                       					}
+
+			                       					taskErr = device.FormatDesfireCard(DesfireMasterKeyCurrent,SelectedDesfireMasterKeyEncryptionTypeCurrent);
+			                       				}
+
+			                       				else
+			                       				{
+			                       					StatusText += "Unable to Auth";
+			                       					taskErr = ERROR.AuthenticationError;
+			                       					return;
+			                       				}
+			                       				
+			                       			}
+
+			                       			
+			                       			//RaisePropertyChanged("DataAsByteArray");
+			                       			
+			                       			//Mouse.OverrideCursor = null;
+			                       		}
+			                       		else
+			                       		{
+			                       			taskErr = ERROR.DeviceNotReadyError;
+			                       			return;
+			                       		}
+			                       	}
+			                       	return;
+			                       });
 			
-			using ( RFiDDevice device = RFiDDevice.Instance ?? _device)
+			
+			
+			if(taskErr == ERROR.Empty)
 			{
+				taskErr = ERROR.DeviceNotReadyError;
 				
-				if(device != null)
-				{					
-					StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
-					
-					Mouse.OverrideCursor = Cursors.Wait;
-
-					if(CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
-					{
-						if(IsValidAppNumberCurrent != false &&
-						   device.AuthToMifareDesfireApplication(
-						   	DesfireMasterKeyCurrent,
-						   	SelectedDesfireMasterKeyEncryptionTypeCurrent,
-						   	MifareDesfireKeyNumber.MifareDesfireKey00) == ERROR.NoError)
-						{
-							StatusText += string.Format("{0}: Successfully Authenticated to PICC Master App 0\n", DateTime.Now);
-							
-							foreach(uint appID in device.GetAppIDList)
-							{
-								StatusText += string.Format("{0}: FoundAppID {1}\n", DateTime.Now, appID);
-								
-								if(device.DeleteMifareDesfireApplication(
-									DesfireMasterKeyCurrent,
-									SelectedDesfireMasterKeyEncryptionTypeCurrent,
-									(int)appID) == ERROR.NoError)
-								{
-									IsTaskCompletedSuccessfully = true;
-									StatusText += string.Format("{0}: Successfully Deleted AppID {1}\n", DateTime.Now, appID);
-								}
-								else
-									StatusText += string.Format("{0}: Unable to Remove AppID {1}\n", DateTime.Now, appID);
-							}
-							
-							device.FormatDesfireCard(DesfireMasterKeyCurrent,SelectedDesfireMasterKeyEncryptionTypeCurrent);
-						}
-
-						else
-							StatusText += "Unable to Auth";
-					}
-
-					
-					//RaisePropertyChanged("DataAsByteArray");
-					
-					Mouse.OverrideCursor = null;
-				}
-
+				thread.ContinueWith((x) => {
+				                    	
+				                    	if(taskErr == ERROR.NoError)
+				                    	{
+				                    		IsTaskCompletedSuccessfully = true;
+				                    	}
+				                    	else
+				                    	{
+				                    		IsTaskCompletedSuccessfully = false;
+				                    	}
+				                    });
+				
+				thread.Start();
 			}
+			
+
+			
+			
+			return;
 		}
 		
 		/// <summary>

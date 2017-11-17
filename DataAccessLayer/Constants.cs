@@ -106,8 +106,10 @@ namespace RFiDGear.DataAccessLayer
 	/// </summary>
 	public enum ERROR
 	{
+		Empty,
 		NoError,
 		AuthenticationError,
+		DeviceNotReadyError,
 		IOError
 	}
 	
