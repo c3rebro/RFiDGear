@@ -123,37 +123,37 @@ namespace RFiDGear
 							
 						}
 						
-						if(o is MifareClassicSetupViewModel)
-						{
-							foreach(TreeViewChildNodeViewModel child in (o as MifareClassicSetupViewModel).ParentNodeViewModel.Children)
-							{
-								child.IsSelected = false;
-								
-								if(child.Children != null)
-								{
-									foreach(TreeViewGrandChildNodeViewModel grandChild in child.Children)
-										grandChild.IsSelected = false;
-								}
-							}
-							
-							(o as MifareClassicSetupViewModel).ParentNodeViewModel.IsSelected = false;
-						}
-						
-						if(o is MifareDesfireSetupViewModel)
-						{
-							foreach(TreeViewChildNodeViewModel child in (o as MifareDesfireSetupViewModel).ParentNodeViewModel.Children)
-							{
-								child.IsSelected = false;
-								
-								if(child.Children != null)
-								{
-									foreach(TreeViewGrandChildNodeViewModel grandChild in child.Children)
-										grandChild.IsSelected = false;
-								}
-							}
-							
-							(o as MifareDesfireSetupViewModel).ParentNodeViewModel.IsSelected = false;
-						}
+//						if(o is MifareClassicSetupViewModel)
+//						{
+//							foreach(TreeViewChildNodeViewModel child in (o as MifareClassicSetupViewModel).ParentNodeViewModelFromChip.Children)
+//							{
+//								child.IsSelected = false;
+//								
+//								if(child.Children != null)
+//								{
+//									foreach(TreeViewGrandChildNodeViewModel grandChild in child.Children)
+//										grandChild.IsSelected = false;
+//								}
+//							}
+//							
+//							(o as MifareClassicSetupViewModel).ParentNodeViewModelFromChip.IsSelected = false;
+//						}
+//						
+//						if(o is MifareDesfireSetupViewModel)
+//						{
+//							foreach(TreeViewChildNodeViewModel child in (o as MifareDesfireSetupViewModel).ParentNodeViewModel.Children)
+//							{
+//								child.IsSelected = false;
+//								
+//								if(child.Children != null)
+//								{
+//									foreach(TreeViewGrandChildNodeViewModel grandChild in child.Children)
+//										grandChild.IsSelected = false;
+//								}
+//							}
+//							
+//							(o as MifareDesfireSetupViewModel).ParentNodeViewModel.IsSelected = false;
+//						}
 					}
 					return;
 				}

@@ -28,24 +28,6 @@
 			HorizontalAlignment="Stretch"
 			Grid.Row="0"
 			Grid.Column="0">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition
-					Width="*" />
-				<ColumnDefinition
-					Width="5" />
-				<ColumnDefinition
-					Width="*" />
-			</Grid.ColumnDefinitions>
-			<GridSplitter
-				ResizeBehavior="PreviousAndNext"
-				ResizeDirection="Auto"
-				Background="#FFD9D9DB"
-				Margin="0,0,0,0"
-				VerticalAlignment="Stretch"
-				HorizontalAlignment="Stretch"
-				Grid.Row="0"
-				Grid.Column="1"
-				Width="5" />
 			<GroupBox
 				Header="Mifare Classic Keys - Current"
 				IsEnabled="{Binding IsClassicAuthInfoEnabled}"
@@ -73,20 +55,20 @@
 						Margin="9,3,7,7" />
 					<Label
 						Content="Key B Value"
-						Grid.Column="0"
+						Width="80"
+						Grid.Column="3"
 						Grid.Row="4"
-						HorizontalAlignment="Stretch"
+						HorizontalAlignment="Left"
 						VerticalAlignment="Stretch"
-						Margin="8,3,7,7" />
+						Margin="9,3,0,7" />
 					<TextBox
 						Text="{Binding ClassicKeyBKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						FontFamily="Lucida Console"
-						Grid.Column="1"
-						Grid.ColumnSpan="3"
+						Grid.Column="4"
 						Grid.Row="4"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Stretch"
-						Margin="9,3,7,7">
+						Margin="7,3,7,7">
 						<TextBox.Resources>
 							<Style
 								TargetType="TextBox">
@@ -140,17 +122,17 @@
 						Margin="9,3,7,7" />
 					<Label
 						Content="Key A Value"
-						Margin="8,3,10,7"
-						VerticalAlignment="Stretch"
+						Grid.Column="0"
+						Grid.Row="4"
 						HorizontalAlignment="Stretch"
-						Grid.Row="3"
-						Grid.Column="0" />
+						VerticalAlignment="Stretch"
+						Margin="8,3,10,7" />
 					<TextBox
 						Text="{Binding ClassicKeyAKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						FontFamily="Lucida Console"
 						Grid.Column="1"
-						Grid.ColumnSpan="3"
-						Grid.Row="3"
+						Grid.ColumnSpan="2"
+						Grid.Row="4"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Stretch"
 						Margin="9,3,7,7">
@@ -205,34 +187,34 @@
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Stretch"
 						Margin="9,9,7,7" />
-					<Button
-						Content="Authenticate"
-						Command="{Binding AuthenticateCommand}"
-						Height="23"
-						Grid.Column="0"
-						Grid.ColumnSpan="4"
-						Grid.Row="5"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Bottom"
-						Margin="7.5,0,7.5,7" />
 					<CheckBox
 						Content="combine Key and sector selection"
 						Height="16"
 						Grid.Column="2"
-						Grid.ColumnSpan="2"
 						Grid.Row="0"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Top"
-						Margin="9,19,7,0" />
+						Margin="9,19,7,0"
+						Grid.ColumnSpan="3" />
 					<CheckBox
 						Content="combine a and b key selection"
 						Height="16"
 						Grid.Column="2"
-						Grid.ColumnSpan="2"
 						Grid.Row="1"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Top"
-						Margin="9,9,7,0" />
+						Margin="9,9,7,0"
+						Grid.ColumnSpan="3" />
+					<Button
+						Command="{Binding ReadDataCommand}"
+						Content="Read"
+						Height="23"
+						Grid.Column="0"
+						Grid.ColumnSpan="5"
+						Grid.Row="6"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Bottom"
+						Margin="8,0,7,7" />
 					<Grid.RowDefinitions>
 						<RowDefinition
 							Height="42" />
@@ -245,7 +227,9 @@
 						<RowDefinition
 							Height="36" />
 						<RowDefinition
-							Height="0.532266027438891*" />
+							Height="*" />
+						<RowDefinition
+							Height="36" />
 					</Grid.RowDefinitions>
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition
@@ -253,317 +237,11 @@
 						<ColumnDefinition
 							Width="86" />
 						<ColumnDefinition
-							Width="112.9042110553" />
+							Width="0.350448685341037*" />
 						<ColumnDefinition
-							Width="129.341287200861*" />
-					</Grid.ColumnDefinitions>
-				</Grid>
-			</GroupBox>
-			<GroupBox
-				Header="Mifare Classic Keys - Target"
-				IsEnabled="{Binding IsClassicKeyEditingEnabled}"
-				Grid.Column="2"
-				Grid.Row="0"
-				HorizontalAlignment="Stretch"
-				VerticalAlignment="Stretch"
-				Margin="8,8,8,8">
-				<Grid>
-					<Label
-						Content="Key A Nr."
-						Grid.Column="0"
-						Grid.Row="1"
-						Height="26"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="8,0,7,7" />
-					<ComboBox
-						ItemsSource="{local:Enumerate {x:Type dal:MifareClassicKeyNumber}}"
-						SelectedItem="{Binding SelectedClassicKeyANumberTarget,Converter={StaticResource Localization},ConverterParameter={x:Type dal:MifareClassicKeyNumber},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
-						IsEnabled="{Binding IsFixedKeyNumber}"
-						Grid.Column="1"
-						Grid.Row="1"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="9,3,7,7" />
-					<Label
-						Content="New Key B Value"
-						Grid.Column="0"
-						Grid.Row="6"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="7.5,3,8.5,7" />
-					<TextBox
-						Text="{Binding ClassicKeyBKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-						FontFamily="Lucida Console"
-						Grid.Column="1"
-						Grid.ColumnSpan="3"
-						Grid.Row="6"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="8.5,3,7.5,7">
-						<TextBox.Resources>
-							<Style
-								TargetType="TextBox">
-								<Style.Triggers>
-									<DataTrigger
-										Binding="{Binding IsValidClassicKeyBKeyTarget}"
-										Value="True">
-										<Setter
-											Property="Foreground"
-											Value="Green" />
-										<Setter
-											Property="Background"
-											Value="White" />
-										<Setter
-											Property="FontWeight"
-											Value="Normal" />
-									</DataTrigger>
-									<DataTrigger
-										Binding="{Binding IsValidClassicKeyBKeyTarget}"
-										Value="False">
-										<Setter
-											Property="Foreground"
-											Value="Black" />
-										<Setter
-											Property="Background"
-											Value="Red" />
-										<Setter
-											Property="FontWeight"
-											Value="Normal" />
-									</DataTrigger>
-								</Style.Triggers>
-							</Style>
-						</TextBox.Resources>
-					</TextBox>
-					<Label
-						Content="Key B Nr."
-						Grid.Column="0"
-						Grid.Row="2"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="8,3,7,7" />
-					<ComboBox
-						ItemsSource="{local:Enumerate {x:Type dal:MifareClassicKeyNumber}}"
-						SelectedItem="{Binding SelectedClassicKeyBNumberTarget,Converter={StaticResource Localization},ConverterParameter={x:Type dal:MifareClassicKeyNumber},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
-						IsEnabled="{Binding IsFixedKeyNumber}"
-						Grid.Column="1"
-						Grid.Row="2"
-						Height="26"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="9,3,7,7" />
-					<Label
-						Content="New Key A Value"
-						Grid.Column="0"
-						Grid.Row="3"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="8,3,10,7" />
-					<TextBox
-						Text="{Binding ClassicKeyAKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-						FontFamily="Lucida Console"
-						Grid.Column="1"
-						Grid.ColumnSpan="3"
-						Grid.Row="3"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="9,3,7,7">
-						<TextBox.Resources>
-							<Style
-								TargetType="TextBox">
-								<Style.Triggers>
-									<DataTrigger
-										Binding="{Binding IsValidClassicKeyAKeyTarget}"
-										Value="True">
-										<Setter
-											Property="Foreground"
-											Value="Green" />
-										<Setter
-											Property="Background"
-											Value="White" />
-										<Setter
-											Property="FontWeight"
-											Value="Normal" />
-									</DataTrigger>
-									<DataTrigger
-										Binding="{Binding IsValidClassicKeyAKeyTarget}"
-										Value="False">
-										<Setter
-											Property="Foreground"
-											Value="Black" />
-										<Setter
-											Property="Background"
-											Value="Red" />
-										<Setter
-											Property="FontWeight"
-											Value="Normal" />
-									</DataTrigger>
-								</Style.Triggers>
-							</Style>
-						</TextBox.Resources>
-					</TextBox>
-					<Label
-						Content="Sector Number:"
-						Grid.Column="0"
-						Grid.Row="0"
-						Height="26"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="8,8,8,8" />
-					<ComboBox
-						ItemsSource="{local:Enumerate {x:Type dal:MifareClassicKeyNumber}}"
-						SelectedIndex="{Binding KeySelectionComboboxIndex, Mode=TwoWay}"
-						IsEnabled="{Binding IsFixedKeyNumber}"
-						Grid.Column="1"
-						Grid.Row="0"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="9,9,7,7" />
-					<CheckBox
-						Content="combine Key and sector selection"
-						Height="16"
-						Grid.Column="2"
-						Grid.ColumnSpan="2"
-						Grid.Row="0"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Top"
-						Margin="9,19,7,0" />
-					<CheckBox
-						Content="combine a and b key selection"
-						Height="16"
-						Grid.Column="2"
-						Grid.ColumnSpan="2"
-						Grid.Row="1"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Top"
-						Margin="9,9,7,0" />
-					<Label
-						Content="Retype Key B Value"
-						Grid.Column="0"
-						Grid.Row="5"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="8,3,8,7" />
-					<TextBox
-						Text="{Binding ClassicKeyBKeyTargetRetyped, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-						FontFamily="Lucida Console"
-						Grid.Column="1"
-						Grid.ColumnSpan="3"
-						Grid.Row="5"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="8,3,8,7">
-						<TextBox.Resources>
-							<Style
-								TargetType="TextBox">
-								<Style.Triggers>
-									<DataTrigger
-										Binding="{Binding IsValidClassicKeyBKeyTargetRetyped}"
-										Value="True">
-										<Setter
-											Property="Foreground"
-											Value="Green" />
-										<Setter
-											Property="Background"
-											Value="White" />
-										<Setter
-											Property="FontWeight"
-											Value="Normal" />
-									</DataTrigger>
-									<DataTrigger
-										Binding="{Binding IsValidClassicKeyBKeyTargetRetyped}"
-										Value="False">
-										<Setter
-											Property="Foreground"
-											Value="Black" />
-										<Setter
-											Property="Background"
-											Value="Red" />
-										<Setter
-											Property="FontWeight"
-											Value="Normal" />
-									</DataTrigger>
-								</Style.Triggers>
-							</Style>
-						</TextBox.Resources>
-					</TextBox>
-					<Label
-						Content="Retype Key A Value"
-						Grid.Column="0"
-						Grid.Row="4"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="7.5,3,10.5,7" />
-					<TextBox
-						Text="{Binding ClassicKeyAKeyTargetRetyped, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-						FontFamily="Lucida Console"
-						Grid.Column="1"
-						Grid.ColumnSpan="3"
-						Grid.Row="4"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="8.5,3,7.5,7">
-						<TextBox.Resources>
-							<Style
-								TargetType="TextBox">
-								<Style.Triggers>
-									<DataTrigger
-										Binding="{Binding IsValidClassicKeyAKeyTargetRetyped}"
-										Value="True">
-										<Setter
-											Property="Foreground"
-											Value="Green" />
-										<Setter
-											Property="Background"
-											Value="White" />
-										<Setter
-											Property="FontWeight"
-											Value="Normal" />
-									</DataTrigger>
-									<DataTrigger
-										Binding="{Binding IsValidClassicKeyAKeyTargetRetyped}"
-										Value="False">
-										<Setter
-											Property="Foreground"
-											Value="Black" />
-										<Setter
-											Property="Background"
-											Value="Red" />
-										<Setter
-											Property="FontWeight"
-											Value="Normal" />
-									</DataTrigger>
-								</Style.Triggers>
-							</Style>
-						</TextBox.Resources>
-					</TextBox>
-					<Grid.RowDefinitions>
-						<RowDefinition
-							Height="42" />
-						<RowDefinition
-							Height="36" />
-						<RowDefinition
-							Height="36" />
-						<RowDefinition
-							Height="36" />
-						<RowDefinition
-							Height="36" />
-						<RowDefinition
-							Height="36" />
-						<RowDefinition
-							Height="36" />
-						<RowDefinition
-							Height="0.532266027438891*" />
-					</Grid.RowDefinitions>
-					<Grid.ColumnDefinitions>
+							Width="116.609208542625" />
 						<ColumnDefinition
-							Width="131.25316053425" />
-						<ColumnDefinition
-							Width="86.0843868447498" />
-						<ColumnDefinition
-							Width="174.91561315525" />
-						<ColumnDefinition
-							Width="129.341287200861*" />
+							Width="0.517473925086157*" />
 					</Grid.ColumnDefinitions>
 				</Grid>
 			</GroupBox>

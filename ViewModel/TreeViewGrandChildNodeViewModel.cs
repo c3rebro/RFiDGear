@@ -2,11 +2,15 @@
 using RFiDGear.Model;
 
 using GalaSoft.MvvmLight;
+using GalaSoft.MvvmLight.Command;
+
+using MvvmDialogs.ViewModels;
 
 using System;
 using System.Linq;
-using System.Text;
-using System.ComponentModel;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Windows.Input;
 using System.Xml.Serialization;
 
 
@@ -16,15 +20,42 @@ namespace RFiDGear.ViewModel
 	/// Description of TreeViewGrandChildNodeViewModel.
 	/// </summary>
 	[XmlRootAttribute("TreeViewGrandChildNode", IsNullable = false)]
-	public class TreeViewGrandChildNodeViewModel : ViewModelBase
+	public class TreeViewGrandChildNodeViewModel : ViewModelBase, IUserDialogViewModel
 	{
 
+		private MifareClassicSetupViewModel setupViewModel;
+		
 		#region Constructors
 		
 		public TreeViewGrandChildNodeViewModel()
 		{
 			dataBlockContent = new MifareClassicDataBlockModel();
 			dataBlockContent.Data = new byte[16];
+			
+			children = new ObservableCollection<TreeViewGrandGrandChildNodeViewModel>();
+		}
+		
+		public TreeViewGrandChildNodeViewModel(MifareClassicDataBlockModel dataBlock, MifareClassicSetupViewModel _setupViewModel)
+		{
+			if (dataBlock != null)
+				dataBlockContent = dataBlock;
+			else {
+				dataBlockContent = new MifareClassicDataBlockModel();
+				dataBlockContent.Data = new byte[16];
+			}
+			
+			setupViewModel = _setupViewModel;
+			
+			IsVisible = true;
+			
+			dataBlockContent.dataBlockNumber = dataBlock.dataBlockNumber;
+			
+			DataBlockAsHexString = "00000000000000000000000000000000";
+			DataBlockAsCharString = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+			
+			IsValidDataBlockContent = null;
+			
+			children = new ObservableCollection<TreeViewGrandGrandChildNodeViewModel>();
 		}
 		
 		public TreeViewGrandChildNodeViewModel(MifareClassicDataBlockModel dataBlock, TreeViewChildNodeViewModel parentSector, CARD_TYPE cardType, int sectorNumber, bool _isDataBlock)
@@ -42,21 +73,35 @@ namespace RFiDGear.ViewModel
 			parent = parentSector;
 			dataBlockContent.dataBlockNumber = dataBlock.dataBlockNumber;
 			
-			DataBlockAsHexString = "0000000000000000";
+			DataBlockAsHexString = "00000000000000000000000000000000";
 			DataBlockAsCharString = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 			
 			IsValidDataBlockContent = null;
 			
 			tag = String.Format("{0}:{1}", parentSector.ParentUid, parentSector.SectorNumber);
 			
+			children = new ObservableCollection<TreeViewGrandGrandChildNodeViewModel>();
+		}
+		
+		public TreeViewGrandChildNodeViewModel(MifareDesfireFileModel _desfireFile)
+		{
+			desfireFile = _desfireFile;
+			children = new ObservableCollection<TreeViewGrandGrandChildNodeViewModel>();
 		}
 		
 		public TreeViewGrandChildNodeViewModel(string _displayItem)
 		{
+			children = new ObservableCollection<TreeViewGrandGrandChildNodeViewModel>();
 			grandChildNodeHeader = _displayItem;
 			IsDataBlock = false;
 			isVisible = false;
 		}
+		
+		#endregion
+		
+		#region Dialogs
+		
+		private ObservableCollection<IDialogViewModel> dialogs;
 		
 		#endregion
 		
@@ -83,6 +128,18 @@ namespace RFiDGear.ViewModel
 
 		#endregion
 
+		/// <summary>
+		/// 
+		/// </summary>
+		public ObservableCollection<TreeViewGrandGrandChildNodeViewModel> Children {
+			get { return children; }
+			set {
+				children = value;
+				RaisePropertyChanged("Children");
+			}
+		} private ObservableCollection<TreeViewGrandGrandChildNodeViewModel> children;
+		
+		
 		#region (Dependency) Properties
 		
 		/// <summary>
@@ -115,8 +172,8 @@ namespace RFiDGear.ViewModel
 							if (
 								((char)DataBlockContent[i] != value[i])
 								&& (
-								    (!((char)DataBlockContent[i] < 27 | (char)DataBlockContent[i] > 127))//do not perform overwrite datablockat position 'i' if non printable character...
-								    || (value[i] > 27 && value[i] < 127) //..except if a printable character was entered at the same position
+									(!((char)DataBlockContent[i] < 27 | (char)DataBlockContent[i] > 127))//do not perform overwrite datablockat position 'i' if non printable character...
+									|| (value[i] > 27 && value[i] < 127) //..except if a printable character was entered at the same position
 								)) {
 								DataBlockContent[i] = (byte)value[i];
 								//tempString[i] = (char)DataBlockContent[i];
@@ -168,7 +225,7 @@ namespace RFiDGear.ViewModel
 					IsValidDataBlockContent = false;
 					IsTask = false;
 				}
-					
+				
 				
 				dataBlockAsHexString = value;
 				
@@ -203,6 +260,14 @@ namespace RFiDGear.ViewModel
 			}
 		} private MifareClassicDataBlockModel dataBlockContent;
 		
+		public MifareDesfireFileModel DesfireFile
+		{
+			get { return desfireFile; }
+			set {
+				desfireFile = value;
+				RaisePropertyChanged("DesfireFile");
+			}
+		} private MifareDesfireFileModel desfireFile;
 		
 		[XmlIgnore]
 		public string Tag {
@@ -215,14 +280,81 @@ namespace RFiDGear.ViewModel
 			get {
 				if (dataBlockContent != null)
 					return String.Format("Block: [{0}]", dataBlockContent.dataBlockNumber);
+				else if (desfireFile != null)
+					return string.Format("FileNo: [{0}]", desfireFile.FileID.ToString("D3"));
 				return grandChildNodeHeader;
 			}
 		} private string grandChildNodeHeader;
 		
+		/// <summary>
+		/// 
+		/// </summary>
+		public int SelectedDataLength
+		{
+			get { return selectedDataLength; }
+			set {
+				selectedDataLength = value;
+				
+				if(value%2 == 0 && value < 100 && selectedDataIndexStart%2 == 0)
+				{
+					IsValidSelectedDataIndexAndLength = true;
+				}
+				
+				else if(value%2 == 0 && value >= 100)
+				{
+					selectedDataLength -= 100;
+					IsValidSelectedDataIndexAndLength = true;
+				}
+				
+				else if(value%2 == 1)
+				{
+					//selectedDataLength = value - 1;
+					IsValidSelectedDataIndexAndLength = false;
+				}
+				RaisePropertyChanged("SelectedDataLength");
+			}
+		} private int selectedDataLength;
 		
+		/// <summary>
+		/// 
+		/// </summary>
+		public int SelectedDataIndexStart
+		{
+			get { return selectedDataIndexStart;}
+			set {
+				selectedDataIndexStart = value;
+				
+				if(value%2 == 0 && value < 100)
+				{
+					IsValidSelectedDataIndexAndLength = true;
+				}
+				
+				else if(value%2 == 0 && value >= 100)
+				{
+					selectedDataIndexStart -= 100;
+					IsValidSelectedDataIndexAndLength = true;
+				}
+				
+				else if(value%2 == 1)
+				{
+					//selectedDataIndexStart = 0;
+					IsValidSelectedDataIndexAndLength = false;
+				}
+				
+				RaisePropertyChanged("SelectedDataIndexStart");
+			}
+		} private int selectedDataIndexStart;
+		
+		/// <summary>
+		/// 
+		/// </summary>
 		public int DataBlockNumber {
 			get { return dataBlockContent != null ? dataBlockContent.dataBlockNumber : 0; }
-			set { dataBlockContent.dataBlockNumber = value; }
+			set {
+				dataBlockContent.dataBlockNumber = value;
+				RaisePropertyChanged("DataBlockNumber");
+				RaisePropertyChanged("GrandChildNodeHeader");
+			}
 		}
 		
 		#endregion
@@ -254,7 +386,29 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		private bool isSelected;
+		
+		public bool? IsValidSelectedDataIndexAndLength
+		{
+			get { return isValidSelectedDataIndexAndLength; }
+			set
+			{
+				isValidSelectedDataIndexAndLength = value;
+				RaisePropertyChanged("IsValidSelectedDataIndexAndLength");
+			}
 			
+		} private bool? isValidSelectedDataIndexAndLength;
+		
+		public bool IsFocused {
+			get { return isFocused; }
+			set {
+				if (value != isFocused) {
+					isFocused = value;
+					RaisePropertyChanged("IsFocused");
+				}
+			}
+		}
+		private bool isFocused;
+		
 		public bool? IsAuthenticated {
 			get { return isAuth; }
 			set {
@@ -290,6 +444,81 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		private bool isDataBlock;
+		
+		
 		#endregion
+		
+		#region IUserDialogViewModel Implementation
+
+		[XmlIgnore]
+		public bool IsModal { get; private set; }
+		
+		public virtual void RequestClose()
+		{
+			if (this.OnCloseRequest != null)
+				OnCloseRequest(this);
+			else
+				Close();
+		}
+		public event EventHandler DialogClosing;
+
+		public ICommand OKCommand { get { return new RelayCommand(Ok); } }
+		protected virtual void Ok()
+		{
+			if (this.OnOk != null)
+				this.OnOk(this);
+			else
+				Close();
+		}
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
+		protected virtual void Cancel()
+		{
+			if (this.OnCancel != null)
+				this.OnCancel(this);
+			else
+				Close();
+		}
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		[XmlIgnore]
+		public Action<TreeViewGrandChildNodeViewModel> OnOk { get; set; }
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		[XmlIgnore]
+		public Action<TreeViewGrandChildNodeViewModel> OnCancel { get; set; }
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		[XmlIgnore]
+		public Action<TreeViewGrandChildNodeViewModel> OnCloseRequest { get; set; }
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public void Close()
+		{
+			if (this.DialogClosing != null)
+				this.DialogClosing(this, new EventArgs());
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="collection"></param>
+		public void Show(IList<IDialogViewModel> collection)
+		{
+			collection.Add(this);
+		}
+		
+		#endregion IUserDialogViewModel Implementation
 	}
 }

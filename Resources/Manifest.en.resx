@@ -197,33 +197,6 @@ slot of an available reader</value>
   <data name="mifareAuthSettingsDialogCaption" xml:space="preserve">
     <value>Authenticationdialog</value>
   </data>
-  <data name="ENUM.Data_Block.Block0" xml:space="preserve">
-    <value>Block 0</value>
-  </data>
-  <data name="ENUM.Data_Block.Block1" xml:space="preserve">
-    <value>Block 1</value>
-  </data>
-  <data name="ENUM.Data_Block.Block2" xml:space="preserve">
-    <value>Block 2</value>
-  </data>
-  <data name="ENUM.Data_Block.BlockAll" xml:space="preserve">
-    <value>Combined</value>
-  </data>
-  <data name="ENUM.Access_Condition.Allowed_With_KeyA" xml:space="preserve">
-    <value>Key A</value>
-  </data>
-  <data name="ENUM.Access_Condition.NotAllowed" xml:space="preserve">
-    <value>Not Allowed</value>
-  </data>
-  <data name="ENUM.Access_Condition.NotApplicable" xml:space="preserve">
-    <value>Not Applicable</value>
-  </data>
-  <data name="ENUM.Access_Condition.Allowed_With_KeyA_Or_KeyB" xml:space="preserve">
-    <value>Key A oder B</value>
-  </data>
-  <data name="ENUM.Access_Condition.Allowed_With_KeyB" xml:space="preserve">
-    <value>Key B</value>
-  </data>
   <data name="ENUM.ReaderTypes.Gunnebo" xml:space="preserve">
     <value>Gunnebo</value>
   </data>
@@ -310,30 +283,6 @@ slot of an available reader</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.DeleteApplication" xml:space="preserve">
     <value>Delete Application</value>
-  </data>
-  <data name="ENUM.DESFireKeySettings.KS_FREE_LISTING_WITHOUT_MK" xml:space="preserve">
-    <value>Listing without MasterKey</value>
-  </data>
-  <data name="ENUM.DESFireKeySettings.KS_ALLOW_CHANGE_MK" xml:space="preserve">
-    <value>Allow Change MasterKey</value>
-  </data>
-  <data name="ENUM.DESFireKeySettings.KS_CHANGE_KEY_FROZEN" xml:space="preserve">
-    <value>Change Key Frozen</value>
-  </data>
-  <data name="ENUM.DESFireKeySettings.KS_CHANGE_KEY_WITH_MK" xml:space="preserve">
-    <value>Change Key using MasterKey</value>
-  </data>
-  <data name="ENUM.DESFireKeySettings.KS_CHANGE_KEY_WITH_TARGETED_KEYNO" xml:space="preserve">
-    <value>Change Key using KeyNo</value>
-  </data>
-  <data name="ENUM.DESFireKeySettings.KS_CONFIGURATION_CHANGEABLE" xml:space="preserve">
-    <value>Configuration Changeable</value>
-  </data>
-  <data name="ENUM.DESFireKeySettings.KS_DEFAULT" xml:space="preserve">
-    <value>Default Settings</value>
-  </data>
-  <data name="ENUM.DESFireKeySettings.KS_FREE_CREATE_DELETE_WITHOUT_MK" xml:space="preserve">
-    <value>Create / Delete without MasterKey</value>
   </data>
   <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey15" xml:space="preserve">
     <value>15</value>
@@ -433,5 +382,134 @@ slot of an available reader</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.FormatDesfireCard" xml:space="preserve">
     <value>Format Desfire Card</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.PICCMasterKeyChangeover" xml:space="preserve">
+    <value>PICC Master Key ändern</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.ApplicationKeyChangeover" xml:space="preserve">
+    <value>Change Application Key</value>
+  </data>
+  <data name="ENUM.FileType_MifareDesfireFileType.StdDataFile" xml:space="preserve">
+    <value>Standard Data File</value>
+  </data>
+  <data name="ENUM.FileType_MifareDesfireFileType.ValueFile" xml:space="preserve">
+    <value>Value File</value>
+  </data>
+  <data name="ENUM.FileType_MifareDesfireFileType.BackupFile" xml:space="preserve">
+    <value>Backup File</value>
+  </data>
+  <data name="ENUM.FileType_MifareDesfireFileType.LinearRecordFile" xml:space="preserve">
+    <value>Linear Record File</value>
+  </data>
+  <data name="ENUM.FileType_MifareDesfireFileType.CyclicRecordFile" xml:space="preserve">
+    <value>Cyclic Record File</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_NEVER" xml:space="preserve">
+    <value>not Allowed</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_FREE" xml:space="preserve">
+    <value>without Key</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY10" xml:space="preserve">
+    <value>Key 10</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY0" xml:space="preserve">
+    <value>Key 0</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY1" xml:space="preserve">
+    <value>Key 1</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY2" xml:space="preserve">
+    <value>Key 2</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY3" xml:space="preserve">
+    <value>Key 3</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY4" xml:space="preserve">
+    <value>Key 4</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY5" xml:space="preserve">
+    <value>Key 5</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY6" xml:space="preserve">
+    <value>Key 6</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY7" xml:space="preserve">
+    <value>Key 7</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY8" xml:space="preserve">
+    <value>Key 8</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY9" xml:space="preserve">
+    <value>Key 9</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY13" xml:space="preserve">
+    <value>Key 13</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY11" xml:space="preserve">
+    <value>Key 11</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY12" xml:space="preserve">
+    <value>Key 12</value>
+  </data>
+  <data name="ENUM.EncryptionMode.CM_UNKNOWN" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="ENUM.EncryptionMode.CM_MAC" xml:space="preserve">
+    <value>MAC</value>
+  </data>
+  <data name="ENUM.EncryptionMode.CM_ENCRYPT" xml:space="preserve">
+    <value>Encrypted</value>
+  </data>
+  <data name="ENUM.EncryptionMode.CM_PLAIN" xml:space="preserve">
+    <value>Plain</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB" xml:space="preserve">
+    <value>Key A oder B</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareClassicSectorTrailer.NotApplicable" xml:space="preserve">
+    <value>Not Applicable</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA" xml:space="preserve">
+    <value>Key A</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareClassicSectorTrailer.NotAllowed" xml:space="preserve">
+    <value>Not Allowed</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyB" xml:space="preserve">
+    <value>Key B</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo" xml:space="preserve">
+    <value>Change Key using KeyNo</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK" xml:space="preserve">
+    <value>Change Key using MK</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareDesfireAppCreation.ChangeKeyFrozen" xml:space="preserve">
+    <value>Keychange frozen</value>
+  </data>
+  <data name="ENUM.SectorTrailer_DataBlock.Block1" xml:space="preserve">
+    <value>Block 1</value>
+  </data>
+  <data name="ENUM.SectorTrailer_DataBlock.BlockAll" xml:space="preserve">
+    <value>Combined</value>
+  </data>
+  <data name="ENUM.SectorTrailer_DataBlock.Block2" xml:space="preserve">
+    <value>Block 2</value>
+  </data>
+  <data name="ENUM.SectorTrailer_DataBlock.Block0" xml:space="preserve">
+    <value>Block 0</value>
+  </data>
+  <data name="ENUM.DataExplorer_DataBlock.Block1" xml:space="preserve">
+    <value>Block 1</value>
+  </data>
+  <data name="ENUM.DataExplorer_DataBlock.Block3" xml:space="preserve">
+    <value>Sector Trailer</value>
+  </data>
+  <data name="ENUM.DataExplorer_DataBlock.Block0" xml:space="preserve">
+    <value>Block 0</value>
+  </data>
+  <data name="ENUM.DataExplorer_DataBlock.Block2" xml:space="preserve">
+    <value>Block 2</value>
   </data>
 </root>

@@ -22,12 +22,12 @@ namespace RFiDGear.Model
 		
 		private uint cx;
 		
-		private Access_Condition read_KeyA;
-		private Access_Condition write_KeyA;
-		private Access_Condition read_Access_Condition;
-		private Access_Condition write_Access_Condition;
-		private Access_Condition read_KeyB;
-		private Access_Condition write_KeyB;
+		private AccessCondition_MifareClassicSectorTrailer read_KeyA;
+		private AccessCondition_MifareClassicSectorTrailer write_KeyA;
+		private AccessCondition_MifareClassicSectorTrailer read_AccessCondition_MifareClassicSectorTrailer;
+		private AccessCondition_MifareClassicSectorTrailer write_AccessCondition_MifareClassicSectorTrailer;
+		private AccessCondition_MifareClassicSectorTrailer read_KeyB;
+		private AccessCondition_MifareClassicSectorTrailer write_KeyB;
 		
 		private ObservableCollection<MifareClassicDataBlockModel> mifareClassicBlock;
 		
@@ -47,22 +47,22 @@ namespace RFiDGear.Model
 			cx <<= 1;
 			cx |= (uint)_c1x;
 			
-			read_KeyA = Access_Condition.NotApplicable;
-			write_KeyA = Access_Condition.Allowed_With_KeyA;
-			read_Access_Condition = Access_Condition.Allowed_With_KeyA;
-			write_Access_Condition = Access_Condition.Allowed_With_KeyA;
-			read_KeyB = Access_Condition.Allowed_With_KeyA;
-			write_KeyB = Access_Condition.Allowed_With_KeyA;
+			read_KeyA = AccessCondition_MifareClassicSectorTrailer.NotApplicable;
+			write_KeyA = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
+			read_AccessCondition_MifareClassicSectorTrailer = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
+			write_AccessCondition_MifareClassicSectorTrailer = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
+			read_KeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
+			write_KeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
 			//this = sectorTrailer_AccessBits[(int)cx];
 		}
 		
 		public MifareClassicSectorModel(uint _cx,
-			Access_Condition _readKeyA = Access_Condition.NotApplicable,
-			Access_Condition _writeKeyA = Access_Condition.Allowed_With_KeyA,
-			Access_Condition _readAccessCondition = Access_Condition.Allowed_With_KeyA,
-			Access_Condition _writeAccessCondition = Access_Condition.Allowed_With_KeyA,
-			Access_Condition _readKeyB = Access_Condition.Allowed_With_KeyA,
-			Access_Condition _writeKeyB = Access_Condition.Allowed_With_KeyA)
+			AccessCondition_MifareClassicSectorTrailer _readKeyA = AccessCondition_MifareClassicSectorTrailer.NotApplicable,
+			AccessCondition_MifareClassicSectorTrailer _writeKeyA = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+			AccessCondition_MifareClassicSectorTrailer _readAccessCondition = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+			AccessCondition_MifareClassicSectorTrailer _writeAccessCondition = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+			AccessCondition_MifareClassicSectorTrailer _readKeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+			AccessCondition_MifareClassicSectorTrailer _writeKeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA)
 		{
 			
 			mifareClassicBlock = new ObservableCollection<MifareClassicDataBlockModel>();
@@ -72,8 +72,8 @@ namespace RFiDGear.Model
 			read_KeyA =  _readKeyA;
 			write_KeyA = _writeKeyA;
 			
-			read_Access_Condition = _readAccessCondition;
-			write_Access_Condition = _writeAccessCondition;
+			read_AccessCondition_MifareClassicSectorTrailer = _readAccessCondition;
+			write_AccessCondition_MifareClassicSectorTrailer = _writeAccessCondition;
 			
 			read_KeyB = _readKeyB;
 			write_KeyB = _writeKeyB;
@@ -115,12 +115,12 @@ namespace RFiDGear.Model
 		//public byte[] AccessBitsAsByte { get { return accessBitsAsByte; }}
 		public string KeyB { get { return keyB; } set { keyB = value; }}
 				
-		public Access_Condition Read_KeyA { get { return read_KeyA; } set { read_KeyA = value; }}
-		public Access_Condition Write_KeyA { get { return write_KeyA; } set { write_KeyA = value; }}
-		public Access_Condition Read_Access_Condition { get { return read_Access_Condition; } set { read_Access_Condition = value; }}
-		public Access_Condition Write_Access_Condition { get { return write_Access_Condition; } set { write_Access_Condition = value; }}
-		public Access_Condition Read_KeyB { get { return read_KeyB; } set { read_KeyB = value; }}
-		public Access_Condition Write_KeyB { get { return write_KeyB; } set { write_KeyB = value; }}
+		public AccessCondition_MifareClassicSectorTrailer Read_KeyA { get { return read_KeyA; } set { read_KeyA = value; }}
+		public AccessCondition_MifareClassicSectorTrailer Write_KeyA { get { return write_KeyA; } set { write_KeyA = value; }}
+		public AccessCondition_MifareClassicSectorTrailer Read_AccessCondition_MifareClassicSectorTrailer { get { return read_AccessCondition_MifareClassicSectorTrailer; } set { read_AccessCondition_MifareClassicSectorTrailer = value; }}
+		public AccessCondition_MifareClassicSectorTrailer Write_AccessCondition_MifareClassicSectorTrailer { get { return write_AccessCondition_MifareClassicSectorTrailer; } set { write_AccessCondition_MifareClassicSectorTrailer = value; }}
+		public AccessCondition_MifareClassicSectorTrailer Read_KeyB { get { return read_KeyB; } set { read_KeyB = value; }}
+		public AccessCondition_MifareClassicSectorTrailer Write_KeyB { get { return write_KeyB; } set { write_KeyB = value; }}
 		
 		public bool IsAuthenticated { get { return isAuthenticated; } set { isAuthenticated = value; }}
 		public uint Cx { get { return cx; } set { cx = value; }}
@@ -131,20 +131,20 @@ namespace RFiDGear.Model
 //	public struct Sector_AccessCondition
 //	{
 //		public Sector_AccessCondition(
-//			Access_Condition _readKeyA = Access_Condition.NotApplicable,
-//			Access_Condition _writeKeyA = Access_Condition.Allowed_With_KeyA,
-//			Access_Condition _readAccessCondition = Access_Condition.Allowed_With_KeyA,
-//			Access_Condition _writeAccessCondition = Access_Condition.Allowed_With_KeyA,
-//			Access_Condition _readKeyB = Access_Condition.Allowed_With_KeyA,
-//			Access_Condition _writeKeyB = Access_Condition.Allowed_With_KeyA)
+//			AccessCondition_MifareClassicSectorTrailer _readKeyA = AccessCondition_MifareClassicSectorTrailer.NotApplicable,
+//			AccessCondition_MifareClassicSectorTrailer _writeKeyA = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+//			AccessCondition_MifareClassicSectorTrailer _readAccessCondition = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+//			AccessCondition_MifareClassicSectorTrailer _writeAccessCondition = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+//			AccessCondition_MifareClassicSectorTrailer _readKeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+//			AccessCondition_MifareClassicSectorTrailer _writeKeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA)
 //		{
 //			cx = 0;
 //			
 //			read_KeyA =  _readKeyA;
 //			write_KeyA = _writeKeyA;
 //			
-//			read_Access_Condition = _readAccessCondition;
-//			write_Access_Condition = _writeAccessCondition;
+//			read_AccessCondition_MifareClassicSectorTrailer = _readAccessCondition;
+//			write_AccessCondition_MifareClassicSectorTrailer = _writeAccessCondition;
 //			
 //			read_KeyB = _readKeyB;
 //			write_KeyB = _writeKeyB;
@@ -159,30 +159,30 @@ namespace RFiDGear.Model
 //			cx <<= 1;
 //			cx |= (uint)_c1x;
 //			
-//			read_KeyA = Access_Condition.NotApplicable;
-//			write_KeyA = Access_Condition.Allowed_With_KeyA;
-//			read_Access_Condition = Access_Condition.Allowed_With_KeyA;
-//			write_Access_Condition = Access_Condition.Allowed_With_KeyA;
-//			read_KeyB = Access_Condition.Allowed_With_KeyA;
-//			write_KeyB = Access_Condition.Allowed_With_KeyA;
+//			read_KeyA = AccessCondition_MifareClassicSectorTrailer.NotApplicable;
+//			write_KeyA = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
+//			read_AccessCondition_MifareClassicSectorTrailer = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
+//			write_AccessCondition_MifareClassicSectorTrailer = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
+//			read_KeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
+//			write_KeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
 //			//this = sectorTrailer_AccessBits[(int)cx];
 //		}
 //		
 //		private uint cx;
 //		
-//		private Access_Condition read_KeyA;
-//		private Access_Condition write_KeyA;
-//		private Access_Condition read_Access_Condition;
-//		private Access_Condition write_Access_Condition;
-//		private Access_Condition read_KeyB;
-//		private Access_Condition write_KeyB;
+//		private AccessCondition_MifareClassicSectorTrailer read_KeyA;
+//		private AccessCondition_MifareClassicSectorTrailer write_KeyA;
+//		private AccessCondition_MifareClassicSectorTrailer read_AccessCondition_MifareClassicSectorTrailer;
+//		private AccessCondition_MifareClassicSectorTrailer write_AccessCondition_MifareClassicSectorTrailer;
+//		private AccessCondition_MifareClassicSectorTrailer read_KeyB;
+//		private AccessCondition_MifareClassicSectorTrailer write_KeyB;
 //		
-//		public Access_Condition Read_KeyA { get { return read_KeyA; }}
-//		public Access_Condition Write_KeyA { get { return write_KeyA; }}
-//		public Access_Condition Read_Access_Condition { get { return read_Access_Condition; }}
-//		public Access_Condition Write_Access_Condition { get { return write_Access_Condition; }}
-//		public Access_Condition Read_KeyB { get { return read_KeyB; }}
-//		public Access_Condition Write_KeyB { get { return write_KeyB; }}
+//		public AccessCondition_MifareClassicSectorTrailer Read_KeyA { get { return read_KeyA; }}
+//		public AccessCondition_MifareClassicSectorTrailer Write_KeyA { get { return write_KeyA; }}
+//		public AccessCondition_MifareClassicSectorTrailer Read_AccessCondition_MifareClassicSectorTrailer { get { return read_AccessCondition_MifareClassicSectorTrailer; }}
+//		public AccessCondition_MifareClassicSectorTrailer Write_AccessCondition_MifareClassicSectorTrailer { get { return write_AccessCondition_MifareClassicSectorTrailer; }}
+//		public AccessCondition_MifareClassicSectorTrailer Read_KeyB { get { return read_KeyB; }}
+//		public AccessCondition_MifareClassicSectorTrailer Write_KeyB { get { return write_KeyB; }}
 //		
 //		public uint Cx { get { return cx; } set { cx = value; }}
 //	}

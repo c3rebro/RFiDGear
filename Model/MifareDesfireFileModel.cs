@@ -1,25 +1,36 @@
-﻿using System;
+﻿using LibLogicalAccess;
+
+using System;
 
 namespace RFiDGear
 {
 	/// <summary>
 	/// Description of DesfireDataContent.
 	/// </summary>
-	public class MifareDesfireFileTreeViewModel
+	public class MifareDesfireFileModel
 	{
 		
 		byte data;
 		int discarded;
 		
-		public MifareDesfireFileTreeViewModel()
+		public MifareDesfireFileModel()
 		{
 			
 		}
 		
-		public MifareDesfireFileTreeViewModel(byte[] cardContent, int arIndex)
+		public MifareDesfireFileModel(byte _fileID)
+		{
+			FileID = _fileID;
+		}
+		
+		public MifareDesfireFileModel(byte[] cardContent, int arIndex)
 		{
 			data = cardContent[arIndex];
 		}
+		
+		public byte FileID { get; set; }
+		
+		public FileSetting DesfireFileSetting { get; set; }
 		
 		public byte singleByteAsByte {
 			get { return data; }

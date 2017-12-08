@@ -5,19 +5,27 @@
 	x:Name="homeWindow"
 	mc:Ignorable="d"
 	Title="RFiDGear"
-	BorderThickness="0"
 	FontFamily="Segoe UI"
 	HorizontalContentAlignment="Left"
-	SizeToContent="Width"
-	Topmost="False"
+	SizeToContent="Manual"
 	WindowStartupLocation="CenterScreen"
 	FontWeight="Normal"
 	MouseLeftButtonDown="WindowMouseLeftButtonDown"
 	DataContext="{Binding Source={StaticResource Locator}, Path=Main}"
 	MinWidth="500"
-	MinHeight="300"
-	Width="500"
-	Height="300">
+	MinHeight="500"
+	Height="500"
+	Width="900">
+	
+	<!--
+	WindowStyle="None"
+	ResizeMode="CanResizeWithGrip"
+	AllowsTransparency="True"
+	BorderThickness="1"
+	BorderBrush="Black"
+	Opacity="0.98"
+ 	-->
+	
 	<Window.Resources>
 		<local:BindingProxy
 			x:Key="proxy"
@@ -43,10 +51,10 @@
 			Grid.Row="0"
 			HorizontalAlignment="Stretch"
 			VerticalAlignment="Stretch"
-			Margin="15,36,8,8">
+			Margin="15,36,8,40">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition
-					Width="200" />
+					Width="auto" MinWidth="200"/>
 				<ColumnDefinition
 					Width="5" />
 				<ColumnDefinition
@@ -101,7 +109,6 @@
 					<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
                       Color="Black" />
 					<FontWeightConverter x:Key="{x:Static FontWeights.Bold}" />-->
-					
 					<HierarchicalDataTemplate
 						DataType="{x:Type local:ViewModel.TreeViewParentNodeViewModel}"
 						ItemsSource="{Binding Children}">
@@ -240,11 +247,62 @@
 							</TextBlock.ContextMenu>
 						</TextBlock>
 					</HierarchicalDataTemplate>
-					<DataTemplate
-						DataType="{x:Type vm:TreeViewGrandChildNodeViewModel}">
+					<HierarchicalDataTemplate
+						DataType="{x:Type vm:TreeViewGrandChildNodeViewModel}"
+						ItemsSource="{Binding Children}">
 						<!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\City.png" /> -->
 						<TextBlock
 							Text="{Binding GrandChildNodeHeader}">
+							<TextBlock.Resources>
+								<Style
+									TargetType="TextBlock">
+									<Style.Triggers>
+										<DataTrigger
+											Binding="{Binding IsAuthenticated}"
+											Value="True">
+											<Setter
+												Property="Foreground"
+												Value="Green" />
+											<Setter
+												Property="FontWeight"
+												Value="Bold" />
+										</DataTrigger>
+										<DataTrigger
+											Binding="{Binding IsAuthenticated}"
+											Value="False">
+											<Setter
+												Property="Foreground"
+												Value="Red" />
+											<Setter
+												Property="FontWeight"
+												Value="Normal" />
+										</DataTrigger>
+										<!--
+										<DataTrigger
+											Binding="{Binding IsVisible}"
+											Value="True">
+											<Setter
+												Property="Visibility"
+												Value="Visible" />
+										</DataTrigger>
+										<DataTrigger
+											Binding="{Binding IsVisible}"
+											Value="False">
+											<Setter
+												Property="Visibility"
+												Value="Hidden" />
+										</DataTrigger>
+									 -->
+									</Style.Triggers>
+								</Style>
+							</TextBlock.Resources>
+						</TextBlock>
+					</HierarchicalDataTemplate>
+					<DataTemplate
+						DataType="{x:Type vm:TreeViewGrandGrandChildNodeViewModel}">
+						<!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\City.png" /> -->
+						<TextBlock
+							Text="{Binding GrandGrandChildNodeHeader}">
 							<TextBlock.Resources>
 								<Style
 									TargetType="TextBlock">
@@ -302,10 +360,9 @@
 				Grid.Row="0"
 				Grid.Column="1"
 				Width="5" />
-			
 			<DataGrid
 				x:Name="myDataGrid"
-				ItemsSource="{Binding TreeViewParentTaskNodes.TaskCollection}"
+				ItemsSource="{Binding ChipTasks.TaskCollection}"
 				AutoGenerateColumns="False"
 				CanUserReorderColumns="True"
 				AlternatingRowBackground="LightGray"
@@ -323,33 +380,42 @@
 						x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
 						Color="DodgerBlue" />
 				</DataGrid.Resources>
-				
 				<DataGrid.RowHeaderTemplate>
 					<DataTemplate>
-						<Image x:Name="editImage"
-						       VerticalAlignment="Center"
-						       HorizontalAlignment="Center"
-						       Width="16"
-						       Margin="1,0">
-						</Image>
-						
+						<Image
+							x:Name="editImage"
+							VerticalAlignment="Center"
+							HorizontalAlignment="Center"
+							Width="16"
+							Margin="1,0"></Image>
 						<DataTemplate.Triggers>
-							<DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}, Path=DataContext.IsTaskCompletedSuccessfully}" Value="True">
-								<Setter TargetName="editImage" Property="Source" Value="/RFiDGear;component/Resources/confirm.ico"/>
+							<DataTrigger
+								Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}, Path=DataContext.IsTaskCompletedSuccessfully}"
+								Value="True">
+								<Setter
+									TargetName="editImage"
+									Property="Source"
+									Value="/RFiDGear;component/Resources/confirm.ico" />
 							</DataTrigger>
-							
-							<DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}, Path=DataContext.IsTaskCompletedSuccessfully}" Value="False">
-								<Setter  TargetName="editImage" Property="Source" Value="/RFiDGear;component/Resources/error.ico"/>
+							<DataTrigger
+								Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}, Path=DataContext.IsTaskCompletedSuccessfully}"
+								Value="False">
+								<Setter
+									TargetName="editImage"
+									Property="Source"
+									Value="/RFiDGear;component/Resources/error.ico" />
 							</DataTrigger>
-							
-							<DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}, Path=DataContext.IsTaskCompletedSuccessfully}" Value="{x:Null}">
-								<Setter TargetName="editImage" Property="Source" Value="/RFiDGear;component/Resources/wait.ico"/>
+							<DataTrigger
+								Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}, Path=DataContext.IsTaskCompletedSuccessfully}"
+								Value="{x:Null}">
+								<Setter
+									TargetName="editImage"
+									Property="Source"
+									Value="/RFiDGear;component/Resources/wait.ico" />
 							</DataTrigger>
-						
 						</DataTemplate.Triggers>
 					</DataTemplate>
 				</DataGrid.RowHeaderTemplate>
-				
 				<DataGrid.Columns>
 					<!-- <DataGridTextColumn
 					Header="{Binding Data.LocalizationResourceSet,
@@ -379,78 +445,48 @@
 				DockPanel.Dock="Top"
 				Background="{x:Null}">
 				<MenuItem
-					Header="{Binding MenuItem_FileHeader}"
+					Header="{Binding LocalizationResourceSet,
+					Converter={StaticResource Localization},
+					ConverterParameter='menuItemFileHeader' }"
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top">
-					<MenuItem.Foreground>
-						<SolidColorBrush
-							Color="Black" />
-					</MenuItem.Foreground>
 					<MenuItem
 						Header="_Open Project..."
 						Command="{Binding NewOpenFileDialogCommand}">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 					</MenuItem>
 					<MenuItem
 						Header="_Save Tasks..."
 						Command="{Binding SaveTaskDialogCommand}">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 					</MenuItem>
 					<MenuItem
 						Header="Save _Chips"
 						Command="{Binding SaveChipDialogCommand}">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 					</MenuItem>
 					<Separator />
 					<MenuItem
-						Header="{Binding MenuItem_ExitHeader}"
+						Header="{Binding LocalizationResourceSet,
+						Converter={StaticResource Localization},
+						ConverterParameter='menuItemExitHeader' }"
 						Command="{Binding CloseApplication}">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 					</MenuItem>
 				</MenuItem>
 				<MenuItem
-					Header="{Binding MenuItem_EditHeader}"
+					Header="{Binding LocalizationResourceSet,
+					Converter={StaticResource Localization},
+					ConverterParameter='menuItemEditHeader' }"
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top">
-					<MenuItem.Foreground>
-						<SolidColorBrush
-							Color="Black" />
-					</MenuItem.Foreground>
 					<MenuItem
 						Header="_Create Mifare Classic Task"
 						Command="{Binding CreateClassicTaskCommand}">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 					</MenuItem>
 					<MenuItem
 						Header="_Create Mifare DesFire Task"
 						Command="{Binding CreateDesfireTaskCommand}">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 					</MenuItem>
 					<Separator />
 					<MenuItem
 						Header="_Edit Keys...">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 					</MenuItem>
 				</MenuItem>
 				<MenuItem
@@ -458,81 +494,54 @@
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top"
 					RenderTransformOrigin="0.5,0.5">
-					<MenuItem.Foreground>
-						<SolidColorBrush
-							Color="Black" />
-					</MenuItem.Foreground>
 					<MenuItem
 						Header="_Read RFiD Chip"
 						Command="{Binding ReadChipCommand}">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
+					
 					</MenuItem>
 					<MenuItem
-						Header="_Write RFiD Chip"
-					>
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
+						Header="_Write RFiD Chip">
 					</MenuItem>
 					<Separator />
 					<MenuItem
 						Header="Run _Selected Task on Chip Just Once">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
-					</MenuItem>
-					<MenuItem
-						Header="Run Selected _Task on Chip Automatically">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 					</MenuItem>
 					<MenuItem
 						Header="Run _All Tasks On Selected Chip Just Once"
 						Command="{Binding WriteToChipOnceCommand}">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
+					</MenuItem>
+					<Separator />
+					<MenuItem
+						Header="Run Selected _Task on Chip Automatically">
+					
 					</MenuItem>
 					<MenuItem
+						IsCheckable="True"
+						IsChecked="{Binding IsUpdateChipsAutomaticallyChecked, Mode=OneWay}"
 						Header="_Run All Tasks On Every Chip Automatically"
 						Command="{Binding WriteToAllChipAutoCommand}">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
+					</MenuItem>
+					<Separator />
+					<MenuItem
+						Header="_Set Taskstatus to 'Undone'"
+						Command="{Binding ResetTaskStatusCommand}">
 					</MenuItem>
 				</MenuItem>
 				<MenuItem
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top"
 					RenderTransformOrigin="0.5,0.5"
-					Header="{Binding MenuItem_OptionsHeader}">
-					<MenuItem.Foreground>
-						<SolidColorBrush
-							Color="Black" />
-					</MenuItem.Foreground>
+					Header="{Binding LocalizationResourceSet,
+					Converter={StaticResource Localization},
+					ConverterParameter='menuItemOptionsHeader' }">
 					<MenuItem
-						Header="{Binding MenuItem_ReaderSettingsHeader}"
+						Header="{Binding LocalizationResourceSet,
+						Converter={StaticResource Localization},
+						ConverterParameter='menuItemReaderSettingsHeader' }"
 						Command="{Binding NewReaderSetupDialogCommand}">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 					</MenuItem>
 					<MenuItem
 						Header="_Language">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 						<RadioButton
 							x:Name="radioButtonGerman"
 							Content="german"
@@ -549,36 +558,49 @@
 					Header="Help"
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top">
-					<MenuItem.Foreground>
-						<SolidColorBrush
-							Color="Black" />
-					</MenuItem.Foreground>
 					<MenuItem
 						IsCheckable="True"
 						Header="_Check for Updates"
 						IsChecked="{Binding IsCheckForUpdatesChecked, Mode=TwoWay}">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 					</MenuItem>
 					<MenuItem
 						Header="_Help">
-						<MenuItem.Foreground>
-							<SolidColorBrush
-								Color="Black" />
-						</MenuItem.Foreground>
 					</MenuItem>
 				</MenuItem>
 			</Menu>
-			<ProgressBar
-				Width="519"
-				Height="34"
-				Minimum="0"
-				Maximum="100"
-				Value="{Binding ProgressBarValue}"
-				Visibility="Hidden"
-				Foreground="#FF1CE006" />
+		</DockPanel>
+		<DockPanel>
+			<StatusBar
+				DockPanel.Dock="Bottom"
+				VerticalAlignment="Bottom">
+				<StatusBarItem>
+					<Label
+						Content="Current Reader:" />
+				</StatusBarItem>
+				<StatusBarItem>
+					<TextBlock
+						Text="{Binding CurrentReader}" />
+				</StatusBarItem>
+				<StatusBarItem>
+					<Label
+						Content="Reader Status:" />
+				</StatusBarItem>
+				<StatusBarItem>
+					<TextBlock
+						Text="{Binding ReaderStatus}" />
+				</StatusBarItem>
+				<!--				<StatusBarItem>
+					<ProgressBar
+						Minimum="0"
+						Maximum="100"
+						Value="{Binding ProgressBarValue}"
+						Visibility="Visible"
+						Foreground="#FF1CE006"
+						Height="26"
+						Width="150"
+						HorizontalAlignment="Right" />
+				</StatusBarItem>-->
+			</StatusBar>
 		</DockPanel>
 	</Grid>
 </Window>

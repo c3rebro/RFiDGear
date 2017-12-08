@@ -111,6 +111,7 @@
     <Compile Include="3rdParty\RedCell\RedCell.Diagnostics.Update\Updater.cs" />
     <Compile Include="3rdParty\RedCell\RedCell.Net\Fetch.cs" />
     <Compile Include="3rdParty\RedCell\RedCell.Net\FetchStream.cs" />
+    <Compile Include="3rdParty\SelectionBindingTextBox.cs" />
     <Compile Include="App.xaml.cs">
       <SubType>Code</SubType>
       <DependentUpon>App.xaml</DependentUpon>
@@ -128,7 +129,7 @@
     <Compile Include="Model\MifareClassicSectorModel.cs" />
     <Compile Include="Model\MifareClassicChipModel.cs" />
     <Compile Include="Model\MifareDesfireAppIdTreeViewModel.cs" />
-    <Compile Include="Model\MifareDesfireFileTreeViewModel.cs" />
+    <Compile Include="Model\MifareDesfireFileModel.cs" />
     <Compile Include="Model\MifareDesfireChipModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\WPFAssemblyInfo.cs" />
@@ -142,6 +143,7 @@
     <Compile Include="ViewModel\SetupViewModel.cs" />
     <Compile Include="ViewModel\TreeViewChildNodeViewModel.cs" />
     <Compile Include="ViewModel\TreeViewGrandChildNodeViewModel.cs" />
+    <Compile Include="ViewModel\TreeViewGrandGrandChildNodeViewModel.cs" />
     <Compile Include="ViewModel\TreeViewParentNodeViewModel.cs" />
     <Compile Include="ViewModel\ViewModelLocator.cs" />
     <Compile Include="View\CustomDialogBox.xaml.cs">
@@ -202,95 +204,6 @@
   <ItemGroup>
     <None Include="3rdParty\RedCell\RedCell.Diagnostics.Update\Update.cd" />
     <None Include="app.config" />
-    <None Include="docs\bottom.gif" />
-    <None Include="docs\bullet.gif" />
-    <None Include="docs\desc.txt" />
-    <None Include="docs\google40c0c4994e785d2e.html" />
-    <None Include="docs\index.html" />
-    <None Include="docs\logo.gif" />
-    <None Include="docs\menustructuremindmap.html" />
-    <None Include="docs\menustructuremindmap.html_files\icons\attach.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\back.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\bell.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\bookmark.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\broken-line.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\button_cancel.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\button_ok.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\calendar.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\clanbomber.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\clock.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\closed.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\desktop_new.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\down.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\edit.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\family.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\fema.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\female1.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\female2.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\flag-black.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\flag-blue.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\flag-green.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\flag-orange.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\flag-pink.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\flag-yellow.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\flag.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\folder.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\forward.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\freemind_butterfly.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\full-0.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\full-1.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\full-2.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\full-3.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\full-4.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\full-5.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\full-6.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\full-7.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\full-8.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\full-9.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\go.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\gohome.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\group.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\help.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\hourglass.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\idea.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\info.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\kaddressbook.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\kmail.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\knotify.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\korn.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\ksmiletris.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\launch.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\licq.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\list.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\Mail.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\male1.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\male2.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\messagebox_warning.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\password.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\pencil.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\penguin.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\prepare.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\smiley-angry.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\smiley-neutral.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\smiley-oh.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\smily_bad.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\stop-sign.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\stop.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\up.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\wizard.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\xmag.png" />
-    <None Include="docs\menustructuremindmap.html_files\icons\yes.png" />
-    <None Include="docs\menustructuremindmap.html_files\ilink.png" />
-    <None Include="docs\menustructuremindmap.html_files\map_location.png" />
-    <None Include="docs\menustructuremindmap.html_files\marktree.js" />
-    <None Include="docs\menustructuremindmap.html_files\minus.png" />
-    <None Include="docs\menustructuremindmap.html_files\plus.png" />
-    <None Include="docs\menustructuremindmap.html_files\treestyles.css" />
-    <None Include="docs\style.css" />
-    <None Include="docs\top.gif" />
-    <None Include="docs\images\image001.jpg" />
-    <None Include="docs\images\image002.jpg" />
-    <None Include="docs\images\image003.jpg" />
     <None Include="packages.config" />
     <None Include="README.md" />
     <Resource Include="Resources\wait.ico" />
@@ -323,11 +236,7 @@
     <Folder Include="3rdParty\RedCell" />
     <Folder Include="3rdParty\RedCell\RedCell.Diagnostics.Update" />
     <Folder Include="3rdParty\RedCell\RedCell.Net" />
-    <Folder Include="docs\images" />
-    <Folder Include="docs\menustructuremindmap.html_files" />
-    <Folder Include="docs\menustructuremindmap.html_files\icons" />
     <Folder Include="Model" />
-    <Folder Include="docs" />
     <Folder Include="DataAccessLayer" />
     <Folder Include="Resources" />
     <Folder Include="View" />
@@ -339,13 +248,12 @@
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="LibLogicalAccess">
-      <Guid>{DFDCDD8C-B13E-465B-8982-B09FC4917EAC}</Guid>
+      <Guid>{9B9E09AD-A354-4D6F-93A8-DA32D71525A4}</Guid>
       <VersionMajor>1</VersionMajor>
-      <VersionMinor>55</VersionMinor>
+      <VersionMinor>57</VersionMinor>
       <Lcid>0</Lcid>
       <WrapperTool>tlbimp</WrapperTool>
       <Isolated>False</Isolated>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

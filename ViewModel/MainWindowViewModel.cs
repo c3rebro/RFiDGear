@@ -4,19 +4,17 @@ using RFiDGear.Model;
 
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
-using GalaSoft.MvvmLight.Messaging;
 
 using MvvmDialogs.ViewModels;
 
 using RedCell.Diagnostics.Update;
 
 using System;
-using System.ComponentModel;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using System.Linq;
@@ -29,10 +27,8 @@ namespace RFiDGear.ViewModel
 	/// </summary>
 	public class MainWindowViewModel : ViewModelBase
 	{
-		//private ReaderModel readerModel;
 		private ResourceLoader resLoader;
-		private SettingsReaderWriter settings;
-		//private RFiDDevice device;
+		private MainWindow mw;
 		private Updater updater = new Updater();
 		private DatabaseReaderWriter databaseReaderWriter;
 		private DispatcherTimer triggerReadChip;
@@ -42,14 +38,21 @@ namespace RFiDGear.ViewModel
 		private List<MifareClassicChipModel> mifareClassicUidModels = new List<MifareClassicChipModel>();
 		private List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
 		
-		private MifareClassicSetupViewModel defaultTask;
+		readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 		
 		int taskIndex = 0; //if programming takes too long; quit the process
 		
 		#region Constructors
 		
 		public MainWindowViewModel()
-		{			
+		{
+			using (SettingsReaderWriter settings = new SettingsReaderWriter())
+			{
+				CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
+					? Enum.GetName(typeof(ReaderTypes),settings.DefaultSpecification.DefaultReaderProvider)
+					: settings.DefaultSpecification.DefaultReaderName;
+			}
+			
 			triggerReadChip = new DispatcherTimer();
 			triggerReadChip.Interval = new TimeSpan(0,0,0,0,500);
 			
@@ -57,6 +60,8 @@ namespace RFiDGear.ViewModel
 			
 			triggerReadChip.Start();
 			triggerReadChip.IsEnabled = false;
+			triggerReadChip.Tag = triggerReadChip.IsEnabled;
+			
 			
 			taskTimeout = new DispatcherTimer();
 			taskTimeout.Interval = new TimeSpan(0,0,0,10,0);
@@ -66,22 +71,14 @@ namespace RFiDGear.ViewModel
 			taskTimeout.IsEnabled = false;
 			
 			treeViewParentNodes = new ObservableCollection<TreeViewParentNodeViewModel>();
-			//treeViewParentTaskNodes = new ObservableCollection<TreeViewParentNodeViewModel>();
-			
-			defaultTask = new MifareClassicSetupViewModel(new TreeViewParentNodeViewModel(new MifareClassicChipModel("no Task", CARD_TYPE.Unspecified), dialogs, true),dialogs);
-			//defaultTask.IsSelected = false;
-			
+
 			taskHandler = new ChipTaskHandlerModel();
 			
-			TreeViewParentTaskNodes.TaskCollection.Add(defaultTask);
-			
-			//readerModel = new ReaderModel();
-			settings = new SettingsReaderWriter();
-			//device = new RFiDDevice(settings.DefaultSpecification);
+			ReaderStatus = CurrentReader == "None" ? "" : "ready";
 			databaseReaderWriter = new DatabaseReaderWriter();
 			resLoader = new ResourceLoader();
 
-			progressBarValue = 50;
+			Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
 			
 			//any dialog boxes added in the constructor won't appear until DialogBehavior.DialogViewModels gets bound to the Dialogs collection.
 		}
@@ -94,191 +91,14 @@ namespace RFiDGear.ViewModel
 		public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
 		
 		#endregion
-		
-		
-		#region Items Sources
-		public bool? TaskCompletedSuccessfully
-		{
-			get { return null; }
-		}
-		
-		public string RowHeaderImageVisibility
-		{
-			get { return "Visible"; }
-		}
-		
-		private int progressBarValue;
-		public int ProgressBarValue {
-			get { return progressBarValue; }
-			set { progressBarValue = value;
-				RaisePropertyChanged("ProgressBarValue");
-			}
-		}
-		
-		private ObservableCollection<TreeViewParentNodeViewModel> treeViewParentNodes;
-		public ObservableCollection<TreeViewParentNodeViewModel> TreeViewParentNodes {
-			get {
-				return treeViewParentNodes;
-			}
-			
-			set {
-				treeViewParentNodes = value;
-				RaisePropertyChanged("TreeViewParentNodes");
-			}
-		}
 
-		
-		public ChipTaskHandlerModel TreeViewParentTaskNodes {
-			get {
-				return taskHandler;
-			}
-			
-			set {
-				taskHandler = value;
-				RaisePropertyChanged("TreeViewParentTaskNodes");
-			}
-		} //private ObservableCollection<TreeViewParentNodeViewModel> treeViewParentTaskNodes;
-		
-		#endregion
-		
-		#region MifareDesFIRE Communication
-		
-		private void ReadAppIDs(TreeViewParentNodeViewModel selectedPNVM, string content) {
-			using (RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
-			{
-				foreach(uint appID in device.GetAppIDList){
-					selectedPNVM.Children.Add(
-						new TreeViewChildNodeViewModel(
-							new MifareDesfireAppIdTreeViewModel(appID),selectedPNVM, device.CardInfo.cardType));
-					//String.Format("{0:d2}",)),, ));
-				}
-			}
-			
-		}
-		
-		private void CreateApp(TreeViewParentNodeViewModel selectedPNVM, string content) {
-			
-			this.Dialogs.Add(new MifareDesfireSetupViewModel(selectedPNVM, dialogs) {
-			                 	
-			                 	
-			                 	OnOk = (sender) => {
-			                 		
-			                 	},
-
-			                 	OnCancel = (sender) => {
-			                 		
-			                 		sender.Close();
-
-			                 	},
-
-			                 	OnCloseRequest = (sender) => {
-			                 		sender.Close();
-			                 	}
-			                 });
-		}
-		#endregion
-		
-		#region MifareClassic Communication
-
-		
-		
-		private void ReadSectorsWithDefaultConfig(TreeViewChildNodeViewModel selectedCnVM, string content)
-		{
-			using (RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
-			{
-				selectedCnVM.IsSelected = true;
-				
-				Mouse.OverrideCursor = Cursors.Wait;
-				
-				TreeViewChildNodeViewModel vm = selectedCnVM;
-
-				//readerModel.ReadMiFareClassicSingleSector(selectedCnVM.SectorNumber, selectedCnVM.SectorNumber);
-				selectedCnVM.IsAuthenticated = device.SectorSuccesfullyAuth;
-				foreach (TreeViewGrandChildNodeViewModel gcVM in selectedCnVM.Children) {
-					if(selectedCnVM.SectorNumber <= 31)
-						gcVM.IsAuthenticated = device.DataBlockSuccesfullyAuth[(((selectedCnVM.SectorNumber + 1) * selectedCnVM.BlockCount) - (selectedCnVM.BlockCount - gcVM.DataBlockNumber))];
-					else
-						gcVM.IsAuthenticated = device.DataBlockSuccesfullyAuth[((128 + (selectedCnVM.SectorNumber - 31) * selectedCnVM.BlockCount) - (selectedCnVM.BlockCount - gcVM.DataBlockNumber))];
-					
-					gcVM.DataBlockContent = device.currentSector[gcVM.DataBlockNumber];
-				}
-				Mouse.OverrideCursor = null;
-			}
-		}
-		
-		public void NewSectorTrailerEditDialog(TreeViewParentNodeViewModel uidVM, string content)
-		{
-			using (RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
-			{
-				bool isClassicCard;
-				
-				if (uidVM.CardType == CARD_TYPE.Mifare1K || uidVM.CardType == CARD_TYPE.Mifare2K || uidVM.CardType == CARD_TYPE.Mifare4K)
-					isClassicCard = true;
-				else
-					isClassicCard = false;
-				
-				this.Dialogs.Add(new MifareClassicSetupViewModel(uidVM, dialogs) {
-				                 	
-				                 	Caption = String.Format("{0}{1}{2}", resLoader.getResource("mifareAuthSettingsDialogCaption"), uidVM.CardType, uidVM.UidNumber),
-				                 	IsClassicAuthInfoEnabled = isClassicCard,
-				                 	
-				                 	OnOk = (sender) => {
-				                 		//databaseReaderWriter.WriteDatabase((sender.ViewModelContext as TreeViewChildNodeViewModel)._sectorModel);
-				                 	},
-
-				                 	OnCancel = (sender) => {
-				                 		
-				                 		sender.Close();
-
-				                 	},
-				                 	
-				                 	OnAuth = (sender) => {
-				                 		foreach (TreeViewChildNodeViewModel cnVM in uidVM.Children) {
-				                 			//readerModel.ReadMiFareClassicSingleSector(cnVM.SectorNumber, cnVM.SectorNumber);
-				                 			cnVM.IsAuthenticated = device.SectorSuccesfullyAuth;
-				                 			foreach (TreeViewGrandChildNodeViewModel gcVM in cnVM.Children) {
-				                 				gcVM.IsAuthenticated = device.DataBlockSuccesfullyAuth[(((cnVM.SectorNumber + 1) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
-				                 				gcVM.DataBlockContent = device.currentSector[gcVM.DataBlockNumber];
-				                 			}
-				                 		}
-				                 	},
-
-				                 	OnCloseRequest = (sender) => {
-				                 		sender.Close();
-				                 	}
-				                 });
-			}
-
-		}
-		
-		public void NewSectorTrailerEditDialog(TreeViewChildNodeViewModel sectorVM, string content)
-		{
-			
-		}
-		
-		#endregion
-		
 		#region Localization
+
+		/// <summary>
+		/// Expose translated strings from ResourceLoader
+		/// </summary>
+		public string LocalizationResourceSet { get; set; }
 		
-		public string MenuItem_FileHeader {
-			get { return resLoader.getResource("menuItemFileHeader"); }
-		}
-		
-		public string MenuItem_ExitHeader {
-			get { return resLoader.getResource("menuItemExitHeader"); }
-		}
-		
-		public string MenuItem_EditHeader {
-			get { return resLoader.getResource("menuItemEditHeader"); }
-		}
-		
-		public string MenuItem_OptionsHeader {
-			get { return resLoader.getResource("menuItemOptionsHeader"); }
-		}
-		
-		public string MenuItem_ReaderSettingsHeader {
-			get { return resLoader.getResource("menuItemReaderSettingsHeader"); }
-		}
 		#endregion
 		
 		#region Menu Commands
@@ -293,36 +113,10 @@ namespace RFiDGear.ViewModel
 			try{
 				using (RFiDDevice device = RFiDDevice.Instance)
 				{
-					TreeViewParentNodeViewModel treeViewModel;
-					
-					
-					
-					try{
-						if(TreeViewParentTaskNodes.GetTaskType == typeof(MifareClassicSetupViewModel))
-						{
-							var item = TreeViewParentTaskNodes.TaskCollection.Where(x => (x as MifareClassicSetupViewModel).ParentNodeViewModel.IsSelected);
-							treeViewModel = item.First(x => (x as TreeViewParentNodeViewModel).IsTask) as TreeViewParentNodeViewModel;
-						}
-						else
-						{
-							treeViewModel = new TreeViewParentNodeViewModel(new MifareClassicChipModel("no Task", CARD_TYPE.Mifare1K), dialogs, true);;
-						}
-						
-						
-						//.Where(x => x.ParentNodeViewModel.IsTask == true);
-						//First(x => (x as TreeViewParentNodeViewModel).IsSelected);
-						//treeViewModel = item as TreeViewParentNodeViewModel;
-					}
-					catch
-					{
-						treeViewModel = new TreeViewParentNodeViewModel(new MifareClassicChipModel("no Task", CARD_TYPE.Mifare1K), dialogs, true); //new MifareClassicChipModel(device.CardInfo.cardType.ToString(),device.CardInfo.cardType),dialogs);
-						
-					}
-					
 					// only call dialog if device is ready
 					if(device != null)
 					{
-						this.dialogs.Add(new MifareClassicSetupViewModel(treeViewModel, dialogs) {
+						this.dialogs.Add(new MifareClassicSetupViewModel(null, dialogs) {
 						                 	
 						                 	Caption = String.Format("{0} UID:[{1}] Type:[{2}]",
 						                 	                        resLoader.getResource("mifareAuthSettingsDialogCaption"),
@@ -336,29 +130,14 @@ namespace RFiDGear.ViewModel
 						                 		if(sender.SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
 						                 			sender.Settings.SaveSettings();
 						                 		
-						                 		if(sender.SelectedTaskType == TaskType_MifareClassicTask.WriteData)
+						                 		if(sender.SelectedTaskType == TaskType_MifareClassicTask.WriteData ||
+						                 		   sender.SelectedTaskType == TaskType_MifareClassicTask.ReadData)
 						                 		{
-						                 			TreeViewParentTaskNodes.TaskCollection.Remove(defaultTask);
+						                 			ChipTasks.TaskCollection.Add(sender);
 						                 			
-						                 			TreeViewChildNodeViewModel taskChild = sender.ParentNodeViewModel.Children.First(x => x.IsTask == true);
+						                 			ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt));
 						                 			
-						                 			treeViewModel.Children.Clear();
-						                 			treeViewModel.Children.Add(taskChild);
-						                 			treeViewModel.ParentNodeHeader = string.Format("Task Order: {0}\nType: {1}\nDescription: {2}"
-						                 			                                               ,sender.SelectedTaskIndex
-						                 			                                               ,Enum.GetName(typeof(TaskType_MifareClassicTask),sender.SelectedTaskType)
-						                 			                                               ,sender.SelectedTaskDescription);
-						                 			treeViewModel.TaskIndex = int.Parse(sender.SelectedTaskIndex);
-						                 			TreeViewParentTaskNodes.TaskCollection.Add(sender);
-						                 			
-						                 			TreeViewParentTaskNodes.TaskCollection = new ObservableCollection<object>(
-						                 				TreeViewParentTaskNodes.TaskCollection.OrderBy(x => (x as MifareClassicSetupViewModel).ParentNodeViewModel.TaskIndex)
-						                 			);
-						                 			
-						                 			//foreach(TreeViewParentNodeViewModel vm in TreeViewParentTaskNodes.TaskCollection)
-						                 			//	vm.IsSelected = false;
-						                 			
-						                 			RaisePropertyChanged("TreeViewParentTaskNodes");
+						                 			RaisePropertyChanged("ChipTasks");
 						                 		}
 						                 		sender.Close();
 						                 	},
@@ -381,7 +160,7 @@ namespace RFiDGear.ViewModel
 			}
 			catch(Exception e)
 			{
-				
+				dialogs.Clear();
 			}
 			
 			triggerReadChip.IsEnabled = timerState;
@@ -396,21 +175,9 @@ namespace RFiDGear.ViewModel
 			
 			using (RFiDDevice device = RFiDDevice.Instance)
 			{
-				TreeViewParentNodeViewModel treeViewModel;
-				
-				try{
-					var item = TreeViewParentTaskNodes.TaskCollection.First(x => (x as MifareClassicSetupViewModel).ParentNodeViewModel.IsSelected);
-					treeViewModel = (item as MifareClassicSetupViewModel).ParentNodeViewModel;
-				}
-				catch
-				{
-					treeViewModel = new TreeViewParentNodeViewModel(new MifareDesfireChipModel("no Task", CARD_TYPE.DESFire), dialogs, true);
-					
-				}
-				
 				if(device != null)
 				{
-					this.dialogs.Add(new MifareDesfireSetupViewModel(treeViewModel, dialogs) {
+					this.dialogs.Add(new MifareDesfireSetupViewModel(null, dialogs) {
 					                 	
 					                 	Caption = String.Format("{0} UID:[{1}] Type:[{2}]",
 					                 	                        resLoader.getResource("mifareAuthSettingsDialogCaption"),
@@ -423,27 +190,18 @@ namespace RFiDGear.ViewModel
 					                 		if(sender.SelectedTaskType == TaskType_MifareDesfireTask.ChangeDefault)
 					                 			sender.Settings.SaveSettings();
 					                 		
-					                 		if(sender.SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard)
+					                 		if(sender.SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard ||
+					                 		   sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateApplication ||
+					                 		   sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover ||
+					                 		   sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover ||
+					                 		   sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication ||
+					                 		   sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateFile)
 					                 		{
-					                 			TreeViewParentTaskNodes.TaskCollection.Remove(defaultTask);
+					                 			ChipTasks.TaskCollection.Add(sender);
 					                 			
-					                 			//TreeViewChildNodeViewModel taskChild = sender.ParentNodeViewModel.Children.First(x => x.IsTask == true);
+					                 			ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt));
 					                 			
-					                 			treeViewModel.Children.Clear();
-					                 			//treeViewModel.Children.Add(taskChild);
-					                 			treeViewModel.ParentNodeHeader = string.Format("Task Order: {0}\nType: {1}\nDescription: {2}"
-					                 			                                               ,sender.SelectedTaskIndex
-					                 			                                               ,Enum.GetName(typeof(TaskType_MifareDesfireTask),sender.SelectedTaskType)
-					                 			                                               ,sender.SelectedTaskDescription);
-					                 			treeViewModel.TaskIndex = int.Parse(sender.SelectedTaskIndex);
-					                 			TreeViewParentTaskNodes.TaskCollection.Add(sender);
-					                 			
-					                 			TreeViewParentTaskNodes.TaskCollection = new ObservableCollection<object>(TreeViewParentTaskNodes.TaskCollection.OrderBy(x => (x as MifareDesfireSetupViewModel).ParentNodeViewModel.TaskIndex));
-					                 			
-					                 			foreach(MifareDesfireSetupViewModel vm in TreeViewParentTaskNodes.TaskCollection)
-					                 				vm.ParentNodeViewModel.IsSelected = false;
-					                 			
-					                 			RaisePropertyChanged("TreeViewParentTaskNodes");
+					                 			RaisePropertyChanged("ChipTasks");
 					                 			
 					                 			sender.Close();
 					                 		}
@@ -472,7 +230,7 @@ namespace RFiDGear.ViewModel
 			
 			triggerReadChip.IsEnabled = false;
 			
-			using (RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
+			using (RFiDDevice device = RFiDDevice.Instance)
 			{
 				foreach(TreeViewParentNodeViewModel item in treeViewParentNodes)
 				{
@@ -516,9 +274,9 @@ namespace RFiDGear.ViewModel
 					}
 				}
 				
-				else if (treeViewParentNodes.Where(x => x.UidNumber == device.CardInfo.uid).Any())
+				else if (treeViewParentNodes.Any(x => x.UidNumber == device.CardInfo.uid))
 				{
-					treeViewParentNodes.Where(x => x.UidNumber == device.CardInfo.uid).First().IsSelected = true;
+					treeViewParentNodes.First(x => x.UidNumber == device.CardInfo.uid).IsSelected = true;
 				}
 			}
 
@@ -532,6 +290,13 @@ namespace RFiDGear.ViewModel
 		/// <param name="e"></param>
 		private void UpdateChip(object sender, EventArgs e)
 		{
+			CARD_INFO card;
+			
+			
+			//TaskScheduler scheduler = TaskScheduler.FromCurrentSynchronizationContext();
+			
+//			Task desfireTask = new Task(() =>
+//			                            {
 			try{
 				//try to get singleton instance
 				using (RFiDDevice device = RFiDDevice.Instance)
@@ -541,115 +306,90 @@ namespace RFiDGear.ViewModel
 					{
 						device.ReadChipPublic();
 						
-						//proceed to create dummy only when uid is yet unknown
-						if (device != null &&
-						    !string.IsNullOrWhiteSpace(device.CardInfo.uid) &&
-						    !treeViewParentNodes.Where(x => x.UidNumber == device.CardInfo.uid).Any()) {
-
-							foreach(TreeViewParentNodeViewModel item in treeViewParentNodes)
-							{
-								item.IsExpanded = false;
-							}
-							
-							// fill treeview with dummy models and viewmodels
-							switch (device.CardInfo.cardType)
-							{
-								case CARD_TYPE.Mifare1K:
-									treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicChipModel(device.CardInfo.uid, CARD_TYPE.Mifare1K),  Dialogs));
-									break;
-
-								case CARD_TYPE.Mifare2K:
-									treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicChipModel(device.CardInfo.uid, CARD_TYPE.Mifare2K),  Dialogs));
-									break;
-
-								case CARD_TYPE.Mifare4K:
-									treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicChipModel(device.CardInfo.uid, CARD_TYPE.Mifare4K),  Dialogs));
-									break;
-
-								case CARD_TYPE.DESFire:
-								case CARD_TYPE.DESFireEV1:
-								case CARD_TYPE.DESFireEV2:
-									treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareDesfireChipModel(device.CardInfo.uid, device.CardInfo.cardType),  Dialogs));
-									break;
-							}
-
-							//fill the models with data from db
-							foreach (TreeViewParentNodeViewModel pnVM in treeViewParentNodes) {
-
-							}
-						}
-						
-						//only run if theres a card on the reader and its uid was previously added
-						if (device != null &&
-						    !string.IsNullOrWhiteSpace(device.CardInfo.uid) &&
-						    treeViewParentNodes.Where(x => x.UidNumber == device.CardInfo.uid).Any())
-						{
-							//only run tasks if there is no child or grandchildnode selected for further edit
-							if((treeViewParentNodes.Where(x => x.UidNumber == device.CardInfo.uid).First().Children.Any() && !(treeViewParentNodes.Where(x => x.UidNumber == device.CardInfo.uid).First().Children.Any(x => x.IsSelected))) &&
-							   (!(treeViewParentNodes.Where(x => x.UidNumber == device.CardInfo.uid).First().Children.Where(x => x.Children != null && x.Children.Any(y => y.IsSelected)).Any())))
-							{
-								//select current parentnode (card) on reader
-								treeViewParentNodes.Where(x => x.UidNumber == device.CardInfo.uid).First().IsSelected = true;
-								
-								//only run tasks when the card is yet untouched
-								if(treeViewParentNodes.Where(x => x.UidNumber == device.CardInfo.uid).First().IsBeingProgrammed == null)
-								{
-									//are there tasks present to process?
-									for(int i = 0; i < taskHandler.TaskCollection.Count; i++)
-									{
-										//decide what type of card to process
-										if(taskHandler.GetTaskType == typeof(MifareClassicSetupViewModel))
-										{
-											switch( (taskHandler.TaskCollection[i] as MifareClassicSetupViewModel).SelectedTaskType)
-											{
-												case TaskType_MifareClassicTask.ChangeSecuritySettings:
-													break;
-											}
-
-										}
-										if(taskHandler.GetTaskType == typeof(MifareDesfireSetupViewModel))
-										{
-											switch( (taskHandler.TaskCollection[i] as MifareDesfireSetupViewModel).SelectedTaskType)
-											{
-												case TaskType_MifareDesfireTask.FormatDesfireCard:
-													
-													treeViewParentNodes.Where(x => x.IsSelected).First().IsBeingProgrammed = true;
-													
-													(taskHandler.TaskCollection[i] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(device);
-													
-													if((taskHandler.TaskCollection[i] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully == true)
-														treeViewParentNodes.Where(x => x.IsSelected).First().IsBeingProgrammed = null;
-													else
-													{
-														treeViewParentNodes.Where(x => x.IsSelected).First().IsBeingProgrammed = false;
-														(taskHandler.TaskCollection[i] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
-													}
-													
-													break;
-											}
-										}
-									}
-								}
-								
-							}
-							
-							
-							
-						}
-						
-						else
-						{
-							if(treeViewParentNodes.Where(x => x.IsSelected).Any())
-								treeViewParentNodes.Where(x => x.IsSelected).First().IsSelected = false;
-						}
-						
-						RaisePropertyChanged("TreeViewParentNodes");
+						card = device.CardInfo;
 					}
+					else
+					{
+						//card = new CARD_INFO(CARD_TYPE.Unspecified, "");
+						return;
+					}
+					
+				}
+				//proceed to create dummy only when uid is yet unknown
+				if (!string.IsNullOrWhiteSpace(card.uid) &&
+				    !treeViewParentNodes.Any(x => (x.UidNumber == card.uid))) {
+
+					foreach(TreeViewParentNodeViewModel item in treeViewParentNodes)
+					{
+						item.IsExpanded = false;
+					}
+					
+					// fill treeview with dummy models and viewmodels
+					switch (card.cardType)
+					{
+						case CARD_TYPE.Mifare1K:
+							treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicChipModel(card.uid, CARD_TYPE.Mifare1K),  Dialogs));
+							break;
+
+						case CARD_TYPE.Mifare2K:
+							treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicChipModel(card.uid, CARD_TYPE.Mifare2K),  Dialogs));
+							break;
+
+						case CARD_TYPE.Mifare4K:
+							treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareClassicChipModel(card.uid, CARD_TYPE.Mifare4K),  Dialogs));
+							break;
+
+						case CARD_TYPE.DESFire:
+						case CARD_TYPE.DESFireEV1:
+						case CARD_TYPE.DESFireEV2:
+							treeViewParentNodes.Add(new TreeViewParentNodeViewModel(new MifareDesfireChipModel(card.uid, card.cardType),  Dialogs));
+							break;
+					}
+					OnNewResetTaskStatusCommand();
+					OnNewWriteToChipOnceCommand();
 				}
 			}
 			catch(Exception ex)
 			{
 				
+			}
+			// });
+			
+			//desfireTask.Start(scheduler);
+			
+//			desfireTask.ContinueWith((x) =>
+//			                         {
+//			                         	//triggerReadChip.Start();
+//			                         });
+		}
+		
+		private void TaskTimeout(object sender, EventArgs e)
+		{
+			taskTimeout.IsEnabled = false;
+			taskTimeout.Stop();
+			if(taskHandler.GetTaskType == typeof(MifareDesfireSetupViewModel))
+				(taskHandler.TaskCollection[(int)taskTimeout.Tag] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			else if(taskHandler.GetTaskType == typeof(MifareClassicSetupViewModel))
+				(taskHandler.TaskCollection[(int)taskTimeout.Tag] as MifareClassicSetupViewModel).IsTaskCompletedSuccessfully = false;
+			taskIndex = int.MaxValue;
+		}
+		
+		public ICommand ResetTaskStatusCommand { get { return new RelayCommand(OnNewResetTaskStatusCommand); }}
+		private void OnNewResetTaskStatusCommand()
+		{
+			foreach(object chipTask in taskHandler.TaskCollection)
+			{
+				if (chipTask is MifareClassicSetupViewModel)
+				{
+					(chipTask as MifareClassicSetupViewModel).IsTaskCompletedSuccessfully = null;
+					(chipTask as MifareClassicSetupViewModel).TaskErr = ERROR.Empty;
+				}
+				
+				else if(chipTask is MifareDesfireSetupViewModel)
+				{
+					(chipTask as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = null;
+					(chipTask as MifareDesfireSetupViewModel).TaskErr = ERROR.Empty;
+				}
 			}
 		}
 		
@@ -665,13 +405,13 @@ namespace RFiDGear.ViewModel
 		public ICommand WriteToChipOnceCommand { get { return new RelayCommand(OnNewWriteToChipOnceCommand); } }
 		private void OnNewWriteToChipOnceCommand()
 		{
-//			foreach(object chipTask in taskHandler.TaskCollection)
-//			{
-//				if (chipTask is MifareClassicSetupViewModel)
-//					(chipTask as MifareClassicSetupViewModel).IsTaskCompletedSuccessfully = null;
-//				else if(chipTask is MifareDesfireSetupViewModel)
-//					(chipTask as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = null;
-//			}
+			taskIndex = 0;
+			
+			taskTimeout.IsEnabled = true;
+			taskTimeout.Start();
+			
+			triggerReadChip.Tag = triggerReadChip.IsEnabled;
+			triggerReadChip.IsEnabled = false;
 			
 			Task thread = new Task(() =>
 			                       {
@@ -696,12 +436,12 @@ namespace RFiDGear.ViewModel
 			                       		//only run if theres a card on the reader and its uid was previously added
 			                       		if (
 			                       			!string.IsNullOrWhiteSpace(card.uid) &&
-			                       			treeViewParentNodes.Where(x => x.UidNumber == card.uid).Any())
+			                       			treeViewParentNodes.Any(x => (x.UidNumber == card.uid)))
 			                       		{
 
 			                       			//select current parentnode (card) on reader
-			                       			treeViewParentNodes.Where(x => x.UidNumber == card.uid).First().IsSelected = true;
-			                       			treeViewParentNodes.Where(x => x.IsSelected).First().IsBeingProgrammed = true;
+			                       			treeViewParentNodes.First(x => (x.UidNumber == card.uid)).IsSelected = true;
+			                       			treeViewParentNodes.First(x => x.IsSelected).IsBeingProgrammed = true;
 			                       			
 			                       			//are there tasks present to process?
 			                       			while(taskIndex < taskHandler.TaskCollection.Count)
@@ -709,15 +449,63 @@ namespace RFiDGear.ViewModel
 			                       				
 			                       				Thread.Sleep(100);
 			                       				
-			                       				taskTimeout.IsEnabled = true;
-			                       				taskTimeout.Start();
+			                       				taskTimeout.Tag = taskIndex;
+			                       				
 			                       				
 			                       				//decide what type of card to process
 			                       				if(taskHandler.GetTaskType == typeof(MifareClassicSetupViewModel))
 			                       				{
 			                       					switch( (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedTaskType)
 			                       					{
-			                       						case TaskType_MifareClassicTask.ChangeSecuritySettings:
+			                       						case TaskType_MifareClassicTask.ReadData:
+			                       							switch((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr)
+			                       							{
+			                       								case ERROR.AuthenticationError:
+			                       									//FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr = ERROR.Empty;
+			                       									break;
+			                       									
+			                       								case ERROR.DeviceNotReadyError:
+			                       									break;
+			                       								case ERROR.IOError:
+			                       									break;
+			                       								case ERROR.NoError:
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).IsTaskCompletedSuccessfully = true;
+			                       									taskIndex++;
+			                       									//taskTimeout.IsEnabled = false;
+			                       									taskTimeout.Start();
+			                       									break;
+			                       								case ERROR.Empty:
+			                       									taskTimeout.Start();
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
+			                       									break;
+			                       							}
+			                       							break;
+			                       							
+			                       						case TaskType_MifareClassicTask.WriteData:
+			                       							
+			                       							switch((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr)
+			                       							{
+			                       								case ERROR.AuthenticationError:
+			                       									//FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr = ERROR.Empty;
+			                       									break;
+			                       									
+			                       								case ERROR.DeviceNotReadyError:
+			                       									break;
+			                       								case ERROR.IOError:
+			                       									break;
+			                       								case ERROR.NoError:
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).IsTaskCompletedSuccessfully = true;
+			                       									taskIndex++;
+			                       									//taskTimeout.IsEnabled = false;
+			                       									taskTimeout.Start();
+			                       									break;
+			                       								case ERROR.Empty:
+			                       									taskTimeout.Start();
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
+			                       									break;
+			                       							}
 			                       							break;
 			                       					}
 			                       				}
@@ -727,12 +515,13 @@ namespace RFiDGear.ViewModel
 			                       					switch( (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedTaskType)
 			                       					{
 			                       						case TaskType_MifareDesfireTask.FormatDesfireCard:
-			                       							
-			                       							switch((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).taskErr)
+			                       							switch((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
 			                       							{
 			                       								case ERROR.AuthenticationError:
-			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       									//FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr = ERROR.Empty;
 			                       									break;
+			                       									
 			                       								case ERROR.DeviceNotReadyError:
 			                       									break;
 			                       								case ERROR.IOError:
@@ -740,14 +529,144 @@ namespace RFiDGear.ViewModel
 			                       								case ERROR.NoError:
 			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = true;
 			                       									taskIndex++;
-			                       									taskTimeout.IsEnabled = false;
-			                       									taskTimeout.Stop();
+			                       									//taskTimeout.IsEnabled = false;
+			                       									taskTimeout.Start();
 			                       									break;
 			                       								case ERROR.Empty:
+			                       									taskTimeout.Start();
 			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
 			                       									break;
 			                       							}
+			                       							break;
 			                       							
+			                       						case TaskType_MifareDesfireTask.CreateApplication:
+			                       							switch((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+			                       							{
+			                       								case ERROR.AuthenticationError:
+			                       									//FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr = ERROR.Empty;
+			                       									break;
+			                       									
+			                       								case ERROR.DeviceNotReadyError:
+			                       									break;
+			                       								case ERROR.IOError:
+			                       									break;
+			                       									
+			                       								case ERROR.NoError:
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = true;
+			                       									taskIndex++;
+			                       									//taskTimeout.IsEnabled = false;
+			                       									taskTimeout.Start();
+			                       									break;
+			                       								case ERROR.Empty:
+			                       									taskTimeout.Start();
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
+			                       									break;
+			                       							}
+			                       							break;
+
+			                       						case TaskType_MifareDesfireTask.DeleteApplication:
+			                       							switch((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+			                       							{
+			                       								case ERROR.AuthenticationError:
+			                       									//FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr = ERROR.Empty;
+			                       									break;
+			                       									
+			                       								case ERROR.DeviceNotReadyError:
+			                       									break;
+			                       								case ERROR.IOError:
+			                       									break;
+			                       									
+			                       								case ERROR.NoError:
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = true;
+			                       									taskIndex++;
+			                       									//taskTimeout.IsEnabled = false;
+			                       									taskTimeout.Start();
+			                       									break;
+			                       								case ERROR.Empty:
+			                       									taskTimeout.Start();
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
+			                       									break;
+			                       							}
+			                       							break;
+			                       							
+			                       						case TaskType_MifareDesfireTask.PICCMasterKeyChangeover:
+			                       							switch((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+			                       							{
+			                       								case ERROR.AuthenticationError:
+			                       									//FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr = ERROR.Empty;
+			                       									break;
+			                       									
+			                       								case ERROR.DeviceNotReadyError:
+			                       									break;
+			                       								case ERROR.IOError:
+			                       									break;
+			                       									
+			                       								case ERROR.NoError:
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = true;
+			                       									taskIndex++;
+			                       									//taskTimeout.IsEnabled = false;
+			                       									taskTimeout.Start();
+			                       									break;
+			                       								case ERROR.Empty:
+			                       									taskTimeout.Start();
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
+			                       									break;
+			                       							}
+			                       							break;
+			                       							
+			                       						case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
+			                       							switch((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+			                       							{
+			                       								case ERROR.AuthenticationError:
+			                       									//FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr = ERROR.Empty;
+			                       									break;
+			                       									
+			                       								case ERROR.DeviceNotReadyError:
+			                       									break;
+			                       								case ERROR.IOError:
+			                       									break;
+			                       									
+			                       								case ERROR.NoError:
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = true;
+			                       									taskIndex++;
+			                       									//taskTimeout.IsEnabled = false;
+			                       									taskTimeout.Start();
+			                       									break;
+			                       								case ERROR.Empty:
+			                       									taskTimeout.Start();
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
+			                       									break;
+			                       							}
+			                       							break;
+			                       							
+			                       						case TaskType_MifareDesfireTask.CreateFile:
+			                       							switch((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+			                       							{
+			                       								case ERROR.AuthenticationError:
+			                       									//FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr = ERROR.Empty;
+			                       									break;
+			                       									
+			                       								case ERROR.DeviceNotReadyError:
+			                       									break;
+			                       								case ERROR.IOError:
+			                       									break;
+			                       									
+			                       								case ERROR.NoError:
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = true;
+			                       									taskIndex++;
+			                       									//taskTimeout.IsEnabled = false;
+			                       									taskTimeout.Start();
+			                       									break;
+			                       								case ERROR.Empty:
+			                       									taskTimeout.Start();
+			                       									(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
+			                       									break;
+			                       							}
 			                       							break;
 			                       					}
 			                       				}
@@ -762,12 +681,13 @@ namespace RFiDGear.ViewModel
 			                       		
 			                       		else
 			                       		{
-			                       			if(treeViewParentNodes.Where(x => x.IsSelected).Any())
-			                       				treeViewParentNodes.Where(x => x.IsSelected).First().IsSelected = false;
+			                       			if(treeViewParentNodes.Any(x => x.IsSelected))
+			                       				treeViewParentNodes.First(x => x.IsSelected).IsSelected = false;
 			                       		}
 			                       		
 			                       		RaisePropertyChanged("TreeViewParentNodes");
 			                       		
+			                       		taskTimeout.Stop();
 			                       		
 			                       	}
 			                       	catch(Exception ex)
@@ -777,15 +697,11 @@ namespace RFiDGear.ViewModel
 			                       });
 			
 			thread.ContinueWith((x) => {
-			                    	treeViewParentNodes.Where(y => y.IsSelected).First().IsBeingProgrammed = null;
+			                    	treeViewParentNodes.First(y => y.IsSelected).IsBeingProgrammed = null;
+			                    	triggerReadChip.IsEnabled = (bool)triggerReadChip.Tag;
 			                    });
 			thread.Start();
 
-		}
-		
-		private void TaskTimeout(object sender, EventArgs e)
-		{
-			taskIndex = int.MaxValue;
 		}
 		
 		public ICommand CloseAllCommand { get { return new RelayCommand(OnCloseAll); } }
@@ -797,21 +713,27 @@ namespace RFiDGear.ViewModel
 		public ICommand SwitchLanguageToGerman { get { return new RelayCommand(SetGermanLanguage); } }
 		private void SetGermanLanguage()
 		{
-			if (settings.DefaultSpecification.DefaultLanguage != "german") {
-				settings.DefaultSpecification.DefaultLanguage = "german";
-				this.OnNewLanguageChangedDialog();
+			using (SettingsReaderWriter settings = new SettingsReaderWriter())
+			{
+				if (settings.DefaultSpecification.DefaultLanguage != "german") {
+					settings.DefaultSpecification.DefaultLanguage = "german";
+					settings.SaveSettings();
+					this.OnNewLanguageChangedDialog();
+				}
 			}
-
 		}
 		
 		public ICommand SwitchLanguageToEnglish { get { return new RelayCommand(SetEnglishLanguage); } }
 		private void SetEnglishLanguage()
 		{
-			if (settings.DefaultSpecification.DefaultLanguage != "english") {
-				settings.DefaultSpecification.DefaultLanguage = "english";
-				this.OnNewLanguageChangedDialog();
+			using (SettingsReaderWriter settings = new SettingsReaderWriter())
+			{
+				if (settings.DefaultSpecification.DefaultLanguage != "english") {
+					settings.DefaultSpecification.DefaultLanguage = "english";
+					settings.SaveSettings();
+					this.OnNewLanguageChangedDialog();
+				}
 			}
-
 		}
 		
 		public void OnNewLanguageChangedDialog()
@@ -839,20 +761,28 @@ namespace RFiDGear.ViewModel
 		public ICommand NewReaderSetupDialogCommand { get { return new RelayCommand(OnNewReaderSetupDialog); } }
 		private void OnNewReaderSetupDialog()
 		{
-			using (RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
+			using (RFiDDevice device = RFiDDevice.Instance)
 			{
-				this.Dialogs.Add(new SetupViewModel(settings, device) {
+				this.Dialogs.Add(new SetupViewModel(device) {
 				                 	Caption = "RFiDGear Reader Setup",
 				                 	
 				                 	OnOk = (sender) => {
-				                 		
-				                 		settings.DefaultSpecification.DefaultReaderProvider = sender.SelectedReader;
-				                 		//currentReaderSetup = new RFiDReaderSetup(sender.SelectedReader);
-				                 		settings.SaveSettings();
-				                 		sender.Close();
-				                 		
+				                 		using (SettingsReaderWriter settings = new SettingsReaderWriter())
+				                 		{
+				                 			DefaultSpecification currentSettings = settings.DefaultSpecification;
+				                 			
+				                 			currentSettings.DefaultReaderProvider = sender.SelectedReader;
+				                 			
+				                 			settings.DefaultSpecification = currentSettings;
+
+				                 			sender.Close();
+				                 		}
 				                 	},
 
+				                 	OnConnect = (sender) => {
+				                 		
+				                 	},
+				                 	
 				                 	OnCancel = (sender) => {
 				                 		sender.Close();
 				                 	},
@@ -864,71 +794,6 @@ namespace RFiDGear.ViewModel
 			}
 
 		}
-		
-		/*
-		public ICommand NewModalDialogCommand { get { return new RelayCommand(OnNewModalDialog); } }
-		public void OnNewModalDialog()
-		{
-			this.Dialogs.Add(new CustomDialogViewModel {
-			                 	Message = "Hello World!",
-			                 	Caption = "Modal Dialog Box",
-
-			                 	OnOk = (sender) => {
-			                 		sender.Close();
-			                 		new MessageBoxViewModel("You pressed ok!", "Bye bye!").Show(this.Dialogs);
-			                 	},
-
-			                 	OnCancel = (sender) => {
-			                 		sender.Close();
-			                 		new MessageBoxViewModel("You pressed cancel!", "Bye bye!").Show(this.Dialogs);
-			                 	},
-
-			                 	OnCloseRequest = (sender) => {
-			                 		sender.Close();
-			                 		new MessageBoxViewModel("You clicked the caption bar close button!", "Bye bye!").Show(this.Dialogs);
-			                 	}
-			                 });
-		}
-
-		 */
-
-		/*
-		public ICommand NewModelessDialogCommand { get { return new RelayCommand(OnNewModelessDialog); } }
-		public void OnNewModelessDialog()
-		{
-			var confirmClose = new Action<CustomDialogViewModel>((sender) => {
-			                                                     	if (new MessageBoxViewModel {
-			                                                     	    	Caption = "Closing",
-			                                                     	    	Message = "Are you sure you want to close this window?",
-			                                                     	    	Buttons = MessageBoxButton.YesNo,
-			                                                     	    	Image = MessageBoxImage.Question
-			                                                     	    }
-			                                                     	    .Show(this.Dialogs) == MessageBoxResult.Yes)
-			                                                     		sender.Close();
-			                                                     });
-
-			new CustomDialogViewModel(false) {
-				Message = "Hello World!",
-				Caption = "Modeless Dialog Box",
-				OnOk = confirmClose,
-				OnCancel = confirmClose,
-				OnCloseRequest = confirmClose
-			}.Show(this.Dialogs);
-		}
-
-		 */
-
-		/*
-		public ICommand NewMessageBoxCommand { get { return new RelayCommand(OnNewMessageBox); } }
-		public void OnNewMessageBox()
-		{
-			new MessageBoxViewModel {
-				Caption = "Message Box",
-				Message = "This is a message box!",
-				Image = MessageBoxImage.Information
-			}.Show(this.Dialogs);
-		}
-		 */
 
 		public ICommand NewOpenFileDialogCommand { get { return new RelayCommand(OnNewOpenFileDialog); } }
 		public void OnNewOpenFileDialog()
@@ -941,8 +806,8 @@ namespace RFiDGear.ViewModel
 			
 			if (dlg.Show(this.Dialogs) && dlg.FileName != null)
 			{
-				if(TreeViewParentTaskNodes.TaskCollection != null && TreeViewParentTaskNodes.TaskCollection.Count > 0)
-					TreeViewParentTaskNodes.TaskCollection.Clear();
+				if(ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
+					ChipTasks.TaskCollection.Clear();
 				
 				databaseReaderWriter.ReadDatabase(dlg.FileName);
 				
@@ -953,14 +818,14 @@ namespace RFiDGear.ViewModel
 				
 				foreach(object setup in databaseReaderWriter.setupModel.TaskCollection)
 				{
-					TreeViewParentTaskNodes.TaskCollection.Add(setup);
+					ChipTasks.TaskCollection.Add(setup);
 				}
 			}
 			
 			else
 				new MessageBoxViewModel { Message = "You didn't select a file." }.Show(this.Dialogs);
 			
-			RaisePropertyChanged("TreeViewParentTaskNodes");
+			RaisePropertyChanged("ChipTasks");
 		}
 
 		/// <summary>
@@ -976,7 +841,7 @@ namespace RFiDGear.ViewModel
 			
 			if (dlg.Show(this.Dialogs) && dlg.FileName != null)
 			{
-				databaseReaderWriter.WriteDatabase(TreeViewParentTaskNodes, dlg.FileName);
+				databaseReaderWriter.WriteDatabase(ChipTasks, dlg.FileName);
 			}
 		}
 		
@@ -997,11 +862,81 @@ namespace RFiDGear.ViewModel
 		
 		#endregion
 		
-		#region View Switchers
+		#region Dependency Properties
+		
+		public bool? TaskCompletedSuccessfully
+		{
+			get { return null; }
+		}
+		
+		public string RowHeaderImageVisibility
+		{
+			get { return "Visible"; }
+		}
+		
+		private int progressBarValue;
+		public int ProgressBarValue {
+			get { return progressBarValue; }
+			set { progressBarValue = value;
+				RaisePropertyChanged("ProgressBarValue");
+			}
+		}
+		
+		private ObservableCollection<TreeViewParentNodeViewModel> treeViewParentNodes;
+		public ObservableCollection<TreeViewParentNodeViewModel> TreeViewParentNodes {
+			get {
+				return treeViewParentNodes;
+			}
+			
+			set {
+				treeViewParentNodes = value;
+				RaisePropertyChanged("TreeViewParentNodes");
+			}
+		}
+
+		public ChipTaskHandlerModel ChipTasks {
+			get {
+				return taskHandler;
+			}
+			
+			set {
+				taskHandler = value;
+				RaisePropertyChanged("ChipTasks");
+			}
+		}
+		
+		public bool IsUpdateChipsAutomaticallyChecked {
+			get { return triggerReadChip.IsEnabled; }
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public string CurrentReader
+		{
+			get { return currentReader; }
+			set
+			{
+				currentReader = value;
+				RaisePropertyChanged("CurrentReader");
+			}
+		} private string currentReader;
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public string ReaderStatus
+		{
+			get { return readerStatus; }
+			set
+			{
+				readerStatus = value;
+				RaisePropertyChanged("ReaderStatus");
+			}
+		} private string readerStatus;
 		
 		public bool IsSelected { get; set; }
 		
-		private bool isCheckedForUpdatesChecked;
 		public bool IsCheckForUpdatesChecked {
 			get { return isCheckedForUpdatesChecked; }
 			set {
@@ -1013,39 +948,73 @@ namespace RFiDGear.ViewModel
 				else
 					updater.StopMonitoring();
 			}
-		}
+		} private bool isCheckedForUpdatesChecked;
 		
 		public bool RadioButtonGermanLanguageSelectedState {
 			get {
-				if (settings.DefaultSpecification.DefaultLanguage == "german")
-					return true;
-				else
-					return false;
+				using (SettingsReaderWriter settings = new SettingsReaderWriter())
+				{
+					if (settings.DefaultSpecification.DefaultLanguage == "german")
+						return true;
+					else
+						return false;
+				}
 			}
 			set {
-				if (settings.DefaultSpecification.DefaultLanguage == "english")
-					value = false;
-				RaisePropertyChanged("RadioButtonGermanLanguageSelectedState");
+				using (SettingsReaderWriter settings = new SettingsReaderWriter())
+				{
+					if (settings.DefaultSpecification.DefaultLanguage == "english")
+						value = false;
+					RaisePropertyChanged("RadioButtonGermanLanguageSelectedState");
+				}
 			}
 		}
 		
 		public bool RadioButtonEnglishLanguageSelectedState {
 			get {
-				if (settings.DefaultSpecification.DefaultLanguage == "german")
-					return false;
-				else
-					return true;
+				using (SettingsReaderWriter settings = new SettingsReaderWriter())
+				{
+					if (settings.DefaultSpecification.DefaultLanguage == "german")
+						return false;
+					else
+						return true;
+				}
 			}
 			set {
-				if (settings.DefaultSpecification.DefaultLanguage == "german")
-					value = false;
-				RaisePropertyChanged("RadioButtonEnglishLanguageSelectedState");
+				using (SettingsReaderWriter settings = new SettingsReaderWriter())
+				{
+					if (settings.DefaultSpecification.DefaultLanguage == "german")
+						value = false;
+					RaisePropertyChanged("RadioButtonEnglishLanguageSelectedState");
+				}
 			}
 		}
 		
 		#endregion
 		
-
+		private void LoadCompleted(object sender, EventArgs e) {
+			
+			mw = (MainWindow) Application.Current.MainWindow;
+			mw.Title= string.Format("RFiDGear {0}.{1}.{2} {3}", Version.Major, Version.Minor, Version.Build , Version.Major == 0 ? "DEVELOPER PREVIEW" : "");
+			
+//			Task updateDeviceStatus =
+//				new Task(() => {
+//				         	using (RFiDDevice device = RFiDDevice.Instance)
+//				         	{
+//				         		if(device != null)
+//				         		{
+//				         			ReaderStatus="Provider OK";
+//				         		}
+//
+//				         		else
+//				         			ReaderStatus="Device Busy";
+//
+//
+//				         	}
+//				         });
+//
+//			updateDeviceStatus.Start();
+		}
 		
 	}
 }

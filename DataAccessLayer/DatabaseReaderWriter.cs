@@ -121,11 +121,9 @@ namespace RFiDGear.DataAccessLayer
 					
 					if(verInfo > Convert.ToInt32(string.Format("{0}{1}{2}",Version.Major,Version.Minor,Version.Build)))
 					{
-						throw new Exception(
-							string.Format("database that was tried to open is newer ({0}) than this version of eventmessenger ({1})"
-							              ,verInfo, Convert.ToInt32(string.Format("{0}{1}{2}",Version.Major,Version.Minor,Version.Build))
-							             )
-						);
+						LogWriter.CreateLogEntry(string.Format("{0}; {1}",DateTime.Now, string.Format("database that was tried to open is newer ({0}) than this version of eventmessenger ({1})"
+						                                                                              ,verInfo, Convert.ToInt32(string.Format("{0}{1}{2}",Version.Major,Version.Minor,Version.Build)))));
+						return true;
 					}
 					
 					try{
@@ -134,8 +132,15 @@ namespace RFiDGear.DataAccessLayer
 
 					}
 					catch(Exception e){
-						XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<TreeViewParentNodeViewModel>));
-						treeViewModel = (serializer.Deserialize(reader) as ObservableCollection<TreeViewParentNodeViewModel>);
+						try{
+							XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<TreeViewParentNodeViewModel>));
+							treeViewModel = (serializer.Deserialize(reader) as ObservableCollection<TreeViewParentNodeViewModel>);
+						}
+						catch ( Exception innerE) {
+							LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+							LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}",DateTime.Now, innerE.Message, innerE.InnerException != null ? innerE.InnerException.Message : ""));
+							return true;
+						}
 					}
 					
 					
@@ -161,7 +166,7 @@ namespace RFiDGear.DataAccessLayer
 					writer = new StreamWriter(@_path);
 				}
 				else
-					writer = new StreamWriter(@Path.Combine(appDataPath, chipDatabaseFileName));
+					writer = new StreamWriter(@Path.Combine(appDataPath, chipDatabaseFileName),false, new UTF8Encoding(false));
 				
 				//writer.WriteStartDocument();
 				//writer.WriteStartElement("Manifest");

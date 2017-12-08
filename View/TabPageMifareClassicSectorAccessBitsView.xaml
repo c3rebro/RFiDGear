@@ -89,27 +89,27 @@
 							<DataGridTextColumn
 								Header="Read Key A"
 								IsReadOnly="True"
-								Binding="{Binding Path=Read_KeyA, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:Access_Condition}, UpdateSourceTrigger=PropertyChanged}" />
+								Binding="{Binding Path=Read_KeyA, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareClassicSectorTrailer}, UpdateSourceTrigger=PropertyChanged}" />
 							<DataGridTextColumn
 								Header="Write Key A"
 								IsReadOnly="True"
-								Binding="{Binding Path=Write_KeyA, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:Access_Condition}, UpdateSourceTrigger=PropertyChanged}" />
+								Binding="{Binding Path=Write_KeyA, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareClassicSectorTrailer}, UpdateSourceTrigger=PropertyChanged}" />
 							<DataGridTextColumn
 								Header="Read Access Bits"
 								IsReadOnly="True"
-								Binding="{Binding Path=Read_Access_Condition, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:Access_Condition}, UpdateSourceTrigger=PropertyChanged}" />
+								Binding="{Binding Path=Read_AccessCondition_MifareClassicSectorTrailer, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareClassicSectorTrailer}, UpdateSourceTrigger=PropertyChanged}" />
 							<DataGridTextColumn
 								Header="Write Access Bits"
 								IsReadOnly="True"
-								Binding="{Binding Path=Write_Access_Condition, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:Access_Condition}, UpdateSourceTrigger=PropertyChanged}" />
+								Binding="{Binding Path=Write_AccessCondition_MifareClassicSectorTrailer, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareClassicSectorTrailer}, UpdateSourceTrigger=PropertyChanged}" />
 							<DataGridTextColumn
 								Header="Read Key B"
 								IsReadOnly="True"
-								Binding="{Binding Path=Read_KeyB, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:Access_Condition}, UpdateSourceTrigger=PropertyChanged}" />
+								Binding="{Binding Path=Read_KeyB, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareClassicSectorTrailer}, UpdateSourceTrigger=PropertyChanged}" />
 							<DataGridTextColumn
 								Header="Write Key B"
 								IsReadOnly="True"
-								Binding="{Binding Path=Write_KeyB, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:Access_Condition}, UpdateSourceTrigger=PropertyChanged}" />
+								Binding="{Binding Path=Write_KeyB, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareClassicSectorTrailer}, UpdateSourceTrigger=PropertyChanged}" />
 							<!--<DataGridTemplateColumn
 								Header="tadaaa">
 								<DataGridTemplateColumn.CellTemplate>
@@ -168,19 +168,19 @@
 							<DataGridTextColumn
 								Header="Read Data Block"
 								IsReadOnly="True"
-								Binding="{Binding Path=Read_DataBlock, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:Access_Condition}, UpdateSourceTrigger=PropertyChanged}" />
+								Binding="{Binding Path=Read_DataBlock, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareClassicSectorTrailer}, UpdateSourceTrigger=PropertyChanged}" />
 							<DataGridTextColumn
 								Header="Write Data Block"
 								IsReadOnly="True"
-								Binding="{Binding Path=Write_DataBlock, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:Access_Condition}, UpdateSourceTrigger=PropertyChanged}" />
+								Binding="{Binding Path=Write_DataBlock, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareClassicSectorTrailer}, UpdateSourceTrigger=PropertyChanged}" />
 							<DataGridTextColumn
 								Header="Inc. Data Block"
 								IsReadOnly="True"
-								Binding="{Binding Path=Increment_DataBlock, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:Access_Condition}, UpdateSourceTrigger=PropertyChanged}" />
+								Binding="{Binding Path=Increment_DataBlock, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareClassicSectorTrailer}, UpdateSourceTrigger=PropertyChanged}" />
 							<DataGridTextColumn
 								Header="Dec. Data Block"
 								IsReadOnly="True"
-								Binding="{Binding Path=Decrement_DataBlock, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:Access_Condition}, UpdateSourceTrigger=PropertyChanged}" />
+								Binding="{Binding Path=Decrement_DataBlock, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareClassicSectorTrailer}, UpdateSourceTrigger=PropertyChanged}" />
 							<!--							<DataGridTemplateColumn
 								Header="tadaaa">
 								<DataGridTemplateColumn.CellTemplate>
@@ -202,8 +202,8 @@
 						VerticalAlignment="Top"
 						Margin="8,9,7,0" />
 					<ComboBox
-						ItemsSource="{local:Enumerate {x:Type dal:Data_Block}}"
-						SelectedItem="{Binding Selected_DataBlockType,Converter={StaticResource Localization},ConverterParameter={x:Type dal:Data_Block},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+						ItemsSource="{local:Enumerate {x:Type dal:SectorTrailer_DataBlock}}"
+						SelectedItem="{Binding Selected_DataBlockType,Converter={StaticResource Localization},ConverterParameter={x:Type dal:SectorTrailer_DataBlock},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
 						IsEnabled="{Binding DataBlockSelectionComboBoxIsEnabled}"
 						Height="26"
 						Width="90"

@@ -10,6 +10,7 @@ using RFiDGear.DataAccessLayer;
 using RFiDGear.ViewModel;
 
 using System;
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Xml.Serialization;
@@ -31,7 +32,7 @@ namespace RFiDGear.Model
 			ManifestVersion = string.Format("{0}.{1}.{2}",Version.Major,Version.Minor,Version.Build);
 		}
 		
-		public Type GetTaskType { get { return TaskCollection != null ? TaskCollection[0].GetType() : null;} } 
+		public Type GetTaskType { get { return TaskCollection != null ? TaskCollection[0].GetType() : null;} }
 		
 		
 		/// <summary>

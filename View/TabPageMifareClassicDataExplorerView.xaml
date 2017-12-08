@@ -1,13 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <UserControl
-	x:Class="RFiDGear.View.TabPageMifareClassicDataExplorerView"
-	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-	xmlns:local="clr-namespace:RFiDGear"
-	xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-	mc:Ignorable="d">
+	x:Class="RFiDGear.View.TabPageMifareClassicDataExplorerView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:RFiDGear" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+	mc:Ignorable="d" xmlns:vm="clr-namespace:RFiDGear.ViewModel" xmlns:_3rdP="clr-namespace:RFiDGear._3rdParty">
 	<UserControl.Resources>
 		<local:BindingProxy
 			x:Key="proxy"
@@ -51,38 +45,44 @@
 				HorizontalAlignment="Stretch"
 				Grid.Row="0"
 				Grid.Column="1"
-				Width="5" />
+				Width="5"
+				Grid.RowSpan="2" />
 			<GroupBox
-				Header="Data"
 				IsEnabled="{Binding IsDataExplorerEditTabEnabled}"
+				Header="Data on Chip"
 				Grid.Column="0"
 				Grid.Row="0"
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Stretch"
-				Margin="8,8,8,8">
+				Margin="8,0,8,0">
 				<Grid
 					VerticalAlignment="Stretch"
 					Margin="0,0,0,0"
 					HorizontalAlignment="Stretch">
 					<DataGrid
-						ItemsSource="{Binding ParentNodeViewModel.Children/Children, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"
+						ItemsSource="{Binding ChildNodeViewModelFromChip.Children, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"
 						AutoGenerateColumns="False"
-						
 						CanUserReorderColumns="False"
 						CanUserSortColumns="False"
 						CanUserAddRows="False"
 						Background="Transparent"
 						AlternatingRowBackground="LightGray">
 						<!--SelectedItem="{Binding SelectedDataGridItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"-->
-						
 						<DataGrid.RowStyle>
-							<Style TargetType="{x:Type DataGridRow}">
+							<Style
+								TargetType="{x:Type DataGridRow}">
 								<!--<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />-->
 								<!--<Setter Property="ToolTip" Value="{StaticResource DescriptionToolTip}" />-->
 								<!--<Setter Property="IsSelected" Value="{Binding DataContext.IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
-								<Setter Property="Header" Value="{Binding GrandChildNodeHeader}" />
-								<Setter Property="HorizontalContentAlignment" Value="Center" />
-								<Setter Property="VerticalContentAlignment" Value="Center" />
+								<Setter
+									Property="Header"
+									Value="{Binding GrandChildNodeHeader}" />
+								<Setter
+									Property="HorizontalContentAlignment"
+									Value="Center" />
+								<Setter
+									Property="VerticalContentAlignment"
+									Value="Center" />
 								<Style.Triggers>
 									<DataTrigger
 										Binding="{Binding IsValidDataBlockContent}"
@@ -106,136 +106,103 @@
 									</DataTrigger>
 								</Style.Triggers>
 							</Style>
-						
 						</DataGrid.RowStyle>
-						
 						<!--	{Binding Data.LocalizationResourceSet,
 								Converter={StaticResource Localization},
 								ConverterParameter='dataGridHeaderMainWindowEventName',
 								Source={StaticResource proxy}}-->
-						
 						<DataGrid.Columns>
 							<DataGridTextColumn
 								Header="Hex"
 								Binding="{Binding DataBlockAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-								FontFamily="Lucida Console"	>
+								FontFamily="Lucida Console"
+								IsReadOnly="True">
 								<DataGridTextColumn.ElementStyle>
-									<Style TargetType="{x:Type TextBlock}">
-										<Setter Property="VerticalAlignment" Value="Center" />
-										<Setter Property="HorizontalAlignment" Value="Center" />
+									<Style
+										TargetType="{x:Type TextBlock}">
+										<Setter
+											Property="VerticalAlignment"
+											Value="Center" />
+										<Setter
+											Property="HorizontalAlignment"
+											Value="Center" />
 									</Style>
 								</DataGridTextColumn.ElementStyle>
 							</DataGridTextColumn>
-							
 							<DataGridTextColumn
 								Header="String"
 								Binding="{Binding DataBlockAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-								FontFamily="Lucida Console">
+								FontFamily="Lucida Console"
+								IsReadOnly="True">
 								<DataGridTextColumn.ElementStyle>
-									<Style TargetType="{x:Type TextBlock}">
-										<Setter Property="VerticalAlignment" Value="Center" />
-										<Setter Property="HorizontalAlignment" Value="Center" />
+									<Style
+										TargetType="{x:Type TextBlock}">
+										<Setter
+											Property="VerticalAlignment"
+											Value="Center" />
+										<Setter
+											Property="HorizontalAlignment"
+											Value="Center" />
 										<!--<EventSetter Event="KeyDown" Handler="{Binding StaticResource proxy}" />-->
 									</Style>
 								</DataGridTextColumn.ElementStyle>
 							</DataGridTextColumn>
-						
 						</DataGrid.Columns>
 					</DataGrid>
 				</Grid>
 			</GroupBox>
 			<GroupBox
-				Header="Data Block | Access Bits"
-				IsEnabled="{Binding IsAccessBitsEditTabEnabled}"
-				Margin="7,8,8,8"
-				VerticalAlignment="Stretch"
+				IsEnabled="{Binding IsDataExplorerEditTabEnabled}"
+				Header="Data in Memory/File"
+				Grid.Column="0"
+				Grid.Row="1"
 				HorizontalAlignment="Stretch"
-				Grid.Row="0"
-				Grid.Column="2">
+				VerticalAlignment="Stretch"
+				Margin="8,0,8,8">
 				<Grid
 					VerticalAlignment="Stretch"
 					Margin="0,0,0,0"
 					HorizontalAlignment="Stretch">
-					<Label
-						Content="DataBlock Selection"
-						Height="26"
-						Grid.Column="0"
-						Grid.Row="0"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Top"
-						Margin="8,9,7,0" />
-					<ComboBox
-						ItemsSource="{local:Enumerate {x:Type dal:Data_Block}}"
-						SelectedItem="{Binding Selected_DataBlockType,Converter={StaticResource Localization},ConverterParameter={x:Type dal:Data_Block},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
-						IsEnabled="{Binding DataBlockSelectionComboBoxIsEnabled}"
-						Height="26"
-						Width="90"
-						Grid.Column="1"
-						Grid.Row="0"
-						HorizontalAlignment="Left"
-						VerticalAlignment="Top"
-						Margin="9,9,0,0" />
-					<CheckBox
-						IsChecked="{Binding DataBlockIsCombinedToggleButtonIsChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-						Content="Combined"
-						HorizontalContentAlignment="Left"
-						VerticalContentAlignment="Center"
-						Canvas.Top="8"
-						Canvas.Left="194"
-						Width="81"
-						Height="16"
-						Grid.Row="0"
-						HorizontalAlignment="Left"
-						VerticalAlignment="Top"
-						Grid.Column="2"
-						Margin="12,14,0,0" />
-					<Label
-						Content="Sector Trailer:"
-						Canvas.Top="38"
-						Canvas.Left="582"
-						Height="27"
-						Width="85"
-						Grid.Column="0"
-						Grid.Row="1"
-						HorizontalAlignment="Left"
-						VerticalAlignment="Top"
-						Margin="8,2,0,0" />
-					<TextBox
-						Text="{Binding SectorTrailer, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-						FontFamily="Lucida Console"
-						BorderThickness="1,1,1,1"
-						Height="26"
-						Grid.Column="1"
-						Grid.ColumnSpan="2"
-						Grid.Row="1"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Top"
-						Margin="9,3,7,0">
-						<TextBox.Resources>
+					<DataGrid
+						ItemsSource="{Binding ChildNodeViewModelTemp.Children}"
+						AutoGenerateColumns="False"
+						CanUserReorderColumns="False"
+						CanUserSortColumns="False"
+						CanUserAddRows="False"
+						Background="Transparent"
+						AlternatingRowBackground="LightGray">
+						<!--SelectedItem="{Binding SelectedDataGridItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"-->
+						<DataGrid.RowStyle>
 							<Style
-								TargetType="TextBox">
+								TargetType="{x:Type DataGridRow}">
+								<!--<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />-->
+								<!--<Setter Property="ToolTip" Value="{StaticResource DescriptionToolTip}" />-->
+								<!--<Setter Property="IsSelected" Value="{Binding DataContext.IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
+								<Setter
+									Property="Header"
+									Value="{Binding GrandChildNodeHeader}" />
+								<Setter
+									Property="HorizontalContentAlignment"
+									Value="Center" />
+								<Setter
+									Property="VerticalContentAlignment"
+									Value="Center" />
 								<Style.Triggers>
 									<DataTrigger
-										Binding="{Binding IsValidSectorTrailer}"
+										Binding="{Binding IsValidDataBlockContent}"
 										Value="True">
 										<Setter
 											Property="Foreground"
 											Value="Green" />
 										<Setter
-											Property="Background"
-											Value="White" />
-										<Setter
 											Property="FontWeight"
-											Value="Normal" />
+											Value="Bold" />
 									</DataTrigger>
 									<DataTrigger
-										Binding="{Binding IsValidSectorTrailer}"
+										Binding="{Binding IsValidDataBlockContent}"
 										Value="False">
 										<Setter
 											Property="Foreground"
-											Value="Black" />
-										<Setter
-											Property="Background"
 											Value="Red" />
 										<Setter
 											Property="FontWeight"
@@ -243,15 +210,159 @@
 									</DataTrigger>
 								</Style.Triggers>
 							</Style>
-						</TextBox.Resources>
-					</TextBox>
+						</DataGrid.RowStyle>
+						<DataGrid.Columns>
+							<DataGridTemplateColumn
+								Header="Hex">
+								<DataGridTemplateColumn.CellTemplate>
+									<DataTemplate>
+										<_3rdP:SelectionBindingTextBox
+											Text="{Binding DataBlockAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+											VerticalContentAlignment="Center"
+											HorizontalContentAlignment="Center"
+											BindableSelectionStart="{Binding SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+											BindableSelectionLength="{Binding SelectedDataLength, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+											FontFamily="Lucida Console"
+											BorderThickness="0"
+											IsFocused="{Binding IsFocused}">
+											<_3rdP:SelectionBindingTextBox.Style>
+												<Style
+													TargetType="{x:Type TextBox}">
+													<Style.Triggers>
+														<DataTrigger
+															Binding="{Binding IsValidSelectedDataIndexAndLength}"
+															Value="True">
+															<Setter
+																Property="Foreground"
+																Value="Black" />
+														</DataTrigger>
+														<DataTrigger
+															Binding="{Binding IsValidSelectedDataIndexAndLength}"
+															Value="False">
+															<Setter
+																Property="Foreground"
+																Value="Red" />
+														</DataTrigger>
+													</Style.Triggers>
+												</Style>
+											</_3rdP:SelectionBindingTextBox.Style>
+										</_3rdP:SelectionBindingTextBox>
+									</DataTemplate>
+								</DataGridTemplateColumn.CellTemplate>
+							</DataGridTemplateColumn>
+							<DataGridTextColumn
+								Header="String"
+								Binding="{Binding DataBlockAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								FontFamily="Lucida Console">
+								<DataGridTextColumn.ElementStyle>
+									<Style
+										TargetType="{x:Type TextBlock}">
+										<Setter
+											Property="VerticalAlignment"
+											Value="Center" />
+										<Setter
+											Property="FontFamily"
+											Value="Lucida Console" />
+										<Setter
+											Property="HorizontalAlignment"
+											Value="Center" />
+										<!--<EventSetter Event="KeyDown" Handler="{Binding StaticResource proxy}" />-->
+									</Style>
+								</DataGridTextColumn.ElementStyle>
+							</DataGridTextColumn>
+						</DataGrid.Columns>
+					</DataGrid>
+				</Grid>
+			</GroupBox>
+			<GroupBox
+				Header="Read | Write Data"
+				IsEnabled="{Binding IsDataExplorerEditTabEnabled}"
+				Margin="7,8,8,8"
+				VerticalAlignment="Stretch"
+				HorizontalAlignment="Stretch"
+				Grid.Row="0"
+				Grid.Column="2"
+				Grid.RowSpan="2">
+				<Grid
+					VerticalAlignment="Stretch"
+					Margin="0,0,0,0"
+					HorizontalAlignment="Stretch">
+					<RadioButton
+						Content="Write from Memory to Chip"
+						IsChecked="{Binding IsWriteFromMemoryToChipChecked}"
+						Height="16"
+						Width="171"
+						Grid.Column="0"
+						Grid.Row="1"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,11,0,0" />
+					<RadioButton
+						Content="Write from File to Chip"
+						IsChecked="{Binding IsWriteFromFileToChipChecked}"
+						Height="16"
+						Width="171"
+						Grid.Column="0"
+						Grid.Row="2"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,13,0,0" />
+					<Label
+						Content="Data Block to Read/Write"
+						Height="26"
+						Width="161"
+						Grid.Column="0"
+						Grid.Row="0"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,9,0,0" />
+					<ComboBox
+						ItemsSource="{local:Enumerate {x:Type dal:DataExplorer_DataBlock}}"
+						SelectedItem="{Binding SelectedDataBlockToReadWrite,Converter={StaticResource Localization},ConverterParameter={x:Type dal:DataExplorer_DataBlock},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+						Height="26"
+						FocusManager.IsFocusScope="True"
+						Grid.Column="1"
+						Grid.ColumnSpan="2"
+						Grid.Row="0"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Top"
+						Margin="9,9,7,0" />
+					<Button
+						Content="Select a File"
+						Height="23"
+						Grid.Column="0"
+						Grid.ColumnSpan="3"
+						Grid.Row="5"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Top"
+						Margin="8,6,8,0" />
+					<Button
+						Command="{Binding WriteDataCommand}"
+						Content="Write"
+						Height="23"
+						Grid.Column="0"
+						Grid.ColumnSpan="3"
+						Grid.Row="3"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Bottom"
+						Margin="8,0,7,7" />
+					<Button
+						Command="{Binding ReadDataCommand}"
+						Content="Read"
+						Height="23"
+						Grid.Column="0"
+						Grid.ColumnSpan="3"
+						Grid.Row="4"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Bottom"
+						Margin="8,0,7,7" />
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition
-							Width="150" />
+							Width="186" />
 						<ColumnDefinition
-							Width="100" />
+							Width="181" />
 						<ColumnDefinition
-							Width="*" />
+							Width="0.50649271967203*" />
 					</Grid.ColumnDefinitions>
 					<Grid.RowDefinitions>
 						<RowDefinition
@@ -259,10 +370,22 @@
 						<RowDefinition
 							Height="36" />
 						<RowDefinition
-							Height="0.428309803725103*" />
+							Height="36" />
+						<RowDefinition
+							Height="*" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="36" />
 					</Grid.RowDefinitions>
 				</Grid>
 			</GroupBox>
+			<Grid.RowDefinitions>
+				<RowDefinition
+					Height="*" />
+				<RowDefinition
+					Height="*" />
+			</Grid.RowDefinitions>
 		</Grid>
 	</Grid>
 </UserControl>

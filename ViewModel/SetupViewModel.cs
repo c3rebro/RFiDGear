@@ -26,22 +26,22 @@ namespace RFiDGear.ViewModel
 	public class SetupViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		private RFiDDevice device;
-		private SettingsReaderWriter settings;
-		
+
 		public SetupViewModel()
 		{
 			
 		}
 		
-		public SetupViewModel(SettingsReaderWriter _settings, RFiDDevice _device)
+		public SetupViewModel(RFiDDevice _device)
 		{
-			device = _device;
-			settings = _settings;
-			
-			if(device != null)
-				device.ReadChipPublic();
-			
-			selectedReader = settings.DefaultSpecification.DefaultReaderProvider;
+			using (SettingsReaderWriter settings = new SettingsReaderWriter())
+			{
+				device = _device;
+				
+				selectedReader = settings.DefaultSpecification.DefaultReaderProvider;
+				
+				ConnectToReaderCommand.Execute(null);
+			}
 		}
 		
 		#region Commands
@@ -55,12 +55,26 @@ namespace RFiDGear.ViewModel
 		public ICommand ConnectToReaderCommand { get { return new RelayCommand(ConnectToReader); } }
 		protected virtual void ConnectToReader()
 		{
-			device.ReaderProvider = SelectedReader;
-			device.ReadChipPublic();
+			if (this.OnConnect != null)
+			{
+				this.OnConnect(this); }
 			
-			RaisePropertyChanged("DefaultReader");
-			RaisePropertyChanged("ReaderStatus");
+			device.ChangeProvider(SelectedReader);
+			
+			if(device != null && device.ReadChipPublic() == ERROR.NoError)
+			{
+				ReaderStatus = string.Format("Connected to Card:"
+				                             + '\n'
+				                             +"UID: {0} "
+				                             + '\n'
+				                             +"Type: {1}",device.CardInfo.uid, Enum.GetName(typeof(CARD_TYPE), device.CardInfo.cardType));
+			}
+			else
+				ReaderStatus = "no Reader detected" ;
+			
 		}
+
+		
 		
 		public ICommand ApplyAndExitCommand { get { return new RelayCommand(Ok); } }
 		protected virtual void Ok()
@@ -89,30 +103,25 @@ namespace RFiDGear.ViewModel
 		
 		public string ReaderStatus {
 			get {
-				if(device != null)
-					device.ReadChipPublic();
-				
-				return device != null ? (!String.IsNullOrWhiteSpace(device.CardInfo.uid)
-				                         ? String.Format("Connected to Card:"
-				                                         + '\n'
-				                                         +"UID: {0} "
-				                                         + '\n'
-				                                         +"Type: {1}",device.CardInfo.uid, Enum.GetName(typeof(CARD_TYPE), device.CardInfo.cardType))
-				                         : "not Connected") : "no Reader detected" ;}
-		}
+				return readerStatus;
+			}
+			set {
+				readerStatus = value;
+				RaisePropertyChanged("ReaderStatus");
+			}
+		} private string readerStatus;
 		
 		public string DefaultReader {
-			get { return Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider);}
-		}
-		
-		public string ConnectButtonText {
-			get { return "buttonConnectToReaderText"; }
+			
+			get { using (SettingsReaderWriter settings = new SettingsReaderWriter())
+				{ return Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider); }}
 		}
 		
 		#region IUserDialogViewModel Implementation
 		
 		public Action<SetupViewModel> OnOk { get; set; }
 		public Action<SetupViewModel> OnCancel { get; set; }
+		public Action<SetupViewModel> OnConnect { get; set; }
 		public Action<SetupViewModel> OnCloseRequest { get; set; }
 
 		public bool IsModal { get; private set; }
@@ -137,24 +146,6 @@ namespace RFiDGear.ViewModel
 		}
 
 		#endregion IUserDialogViewModel Implementation
-		
-		#region resLoader
-		public string ButtonSaveAndExitReaderSetupText {
-			
-			get { return "buttonSaveAndExitReaderSetupText";}
-		}
-		
-		public string ButtonConnectToReaderText {
-			get { return "buttonConnectToReaderText";}
-		}
-		
-		public string ButtonCancelReaderSetupText {
-			get { return "buttonCancelReaderSetupText";}
-		}
-		
-
-		
-		#endregion
 		
 		#region Localization
 

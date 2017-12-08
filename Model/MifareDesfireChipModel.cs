@@ -10,9 +10,9 @@ namespace RFiDGear.Model
 	/// </summary>
 	public class MifareDesfireChipModel
 	{
-		readonly List<MifareDesfireAppIdTreeViewModel> _appList = new List<MifareDesfireAppIdTreeViewModel>();
+		readonly List<MifareDesfireAppModel> _appList = new List<MifareDesfireAppModel>();
 
-		public List<MifareDesfireAppIdTreeViewModel> AppList {
+		public List<MifareDesfireAppModel> AppList {
 			get { return _appList; }
 		}
 

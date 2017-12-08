@@ -197,7 +197,7 @@
 					<v:TabPageMifareDesfireApplicationMasteringView />
 				</TabItem>
 				<TabItem
-					Header="File Mastering">
+					Header="File Setup">
 					<v:TabPageMifareDesfireFileMasteringView />
 				</TabItem>
 				<TabItem

@@ -32,15 +32,31 @@ namespace RFiDGear.ViewModel
 		private readonly RelayCommand _cmdEditAuthAndModifySector;
 		private readonly string _parentUid;
 		
+		private MifareClassicSetupViewModel setupViewModel;
 		private MifareClassicSectorModel sectorModel;
-		private MifareDesfireAppIdTreeViewModel appModel;
+		private MifareDesfireAppModel appModel;
 		
 		#region Constructors
 		
 		public TreeViewChildNodeViewModel()
 		{
 			sectorModel = new MifareClassicSectorModel(0);
-			appModel = new MifareDesfireAppIdTreeViewModel();
+			appModel = new MifareDesfireAppModel();
+			
+			children = new ObservableCollection<TreeViewGrandChildNodeViewModel>();
+		}
+
+		public TreeViewChildNodeViewModel(
+			MifareClassicSectorModel _sectorModel,
+			MifareClassicSetupViewModel _setupViewModel)
+		{
+			sectorModel = _sectorModel;
+			setupViewModel = _setupViewModel;
+			
+			isTask = true;
+			children = new ObservableCollection<TreeViewGrandChildNodeViewModel>();
+			
+			LoadChildren();
 		}
 		
 		public TreeViewChildNodeViewModel(
@@ -94,7 +110,7 @@ namespace RFiDGear.ViewModel
 		}
 
 		public TreeViewChildNodeViewModel(
-			MifareDesfireAppIdTreeViewModel appID,
+			MifareDesfireAppModel appID,
 			TreeViewParentNodeViewModel parentUID,
 			CARD_TYPE cardType,
 			ObservableCollection<IDialogViewModel> _dialogs = null,
@@ -357,7 +373,7 @@ namespace RFiDGear.ViewModel
 		/// 
 		/// </summary>
 		public uint? AppID{
-			get { 
+			get {
 				try {
 					return appModel.appID;
 				}
@@ -409,13 +425,6 @@ namespace RFiDGear.ViewModel
 		{
 			switch (_cardType) {
 				case CARD_TYPE.Mifare1K:
-					{
-						for (int i = 0; i <= 3; i++) {
-							children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, sectorModel.SectorNumber, true));
-						}
-					}
-					break;
-					
 				case CARD_TYPE.Mifare2K:
 					{
 						for (int i = 0; i <= 3; i++) {
@@ -436,6 +445,12 @@ namespace RFiDGear.ViewModel
 								children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, sectorModel.SectorNumber , true));
 							}
 						}
+					}
+					break;
+					
+				case CARD_TYPE.Unspecified:
+					for (int i = 0; i <= 3; i++) {
+						children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), setupViewModel));
 					}
 					break;
 			}

@@ -27,7 +27,9 @@
 				Header="Options" />
 		</TabControl>
 		<Button
-			Content="{Binding ButtonConnectToReaderText}"
+			Content="{Binding LocalizationResourceSet,
+			Converter={StaticResource Localization},
+			ConverterParameter='buttonConnectToReaderText' }"
 			Command="{Binding ConnectToReaderCommand}"
 			Grid.Column="0"
 			Grid.Row="0"
@@ -47,7 +49,9 @@
 			</Button.ToolTip>
 		</Button>
 		<Button
-			Content="{Binding ButtonCancelReaderSetupText}"
+			Content="{Binding LocalizationResourceSet,
+			Converter={StaticResource Localization},
+			ConverterParameter='buttonCancelReaderSetupText' }"
 			Command="{Binding CancelCommand}"
 			Grid.Column="0"
 			Grid.Row="0"
@@ -57,7 +61,9 @@
 			HorizontalAlignment="Left"
 			Margin="4.00000000000011,0,0,6" />
 		<Button
-			Content="{Binding ButtonSaveAndExitReaderSetupText}"
+			Content="{Binding LocalizationResourceSet,
+			Converter={StaticResource Localization},
+			ConverterParameter='buttonSaveAndExitReaderSetupText' }"
 			Command="{Binding ApplyAndExitCommand}"
 			Width="130"
 			Height="28"

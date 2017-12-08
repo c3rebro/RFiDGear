@@ -5,6 +5,8 @@ using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using GalaSoft.MvvmLight.Messaging;
 
+using LibLogicalAccess;
+
 using MvvmDialogs.ViewModels;
 
 using System;
@@ -73,7 +75,7 @@ namespace RFiDGear.ViewModel
 			mifareClassicUidModel = _uidModel;
 			CardType = mifareClassicUidModel.CardType;
 			
-			_cmdReadAllSectorsWithDefaultKeys = new RelayCommand(ReadSectorsWithDefaultConfig);
+			_cmdReadAllSectorsWithDefaultKeys = new RelayCommand(MifareClassicQuickCheck);
 			_cmdDeleteThisNode = new RelayCommand(DeleteMeCommand);
 			_cmdEditDefaultKeys = new RelayCommand(EditDefaultKeys);
 			
@@ -101,9 +103,9 @@ namespace RFiDGear.ViewModel
 			IsSelected = true;
 			
 			if(mifareClassicUidModel != null)
-				ParentNodeHeader = String.Format("TaskType: {0}\nChipType: {1}", mifareClassicUidModel.UidNumber, Enum.GetName(typeof(CARD_TYPE),CardType));
+				ParentNodeHeader = String.Format("Uid: {0}\nChipType: {1}", mifareClassicUidModel.UidNumber, Enum.GetName(typeof(CARD_TYPE),CardType));
 			else
-				ParentNodeHeader = String.Format("TaskType: {0}\nChipType: {1}", mifareDesfireUidModel.uidNumber, Enum.GetName(typeof(CARD_TYPE),CardType));
+				ParentNodeHeader = String.Format("Uid: {0}\nChipType: {1}", mifareDesfireUidModel.uidNumber, Enum.GetName(typeof(CARD_TYPE),CardType));
 		}
 		
 		public TreeViewParentNodeViewModel(MifareDesfireChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
@@ -120,7 +122,7 @@ namespace RFiDGear.ViewModel
 			CardType = mifareDesfireUidModel.CardType;
 			
 			RelayCommand _cmdEditDefaultKeys = new RelayCommand(EditDefaultKeys);
-			RelayCommand _cmdReadAppIds = new RelayCommand(ReadAppIDs);
+			RelayCommand _cmdReadAppIds = new RelayCommand(MifareDesfireQuickCheck);
 			_cmdCreateApp = new RelayCommand(CreateApp);
 			_cmdEraseDesfireCard = new RelayCommand(EraseDesfireCard);
 			
@@ -145,7 +147,7 @@ namespace RFiDGear.ViewModel
 			IsSelected = true;
 			
 			if(mifareDesfireUidModel != null)
-				ParentNodeHeader = String.Format("TaskType: {0}\nChipType: {1}", mifareDesfireUidModel.uidNumber, Enum.GetName(typeof(CARD_TYPE),CardType));
+				ParentNodeHeader = String.Format("Uid: {0}\nChipType: {1}", mifareDesfireUidModel.uidNumber, Enum.GetName(typeof(CARD_TYPE),CardType));
 		}
 
 		#endregion
@@ -159,9 +161,8 @@ namespace RFiDGear.ViewModel
 		public List<MenuItem> ContextMenu {
 			get { return ContextMenuItems; }
 		}
-
 		
-		private void ReadSectorsWithDefaultConfig() {
+		private void MifareClassicQuickCheck() {
 			if(!isTask)
 			{
 				using ( RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
@@ -210,14 +211,14 @@ namespace RFiDGear.ViewModel
 
 		}
 		
-		private void ReadAppIDs() {
+		private void MifareDesfireQuickCheck() {
 			if(!isTask)
 			{
 				using ( RFiDDevice device = RFiDDevice.Instance)
 				{
 					//private void ReadSectorsWithDefaultConfig(TreeViewParentNodeViewModel selectedPnVM, string content)
 					
-					if(device != null)
+					if(device != null && device.GetMiFareDESFireChipAppIDs() == ERROR.NoError)
 					{
 						Mouse.OverrideCursor = Cursors.Wait;
 						
@@ -228,7 +229,7 @@ namespace RFiDGear.ViewModel
 						//00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 						//var success = device.FormatDesFireCard("ca be 09 11 20 16 ca 22 01 19 90 be 01 09 19 92",LibLogicalAccess.DESFireKeyType.DF_KEY_AES);
 						
-						var appIDs = device.GetAppIDList;
+						var appIDs = device.AppIDList;
 						
 						Children.Clear();
 						
@@ -238,11 +239,58 @@ namespace RFiDGear.ViewModel
 						
 						Children.Add(
 							new TreeViewChildNodeViewModel(
-								new MifareDesfireAppIdTreeViewModel(0),this, CardType, dialogs));
+								new MifareDesfireAppModel(0),this, CardType, dialogs));
 						
 						foreach(uint appID in appIDs)
 						{
-							Children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppIdTreeViewModel(appID), this, device.CardInfo.cardType, dialogs));
+							Children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppModel(appID), this, device.CardInfo.cardType, dialogs));
+							
+							if(device.GetMifareDesfireAppSettings(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key,
+							                                      settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType,
+							                                      0,(int)appID) == ERROR.NoError)
+							{
+								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Available Keys: {0}",device.MaxNumberOfAppKeys)));
+								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Key Settings: {0}",Enum.GetName(typeof(DESFireKeySettings),(device.DesfireAppKeySetting & (DESFireKeySettings)0xF0)))));
+								
+
+								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Allow Change MK: {0}",(device.DesfireAppKeySetting & (DESFireKeySettings)0x01) == (DESFireKeySettings)0x01 ? "yes": "no")));
+								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Allow Listing without MK: {0}",(device.DesfireAppKeySetting & (DESFireKeySettings)0x02) == (DESFireKeySettings)0x02 ? "yes": "no")));
+								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Allow Create/Delete without MK: {0}",(device.DesfireAppKeySetting & (DESFireKeySettings)0x04) == (DESFireKeySettings)0x04? "yes": "no")));
+								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Allow Change Config: {0}",(device.DesfireAppKeySetting & (DESFireKeySettings)0x08) == (DESFireKeySettings)0x08? "yes": "no")));
+							}
+							
+							//TODO add grandchild fileid
+							if(device.GetMifareDesfireFileList(
+								settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key,
+								settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType,
+								0,(int)appID) == ERROR.NoError)
+							{
+								foreach(byte fileID in device.FileIDList)
+								{
+									Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(new MifareDesfireFileModel(fileID)));
+									
+									if(device.GetMifareDesfireFileSettings(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key,
+									                                       settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType,
+									                                       0,(int)appID, fileID) == ERROR.NoError)
+									{
+										TreeViewGrandChildNodeViewModel grandChild = Children.First(x => x.AppID == appID).Children.First(y => (y.DesfireFile != null ? y.DesfireFile.FileID : -1) == fileID);
+										//if(Children.First(x => x.AppID == appID).Children.Any(y => y.DesfireFile.FileID == fileID))
+//											Children.First(x => x.AppID == appID).
+//												Children.First(y => y.DesfireFile.FileID == fileID).
+//												Children.Add(
+//													new TreeViewGrandGrandChildNodeViewModel(string.Format("FileSize: {0}Bytes",device.DesfireFileSetting.dataFile.fileSize.ToString())));
+										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("FileType: {0}",Enum.GetName(typeof(FileType_MifareDesfireFileType), device.DesfireFileSetting.FileType))));
+										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("FileSize: {0}Bytes",device.DesfireFileSetting.dataFile.fileSize.ToString())));
+										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("EncryptionMode: {0}",Enum.GetName(typeof(EncryptionMode), device.DesfireFileSetting.comSett))));
+										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("Read: {0}",Enum.GetName(typeof(TaskAccessRights), ((device.DesfireFileSetting.accessRights[1] & 0xF0) >> 4)))));
+										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("Write: {0}",Enum.GetName(typeof(TaskAccessRights), device.DesfireFileSetting.accessRights[1] & 0x0F))));
+										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("RW: {0}",Enum.GetName(typeof(TaskAccessRights), ((device.DesfireFileSetting.accessRights[0] & 0xF0) >> 4) )))); //lsb, upper nibble
+										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("Change: {0}",Enum.GetName(typeof(TaskAccessRights), device.DesfireFileSetting.accessRights[0] & 0x0F)))); //lsb , lower nibble
+									}
+								}
+								
+
+							}
 						}
 						
 						if(device.AuthToMifareDesfireApplication("00000000000000000000000000000000",LibLogicalAccess.DESFireKeyType.DF_KEY_AES, MifareDesfireKeyNumber.MifareDesfireKey00) == ERROR.NoError)
@@ -484,7 +532,7 @@ namespace RFiDGear.ViewModel
 					{
 						_children.Add(
 							new TreeViewChildNodeViewModel(
-								new MifareDesfireAppIdTreeViewModel(0),this, CardType, dialogs));
+								new MifareDesfireAppModel(0),this, CardType, dialogs));
 					}
 					break;
 			}

@@ -5,19 +5,40 @@
  * 
  */
 using LibLogicalAccess;
- 
+
 using System;
 using System.Collections.ObjectModel;
 
 namespace RFiDGear.DataAccessLayer
 {
+	// change key using mk = 0 enum
+	// allow change mk = 1 or-ing
+	// listing without mk = 2 or-ing
+	// create del without mk = 4 or-ing
+	// config changeable = 8 or-ing
+	// default setting = 11
+	// change using keyno = 224 enum
+	// change frozen = 240 enum
+	
+	
+	/// <summary>
+	/// 
+	/// </summary>
+	public enum FileType_MifareDesfireFileType
+	{
+		StdDataFile,
+		BackupFile,
+		ValueFile,
+		CyclicRecordFile,
+		LinearRecordFile
+	}
+	
 	/// <summary>
 	/// 
 	/// </summary>
 	public enum TaskType_MifareClassicTask
 	{
 		None,
-		ChangeSecuritySettings,
 		ReadData,
 		WriteData,
 		ChangeDefault
@@ -27,6 +48,8 @@ namespace RFiDGear.DataAccessLayer
 	{
 		None,
 		FormatDesfireCard,
+		PICCMasterKeyChangeover,
+		ApplicationKeyChangeover,
 		ReadData,
 		WriteData,
 		CreateApplication,
@@ -37,9 +60,21 @@ namespace RFiDGear.DataAccessLayer
 	}
 	
 	/// <summary>
-	/// 
+	/// Select DataBlock in Data Explorer
 	/// </summary>
-	public enum Data_Block
+	[Flags]
+	public enum DataExplorer_DataBlock
+	{
+		Block0 = 0,
+		Block1 = 1,
+		Block2 = 2,
+		Block3 = 3
+	}
+	
+	/// <summary>
+	/// Select DataBlock in Sector Trailer Access Bits
+	/// </summary>
+	public enum SectorTrailer_DataBlock
 	{
 		Block0 = 0,
 		Block1 = 1,
@@ -47,6 +82,7 @@ namespace RFiDGear.DataAccessLayer
 		BlockAll = 3
 	}
 	
+	[Flags]
 	public enum SectorTrailer_AccessType
 	{
 		WriteKeyB = 1,
@@ -57,10 +93,23 @@ namespace RFiDGear.DataAccessLayer
 		ReadKeyA = 32
 	}
 	
+	
 	/// <summary>
 	/// 
 	/// </summary>
-	public enum Access_Condition
+	[Flags]
+	public enum AccessCondition_MifareDesfireAppCreation
+	{
+		ChangeKeyUsingMK = 0,
+		ChangeKeyUsingKeyNo = 224,
+		ChangeKeyFrozen = 240
+			
+	}
+	
+	/// <summary>
+	/// 
+	/// </summary>
+	public enum AccessCondition_MifareClassicSectorTrailer
 	{
 		NotApplicable,
 		NotAllowed,
@@ -113,6 +162,9 @@ namespace RFiDGear.DataAccessLayer
 		IOError
 	}
 	
+	/// <summary>
+	/// 
+	/// </summary>
 	public enum KEY_ERROR
 	{
 		KEY_IS_EMPTY,
@@ -121,14 +173,7 @@ namespace RFiDGear.DataAccessLayer
 		NO_ERROR
 	};
 	
-	public enum AUTH_ERROR
-	{
-		DESFIRE_WRONG_CARD_MASTER_KEY,
-		DESFIRE_WRONG_APPLICATION_MASTER_KEY,
-		DESFIRE_WRONG_READ_KEY,
-		DESFIRE_WRONG_WRITE_KEY
-	};
-	
+	[Flags]
 	public enum ReaderTypes
 	{
 		None = 0,
@@ -145,13 +190,6 @@ namespace RFiDGear.DataAccessLayer
 		SmartID = 11,
 		STidPRG = 12
 	};
-	
-//	public enum KeyType_EncryptionType
-//	{
-//		DES,
-//		TrippleDES,
-//		AES
-//	}
 	
 	public enum KeyType_MifareDesFireKeyType
 	{

@@ -16,32 +16,44 @@ namespace RFiDGear
 	/// <summary>
 	/// Description of Class1.
 	/// </summary>
-	public class SettingsReaderWriter
+	public class SettingsReaderWriter : IDisposable
 	{
 		
 		#region fields
 		
-		readonly string _settingsFileFileName = "settings.xml";
-		readonly string _updateConfigFileFileName = "update.xml";
-		readonly string _updateURL = @"http://rfidgear.hyperstack.de/update.xml";
-		readonly int _updateInterval = 900;
-		readonly string _securityToken = "D68EF3A7-E787-4CC4-B020-878BA649B4CD";
-		readonly string _payload = "update.zip";
-		readonly string _baseUri = @"http://rfidgear.hyperstack.de/download/";
+		private readonly string _settingsFileFileName = "settings.xml";
+		private readonly string _updateConfigFileFileName = "update.xml";
+		private readonly string _updateURL = @"http://rfidgear.hyperstack.de/update.xml";
+		private readonly int _updateInterval = 900;
+		private readonly string _securityToken = "D68EF3A7-E787-4CC4-B020-878BA649B4CD";
+		private readonly string _payload = "update.zip";
+		private readonly string _baseUri = @"http://rfidgear.hyperstack.de/download/";
 		
 		private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 		
-		private string appDataPath;
+		private readonly string appDataPath;
+		
+		private bool _disposed = false;
 		
 		private XmlWriter xmlWriter;
 		
-		public DefaultSpecification DefaultSpecification { get; set; }
+		public DefaultSpecification DefaultSpecification {
+			get {
+				ReadSettings();
+				return defaultSpecification ?? new DefaultSpecification();
+			}
+			
+			set {
+				defaultSpecification = value;
+				if(defaultSpecification != null)
+					SaveSettings();
+			}
+		} private DefaultSpecification defaultSpecification;
 		
 		#endregion
 		
 		public SettingsReaderWriter()
 		{
-			
 			try{
 				appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 				
@@ -58,7 +70,7 @@ namespace RFiDGear
 				xmlWriter.WriteEndElement();
 				xmlWriter.Close();
 				
-				XmlDocument doc = new XmlDocument();
+				var doc = new XmlDocument();
 				doc.Load(Path.Combine(appDataPath, _updateConfigFileFileName));
 				
 				if (doc.SelectSingleNode("//CheckInterval") == null) {
@@ -93,13 +105,13 @@ namespace RFiDGear
 			{
 				try
 				{
-					DefaultSpecification = new DefaultSpecification(true);
+					defaultSpecification = new DefaultSpecification(true);
 					
-					XmlSerializer serializer = new XmlSerializer(DefaultSpecification.GetType());
+					var serializer = new XmlSerializer(defaultSpecification.GetType());
 					
-					TextWriter txtWriter = new StreamWriter(Path.Combine(appDataPath, _settingsFileFileName));
+					var txtWriter = new StreamWriter(Path.Combine(appDataPath, _settingsFileFileName));
 					
-					serializer.Serialize(txtWriter, DefaultSpecification);
+					serializer.Serialize(txtWriter, defaultSpecification);
 					
 					txtWriter.Close();
 					
@@ -109,8 +121,8 @@ namespace RFiDGear
 					LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 				}
 			}
-			else
-				ReadSettings();
+			//else
+			//ReadSettings();
 		}
 		
 		/// <summary>
@@ -130,18 +142,18 @@ namespace RFiDGear
 			if (File.Exists(_fileName) || (string.IsNullOrWhiteSpace(_fileName) && File.Exists(Path.Combine(appDataPath,_settingsFileFileName)))) {
 				
 				//Path.Combine(appDataPath,databaseFileName)
-				XmlDocument doc = new XmlDocument();
+				var doc = new XmlDocument();
 
 				
 				
 				try {
-					XmlSerializer serializer = new XmlSerializer(typeof(DefaultSpecification));
+					var serializer = new XmlSerializer(typeof(DefaultSpecification));
 					
 					if(string.IsNullOrWhiteSpace(_fileName) && File.Exists(Path.Combine(appDataPath,_settingsFileFileName)))
 					{
 						doc.Load(@Path.Combine(appDataPath,_settingsFileFileName));
 						
-						XmlNode node = doc.SelectSingleNode("//ManifestVersion");
+						var node = doc.SelectSingleNode("//ManifestVersion");
 						verInfo = Convert.ToInt32(node.InnerText.Replace(".",string.Empty));
 						
 						reader = new StreamReader(Path.Combine(appDataPath,_settingsFileFileName));
@@ -169,8 +181,9 @@ namespace RFiDGear
 					
 
 					//defaultSpecification = new DefaultSpecification();
-					DefaultSpecification = (serializer.Deserialize(reader) as DefaultSpecification);
+					defaultSpecification = (serializer.Deserialize(reader) as DefaultSpecification);
 					
+					reader.Close();
 					
 				} catch(Exception e) {
 					LogWriter.CreateLogEntry(string.Format("{0}\n{1}",e.Message, e.InnerException != null ? e.InnerException.Message : ""));
@@ -190,16 +203,11 @@ namespace RFiDGear
 		{
 			try {
 				TextWriter textWriter;
-				XmlSerializer serializer = new XmlSerializer(typeof(DefaultSpecification));
+				var serializer = new XmlSerializer(typeof(DefaultSpecification));
+
+				textWriter = new StreamWriter(!string.IsNullOrEmpty(_path) ? @_path : @Path.Combine(appDataPath,_settingsFileFileName), false);
 				
-				if(!string.IsNullOrEmpty(_path))
-				{
-					textWriter = new StreamWriter(@_path);
-				}
-				else
-					textWriter = new StreamWriter(@Path.Combine(appDataPath,_settingsFileFileName),false);
-				
-				serializer.Serialize(textWriter, DefaultSpecification);
+				serializer.Serialize(textWriter, defaultSpecification);
 
 				textWriter.Close();
 				
@@ -210,6 +218,31 @@ namespace RFiDGear
 				LogWriter.CreateLogEntry(string.Format("{0}\n{1}",e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 				return false;
 			}
+		}
+		
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!_disposed)
+			{
+				if (disposing)
+				{
+					xmlWriter.Close();
+					defaultSpecification = null;
+					// Dispose any managed objects
+					// ...
+				}
+
+				// Now disposed of any unmanaged objects
+				// ...
+
+				_disposed = true;
+			}
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
 	}
 }

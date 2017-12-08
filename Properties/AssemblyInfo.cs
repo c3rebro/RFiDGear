@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 [assembly: AssemblyTitle ("RFiDGear")]
 [assembly: AssemblyDescription ("RFiD Frontend using LibLogicalAccess")]
-[assembly: AssemblyConfiguration ("")]
+[assembly: AssemblyConfiguration ("x86")]
 [assembly: AssemblyCompany ("")]
 [assembly: AssemblyProduct ("RFiDGear")]
 [assembly: AssemblyCopyright ("Copyright 2016")]
@@ -24,4 +24,4 @@ using System.Runtime.InteropServices;
 //
 // You can specify all the values or you can use the default the Revision and 
 // Build Numbers by using the '*' as shown below:
-[assembly: AssemblyVersion ("0.0.1.*")]
+[assembly: AssemblyVersion ("0.1.*")]

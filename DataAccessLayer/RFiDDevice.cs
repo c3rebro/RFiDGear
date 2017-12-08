@@ -5,6 +5,7 @@ using System;
 using LibLogicalAccess;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Threading;
 using System.Linq;
 
 namespace RFiDGear
@@ -15,25 +16,15 @@ namespace RFiDGear
 	/// Initialize Reader
 	/// </summary>
 	/// 
-	
-
-	
 	public class RFiDDevice : IDisposable
 	{
 		// global (cross-class) Instances go here ->
 		private IReaderProvider readerProvider;
 		private IReaderUnit readerUnit;
 		private chip card;
-		private SettingsReaderWriter defaultSettings;
-		
-		private string readerProviderName;
 
-		//private string readerSerialNumber;
 		private string chipType;
 		private string chipUID;
-		
-		private string classicCardKeyA;
-		private string classicCardKeyB;
 		
 		private byte[] cardDataBlock;
 		private byte[][] cardDataSector;
@@ -45,76 +36,46 @@ namespace RFiDGear
 		
 		private byte[] desFireFileData;
 
-		
+		private bool _disposed = false;
 		
 
 		#region properties
-		public MifareClassicSectorModel Sector
-		{
-			get { return sectorModel; }
-		} private MifareClassicSectorModel sectorModel;
+		public MifareClassicSectorModel Sector { get; private set; }
 		
-		public bool IsChipPresent {
-			get { return ReadChipPublic(); }
-		}
+		public ReaderTypes ReaderProvider { get; private set; }
 		
-		public ReaderTypes ReaderProvider { get; set; }
+		public string ReaderUnitName { get; private set; }
 		
-		public string CurrentReaderUnitName {
-			get { return readerUnitName; }
-		} private string readerUnitName;
+		public CARD_INFO CardInfo {	get; private set; }
 		
-		public CARD_INFO CardInfo {
-			get; private set;
-		}
+		public byte[][] currentSector { get; private set; }
 		
-		public byte[][] currentSector {
-			get { return cardDataSector; }
-		}
+		public byte[] currentDataBlock { get; private set; }
 		
-		public byte[] currentDataBlock {
-			get { return cardDataBlock; }
-		}
+		public bool[] DataBlockSuccessfullyRead { get; private set;	}
 		
-		public string usedClassicCardKeyA {
-			get { return classicCardKeyA; }
-			set { classicCardKeyA = value; }
-		}
+		public bool[] DataBlockSuccesfullyAuth { get; private set; }
 		
-		public string usedClassicCardKeyB {
-			get { return classicCardKeyB; }
-			set { classicCardKeyB = value; }
-		}
+		public bool SectorSuccessfullyRead { get; private set; }
 		
-		public bool[] DataBlockSuccessfullyRead {
-			get { return blockReadSuccessful; }
-		}
+		public bool SectorSuccesfullyAuth { get; private set; }
 		
-		public bool[] DataBlockSuccesfullyAuth {
-			get{ return blockAuthSuccessful; }
-		}
+		public byte[] GetDESFireFileData { get; private set; }
 		
-		public bool SectorSuccessfullyRead {
-			get { return sectorCanRead; }
-		}
+		public uint[] AppIDList { get; private set;}
 		
-		public bool SectorSuccesfullyAuth {
-			get{ return sectorIsKeyAAuthSuccessful; }
-		}
+		public byte[] FileIDList { get; private set; }
 		
-		public byte[] GetDESFireFileData {
-			get { return desFireFileData; }
-		}
+		public byte MaxNumberOfAppKeys { get; private set; }
 		
-		public uint[] GetAppIDList {
-			get{ return !GetMiFareDESFireChipAppIDs() ? appIDs : null; }
-		} private uint[] appIDs;
+		public uint FreeMemory { get; private set; }
 		
-		public uint FreeMemory {
-			get { return freeMemory; }
-		} private uint freeMemory;
+		public FileSetting DesfireFileSetting { get; private set; }
+		
+		public DESFireKeySettings DesfireAppKeySetting { get; private set; }
 		#endregion
 		
+		#region contructor
 		public static RFiDDevice Instance
 		{
 			get {
@@ -136,16 +97,13 @@ namespace RFiDGear
 		public RFiDDevice(ReaderTypes _readerType = ReaderTypes.None)
 		{
 			try{
-				defaultSettings = new SettingsReaderWriter();
-				
-				if(_readerType != ReaderTypes.None)
-					ReaderProvider = _readerType;
-				else
-					ReaderProvider = defaultSettings.DefaultSpecification.DefaultReaderProvider;
-				
-				
-				readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
-				readerUnit = readerProvider.CreateReaderUnit();
+				using (SettingsReaderWriter defaultSettings = new SettingsReaderWriter())
+				{
+					ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
+
+					readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
+					readerUnit = readerProvider.CreateReaderUnit();
+				}
 			}
 
 			catch(Exception e)
@@ -155,19 +113,49 @@ namespace RFiDGear
 
 		}
 		
-		/// <summary>
-		/// Test reader connection. A chip with matching technology  (e.g. mifare card - omnikey reader) must be present on the reader
-		/// </summary>
-		/// <returns></returns>
-		public bool ReadChipPublic()
+		#endregion
+
+		#region common
+		
+		public ERROR ChangeProvider(ReaderTypes _provider)
+		{
+			if(Enum.IsDefined(typeof(ReaderTypes), _provider))
+			{
+				if(readerProvider != null)
+				{
+					try {
+						readerUnit.DisconnectFromReader();
+						readerProvider.ReleaseInstance();
+					}
+					catch {
+						return ERROR.IOError;
+					}
+				}
+				
+				ReaderProvider = _provider;
+				
+				try {
+					readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
+					readerUnit = readerProvider.CreateReaderUnit();
+					
+					return ERROR.NoError;
+				}
+				catch {
+					return ERROR.IOError;
+				}
+			}
+			
+			return ERROR.IOError;
+		}
+		
+		public ERROR ReadChipPublic()
 		{
 			try {
-
 				if (readerUnit.ConnectToReader()) {
 					if (readerUnit.WaitInsertion(100)) {
 						if (readerUnit.Connect()) {
 							
-							readerUnitName = readerUnit.ConnectedName;
+							ReaderUnitName = readerUnit.ConnectedName;
 							//string readerSerialNumber = readerUnit.GetReaderSerialNumber(); //-> ERROR with OmniKey (and some others?) Reader when card isnt removed before recalling!
 							
 							card = readerUnit.GetSingleChip();
@@ -175,12 +163,13 @@ namespace RFiDGear
 							if (card.ChipIdentifier != chipUID && card.ChipIdentifier.Length != 0) {
 								
 								CARD_TYPE type;
-								
 								Enum.TryParse(card.Type, out type);
-								
 								CardInfo = new CARD_INFO(type, card.ChipIdentifier);
+								
+								return ERROR.NoError;
 							}
-							return false;
+							else
+								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
@@ -189,10 +178,441 @@ namespace RFiDGear
 					readerProvider.ReleaseInstance();
 				
 				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				
+				return ERROR.NoError;
 			}
-			return false;
+			
+			return ERROR.IOError;
+		}
+		
+				protected virtual void Dispose(bool disposing)
+		{
+			if (!_disposed)
+			{
+				if (disposing)
+				{
+					instance = null;
+					// Dispose any managed objects
+					// ...
+				}
+
+				if(readerUnit != null)
+				{
+					readerUnit.Disconnect();
+					readerUnit.DisconnectFromReader();
+				}
+
+				if(readerProvider != null)
+					readerProvider.ReleaseInstance();
+				// Now disposed of any unmanaged objects
+				// ...
+
+				Thread.Sleep(200);
+				_disposed = true;
+			}
 		}
 
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+		
+		#endregion
+		
+		#region mifare classic
+
+		public ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+		{
+			var settings = new SettingsReaderWriter();
+			Sector = new MifareClassicSectorModel();
+			
+			settings.ReadSettings();
+			
+			
+			var keyA = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(aKey) ? aKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey) };
+			var keyB = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(bKey) ? bKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey) };
+			
+			int blockCount = 0;
+			int dataBlockNumber = 0;
+			sectorIsKeyAAuthSuccessful = true;
+			sectorIsKeyBAuthSuccessful = false;
+			sectorCanRead = true;
+			
+			try {
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(200)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.ChipIdentifier != chipUID && card.ChipIdentifier.Length != 0) {
+
+								chipUID = card.ChipIdentifier;
+								chipType = card.Type;
+							}
+							
+							
+							if (card.Type == "Mifare1K") {
+								
+								blockAuthSuccessful = new bool[64];
+								blockReadSuccessful = new bool[64];
+								
+								blockCount = 4;
+								
+								cardDataBlock = new byte[16];
+								cardDataSector = new byte[4][];
+								
+							}
+							if (card.Type == "Mifare4K") {
+								
+								blockAuthSuccessful = new bool[256];
+								blockReadSuccessful = new bool[256];
+								
+								
+								blockCount = (sectorNumber <= 31 ? 4 : 16);
+								
+								cardDataBlock = new byte[16];
+								cardDataSector = new byte[16][];
+								
+							}
+							
+
+							var cmd = card.Commands as IMifareCommands;
+
+							dataBlockNumber = sectorNumber <= 31
+								? (((sectorNumber + 1) * blockCount) - (blockCount - dataBlockNumber))
+								: ((128 + (sectorNumber - 31) * blockCount) - (blockCount - dataBlockNumber));
+							
+							try { //try to Auth with Keytype A
+								
+								for (int k = 0; k < blockCount; k++) {
+
+									cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME "sectorNumber" to 0
+									
+									var dataBlock = new MifareClassicDataBlockModel();
+									dataBlock.BlockNumber = dataBlockNumber + k;
+									
+									try {
+
+										cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)0, MifareKeyType.KT_KEY_A); // FIXME same as '303
+										blockAuthSuccessful[dataBlockNumber + k] = true;
+										
+										Sector.IsAuthenticated = true;
+										
+										try {
+											object data = cmd.ReadBinary((byte)(dataBlockNumber + k), 48);
+											
+											cardDataBlock = (byte[])data;
+											cardDataSector[k] = cardDataBlock;
+											
+											blockReadSuccessful[dataBlockNumber + k] = true;
+											
+											dataBlock.IsAuthenticated = true;
+											dataBlock.Data = (byte[])data;
+											
+											Sector.DataBlock.Add(dataBlock);
+											
+										} catch {
+											
+											dataBlock.IsAuthenticated = false;
+											Sector.DataBlock.Add(dataBlock);
+											
+											blockReadSuccessful[dataBlockNumber + k] = false;
+											sectorCanRead = false;
+										}
+										
+									} catch { // Try Auth with keytype b
+										
+										sectorIsKeyAAuthSuccessful = false;
+										
+										try {
+
+											cmd.LoadKeyNo((byte)1, keyB, MifareKeyType.KT_KEY_B);
+											
+											cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)1, MifareKeyType.KT_KEY_B); // FIXME same as '303
+											blockAuthSuccessful[dataBlockNumber + k] = true;
+											sectorIsKeyBAuthSuccessful = true;
+											
+											Sector.IsAuthenticated = true;
+											
+											
+											
+											
+											try {
+												object data = cmd.ReadBinary((byte)(dataBlockNumber + k), 48);
+												
+												cardDataBlock = (byte[])data;
+												cardDataSector[k] = cardDataBlock;
+												
+												blockReadSuccessful[dataBlockNumber + k] = true;
+												dataBlock.IsAuthenticated = true;
+												dataBlock.Data = (byte[])data;
+												
+												Sector.DataBlock.Add(dataBlock);
+												
+											} catch (Exception e) {
+												
+												dataBlock.IsAuthenticated = false;
+												
+												Sector.DataBlock.Add(dataBlock);
+												
+												blockReadSuccessful[dataBlockNumber + k] = false;
+												sectorCanRead = false;
+												
+												return ERROR.AuthenticationError;
+											}
+											
+										} catch {
+											
+											Sector.IsAuthenticated = false;
+											dataBlock.IsAuthenticated = false;
+											
+											Sector.DataBlock.Add(dataBlock);
+											
+											blockAuthSuccessful[dataBlockNumber + k] = false;
+											sectorIsKeyBAuthSuccessful = false;
+											
+											return ERROR.AuthenticationError;
+										}
+									}
+								}
+							} catch {
+								return ERROR.NoError;
+								
+							}
+							return ERROR.NoError;
+						}
+					}
+				}
+			} catch(Exception e) {
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				return ERROR.AuthenticationError;
+			}
+			return ERROR.NoError;
+		}
+		
+		public ERROR WriteMiFareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer)
+		{
+			var keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey) };
+			var keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey) };
+			
+			int blockCount = 0;
+			int dataBlockNumber = 0;
+			
+			sectorIsKeyAAuthSuccessful = true;
+			sectorIsKeyBAuthSuccessful = false;
+			sectorCanRead = true;
+			
+			byte[] test;
+			
+			try {
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(200)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.ChipIdentifier != chipUID && card.ChipIdentifier.Length != 0) {
+
+								chipUID = card.ChipIdentifier;
+								chipType = card.Type;
+							}
+							
+							if (card.Type == "Mifare1K") {
+								
+								blockAuthSuccessful = new bool[64];
+								blockReadSuccessful = new bool[64];
+								
+								blockCount = 4;
+								
+								cardDataBlock = new byte[16];
+								cardDataSector = new byte[4][];
+								
+							}
+							if (card.Type == "Mifare4K") {
+								
+								blockAuthSuccessful = new bool[256];
+								blockReadSuccessful = new bool[256];
+								
+								blockCount = (sectorNumber <= 31 ? 4 : 16);
+								
+								cardDataBlock = new byte[16];
+								cardDataSector = new byte[16][];
+								
+							}
+							
+
+							var cmd = card.Commands as IMifareCommands;
+
+							
+							dataBlockNumber = (sectorNumber <= 31
+							                   ? (((sectorNumber + 1) * blockCount) - (blockCount - dataBlockNumber))
+							                   : ((128 + (sectorNumber - 31) * blockCount) - (blockCount - dataBlockNumber)));
+							
+							try { //try to Auth with Keytype A
+								
+								cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME "sectorNumber" to 0
+								cmd.LoadKeyNo((byte)1, keyB, MifareKeyType.KT_KEY_B); // FIXME "sectorNumber" to 1
+								
+								for (int k = 0; k < blockCount; k++) {
+									try {
+										
+										cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)0, MifareKeyType.KT_KEY_A); // FIXME same as '303
+										blockAuthSuccessful[dataBlockNumber + k] = true;
+										
+										try {
+											cmd.WriteBinary((byte)(dataBlockNumber + k), buffer);
+											
+											blockReadSuccessful[dataBlockNumber + k] = true;
+											
+											return ERROR.NoError;
+										}
+										
+										catch {
+											
+											blockReadSuccessful[dataBlockNumber + k] = false;
+											sectorCanRead = false;
+											
+											return ERROR.AuthenticationError;
+										}
+										
+									}
+
+									catch { // Try Auth with keytype b
+										
+										sectorIsKeyAAuthSuccessful = false;
+										
+										try {
+
+											cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)1, MifareKeyType.KT_KEY_B); // FIXME same as '303
+											blockAuthSuccessful[dataBlockNumber + k] = true;
+											sectorIsKeyBAuthSuccessful = true;
+											
+											try {
+												object data = cmd.ReadBinary((byte)(dataBlockNumber + k), 48);
+												
+												cardDataBlock = (byte[])data;
+												cardDataSector[k] = cardDataBlock;
+												
+												blockReadSuccessful[dataBlockNumber + k] = true;
+												
+												return ERROR.NoError;
+											} catch {
+												
+												blockReadSuccessful[dataBlockNumber + k] = false;
+												sectorCanRead = false;
+												
+												return ERROR.AuthenticationError;
+											}
+											
+										} catch {
+											
+											blockAuthSuccessful[dataBlockNumber + k] = false;
+											sectorIsKeyBAuthSuccessful = false;
+											
+											//return ERROR.AuthenticationError;
+										}
+									}
+								}
+							} catch {
+								return ERROR.IOError;
+								
+							}
+							return ERROR.DeviceNotReadyError;
+						}
+					}
+				}
+			} catch(Exception e) {
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				
+				return ERROR.IOError;
+			}
+			return ERROR.DeviceNotReadyError;
+		}
+		
+		public ERROR WriteMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
+		{
+			try {
+				
+				var keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey) };
+				var keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey) };
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(200)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.ChipIdentifier != chipUID && card.ChipIdentifier.Length != 0) {
+
+								chipUID = card.ChipIdentifier;
+								chipType = card.Type;
+							}
+
+							var cmd = card.Commands as IMifareCommands;
+
+							try {
+								
+								cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME "sectorNumber" to 0
+
+								try { //try to Auth with Keytype A
+									
+									cmd.AuthenticateKeyNo((byte)(_blockNumber), (byte)0, MifareKeyType.KT_KEY_A); // FIXME same as '303
+									
+									cmd.WriteBinary((byte)(_blockNumber), buffer);
+									
+									return ERROR.NoError;
+									
+								}
+
+								catch { // Try Auth with keytype b
+									
+									sectorIsKeyAAuthSuccessful = false;
+									
+									cmd.LoadKeyNo((byte)0, keyB, MifareKeyType.KT_KEY_B);
+									
+									try {
+
+										cmd.AuthenticateKeyNo((byte)(_blockNumber), (byte)0, MifareKeyType.KT_KEY_B); // FIXME same as '303
+										
+										cmd.WriteBinary((byte)(_blockNumber), buffer);
+										
+										return ERROR.NoError;
+										
+									} catch {
+										return ERROR.AuthenticationError;
+									}
+									
+								}
+							} catch {
+								return ERROR.AuthenticationError;
+								
+							}
+						}
+					}
+				}
+			} catch(Exception e) {
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				
+				return ERROR.IOError;
+			}
+			return ERROR.IOError;
+		}
+		
+		#endregion
+		
+		#region mifare ultralight
+		
 		public ERROR ReadMifareUltralight()
 		{
 			try {
@@ -201,7 +621,7 @@ namespace RFiDGear
 					if (readerUnit.WaitInsertion(100)) {
 						if (readerUnit.Connect()) {
 							
-							readerUnitName = readerUnit.ConnectedName;
+							ReaderUnitName = readerUnit.ConnectedName;
 							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 							
 							card = readerUnit.GetSingleChip();
@@ -229,438 +649,11 @@ namespace RFiDGear
 				return ERROR.IOError;
 			}
 		}
+		#endregion
 		
-		protected bool ReadMiFareClassicSingleSector(int sectorNumber, int keyNumber)
-		{
-			SettingsReaderWriter settings = new SettingsReaderWriter();
-			
-			settings.ReadSettings();
-			
-			//MifareKey keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(settings.DefaultSpecification.SecurityInfo.Where(x => x.Key == DefaultClassicCardKeysAKeys[keyNumber]) };
-			//MifareKey keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(settings.DefaultClassicCardKeysBKeys[keyNumber]) };
-			
-			int blockCount = 0;
-			int dataBlockNumber = 0;
-			sectorIsKeyAAuthSuccessful = true;
-			sectorCanRead = true;
-			
-			try {
-
-				if (readerUnit.ConnectToReader()) {
-					if (readerUnit.WaitInsertion(200)) {
-						if (readerUnit.Connect()) {
-							
-							readerUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
-							
-							card = readerUnit.GetSingleChip();
-							
-							if (card.ChipIdentifier != chipUID && card.ChipIdentifier.Length != 0) {
-
-								chipUID = card.ChipIdentifier;
-								chipType = card.Type;
-							}
-							
-							
-							if (card.Type == "Mifare1K") {
-								
-								blockAuthSuccessful = new bool[64];
-								blockReadSuccessful = new bool[64];
-								
-								blockCount = 4;
-								
-								cardDataBlock = new byte[16];
-								cardDataSector = new byte[4][];
-								
-							}
-							if (card.Type == "Mifare4K") {
-								
-								blockAuthSuccessful = new bool[256];
-								blockReadSuccessful = new bool[256];
-								
-								if(sectorNumber <= 31)
-									blockCount = 4;
-								else
-									blockCount = 16;
-								
-								cardDataBlock = new byte[16];
-								cardDataSector = new byte[16][];
-								
-							}
-							
-
-							IMifareCommands cmd = card.Commands as IMifareCommands;
-
-							if(sectorNumber <= 31)
-								dataBlockNumber = (((sectorNumber + 1) * blockCount) - (blockCount - dataBlockNumber));
-							else
-								dataBlockNumber = ((128 + (sectorNumber - 31) * blockCount) - (blockCount - dataBlockNumber));
-							
-							try {
-								//cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME changed "keyNumber" to 0: for whatever reason some readers can contain more keys than others
-								
-								for (int k = 0; k < blockCount; k++) {
-
-									try {
-										
-										cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)0, MifareKeyType.KT_KEY_A); // change "keyNumber" to 0 // FIXME same as '190
-										blockAuthSuccessful[dataBlockNumber + k] = true;
-										
-										try {
-											object data = cmd.ReadBinary((byte)(dataBlockNumber + k), 48);
-											
-											cardDataBlock = (byte[])data;
-											cardDataSector[k] = cardDataBlock;
-											
-											blockReadSuccessful[dataBlockNumber + k] = true;
-										} catch {
-											blockReadSuccessful[dataBlockNumber + k] = false;
-											sectorCanRead = false;
-										}
-									} catch {
-										blockAuthSuccessful[dataBlockNumber + k] = false;
-										sectorIsKeyAAuthSuccessful = false;
-									}
-								}
-							} catch{
-								return true;
-								
-							}
-							return false;
-						}
-					}
-				}
-			} catch(Exception e) {
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-			}
-			return true;
-		}
-
-		public ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey)
-		{
-			SettingsReaderWriter settings = new SettingsReaderWriter();
-			sectorModel = new MifareClassicSectorModel();
-			
-			settings.ReadSettings();
-			
-			
-			MifareKey keyA = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(aKey) ? aKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey) };
-			MifareKey keyB = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(bKey) ? bKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey) };
-			
-			int blockCount = 0;
-			int dataBlockNumber = 0;
-			sectorIsKeyAAuthSuccessful = true;
-			sectorIsKeyBAuthSuccessful = false;
-			sectorCanRead = true;
-			
-			try {
-				if (readerUnit.ConnectToReader()) {
-					if (readerUnit.WaitInsertion(200)) {
-						if (readerUnit.Connect()) {
-							
-							readerUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
-							
-							card = readerUnit.GetSingleChip();
-							
-							if (card.ChipIdentifier != chipUID && card.ChipIdentifier.Length != 0) {
-
-								chipUID = card.ChipIdentifier;
-								chipType = card.Type;
-							}
-							
-							
-							if (card.Type == "Mifare1K") {
-								
-								blockAuthSuccessful = new bool[64];
-								blockReadSuccessful = new bool[64];
-								
-								blockCount = 4;
-								
-								cardDataBlock = new byte[16];
-								cardDataSector = new byte[4][];
-								
-							}
-							if (card.Type == "Mifare4K") {
-								
-								blockAuthSuccessful = new bool[256];
-								blockReadSuccessful = new bool[256];
-								
-								if(sectorNumber <= 31)
-									blockCount = 4;
-								else
-									blockCount = 16;
-								
-								cardDataBlock = new byte[16];
-								cardDataSector = new byte[16][];
-								
-							}
-							
-
-							IMifareCommands cmd = card.Commands as IMifareCommands;
-
-							if(sectorNumber <= 31)
-								dataBlockNumber = (((sectorNumber + 1) * blockCount) - (blockCount - dataBlockNumber));
-							else
-								dataBlockNumber = ((128 + (sectorNumber - 31) * blockCount) - (blockCount - dataBlockNumber));
-							
-							try { //try to Auth with Keytype A
-								
-								//cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME "sectorNumber" to 0
-								//cmd.LoadKeyNo((byte)1, keyB, MifareKeyType.KT_KEY_B); // FIXME "sectorNumber" to 1
-								
-								for (int k = 0; k < blockCount; k++) {
-
-									cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME "sectorNumber" to 0
-									
-									MifareClassicDataBlockModel dataBlock = new MifareClassicDataBlockModel();
-									dataBlock.BlockNumber = dataBlockNumber + k;
-									
-									try {
-
-										cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)0, MifareKeyType.KT_KEY_A); // FIXME same as '303
-										blockAuthSuccessful[dataBlockNumber + k] = true;
-										
-										sectorModel.IsAuthenticated = true;
-										
-										try {
-											object data = cmd.ReadBinary((byte)(dataBlockNumber + k), 48);
-											
-											cardDataBlock = (byte[])data;
-											cardDataSector[k] = cardDataBlock;
-											
-											blockReadSuccessful[dataBlockNumber + k] = true;
-											
-											dataBlock.IsAuthenticated = true;
-											dataBlock.Data = (byte[])data;
-											
-											sectorModel.DataBlock.Add(dataBlock);
-											
-										} catch {
-											
-											dataBlock.IsAuthenticated = false;
-											sectorModel.DataBlock.Add(dataBlock);
-											
-											blockReadSuccessful[dataBlockNumber + k] = false;
-											sectorCanRead = false;
-										}
-										
-									} catch { // Try Auth with keytype b
-										
-										sectorIsKeyAAuthSuccessful = false;
-										
-										try {
-
-											cmd.LoadKeyNo((byte)0, keyB, MifareKeyType.KT_KEY_B);
-											
-											cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)0, MifareKeyType.KT_KEY_B); // FIXME same as '303
-											blockAuthSuccessful[dataBlockNumber + k] = true;
-											sectorIsKeyBAuthSuccessful = true;
-											
-											sectorModel.IsAuthenticated = true;
-											
-											
-											
-											
-											try {
-												object data = cmd.ReadBinary((byte)(dataBlockNumber + k), 48);
-												
-												cardDataBlock = (byte[])data;
-												cardDataSector[k] = cardDataBlock;
-												
-												blockReadSuccessful[dataBlockNumber + k] = true;
-												dataBlock.IsAuthenticated = true;
-												dataBlock.Data = (byte[])data;
-												
-												sectorModel.DataBlock.Add(dataBlock);
-												
-											} catch {
-												
-												dataBlock.IsAuthenticated = false;
-												
-												sectorModel.DataBlock.Add(dataBlock);
-												
-												blockReadSuccessful[dataBlockNumber + k] = false;
-												sectorCanRead = false;
-											}
-											
-										} catch {
-											
-											sectorModel.IsAuthenticated = false;
-											dataBlock.IsAuthenticated = false;
-											
-											sectorModel.DataBlock.Add(dataBlock);
-											
-											blockAuthSuccessful[dataBlockNumber + k] = false;
-											sectorIsKeyBAuthSuccessful = false;
-										}
-									}
-								}
-							} catch {
-								return ERROR.NoError;
-								
-							}
-							return ERROR.NoError;
-						}
-					}
-				}
-			} catch(Exception e) {
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-				return ERROR.AuthenticationError;
-			}
-			return ERROR.NoError;
-		}
+		#region mifare desfire
 		
-		public bool WriteMiFareClassicSingleSector(int sectorNumber, string sectorTrailer, byte[] buffer)
-		{
-			SettingsReaderWriter settings = new SettingsReaderWriter();
-			
-			settings.ReadSettings();
-			
-			string[] keys = sectorTrailer.Split(',');
-			
-			string accessBits = keys[1];
-			
-			MifareKey keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(keys[0]) };
-			MifareKey keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(keys[2]) };
-			
-			int blockCount = 0;
-			int dataBlockNumber = 0;
-			sectorIsKeyAAuthSuccessful = true;
-			sectorIsKeyBAuthSuccessful = false;
-			sectorCanRead = true;
-			
-			
-			byte[] test;
-			
-			try {
-				if (readerUnit.ConnectToReader()) {
-					if (readerUnit.WaitInsertion(200)) {
-						if (readerUnit.Connect()) {
-							
-							readerUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
-							
-							card = readerUnit.GetSingleChip();
-							
-							if (card.ChipIdentifier != chipUID && card.ChipIdentifier.Length != 0) {
-
-								chipUID = card.ChipIdentifier;
-								chipType = card.Type;
-							}
-							
-							
-							if (card.Type == "Mifare1K") {
-								
-								blockAuthSuccessful = new bool[64];
-								blockReadSuccessful = new bool[64];
-								
-								blockCount = 4;
-								
-								cardDataBlock = new byte[16];
-								cardDataSector = new byte[4][];
-								
-							}
-							if (card.Type == "Mifare4K") {
-								
-								blockAuthSuccessful = new bool[256];
-								blockReadSuccessful = new bool[256];
-								
-								if(sectorNumber <= 31)
-									blockCount = 4;
-								else
-									blockCount = 16;
-								
-								cardDataBlock = new byte[16];
-								cardDataSector = new byte[16][];
-								
-							}
-							
-
-							IMifareCommands cmd = card.Commands as IMifareCommands;
-
-							if(sectorNumber <= 31)
-								dataBlockNumber = (((sectorNumber + 1) * blockCount) - (blockCount - dataBlockNumber));
-							else
-								dataBlockNumber = ((128 + (sectorNumber - 31) * blockCount) - (blockCount - dataBlockNumber));
-							
-							try { //try to Auth with Keytype A
-								
-								cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME "sectorNumber" to 0
-								cmd.LoadKeyNo((byte)1, keyB, MifareKeyType.KT_KEY_B); // FIXME "sectorNumber" to 1
-								
-								for (int k = 0; k < blockCount; k++) {
-
-									try {
-										
-										cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)0, MifareKeyType.KT_KEY_A); // FIXME same as '303
-										blockAuthSuccessful[dataBlockNumber + k] = true;
-										
-										try {
-											if(k <= 3)
-												cmd.WriteBinary((byte)(dataBlockNumber + k), buffer);
-											else
-											{
-												test = new ByteConverter().ConvertFrom(keys) as byte[];
-												cmd.WriteBinary((byte)(dataBlockNumber + k), new ByteConverter().ConvertFrom(keys) as byte[]);
-											}
-
-											
-											//cardDataBlock = (byte[])data;
-											//cardDataSector[k] = cardDataBlock;
-											
-											blockReadSuccessful[dataBlockNumber + k] = true;
-										} catch {
-											
-											blockReadSuccessful[dataBlockNumber + k] = false;
-											sectorCanRead = false;
-										}
-										
-									} catch { // Try Auth with keytype b
-										
-										sectorIsKeyAAuthSuccessful = false;
-										
-										try {
-
-											cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)1, MifareKeyType.KT_KEY_B); // FIXME same as '303
-											blockAuthSuccessful[dataBlockNumber + k] = true;
-											sectorIsKeyBAuthSuccessful = true;
-											
-											try {
-												object data = cmd.ReadBinary((byte)(dataBlockNumber + k), 48);
-												
-												cardDataBlock = (byte[])data;
-												cardDataSector[k] = cardDataBlock;
-												
-												blockReadSuccessful[dataBlockNumber + k] = true;
-											} catch {
-												
-												blockReadSuccessful[dataBlockNumber + k] = false;
-												sectorCanRead = false;
-											}
-											
-										} catch {
-											
-											blockAuthSuccessful[dataBlockNumber + k] = false;
-											sectorIsKeyBAuthSuccessful = false;
-										}
-									}
-								}
-							} catch {
-								return true;
-								
-							}
-							return false;
-						}
-					}
-				}
-			} catch(Exception e) {
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-			}
-			return true;
-		}
-		
-		private bool GetMiFareDESFireChipAppIDs()
+		public ERROR GetMiFareDESFireChipAppIDs()
 		{
 			try {
 				// The excepted memory tree
@@ -668,7 +661,6 @@ namespace RFiDGear
 				// File communication requires encryption
 				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
 				
-				IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				aiToUse.MasterCardKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
@@ -677,38 +669,648 @@ namespace RFiDGear
 					if (readerUnit.WaitInsertion(100)) {
 						if (readerUnit.Connect()) {
 							
-							readerUnitName = readerUnit.ConnectedName;
+							ReaderUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.Type == "DESFire") {
+								var cmd = card.Commands as IDESFireCommands;
+								
+								object appIDsObject = cmd.GetApplicationIDs();
+								AppIDList = (appIDsObject as UInt32[]);
+								
+								return ERROR.NoError;
+								
+							}
+							if (card.Type == "DESFireEV1" ||
+							    card.Type == "DESFireEV2" ) {
+								
+								var cmd = card.Commands as IDESFireEV1Commands;
+								
+								object appIDsObject = cmd.GetApplicationIDs();
+								AppIDList = (appIDsObject as UInt32[]);
+								FreeMemory = cmd.GetFreeMemory();
+								
+								return ERROR.NoError;
+							}
+							
+							else
+								return ERROR.Empty;
+						}
+					}
+				}
+				return ERROR.DeviceNotReadyError;
+			} catch (Exception e) {
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				return ERROR.IOError;
+			}
+		}
+		
+		public ERROR CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
+		                                     int _appID, int _fileNo, int _fileSize,
+		                                     int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
+		                                     int _maxNbOfRecords = 100)
+		{
+			try
+			{
+				DESFireAccessRights accessRights = _accessRights;
+				IDESFireCommands cmd;
+				
+				// Keys to use for authentication
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
+				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
+				aiToUse.MasterCardKey.KeyType = _keyTypeAppMasterKey;
+				
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(2000)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.Type == "DESFireEV1") {
+								cmd = card.Commands as IDESFireEV1Commands;
+								try {
+									//cmd.SelectApplication(0);
+									//cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+									
+									cmd.SelectApplication((uint)_appID);
+									cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+									
+									switch(_fileType)
+									{
+										case FileType_MifareDesfireFileType.StdDataFile:
+											cmd.CreateStdDataFile((byte)_fileNo,_encMode,accessRights,(uint)_fileSize);
+											break;
+											
+										case FileType_MifareDesfireFileType.BackupFile:
+											cmd.CreateBackupFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+											break;
+											
+										case FileType_MifareDesfireFileType.ValueFile:
+											cmd.CreateValueFile((byte)_fileNo, _encMode, accessRights, (uint)_minValue, (uint)_maxValue, (uint)_initValue, _isValueLimited);
+											break;
+											
+										case FileType_MifareDesfireFileType.CyclicRecordFile:
+											cmd.CreateCyclicRecordFile((byte)_fileNo,_encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+											break;
+											
+										case FileType_MifareDesfireFileType.LinearRecordFile:
+											cmd.CreateLinearRecordFile((byte)_fileNo,_encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+											break;
+									}
+									
+									return ERROR.NoError;
+								} catch (Exception e) {
+									return ERROR.AuthenticationError;
+								}
+
+							}
+							if (card.Type == "DESFireEV2") {
+								
+							}
+							return ERROR.AuthenticationError;
+						}
+					}
+				}
+				return ERROR.IOError;
+			}
+			
+			catch
+			{
+				return ERROR.AuthenticationError;
+			}
+			
+		}
+		
+		public ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, MifareDesfireKeyNumber _keyNumber, int _appID = 0)
+		{
+			try
+			{
+				// The excepted memory tree
+				IDESFireLocation location = new DESFireLocation();
+				// The Application ID to use
+				location.aid = _appID;
+				// File communication requires encryption
+				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				
+				IDESFireEV1Commands cmd;
+				// Keys to use for authentication
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
+				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
+				aiToUse.MasterCardKey.KeyType = _keyType;
+				
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(2000)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
 							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 							
 							card = readerUnit.GetSingleChip();
 							
 							if (card.Type == "DESFireEV1") {
 								cmd = card.Commands as IDESFireEV1Commands;
-								
-								object appIDsObject = cmd.GetApplicationIDs();
-								appIDs = (appIDsObject as UInt32[]);
-								freeMemory = cmd.GetFreeMemory();
-								DESFireKeySettings s;
-								DESFireKeyType k;
-								byte b;
-								
-								cmd.GetKeySettingsEV1(out s,out b,out k);
-								
+								try {
+									cmd.SelectApplication((uint)_appID);
+									if(_appID > 0)
+										cmd.Authenticate((byte)_keyNumber, aiToUse.MasterCardKey);
+									else
+										cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+									return ERROR.NoError;
+								} catch (Exception e1) {
+									return ERROR.AuthenticationError;
+								}
+
 							}
 							if (card.Type == "DESFireEV2") {
 								
 							}
-							
-							return false;
+							return ERROR.AuthenticationError;
 						}
 					}
 				}
-				return true;
-			} catch (Exception e) {
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}",DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-				return true;
+				return ERROR.IOError;
+			}
+			
+			catch (Exception e2)
+			{
+				return ERROR.AuthenticationError;
+			}
+			
+		}
+		
+		public ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
+		{
+			byte maxNbrOfKeys;
+			DESFireKeySettings keySettings;
+			
+			try
+			{
+				// Keys to use for authentication
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
+				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
+				aiToUse.MasterCardKey.KeyType = _keyType;
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(2000)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
+							card = readerUnit.GetSingleChip();
+							
+							if (card.Type == "DESFire" ||
+							    card.Type == "DESFireEV1" ||
+							    card.Type == "DESFireEV2") {
+								
+								var cmd = card.Commands as IDESFireCommands;
+								
+								try {
+									cmd.SelectApplication((uint)_appID);
+									try{
+										cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterCardKey);
+									}
+									catch{
+										try{
+											
+											cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
+											MaxNumberOfAppKeys = maxNbrOfKeys;
+											DesfireAppKeySetting = keySettings;
+											
+											
+											return ERROR.NoError;
+										}
+										catch{
+											return ERROR.AuthenticationError;
+										}
+									}
+									cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
+									MaxNumberOfAppKeys = maxNbrOfKeys;
+									DesfireAppKeySetting = keySettings;
+									
+									
+									return ERROR.NoError;
+								} catch {
+									return ERROR.AuthenticationError;
+								}
+
+							}
+							return ERROR.AuthenticationError;
+						}
+					}
+				}
+				return ERROR.DeviceNotReadyError;
+			}
+			
+			catch {
+				return ERROR.IOError;
 			}
 		}
+		
+		public ERROR CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID)
+		{
+			try
+			{
+				// The excepted memory tree
+				IDESFireLocation location = new DESFireLocation();
+				// The Application ID to use
+				location.aid = _appID;
+				
+				// File communication requires encryption
+				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				
+				IDESFireEV1Commands cmd;
+				// Keys to use for authentication
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_piccMasterKey);
+				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
+				aiToUse.MasterCardKey.KeyType = _keyTypePiccMasterKey;
+				
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(2000)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.Type == "DESFireEV1") {
+								cmd = card.Commands as IDESFireEV1Commands;
+								try {
+									cmd.SelectApplication(0);
+									cmd.Authenticate(0, aiToUse.MasterCardKey);
+									cmd.CreateApplicationEV1((uint)_appID,_keySettingsTarget,(byte)_maxNbKeys,false,_keyTypeTargetApplication,0,0);
+									//cmd.CreateApplication((uint)_appID,_keySettings,(byte)_maxNbKeys);
+									//cmd.SelectApplication((uint)_appID);
+									//cmd.AuthenticateKeyNo(0);
+									//cmd.ChangeKey(1,aiToUse.MasterCardKey);
+									
+									return ERROR.NoError;
+								} catch (Exception e) {
+									return ERROR.AuthenticationError;
+								}
+
+							}
+							if (card.Type == "DESFireEV2") {
+								
+							}
+							return ERROR.AuthenticationError;
+						}
+					}
+				}
+				return ERROR.IOError;
+			}
+			
+			catch
+			{
+				return ERROR.AuthenticationError;
+			}
+			
+		}
+		
+		public ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent, string _applicationMasterKeyTarget, int _keyNumberTarget, DESFireKeyType _keyTypeTarget, int _appIDCurrent = 0, int _appIDTarget = 0)
+		{
+			try
+			{
+				// The excepted memory tree
+				IDESFireLocation location = new DESFireLocation();
+				// The Application ID to use
+				location.aid = _appIDCurrent;
+				// File communication requires encryption
+				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				
+				IDESFireEV1Commands cmd;
+				// Keys to use for authentication
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				if(_appIDCurrent > 0)
+				{
+					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
+					aiToUse.MasterApplicationKey.Value = CustomConverter.desFireKeyToEdit;
+					aiToUse.MasterApplicationKey.KeyType = _keyTypeCurrent;
+				}
+				else
+				{
+					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
+					aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
+					aiToUse.MasterCardKey.KeyType = _keyTypeCurrent;
+				}
+
+				
+				DESFireKey applicationMasterKeyTarget = new DESFireKeyClass();
+				applicationMasterKeyTarget.KeyType = _keyTypeTarget;
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
+				applicationMasterKeyTarget.Value = CustomConverter.desFireKeyToEdit;
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(2000)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.Type == "DESFireEV1") {
+								cmd = card.Commands as IDESFireEV1Commands;
+								try {
+									cmd.SelectApplication((uint)_appIDCurrent);
+									
+									if(_appIDCurrent == 0 && _appIDTarget == 0)
+									{
+										cmd.Authenticate(0, aiToUse.MasterCardKey);
+										cmd.ChangeKey((byte)0, applicationMasterKeyTarget);
+									}
+									else if(_appIDCurrent == 0 && _appIDTarget > 0)
+									{
+										cmd.Authenticate(0, aiToUse.MasterCardKey);
+										cmd.SelectApplication((uint)_appIDTarget);
+										cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterCardKey);
+										cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+									}
+									else
+									{
+										cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
+										cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+									}
+									
+									return ERROR.NoError;
+									
+								} catch (Exception e) {
+									return ERROR.AuthenticationError;
+								}
+
+							}
+							if (card.Type == "DESFireEV2") {
+								
+							}
+							return ERROR.AuthenticationError;
+						}
+					}
+				}
+				return ERROR.IOError;
+			}
+			
+			catch
+			{
+				return ERROR.AuthenticationError;
+			}
+		}
+
+		public ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
+		{
+			try
+			{
+				// The excepted memory tree
+				IDESFireLocation location = new DESFireLocation();
+				// The Application ID to use
+				location.aid = _appID;
+				// File communication requires encryption
+				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				
+				IDESFireEV1Commands cmd;
+				// Keys to use for authentication
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
+				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
+				aiToUse.MasterCardKey.KeyType = _keyType;
+				
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(2000)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.Type == "DESFireEV1") {
+								cmd = card.Commands as IDESFireEV1Commands;
+								try {
+									cmd.SelectApplication(0);
+									cmd.Authenticate(0, aiToUse.MasterCardKey);
+									
+									cmd.DeleteApplication((uint)_appID);
+									return ERROR.NoError;
+								} catch {
+									return ERROR.AuthenticationError;
+								}
+
+							}
+							if (card.Type == "DESFireEV2") {
+								
+							}
+							return ERROR.AuthenticationError;
+						}
+					}
+				}
+				return ERROR.IOError;
+			}
+			
+			catch
+			{
+				return ERROR.AuthenticationError;
+			}
+			
+		}
+		
+		public ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
+		{
+			try
+			{
+				// The excepted memory tree
+				IDESFireLocation location = new DESFireLocation();
+				// The Application ID to use
+				location.aid = _appID;
+				// File communication requires encryption
+				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				
+				IDESFireEV1Commands cmd;
+				// Keys to use for authentication
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
+				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
+				aiToUse.MasterCardKey.KeyType = _keyType;
+				
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(2000)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.Type == "DESFireEV1") {
+								cmd = card.Commands as IDESFireEV1Commands;
+								try {
+									cmd.SelectApplication(0);
+									cmd.Authenticate(0, aiToUse.MasterCardKey);
+									
+									cmd.Erase();
+									
+									return ERROR.NoError;
+								} catch {
+									return ERROR.AuthenticationError;
+								}
+
+							}
+							if (card.Type == "DESFireEV2") {
+								
+							}
+							return ERROR.AuthenticationError;
+						}
+					}
+				}
+				return ERROR.IOError;
+			}
+			
+			catch
+			{
+				return ERROR.AuthenticationError;
+			}
+			
+		}
+		
+		public ERROR GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
+		{
+			try
+			{
+				// The excepted memory tree
+				IDESFireLocation location = new DESFireLocation();
+				// The Application ID to use
+				location.aid = _appID;
+				// File communication requires encryption
+				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				
+				IDESFireEV1Commands cmd;
+				// Keys to use for authentication
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
+				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
+				aiToUse.MasterCardKey.KeyType = _keyType;
+				
+				object fileIDsObject;
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(2000)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							
+							card = readerUnit.GetSingleChip();
+							
+							if (card.Type == "DESFireEV1") {
+								cmd = card.Commands as IDESFireEV1Commands;
+								try {
+									cmd.SelectApplication((uint)_appID);
+									try{
+										cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterCardKey);
+									}
+									catch{
+										try{
+											fileIDsObject = cmd.GetFileIDs();
+											FileIDList = (fileIDsObject as byte[]);
+											return ERROR.NoError;
+										}
+										catch{
+											return ERROR.AuthenticationError;
+										}
+									}
+									
+									fileIDsObject = cmd.GetFileIDs();
+									FileIDList = (fileIDsObject as byte[]);
+									
+									return ERROR.NoError;
+								} catch {
+									return ERROR.AuthenticationError;
+								}
+
+							}
+							if (card.Type == "DESFireEV2") {
+								
+							}
+							return ERROR.AuthenticationError;
+						}
+					}
+				}
+				return ERROR.IOError;
+			}
+			
+			catch
+			{
+				return ERROR.AuthenticationError;
+			}
+			
+		}
+		
+		public ERROR GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0)
+		{
+			try
+			{
+				IDESFireEV1Commands cmd;
+				// Keys to use for authentication
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
+				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
+				aiToUse.MasterCardKey.KeyType = _keyType;
+				
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(2000)) {
+						if (readerUnit.Connect()) {
+							
+							ReaderUnitName = readerUnit.ConnectedName;
+							card = readerUnit.GetSingleChip();
+							
+							if (card.Type == "DESFireEV1") {
+								cmd = card.Commands as IDESFireEV1Commands;
+								try {
+									cmd.SelectApplication((uint)_appID);
+									try{
+										cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterCardKey);
+									}
+									catch{
+										try{
+											DesfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
+											
+											return ERROR.NoError;
+										}
+										catch{
+											return ERROR.AuthenticationError;
+										}
+									}
+									DesfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
+									
+									return ERROR.NoError;
+								} catch {
+									return ERROR.AuthenticationError;
+								}
+
+							}
+							return ERROR.AuthenticationError;
+						}
+					}
+				}
+				return ERROR.DeviceNotReadyError;
+			}
+			
+			catch {
+				return ERROR.IOError;
+			}
+		}
+		
+		#endregion
 		
 		private bool ReadMiFareDESFireChipFile(int fileNo, int appid)
 		{
@@ -836,7 +1438,7 @@ namespace RFiDGear
 							cmd.GetKeySettings(out desFireKeySet, out nBNmbr);
 							cmd.Authenticate(0, aiToUse.MasterCardKey);
 							cmd.DeleteApplication(1);
-							
+
 							//cmd.SelectApplication(0);
 							
 							//FileSetting fSetting = cmd.GetFileSettings(0);
@@ -847,7 +1449,6 @@ namespace RFiDGear
 							//appIDs = (appIDsObject as UInt32[]);
 							cmd.ChangeKey(0, aiToWrite.MasterCardKey);
 							//desFireFileData = (byte[])storage.ReadData(location, aiToWrite, 48, CardBehavior.CB_DEFAULT);
-
 							
 						}
 						if (card.Type == "DESFireEV2") {
@@ -860,360 +1461,7 @@ namespace RFiDGear
 			return true;
 		}
 		
-		public ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, MifareDesfireKeyNumber _keyNumber, int _appID = 0)
-		{
-			try
-			{
-				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
-				// The Application ID to use
-				location.aid = _appID;
-				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
-				
-				IDESFireEV1Commands cmd;
-				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
-				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
-				aiToUse.MasterCardKey.KeyType = _keyType;
-				
-				
-				if (readerUnit.ConnectToReader()) {
-					if (readerUnit.WaitInsertion(2000)) {
-						if (readerUnit.Connect()) {
-							
-							readerUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
-							
-							card = readerUnit.GetSingleChip();
-							
-							if (card.Type == "DESFireEV1") {
-								cmd = card.Commands as IDESFireEV1Commands;
-								try {
-									cmd.SelectApplication((uint)_appID);
-									cmd.Authenticate((byte)_keyNumber, aiToUse.MasterCardKey);
-									return ERROR.NoError;
-								} catch {
-									return ERROR.AuthenticationError;
-								}
 
-							}
-							if (card.Type == "DESFireEV2") {
-								
-							}
-							return ERROR.AuthenticationError;
-						}
-					}
-				}
-				return ERROR.IOError;
-			}
-			
-			catch
-			{
-				return ERROR.AuthenticationError;
-			}
-			
-		}
-		
-		public ERROR CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID)
-		{
-			try
-			{
-				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
-				// The Application ID to use
-				location.aid = _appID;
-				
-				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
-				
-				IDESFireEV1Commands cmd;
-				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
-				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_piccMasterKey);
-				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
-				aiToUse.MasterCardKey.KeyType = _keyTypePiccMasterKey;
-				
-				
-				if (readerUnit.ConnectToReader()) {
-					if (readerUnit.WaitInsertion(2000)) {
-						if (readerUnit.Connect()) {
-							
-							readerUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
-							
-							card = readerUnit.GetSingleChip();
-							
-							if (card.Type == "DESFireEV1") {
-								cmd = card.Commands as IDESFireEV1Commands;
-								try {
-									cmd.SelectApplication(0);
-									cmd.Authenticate(0, aiToUse.MasterCardKey);
-									cmd.CreateApplicationEV1((uint)_appID,_keySettingsTarget,(byte)_maxNbKeys,false,_keyTypeTargetApplication,0,0);
-									//cmd.CreateApplication((uint)_appID,_keySettings,(byte)_maxNbKeys);
-									//cmd.SelectApplication((uint)_appID);
-									//cmd.AuthenticateKeyNo(0);
-									//cmd.ChangeKey(1,aiToUse.MasterCardKey);
-									
-									return ERROR.NoError;
-								} catch (Exception e) {
-									return ERROR.AuthenticationError;
-								}
-
-							}
-							if (card.Type == "DESFireEV2") {
-								
-							}
-							return ERROR.AuthenticationError;
-						}
-					}
-				}
-				return ERROR.IOError;
-			}
-			
-			catch
-			{
-				return ERROR.AuthenticationError;
-			}
-			
-		}
-		
-		public ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent, string _applicationMasterKeyTarget, DESFireKeyType _keyTypeTarget, int _appIDCurrent = 0, int _appIDTarget = 0)
-		{
-			try
-			{
-				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
-				// The Application ID to use
-				location.aid = _appIDCurrent;
-				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
-				
-				IDESFireEV1Commands cmd;
-				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
-				if(_appIDCurrent > 0)
-				{
-					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
-					aiToUse.MasterApplicationKey.Value = CustomConverter.desFireKeyToEdit;
-					aiToUse.MasterApplicationKey.KeyType = _keyTypeCurrent;
-				}
-				else
-				{
-					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
-					aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
-					aiToUse.MasterCardKey.KeyType = _keyTypeCurrent;
-				}
-
-				
-				DESFireKey applicationMasterKeyTarget = new DESFireKeyClass();
-				applicationMasterKeyTarget.KeyType = _keyTypeTarget;
-				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
-				applicationMasterKeyTarget.Value = CustomConverter.desFireKeyToEdit;
-				
-				if (readerUnit.ConnectToReader()) {
-					if (readerUnit.WaitInsertion(2000)) {
-						if (readerUnit.Connect()) {
-							
-							readerUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
-							
-							card = readerUnit.GetSingleChip();
-							
-							if (card.Type == "DESFireEV1") {
-								cmd = card.Commands as IDESFireEV1Commands;
-								try {
-									cmd.SelectApplication((uint)_appIDCurrent);
-									
-									if(_appIDCurrent == 0 && _appIDTarget == 0)
-										cmd.Authenticate(0, aiToUse.MasterCardKey);
-									else if(_appIDCurrent == 0 && _appIDTarget > 0)
-									{
-										cmd.Authenticate(0, aiToUse.MasterCardKey);
-										cmd.SelectApplication((uint)_appIDTarget);
-										cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterCardKey);
-									}
-									else
-										cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
-									
-									cmd.ChangeKey((byte)1, applicationMasterKeyTarget);
-									
-									
-									
-									return ERROR.NoError;
-								} catch (Exception e) {
-									return ERROR.AuthenticationError;
-								}
-
-							}
-							if (card.Type == "DESFireEV2") {
-								
-							}
-							return ERROR.AuthenticationError;
-						}
-					}
-				}
-				return ERROR.IOError;
-			}
-			
-			catch
-			{
-				return ERROR.AuthenticationError;
-			}
-		}
-
-		public ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
-		{
-			try
-			{
-				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
-				// The Application ID to use
-				location.aid = _appID;
-				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
-				
-				IDESFireEV1Commands cmd;
-				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
-				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
-				aiToUse.MasterCardKey.KeyType = _keyType;
-				
-				
-				if (readerUnit.ConnectToReader()) {
-					if (readerUnit.WaitInsertion(2000)) {
-						if (readerUnit.Connect()) {
-							
-							readerUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
-							
-							card = readerUnit.GetSingleChip();
-							
-							if (card.Type == "DESFireEV1") {
-								cmd = card.Commands as IDESFireEV1Commands;
-								try {
-									cmd.SelectApplication(0);
-									cmd.Authenticate(0, aiToUse.MasterCardKey);
-									
-									cmd.DeleteApplication((uint)_appID);
-									return ERROR.NoError;
-								} catch {
-									return ERROR.AuthenticationError;
-								}
-
-							}
-							if (card.Type == "DESFireEV2") {
-								
-							}
-							return ERROR.AuthenticationError;
-						}
-					}
-				}
-				return ERROR.IOError;
-			}
-			
-			catch
-			{
-				return ERROR.AuthenticationError;
-			}
-			
-		}
-			
-		public ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
-		{
-			try
-			{
-				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
-				// The Application ID to use
-				location.aid = _appID;
-				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
-				
-				IDESFireEV1Commands cmd;
-				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
-				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-				aiToUse.MasterCardKey.Value = CustomConverter.desFireKeyToEdit;
-				aiToUse.MasterCardKey.KeyType = _keyType;
-				
-				
-				if (readerUnit.ConnectToReader()) {
-					if (readerUnit.WaitInsertion(2000)) {
-						if (readerUnit.Connect()) {
-							
-							readerUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
-							
-							card = readerUnit.GetSingleChip();
-							
-							if (card.Type == "DESFireEV1") {
-								cmd = card.Commands as IDESFireEV1Commands;
-								try {
-									cmd.SelectApplication(0);
-									cmd.Authenticate(0, aiToUse.MasterCardKey);
-									
-									cmd.Erase();
-									
-									return ERROR.NoError;
-								} catch {
-									return ERROR.AuthenticationError;
-								}
-
-							}
-							if (card.Type == "DESFireEV2") {
-								
-							}
-							return ERROR.AuthenticationError;
-						}
-					}
-				}
-				return ERROR.IOError;
-			}
-			
-			catch
-			{
-				return ERROR.AuthenticationError;
-			}
-			
-		}
-		
-		
-		private bool _disposed = false;
-		
-		protected virtual void Dispose(bool disposing)
-		{
-			if (!_disposed)
-			{
-				if (disposing)
-				{
-					instance = null;
-					// Dispose any managed objects
-					// ...
-				}
-
-				if(readerUnit != null)
-				{
-					readerUnit.Disconnect();
-					readerUnit.DisconnectFromReader();
-				}
-
-				if(readerProvider != null)
-					readerProvider.ReleaseInstance();
-				// Now disposed of any unmanaged objects
-				// ...
-
-				_disposed = true;
-			}
-		}
-
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
 	}
 }
 
