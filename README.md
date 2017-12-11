@@ -1,6 +1,6 @@
 ![](http://rfidgear.hyperstack.de/logoRG.png) 
 
-RFiDGear: Your essential gear to read - modify - write mifare rfid tags. Support for batch processing included. 
+RFiDGear: Your essential gear for programming (read - modify - write) mifare rfid tags. Support for batch processing included. 
 
 ### [Wiki](https://github.com/c3rebro/RFiDGear/wiki) | [Download](https://github.com/c3rebro/RFiDGear/releases) | [Report Bugs](https://github.com/c3rebro/RFiDGear/issues)
 
