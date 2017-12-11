@@ -172,7 +172,7 @@ namespace RFiDGear.ViewModel
                     }
                 }
             }
-            catch (Exception e)
+            catch
             {
                 dialogs.Clear();
             }
@@ -365,6 +365,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception ex)
             {
+            	LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""));
             }
             // });
 
@@ -712,8 +713,9 @@ namespace RFiDGear.ViewModel
 
                                            taskTimeout.Stop();
                                        }
-                                       catch (Exception ex)
+                                       catch (Exception e)
                                        {
+                                       	LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
                                        }
                                    });
 

@@ -359,7 +359,7 @@ namespace RFiDGear
 
                                                 Sector.DataBlock.Add(dataBlock);
                                             }
-                                            catch (Exception e)
+                                            catch
                                             {
                                                 dataBlock.IsAuthenticated = false;
 
@@ -414,8 +414,6 @@ namespace RFiDGear
             sectorIsKeyAAuthSuccessful = true;
             sectorIsKeyBAuthSuccessful = false;
             sectorCanRead = true;
-
-            byte[] test;
 
             try
             {
@@ -792,7 +790,7 @@ namespace RFiDGear
 
                                     return ERROR.NoError;
                                 }
-                                catch (Exception e)
+                                catch
                                 {
                                     return ERROR.AuthenticationError;
                                 }
@@ -853,7 +851,7 @@ namespace RFiDGear
                                         cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
                                     return ERROR.NoError;
                                 }
-                                catch (Exception e1)
+                                catch
                                 {
                                     return ERROR.AuthenticationError;
                                 }
@@ -867,7 +865,7 @@ namespace RFiDGear
                 }
                 return ERROR.IOError;
             }
-            catch (Exception e2)
+            catch
             {
                 return ERROR.AuthenticationError;
             }
@@ -991,7 +989,7 @@ namespace RFiDGear
 
                                     return ERROR.NoError;
                                 }
-                                catch (Exception e)
+                                catch
                                 {
                                     return ERROR.AuthenticationError;
                                 }
@@ -1081,7 +1079,7 @@ namespace RFiDGear
 
                                     return ERROR.NoError;
                                 }
-                                catch (Exception e)
+                                catch
                                 {
                                     return ERROR.AuthenticationError;
                                 }

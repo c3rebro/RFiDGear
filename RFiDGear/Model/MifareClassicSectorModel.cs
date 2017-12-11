@@ -18,7 +18,7 @@ namespace RFiDGear.Model
         private string keyB;
         private bool isAuthenticated;
 
-        private uint cx;
+        private short cx;
 
         private AccessCondition_MifareClassicSectorTrailer read_KeyA;
         private AccessCondition_MifareClassicSectorTrailer write_KeyA;
@@ -39,11 +39,11 @@ namespace RFiDGear.Model
             mifareClassicBlock = new ObservableCollection<MifareClassicDataBlockModel>();
 
             cx = 0;
-            cx |= (uint)_c3x;
+            cx |= _c3x;
             cx <<= 1;
-            cx |= (uint)_c2x;
+            cx |= _c2x;
             cx <<= 1;
-            cx |= (uint)_c1x;
+            cx |= _c1x;
 
             read_KeyA = AccessCondition_MifareClassicSectorTrailer.NotApplicable;
             write_KeyA = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
@@ -54,7 +54,7 @@ namespace RFiDGear.Model
             //this = sectorTrailer_AccessBits[(int)cx];
         }
 
-        public MifareClassicSectorModel(uint _cx,
+        public MifareClassicSectorModel(short _cx,
             AccessCondition_MifareClassicSectorTrailer _readKeyA = AccessCondition_MifareClassicSectorTrailer.NotApplicable,
             AccessCondition_MifareClassicSectorTrailer _writeKeyA = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
             AccessCondition_MifareClassicSectorTrailer _readAccessCondition = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
@@ -121,7 +121,7 @@ namespace RFiDGear.Model
         public AccessCondition_MifareClassicSectorTrailer Write_KeyB { get { return write_KeyB; } set { write_KeyB = value; } }
 
         public bool IsAuthenticated { get { return isAuthenticated; } set { isAuthenticated = value; } }
-        public uint Cx { get { return cx; } set { cx = value; } }
+        public short Cx { get { return cx; } set { cx = value; } }
     }
 
     //	public struct Sector_AccessCondition

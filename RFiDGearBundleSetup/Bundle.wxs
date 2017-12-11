@@ -1,45 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension" xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
-  <?define VersionNumber="0.1.6551" ?>
-  <?define UpgradeCode="a34bc413-e349-4fd1-8b90-2eb95a333436" ?>
-  <?define NetFx451MinRelease = 378675 ?>
-  <!-- The URL for add/remove programs -->
-  <?define InfoURL="http://rfidgear.hyperstack.de" ?>
-  <?define ISLOG_ProgramDataDir = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.0.1024" ?>
-  <!-- 32-bit / 64-bit variables -->
-  <?if $(var.Platform) = x64 ?>
-  <?define Win64 = "yes" ?>
-  <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
-  <?define RFiDGearExeSourcePath = "$(var.ProjectDir)..\RFiDGear\bin\Release\RFiDGear.exe" ?>
-  <?else ?>
-  <?define Win64 = "no" ?>
-  <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
-  <?define RFiDGearExeSourcePath = "$(var.ProjectDir)..\RFiDGear\bin\Release\RFiDGear.exe" ?>
-  <?endif ?>
-
-  <Bundle Name="$(var.RFiDGear.ProjectName)" Version="$(var.VersionNumber)" Manufacturer="Messgeraetetechnik Hansen" UpgradeCode="$(var.UpgradeCode)" Copyright="Messgeraetetechnik Hansen 2017" IconSourceFile="$(var.RFiDGear.ProjectDir)Resources\logo.ico" AboutUrl="http://rfidgear.hyperstack.de">
-    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
-			<bal:WixStandardBootstrapperApplication LicenseFile="$(var.RFiDGear.ProjectDir)Resources\license.rtf" LogoFile="setuplogo.ico" ThemeFile="rtftheme.xml"/>
+	<?define VersionNumber="0.1.6551" ?>
+	<?define UpgradeCode="a34bc413-e349-4fd1-8b90-2eb95a333436" ?>
+	<?define NetFx451MinRelease = 378675 ?>
+	<!-- The URL for add/remove programs -->
+	<?define InfoURL="http://rfidgear.hyperstack.de" ?>
+	<?define ISLOG_ProgramDataDir = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.0.1024" ?>
+	<!-- 32-bit / 64-bit variables -->
+	<?if $(var.Platform) = x64 ?>
+	<?define Win64 = "yes" ?>
+	<?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+	<?define RFiDGearExeSourcePath = "$(var.ProjectDir)..\RFiDGear\bin\Release\RFiDGear.exe" ?>
+	<?define ISLOG_RegistrySearch_Value = "C:\Program Files\Common Files\ISLOG\LibLogicalAccess\1.87.0.1024\liblogicalaccess.com.dll" ?>
+	<?else ?>
+	<?define Win64 = "no" ?>
+	<?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+	<?define RFiDGearExeSourcePath = "$(var.ProjectDir)..\RFiDGear\bin\Release\RFiDGear.exe" ?>
+	<?define ISLOG_RegistrySearch_Value = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.0.1024\liblogicalaccess.com.dll" ?>
+	<?endif ?>
+	
+	<Bundle Name="$(var.RFiDGear.ProjectName)" Version="$(var.VersionNumber)" Manufacturer="Messgeraetetechnik Hansen" UpgradeCode="$(var.UpgradeCode)" Copyright="Messgeraetetechnik Hansen 2017" IconSourceFile="$(var.RFiDGear.ProjectDir)Resources\logo.ico" AboutUrl="http://rfidgear.hyperstack.de">
+		<BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
+			<bal:WixStandardBootstrapperApplication LicenseFile="$(var.RFiDGear.ProjectDir)Resources\gpl_v3_license.rtf" LogoFile="setuplogo.ico" ThemeFile="rtftheme.xml"/>
 		</BootstrapperApplicationRef>
-
-    <util:RegistrySearch Root="HKCR" Key="CLSID\{61D975C9-4005-4339-B4E7-ED63ED506981}\InprocServer32" Value="C:\Program Files\Common Files\ISLOG\LibLogicalAccess\1.87.0.1024\liblogicalaccess.com.dll" Variable="LibLogicalAccess_1_87" />
-    
-    <Chain>
-      <PackageGroupRef Id="NetFx452Redist" />
-
-      <RollbackBoundary />
-      <ExePackage Id="ISLOG" Name="LibLogicalAccess Library v1.87" Cache="no" Compressed="yes" PerMachine="yes" Permanent="yes" Vital="yes" InstallCommand="/q"
-        SourceFile="LibLogicalAccess1.87.exe"
-        InstallCondition="(VersionNT &lt; v6.0 OR VersionNT64 &lt; v6.0) AND (NOT LibLogicalAccess_1_87)"/>
-
-      <RollbackBoundary />
-      <MsiPackage Id="MainPackage" SourceFile="$(var.Setup.ProjectDir)bin\Release\en-us\Setup.msi" DisplayInternalUI="yes" Compressed="yes" Vital="yes" />
-    </Chain>
-
-    <PayloadGroup Id="NetFx452RedistPayload">
-      <Payload Name="redist\NDP452-KB2901907-x86-x64-AllOS-ENU.exe"
-               SourceFile="NDP452-KB2901907-x86-x64-AllOS-ENU.exe"/>
-    </PayloadGroup>
-    
-  </Bundle>
+		
+		<util:RegistrySearch Root="HKCR" Value="Version" Key="Installer\Products\52D511A262B028B4587F5E0E98547532" Result="value" Win64="yes" Variable="LibLogicalAccess_1_87x64" />
+		<util:RegistrySearch Root="HKCR" Value="Version" Key="Installer\Products\52D511A262B028B4587F5E0E98547532" Result="value" Win64="no" Variable="LibLogicalAccess_1_87x86" />
+		
+		<Chain>
+			<PackageGroupRef Id="NetFx452Redist" />
+			
+			<ExePackage Id="ISLOG" Cache="no" Compressed="yes" PerMachine="yes" Vital="yes"
+			            SourceFile="LibLogicalAccess1_87.exe"
+			            DetectCondition="(LibLogicalAccess_1_87x64 &gt; 22478847 OR LibLogicalAccess_1_87x32 &gt; 22478847)"
+			            InstallCondition="(VersionNT &gt; v6.0 OR VersionNT64 &gt; v6.0) AND (NOT (LibLogicalAccess_1_87x64 &gt; 22478847 OR LibLogicalAccess_1_87x32 &gt; 22478847))" DisplayName="LibLogicalAccess" InstallCommand="/q"/>
+			
+			<RollbackBoundary />
+			<MsiPackage Id="MainPackage" SourceFile="$(var.Setup.ProjectDir)bin\Release\en-us\Setup.msi" DisplayInternalUI="yes" Compressed="yes" Vital="yes" />
+		</Chain>
+		
+		<PayloadGroup Id="NetFx452RedistPayload">
+			<Payload Name="redist\NDP452-KB2901907-x86-x64-AllOS-ENU.exe"
+			         SourceFile="NDP452-KB2901907-x86-x64-AllOS-ENU.exe"/>
+		</PayloadGroup>
+	
+	</Bundle>
 </Wix>
