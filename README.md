@@ -1,4 +1,4 @@
-![](http://www.rfidgear.hyperstack.de/logoRG.png) 
+![](http://rfidgear.hyperstack.de/logoRG.png) 
 
 RFiDGear: Your essential gear to read - modify - write mifare rfid tags. Support for batch processing included. 
 
