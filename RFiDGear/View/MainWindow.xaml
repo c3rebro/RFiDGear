@@ -1,0 +1,604 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+	x:Class="RFiDGear.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors"
+	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}" xmlns:local="clr-namespace:RFiDGear" xmlns:m="clr-namespace:RFiDGear.Model" xmlns:vm="clr-namespace:RFiDGear.ViewModel" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+	x:Name="homeWindow"
+	mc:Ignorable="d"
+	Title="RFiDGear"
+	FontFamily="Segoe UI"
+	HorizontalContentAlignment="Left"
+	SizeToContent="Manual"
+	WindowStartupLocation="CenterScreen"
+	FontWeight="Normal"
+	MouseLeftButtonDown="WindowMouseLeftButtonDown"
+	DataContext="{Binding Source={StaticResource Locator}, Path=Main}"
+	MinWidth="500"
+	MinHeight="500"
+	Height="500"
+	Width="900">
+
+    <!--
+	WindowStyle="None"
+	ResizeMode="CanResizeWithGrip"
+	AllowsTransparency="True"
+	BorderThickness="1"
+	BorderBrush="Black"
+	Opacity="0.98"
+ 	-->
+
+    <Window.Resources>
+        <local:BindingProxy
+			x:Key="proxy"
+			Data="{Binding}" />
+        <local:ResourceLoader
+			x:Key="Localization" />
+        <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+			<ContextMenu.ItemContainerStyle>
+				<Style TargetType="MenuItem">
+					<Setter
+						Property="HorizontalContentAlignment"
+						Value="Left" />
+					<Setter
+						Property="VerticalContentAlignment"
+						Value="Center" />
+				</Style>
+			</ContextMenu.ItemContainerStyle>
+		</ContextMenu>-->
+    </Window.Resources>
+    <Grid>
+        <Grid
+			Grid.Column="0"
+			Grid.Row="0"
+			HorizontalAlignment="Stretch"
+			VerticalAlignment="Stretch"
+			Margin="15,36,8,40">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition
+					Width="auto" MinWidth="200" />
+                <ColumnDefinition
+					Width="5" />
+                <ColumnDefinition
+					Width="*" />
+            </Grid.ColumnDefinitions>
+            <TreeView
+				Grid.Column="0"
+				Grid.Row="0"
+				HorizontalAlignment="Stretch"
+				VerticalAlignment="Stretch"
+				Margin="0,0,3,0"
+				x:Name="treeViewOnline"
+				ItemsSource="{Binding TreeViewParentNodes}"
+				Background="Transparent"
+				BorderThickness="1,1,1,1"
+				MouseLeftButtonDown="MainWindowTreeViewControlMouseButtonDown"
+				MouseRightButtonDown="MainWindowTreeViewControlMouseButtonDown">
+                <TreeView.ItemContainerStyle>
+                    <!-- This Style binds a TreeViewItem to a TreeViewModelBase. -->
+                    <Style
+						TargetType="{x:Type TreeViewItem}">
+                        <Setter
+							Property="IsExpanded"
+							Value="{Binding IsExpanded,  UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        <Setter
+							Property="IsSelected"
+							Value="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        <Setter
+							Property="FontWeight"
+							Value="Normal" />
+                        <!--<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />-->
+                        <!--<Setter
+							Property="IsSelected"
+							Value="{Binding DataContext.IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
+                        <Style.Triggers>
+                            <Trigger
+								Property="IsSelected"
+								Value="True">
+                                <Setter
+									Property="FontWeight"
+									Value="Bold" />
+                                <Setter
+									Property="Background"
+									Value="White" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </TreeView.ItemContainerStyle>
+                <TreeView.Resources>
+                    <!--					<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
+                      Color="White" />
+					<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
+                      Color="Black" />
+					<FontWeightConverter x:Key="{x:Static FontWeights.Bold}" />-->
+                    <HierarchicalDataTemplate
+						DataType="{x:Type local:ViewModel.TreeViewParentNodeViewModel}"
+						ItemsSource="{Binding Children}">
+                        <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\Region.png" /> -->
+                        <HierarchicalDataTemplate.Resources>
+                            <Style
+								TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger
+										Binding="{Binding IsBeingProgrammed}"
+										Value="True">
+                                        <Setter
+											Property="Background"
+											Value="Yellow" />
+                                        <Setter
+											Property="FontWeight"
+											Value="Normal" />
+                                    </DataTrigger>
+                                    <DataTrigger
+										Binding="{Binding IsBeingProgrammed}"
+										Value="False">
+                                        <Setter
+											Property="Background"
+											Value="Red" />
+                                        <Setter
+											Property="FontWeight"
+											Value="Normal" />
+                                    </DataTrigger>
+                                    <DataTrigger
+										Binding="{Binding IsProgrammingCompletedSuccessfully}"
+										Value="True">
+                                        <Setter
+											Property="Background"
+											Value="Green" />
+                                        <Setter
+											Property="FontWeight"
+											Value="Normal" />
+                                    </DataTrigger>
+                                    <DataTrigger
+										Binding="{Binding IsProgrammingCompletedSuccessfully}"
+										Value="False">
+                                        <Setter
+											Property="Background"
+											Value="Red" />
+                                        <Setter
+											Property="FontWeight"
+											Value="Normal" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </HierarchicalDataTemplate.Resources>
+                        <TextBlock
+							Text="{Binding ParentNodeHeader}">
+                            <TextBlock.ContextMenu>
+                                <ContextMenu
+									ItemsSource="{Binding ContextMenu}"></ContextMenu>
+                            </TextBlock.ContextMenu>
+                        </TextBlock>
+                    </HierarchicalDataTemplate>
+                    <HierarchicalDataTemplate
+						DataType="{x:Type local:ViewModel.TreeViewChildNodeViewModel}"
+						ItemsSource="{Binding Children}">
+                        <HierarchicalDataTemplate.Resources>
+                            <Style
+								TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger
+										Binding="{Binding IsAuthenticated}"
+										Value="True">
+                                        <Setter
+											Property="Foreground"
+											Value="Green" />
+                                        <Setter
+											Property="FontWeight"
+											Value="Bold" />
+                                    </DataTrigger>
+                                    <DataTrigger
+										Binding="{Binding IsAuthenticated}"
+										Value="False">
+                                        <Setter
+											Property="Foreground"
+											Value="Red" />
+                                        <Setter
+											Property="FontWeight"
+											Value="Normal" />
+                                    </DataTrigger>
+                                    <DataTrigger
+										Binding="{Binding IsTask}"
+										Value="True">
+                                        <Setter
+											Property="Foreground"
+											Value="DarkViolet" />
+                                        <Setter
+											Property="FontWeight"
+											Value="Bold" />
+                                    </DataTrigger>
+                                    <DataTrigger
+										Binding="{Binding IsTask}"
+										Value="False">
+                                        <Setter
+											Property="Foreground"
+											Value="Green" />
+                                        <Setter
+											Property="FontWeight"
+											Value="Bold" />
+                                    </DataTrigger>
+                                    <DataTrigger
+										Binding="{Binding HasChanged}"
+										Value="True">
+                                        <Setter
+											Property="Foreground"
+											Value="DarkViolet" />
+                                        <Setter
+											Property="FontWeight"
+											Value="Bold" />
+                                    </DataTrigger>
+                                    <DataTrigger
+										Binding="{Binding HasChanged}"
+										Value="False">
+                                        <Setter
+											Property="Foreground"
+											Value="Green" />
+                                        <Setter
+											Property="FontWeight"
+											Value="Bold" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </HierarchicalDataTemplate.Resources>
+                        <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\State.png" /> -->
+                        <TextBlock
+							Text="{Binding ChildNodeHeader}">
+                            <TextBlock.ContextMenu>
+                                <ContextMenu
+									ItemsSource="{Binding ContextMenu}"></ContextMenu>
+                            </TextBlock.ContextMenu>
+                        </TextBlock>
+                    </HierarchicalDataTemplate>
+                    <HierarchicalDataTemplate
+						DataType="{x:Type vm:TreeViewGrandChildNodeViewModel}"
+						ItemsSource="{Binding Children}">
+                        <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\City.png" /> -->
+                        <TextBlock
+							Text="{Binding GrandChildNodeHeader}">
+                            <TextBlock.Resources>
+                                <Style
+									TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger
+											Binding="{Binding IsAuthenticated}"
+											Value="True">
+                                            <Setter
+												Property="Foreground"
+												Value="Green" />
+                                            <Setter
+												Property="FontWeight"
+												Value="Bold" />
+                                        </DataTrigger>
+                                        <DataTrigger
+											Binding="{Binding IsAuthenticated}"
+											Value="False">
+                                            <Setter
+												Property="Foreground"
+												Value="Red" />
+                                            <Setter
+												Property="FontWeight"
+												Value="Normal" />
+                                        </DataTrigger>
+                                        <!--
+										<DataTrigger
+											Binding="{Binding IsVisible}"
+											Value="True">
+											<Setter
+												Property="Visibility"
+												Value="Visible" />
+										</DataTrigger>
+										<DataTrigger
+											Binding="{Binding IsVisible}"
+											Value="False">
+											<Setter
+												Property="Visibility"
+												Value="Hidden" />
+										</DataTrigger>
+									 -->
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Resources>
+                        </TextBlock>
+                    </HierarchicalDataTemplate>
+                    <DataTemplate
+						DataType="{x:Type vm:TreeViewGrandGrandChildNodeViewModel}">
+                        <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\City.png" /> -->
+                        <TextBlock
+							Text="{Binding GrandGrandChildNodeHeader}">
+                            <TextBlock.Resources>
+                                <Style
+									TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger
+											Binding="{Binding IsAuthenticated}"
+											Value="True">
+                                            <Setter
+												Property="Foreground"
+												Value="Green" />
+                                            <Setter
+												Property="FontWeight"
+												Value="Bold" />
+                                        </DataTrigger>
+                                        <DataTrigger
+											Binding="{Binding IsAuthenticated}"
+											Value="False">
+                                            <Setter
+												Property="Foreground"
+												Value="Red" />
+                                            <Setter
+												Property="FontWeight"
+												Value="Normal" />
+                                        </DataTrigger>
+                                        <!--
+										<DataTrigger
+											Binding="{Binding IsVisible}"
+											Value="True">
+											<Setter
+												Property="Visibility"
+												Value="Visible" />
+										</DataTrigger>
+										<DataTrigger
+											Binding="{Binding IsVisible}"
+											Value="False">
+											<Setter
+												Property="Visibility"
+												Value="Hidden" />
+										</DataTrigger>
+									 -->
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Resources>
+                        </TextBlock>
+                    </DataTemplate>
+                </TreeView.Resources>
+            </TreeView>
+            <GridSplitter
+				ResizeBehavior="PreviousAndNext"
+				ResizeDirection="Auto"
+				Background="#FFD9D9DB"
+				Margin="0,0,0,0"
+				VerticalAlignment="Stretch"
+				HorizontalAlignment="Stretch"
+				Grid.Row="0"
+				Grid.Column="1"
+				Width="5" />
+            <DataGrid
+				x:Name="myDataGrid"
+				ItemsSource="{Binding ChipTasks.TaskCollection}"
+				AutoGenerateColumns="False"
+				CanUserReorderColumns="True"
+				AlternatingRowBackground="LightGray"
+				CanUserAddRows="False"
+				SelectionMode="Single"
+				CanUserSortColumns="True"
+				Background="Transparent"
+				Grid.Column="2"
+				Grid.Row="0"
+				HorizontalAlignment="Stretch"
+				VerticalAlignment="Stretch"
+				Margin="3,0,0,0">
+                <DataGrid.Resources>
+                    <SolidColorBrush
+						x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
+						Color="DodgerBlue" />
+                </DataGrid.Resources>
+                <DataGrid.RowHeaderTemplate>
+                    <DataTemplate>
+                        <Image
+							x:Name="editImage"
+							VerticalAlignment="Center"
+							HorizontalAlignment="Center"
+							Width="16"
+							Margin="1,0"></Image>
+                        <DataTemplate.Triggers>
+                            <DataTrigger
+								Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}, Path=DataContext.IsTaskCompletedSuccessfully}"
+								Value="True">
+                                <Setter
+									TargetName="editImage"
+									Property="Source"
+									Value="/RFiDGear;component/Resources/confirm.ico" />
+                            </DataTrigger>
+                            <DataTrigger
+								Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}, Path=DataContext.IsTaskCompletedSuccessfully}"
+								Value="False">
+                                <Setter
+									TargetName="editImage"
+									Property="Source"
+									Value="/RFiDGear;component/Resources/error.ico" />
+                            </DataTrigger>
+                            <DataTrigger
+								Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}, Path=DataContext.IsTaskCompletedSuccessfully}"
+								Value="{x:Null}">
+                                <Setter
+									TargetName="editImage"
+									Property="Source"
+									Value="/RFiDGear;component/Resources/wait.ico" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </DataGrid.RowHeaderTemplate>
+                <DataGrid.Columns>
+                    <!-- <DataGridTextColumn
+					Header="{Binding Data.LocalizationResourceSet,
+					Converter={StaticResource Localization},
+					ConverterParameter='dataGridHeaderUnlockEventConfigDialogTriggerType',
+					Source={StaticResource proxy}}"
+					IsReadOnly="True"
+					Binding="{Binding Path=DoorMonitoringTrigger, Converter={StaticResource Localization}, ConverterParameter={x:Type local:DoorMonEventType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />  -->
+                    <DataGridTextColumn
+						Header="Task Index"
+						IsReadOnly="True"
+						Binding="{Binding Path=SelectedTaskIndex}" />
+                    <DataGridTextColumn
+						Header="Task Type"
+						IsReadOnly="True"
+						Binding="{Binding Path=SelectedTaskType, Converter={StaticResource Localization}}" />
+                    <DataGridTextColumn
+						Header="Description"
+						IsReadOnly="True"
+						Binding="{Binding Path=SelectedTaskDescription}" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+        <DockPanel
+			RenderTransformOrigin="0.5,0.5">
+            <Menu
+				DockPanel.Dock="Top"
+				Background="{x:Null}">
+                <MenuItem
+					Header="{Binding LocalizationResourceSet,
+					Converter={StaticResource Localization},
+					ConverterParameter='menuItemFileHeader' }"
+					VerticalContentAlignment="Center"
+					VerticalAlignment="Top">
+                    <MenuItem
+						Header="_Open Project..."
+						Command="{Binding NewOpenFileDialogCommand}">
+                    </MenuItem>
+                    <MenuItem
+						Header="_Save Tasks..."
+						Command="{Binding SaveTaskDialogCommand}">
+                    </MenuItem>
+                    <MenuItem
+						Header="Save _Chips"
+						Command="{Binding SaveChipDialogCommand}">
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem
+						Header="{Binding LocalizationResourceSet,
+						Converter={StaticResource Localization},
+						ConverterParameter='menuItemExitHeader' }"
+						Command="{Binding CloseApplication}">
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem
+					Header="{Binding LocalizationResourceSet,
+					Converter={StaticResource Localization},
+					ConverterParameter='menuItemEditHeader' }"
+					VerticalContentAlignment="Center"
+					VerticalAlignment="Top">
+                    <MenuItem
+						Header="_Create Mifare Classic Task"
+						Command="{Binding CreateClassicTaskCommand}">
+                    </MenuItem>
+                    <MenuItem
+						Header="_Create Mifare DesFire Task"
+						Command="{Binding CreateDesfireTaskCommand}">
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem
+						Header="_Edit Keys...">
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem
+					Header="_Programming"
+					VerticalContentAlignment="Center"
+					VerticalAlignment="Top"
+					RenderTransformOrigin="0.5,0.5">
+                    <MenuItem
+						Header="_Read RFiD Chip"
+						Command="{Binding ReadChipCommand}">
+                    </MenuItem>
+                    <MenuItem
+						Header="_Write RFiD Chip">
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem
+						Header="Run _Selected Task on Chip Just Once">
+                    </MenuItem>
+                    <MenuItem
+						Header="Run _All Tasks On Selected Chip Just Once"
+						Command="{Binding WriteToChipOnceCommand}">
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem
+						Header="Run Selected _Task on Chip Automatically">
+                    </MenuItem>
+                    <MenuItem
+						IsCheckable="True"
+						IsChecked="{Binding IsUpdateChipsAutomaticallyChecked, Mode=OneWay}"
+						Header="_Run All Tasks On Every Chip Automatically"
+						Command="{Binding WriteToAllChipAutoCommand}">
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem
+						Header="_Set Taskstatus to 'Undone'"
+						Command="{Binding ResetTaskStatusCommand}">
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem
+					VerticalContentAlignment="Center"
+					VerticalAlignment="Top"
+					RenderTransformOrigin="0.5,0.5"
+					Header="{Binding LocalizationResourceSet,
+					Converter={StaticResource Localization},
+					ConverterParameter='menuItemOptionsHeader' }">
+                    <MenuItem
+						Header="{Binding LocalizationResourceSet,
+						Converter={StaticResource Localization},
+						ConverterParameter='menuItemReaderSettingsHeader' }"
+						Command="{Binding NewReaderSetupDialogCommand}">
+                    </MenuItem>
+                    <MenuItem
+						Header="_Language">
+                        <RadioButton
+							x:Name="radioButtonGerman"
+							Content="german"
+							IsChecked="{Binding RadioButtonGermanLanguageSelectedState, Mode=TwoWay}"
+							Command="{Binding SwitchLanguageToGerman}" />
+                        <RadioButton
+							x:Name="radioButtonEnglish"
+							Content="english"
+							IsChecked="{Binding RadioButtonEnglishLanguageSelectedState, Mode=TwoWay}"
+							Command="{Binding SwitchLanguageToEnglish}" />
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem
+					Header="Help"
+					VerticalContentAlignment="Center"
+					VerticalAlignment="Top">
+                    <MenuItem
+						IsCheckable="True"
+						Header="_Check for Updates"
+						IsChecked="{Binding IsCheckForUpdatesChecked, Mode=TwoWay}">
+                    </MenuItem>
+                    <MenuItem
+						Header="_Help">
+                    </MenuItem>
+                </MenuItem>
+            </Menu>
+        </DockPanel>
+        <DockPanel>
+            <StatusBar
+				DockPanel.Dock="Bottom"
+				VerticalAlignment="Bottom">
+                <StatusBarItem>
+                    <Label
+						Content="Current Reader:" />
+                </StatusBarItem>
+                <StatusBarItem>
+                    <TextBlock
+						Text="{Binding CurrentReader}" />
+                </StatusBarItem>
+                <StatusBarItem>
+                    <Label
+						Content="Reader Status:" />
+                </StatusBarItem>
+                <StatusBarItem>
+                    <TextBlock
+						Text="{Binding ReaderStatus}" />
+                </StatusBarItem>
+                <!--				<StatusBarItem>
+					<ProgressBar
+						Minimum="0"
+						Maximum="100"
+						Value="{Binding ProgressBarValue}"
+						Visibility="Visible"
+						Foreground="#FF1CE006"
+						Height="26"
+						Width="150"
+						HorizontalAlignment="Right" />
+				</StatusBarItem>-->
+            </StatusBar>
+        </DockPanel>
+    </Grid>
+</Window>
