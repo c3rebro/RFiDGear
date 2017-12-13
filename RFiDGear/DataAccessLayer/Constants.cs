@@ -20,6 +20,11 @@ namespace RFiDGear.DataAccessLayer
     // change using keyno = 224 enum
     // change frozen = 240 enum
 
+    public static class Constants
+    {
+    	public const int MAX_WAIT_INSERTION = 200; //timeout for chip response in ms
+    }
+    
     /// <summary>
     ///
     /// </summary>

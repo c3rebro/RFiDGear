@@ -207,7 +207,6 @@
     <None Include="3rdParty\RedCell\RedCell.Diagnostics.Update\Update.cd" />
     <None Include="app.config" />
     <None Include="packages.config" />
-    <None Include="README.md" />
     <Resource Include="Resources\wait.ico" />
     <Resource Include="Resources\confirm.ico" />
     <Resource Include="Resources\error.ico" />

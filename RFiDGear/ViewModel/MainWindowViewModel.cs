@@ -133,7 +133,7 @@ namespace RFiDGear.ViewModel
                         this.dialogs.Add(new MifareClassicSetupViewModel(null, dialogs)
                         {
                             Caption = String.Format("{0} UID:[{1}] Type:[{2}]",
-                                                                     resLoader.getResource("mifareAuthSettingsDialogCaption"),
+                                                                     ResourceLoader.getResource("mifareAuthSettingsDialogCaption"),
                                                                      "empty",
                                                                      "none"),
                             IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
@@ -195,7 +195,7 @@ namespace RFiDGear.ViewModel
                     this.dialogs.Add(new MifareDesfireSetupViewModel(null, dialogs)
                     {
                         Caption = String.Format("{0} UID:[{1}] Type:[{2}]",
-                                                                 resLoader.getResource("mifareAuthSettingsDialogCaption"),
+                                                                 ResourceLoader.getResource("mifareAuthSettingsDialogCaption"),
                                                                  "empty",
                                                                  "none"),
 
@@ -768,8 +768,8 @@ namespace RFiDGear.ViewModel
         {
             this.Dialogs.Add(new CustomDialogViewModel
             {
-                Message = resLoader.getResource("messageBoxRestartRequiredMessage"),
-                Caption = resLoader.getResource("messageBoxRestartRequiredCaption"),
+                Message = ResourceLoader.getResource("messageBoxRestartRequiredMessage"),
+                Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
 
                 OnOk = (sender) =>
                 {
@@ -836,8 +836,8 @@ namespace RFiDGear.ViewModel
         {
             var dlg = new OpenFileDialogViewModel
             {
-                Title = "Select a file (I won't actually do anything with it)",
-                Filter = "All files (*.*)|*.*",
+                Title = ResourceLoader.getResource("windowTitleOpenProject"),
+                Filter = ResourceLoader.getResource("filterStringSaveTasks"),
                 Multiselect = false
             };
 
@@ -858,8 +858,6 @@ namespace RFiDGear.ViewModel
                     ChipTasks.TaskCollection.Add(setup);
                 }
             }
-            else
-                new MessageBoxViewModel { Message = "You didn't select a file." }.Show(this.Dialogs);
 
             RaisePropertyChanged("ChipTasks");
         }
@@ -873,8 +871,8 @@ namespace RFiDGear.ViewModel
         {
             var dlg = new SaveFileDialogViewModel
             {
-                Title = "Select a file (I won't actually do anything with it)",
-                Filter = "All files (*.xml)|*.xml"
+            	Title = ResourceLoader.getResource("windowTitleSaveTasks"),
+                Filter = ResourceLoader.getResource("filterStringSaveTasks")
             };
 
             if (dlg.Show(this.Dialogs) && dlg.FileName != null)
@@ -1071,8 +1069,8 @@ namespace RFiDGear.ViewModel
         {
             if (new MessageBoxViewModel
             {
-                Caption = resLoader.getResource("messageBoxUpdateAvailableCaption"),
-                Message = resLoader.getResource("messageBoxUpdateAvailableMessage"),
+                Caption = ResourceLoader.getResource("messageBoxUpdateAvailableCaption"),
+                Message = ResourceLoader.getResource("messageBoxUpdateAvailableMessage"),
                 Buttons = MessageBoxButton.YesNo,
                 Image = MessageBoxImage.Question
             }.Show(this.Dialogs) == MessageBoxResult.Yes)

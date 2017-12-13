@@ -200,7 +200,7 @@ namespace RFiDGear.ViewModel
                 this.dialogs.Add(new MifareClassicSetupViewModel(this, dialogs)
                 {
                     Caption = String.Format("{0} UID:[{1}] Type:[{2}]",
-                                                             resLoader.getResource("mifareAuthSettingsDialogCaption"),
+                                                             ResourceLoader.getResource("mifareAuthSettingsDialogCaption"),
                                                              this.Parent.UidNumber,
                                                              this.Parent.CardType),
                     //ViewModelContext = this,

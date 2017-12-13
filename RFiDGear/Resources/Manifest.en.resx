@@ -136,10 +136,6 @@ slot of an available reader</value>
   <data name="toolTipCaption" xml:space="preserve">
     <value>Hint:</value>
   </data>
-  <data name="toolTipButtonCardReaderEstablishConnection" xml:space="preserve">
-    <value>This button calls the "SCardEstablishContext" function which establishes the resource manager context
-(the scoped cardreader) with functions that can be used later.</value>
-  </data>
   <data name="cardStatusToolStripLabel" xml:space="preserve">
     <value>not connected</value>
   </data>
@@ -189,10 +185,10 @@ slot of an available reader</value>
     <value>_Edit</value>
   </data>
   <data name="menuItemOptionsHeader" xml:space="preserve">
-    <value>_Options</value>
+    <value>_Tools</value>
   </data>
   <data name="menuItemReaderSettingsHeader" xml:space="preserve">
-    <value>_Reader Settings...</value>
+    <value>_Settings...</value>
   </data>
   <data name="mifareAuthSettingsDialogCaption" xml:space="preserve">
     <value>Authenticationdialog</value>
@@ -511,5 +507,91 @@ slot of an available reader</value>
   </data>
   <data name="ENUM.DataExplorer_DataBlock.Block2" xml:space="preserve">
     <value>Block 2</value>
+  </data>
+  <data name="labelReaderStatus" xml:space="preserve">
+    <value>Reader Status:</value>
+  </data>
+  <data name="labelSelectedReader" xml:space="preserve">
+    <value>Selected Reader:</value>
+  </data>
+  <data name="menuItemHelpHeader" xml:space="preserve">
+    <value>_Help</value>
+  </data>
+  <data name="menuItemCheckForUpdates" xml:space="preserve">
+    <value>_Check for Updates</value>
+  </data>
+  <data name="menuItemSetTaskStatusToUndone" xml:space="preserve">
+    <value>_Set Taskstatus to 'Undone'</value>
+  </data>
+  <data name="menuItemRunAllTasksAutomatically" xml:space="preserve">
+    <value>_Run All Tasks Automatically</value>
+  </data>
+  <data name="menuItemRunSelectedTaskAutomatically" xml:space="preserve">
+    <value>Run Selected _Task Automatically</value>
+  </data>
+  <data name="menuItemRunSelectedTaskOnce" xml:space="preserve">
+    <value>Run _Selected Task on Chip Just Once</value>
+  </data>
+  <data name="menuItemRunAllTasksOnce" xml:space="preserve">
+    <value>Run _All Tasks On Selected Chip Just Once</value>
+  </data>
+  <data name="menuItemOpenProject" xml:space="preserve">
+    <value>_Open Project...</value>
+  </data>
+  <data name="menuItemSaveTask" xml:space="preserve">
+    <value>_Save Tasks...</value>
+  </data>
+  <data name="menuItemSaveChip" xml:space="preserve">
+    <value>Save _Chips...</value>
+  </data>
+  <data name="menuItemReadChipPublic" xml:space="preserve">
+    <value>_Read Chip Public</value>
+  </data>
+  <data name="toolTipButtonCardReaderEstablishConnection" xml:space="preserve">
+    <value>Try to Connect to the CardReader. Note: A RFID Tag with matching technology must be present on the reader.</value>
+  </data>
+  <data name="tabPageHeaderMisc" xml:space="preserve">
+    <value>Miscellaneous Settings</value>
+  </data>
+  <data name="tabPageHeaderReaderSetup" xml:space="preserve">
+    <value>Reader Settings</value>
+  </data>
+  <data name="labelAvailableReaders" xml:space="preserve">
+    <value>Available Reader Providers</value>
+  </data>
+  <data name="menuItemAddEditMifareClassicTaskHeader" xml:space="preserve">
+    <value>Create Mifare _Classic Task</value>
+  </data>
+  <data name="menuItemAddEditMifareDesfireTaskHeader" xml:space="preserve">
+    <value>Create Mifare _Desfire Task</value>
+  </data>
+  <data name="dataGridHeaderMainWindowTaskIndex" xml:space="preserve">
+    <value>Task Nr.</value>
+  </data>
+  <data name="dataGridHeaderMainWindowTaskType" xml:space="preserve">
+    <value>Task Type</value>
+  </data>
+  <data name="dataGridHeaderMainWindowTaskDescription" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="windowTitleOpenProject" xml:space="preserve">
+    <value>Open Project...</value>
+  </data>
+  <data name="filterStringSaveTasks" xml:space="preserve">
+    <value>Project files (*.xml)|*.xml</value>
+  </data>
+  <data name="windowTitleSaveTasks" xml:space="preserve">
+    <value>Save Tasks to File...</value>
+  </data>
+  <data name="menuItemContextMenuParentNodeQuickCheck" xml:space="preserve">
+    <value>QuickCheck</value>
+  </data>
+  <data name="toolTipContextMenuParentNodeMifareClassicQuickCheck" xml:space="preserve">
+    <value>Try to get read access to all DataBlocks on the Card
+Place the Result in a Database including SectorTrailer (Block 3)
+Use a csv file to acuire default keys for authentication</value>
+  </data>
+  <data name="toolTipContextMenuParentNodeMifareDesfireQuickCheck" xml:space="preserve">
+    <value>Try to get all Application IDs and Chip Key Settings</value>
   </data>
 </root>

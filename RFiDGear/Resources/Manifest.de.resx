@@ -131,14 +131,10 @@
   </data>
   <data name="toolTipSelectReaderComboBox" xml:space="preserve">
     <value>Bitte aus der Liste verfügbarer Kartenleser
-einen Kartenlesegerät auswählen</value>
+ein Kartenlesegerät auswählen</value>
   </data>
   <data name="toolTipCaption" xml:space="preserve">
     <value>Hinweis:</value>
-  </data>
-  <data name="toolTipButtonCardReaderEstablishConnection" xml:space="preserve">
-    <value>Diese Schaltfläche stellt die Verbindung mit dem Kartenleser her und lädt alle später benötigten
-Informationen in der Kartenleser. ("SCardEstablishContext" Funktion - WinSCard.dll)</value>
   </data>
   <data name="cardStatusToolStripLabel_Inserted" xml:space="preserve">
     <value>Karte erkannt</value>
@@ -189,10 +185,10 @@ Informationen in der Kartenleser. ("SCardEstablishContext" Funktion - WinSCard.d
     <value>_Bearbeiten</value>
   </data>
   <data name="menuItemOptionsHeader" xml:space="preserve">
-    <value>_Optionen</value>
+    <value>_Extras</value>
   </data>
   <data name="menuItemReaderSettingsHeader" xml:space="preserve">
-    <value>_Kartenleser...</value>
+    <value>_Einstellungen...</value>
   </data>
   <data name="mifareAuthSettingsDialogCaption" xml:space="preserve">
     <value>Authentifizierungsdialog</value>
@@ -523,5 +519,93 @@ Informationen in der Kartenleser. ("SCardEstablishContext" Funktion - WinSCard.d
   </data>
   <data name="ENUM.DataExplorer_DataBlock.Block2" xml:space="preserve">
     <value>Block 2</value>
+  </data>
+  <data name="labelReaderStatus" xml:space="preserve">
+    <value>Kartenleser Status:</value>
+  </data>
+  <data name="labelSelectedReader" xml:space="preserve">
+    <value>Ausgewählter Kartenleser:</value>
+  </data>
+  <data name="menuItemHelpHeader" xml:space="preserve">
+    <value>_Hilfe</value>
+  </data>
+  <data name="menuItemCheckForUpdates" xml:space="preserve">
+    <value>_Auf Updates prüfen</value>
+  </data>
+  <data name="menuItemSetTaskStatusToUndone" xml:space="preserve">
+    <value>_Aufgabenstatus zurücksetzen</value>
+  </data>
+  <data name="menuItemRunAllTasksAutomatically" xml:space="preserve">
+    <value>_Alle Aufgaben automatisch abarbeiten</value>
+  </data>
+  <data name="menuItemRunSelectedTaskAutomatically" xml:space="preserve">
+    <value>_Markierte Aufgabe automatisch abarbeiten</value>
+  </data>
+  <data name="menuItemRunSelectedTaskOnce" xml:space="preserve">
+    <value>Markierte Aufgaben _einmalig abarbeiten</value>
+  </data>
+  <data name="menuItemRunAllTasksOnce" xml:space="preserve">
+    <value>Alle A_ufgaben einmalig abarbeiten</value>
+  </data>
+  <data name="menuItemOpenProject" xml:space="preserve">
+    <value>Projektdatei _öffnen...</value>
+  </data>
+  <data name="menuItemSaveTask" xml:space="preserve">
+    <value>_Aufgabenliste Speichern unter...</value>
+  </data>
+  <data name="menuItemSaveChip" xml:space="preserve">
+    <value>_RFiD Chipliste Speichern unter...</value>
+  </data>
+  <data name="menuItemReadChipPublic" xml:space="preserve">
+    <value>_RFiD Chip Einlesen</value>
+  </data>
+  <data name="toolTipButtonCardReaderEstablishConnection" xml:space="preserve">
+    <value>Versucht eine Verbindung zum Kartenleser her zu stellen.
+Ein zum Lesertyp passender RFID Chip muss sich in Leserreichweite befinden.</value>
+  </data>
+  <data name="tabPageHeaderMisc" xml:space="preserve">
+    <value>Erweiterte Einstellungen</value>
+  </data>
+  <data name="tabPageHeaderReaderSetup" xml:space="preserve">
+    <value>Kartenleser Einstellungen</value>
+  </data>
+  <data name="labelAvailableReaders" xml:space="preserve">
+    <value>Verfügbare Kartenleseranbieter</value>
+  </data>
+  <data name="menuItemAddEditMifareClassicTaskHeader" xml:space="preserve">
+    <value>Mifare _Classic Aufgabe hinzufügen/bearbeiten</value>
+  </data>
+  <data name="menuItemAddEditMifareDesfireTaskHeader" xml:space="preserve">
+    <value>Mifare _Desfire Aufgabe hinzufügen/bearbeiten</value>
+  </data>
+  <data name="dataGridHeaderMainWindowTaskIndex" xml:space="preserve">
+    <value>Aufgaben Nr.</value>
+  </data>
+  <data name="dataGridHeaderMainWindowTaskType" xml:space="preserve">
+    <value>Aufgabentyp</value>
+  </data>
+  <data name="dataGridHeaderMainWindowTaskDescription" xml:space="preserve">
+    <value>Aufgabenbeschreibung</value>
+  </data>
+  <data name="windowTitleSaveTasks" xml:space="preserve">
+    <value>Aufgabenliste Speichern unter...</value>
+  </data>
+  <data name="filterStringSaveTasks" xml:space="preserve">
+    <value>Projekt Dateien (*.xml)|*.xml</value>
+  </data>
+  <data name="windowTitleOpenProject" xml:space="preserve">
+    <value>Projektdatei öffnen...</value>
+  </data>
+  <data name="menuItemContextMenuParentNodeQuickCheck" xml:space="preserve">
+    <value>Schnellprüfung</value>
+  </data>
+  <data name="toolTipContextMenuParentNodeMifareClassicQuickCheck" xml:space="preserve">
+    <value>Try to get read access to all DataBlocks on the Card
+Place the Result in a Database including SectorTrailer (Block 3)
+Use a csv file to acuire default keys for authentication</value>
+  </data>
+  <data name="toolTipContextMenuParentNodeMifareDesfireQuickCheck" xml:space="preserve">
+    <value>Erstellt eine Liste der vorhanden Applikationen und 
+versucht alle enthaltenen Schlüsseleinstellungen zu erfassen</value>
   </data>
 </root>

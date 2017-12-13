@@ -158,7 +158,7 @@ namespace RFiDGear
             {
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(100))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -251,7 +251,7 @@ namespace RFiDGear
             {
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(200))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -419,7 +419,7 @@ namespace RFiDGear
             {
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(200))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -555,7 +555,7 @@ namespace RFiDGear
 
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(200))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -631,7 +631,7 @@ namespace RFiDGear
             {
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(100))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -685,7 +685,7 @@ namespace RFiDGear
 
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(100))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -746,7 +746,7 @@ namespace RFiDGear
 
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(2000))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -830,7 +830,7 @@ namespace RFiDGear
 
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(2000))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -886,7 +886,7 @@ namespace RFiDGear
 
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(2000))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -965,7 +965,7 @@ namespace RFiDGear
 
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(2000))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -1043,7 +1043,7 @@ namespace RFiDGear
 
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(2000))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -1119,7 +1119,7 @@ namespace RFiDGear
 
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(2000))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -1179,7 +1179,7 @@ namespace RFiDGear
 
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(2000))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -1242,7 +1242,7 @@ namespace RFiDGear
 
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(2000))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
@@ -1313,7 +1313,7 @@ namespace RFiDGear
 
                 if (readerUnit.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(2000))
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
                         if (readerUnit.Connect())
                         {
