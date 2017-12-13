@@ -84,7 +84,7 @@ namespace RFiDGear
 			string[] values = new string[names.Length];
 
 			for (int i = 0; i < names.Length; i++)
-			{ values[i] = resManager.GetString(string.Format("ENUM.{0}.{1}", Type.Name, names[i]), cultureInfo); }
+			{ values[i] = ResourceLoader.getResource(string.Format("ENUM.{0}.{1}", Type.Name, names[i])); }
 
 			return values;
 		}
@@ -124,24 +124,24 @@ namespace RFiDGear
 			try
 			{
 				if (parameter is string)
-					return resManager.GetString((parameter as string), cultureInfo);
+					return ResourceLoader.getResource((parameter as string));
 				else if (value != null && value.GetType() == typeof(ObservableCollection<string>))
 				{
 					var collection = new ObservableCollection<string>();
 
 					foreach (string s in value as ObservableCollection<string>)
 					{
-						collection.Add(resManager.GetString(string.Format("ENUM.{0}", s), cultureInfo));
+						collection.Add(ResourceLoader.getResource(string.Format("ENUM.{0}", s)));
 					}
 					return collection;
 				}
 				else if (value != null && !(value is string))
 				{
 					string t = string.Format("ENUM.{0}.{1}", value.GetType().Name, Enum.GetName(value.GetType(), value));
-					return resManager.GetString(string.Format("ENUM.{0}.{1}", value.GetType().Name, Enum.GetName(value.GetType(), value)), cultureInfo);
+					return ResourceLoader.getResource(string.Format("ENUM.{0}.{1}", value.GetType().Name, Enum.GetName(value.GetType(), value)));
 				}
 				else if (value is string)
-					return resManager.GetString(string.Format("ENUM.{0}.{1}", value.GetType().Name, value), cultureInfo);
+					return ResourceLoader.getResource(string.Format("ENUM.{0}.{1}", value.GetType().Name, value));
 				else
 					return "Ressource not Found";
 			}
@@ -173,7 +173,7 @@ namespace RFiDGear
 
 				for (int i = 0; i < names.Length; i++)
 				{
-					values[i] = resManager.GetString(string.Format("ENUM.{0}.{1}", targetType.Name, names[i]), cultureInfo);
+					values[i] = ResourceLoader.getResource(string.Format("ENUM.{0}.{1}", targetType.Name, names[i]));
 					if ((string)value == values[i])
 						return names[i];
 				}
@@ -200,7 +200,6 @@ namespace RFiDGear
 		{
 			try
 			{
-				
 				using (SettingsReaderWriter settings = new SettingsReaderWriter())
 				{
 					settings.ReadSettings();

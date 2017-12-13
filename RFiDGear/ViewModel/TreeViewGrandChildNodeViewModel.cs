@@ -139,9 +139,7 @@ namespace RFiDGear.ViewModel
                 children = value;
                 RaisePropertyChanged("Children");
             }
-        }
-
-        private ObservableCollection<TreeViewGrandGrandChildNodeViewModel> children;
+        } private ObservableCollection<TreeViewGrandGrandChildNodeViewModel> children;
 
         #region (Dependency) Properties
 
@@ -327,6 +325,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public int SelectedDataLength
         {
             get { return selectedDataLength; }
@@ -357,6 +356,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public int SelectedDataIndexStart
         {
             get { return selectedDataIndexStart; }
@@ -403,6 +403,7 @@ namespace RFiDGear.ViewModel
 
         #region View Switches
 
+        [XmlIgnore]
         public bool IsExpanded
         {
             get { return isExpanded; }
@@ -422,6 +423,7 @@ namespace RFiDGear.ViewModel
 
         private bool isExpanded;
 
+        [XmlIgnore]
         public bool IsSelected
         {
             get { return isSelected; }
@@ -449,6 +451,7 @@ namespace RFiDGear.ViewModel
 
         private bool? isValidSelectedDataIndexAndLength;
 
+        [XmlIgnore]
         public bool IsFocused
         {
             get { return isFocused; }
@@ -460,9 +463,7 @@ namespace RFiDGear.ViewModel
                     RaisePropertyChanged("IsFocused");
                 }
             }
-        }
-
-        private bool isFocused;
+        } private bool isFocused;
 
         public bool? IsAuthenticated
         {
@@ -472,9 +473,7 @@ namespace RFiDGear.ViewModel
                 isAuth = value;
                 RaisePropertyChanged("IsAuthenticated");
             }
-        }
-
-        private bool? isAuth;
+        } private bool? isAuth;
 
         public bool? IsTask
         {
@@ -484,10 +483,9 @@ namespace RFiDGear.ViewModel
                 isTask = value;
                 RaisePropertyChanged("IsTask");
             }
-        }
+        } private bool? isTask;
 
-        private bool? isTask;
-
+        [XmlIgnore]
         public bool? IsVisible
         {
             get { return isVisible; }
@@ -496,9 +494,7 @@ namespace RFiDGear.ViewModel
                 isVisible = value;
                 RaisePropertyChanged("IsVisible");
             }
-        }
-
-        private bool? isVisible;
+        } private bool? isVisible;
 
         public bool IsDataBlock
         {
@@ -508,9 +504,7 @@ namespace RFiDGear.ViewModel
                 isDataBlock = value;
                 RaisePropertyChanged("IsDataBlock");
             }
-        }
-
-        private bool isDataBlock;
+        } private bool isDataBlock;
 
         #endregion View Switches
 

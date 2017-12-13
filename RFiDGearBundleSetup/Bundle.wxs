@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension" xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
-	<?define VersionNumber="0.1.6551" ?>
+	<?define VersionNumber="0.1.6556" ?>
 	<?define UpgradeCode="a34bc413-e349-4fd1-8b90-2eb95a333436" ?>
 	<?define NetFx451MinRelease = 378675 ?>
 	<!-- The URL for add/remove programs -->

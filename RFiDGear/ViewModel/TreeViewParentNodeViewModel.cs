@@ -201,10 +201,6 @@ namespace RFiDGear.ViewModel
 			}
 		}
 
-		private void EditDefaultKeys()
-		{
-		}
-
 		private void MifareDesfireQuickCheck()
 		{
 			if (!isTask)

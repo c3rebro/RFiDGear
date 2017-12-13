@@ -27,9 +27,6 @@ namespace RFiDGear
         private byte[][] cardDataSector;
         private bool[] blockAuthSuccessful;
         private bool[] blockReadSuccessful;
-        private bool sectorIsKeyAAuthSuccessful;
-        private bool sectorIsKeyBAuthSuccessful;
-        private bool sectorCanRead;
 
         private byte[] desFireFileData;
 
@@ -243,9 +240,6 @@ namespace RFiDGear
 
             int blockCount = 0;
             int dataBlockNumber = 0;
-            sectorIsKeyAAuthSuccessful = true;
-            sectorIsKeyBAuthSuccessful = false;
-            sectorCanRead = true;
 
             try
             {
@@ -329,12 +323,10 @@ namespace RFiDGear
                                             Sector.DataBlock.Add(dataBlock);
 
                                             blockReadSuccessful[dataBlockNumber + k] = false;
-                                            sectorCanRead = false;
                                         }
                                     }
                                     catch
                                     { // Try Auth with keytype b
-                                        sectorIsKeyAAuthSuccessful = false;
 
                                         try
                                         {
@@ -342,7 +334,6 @@ namespace RFiDGear
 
                                             cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)1, MifareKeyType.KT_KEY_B); // FIXME same as '303
                                             blockAuthSuccessful[dataBlockNumber + k] = true;
-                                            sectorIsKeyBAuthSuccessful = true;
 
                                             Sector.IsAuthenticated = true;
 
@@ -366,7 +357,6 @@ namespace RFiDGear
                                                 Sector.DataBlock.Add(dataBlock);
 
                                                 blockReadSuccessful[dataBlockNumber + k] = false;
-                                                sectorCanRead = false;
 
                                                 return ERROR.AuthenticationError;
                                             }
@@ -379,7 +369,6 @@ namespace RFiDGear
                                             Sector.DataBlock.Add(dataBlock);
 
                                             blockAuthSuccessful[dataBlockNumber + k] = false;
-                                            sectorIsKeyBAuthSuccessful = false;
 
                                             return ERROR.AuthenticationError;
                                         }
@@ -410,10 +399,6 @@ namespace RFiDGear
 
             int blockCount = 0;
             int dataBlockNumber = 0;
-
-            sectorIsKeyAAuthSuccessful = true;
-            sectorIsKeyBAuthSuccessful = false;
-            sectorCanRead = true;
 
             try
             {
@@ -484,20 +469,16 @@ namespace RFiDGear
                                         catch
                                         {
                                             blockReadSuccessful[dataBlockNumber + k] = false;
-                                            sectorCanRead = false;
-
                                             return ERROR.AuthenticationError;
                                         }
                                     }
                                     catch
                                     { // Try Auth with keytype b
-                                        sectorIsKeyAAuthSuccessful = false;
 
                                         try
                                         {
                                             cmd.AuthenticateKeyNo((byte)(dataBlockNumber + k), (byte)1, MifareKeyType.KT_KEY_B); // FIXME same as '303
                                             blockAuthSuccessful[dataBlockNumber + k] = true;
-                                            sectorIsKeyBAuthSuccessful = true;
 
                                             try
                                             {
@@ -513,7 +494,6 @@ namespace RFiDGear
                                             catch
                                             {
                                                 blockReadSuccessful[dataBlockNumber + k] = false;
-                                                sectorCanRead = false;
 
                                                 return ERROR.AuthenticationError;
                                             }
@@ -521,7 +501,6 @@ namespace RFiDGear
                                         catch
                                         {
                                             blockAuthSuccessful[dataBlockNumber + k] = false;
-                                            sectorIsKeyBAuthSuccessful = false;
 
                                             //return ERROR.AuthenticationError;
                                         }
@@ -586,7 +565,6 @@ namespace RFiDGear
                                 }
                                 catch
                                 { // Try Auth with keytype b
-                                    sectorIsKeyAAuthSuccessful = false;
 
                                     cmd.LoadKeyNo((byte)0, keyB, MifareKeyType.KT_KEY_B);
 

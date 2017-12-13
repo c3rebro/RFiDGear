@@ -11,7 +11,7 @@
       Defines & Variables
    -->
   <!-- Full version number to display <?define VersionNumber="!(bind.FileVersion.Product)" ?> -->
-  <?define VersionNumber="0.1.6551" ?>
+  <?define VersionNumber="0.1.6556" ?>
   <!--
    Upgrade code HAS to be the same for all updates.
    Once you've chosen it don't change it.
