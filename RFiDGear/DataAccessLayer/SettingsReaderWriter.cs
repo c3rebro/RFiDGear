@@ -4,6 +4,7 @@ using RFiDGear.Model;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -63,7 +64,10 @@ namespace RFiDGear
                 if (!Directory.Exists(appDataPath))
                     Directory.CreateDirectory(appDataPath);
 
-                xmlWriter = XmlWriter.Create(Path.Combine(appDataPath, _updateConfigFileFileName));
+                XmlWriterSettings xmlSettings = new XmlWriterSettings();
+                xmlSettings.Encoding = new UTF8Encoding(false);
+                
+                xmlWriter = XmlWriter.Create(Path.Combine(appDataPath, _updateConfigFileFileName), xmlSettings);
                 xmlWriter.WriteStartDocument();
                 xmlWriter.WriteStartElement("Manifest");
                 xmlWriter.WriteAttributeString("version", string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build));

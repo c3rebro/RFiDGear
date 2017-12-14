@@ -87,7 +87,7 @@ namespace RedCell.Diagnostics.Update
                 return;
             }
 
-            string data = File.ReadAllText(configFile.FullName);
+            string data = File.ReadAllText(configFile.FullName, new UTF8Encoding(false));
             this._localConfig = new Manifest(data);
 
             var rootDirectory = new DirectoryInfo(Path.GetDirectoryName(me));
@@ -262,7 +262,7 @@ namespace RedCell.Diagnostics.Update
             foreach (string update in this._remoteConfig.Payloads)
             {
                 Log.Write("Fetching '{0}'.", update);
-                var url = this._remoteConfig.BaseUri + (_settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/") + update; //TODO: make this localizable
+                var url = this._remoteConfig.BaseUri  + update; //TODO: make this localizable e.g. + (_settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/")
                 var file = Fetch.Get(url);
                 if (file == null)
                 {
@@ -278,9 +278,9 @@ namespace RedCell.Diagnostics.Update
                 {
                     try
                     {
-                        var zipfile = Path.Combine(WorkPath, update);
+                        var zipfile = Path.Combine(Path.Combine(appDataPath, WorkPath), update);
                         using (var zip = ZipFile.Read(zipfile))
-                            zip.ExtractAll(WorkPath, ExtractExistingFileAction.Throw);
+                            zip.ExtractAll(Path.Combine(appDataPath, WorkPath), ExtractExistingFileAction.Throw);
                         File.Delete(zipfile);
                     }
                     catch (Exception e)
@@ -294,9 +294,9 @@ namespace RedCell.Diagnostics.Update
             if (isUserNotified && allowUpdate)
             {
                 Process p = new Process();
-                ProcessStartInfo info = new ProcessStartInfo("msiexec.exe");
-                info.Arguments = string.Format("/i {0}", Path.Combine(appDataPath, WorkPath, "Setup.msi"));
-
+                ProcessStartInfo info = new ProcessStartInfo(Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe"));
+                //info.Arguments = string.Format("/i {0}", Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe"));
+                info.UseShellExecute = false;
 
                 try
                 {
@@ -314,44 +314,6 @@ namespace RedCell.Diagnostics.Update
                     return;
                 }
             }
-
-            // Change the currently running executable so it can be overwritten.
-            //			Process thisprocess = Process.GetCurrentProcess();
-            //			string me = thisprocess.MainModule.FileName;
-            //
-            //			var rootDirectory = new DirectoryInfo(Path.GetDirectoryName(me));
-            //			var rootFiles = rootDirectory.GetFiles("*.*", SearchOption.TopDirectoryOnly);
-            //
-            //			foreach (FileInfo file in rootFiles)
-            //			{
-            //				string bak = file.FullName + ".bak";
-            //				Log.Write("Renaming current file to '{0}'.", bak);
-            //				File.Move(file.FullName, bak);
-            //			}
-            //
-            //			// Write out the new manifest.
-            //			_remoteConfig.Write(Path.Combine(WorkPath, _localConfigFile.Name));
-            //
-            //			// Copy everything.
-            //			var workDirectory = new DirectoryInfo(WorkPath);
-            //			var workFiles = workDirectory.GetFiles("*.*", SearchOption.AllDirectories);
-            //			foreach (FileInfo file in workFiles)
-            //			{
-            //				Log.Write("installing file '{0}'.", rootDirectory + "\"" + file.Name);
-            //				//Directory.CreateDirectory(new FileInfo(destination).DirectoryName);
-            //				file.CopyTo(Path.Combine(rootDirectory.FullName, file.Name), true);
-            //				if(File.Exists(Path.Combine(rootDirectory.FullName, file.Name + ".bak" )))
-            //					try {
-            //					File.Delete(Path.Combine(rootDirectory.FullName, file.Name + ".bak"));
-            //				}
-            //				catch(Exception e) {
-            //
-            //				}
-            //
-            //			}
-
-            // Clean up.
-
         }
         #endregion
     }

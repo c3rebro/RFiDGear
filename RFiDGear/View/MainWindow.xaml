@@ -400,7 +400,7 @@
 						<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />
 					</Style>
 				</DataGrid.RowStyle>
-					
+				
 				<DataGrid.RowHeaderTemplate>
 					<DataTemplate>
 						<Image
@@ -519,7 +519,7 @@
 						ConverterParameter='menuItemExitHeader' }"
 						Command="{Binding CloseApplication}">
 					</MenuItem>
-				</MenuItem>
+				</MenuItem> <!-- File -->
 				<MenuItem
 					Header="{Binding LocalizationResourceSet,
 					Converter={StaticResource Localization},
@@ -538,9 +538,11 @@
 						ConverterParameter='menuItemAddEditMifareDesfireTaskHeader' }"
 						Command="{Binding CreateDesfireTaskCommand}">
 					</MenuItem>
-				</MenuItem>
+				</MenuItem> <!-- Edit -->
 				<MenuItem
-					Header="_Programming"
+					Header="{Binding LocalizationResourceSet,
+					Converter={StaticResource Localization},
+					ConverterParameter='menuItemProgrammingHeader' }"
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top"
 					RenderTransformOrigin="0.5,0.5">
@@ -561,6 +563,7 @@
 						Header="{Binding LocalizationResourceSet,
 						Converter={StaticResource Localization},
 						ConverterParameter='menuItemRunSelectedTaskOnce' }"
+						Command="{Binding WriteSelectedTaskToChipOnceCommand}"
 					>
 					</MenuItem>
 					<Separator />
@@ -584,7 +587,7 @@
 						ConverterParameter='menuItemSetTaskStatusToUndone' }"
 						Command="{Binding ResetTaskStatusCommand}">
 					</MenuItem>
-				</MenuItem>
+				</MenuItem> <!-- Programming -->
 				<MenuItem
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top"
@@ -611,7 +614,7 @@
 							IsChecked="{Binding RadioButtonEnglishLanguageSelectedState, Mode=TwoWay}"
 							Command="{Binding SwitchLanguageToEnglish}" />
 					</MenuItem>
-				</MenuItem>
+				</MenuItem> <!-- Options -->
 				<MenuItem
 					Header="{Binding LocalizationResourceSet,
 					Converter={StaticResource Localization},
@@ -630,7 +633,7 @@
 						Converter={StaticResource Localization},
 						ConverterParameter='menuItemHelpHeader' }">
 					</MenuItem>
-				</MenuItem>
+				</MenuItem> <!-- Help -->
 			</Menu>
 		</DockPanel>
 		<DockPanel>

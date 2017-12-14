@@ -399,8 +399,14 @@ namespace RFiDGear.ViewModel
 				triggerReadChip.IsEnabled = false;
 		}
 
-		public ICommand WriteToChipOnceCommand { get { return new RelayCommand(OnNewWriteToChipOnceCommand); } }
-		private void OnNewWriteToChipOnceCommand()
+		public ICommand WriteSelectedTaskToChipOnceCommand { get { return new RelayCommand(OnNewWriteSelectedTaskToChipOnceCommand); } }
+		private void OnNewWriteSelectedTaskToChipOnceCommand()
+		{
+			OnNewWriteToChipOnceCommand(true);
+		}
+		
+		public ICommand WriteToChipOnceCommand { get { return new RelayCommand<bool>(OnNewWriteToChipOnceCommand); } }
+		private void OnNewWriteToChipOnceCommand(bool _runSelectedOnly = false)
 		{
 			taskIndex = 0;
 
@@ -442,6 +448,21 @@ namespace RFiDGear.ViewModel
 			                       			//are there tasks present to process?
 			                       			while (taskIndex < taskHandler.TaskCollection.Count)
 			                       			{
+			                       				if(_runSelectedOnly)
+			                       				{
+			                       					if(SelectedSetupViewModel is MifareClassicSetupViewModel
+			                       					   && (SelectedSetupViewModel as MifareClassicSetupViewModel).IsValidSelectedTaskIndex != false)
+			                       					{
+			                       						taskIndex = (SelectedSetupViewModel as MifareClassicSetupViewModel).SelectedTaskIndexAsInt;
+			                       					}
+			                       					
+			                       					else if(SelectedSetupViewModel is MifareDesfireSetupViewModel
+			                       					        && (SelectedSetupViewModel as MifareDesfireSetupViewModel).IsValidSelectedTaskIndex != false)
+			                       					{
+			                       						taskIndex = (SelectedSetupViewModel as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt;
+			                       					}
+			                       				}
+
 			                       				Thread.Sleep(100);
 
 			                       				taskTimeout.Tag = taskIndex;
@@ -682,6 +703,10 @@ namespace RFiDGear.ViewModel
 			                       							break;
 			                       					}
 			                       				}
+			                       				
+			                       				
+			                       				if(_runSelectedOnly)
+			                       					break;
 			                       			}
 			                       		}
 			                       		else
@@ -883,22 +908,6 @@ namespace RFiDGear.ViewModel
 		#endregion Menu Commands
 
 		#region Dependency Properties
-
-//		/// <summary>
-//		/// 
-//		/// </summary>
-//		public bool? TaskCompletedSuccessfully
-//		{
-//			get { return null; }
-//		}
-//
-//		/// <summary>
-//		/// 
-//		/// </summary>
-//		public string RowHeaderImageVisibility
-//		{
-//			get { return "Visible"; }
-//		}
 
 		/// <summary>
 		/// 

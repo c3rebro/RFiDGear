@@ -644,8 +644,11 @@ namespace RFiDGear.ViewModel
 			set
 			{
 				selectedClassicKeyANumberCurrent = value;
-				ClassicKeyAKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
-					First(x => x.KeyType == SelectedClassicKeyANumberCurrent).AccessBits.Split(new[] { ',', ';' })[0];
+//				if(SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
+//				{
+//					ClassicKeyAKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
+//						First(x => x.KeyType == SelectedClassicKeyANumberCurrent).AccessBits.Split(new[] { ',', ';' })[0];
+//				}
 
 				RaisePropertyChanged("SelectedClassicKeyANumberCurrent");
 			}
@@ -662,8 +665,8 @@ namespace RFiDGear.ViewModel
 			{
 				selectedClassicKeyBNumberCurrent = value;
 
-				ClassicKeyBKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
-					First(x => x.KeyType == SelectedClassicKeyBNumberCurrent).AccessBits.Split(new[] { ',', ';' })[2];
+//				ClassicKeyBKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
+//					First(x => x.KeyType == SelectedClassicKeyBNumberCurrent).AccessBits.Split(new[] { ',', ';' })[2];
 
 				RaisePropertyChanged("SelectedClassicKeyBNumberCurrent");
 			}
@@ -1059,15 +1062,6 @@ namespace RFiDGear.ViewModel
 				         		{
 				         			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
 
-				         			//				         			if(device.Sector.IsAuthenticated)
-				         			//				         				StatusText = StatusText + string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, (int)SelectedClassicSectorCurrent);
-				         			//				         			else
-				         			//				         			{
-				         			//				         				StatusText = StatusText + string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, (int)SelectedClassicSectorCurrent);
-				         			//				         				Mouse.OverrideCursor = null;
-				         			//				         				return;
-				         			//				         			}
-
 				         			if (device.WriteMiFareClassicSingleBlock(childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
 				         			                                         ClassicKeyAKeyCurrent,
 				         			                                         ClassicKeyBKeyCurrent,
@@ -1211,8 +1205,6 @@ namespace RFiDGear.ViewModel
 		/// </summary>
 		/// <param name="st"></param>
 		/// <param name="_sector"></param>
-		/// <param name="_keyA"></param>
-		/// <param name="_keyB"></param>
 		/// <returns></returns>
 		private bool decodeSectorTrailer(byte[] st, ref MifareClassicSectorModel _sector)
 		{
@@ -1434,8 +1426,7 @@ namespace RFiDGear.ViewModel
 		/// Converts a given selection for either sector
 		/// access bits or datablock access bits to the equivalent 3 bytes sector trailer
 		/// </summary>
-		/// <param name="cond"></param>
-		/// <param name="type"></param>
+		/// <param name="_sector"></param>
 		/// <returns></returns>
 		private bool encodeSectorTrailer(ref MifareClassicSectorModel _sector)
 		{

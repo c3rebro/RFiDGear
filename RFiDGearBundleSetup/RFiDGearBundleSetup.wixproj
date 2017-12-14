@@ -45,12 +45,8 @@
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
     <ProjectReference Include="..\Setup\Setup.wixproj">
-      <Name>Setup</Name>
       <Project>{856ca06c-0b4c-46c6-ad71-873317f1c763}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+      <Name>Setup</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

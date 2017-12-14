@@ -608,4 +608,14 @@ Use a csv file to acuire default keys for authentication</value>
     <value>Erstellt eine Liste der vorhanden Applikationen und 
 versucht alle enthaltenen Schlüsseleinstellungen zu erfassen</value>
   </data>
+  <data name="messageBoxUpdateAvailableMessage" xml:space="preserve">
+    <value>Eine neuere Version von RFiDGear ist vorhanden und kann jetzt heruntergeladen werden.
+Soll die Aktualisierung jetzt herunter geladen und installiert werden?</value>
+  </data>
+  <data name="messageBoxUpdateAvailableCaption" xml:space="preserve">
+    <value>Aktualisierung verfügbar</value>
+  </data>
+  <data name="menuItemProgrammingHeader" xml:space="preserve">
+    <value>_Programmierung</value>
+  </data>
 </root>
