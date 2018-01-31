@@ -17,6 +17,11 @@
 	Height="500"
 	Width="900">
 	
+	<Window.InputBindings>
+		<KeyBinding Key="F1" Command="{Binding ShowHelpCommand}"/>
+		<KeyBinding Modifiers="Control" Key="R" Command="{Binding ReadChipCommand}"/>
+	</Window.InputBindings>
+	
 	<!--
 	WindowStyle="None"
 	ResizeMode="CanResizeWithGrip"
@@ -32,7 +37,7 @@
 			Data="{Binding}" />
 		<local:ResourceLoader
 			x:Key="Localization" />
-		<!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+		<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 			<ContextMenu.ItemContainerStyle>
 				<Style TargetType="MenuItem">
 					<Setter
@@ -43,7 +48,7 @@
 						Value="Center" />
 				</Style>
 			</ContextMenu.ItemContainerStyle>
-		</ContextMenu>-->
+		</ContextMenu>
 	</Window.Resources>
 	<Grid>
 		<Grid
@@ -110,7 +115,7 @@
                       Color="Black" />
 					<FontWeightConverter x:Key="{x:Static FontWeights.Bold}" />-->
 					<HierarchicalDataTemplate
-						DataType="{x:Type local:ViewModel.TreeViewParentNodeViewModel}"
+						DataType="{x:Type local:ViewModel.RFiDChipParentLayerViewModel}"
 						ItemsSource="{Binding Children}">
 						<!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\Region.png" /> -->
 						<HierarchicalDataTemplate.Resources>
@@ -169,7 +174,7 @@
 						</TextBlock>
 					</HierarchicalDataTemplate>
 					<HierarchicalDataTemplate
-						DataType="{x:Type local:ViewModel.TreeViewChildNodeViewModel}"
+						DataType="{x:Type local:ViewModel.RFiDChipChildLayerViewModel}"
 						ItemsSource="{Binding Children}">
 						<HierarchicalDataTemplate.Resources>
 							<Style
@@ -248,7 +253,7 @@
 						</TextBlock>
 					</HierarchicalDataTemplate>
 					<HierarchicalDataTemplate
-						DataType="{x:Type vm:TreeViewGrandChildNodeViewModel}"
+						DataType="{x:Type vm:RFiDChipGrandChildLayerViewModel}"
 						ItemsSource="{Binding Children}">
 						<!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\City.png" /> -->
 						<TextBlock
@@ -299,7 +304,7 @@
 						</TextBlock>
 					</HierarchicalDataTemplate>
 					<DataTemplate
-						DataType="{x:Type vm:TreeViewGrandGrandChildNodeViewModel}">
+						DataType="{x:Type vm:RFiDChipGrandGrandChildLayerViewModel}">
 						<!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\City.png" /> -->
 						<TextBlock
 							Text="{Binding GrandGrandChildNodeHeader}">
@@ -487,7 +492,8 @@
 			RenderTransformOrigin="0.5,0.5">
 			<Menu
 				DockPanel.Dock="Top"
-				Background="{x:Null}">
+				Background="{x:Null}"
+				HorizontalContentAlignment="Right">
 				<MenuItem
 					Header="{Binding LocalizationResourceSet,
 					Converter={StaticResource Localization},
@@ -495,11 +501,53 @@
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top">
 					<MenuItem
+						Command="{Binding NewOpenFileDialogCommand}">
+						
+						<MenuItem.Header>
+							<StackPanel Orientation="Horizontal">
+								<Grid
+									Grid.Column="0"
+									Grid.Row="0"
+									HorizontalAlignment="Stretch"
+									VerticalAlignment="Stretch">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition
+											Width="200"/>
+										<ColumnDefinition
+											Width="*" />
+									</Grid.ColumnDefinitions>
+									<TextBlock Grid.Column="0"
+									           Text="{Binding LocalizationResourceSet,
+									           Converter={StaticResource Localization},
+									           ConverterParameter='menuItemOpenProject'}" HorizontalAlignment="Left"/>
+									<TextBlock Grid.Column="1" Text="Bar" HorizontalAlignment="Right"/>
+								</Grid>
+							</StackPanel>
+						</MenuItem.Header>
+						<!---->
+					</MenuItem>
+					
+					<!--										<MenuItem
 						Header="{Binding LocalizationResourceSet,
 						Converter={StaticResource Localization},
 						ConverterParameter='menuItemOpenProject' }"
-						Command="{Binding NewOpenFileDialogCommand}">
-					</MenuItem>
+						Command="{Binding NewOpenFileDialogCommand}"
+						ItemsSource="{Binding test}">
+						<MenuItem.ItemTemplate>
+							<DataTemplate>
+								<MenuItem>
+									<MenuItem.Header>
+										<StackPanel Orientation="Horizontal">
+											<TextBlock Text="{Binding t1}" FontWeight="Bold"/>
+											<TextBlock Text="{Binding t2}" FontStyle="Italic" Margin="2,0,0,0"/>
+										</StackPanel>
+									</MenuItem.Header>
+								</MenuItem>
+							</DataTemplate>
+						</MenuItem.ItemTemplate>
+					</MenuItem>-->
+					
+					
 					<MenuItem
 						Header="{Binding LocalizationResourceSet,
 						Converter={StaticResource Localization},
@@ -529,14 +577,61 @@
 					<MenuItem
 						Header="{Binding LocalizationResourceSet,
 						Converter={StaticResource Localization},
-						ConverterParameter='menuItemAddEditMifareClassicTaskHeader' }"
-						Command="{Binding CreateClassicTaskCommand}">
+						ConverterParameter='menuItemCreateTaskHeader' }">
+						<MenuItem
+							Header="{Binding LocalizationResourceSet,
+							Converter={StaticResource Localization},
+							ConverterParameter='menuItemMifareHeader' }">
+							<MenuItem
+								Header="{Binding LocalizationResourceSet,
+								Converter={StaticResource Localization},
+								ConverterParameter='menuItemAddEditMifareClassicTaskHeader' }"
+								Command="{Binding CreateClassicTaskCommand}">
+							</MenuItem>
+							<MenuItem
+								Header="{Binding LocalizationResourceSet,
+								Converter={StaticResource Localization},
+								ConverterParameter='menuItemAddEditMifareDesfireTaskHeader' }"
+								Command="{Binding CreateDesfireTaskCommand}">
+							</MenuItem>
+							<MenuItem
+								Header="{Binding LocalizationResourceSet,
+								Converter={StaticResource Localization},
+								ConverterParameter='menuItemAddEditMifarePlusTaskHeader' }"
+								IsEnabled="False">
+							</MenuItem>
+							<MenuItem
+								Header="{Binding LocalizationResourceSet,
+								Converter={StaticResource Localization},
+								ConverterParameter='menuItemAddEditMifareSAMTaskHeader' }"
+								IsEnabled="False">
+							</MenuItem>
+							<MenuItem
+								Header="{Binding LocalizationResourceSet,
+								Converter={StaticResource Localization},
+								ConverterParameter='menuItemAddEditMifareUltralightTaskHeader' }"
+								IsEnabled="False">
+							</MenuItem>
+						</MenuItem>
+						<MenuItem
+							Header="{Binding LocalizationResourceSet,
+							Converter={StaticResource Localization},
+							ConverterParameter='menuItemTagItHeader' }"
+							IsEnabled="False">
+							<MenuItem
+								Header="{Binding LocalizationResourceSet,
+								Converter={StaticResource Localization},
+								ConverterParameter='menuItemAddEditTagitHFIPlusTaskHeader' }"
+								IsEnabled="False">
+							</MenuItem>
+						</MenuItem>
 					</MenuItem>
+					<Separator/>
 					<MenuItem
 						Header="{Binding LocalizationResourceSet,
 						Converter={StaticResource Localization},
-						ConverterParameter='menuItemAddEditMifareDesfireTaskHeader' }"
-						Command="{Binding CreateDesfireTaskCommand}">
+						ConverterParameter='menuItemRemoveCardsHeader' }"
+						Command="{Binding RemoveChipsFromTreeCommand}">
 					</MenuItem>
 				</MenuItem> <!-- Edit -->
 				<MenuItem
@@ -570,11 +665,13 @@
 					<MenuItem
 						Header="{Binding LocalizationResourceSet,
 						Converter={StaticResource Localization},
-						ConverterParameter='menuItemRunSelectedTaskAutomatically' }">
+						ConverterParameter='menuItemRunSelectedTaskAutomatically' }"
+						Command="{Binding WriteSelectedTaskToChipAutoCommand}"
+						IsChecked="{Binding IsWriteSelectedToChipAutoChecked, Mode=OneWay}">
 					</MenuItem>
 					<MenuItem
 						IsCheckable="True"
-						IsChecked="{Binding IsUpdateChipsAutomaticallyChecked, Mode=OneWay}"
+						IsChecked="{Binding IsWriteToAllChipAutoChecked, Mode=OneWay}"
 						Header="{Binding LocalizationResourceSet,
 						Converter={StaticResource Localization},
 						ConverterParameter='menuItemRunAllTasksAutomatically' }"
@@ -586,6 +683,12 @@
 						Converter={StaticResource Localization},
 						ConverterParameter='menuItemSetTaskStatusToUndone' }"
 						Command="{Binding ResetTaskStatusCommand}">
+					</MenuItem>
+					<MenuItem
+						Header="{Binding LocalizationResourceSet,
+						Converter={StaticResource Localization},
+						ConverterParameter='menuItemRemoveAllTasks' }"
+						Command="{Binding RemoveAllTasksCommand}">
 					</MenuItem>
 				</MenuItem> <!-- Programming -->
 				<MenuItem

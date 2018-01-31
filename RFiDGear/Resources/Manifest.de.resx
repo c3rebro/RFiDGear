@@ -557,7 +557,7 @@ ein Kartenlesegerät auswählen</value>
     <value>_RFiD Chipliste Speichern unter...</value>
   </data>
   <data name="menuItemReadChipPublic" xml:space="preserve">
-    <value>_RFiD Chip Einlesen</value>
+    <value>_RFiD Chip Einlesen [Strg+R]</value>
   </data>
   <data name="toolTipButtonCardReaderEstablishConnection" xml:space="preserve">
     <value>Versucht eine Verbindung zum Kartenleser her zu stellen.
@@ -617,5 +617,38 @@ Soll die Aktualisierung jetzt herunter geladen und installiert werden?</value>
   </data>
   <data name="menuItemProgrammingHeader" xml:space="preserve">
     <value>_Programmierung</value>
+  </data>
+  <data name="menuItemCreateTaskHeader" xml:space="preserve">
+    <value>RFiD Aufgaben</value>
+  </data>
+  <data name="menuItemMifareHeader" xml:space="preserve">
+    <value>Mifare</value>
+  </data>
+  <data name="menuItemRemoveCardsHeader" xml:space="preserve">
+    <value>Karten entfernen</value>
+  </data>
+  <data name="menuItemAddEditMifareUltralightTaskHeader" xml:space="preserve">
+    <value>Mifare _Ultralight Aufgabe hinzufügen/bearbeiten</value>
+  </data>
+  <data name="menuItemAddEditMifareSAMTaskHeader" xml:space="preserve">
+    <value>Mifare _SAM Aufgabe hinzufügen/bearbeiten</value>
+  </data>
+  <data name="menuItemAddEditMifarePlusTaskHeader" xml:space="preserve">
+    <value>Mifare _Plus Aufgabe hinzufügen/bearbeiten</value>
+  </data>
+  <data name="menuItemTagItHeader" xml:space="preserve">
+    <value>Tag It</value>
+  </data>
+  <data name="menuItemAddEditTagitHFIPlusTaskHeader" xml:space="preserve">
+    <value>TagIt _HF-I Plus Aufgabe hinzufügen/bearbeiten</value>
+  </data>
+  <data name="contextMenuItemAddOrEditTask" xml:space="preserve">
+    <value>Aufgabe bearbeiten...</value>
+  </data>
+  <data name="contextMenuItemDeleteSelectedItem" xml:space="preserve">
+    <value>Aufgabe entfernen</value>
+  </data>
+  <data name="menuItemRemoveAllTasks" xml:space="preserve">
+    <value>Alle Aufgaben entfernen</value>
   </data>
 </root>

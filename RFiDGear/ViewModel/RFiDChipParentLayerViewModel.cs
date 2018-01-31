@@ -18,7 +18,7 @@ namespace RFiDGear.ViewModel
 	/// Description of MifareClassic1KContentViewModel.
 	/// </summary>
 	[XmlRootAttribute("TreeViewParentNode", IsNullable = false)]
-	public class TreeViewParentNodeViewModel : ViewModelBase
+	public class RFiDChipParentLayerViewModel : ViewModelBase
 	{
 		private SettingsReaderWriter settings;
 
@@ -41,20 +41,15 @@ namespace RFiDGear.ViewModel
 
 		#region Constructors
 
-		public TreeViewParentNodeViewModel()
+		public RFiDChipParentLayerViewModel()
 		{
 			ID = new Random().Next();
 
 			mifareClassicUidModel = new MifareClassicChipModel();
 			mifareDesfireUidModel = new MifareDesfireChipModel();
-
-			//			if(mifareClassicUidModel != null )
-			//				ParentNodeHeader = String.Format("[{0} Type: {1}]", mifareClassicUidModel.UidNumber, Enum.GetName(typeof(CARD_TYPE),CardType));
-			//			else
-			//				ParentNodeHeader = String.Format("[{0} Type: {1}]", mifareDesfireUidModel.uidNumber, Enum.GetName(typeof(CARD_TYPE),CardType));
 		}
 
-		public TreeViewParentNodeViewModel(MifareClassicChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
+		public RFiDChipParentLayerViewModel(MifareClassicChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
 		{
 			ID = new Random().Next();
 
@@ -76,7 +71,7 @@ namespace RFiDGear.ViewModel
 			                     	Command = _cmdReadAllSectorsWithDefaultKeys,
 			                     	ToolTip = new ToolTip()
 			                     	{
-			                     		Content = ResourceLoader.getResource("toolTipContextMenuParentNodeMifareClassicQuickCheck") 
+			                     		Content = ResourceLoader.getResource("toolTipContextMenuParentNodeMifareClassicQuickCheck")
 			                     	}
 			                     });
 
@@ -86,7 +81,7 @@ namespace RFiDGear.ViewModel
 			                     	Command = _cmdDeleteThisNode
 			                     });
 
-			_children = new ObservableCollection<TreeViewChildNodeViewModel>();
+			_children = new ObservableCollection<RFiDChipChildLayerViewModel>();
 
 			if (!isTask)
 				LoadChildren();
@@ -99,7 +94,7 @@ namespace RFiDGear.ViewModel
 				ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareDesfireUidModel.uidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
 		}
 
-		public TreeViewParentNodeViewModel(MifareDesfireChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
+		public RFiDChipParentLayerViewModel(MifareDesfireChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
 		{
 			ID = new Random().Next();
 
@@ -125,11 +120,11 @@ namespace RFiDGear.ViewModel
 			                     	Command = _cmdReadAppIds,
 			                     	ToolTip = new ToolTip()
 			                     	{
-			                     		Content = ResourceLoader.getResource("toolTipContextMenuParentNodeMifareDesfireQuickCheck") 
+			                     		Content = ResourceLoader.getResource("toolTipContextMenuParentNodeMifareDesfireQuickCheck")
 			                     	}
 			                     });
 
-			_children = new ObservableCollection<TreeViewChildNodeViewModel>();
+			_children = new ObservableCollection<RFiDChipChildLayerViewModel>();
 
 			if (!isTask)
 				LoadChildren();
@@ -159,37 +154,44 @@ namespace RFiDGear.ViewModel
 			{
 				using (RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
 				{
-					//private void ReadSectorsWithDefaultConfig(TreeViewParentNodeViewModel selectedPnVM, string content)
-
 					Mouse.OverrideCursor = Cursors.Wait;
 
-					//TreeViewParentNodeViewModel vm = this;
-
-					foreach (TreeViewChildNodeViewModel cnVM in this.Children)
+					foreach (RFiDChipChildLayerViewModel cnVM in this.Children)
 					{
-						foreach (string keys in settings.DefaultSpecification.MifareClassicDefaultQuickCheckKeys)
+						foreach (string key in settings.DefaultSpecification.MifareClassicDefaultQuickCheckKeys)
 						{
 							//TODO Try all Keys and add the result somewhere in the treeview
-							//rfidDevice.ReadMiFareClassicSingleSector(cnVM.SectorNumber, keys, keys);
-							device.ReadMiFareClassicSingleSector(cnVM.SectorNumber, keys, keys);
 
-							if (device.SectorSuccesfullyAuth)
+							if (device.ReadMiFareClassicSingleSector(cnVM.SectorNumber, key, key) == ERROR.NoError)
 							{
-								cnVM.Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Key: {0}", keys)));
-								break;
+								cnVM.Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Key: {0}", key)));
+								cnVM.IsAuthenticated = true;
 							}
-						}
-						cnVM.IsAuthenticated = device.SectorSuccesfullyAuth;
-						foreach (TreeViewGrandChildNodeViewModel gcVM in cnVM.Children.Where(x => x.IsDataBlock))
-						{
-							if (gcVM.DataBlockContent != null)
+							else
 							{
-								if (cnVM.SectorNumber <= 31)
-									gcVM.IsAuthenticated = device.DataBlockSuccesfullyAuth[(((cnVM.SectorNumber + 1) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
-								else
-									gcVM.IsAuthenticated = device.DataBlockSuccesfullyAuth[((128 + (cnVM.SectorNumber - 31) * cnVM.BlockCount) - (cnVM.BlockCount - gcVM.DataBlockNumber))];
+								cnVM.IsAuthenticated = false;
+								continue;
+							}
+							break;
+						}
 
-								gcVM.DataBlockContent = device.currentSector[gcVM.DataBlockNumber];
+						foreach (RFiDChipGrandChildLayerViewModel gcVM in cnVM.Children.Where(x => x.IsDataBlock))
+						{
+							if (device.Sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber)) // (gcVM.DataBlockContent != null)
+							{
+								if (device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data != null)
+								{
+									gcVM.DataBlockContent = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data; //device.currentSector[gcVM.DataBlockNumber];
+									gcVM.IsAuthenticated = true;
+								}
+								else
+								{
+									gcVM.IsAuthenticated = false;
+								}
+							}
+							else
+							{
+								gcVM.IsAuthenticated = false;
 							}
 						}
 					}
@@ -216,28 +218,31 @@ namespace RFiDGear.ViewModel
 						Children.Clear();
 
 						Children.Add(
-							new TreeViewChildNodeViewModel(
+							new RFiDChipChildLayerViewModel(
 								string.Format("Available Space: {0}Byte", device.FreeMemory)));
 
 						Children.Add(
-							new TreeViewChildNodeViewModel(
+							new RFiDChipChildLayerViewModel(
 								new MifareDesfireAppModel(0), this, CardType, dialogs));
 
 						foreach (uint appID in appIDs)
 						{
-							Children.Add(new TreeViewChildNodeViewModel(new MifareDesfireAppModel(appID), this, CardType, dialogs));
+							if(appID == 0)
+								continue;
+							
+							Children.Add(new RFiDChipChildLayerViewModel(new MifareDesfireAppModel(appID), this, CardType, dialogs));
 
 							if (device.GetMifareDesfireAppSettings(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key,
 							                                       settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType,
 							                                       0, (int)appID) == ERROR.NoError)
 							{
-								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Available Keys: {0}", device.MaxNumberOfAppKeys)));
-								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Key Settings: {0}", Enum.GetName(typeof(DESFireKeySettings), (device.DesfireAppKeySetting & (DESFireKeySettings)0xF0)))));
+								Children.First(x => x.AppID == appID).Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Available Keys: {0}", device.MaxNumberOfAppKeys)));
+								Children.First(x => x.AppID == appID).Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Key Settings: {0}", Enum.GetName(typeof(DESFireKeySettings), (device.DesfireAppKeySetting & (DESFireKeySettings)0xF0)))));
 
-								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Allow Change MK: {0}", (device.DesfireAppKeySetting & (DESFireKeySettings)0x01) == (DESFireKeySettings)0x01 ? "yes" : "no")));
-								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Allow Listing without MK: {0}", (device.DesfireAppKeySetting & (DESFireKeySettings)0x02) == (DESFireKeySettings)0x02 ? "yes" : "no")));
-								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Allow Create/Delete without MK: {0}", (device.DesfireAppKeySetting & (DESFireKeySettings)0x04) == (DESFireKeySettings)0x04 ? "yes" : "no")));
-								Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(string.Format("Allow Change Config: {0}", (device.DesfireAppKeySetting & (DESFireKeySettings)0x08) == (DESFireKeySettings)0x08 ? "yes" : "no")));
+								Children.First(x => x.AppID == appID).Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Allow Change MK: {0}", (device.DesfireAppKeySetting & (DESFireKeySettings)0x01) == (DESFireKeySettings)0x01 ? "yes" : "no")));
+								Children.First(x => x.AppID == appID).Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Allow Listing without MK: {0}", (device.DesfireAppKeySetting & (DESFireKeySettings)0x02) == (DESFireKeySettings)0x02 ? "yes" : "no")));
+								Children.First(x => x.AppID == appID).Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Allow Create/Delete without MK: {0}", (device.DesfireAppKeySetting & (DESFireKeySettings)0x04) == (DESFireKeySettings)0x04 ? "yes" : "no")));
+								Children.First(x => x.AppID == appID).Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Allow Change Config: {0}", (device.DesfireAppKeySetting & (DESFireKeySettings)0x08) == (DESFireKeySettings)0x08 ? "yes" : "no")));
 							}
 
 							//TODO add grandchild fileid
@@ -248,29 +253,35 @@ namespace RFiDGear.ViewModel
 							{
 								foreach (byte fileID in device.FileIDList)
 								{
-									Children.First(x => x.AppID == appID).Children.Add(new TreeViewGrandChildNodeViewModel(new MifareDesfireFileModel(fileID)));
+									Children.First(x => x.AppID == appID).Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(null, fileID),Children.First(x => x.AppID == appID)));
 
 									if (device.GetMifareDesfireFileSettings(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key,
 									                                        settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType,
 									                                        0, (int)appID, fileID) == ERROR.NoError)
 									{
-										TreeViewGrandChildNodeViewModel grandChild = Children.First(x => x.AppID == appID).Children.First(y => (y.DesfireFile != null ? y.DesfireFile.FileID : -1) == fileID);
+										RFiDChipGrandChildLayerViewModel grandChild = Children.First(x => x.AppID == appID).Children.First(y => (y.DesfireFile != null ? y.DesfireFile.FileID : -1) == fileID);
 
-										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("FileType: {0}", Enum.GetName(typeof(FileType_MifareDesfireFileType), device.DesfireFileSetting.FileType))));
-										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("FileSize: {0}Bytes", device.DesfireFileSetting.dataFile.fileSize.ToString())));
-										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("EncryptionMode: {0}", Enum.GetName(typeof(EncryptionMode), device.DesfireFileSetting.comSett))));
-										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("Read: {0}", Enum.GetName(typeof(TaskAccessRights), ((device.DesfireFileSetting.accessRights[1] & 0xF0) >> 4)))));
-										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("Write: {0}", Enum.GetName(typeof(TaskAccessRights), device.DesfireFileSetting.accessRights[1] & 0x0F))));
-										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("RW: {0}", Enum.GetName(typeof(TaskAccessRights), ((device.DesfireFileSetting.accessRights[0] & 0xF0) >> 4))))); //lsb, upper nibble
-										grandChild.Children.Add(new TreeViewGrandGrandChildNodeViewModel(string.Format("Change: {0}", Enum.GetName(typeof(TaskAccessRights), device.DesfireFileSetting.accessRights[0] & 0x0F)))); //lsb , lower nibble
+										grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileType: {0}", Enum.GetName(typeof(FileType_MifareDesfireFileType), device.DesfireFileSetting.FileType)),grandChild));
+										grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileSize: {0}Bytes", device.DesfireFileSetting.dataFile.fileSize.ToString()),grandChild));
+										grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("EncryptionMode: {0}", Enum.GetName(typeof(EncryptionMode), device.DesfireFileSetting.comSett)),grandChild));
+										grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("Read: {0}", Enum.GetName(typeof(TaskAccessRights), ((device.DesfireFileSetting.accessRights[1] & 0xF0) >> 4))),grandChild));
+										grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("Write: {0}", Enum.GetName(typeof(TaskAccessRights), device.DesfireFileSetting.accessRights[1] & 0x0F)),grandChild));
+										grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("RW: {0}", Enum.GetName(typeof(TaskAccessRights), ((device.DesfireFileSetting.accessRights[0] & 0xF0) >> 4))),grandChild)); //lsb, upper nibble
+										grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("Change: {0}", Enum.GetName(typeof(TaskAccessRights), device.DesfireFileSetting.accessRights[0] & 0x0F)),grandChild)); //lsb , lower nibble
 									}
 								}
 							}
 						}
 
-						if (device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_AES, MifareDesfireKeyNumber.MifareDesfireKey00) == ERROR.NoError)
+						if (device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_AES, MifareDesfireKeyNumber.MifareDesfireKey00) == ERROR.NoError ||
+						    device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_3K3DES, MifareDesfireKeyNumber.MifareDesfireKey00) == ERROR.NoError ||
+						    device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_DES, MifareDesfireKeyNumber.MifareDesfireKey00) == ERROR.NoError)
 						{
-							Children.First(x => x.AppID == 0).Children.Add(new TreeViewGrandChildNodeViewModel("PICC MasterKey NOT Set"));
+							Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("PICC MasterKey NOT Set"));
+						}
+						else
+						{
+							Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("PICC SECURED, MasterKey Unkown"));
 						}
 
 						IsExpanded = true;
@@ -316,7 +327,7 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		///
 		/// </summary>
-		public ObservableCollection<TreeViewChildNodeViewModel> Children
+		public ObservableCollection<RFiDChipChildLayerViewModel> Children
 		{
 			get { return _children; }
 			set
@@ -326,7 +337,7 @@ namespace RFiDGear.ViewModel
 			}
 		}
 
-		private ObservableCollection<TreeViewChildNodeViewModel> _children;
+		private ObservableCollection<RFiDChipChildLayerViewModel> _children;
 
 		#endregion Items Sources
 
@@ -361,9 +372,7 @@ namespace RFiDGear.ViewModel
 				parentNodeHeader = value;
 				RaisePropertyChanged("ParentNodeHeader");
 			}
-		}
-
-		private string parentNodeHeader;
+		} private string parentNodeHeader;
 
 		/// <summary>
 		///
@@ -487,9 +496,18 @@ namespace RFiDGear.ViewModel
 						for (int i = 0; i < 16; i++)
 						{
 							_children.Add(
-								new TreeViewChildNodeViewModel(
-									new MifareClassicSectorModel(i), this, CardType, i, dialogs));
+								new RFiDChipChildLayerViewModel(
+									new MifareClassicSectorModel(i), this, CardType, dialogs));
 						}
+						
+						for(int i = 0; i < _children.Count; i++)
+						{
+							for(int j = 0; j < _children[i].Children.Count(); j++)
+							{
+								_children[i].Children[j].DataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].DataBlock.DataBlockNumberSectorBased);
+							}
+						}
+
 					}
 					break;
 
@@ -498,8 +516,16 @@ namespace RFiDGear.ViewModel
 						for (int i = 0; i < 32; i++)
 						{
 							_children.Add(
-								new TreeViewChildNodeViewModel(
-									new MifareClassicSectorModel(i), this, CardType, i, dialogs));
+								new RFiDChipChildLayerViewModel(
+									new MifareClassicSectorModel(i), this, CardType, dialogs));
+						}
+						
+						for(int i = 0; i < _children.Count; i++)
+						{
+							for(int j = 0; j < _children[i].Children.Count(); j++)
+							{
+								_children[i].Children[j].DataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].DataBlock.DataBlockNumberSectorBased);
+							}
 						}
 					}
 					break;
@@ -509,8 +535,16 @@ namespace RFiDGear.ViewModel
 						for (int i = 0; i < 40; i++)
 						{
 							_children.Add(
-								new TreeViewChildNodeViewModel(
-									new MifareClassicSectorModel(i), this, CardType, i, dialogs));
+								new RFiDChipChildLayerViewModel(
+									new MifareClassicSectorModel(i), this, CardType, dialogs));
+						}
+						
+						for(int i = 0; i < _children.Count; i++)
+						{
+							for(int j = 0; j < _children[i].Children.Count(); j++)
+							{
+								_children[i].Children[j].DataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].DataBlock.DataBlockNumberSectorBased);
+							}
 						}
 					}
 					break;
@@ -520,7 +554,7 @@ namespace RFiDGear.ViewModel
 				case CARD_TYPE.DESFireEV2:
 					{
 						_children.Add(
-							new TreeViewChildNodeViewModel(
+							new RFiDChipChildLayerViewModel(
 								new MifareDesfireAppModel(0), this, CardType, dialogs));
 					}
 					break;

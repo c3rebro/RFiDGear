@@ -143,10 +143,10 @@
     <Compile Include="ViewModel\OpenFileDialogViewModel.cs" />
     <Compile Include="ViewModel\SaveFileDialogViewModel.cs" />
     <Compile Include="ViewModel\SetupViewModel.cs" />
-    <Compile Include="ViewModel\TreeViewChildNodeViewModel.cs" />
-    <Compile Include="ViewModel\TreeViewGrandChildNodeViewModel.cs" />
-    <Compile Include="ViewModel\TreeViewGrandGrandChildNodeViewModel.cs" />
-    <Compile Include="ViewModel\TreeViewParentNodeViewModel.cs" />
+    <Compile Include="ViewModel\RFiDChipChildLayerViewModel.cs" />
+    <Compile Include="ViewModel\RFiDChipGrandChildLayerViewModel.cs" />
+    <Compile Include="ViewModel\RFiDChipGrandGrandChildLayerViewModel.cs" />
+    <Compile Include="ViewModel\RFiDChipParentLayerViewModel.cs" />
     <Compile Include="ViewModel\ViewModelLocator.cs" />
     <Compile Include="View\CustomDialogBox.xaml.cs">
       <DependentUpon>CustomDialogBox.xaml</DependentUpon>

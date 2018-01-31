@@ -193,8 +193,11 @@ namespace RFiDGear.ViewModel
 			sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block2, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
 			sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.BlockAll, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
 
-			childNodeViewModelFromChip = new TreeViewChildNodeViewModel(sectorModel, this);
-			childNodeViewModelTemp = new TreeViewChildNodeViewModel(sectorModel, this);
+			childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(sectorModel, this);
+			childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, this);
+			
+			Selected_Sector_AccessCondition = sectorTrailer_AccessBits[4];
+			Selected_DataBlock_AccessCondition = dataBlock_AccessBits[0];
 		}
 
 		/// <summary>
@@ -204,64 +207,73 @@ namespace RFiDGear.ViewModel
 		/// <param name="_dialogs"></param>
 		public MifareClassicSetupViewModel(object _selectedSetupViewModel, ObservableCollection<IDialogViewModel> _dialogs)
 		{
-			databaseReaderWriter = new DatabaseReaderWriter();
-			
-			chipModel = new MifareClassicChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.Mifare4K);
+			try{
+				databaseReaderWriter = new DatabaseReaderWriter();
+				
+				chipModel = new MifareClassicChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.Mifare4K);
 
-			sectorModel = new MifareClassicSectorModel(4,
-			                                           AccessCondition_MifareClassicSectorTrailer.NotAllowed,
-			                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-			                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-			                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-			                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-			                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA);
+				sectorModel = new MifareClassicSectorModel(4,
+				                                           AccessCondition_MifareClassicSectorTrailer.NotAllowed,
+				                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+				                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+				                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+				                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+				                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA);
 
-			sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block0, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
-			sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block1, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
-			sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block2, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
-			sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.BlockAll, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+				sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block0, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+				sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block1, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+				sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block2, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+				sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.BlockAll, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
 
-			sectorModel.AccessBitsAsString = settings.DefaultSpecification.MifareClassicDefaultSectorTrailer;
+				sectorModel.AccessBitsAsString = settings.DefaultSpecification.MifareClassicDefaultSectorTrailer;
 
-			sectorModel.SectorNumber = (int)selectedClassicSectorCurrent;
+				sectorModel.SectorNumber = (int)selectedClassicSectorCurrent;
 
-			childNodeViewModelFromChip = new TreeViewChildNodeViewModel(sectorModel, this);
-			childNodeViewModelTemp = new TreeViewChildNodeViewModel(sectorModel, this);
-			
-			if(_selectedSetupViewModel is MifareClassicSetupViewModel)
-			{
-				PropertyInfo[] properties = typeof(MifareClassicSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+				childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(sectorModel, this);
+				childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, this);
 
-				foreach (PropertyInfo p in properties)
+				Selected_DataBlock_AccessCondition = dataBlock_AccessBits[0];
+				Selected_Sector_AccessCondition = sectorTrailer_AccessBits[4];
+				
+				if(_selectedSetupViewModel is MifareClassicSetupViewModel)
 				{
-					// If not writable then cannot null it; if not readable then cannot check it's value
-					if (!p.CanWrite || !p.CanRead) { continue; }
+					PropertyInfo[] properties = typeof(MifareClassicSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-					MethodInfo mget = p.GetGetMethod(false);
-					MethodInfo mset = p.GetSetMethod(false);
+					foreach (PropertyInfo p in properties)
+					{
+						// If not writable then cannot null it; if not readable then cannot check it's value
+						if (!p.CanWrite || !p.CanRead) { continue; }
 
-					// Get and set methods have to be public
-					if (mget == null) { continue; }
-					if (mset == null) { continue; }
+						MethodInfo mget = p.GetGetMethod(false);
+						MethodInfo mset = p.GetSetMethod(false);
 
-					p.SetValue(this, p.GetValue(_selectedSetupViewModel));
+						// Get and set methods have to be public
+						if (mget == null) { continue; }
+						if (mset == null) { continue; }
+
+						p.SetValue(this, p.GetValue(_selectedSetupViewModel));
+					}
+				}
+				
+				else
+				{
+					DataBlockIsCombinedToggleButtonIsChecked = true;
+					
+					IsValidSectorTrailer = true;
+
+					ClassicKeyAKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[0];
+					ClassicKeyBKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[2];
+
+					IsWriteFromMemoryToChipChecked = true;
+
+					SelectedTaskIndex = "0";
+					SelectedTaskDescription = "Enter a Description";
 				}
 			}
-			
-			else
-			{
-				DataBlockIsCombinedToggleButtonIsChecked = true;
-				
-				IsValidSectorTrailer = true;
-
-				ClassicKeyAKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[0];
-				ClassicKeyBKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[2];
-
-				IsWriteFromMemoryToChipChecked = true;
-
-				SelectedTaskIndex = "0";
-				SelectedTaskDescription = "Enter a Description";
+			catch (Exception e){
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 			}
+
 			
 		}
 
@@ -689,7 +701,7 @@ namespace RFiDGear.ViewModel
 				catch
 				{
 				}
-				//(parentNodeViewModel as TreeViewParentNodeViewModel).Children.First(x => x.SectorNumber == (int)SelectedClassicSectorCurrent).IsTask = true;
+				//(parentNodeViewModel as RFiDChipParentLayerViewModel).Children.First(x => x.SectorNumber == (int)SelectedClassicSectorCurrent).IsTask = true;
 
 				selectedClassicSectorCurrent = value;
 				RaisePropertyChanged("SelectedClassicSectorCurrent");
@@ -728,7 +740,7 @@ namespace RFiDGear.ViewModel
 			set
 			{
 				selectedDataBlockToReadWrite = value;
-				foreach (TreeViewGrandChildNodeViewModel gCNVM in ChildNodeViewModelTemp.Children)
+				foreach (RFiDChipGrandChildLayerViewModel gCNVM in ChildNodeViewModelTemp.Children)
 					gCNVM.IsFocused = false;
 
 				ChildNodeViewModelTemp.Children.First(x => x.DataBlockNumber == (int)SelectedDataBlockToReadWrite).IsFocused = true;
@@ -783,22 +795,22 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		///
 		/// </summary>
-		public TreeViewChildNodeViewModel ChildNodeViewModelFromChip
+		public RFiDChipChildLayerViewModel ChildNodeViewModelFromChip
 		{
 			get { return childNodeViewModelFromChip; }
 			set { childNodeViewModelFromChip = value; }
 		}
-		private TreeViewChildNodeViewModel childNodeViewModelFromChip;
+		private RFiDChipChildLayerViewModel childNodeViewModelFromChip;
 
 		/// <summary>
 		///
 		/// </summary>
-		public TreeViewChildNodeViewModel ChildNodeViewModelTemp
+		public RFiDChipChildLayerViewModel ChildNodeViewModelTemp
 		{
 			get { return childNodeViewModelTemp; }
 			set { childNodeViewModelTemp = value; }
 		}
-		private TreeViewChildNodeViewModel childNodeViewModelTemp;
+		private RFiDChipChildLayerViewModel childNodeViewModelTemp;
 
 		#endregion DataExplorer
 
@@ -976,51 +988,66 @@ namespace RFiDGear.ViewModel
 			Task classicTask =
 				new Task(() =>
 				         {
-				         	using (RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
+				         	using (RFiDDevice device = RFiDDevice.Instance)
 				         	{
-				         		StatusText = "";
-
-				         		if (device.ReadMiFareClassicSingleSector((int)SelectedClassicSectorCurrent, ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent) == ERROR.NoError)
+				         		if(device != null && device.ReadChipPublic() == ERROR.NoError)
 				         		{
-				         			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+				         			StatusText = "";
+				         			
+				         			
+				         			if (device.ReadMiFareClassicSingleSector(
+				         				(int)SelectedClassicSectorCurrent,
+				         				ClassicKeyAKeyCurrent,
+				         				ClassicKeyBKeyCurrent) == ERROR.NoError)
+				         			{
+				         				StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
 
-				         			if (device.Sector.IsAuthenticated)
+				         				childNodeViewModelFromChip.SectorNumber = (int)SelectedClassicSectorCurrent;
+				         				childNodeViewModelTemp.SectorNumber = (int)SelectedClassicSectorCurrent;
+				         				
 				         				StatusText = StatusText + string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, (int)SelectedClassicSectorCurrent);
+				         				
+				         				for (int i = 0; i < device.Sector.DataBlock.Count; i++)
+				         				{
+				         					childNodeViewModelFromChip.Children[i].DataBlockNumber = i;
+				         					childNodeViewModelTemp.Children[i].DataBlockNumber = i;
+				         					
+				         					childNodeViewModelFromChip.Children[i].DataBlock.DataBlockNumberChipBased = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == i).DataBlockNumberChipBased;
+				         					
+				         					if (device.Sector.DataBlock[i].IsAuthenticated)
+				         					{
+				         						StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n", DateTime.Now, device.Sector.DataBlock[i].DataBlockNumberChipBased, CustomConverter.HexToString(device.Sector.DataBlock[i].Data));
+				         						childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).DataBlockContent = device.Sector.DataBlock[i].Data;
+
+				         						childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).DataBlockContent = device.Sector.DataBlock[i].Data;
+
+				         						TaskErr = ERROR.NoError;
+				         					}
+				         					else
+				         						StatusText = StatusText + string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, (int)SelectedClassicSectorCurrent, device.Sector.DataBlock[i - 1].DataBlockNumberChipBased);
+				         				}
+				         				
+				         				TaskErr = ERROR.NoError;
+
+
+				         			}
 				         			else
 				         			{
 				         				StatusText = StatusText + string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, (int)SelectedClassicSectorCurrent);
 				         				TaskErr = ERROR.AuthenticationError;
 				         				return;
 				         			}
-
-				         			for (int i = 0; i < device.Sector.DataBlock.Count; i++) //(MifareClassicDataBlockModel b in device.Sector.DataBlock)
-				         			{
-				         				childNodeViewModelFromChip.Children[i].DataBlockNumber = i;
-
-				         				if (device.Sector.DataBlock[i].IsAuthenticated)
-				         				{
-				         					StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n", DateTime.Now, device.Sector.DataBlock[i].BlockNumber, CustomConverter.HexToString(device.Sector.DataBlock[i].Data));
-				         					childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).DataBlockContent = device.Sector.DataBlock[i].Data;
-
-				         					childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).DataBlockContent = device.Sector.DataBlock[i].Data;
-				         					childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).DataBlockNumber = device.Sector.DataBlock[i].BlockNumber;
-
-				         					//parentNodeViewModelTemp.Children.First(x => x.SectorNumber == (int)SelectedClassicSectorCurrent).Children[i-1].DataBlockContent = device.Sector.DataBlock[i-1].Data;
-				         					//dataAsByteArray = b.Data;
-				         					TaskErr = ERROR.NoError;
-				         				}
-				         				else
-				         					StatusText = StatusText + string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, (int)SelectedClassicSectorCurrent, device.Sector.DataBlock[i - 1].BlockNumber);
-				         			}
-				         			TaskErr = ERROR.NoError;
 				         		}
+				         		
 				         		else
 				         		{
-				         			StatusText = "Unable to Auth";
-				         			TaskErr = ERROR.AuthenticationError;
+				         			TaskErr = ERROR.DeviceNotReadyError;
+				         			return;
 				         		}
 
 				         		RaisePropertyChanged("ChildNodeViewModelTemp");
+				         		
+				         		return;
 				         	}
 				         });
 
@@ -1062,17 +1089,26 @@ namespace RFiDGear.ViewModel
 				         		{
 				         			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
 
-				         			if (device.WriteMiFareClassicSingleBlock(childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
-				         			                                         ClassicKeyAKeyCurrent,
-				         			                                         ClassicKeyBKeyCurrent,
-				         			                                         childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].DataBlockContent) == ERROR.NoError)
+				         			childNodeViewModelFromChip.SectorNumber = (int)SelectedClassicSectorCurrent;
+				         			childNodeViewModelTemp.SectorNumber = (int)SelectedClassicSectorCurrent;
+				         			
+				         			if (true) //device.Sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == (int)SelectedDataBlockToReadWrite (gcVM.DataBlockContent != null)
 				         			{
-				         				StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
-				         				                                        DateTime.Now,
-				         				                                        childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
-				         				                                        CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].DataBlockContent));
-
-				         				TaskErr = ERROR.NoError;
+				         				//childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlock.DataBlockNumberChipBased = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == (int)SelectedDataBlockToReadWrite).DataBlockNumberChipBased;
+				         				
+				         				if (device.WriteMiFareClassicSingleBlock(childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlock.DataBlockNumberChipBased,
+				         				                                         ClassicKeyAKeyCurrent,
+				         				                                         ClassicKeyBKeyCurrent,
+				         				                                         childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].DataBlockContent) == ERROR.NoError)
+				         				{
+				         					StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
+				         					                                        DateTime.Now,
+				         					                                        childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
+				         					                                        CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].DataBlockContent));
+				         					TaskErr = ERROR.NoError;
+				         				}
+				         				else
+				         					TaskErr = ERROR.AuthenticationError;
 				         			}
 				         			else
 				         				TaskErr = ERROR.AuthenticationError;

@@ -41,14 +41,12 @@ namespace RFiDGear.ViewModel
         #region Commands
 
         public ICommand ReaderSeletedCommand { get { return new RelayCommand(ReaderSelected); } }
-
-        protected virtual void ReaderSelected()
+        private void ReaderSelected()
         {
         }
 
         public ICommand ConnectToReaderCommand { get { return new RelayCommand(ConnectToReader); } }
-
-        protected virtual void ConnectToReader()
+        private void ConnectToReader()
         {
             if (this.OnConnect != null)
             {
@@ -63,15 +61,14 @@ namespace RFiDGear.ViewModel
                                              + '\n'
                                              + "UID: {0} "
                                              + '\n'
-                                             + "Type: {1}", device.CardInfo.uid, Enum.GetName(typeof(CARD_TYPE), device.CardInfo.cardType));
+                                             + "Type: {1}", device.CardInfo.uid, Enum.GetName(typeof(CARD_TYPE), device.CardInfo.CardType));
             }
             else
                 ReaderStatus = "no Reader detected";
         }
 
         public ICommand ApplyAndExitCommand { get { return new RelayCommand(Ok); } }
-
-        protected virtual void Ok()
+        private void Ok()
         {
             if (this.OnOk != null)
                 this.OnOk(this);
@@ -80,8 +77,7 @@ namespace RFiDGear.ViewModel
         }
 
         public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
-
-        protected virtual void Cancel()
+        private void Cancel()
         {
             if (this.OnCancel != null)
                 this.OnCancel(this);

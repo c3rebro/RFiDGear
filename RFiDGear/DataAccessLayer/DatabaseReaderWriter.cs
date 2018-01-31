@@ -23,7 +23,7 @@ namespace RFiDGear.DataAccessLayer
         private const string taskDatabaseFileName = "taskdatabase.xml";
         private string appDataPath;
 
-        public ObservableCollection<TreeViewParentNodeViewModel> treeViewModel;
+        public ObservableCollection<RFiDChipParentLayerViewModel> treeViewModel;
         public ChipTaskHandlerModel setupModel;
 
         #endregion fields
@@ -39,12 +39,12 @@ namespace RFiDGear.DataAccessLayer
                 if (!Directory.Exists(appDataPath))
                     Directory.CreateDirectory(appDataPath);
 
-                treeViewModel = new ObservableCollection<TreeViewParentNodeViewModel>();
+                treeViewModel = new ObservableCollection<RFiDChipParentLayerViewModel>();
                 setupModel = new ChipTaskHandlerModel();
 
                 if (!File.Exists(Path.Combine(appDataPath, chipDatabaseFileName)))
                 {
-                    XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<TreeViewParentNodeViewModel>));
+                    XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
 
                     TextWriter writer = new StreamWriter(Path.Combine(appDataPath, chipDatabaseFileName));
 
@@ -127,8 +127,8 @@ namespace RFiDGear.DataAccessLayer
                     {
                         try
                         {
-                            XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<TreeViewParentNodeViewModel>));
-                            treeViewModel = (serializer.Deserialize(reader) as ObservableCollection<TreeViewParentNodeViewModel>);
+                            XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
+                            treeViewModel = (serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>);
                         }
                         catch (Exception innerE)
                         {
@@ -150,12 +150,12 @@ namespace RFiDGear.DataAccessLayer
             return true;
         }
 
-        public void WriteDatabase(ObservableCollection<TreeViewParentNodeViewModel> objModel, string _path = "")
+        public void WriteDatabase(ObservableCollection<RFiDChipParentLayerViewModel> objModel, string _path = "")
         {
             try
             {
                 TextWriter writer;
-                XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<TreeViewParentNodeViewModel>));
+                XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
 
                 if (!string.IsNullOrEmpty(_path))
                 {

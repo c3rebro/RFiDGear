@@ -48,20 +48,20 @@ namespace RFiDGear
 				{
 					foreach (object o in item.Items)
 					{
-						if (o is TreeViewParentNodeViewModel)
+						if (o is RFiDChipParentLayerViewModel)
 						{
-							foreach (TreeViewChildNodeViewModel child in (o as TreeViewParentNodeViewModel).Children)
+							foreach (RFiDChipChildLayerViewModel child in (o as RFiDChipParentLayerViewModel).Children)
 							{
 								child.IsSelected = false;
 
 								if (child.Children != null)
 								{
-									foreach (TreeViewGrandChildNodeViewModel grandChild in child.Children)
+									foreach (RFiDChipGrandChildLayerViewModel grandChild in child.Children)
 										grandChild.IsSelected = false;
 								}
 							}
 
-							(o as TreeViewParentNodeViewModel).IsSelected = false;
+							(o as RFiDChipParentLayerViewModel).IsSelected = false;
 						}
 
 					}

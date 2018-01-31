@@ -19,42 +19,37 @@ namespace RFiDGear.Model
             AccessCondition_MifareClassicSectorTrailer _incDataBlock,
             AccessCondition_MifareClassicSectorTrailer _decDataBlock)
         {
-            cx = _cx;
-            blockNumber = _blockNumber;
+            Cx = _cx;
+            DataBlockNumberSectorBased = (int)_blockNumber;
 
-            read_DataBlock = _readDataBlock;
-            write_DataBlock = _writeDataBlock;
+            Read_DataBlock = _readDataBlock;
+            Write_DataBlock = _writeDataBlock;
 
-            increment_DataBlock = _incDataBlock;
-            decrement_DataBlock = _decDataBlock;
+            Increment_DataBlock = _incDataBlock;
+            Decrement_DataBlock = _decDataBlock;
 
         }
 
-        private uint cx;
-        private SectorTrailer_DataBlock blockNumber;
-        private bool isAuthenticated;
-
-        private AccessCondition_MifareClassicSectorTrailer read_DataBlock;
-        private AccessCondition_MifareClassicSectorTrailer write_DataBlock;
-        private AccessCondition_MifareClassicSectorTrailer increment_DataBlock;
-        private AccessCondition_MifareClassicSectorTrailer decrement_DataBlock;
-
-        public MifareClassicDataBlockModel(int _dataBlockNumber)
+        public MifareClassicDataBlockModel(int _dataBlockNumberChipBased, int _dataBlockNumberSectorBased)
         {
-            dataBlockNumber = _dataBlockNumber;
+            DataBlockNumberChipBased = _dataBlockNumberChipBased;
+            DataBlockNumberSectorBased = _dataBlockNumberSectorBased;
         }
 
-        public int dataBlockNumber { get; set; }
+        public int DataBlockNumberChipBased { get; set; }
+        
+        public int DataBlockNumberSectorBased { get; set; }
 
         public byte[] Data { get; set; }
 
-        public AccessCondition_MifareClassicSectorTrailer Read_DataBlock { get { return read_DataBlock; } set { read_DataBlock = value; } }
-        public AccessCondition_MifareClassicSectorTrailer Write_DataBlock { get { return write_DataBlock; } set { write_DataBlock = value; } }
-        public AccessCondition_MifareClassicSectorTrailer Increment_DataBlock { get { return increment_DataBlock; } set { increment_DataBlock = value; } }
-        public AccessCondition_MifareClassicSectorTrailer Decrement_DataBlock { get { return decrement_DataBlock; } set { decrement_DataBlock = value; } }
+		public byte ParentSectorNumber { get; set; }
+		
+		public AccessCondition_MifareClassicSectorTrailer Read_DataBlock { get; set; }
+        public AccessCondition_MifareClassicSectorTrailer Write_DataBlock { get; set; }
+        public AccessCondition_MifareClassicSectorTrailer Increment_DataBlock { get; set; }
+        public AccessCondition_MifareClassicSectorTrailer Decrement_DataBlock { get; set; }
 
-        public int BlockNumber { get { return dataBlockNumber; } set { dataBlockNumber = value; } }
-        public bool IsAuthenticated { get { return isAuthenticated; } set { isAuthenticated = value; } }
-        public uint Cx { get { return cx; } set { cx = value; } }
+        public bool IsAuthenticated { get; set; }
+        public uint Cx { get; set; }
     }
 }

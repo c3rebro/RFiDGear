@@ -4,20 +4,21 @@ using System.Xml.Serialization;
 namespace RFiDGear.ViewModel
 {
     /// <summary>
-    /// Description of TreeViewGrandChildNodeViewModel.
+    /// Description of RFiDChipGrandChildLayerViewModel.
     /// </summary>
     [XmlRootAttribute("TreeViewGrandGrandChildNode", IsNullable = false)]
-    public class TreeViewGrandGrandChildNodeViewModel : ViewModelBase
+    public class RFiDChipGrandGrandChildLayerViewModel : ViewModelBase
     {
         #region Constructors
 
-        public TreeViewGrandGrandChildNodeViewModel()
+        public RFiDChipGrandGrandChildLayerViewModel()
         {
         }
 
-        public TreeViewGrandGrandChildNodeViewModel(string _displayItem)
+        public RFiDChipGrandGrandChildLayerViewModel(string _displayItem, RFiDChipGrandChildLayerViewModel _parent)
         {
             grandGrandChildNodeHeader = _displayItem;
+			Parent = _parent;
         }
 
         #endregion Constructors
@@ -40,12 +41,15 @@ namespace RFiDGear.ViewModel
 
         #region Parent
 
-        public TreeViewGrandChildNodeViewModel Parent
+        public RFiDChipGrandChildLayerViewModel Parent
         {
             get { return parent; }
-        }
-
-        private readonly TreeViewGrandChildNodeViewModel parent;
+            set
+            {
+				parent = value;
+				RaisePropertyChanged("Parent");
+            }
+        } private RFiDChipGrandChildLayerViewModel parent;
 
         #endregion Parent
 

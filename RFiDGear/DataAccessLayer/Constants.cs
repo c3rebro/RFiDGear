@@ -127,12 +127,12 @@ namespace RFiDGear.DataAccessLayer
     {
         public CARD_INFO(CARD_TYPE _type, string _uid)
         {
-            cardType = _type;
+            CardType = _type;
             uid = _uid;
         }
 
         public string uid;
-        public CARD_TYPE cardType;
+        public CARD_TYPE CardType;
     }
 
     /// <summary>

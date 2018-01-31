@@ -560,10 +560,10 @@ slot of an available reader</value>
     <value>Available Reader Providers</value>
   </data>
   <data name="menuItemAddEditMifareClassicTaskHeader" xml:space="preserve">
-    <value>Create Mifare _Classic Task</value>
+    <value>Add/Edit Mifare _Classic Task</value>
   </data>
   <data name="menuItemAddEditMifareDesfireTaskHeader" xml:space="preserve">
-    <value>Create Mifare _Desfire Task</value>
+    <value>Add/Edit Mifare _Desfire Task</value>
   </data>
   <data name="dataGridHeaderMainWindowTaskIndex" xml:space="preserve">
     <value>Task Nr.</value>
@@ -602,5 +602,38 @@ Use a csv file to acuire default keys for authentication</value>
   </data>
   <data name="menuItemProgrammingHeader" xml:space="preserve">
     <value>_Programming</value>
+  </data>
+  <data name="menuItemCreateTaskHeader" xml:space="preserve">
+    <value>RFiD Tasks</value>
+  </data>
+  <data name="menuItemMifareHeader" xml:space="preserve">
+    <value>Mifare</value>
+  </data>
+  <data name="menuItemRemoveCardsHeader" xml:space="preserve">
+    <value>Remove Cards</value>
+  </data>
+  <data name="menuItemAddEditMifareUltralightTaskHeader" xml:space="preserve">
+    <value>Add/Edit Mifare _Ultralight Task</value>
+  </data>
+  <data name="menuItemAddEditMifareSAMTaskHeader" xml:space="preserve">
+    <value>Add/Edit Mifare _SAM Task</value>
+  </data>
+  <data name="menuItemAddEditMifarePlusTaskHeader" xml:space="preserve">
+    <value>Add/Edit Mifare _Plus Task</value>
+  </data>
+  <data name="menuItemTagItHeader" xml:space="preserve">
+    <value>Tag It</value>
+  </data>
+  <data name="menuItemAddEditTagitHFIPlusTaskHeader" xml:space="preserve">
+    <value>Add/Edit TagIt _HF-I Plus Task</value>
+  </data>
+  <data name="contextMenuItemAddOrEditTask" xml:space="preserve">
+    <value>Edit Task...</value>
+  </data>
+  <data name="contextMenuItemDeleteSelectedItem" xml:space="preserve">
+    <value>Remove Task</value>
+  </data>
+  <data name="menuItemRemoveAllTasks" xml:space="preserve">
+    <value>Remove All Tasks</value>
   </data>
 </root>

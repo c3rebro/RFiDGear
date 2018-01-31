@@ -13,13 +13,13 @@ using System.Xml.Serialization;
 namespace RFiDGear.ViewModel
 {
 	/// <summary>
-	/// Description of TreeViewChildNodeViewModel.
+	/// Description of RFiDChipChildLayerViewModel.
 	/// </summary>
 	[XmlRootAttribute("TreeViewChildNode", IsNullable = false)]
-	public class TreeViewChildNodeViewModel : ViewModelBase, IUserDialogViewModel
+	public class RFiDChipChildLayerViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		private readonly ResourceLoader resLoader = new ResourceLoader();
-		private readonly TreeViewParentNodeViewModel _parent;
+		private readonly RFiDChipParentLayerViewModel _parent;
 		private readonly CARD_TYPE _cardType;
 		private readonly RelayCommand _cmdReadSectorWithCustoms;
 		private readonly RelayCommand _cmdReadSectorWithDefaults;
@@ -32,15 +32,15 @@ namespace RFiDGear.ViewModel
 
 		#region Constructors
 
-		public TreeViewChildNodeViewModel()
+		public RFiDChipChildLayerViewModel()
 		{
 			sectorModel = new MifareClassicSectorModel(0);
 			appModel = new MifareDesfireAppModel();
 
-			children = new ObservableCollection<TreeViewGrandChildNodeViewModel>();
+			children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 		}
 
-		public TreeViewChildNodeViewModel(
+		public RFiDChipChildLayerViewModel(
 			MifareClassicSectorModel _sectorModel,
 			MifareClassicSetupViewModel _setupViewModel)
 		{
@@ -48,16 +48,15 @@ namespace RFiDGear.ViewModel
 			setupViewModel = _setupViewModel;
 
 			isTask = true;
-			children = new ObservableCollection<TreeViewGrandChildNodeViewModel>();
+			children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
 			LoadChildren();
 		}
 
-		public TreeViewChildNodeViewModel(
+		public RFiDChipChildLayerViewModel(
 			MifareClassicSectorModel _sectorModel,
-			TreeViewParentNodeViewModel parent,
+			RFiDChipParentLayerViewModel parent,
 			CARD_TYPE cardType,
-			int _sectorNumber,
 			ObservableCollection<IDialogViewModel> _dialogs = null,
 			bool? _isTask = null)
 		{
@@ -65,9 +64,7 @@ namespace RFiDGear.ViewModel
 				dialogs = _dialogs;
 
 			isTask = _isTask;
-			//device = _device;
 			sectorModel = _sectorModel;
-			sectorModel.SectorNumber = _sectorNumber;
 			_cardType = cardType;
 			_parent = parent;
 
@@ -88,29 +85,14 @@ namespace RFiDGear.ViewModel
 			                     	Command = _cmdReadSectorWithCustoms
 			                     });
 
-			children = new ObservableCollection<TreeViewGrandChildNodeViewModel>();
-
-			if (_cardType == CARD_TYPE.Mifare1K || _cardType == CARD_TYPE.Mifare2K || _cardType == CARD_TYPE.Mifare4K)
-			{
-				if (isTask == true)
-					ChildNodeHeader = String.Format("*Sector: [{0}]", sectorModel.SectorNumber);
-				else
-					ChildNodeHeader = String.Format("Sector: [{0}]", sectorModel.SectorNumber);
-			}
-			else
-			{
-				if (isTask == true)
-					ChildNodeHeader = String.Format("*AppID: {0}", appModel.appID);
-				else
-					ChildNodeHeader = String.Format("AppID: {0}", appModel.appID);
-			}
+			children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
 			LoadChildren();
 		}
 
-		public TreeViewChildNodeViewModel(
+		public RFiDChipChildLayerViewModel(
 			MifareDesfireAppModel appID,
-			TreeViewParentNodeViewModel parentUID,
+			RFiDChipParentLayerViewModel parentUID,
 			CARD_TYPE cardType,
 			ObservableCollection<IDialogViewModel> _dialogs = null,
 			bool? _isTask = null)
@@ -123,7 +105,7 @@ namespace RFiDGear.ViewModel
 			//device = _device;
 			appModel = appID;
 			_cardType = cardType;
-			_parentUid = parentUID.UidNumber;
+			_parentUid = parentUID != null ? parentUID.UidNumber : null;
 
 			_cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
 			_cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
@@ -141,27 +123,12 @@ namespace RFiDGear.ViewModel
 			                     	Command = _cmdEditAuthAndModifySector
 			                     });
 
-			children = new ObservableCollection<TreeViewGrandChildNodeViewModel>();
-
-			if (_cardType == CARD_TYPE.Mifare1K || _cardType == CARD_TYPE.Mifare2K || _cardType == CARD_TYPE.Mifare4K)
-			{
-				if (isTask == true)
-					ChildNodeHeader = String.Format("*Sector: [{0}]", sectorModel.SectorNumber);
-				else
-					ChildNodeHeader = String.Format("Sector: [{0}]", sectorModel.SectorNumber);
-			}
-			else
-			{
-				if (isTask == true)
-					ChildNodeHeader = String.Format("*AppID: {0}", appModel.appID);
-				else
-					ChildNodeHeader = String.Format("AppID: {0}", appModel.appID);
-			}
+			children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
 			LoadChildren();
 		}
 
-		public TreeViewChildNodeViewModel(string _childNodeHeader)
+		public RFiDChipChildLayerViewModel(string _childNodeHeader)
 		{
 			ChildNodeHeader = _childNodeHeader;
 		}
@@ -201,14 +168,14 @@ namespace RFiDGear.ViewModel
 				                 {
 				                 	Caption = String.Format("{0} UID:[{1}] Type:[{2}]",
 				                 	                        ResourceLoader.getResource("mifareAuthSettingsDialogCaption"),
-				                 	                        this.Parent.UidNumber,
-				                 	                        this.Parent.CardType),
-				                 	//ViewModelContext = this,
-				                 	IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
+				                 	                        Parent.UidNumber,
+				                 	                        Parent.CardType),
+				                 	
+				                 	IsClassicAuthInfoEnabled = true,
 
 				                 	OnOk = (sender) =>
 				                 	{
-				                 		//databaseReaderWriter.WriteDatabase((sender.ViewModelContext as TreeViewChildNodeViewModel)._sectorModel);
+				                 		//databaseReaderWriter.WriteDatabase((sender.ViewModelContext as RFiDChipChildLayerViewModel)._sectorModel);
 				                 	},
 
 				                 	OnCancel = (sender) =>
@@ -220,11 +187,8 @@ namespace RFiDGear.ViewModel
 				                 	{
 				                 		//readerModel.ReadMiFareClassicSingleSector(sectorVM.SectorNumber, sender.selectedClassicKeyAKey, sender.selectedClassicKeyBKey);
 				                 		this.IsAuthenticated = device.SectorSuccesfullyAuth;
-				                 		foreach (TreeViewGrandChildNodeViewModel gcVM in this.Children)
+				                 		foreach (RFiDChipGrandChildLayerViewModel gcVM in this.Children)
 				                 		{
-				                 			gcVM.IsAuthenticated = device.DataBlockSuccesfullyAuth[
-				                 				(((this.SectorNumber + 1) * this.BlockCount) - (this.BlockCount - gcVM.DataBlockNumber))];
-				                 			gcVM.DataBlockContent = device.currentSector[gcVM.DataBlockNumber];
 				                 		}
 				                 	},
 
@@ -262,7 +226,7 @@ namespace RFiDGear.ViewModel
 		///
 		/// </summary>
 		[XmlIgnore]
-		public TreeViewParentNodeViewModel Parent
+		public RFiDChipParentLayerViewModel Parent
 		{
 			get { return _parent; }
 		}
@@ -270,7 +234,7 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		///
 		/// </summary>
-		public ObservableCollection<TreeViewGrandChildNodeViewModel> Children
+		public ObservableCollection<RFiDChipGrandChildLayerViewModel> Children
 		{
 			get { return children; }
 			set
@@ -278,7 +242,7 @@ namespace RFiDGear.ViewModel
 				children = value;
 				RaisePropertyChanged("Children");
 			}
-		} private ObservableCollection<TreeViewGrandChildNodeViewModel> children;
+		} private ObservableCollection<RFiDChipGrandChildLayerViewModel> children;
 		
 		/// <summary>
 		///
@@ -403,17 +367,11 @@ namespace RFiDGear.ViewModel
 			{
 				if (_cardType == CARD_TYPE.Mifare1K || _cardType == CARD_TYPE.Mifare2K || _cardType == CARD_TYPE.Mifare4K)
 				{
-					if (isTask == true)
-						childNodeHeader = String.Format("*Sector: [{0}]", sectorModel.SectorNumber);
-					else
-						childNodeHeader = String.Format("Sector: [{0}]", sectorModel.SectorNumber);
+					childNodeHeader = string.Format("Sector: [{0}]", sectorModel.SectorNumber);
 				}
 				else if (_cardType == CARD_TYPE.DESFire || _cardType == CARD_TYPE.DESFireEV1 || _cardType == CARD_TYPE.DESFireEV2)
 				{
-					if (isTask == true)
-						childNodeHeader = String.Format("*AppID: {0}", appModel.appID);
-					else
-						childNodeHeader = String.Format("AppID: {0}", appModel.appID);
+					childNodeHeader = string.Format("AppID: {0}", appModel.appID);
 				}
 
 				return childNodeHeader;
@@ -436,7 +394,7 @@ namespace RFiDGear.ViewModel
 					{
 						for (int i = 0; i <= 3; i++)
 						{
-							children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, sectorModel.SectorNumber, true));
+							children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0,i), this));
 						}
 					}
 					break;
@@ -447,29 +405,34 @@ namespace RFiDGear.ViewModel
 						{
 							for (int i = 0; i <= 3; i++)
 							{
-								children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, sectorModel.SectorNumber, true));
+								children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0,i), this));
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= 15; i++)
 							{
-								children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), this, _cardType, sectorModel.SectorNumber, true));
+								children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0,i), this));
 							}
 						}
 					}
 					break;
 
-				case CARD_TYPE.Unspecified:
+				case CARD_TYPE.DESFire:
+				case CARD_TYPE.DESFireEV1:
+				case CARD_TYPE.DESFireEV2:
+					{
+						//children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(), this));
+					}
+					break;
+					
+				case CARD_TYPE.Unspecified: //TODO: Add Card Type "TASK_MF_Classic" for every type
 					for (int i = 0; i <= 3; i++)
 					{
-						children.Add(new TreeViewGrandChildNodeViewModel(new MifareClassicDataBlockModel(i), setupViewModel));
+						children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0,i), setupViewModel));
 					}
 					break;
 			}
-			//foreach (TreeViewGrandChildNodeViewModel item in _children) {
-			//	sectorModel.DataBlock.Add(item._dataBlock);
-			//}
 		}
 
 		#region IUserDialogViewModel Implementation
@@ -514,19 +477,19 @@ namespace RFiDGear.ViewModel
 		///
 		/// </summary>
 		[XmlIgnore]
-		public Action<TreeViewChildNodeViewModel> OnOk { get; set; }
+		public Action<RFiDChipChildLayerViewModel> OnOk { get; set; }
 
 		/// <summary>
 		///
 		/// </summary>
 		[XmlIgnore]
-		public Action<TreeViewChildNodeViewModel> OnCancel { get; set; }
+		public Action<RFiDChipChildLayerViewModel> OnCancel { get; set; }
 
 		/// <summary>
 		///
 		/// </summary>
 		[XmlIgnore]
-		public Action<TreeViewChildNodeViewModel> OnCloseRequest { get; set; }
+		public Action<RFiDChipChildLayerViewModel> OnCloseRequest { get; set; }
 
 		/// <summary>
 		///
