@@ -951,6 +951,7 @@ namespace RFiDGear.ViewModel
 			set
 			{
 				selectedAccessBitsTaskDescription = value;
+				RaisePropertyChanged("SelectedTaskDescription");
 			}
 		}
 		private string selectedAccessBitsTaskDescription;
@@ -1092,26 +1093,20 @@ namespace RFiDGear.ViewModel
 				         			childNodeViewModelFromChip.SectorNumber = (int)SelectedClassicSectorCurrent;
 				         			childNodeViewModelTemp.SectorNumber = (int)SelectedClassicSectorCurrent;
 				         			
-				         			if (true) //device.Sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == (int)SelectedDataBlockToReadWrite (gcVM.DataBlockContent != null)
+				         			if (device.WriteMiFareClassicSingleBlock(childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlock.DataBlockNumberChipBased,
+				         			                                         ClassicKeyAKeyCurrent,
+				         			                                         ClassicKeyBKeyCurrent,
+				         			                                         childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].DataBlockContent) == ERROR.NoError)
 				         			{
-				         				//childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlock.DataBlockNumberChipBased = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == (int)SelectedDataBlockToReadWrite).DataBlockNumberChipBased;
-				         				
-				         				if (device.WriteMiFareClassicSingleBlock(childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlock.DataBlockNumberChipBased,
-				         				                                         ClassicKeyAKeyCurrent,
-				         				                                         ClassicKeyBKeyCurrent,
-				         				                                         childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].DataBlockContent) == ERROR.NoError)
-				         				{
-				         					StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
-				         					                                        DateTime.Now,
-				         					                                        childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
-				         					                                        CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].DataBlockContent));
-				         					TaskErr = ERROR.NoError;
-				         				}
-				         				else
-				         					TaskErr = ERROR.AuthenticationError;
+				         				StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
+				         				                                        DateTime.Now,
+				         				                                        childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
+				         				                                        CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].DataBlockContent));
+				         				TaskErr = ERROR.NoError;
 				         			}
 				         			else
 				         				TaskErr = ERROR.AuthenticationError;
+
 				         		}
 				         		else
 				         		{

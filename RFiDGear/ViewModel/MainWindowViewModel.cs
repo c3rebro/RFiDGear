@@ -1054,7 +1054,16 @@ namespace RFiDGear.ViewModel
 		public ICommand SaveChipDialogCommand { get { return new RelayCommand(OnNewSaveChipDialogCommand); } }
 		private void OnNewSaveChipDialogCommand()
 		{
-			databaseReaderWriter.WriteDatabase(TreeViewParentNodes);
+						var dlg = new SaveFileDialogViewModel
+			{
+				Title = ResourceLoader.getResource("windowTitleSaveTasks"),
+				Filter = ResourceLoader.getResource("filterStringSaveTasks")
+			};
+
+			if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+			{
+				databaseReaderWriter.WriteDatabase(TreeViewParentNodes, dlg.FileName);
+			}
 		}
 
 		/// <summary>
@@ -1297,7 +1306,7 @@ namespace RFiDGear.ViewModel
 		private void LoadCompleted(object sender, EventArgs e)
 		{
 			mw = (MainWindow)Application.Current.MainWindow;
-			mw.Title = string.Format("RFiDGear {0}.{1}.{2} {3}", Version.Major, Version.Minor, Version.Build, Version.Major == 0 ? "DEVELOPER PREVIEW" : "");
+			mw.Title = string.Format("RFiDGear {0}.{1}.{2} {3}", Version.Major, Version.Minor, Version.Build, Constants.TITLE_SUFFIX);
 
 			if (firstRun)
 			{

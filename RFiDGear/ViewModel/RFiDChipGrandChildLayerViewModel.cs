@@ -128,7 +128,7 @@ namespace RFiDGear.ViewModel
 
 		#region Dialogs
 
-		private ObservableCollection<IDialogViewModel> dialogs;
+		//private ObservableCollection<IDialogViewModel> dialogs;
 
 		#endregion Dialogs
 
@@ -203,10 +203,6 @@ namespace RFiDGear.ViewModel
 			}
 			set
 			{
-//				if(value.Length < dataBlockAsCharString.Length)
-//				{
-//					return;
-//				}
 				
 				dataBlockAsCharString = value;
 
@@ -276,7 +272,8 @@ namespace RFiDGear.ViewModel
 			get
 			{
 				if (DataBlockContent != null &&
-				    DataBlockContent.Length == 16)
+				    DataBlockContent.Length == 16 &&
+				    dataBlockAsHexString.Length == 32)
 				{
 					dataBlockAsHexString = CustomConverter.HexToString(DataBlockContent);
 				}
@@ -291,35 +288,26 @@ namespace RFiDGear.ViewModel
 			{
 				int discardedChars = 0;
 				
-//				if(value.Length < dataBlockAsHexString.Length)
-//				{
-//					return;
-//				}
-				
 				dataBlockAsHexString = value;
 				
-				if(DataBlockContent != null)
+				if(DataBlockContent != null && value.Length == 32 && CustomConverter.IsInHexFormat(value))
+				{
 					DataBlockContent = CustomConverter.GetBytes(value, out discardedChars);
+					IsValidDataContent = null;
+				}
+
 				else if(DataFileContent != null && (dataBlockAsHexString.Length % 2 == 0))
 				{
 					DataFileContent = CustomConverter.GetBytes(value, out discardedChars);
 					IsValidDataContent = null;
-					return;
 				}
 				
-				else
-					return;
-				
-				if (discardedChars == 0 && value.Length == 32)
-				{
-					IsValidDataContent = null;
-					IsTask = true;
-				}
 				else
 				{
 					IsValidDataContent = false;
-					IsTask = false;
+					return;
 				}
+
 
 				RaisePropertyChanged("DataAsHexString");
 				RaisePropertyChanged("DataAsCharString");
@@ -436,20 +424,14 @@ namespace RFiDGear.ViewModel
 			{
 				selectedDataLength = value;
 
-//				if (value % 2 == 0 && value < 100 && selectedDataIndexStart % 2 == 0)
-//				{
-//					IsValidSelectedDataIndexAndLength = true;
-//				}
-//				else if (value % 2 == 0 && value >= 100)
-//				{
-//					selectedDataLength -= 100;
-//					IsValidSelectedDataIndexAndLength = true;
-//				}
-//				else if (value % 2 == 1)
-//				{
-//					//selectedDataLength = value - 1;
-//					IsValidSelectedDataIndexAndLength = false;
-//				}
+				if (value % 2 == 0)
+				{
+					SelectedDataLengthInBytes = value/2;
+					IsValidSelectedDataIndexAndLength = (bool)(selectedDataIndexStart % 2 == 0);
+				}
+				else
+					IsValidSelectedDataIndexAndLength = false;
+				
 				RaisePropertyChanged("SelectedDataLength");
 			}
 		} private int selectedDataLength;
@@ -464,27 +446,46 @@ namespace RFiDGear.ViewModel
 			set
 			{
 				selectedDataIndexStart = value;
-
-//				if (value % 2 == 0 && value < 100)
-//				{
-//					selectedDataIndexStart /= 2;
-//					IsValidSelectedDataIndexAndLength = true;
-//				}
-//				else if (value % 2 == 0 && value >= 100)
-//				{
-//					selectedDataIndexStart -= 100;
-//					IsValidSelectedDataIndexAndLength = true;
-//				}
-//				else if (value % 2 == 1)
-//				{
-//					selectedDataIndexStart -= 1;
-//					IsValidSelectedDataIndexAndLength = false;
-//				}
-
+				if (value % 2 == 0)
+				{
+					SelectedDataIndexStartInBytes = value/2;
+					IsValidSelectedDataIndexAndLength = true;
+				}
+				else
+					IsValidSelectedDataIndexAndLength = false;
+				
 				RaisePropertyChanged("SelectedDataIndexStart");
 			}
 		} private int selectedDataIndexStart;
 
+		/// <summary>
+		///
+		/// </summary>
+		[XmlIgnore]
+		public int SelectedDataLengthInBytes
+		{
+			get { return selectedDataLengthInBytes; }
+			set
+			{
+				selectedDataLengthInBytes = value;
+				RaisePropertyChanged("SelectedDataLengthInBytes");
+			}
+		} private int selectedDataLengthInBytes;
+
+		/// <summary>
+		///
+		/// </summary>
+		[XmlIgnore]
+		public int SelectedDataIndexStartInBytes
+		{
+			get { return selectedDataIndexStartInBytes; }
+			set
+			{
+				selectedDataIndexStartInBytes = value;
+				RaisePropertyChanged("SelectedDataIndexStartInBytes");
+			}
+		} private int selectedDataIndexStartInBytes;
+		
 		/// <summary>
 		///
 		/// </summary>

@@ -16,14 +16,8 @@ namespace RFiDGear
 	{
 		// global (cross-class) Instances go here ->
 		private IReaderProvider readerProvider;
-
 		private IReaderUnit readerUnit;
 		private chip card;
-
-		private string chipUID;
-
-		private byte[] desFireFileData;
-
 		private bool _disposed = false;
 
 		#region properties
@@ -962,18 +956,14 @@ namespace RFiDGear
 								cmd.WriteData((byte)_fileNo,0, (uint)_data.Length, EncryptionMode.CM_ENCRYPT, _data);
 								
 								return ERROR.NoError;
-								//storage.WriteData(location, aiToUse, aiToWrite, (object)_data, (int)_data.Length, CardBehavior.CB_DEFAULT);
 							}
 							
-							catch (Exception e) {
-								
+							catch{
+								return ERROR.AuthenticationError;
 							}
-
-							
-							return ERROR.IOError;
 						}
 						else
-							return ERROR.AuthenticationError;
+							return ERROR.DeviceNotReadyError;
 					}
 					return ERROR.DeviceNotReadyError;
 				}
@@ -1011,7 +1001,9 @@ namespace RFiDGear
 
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFireEV1")
+							if (card.Type == "DESFire" ||
+							    card.Type == "DESFireEV1" ||
+							    card.Type == "DESFireEV2")
 							{
 								cmd = card.Commands as IDESFireEV1Commands;
 								try
@@ -1028,9 +1020,7 @@ namespace RFiDGear
 									return ERROR.AuthenticationError;
 								}
 							}
-							if (card.Type == "DESFireEV2")
-							{
-							}
+
 							return ERROR.AuthenticationError;
 						}
 					}
@@ -1146,7 +1136,9 @@ namespace RFiDGear
 
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFireEV1")
+							if (card.Type == "DESFire" ||
+							    card.Type == "DESFireEV1" ||
+							    card.Type == "DESFireEV2")
 							{
 								cmd = card.Commands as IDESFireEV1Commands;
 								try
@@ -1165,9 +1157,6 @@ namespace RFiDGear
 								{
 									return ERROR.AuthenticationError;
 								}
-							}
-							if (card.Type == "DESFireEV2")
-							{
 							}
 							return ERROR.AuthenticationError;
 						}
@@ -1224,7 +1213,9 @@ namespace RFiDGear
 
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFireEV1")
+							if (card.Type == "DESFire" ||
+							    card.Type == "DESFireEV1" ||
+							    card.Type == "DESFireEV2")
 							{
 								cmd = card.Commands as IDESFireEV1Commands;
 								try
@@ -1255,9 +1246,6 @@ namespace RFiDGear
 								{
 									return ERROR.AuthenticationError;
 								}
-							}
-							if (card.Type == "DESFireEV2")
-							{
 							}
 							return ERROR.AuthenticationError;
 						}
@@ -1300,7 +1288,9 @@ namespace RFiDGear
 
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFireEV1")
+							if (card.Type == "DESFire" ||
+							    card.Type == "DESFireEV1" ||
+							    card.Type == "DESFireEV2")
 							{
 								cmd = card.Commands as IDESFireEV1Commands;
 								try
@@ -1315,9 +1305,6 @@ namespace RFiDGear
 								{
 									return ERROR.AuthenticationError;
 								}
-							}
-							if (card.Type == "DESFireEV2")
-							{
 							}
 							return ERROR.AuthenticationError;
 						}
@@ -1377,9 +1364,6 @@ namespace RFiDGear
 									return ERROR.AuthenticationError;
 								}
 							}
-							if (card.Type == "DESFireEV2")
-							{
-							}
 							return ERROR.AuthenticationError;
 						}
 					}
@@ -1421,7 +1405,9 @@ namespace RFiDGear
 
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFireEV1")
+							if(card.Type == "DESFire" ||
+							   card.Type == "DESFireEV1" ||
+							   card.Type == "DESFireEV2")
 							{
 								cmd = card.Commands as IDESFireEV1Commands;
 								try
@@ -1437,9 +1423,6 @@ namespace RFiDGear
 								{
 									return ERROR.AuthenticationError;
 								}
-							}
-							if (card.Type == "DESFireEV2")
-							{
 							}
 							return ERROR.AuthenticationError;
 						}
@@ -1484,7 +1467,9 @@ namespace RFiDGear
 
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFireEV1")
+							if(card.Type == "DESFire" ||
+							   card.Type == "DESFireEV1" ||
+							   card.Type == "DESFireEV2")
 							{
 								cmd = card.Commands as IDESFireEV1Commands;
 								try
@@ -1518,9 +1503,6 @@ namespace RFiDGear
 									return ERROR.AuthenticationError;
 								}
 							}
-							if (card.Type == "DESFireEV2")
-							{
-							}
 							return ERROR.AuthenticationError;
 						}
 					}
@@ -1553,7 +1535,9 @@ namespace RFiDGear
 							ReaderUnitName = readerUnit.ConnectedName;
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFireEV1")
+							if (card.Type == "DESFire" ||
+							    card.Type == "DESFireEV1" ||
+							    card.Type == "DESFireEV2")
 							{
 								cmd = card.Commands as IDESFireEV1Commands;
 								try
@@ -1598,82 +1582,5 @@ namespace RFiDGear
 		}
 
 		#endregion mifare desfire
-
-		private bool WriteMiFareDESFireChipFile(int fileNo, int appid)
-		{
-			// The excepted memory tree
-			IDESFireLocation location = new DESFireLocation();
-			// The Application ID to use
-			location.aid = appid;
-			// File 0 into this application
-			location.File = fileNo;
-			// File communication requires encryption
-			location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
-
-			IDESFireEV1Commands cmd;
-			// Keys to use for authentication
-			IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
-			aiToUse.MasterCardKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"; //"11 22 33 44 55 66 77 88 99 00 11 22 33 44 55 66"
-			aiToUse.MasterCardKey.KeyType = DESFireKeyType.DF_KEY_AES;
-
-			// Get the card storage service
-			IStorageCardService storage = (IStorageCardService)card.GetService(CardServiceType.CST_STORAGE);
-
-			// Change keys with the following ones
-			IDESFireAccessInfo aiToWrite = new DESFireAccessInfo();
-
-			aiToWrite.MasterCardKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
-			aiToWrite.MasterCardKey.KeyType = DESFireKeyType.DF_KEY_AES;
-
-			aiToWrite.MasterApplicationKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";//"bd 9d 22 8c 06 72 14 a9 59 a3 28 91 fd bb 14 8c"; //"c7 56 80 59 0f 31 2c 13 07 12 b6 df 8f a7 b1 dc";
-			aiToWrite.MasterApplicationKey.KeyType = DESFireKeyType.DF_KEY_AES;
-
-			aiToWrite.ReadKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";//"bd 9d 22 8c 06 72 14 a9 59 a3 28 91 fd bb 14 8c";
-			aiToWrite.ReadKey.KeyType = DESFireKeyType.DF_KEY_AES;
-			aiToWrite.ReadKeyNo = 1;
-
-			aiToWrite.WriteKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
-			aiToWrite.WriteKey.KeyType = DESFireKeyType.DF_KEY_AES;
-			aiToWrite.WriteKeyNo = 2;
-
-			DESFireKeySettings desFireKeySet;
-			byte nBNmbr;
-
-			if (readerUnit.ConnectToReader())
-			{
-				if (readerUnit.WaitInsertion(100))
-				{
-					if (readerUnit.Connect())
-					{
-						if (card.Type == "DESFireEV1")
-						{
-							cmd = card.Commands as IDESFireEV1Commands;
-
-							object appIDsObject = cmd.GetApplicationIDs();
-
-							cmd.GetKeySettings(out desFireKeySet, out nBNmbr);
-							cmd.Authenticate(0, aiToUse.MasterCardKey);
-							cmd.DeleteApplication(1);
-
-							//cmd.SelectApplication(0);
-
-							//FileSetting fSetting = cmd.GetFileSettings(0);
-
-							//cmd.CreateApplication(3, DESFireKeySettings.KS_DEFAULT, 3);
-							//cmd.DeleteApplication(4);
-							//object fileIDs = cmd.GetFileIDs();
-							//appIDs = (appIDsObject as UInt32[]);
-							cmd.ChangeKey(0, aiToWrite.MasterCardKey);
-							//desFireFileData = (byte[])storage.ReadData(location, aiToWrite, 48, CardBehavior.CB_DEFAULT);
-						}
-						if (card.Type == "DESFireEV2")
-						{
-						}
-						return false;
-					}
-				}
-			}
-			return true;
-		}
 	}
 }

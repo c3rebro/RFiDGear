@@ -325,7 +325,7 @@
 													<Setter
 														Property="VerticalAlignment"
 														Value="Stretch" />
-													<!--<Style.Triggers>
+													<Style.Triggers>
 														<DataTrigger
 															Binding="{Binding IsValidSelectedDataIndexAndLength}"
 															Value="True">
@@ -340,7 +340,7 @@
 																Property="Foreground"
 																Value="Red" />
 														</DataTrigger>
-													</Style.Triggers>-->
+													</Style.Triggers>
 												</Style>
 											</_3rdP:SelectionBindingTextBox.Style>
 										</_3rdP:SelectionBindingTextBox>
@@ -637,7 +637,7 @@
 						Margin="9,3,7,7"
 						Content="Byte Count" />
 					<TextBox
-						Text="{Binding GrandChildNodeViewModel.SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+						Text="{Binding GrandChildNodeViewModel.SelectedDataIndexStartInBytes, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						HorizontalContentAlignment="Left"
 						VerticalContentAlignment="Center"
 						Height="26"
@@ -648,7 +648,7 @@
 						VerticalAlignment="Top"
 						Margin="9,3,0,0" />
 					<TextBox
-						Text="{Binding GrandChildNodeViewModel.SelectedDataLength, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+						Text="{Binding GrandChildNodeViewModel.SelectedDataLengthInBytes, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						HorizontalContentAlignment="Left"
 						VerticalContentAlignment="Center"
 						Height="26"

@@ -41,8 +41,6 @@ namespace RFiDGear.Model
         public int DataBlockNumberSectorBased { get; set; }
 
         public byte[] Data { get; set; }
-
-		public byte ParentSectorNumber { get; set; }
 		
 		public AccessCondition_MifareClassicSectorTrailer Read_DataBlock { get; set; }
         public AccessCondition_MifareClassicSectorTrailer Write_DataBlock { get; set; }

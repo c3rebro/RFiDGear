@@ -10,38 +10,18 @@ namespace RFiDGear.Model
     [XmlRootAttribute("MifareClassicSectorNode", IsNullable = false)]
     public class MifareClassicSectorModel
     {
-
         public MifareClassicSectorModel()
         {
             DataBlock = new ObservableCollection<MifareClassicDataBlockModel>();
         }
 
-        public MifareClassicSectorModel(short _c1x, short _c2x, short _c3x)
-        {
-            DataBlock = new ObservableCollection<MifareClassicDataBlockModel>();
-
-            Cx = 0;
-            Cx |= _c3x;
-            Cx <<= 1;
-            Cx |= _c2x;
-            Cx <<= 1;
-            Cx |= _c1x;
-
-            Read_KeyA = AccessCondition_MifareClassicSectorTrailer.NotApplicable;
-            Write_KeyA = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
-            Read_AccessCondition_MifareClassicSectorTrailer = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
-            Write_AccessCondition_MifareClassicSectorTrailer = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
-            Read_KeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
-            Write_KeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA;
-        }
-
         public MifareClassicSectorModel(short _cx,
-            AccessCondition_MifareClassicSectorTrailer _readKeyA = AccessCondition_MifareClassicSectorTrailer.NotApplicable,
-            AccessCondition_MifareClassicSectorTrailer _writeKeyA = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-            AccessCondition_MifareClassicSectorTrailer _readAccessCondition = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-            AccessCondition_MifareClassicSectorTrailer _writeAccessCondition = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-            AccessCondition_MifareClassicSectorTrailer _readKeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-            AccessCondition_MifareClassicSectorTrailer _writeKeyB = AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA)
+            AccessCondition_MifareClassicSectorTrailer _readKeyA,
+            AccessCondition_MifareClassicSectorTrailer _writeKeyA,
+            AccessCondition_MifareClassicSectorTrailer _readAccessCondition,
+            AccessCondition_MifareClassicSectorTrailer _writeAccessCondition,
+            AccessCondition_MifareClassicSectorTrailer _readKeyB,
+            AccessCondition_MifareClassicSectorTrailer _writeKeyB)
         {
             DataBlock = new ObservableCollection<MifareClassicDataBlockModel>();
 
@@ -55,13 +35,6 @@ namespace RFiDGear.Model
 
             Read_KeyB = _readKeyB;
             Write_KeyB = _writeKeyB;
-        }
-
-        public MifareClassicSectorModel(int _sectorNumber)
-        {
-            DataBlock = new ObservableCollection<MifareClassicDataBlockModel>();
-
-            SectorNumber = _sectorNumber;
         }
 
         public MifareClassicSectorModel(
