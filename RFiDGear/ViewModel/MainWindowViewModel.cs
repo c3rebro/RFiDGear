@@ -351,6 +351,49 @@ namespace RFiDGear.ViewModel
 			triggerReadChip.IsEnabled = timerState;
 		}
 
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public ICommand ExecuteQuickCheckCommand { get { return new RelayCommand(OnNewExecuteQuickCheckCommand); } }
+		private void OnNewExecuteQuickCheckCommand()
+		{
+			try
+			{
+				ReadChipCommand.Execute(null);
+				
+				if(treeViewParentNodes != null && !treeViewParentNodes.Any(x => x.IsSelected) && treeViewParentNodes.Count > 0)
+				{
+					treeViewParentNodes.FirstOrDefault().IsSelected = true;
+				}
+				
+				switch (treeViewParentNodes.Single(x => x.IsSelected == true).CardType)
+				{
+					case CARD_TYPE.Mifare1K:
+					case CARD_TYPE.Mifare2K:
+					case CARD_TYPE.Mifare4K:
+						
+						treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteClassicQuickCheckCommand.Execute(null);
+						
+						break;
+						
+					case CARD_TYPE.DESFire:
+					case CARD_TYPE.DESFireEV1:
+					case CARD_TYPE.DESFireEV2:
+						
+						treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteDesfireQuickCheckCommand.Execute(null);
+						
+						break;
+				}
+
+			}
+			
+			catch
+			{
+				
+			}
+		}
+		
 		/// <summary>
 		/// 
 		/// </summary>
@@ -1054,7 +1097,7 @@ namespace RFiDGear.ViewModel
 		public ICommand SaveChipDialogCommand { get { return new RelayCommand(OnNewSaveChipDialogCommand); } }
 		private void OnNewSaveChipDialogCommand()
 		{
-						var dlg = new SaveFileDialogViewModel
+			var dlg = new SaveFileDialogViewModel
 			{
 				Title = ResourceLoader.getResource("windowTitleSaveTasks"),
 				Filter = ResourceLoader.getResource("filterStringSaveTasks")

@@ -20,6 +20,10 @@
 	<Window.InputBindings>
 		<KeyBinding Key="F1" Command="{Binding ShowHelpCommand}"/>
 		<KeyBinding Modifiers="Control" Key="R" Command="{Binding ReadChipCommand}"/>
+		<KeyBinding Modifiers="Control" Key="O" Command="{Binding NewOpenFileDialogCommand}"/>
+		<KeyBinding Modifiers="Control" Key="S" Command="{Binding SaveTaskDialogCommand}"/>
+		<KeyBinding Modifiers="Control" Key="X" Command="{Binding WriteToChipOnceCommand}"/>
+		<KeyBinding Modifiers="Control" Key="Q" Command="{Binding ExecuteQuickCheckCommand}"/>
 	</Window.InputBindings>
 	
 	<!--
@@ -501,59 +505,21 @@
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top">
 					<MenuItem
-						Command="{Binding NewOpenFileDialogCommand}">
-						
-						<MenuItem.Header>
-							<StackPanel Orientation="Horizontal">
-								<Grid
-									Grid.Column="0"
-									Grid.Row="0"
-									HorizontalAlignment="Stretch"
-									VerticalAlignment="Stretch">
-									<Grid.ColumnDefinitions>
-										<ColumnDefinition
-											Width="200"/>
-										<ColumnDefinition
-											Width="*" />
-									</Grid.ColumnDefinitions>
-									<TextBlock Grid.Column="0"
-									           Text="{Binding LocalizationResourceSet,
-									           Converter={StaticResource Localization},
-									           ConverterParameter='menuItemOpenProject'}" HorizontalAlignment="Left"/>
-									<TextBlock Grid.Column="1" Text="Bar" HorizontalAlignment="Right"/>
-								</Grid>
-							</StackPanel>
-						</MenuItem.Header>
-						<!---->
-					</MenuItem>
-					
-					<!--										<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemOpenProject' }"
 						Command="{Binding NewOpenFileDialogCommand}"
-						ItemsSource="{Binding test}">
-						<MenuItem.ItemTemplate>
-							<DataTemplate>
-								<MenuItem>
-									<MenuItem.Header>
-										<StackPanel Orientation="Horizontal">
-											<TextBlock Text="{Binding t1}" FontWeight="Bold"/>
-											<TextBlock Text="{Binding t2}" FontStyle="Italic" Margin="2,0,0,0"/>
-										</StackPanel>
-									</MenuItem.Header>
-								</MenuItem>
-							</DataTemplate>
-						</MenuItem.ItemTemplate>
-					</MenuItem>-->
-					
-					
-					<MenuItem
-						Header="{Binding LocalizationResourceSet,
+						InputGestureText="{Binding LocalizationResourceSet,
 						Converter={StaticResource Localization},
-						ConverterParameter='menuItemSaveTask' }"
-						Command="{Binding SaveTaskDialogCommand}">
-					</MenuItem>
+						ConverterParameter='menuItemShortcutOpenProject'}"
+						Header="{Binding LocalizationResourceSet,
+					Converter={StaticResource Localization},
+					ConverterParameter='menuItemOpenProject'}"/>
+					<MenuItem
+						Command="{Binding SaveTaskDialogCommand}"
+						InputGestureText="{Binding LocalizationResourceSet,
+						Converter={StaticResource Localization},
+						ConverterParameter='menuItemShortcutSaveTask'}"
+						Header="{Binding LocalizationResourceSet,
+					Converter={StaticResource Localization},
+					ConverterParameter='menuItemSaveTask'}"/>
 					<MenuItem
 						Header="{Binding LocalizationResourceSet,
 						Converter={StaticResource Localization},
@@ -644,14 +610,27 @@
 					<MenuItem
 						Header="{Binding LocalizationResourceSet,
 						Converter={StaticResource Localization},
-						ConverterParameter='menuItemReadChipPublic' }"
-						Command="{Binding ReadChipCommand}">
-					</MenuItem>
+						ConverterParameter='menuItemReadChipPublic'}"
+						InputGestureText="{Binding LocalizationResourceSet,
+						Converter={StaticResource Localization},
+						ConverterParameter='menuItemShortcutReadChipPublic'}"
+						Command="{Binding ReadChipCommand}"/>
+					<MenuItem
+						Header="{Binding LocalizationResourceSet,
+						Converter={StaticResource Localization},
+						ConverterParameter='menuItemExecuteQuickCheck'}"
+						InputGestureText="{Binding LocalizationResourceSet,
+						Converter={StaticResource Localization},
+						ConverterParameter='menuItemShortcutExecuteQuickCheck'}"
+						Command="{Binding ExecuteQuickCheckCommand}"/>
 					<Separator />
 					<MenuItem
 						Header="{Binding LocalizationResourceSet,
 						Converter={StaticResource Localization},
 						ConverterParameter='menuItemRunAllTasksOnce' }"
+						InputGestureText="{Binding LocalizationResourceSet,
+						Converter={StaticResource Localization},
+						ConverterParameter='menuItemShortcutWriteToChipOnce'}"
 						Command="{Binding WriteToChipOnceCommand}">
 					</MenuItem>
 					<MenuItem

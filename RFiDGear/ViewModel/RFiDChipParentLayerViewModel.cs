@@ -487,6 +487,19 @@ namespace RFiDGear.ViewModel
 
 		#endregion View Switches
 
+		#region Commands
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public ICommand ExecuteDesfireQuickCheckCommand { get { return new RelayCommand(MifareDesfireQuickCheck); } }
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public ICommand ExecuteClassicQuickCheckCommand { get { return new RelayCommand(MifareClassicQuickCheck); } }
+		
+		#endregion
 		private void LoadChildren()
 		{
 			switch (CardType)

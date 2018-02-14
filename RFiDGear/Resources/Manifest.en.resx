@@ -636,4 +636,22 @@ Use a csv file to acuire default keys for authentication</value>
   <data name="menuItemRemoveAllTasks" xml:space="preserve">
     <value>Remove All Tasks</value>
   </data>
+  <data name="menuItemShortcutOpenProject" xml:space="preserve">
+    <value>[Ctrl + O]</value>
+  </data>
+  <data name="menuItemShortcutSaveTask" xml:space="preserve">
+    <value>[Ctrl + S]</value>
+  </data>
+  <data name="menuItemShortcutReadChipPublic" xml:space="preserve">
+    <value>[Ctrl + R]</value>
+  </data>
+  <data name="menuItemShortcutWriteToChipOnce" xml:space="preserve">
+    <value>[Ctrl + X]</value>
+  </data>
+  <data name="menuItemExecuteQuickCheck" xml:space="preserve">
+    <value>Perform Quick _Check</value>
+  </data>
+  <data name="menuItemShortcutExecuteQuickCheck" xml:space="preserve">
+    <value>[Ctrl + Q]</value>
+  </data>
 </root>
