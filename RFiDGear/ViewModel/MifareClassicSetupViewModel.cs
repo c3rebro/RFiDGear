@@ -22,6 +22,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
+using PluginSystem;
+
 namespace RFiDGear.ViewModel
 {
 	/// <summary>
@@ -814,6 +816,50 @@ namespace RFiDGear.ViewModel
 
 		#endregion DataExplorer
 
+		#region Plugins
+		[XmlIgnore]
+		public bool HasPlugins
+		{
+			get {
+				return hasPlugins;
+			}
+			set
+			{
+				hasPlugins = value;
+				RaisePropertyChanged("HasPlugins");
+			}
+		} private bool hasPlugins;
+		
+		private List<PluginBase> _Plugins = new List<PluginBase>();
+
+		/// <summary>
+		/// Gets the Plugins property.
+		/// Changes to that property's value raise the PropertyChanged event.
+		/// This property's value is broadcasted by the Messenger's default instance when it changes.
+		/// </summary>
+		[XmlIgnore]
+		public List<PluginBase> Plugins
+		{
+			get
+			{
+				return _Plugins;
+			}
+
+			set
+			{
+				if (_Plugins == value)
+				{
+					return;
+				}
+
+				_Plugins = value;
+
+				// Update bindings, no broadcast
+				RaisePropertyChanged("Plugins");
+			}
+		}
+		#endregion
+		
 		#region General Properties
 
 		/// <summary>
@@ -985,7 +1031,7 @@ namespace RFiDGear.ViewModel
 		{
 			//Mouse.OverrideCursor = Cursors.Wait;
 			TaskErr = ERROR.Empty;
-
+			
 			Task classicTask =
 				new Task(() =>
 				         {
@@ -1214,6 +1260,11 @@ namespace RFiDGear.ViewModel
 
 		#region Localization
 
+		/// <summary>
+		/// localization strings
+		/// </summary>
+		public string LocalizationResourceSet { get; set; }
+		
 		[XmlIgnore]
 		public string Caption
 		{
@@ -1223,9 +1274,7 @@ namespace RFiDGear.ViewModel
 				_Caption = value;
 				RaisePropertyChanged("Caption");
 			}
-		}
-
-		private string _Caption;
+		} private string _Caption;
 
 		#endregion Localization
 
@@ -1505,6 +1554,7 @@ namespace RFiDGear.ViewModel
 			return false;
 		}
 
+		
 		#endregion Extensions
 	}
 }

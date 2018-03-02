@@ -7,6 +7,7 @@ using RFiDGear.Model;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -15,6 +16,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Ninject;
+using Ninject.Modules;
+using PluginSystem;
 
 namespace RFiDGear.ViewModel
 {
@@ -40,6 +44,36 @@ namespace RFiDGear.ViewModel
 		private bool firstRun = true;
 		private Mutex mutex; //one reader, one instance - only
 
+		#region Plugins
+		private List<PluginBase> _Plugins = new List<PluginBase>();
+
+		/// <summary>
+		/// Gets the Plugins property.
+		/// Changes to that property's value raise the PropertyChanged event.
+		/// This property's value is broadcasted by the Messenger's default instance when it changes.
+		/// </summary>
+		public List<PluginBase> Plugins
+		{
+			get
+			{
+				return _Plugins;
+			}
+
+			set
+			{
+				if (_Plugins == value)
+				{
+					return;
+				}
+
+				_Plugins = value;
+
+				// Update bindings, no broadcast
+				RaisePropertyChanged("Plugins");
+			}
+		}
+		#endregion
+		
 		#region events / delegates
 
 		/// <summary>
@@ -147,6 +181,8 @@ namespace RFiDGear.ViewModel
 
 			try
 			{
+				Mouse.OverrideCursor = Cursors.AppStarting;
+				
 				//try to get singleton instance
 				using (RFiDDevice device = RFiDDevice.Instance)
 				{
@@ -195,9 +231,13 @@ namespace RFiDGear.ViewModel
 					OnNewResetTaskStatusCommand();
 					OnNewWriteToChipOnceCommand();
 				}
+				
+				Mouse.OverrideCursor = null;
 			}
 			catch (Exception ex)
 			{
+				Mouse.OverrideCursor = null;
+				
 				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""));
 			}
 		}
@@ -232,6 +272,8 @@ namespace RFiDGear.ViewModel
 
 			triggerReadChip.IsEnabled = false;
 
+			Mouse.OverrideCursor = Cursors.AppStarting;
+			
 			try
 			{
 				using (RFiDDevice device = RFiDDevice.Instance)
@@ -241,11 +283,10 @@ namespace RFiDGear.ViewModel
 					{
 						this.dialogs.Add(new MifareClassicSetupViewModel(SelectedSetupViewModel, dialogs)
 						                 {
-						                 	Caption = String.Format("{0} UID:[{1}] Type:[{2}]",
-						                 	                        ResourceLoader.getResource("mifareAuthSettingsDialogCaption"),
-						                 	                        "empty",
-						                 	                        "none"),
+						                 	Caption = ResourceLoader.getResource("windowCaptionAddEditMifareClassicTask"),
 						                 	IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
+						                 	Plugins = Plugins,
+						                 	HasPlugins = Plugins.Any(x => x.Name == "VCNEditor"),
 
 						                 	OnOk = (sender) =>
 						                 	{
@@ -281,11 +322,14 @@ namespace RFiDGear.ViewModel
 					}
 				}
 			}
-			catch
+			catch (Exception e)
 			{
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 				dialogs.Clear();
 			}
 
+			Mouse.OverrideCursor = null;
+			
 			triggerReadChip.IsEnabled = timerState;
 		}
 
@@ -299,17 +343,18 @@ namespace RFiDGear.ViewModel
 
 			triggerReadChip.IsEnabled = false;
 
+			Mouse.OverrideCursor = Cursors.AppStarting;
+			
 			using (RFiDDevice device = RFiDDevice.Instance)
 			{
 				if (device != null)
 				{
 					this.dialogs.Add(new MifareDesfireSetupViewModel(SelectedSetupViewModel, dialogs)
 					                 {
-					                 	Caption = String.Format("{0} UID:[{1}] Type:[{2}]",
-					                 	                        ResourceLoader.getResource("mifareAuthSettingsDialogCaption"),
-					                 	                        "empty",
-					                 	                        "none"),
-
+					                 	Caption = ResourceLoader.getResource("windowCaptionAddEditMifareDesfireTask"),
+					                 	Plugins = Plugins,
+					                 	HasPlugins = Plugins.Any(x => x.Name == "VCNEditor"),
+					                 	
 					                 	OnOk = (sender) =>
 					                 	{
 					                 		if (sender.SelectedTaskType == TaskType_MifareDesfireTask.ChangeDefault)
@@ -348,10 +393,11 @@ namespace RFiDGear.ViewModel
 				}
 			}
 
+			Mouse.OverrideCursor = null;
+			
 			triggerReadChip.IsEnabled = timerState;
 		}
 
-		
 		/// <summary>
 		/// 
 		/// </summary>
@@ -360,6 +406,8 @@ namespace RFiDGear.ViewModel
 		{
 			try
 			{
+				Mouse.OverrideCursor = Cursors.Wait;
+				
 				ReadChipCommand.Execute(null);
 				
 				if(treeViewParentNodes != null && !treeViewParentNodes.Any(x => x.IsSelected) && treeViewParentNodes.Count > 0)
@@ -385,12 +433,14 @@ namespace RFiDGear.ViewModel
 						
 						break;
 				}
+				
+				Mouse.OverrideCursor = null;
 
 			}
 			
 			catch
 			{
-				
+				Mouse.OverrideCursor = null;
 			}
 		}
 		
@@ -404,8 +454,11 @@ namespace RFiDGear.ViewModel
 
 			triggerReadChip.IsEnabled = false;
 
+			Mouse.OverrideCursor = Cursors.Wait;
+			
 			using (RFiDDevice device = RFiDDevice.Instance)
 			{
+				
 				foreach (RFiDChipParentLayerViewModel item in treeViewParentNodes)
 				{
 					item.IsExpanded = false;
@@ -444,6 +497,8 @@ namespace RFiDGear.ViewModel
 				}
 			}
 
+			Mouse.OverrideCursor = null;
+			
 			triggerReadChip.IsEnabled = timerState;
 		}
 
@@ -1006,7 +1061,7 @@ namespace RFiDGear.ViewModel
 			{
 				this.Dialogs.Add(new SetupViewModel(device)
 				                 {
-				                 	Caption = "RFiDGear Reader Setup",
+				                 	Caption = ResourceLoader.getResource("windowCaptionReaderSetup"),
 
 				                 	OnOk = (sender) =>
 				                 	{
@@ -1047,13 +1102,15 @@ namespace RFiDGear.ViewModel
 		{
 			var dlg = new OpenFileDialogViewModel
 			{
-				Title = ResourceLoader.getResource("windowTitleOpenProject"),
+				Title = ResourceLoader.getResource("windowCaptionOpenProject"),
 				Filter = ResourceLoader.getResource("filterStringSaveTasks"),
 				Multiselect = false
 			};
 
 			if (dlg.Show(this.Dialogs) && dlg.FileName != null)
 			{
+				Mouse.OverrideCursor = Cursors.AppStarting;
+				
 				if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
 					ChipTasks.TaskCollection.Clear();
 
@@ -1068,6 +1125,8 @@ namespace RFiDGear.ViewModel
 				{
 					ChipTasks.TaskCollection.Add(setup);
 				}
+				
+				Mouse.OverrideCursor = null;
 			}
 
 			RaisePropertyChanged("ChipTasks");
@@ -1081,7 +1140,7 @@ namespace RFiDGear.ViewModel
 		{
 			var dlg = new SaveFileDialogViewModel
 			{
-				Title = ResourceLoader.getResource("windowTitleSaveTasks"),
+				Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
 				Filter = ResourceLoader.getResource("filterStringSaveTasks")
 			};
 
@@ -1099,7 +1158,7 @@ namespace RFiDGear.ViewModel
 		{
 			var dlg = new SaveFileDialogViewModel
 			{
-				Title = ResourceLoader.getResource("windowTitleSaveTasks"),
+				Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
 				Filter = ResourceLoader.getResource("filterStringSaveTasks")
 			};
 
@@ -1354,6 +1413,18 @@ namespace RFiDGear.ViewModel
 			if (firstRun)
 			{
 				firstRun = false;
+				
+				try{
+					IKernel kernel = new StandardKernel(new RFiDGear.Plugins.MainModule());
+
+					Plugins = kernel.GetAll<PluginBase>("MifareClassicTaskPlugin").ToList();
+				}
+				
+				catch (Exception e2)
+				{
+					LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e2.Message, e2.InnerException != null ? e2.InnerException.Message : ""));
+				}
+
 				using (SettingsReaderWriter settings = new SettingsReaderWriter())
 				{
 					if (settings.DefaultSpecification.AutoCheckForUpdates)

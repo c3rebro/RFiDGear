@@ -190,9 +190,6 @@ slot of an available reader</value>
   <data name="menuItemReaderSettingsHeader" xml:space="preserve">
     <value>_Settings...</value>
   </data>
-  <data name="mifareAuthSettingsDialogCaption" xml:space="preserve">
-    <value>Authenticationdialog</value>
-  </data>
   <data name="ENUM.ReaderTypes.Gunnebo" xml:space="preserve">
     <value>Gunnebo</value>
   </data>
@@ -574,13 +571,13 @@ slot of an available reader</value>
   <data name="dataGridHeaderMainWindowTaskDescription" xml:space="preserve">
     <value>Description</value>
   </data>
-  <data name="windowTitleOpenProject" xml:space="preserve">
+  <data name="windowCaptionOpenProject" xml:space="preserve">
     <value>Open Project...</value>
   </data>
   <data name="filterStringSaveTasks" xml:space="preserve">
     <value>Project files (*.xml)|*.xml</value>
   </data>
-  <data name="windowTitleSaveTasks" xml:space="preserve">
+  <data name="windowCaptionSaveTasks" xml:space="preserve">
     <value>Save Tasks to File...</value>
   </data>
   <data name="menuItemContextMenuParentNodeQuickCheck" xml:space="preserve">
@@ -637,21 +634,87 @@ Use a csv file to acuire default keys for authentication</value>
     <value>Remove All Tasks</value>
   </data>
   <data name="menuItemShortcutOpenProject" xml:space="preserve">
-    <value>[Ctrl + O]</value>
+    <value>Ctrl + O</value>
   </data>
   <data name="menuItemShortcutSaveTask" xml:space="preserve">
-    <value>[Ctrl + S]</value>
+    <value>Ctrl + S</value>
   </data>
   <data name="menuItemShortcutReadChipPublic" xml:space="preserve">
-    <value>[Ctrl + R]</value>
+    <value>Ctrl + R</value>
   </data>
   <data name="menuItemShortcutWriteToChipOnce" xml:space="preserve">
-    <value>[Ctrl + X]</value>
+    <value>Ctrl + X</value>
   </data>
   <data name="menuItemExecuteQuickCheck" xml:space="preserve">
     <value>Perform Quick _Check</value>
   </data>
   <data name="menuItemShortcutExecuteQuickCheck" xml:space="preserve">
-    <value>[Ctrl + Q]</value>
+    <value>Ctrl + Q</value>
+  </data>
+  <data name="windowCaptionReaderSetup" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="windowCaptionAddEditMifareClassicTask" xml:space="preserve">
+    <value>Add / Edit Mifare Classic Task</value>
+  </data>
+  <data name="windowCaptionAddEditMifareDesfireTask" xml:space="preserve">
+    <value>Add / Edit Mifare Desfire Task</value>
+  </data>
+  <data name="tabPageHeaderMifareClassicKeys" xml:space="preserve">
+    <value>Mifare Classic Keys</value>
+  </data>
+  <data name="tabPageHeaderMifareClassicDataExplorer" xml:space="preserve">
+    <value>Data Explorer</value>
+  </data>
+  <data name="tabPageHeaderMifareClassicSectorTrailerEditor" xml:space="preserve">
+    <value>Sector Trailer Editor</value>
+  </data>
+  <data name="groupBoxHeaderMifareClassicSetupTaskConfiguration" xml:space="preserve">
+    <value>Task Configuration</value>
+  </data>
+  <data name="labelContentMifareClassicSetupTaskConfigurationType" xml:space="preserve">
+    <value>Task Type</value>
+  </data>
+  <data name="labelContentMifareClassicSetupTaskConfigurationDescription" xml:space="preserve">
+    <value>Task Description</value>
+  </data>
+  <data name="labelContentMifareClassicSetupTaskConfigurationIndex" xml:space="preserve">
+    <value>Task Index</value>
+  </data>
+  <data name="buttonContentMifareClassicSetupOKButton" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="buttonContentMifareClassicSetupCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireSetupTaskConfiguration" xml:space="preserve">
+    <value>Task Configuration</value>
+  </data>
+  <data name="labelContentMifareDesfireSetupTaskConfigurationType" xml:space="preserve">
+    <value>Task Type</value>
+  </data>
+  <data name="labelContentMifareDesfireSetupTaskConfigurationDescription" xml:space="preserve">
+    <value>Task Description</value>
+  </data>
+  <data name="labelContentMifareDesfireSetupTaskConfigurationIndex" xml:space="preserve">
+    <value>Task Index</value>
+  </data>
+  <data name="groupBoxHeaderMifareClassicSetupKeySetup" xml:space="preserve">
+    <value>Key Configuration</value>
+  </data>
+  <data name="labelContentMifareClassicSetupKeyANumber" xml:space="preserve">
+    <value>A Key Nr.</value>
+  </data>
+  <data name="labelContentMifareClassicSetupKeyBValue" xml:space="preserve">
+    <value>B Key</value>
+  </data>
+  <data name="labelContentMifareClassicSetupKeyBNumber" xml:space="preserve">
+    <value>B Key Nr.</value>
+  </data>
+  <data name="labelContentMifareClassicSetupKeyAValue" xml:space="preserve">
+    <value>A Key</value>
+  </data>
+  <data name="labelContentMifareClassicSetupSectorNumber" xml:space="preserve">
+    <value>Sector Nr.</value>
   </data>
 </root>

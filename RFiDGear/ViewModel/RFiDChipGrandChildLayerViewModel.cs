@@ -1,7 +1,6 @@
 ﻿using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using MvvmDialogs.ViewModels;
-using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using System;
 using System.Collections.Generic;
@@ -25,6 +24,8 @@ namespace RFiDGear.ViewModel
 		{
 			dataBlock = new MifareClassicDataBlockModel();
 			dataBlock.Data = new byte[16];
+			
+			desfireFile = new MifareDesfireFileModel();
 
 			children = new ObservableCollection<RFiDChipGrandGrandChildLayerViewModel>();
 		}

@@ -1,4 +1,4 @@
-﻿namespace RFiDGear.View
+﻿namespace MvvmDialogs.View
 {
     /// <summary>
     /// Interaction logic for CustomDialogBox.xaml

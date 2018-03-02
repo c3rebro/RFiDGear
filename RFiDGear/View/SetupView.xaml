@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Window
 	x:Class="RFiDGear.View.SetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:v="clr-namespace:RFiDGear.View" xmlns:local="clr-namespace:RFiDGear"
-	Title="RFiDGear.View"
+	Title="{Binding Caption}"
 	MinWidth="430"
 	Width="430"
 	MinHeight="300"

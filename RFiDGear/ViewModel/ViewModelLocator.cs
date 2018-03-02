@@ -13,41 +13,45 @@
  */
 
 using GalaSoft.MvvmLight.Ioc;
-using Microsoft.Practices.ServiceLocation;
+using CommonServiceLocator;
+using PluginSystem;
 
 namespace RFiDGear.ViewModel
 {
-    /// <summary>
-    /// This class contains static references to all the view models in the
-    /// application and provides an entry point for the bindings.
-    /// </summary>
-    public class ViewModelLocator
-    {
-        /// <summary>
-        /// Initializes a new instance of the ViewModelLocator class.
-        /// </summary>
-        public ViewModelLocator()
-        {
-            ServiceLocator.SetLocatorProvider(() => SimpleIoc.Default);
+	/// <summary>
+	/// This class contains static references to all the view models in the
+	/// application and provides an entry point for the bindings.
+	/// </summary>
+	public class ViewModelLocator
+	{
+		/// <summary>
+		/// Initializes a new instance of the ViewModelLocator class.
+		/// </summary>
+		public ViewModelLocator()
+		{
+			ServiceLocator.SetLocatorProvider(() => SimpleIoc.Default);
 
-            // Create run time view services and models
-            //SimpleIoc.Default.Register<IDataService, DataService>();
+			// Create run time view services and models
+			//SimpleIoc.Default.Register<IDataService, DataService>();
 
-            SimpleIoc.Default.Register<MainWindowViewModel>();
-            //SimpleIoc.Default.Register<Messenger, MainWindowViewModel>(true);
-        }
+			SimpleIoc.Default.Register<MainWindowViewModel>();
+			//SimpleIoc.Default.Register<Messenger, MainWindowViewModel>(true);
+		}
 
-        public MainWindowViewModel Main
-        {
-            get
-            {
-                return ServiceLocator.Current.GetInstance<MainWindowViewModel>();
-            }
-        }
-
-        public static void Cleanup()
-        {
-            // TODO Clear the ViewModels
-        }
-    }
+		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance",
+		                                                 "CA1822:MarkMembersAsStatic",
+		                                                 Justification = "This non-static member is needed for data binding purposes.")]
+		public MainWindowViewModel Main
+		{
+			get
+			{
+				return ServiceLocator.Current.GetInstance<MainWindowViewModel>();
+			}
+		}
+		
+		public static void Cleanup()
+		{
+			// TODO Clear the ViewModels
+		}
+	}
 }

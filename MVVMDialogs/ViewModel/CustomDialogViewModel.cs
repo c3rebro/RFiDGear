@@ -1,11 +1,10 @@
 ﻿using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
-using MvvmDialogs.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Windows.Input;
 
-namespace RFiDGear.ViewModel
+namespace MvvmDialogs.ViewModels
 {
     public class CustomDialogViewModel : ViewModelBase, IUserDialogViewModel
     {

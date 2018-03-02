@@ -1,8 +1,7 @@
-﻿using MvvmDialogs.ViewModels;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace RFiDGear.ViewModel
+namespace MvvmDialogs.ViewModels
 {
     public class OpenFileDialogViewModel : IDialogViewModel
     {

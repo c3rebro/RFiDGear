@@ -7,8 +7,8 @@
 
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
-using LibLogicalAccess;
 using MvvmDialogs.ViewModels;
+using LibLogicalAccess;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using RFiDGear.ViewModel;
@@ -21,6 +21,8 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
+
+using PluginSystem;
 
 namespace RFiDGear.ViewModel
 {
@@ -156,6 +158,50 @@ namespace RFiDGear.ViewModel
 		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
 
 		#endregion Dialogs
+		
+		#region Plugins
+		[XmlIgnore]
+		public bool HasPlugins
+		{
+			get {
+				return hasPlugins;
+			}
+			set
+			{
+				hasPlugins = value;
+				RaisePropertyChanged("HasPlugins");
+			}
+		} private bool hasPlugins;
+		
+		private List<PluginBase> _Plugins = new List<PluginBase>();
+
+		/// <summary>
+		/// Gets the Plugins property.
+		/// Changes to that property's value raise the PropertyChanged event.
+		/// This property's value is broadcasted by the Messenger's default instance when it changes.
+		/// </summary>
+		[XmlIgnore]
+		public List<PluginBase> Plugins
+		{
+			get
+			{
+				return _Plugins;
+			}
+
+			set
+			{
+				if (_Plugins == value)
+				{
+					return;
+				}
+
+				_Plugins = value;
+
+				// Update bindings, no broadcast
+				RaisePropertyChanged("Plugins");
+			}
+		}
+		#endregion
 		
 		#region Key Properties Card Master
 
@@ -1618,7 +1664,7 @@ namespace RFiDGear.ViewModel
 		private void OnNewGetDataFromFileCommand() {
 			var dlg = new OpenFileDialogViewModel
 			{
-				Title = ResourceLoader.getResource("windowTitleOpenProject"),
+				Title = ResourceLoader.getResource("windowCaptionOpenProject"),
 				//Filter = ResourceLoader.getResource("filterStringSaveTasks"),
 				Multiselect = false
 			};
@@ -2310,6 +2356,9 @@ namespace RFiDGear.ViewModel
 
 		#region Localization
 
+		public string LocalizationResourceSet { get; set; }
+		
+		[XmlIgnore]
 		public string Caption
 		{
 			get { return _Caption; }

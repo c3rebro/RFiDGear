@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Window
-	x:Class="RFiDGear.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors"
+	x:Class="RFiDGear.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
 	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}" xmlns:local="clr-namespace:RFiDGear" xmlns:m="clr-namespace:RFiDGear.Model" xmlns:vm="clr-namespace:RFiDGear.ViewModel" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
 	x:Name="homeWindow"
 	mc:Ignorable="d"
@@ -18,6 +18,7 @@
 	Width="900">
 	
 	<Window.InputBindings>
+		<KeyBinding Key="Escape" Command="{Binding CloseApplication}" />
 		<KeyBinding Key="F1" Command="{Binding ShowHelpCommand}"/>
 		<KeyBinding Modifiers="Control" Key="R" Command="{Binding ReadChipCommand}"/>
 		<KeyBinding Modifiers="Control" Key="O" Command="{Binding NewOpenFileDialogCommand}"/>

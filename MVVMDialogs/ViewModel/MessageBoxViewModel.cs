@@ -1,9 +1,8 @@
-﻿using MvvmDialogs.ViewModels;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 
-namespace RFiDGear.ViewModel
+namespace MvvmDialogs.ViewModels
 {
     public class MessageBoxViewModel : IDialogViewModel
     {

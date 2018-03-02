@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Window
-	x:Class="RFiDGear.View.MifareDesfireSetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:RFiDGear" xmlns:v="clr-namespace:RFiDGear.View" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-	Title="RFiDGear.View"
+	x:Class="RFiDGear.View.MifareDesfireSetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:RFiDGear" xmlns:v="clr-namespace:RFiDGear.View" xmlns:PluginSystem_Controls="clr-namespace:PluginSystem.Controls;assembly=PluginSystem" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+	Title="{Binding Caption}"
 	SizeToContent="WidthAndHeight"
 	MinWidth="800"
 	MinHeight="620"
 	WindowStartupLocation="CenterOwner">
-    <Window.Resources>
-        <local:BindingProxy
+	<Window.Resources>
+		<BooleanToVisibilityConverter x:Key="BoolToVisConv"/>
+		<local:BindingProxy
 			x:Key="proxy"
 			Data="{Binding}" />
-        <local:ResourceLoader
+		<local:ResourceLoader
 			x:Key="Localization" />
-        <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+		<!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 			<ContextMenu.ItemContainerStyle>
 				<Style TargetType="MenuItem">
 					<Setter
@@ -24,19 +25,19 @@
 				</Style>
 			</ContextMenu.ItemContainerStyle>
 		</ContextMenu>-->
-    </Window.Resources>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition
+	</Window.Resources>
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition
 				Height="110.066450667812" />
-            <RowDefinition
+			<RowDefinition
 				Height="*" />
-            <RowDefinition
+			<RowDefinition
 				Height="11" />
-            <RowDefinition
+			<RowDefinition
 				Height="0.3*" />
-        </Grid.RowDefinitions>
-        <GridSplitter
+		</Grid.RowDefinitions>
+		<GridSplitter
 			ResizeBehavior="PreviousAndNext"
 			ResizeDirection="Rows"
 			Background="#FFD9D9DB"
@@ -47,29 +48,29 @@
 			Grid.Column="0"
 			Height="5"
 			Width="Auto" />
-        <Grid
+		<Grid
 			Height="106"
 			Grid.Column="0"
 			Grid.Row="0"
 			HorizontalAlignment="Stretch"
 			VerticalAlignment="Top"
 			Margin="0,0,0,0">
-            <GroupBox
-				Header="Task Configuration"
+			<GroupBox
+				Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='groupBoxHeaderMifareDesfireSetupTaskConfiguration' }"
 				Height="106"
 				Grid.Column="0"
 				Grid.Row="0"
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Top"
 				Margin="9,0,8,0">
-                <Grid
+				<Grid
 					VerticalAlignment="Stretch"
 					HorizontalAlignment="Stretch"
 					Margin="0,0,0,0"
 					Grid.Column="0"
 					Grid.Row="0">
-                    <Label
-						Content="Configuration Type"
+					<Label
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireSetupTaskConfigurationType' }"
 						Height="26"
 						Width="117"
 						Grid.Column="0"
@@ -77,9 +78,9 @@
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
 						Margin="10,7,0,0" />
-                    <ComboBox
+					<ComboBox
 						ItemsSource="{local:Enumerate {x:Type dal:TaskType_MifareDesfireTask}}"
-						SelectedItem="{Binding SelectedTaskType,&#x9;Converter={StaticResource Localization},&#x9;ConverterParameter={x:Type dal:TaskType_MifareDesfireTask},&#x9;UpdateSourceTrigger=PropertyChanged,&#x9;Mode=TwoWay}"
+						SelectedItem="{Binding SelectedTaskType,Converter={StaticResource Localization},ConverterParameter={x:Type dal:TaskType_MifareDesfireTask},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
 						Width="252"
 						Height="26"
 						Grid.Column="1"
@@ -87,8 +88,8 @@
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
 						Margin="8,7,0,0"></ComboBox>
-                    <Label
-						Content="Task Description"
+					<Label
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireSetupTaskConfigurationDescription' }"
 						RenderTransformOrigin="0.5085,0.4231"
 						Height="26"
 						Width="97"
@@ -97,7 +98,7 @@
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
 						Margin="10,10,0,0" />
-                    <TextBox
+					<TextBox
 						Text="{Binding SelectedTaskDescription}"
 						Height="26"
 						Grid.Column="3"
@@ -105,8 +106,8 @@
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Top"
 						Margin="9,10,12,0" />
-                    <Label
-						Content="Task Index"
+					<Label
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireSetupTaskConfigurationIndex' }"
 						RenderTransformOrigin="0.5085,0.4231"
 						Height="26"
 						Width="95"
@@ -115,7 +116,7 @@
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
 						Margin="9,7,0,0" />
-                    <TextBox
+					<TextBox
 						Text="{Binding SelectedTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						Height="26"
 						Grid.Column="3"
@@ -123,96 +124,102 @@
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Top"
 						Margin="9,7,12,0">
-                        <TextBox.Resources>
-                            <Style
+						<TextBox.Resources>
+							<Style
 								x:Key="IsValidSelectedKeySetupTaskIndex"
 								TargetType="TextBox">
-                                <Style.Triggers>
-                                    <DataTrigger
+								<Style.Triggers>
+									<DataTrigger
 										Binding="{Binding IsValidSelectedKeySetupTaskIndex}"
 										Value="True">
-                                        <Setter
+										<Setter
 											Property="Foreground"
 											Value="Green" />
-                                        <Setter
+										<Setter
 											Property="Background"
 											Value="White" />
-                                        <Setter
+										<Setter
 											Property="FontWeight"
 											Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger
+									</DataTrigger>
+									<DataTrigger
 										Binding="{Binding IsValidSelectedKeySetupTaskIndex}"
 										Value="False">
-                                        <Setter
+										<Setter
 											Property="Foreground"
 											Value="Black" />
-                                        <Setter
+										<Setter
 											Property="Background"
 											Value="Red" />
-                                        <Setter
+										<Setter
 											Property="FontWeight"
 											Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition
+									</DataTrigger>
+								</Style.Triggers>
+							</Style>
+						</TextBox.Resources>
+					</TextBox>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition
 							Width="140" />
-                        <ColumnDefinition
+						<ColumnDefinition
 							Width="280" />
-                        <ColumnDefinition
+						<ColumnDefinition
 							Width="120" />
-                        <ColumnDefinition
+						<ColumnDefinition
 							Width="0.241549838813732*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition
+					</Grid.ColumnDefinitions>
+					<Grid.RowDefinitions>
+						<RowDefinition
 							Height="38" />
-                        <RowDefinition
+						<RowDefinition
 							Height="0.286848072562358*" />
-                    </Grid.RowDefinitions>
-                </Grid>
-            </GroupBox>
-        </Grid>
-        <Grid
+					</Grid.RowDefinitions>
+				</Grid>
+			</GroupBox>
+		</Grid>
+		<Grid
 			Grid.Column="0"
 			Grid.Row="1"
 			HorizontalAlignment="Stretch"
 			Margin="0,0,0,0"
 			VerticalAlignment="Stretch">
-            <TabControl>
-                <TabItem
+			<TabControl>
+				<TabItem
 					Header="PICC Master Key Setup">
-                    <v:TabPageMifareDesfireCardMasteringView />
-                </TabItem>
-                <TabItem
+					<v:TabPageMifareDesfireCardMasteringView />
+				</TabItem>
+				<TabItem
 					Header="Application Setup">
-                    <v:TabPageMifareDesfireAppCreationView />
-                </TabItem>
-                <TabItem
+					<v:TabPageMifareDesfireAppCreationView />
+				</TabItem>
+				<TabItem
 					Header="Application Key Changeover">
-                    <v:TabPageMifareDesfireApplicationMasteringView />
-                </TabItem>
-                <TabItem
+					<v:TabPageMifareDesfireApplicationMasteringView />
+				</TabItem>
+				<TabItem
 					Header="File Setup">
-                    <v:TabPageMifareDesfireFileMasteringView />
-                </TabItem>
-                <TabItem
+					<v:TabPageMifareDesfireFileMasteringView />
+				</TabItem>
+				<TabItem
 					Header="Data Explorer">
-                    <v:TabPageMifareDesfireDataExplorerView />
-                </TabItem>
-            </TabControl>
-        </Grid>
-        <Grid
+					<v:TabPageMifareDesfireDataExplorerView />
+				</TabItem>
+				<TabItem Header="Plugins" Visibility="{Binding HasPlugins, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">
+					<Grid>
+						<ListBox x:Name="listBox" VerticalAlignment="Top" ItemsSource="{Binding Plugins}" ItemsPanel="{DynamicResource MenuItemsPanelTemplate}" ItemTemplate="{DynamicResource MenuItemTemplate}" SelectedIndex="0" Height="25"/>
+						<PluginSystem_Controls:AnimatedContentControl Margin="0,25,0,0" AnimatedContent="{Binding SelectedItem, ElementName=listBox}"/>
+					</Grid>
+				</TabItem>
+			</TabControl>
+		</Grid>
+		<Grid
 			Grid.Column="0"
 			Grid.Row="3"
 			HorizontalAlignment="Stretch"
 			VerticalAlignment="Stretch"
 			Margin="0,0,0,0">
-            <TextBox
+			<TextBox
 				Text="{Binding StatusText}"
 				FontFamily="Lucida Console"
 				IsReadOnly="True"
@@ -223,7 +230,7 @@
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Stretch"
 				Margin="8,0,8,39" />
-            <Button
+			<Button
 				Content="OK"
 				Command="{Binding OKCommand}"
 				Height="23"
@@ -233,7 +240,7 @@
 				HorizontalAlignment="Left"
 				VerticalAlignment="Bottom"
 				Margin="9,0,0,8" />
-            <Button
+			<Button
 				Content="Cancel"
 				Command="{Binding CancelCommand}"
 				Height="23"
@@ -243,6 +250,6 @@
 				HorizontalAlignment="Left"
 				VerticalAlignment="Bottom"
 				Margin="157,0,0,8" />
-        </Grid>
-    </Grid>
+		</Grid>
+	</Grid>
 </Window>

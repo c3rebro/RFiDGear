@@ -189,9 +189,9 @@
 						<!-- Main program file -->
 						<!-- Configuration file -->
 						<!--<Component Id="uberAgent.conf_comp" Guid="7448780e-b66a-43d3-be5a-eeba38a821ef">
-															<File Source="$(var.ProjectDir)..\uberAgent\Config file\Standalone mode\uberAgent.conf" Id="uberAgentConf" KeyPath="yes" />
-															<IniFile Id="ConfigFile" Action="addLine" Directory="INSTALLDIR" Name="uberAgent.conf" Section="Receiver" Key="Servers" Value="[SERVERS]" />
-														</Component>-->
+																	<File Source="$(var.ProjectDir)..\uberAgent\Config file\Standalone mode\uberAgent.conf" Id="uberAgentConf" KeyPath="yes" />
+																	<IniFile Id="ConfigFile" Action="addLine" Directory="INSTALLDIR" Name="uberAgent.conf" Section="Receiver" Key="Servers" Value="[SERVERS]" />
+																</Component>-->
 						<Component Id="GalaSoftMvvmLightDll" Guid="40A4382E-00AA-479A-923F-0B45401700BB" DiskId="1">
 							<File Id="GalaSoft.MvvmLight.dll" Name="GalaSoft.MvvmLight.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.dll" KeyPath="yes" />
 						</Component>
@@ -203,9 +203,6 @@
 						</Component>
 						<Component Id="IonicZipReducedDll" Guid="DC246BF8-25A3-42BF-A2A5-CEE429219381" DiskId="1">
 							<File Id="Ionic.Zip.Reduced.dll" Name="Ionic.Zip.Reduced.dll" Source="..\RFiDGear\bin\Release\Ionic.Zip.Reduced.dll" KeyPath="yes" />
-						</Component>
-						<Component Id="MicrosoftPracticesServiceLocationDll" Guid="F08C56CE-1821-41B5-A6DB-B23DE06EF3EE" DiskId="1">
-							<File Id="Microsoft.Practices.ServiceLocation.dll" Name="Microsoft.Practices.ServiceLocation.dll" Source="..\RFiDGear\bin\Release\Microsoft.Practices.ServiceLocation.dll" KeyPath="yes" />
 						</Component>
 						<Component Id="RFiDGearExe" Guid="08A86D18-98BA-486E-BC08-42079879AE51" DiskId="1">
 							<File Id="RFiDGear.exe" Name="RFiDGear.exe" Source="..\RFiDGear\bin\Release\RFiDGear.exe" KeyPath="yes" />
@@ -227,13 +224,28 @@
 								<File Id="en.RFiDGear.resources.dll" Name="RFiDGear.resources.dll" Source="..\RFiDGear\bin\Release\en\RFiDGear.resources.dll" KeyPath="yes" />
 							</Component>
 						</Directory>
+						<Component Id="MVVMDialogsDll" Guid="1E11FAF7-1CD6-49A4-AC0C-ED87A237C1CD" DiskId="1">
+							<File Id="MVVMDialogs.dll" Name="MVVMDialogs.dll" Source="..\RFiDGear\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
+						</Component>
+						<Component Id="NinjectDll" Guid="48E1E589-51DE-4422-92B5-B5DE48E80C84" DiskId="1">
+							<File Id="Ninject.dll" Name="Ninject.dll" Source="..\RFiDGear\bin\Release\Ninject.dll" KeyPath="yes" />
+						</Component>
+						<Component Id="PluginSystemDll" Guid="B6782BE0-4826-4FDD-AAF0-5660ECAAE6AA" DiskId="1">
+							<File Id="PluginSystem.dll" Name="PluginSystem.dll" Source="..\RFiDGear\bin\Release\PluginSystem.dll" KeyPath="yes" />
+						</Component>
+						<Component Id="CommonServiceLocatorDll" Guid="5CA5CB50-8EA8-4EBF-AA40-6BC120B61AC7" DiskId="1">
+							<File Id="CommonServiceLocator.dll" Name="CommonServiceLocator.dll" Source="..\RFiDGear\bin\Release\CommonServiceLocator.dll" KeyPath="yes" />
+						</Component>
+						<Component Id="GalaSoftMvvmLightPlatformDll" Guid="F1BC217E-D278-487D-957A-1A7C2837F779" DiskId="1">
+							<File Id="GalaSoft.MvvmLight.Platform.dll" Name="GalaSoft.MvvmLight.Platform.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.Platform.dll" KeyPath="yes" />
+						</Component>
 					</Directory>
 				</Directory>
 			</Directory>
 			<!-- Registry entries -->
 			<Component Id="RegValInstallLocation_comp" Guid="7448780e-b66a-43d3-be5a-eeba38a821ee">
 				<!-- Do NOT use the application's default registry key here, because THIS key will be removed on uninstall
-								                 (important when installing a newer version, because that is uninstall followed by install) -->
+										                 (important when installing a newer version, because that is uninstall followed by install) -->
 				<RegistryKey Root="HKLM" Key="Software\!(loc.ManufacturerName)\InstalledProducts\!(loc.ApplicationName)">
 					<RegistryValue Name="InstallLocation" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
 				</RegistryKey>
@@ -259,12 +271,17 @@
 				<ComponentRef Id="GalaSoftMvvmLightExtrasDll" />
 				<ComponentRef Id="InteropLibLogicalAccessDll" />
 				<ComponentRef Id="IonicZipReducedDll" />
-				<ComponentRef Id="MicrosoftPracticesServiceLocationDll" />
+				<ComponentRef Id="CommonServiceLocatorDll" />
 				<ComponentRef Id="RFiDGearExe" />
 				<ComponentRef Id="RFiDGearexeConfig" />
 				<ComponentRef Id="SystemWindowsInteractivityDll" />
 				<ComponentRef Id="RFiDGearresourcesDll" />
 				<ComponentRef Id="EnRFiDGearresourcesDll" />
+				
+				<ComponentRef Id="GalaSoftMvvmLightPlatformDll" />
+				<ComponentRef Id="PluginSystemDll" />
+				<ComponentRef Id="NinjectDll" />
+				<ComponentRef Id="MVVMDialogsDll" />
 				
 				<ComponentRef Id="RegValInstallLocation_comp" />
 			</Feature>
