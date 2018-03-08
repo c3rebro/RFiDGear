@@ -77,9 +77,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataAccessLayer\CRC32.cs" />
     <Compile Include="DataAccessLayer\CustomConverter.cs" />
     <Compile Include="DataAccessLayer\LogWriter.cs" />
-    <Compile Include="Model\CRC32.cs" />
+    <Compile Include="Model\AccessProfile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VCNEditor.cs" />
     <Compile Include="ViewModel\ProfileEditorViewModel.cs" />

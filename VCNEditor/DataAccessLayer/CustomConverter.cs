@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RFiDGear.Plugins
+namespace VCNEditor.DataAccessLayer
 {
 	//**************************************************************************
 	// Hexidecimal to Byte and Byte to Hexadecimal conversion

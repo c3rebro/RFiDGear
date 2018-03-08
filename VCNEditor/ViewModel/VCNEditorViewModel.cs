@@ -1,4 +1,6 @@
-﻿using VCNEditor.View;
+﻿using VCNEditor.DataAccessLayer;
+using VCNEditor.Model;
+using VCNEditor.View;
 using VCNEditor.ViewModel;
 
 using MvvmDialogs.ViewModels;
@@ -14,18 +16,18 @@ using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using PluginSystem;
 
-namespace RFiDGear.Plugins
+namespace VCNEditor.ViewModel
 {
 	public class VCNEditorViewModel : PluginViewModelBase<VCNEditor>
 	{
 		private byte[] idFileAsByte;
 		private byte[] accessFileAsByte;
-		private byte[] accessProfileAsBytes = new byte[4]{0,0,0,0};
+		private AccessProfile accessProfile;
+		
 		private byte[] sIConfAsBytes = new byte[2];
 		private byte[] areaIDAsBytes = new byte[2];
 		private byte sICardConfAsByte = 0x00;
 		private byte fileFormatRelease = 0x00;
-		private byte[] mainListWords;
 		
 		public VCNEditorViewModel(VCNEditor plugin)
 			: base(plugin)
@@ -49,6 +51,8 @@ namespace RFiDGear.Plugins
 			
 			UpStreamFileContentAsString = "0";
 			UpStreamFileTypeAsString = "0";
+
+			accessProfile = new AccessProfile();
 		}
 
 		#region Dialogs
@@ -60,6 +64,41 @@ namespace RFiDGear.Plugins
 		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
 
 		#endregion Dialogs
+		
+		#region Commands
+		
+		public ICommand AddProfileCommand { get { return new RelayCommand(OnNewAddProfileCommand); }}
+		private void OnNewAddProfileCommand()
+		{
+			if (AccessProfiles == null)
+			{
+				AccessProfiles = new ObservableCollection<AccessProfile>();
+			}
+			
+			#region accessprofile
+			
+			//Array.Clear(accessProfile.AccessProfileAsBytes, 0, 4);
+			
+			foreach(AccessProfile ap in AccessProfiles)
+			{
+				ap.AccessProfileAsBytes[3] &= 0xFE; // remove isLastProfile on every profile
+			}
+			
+			accessProfile.AccessProfileAsBytes[0] |= 0x01; //set isLastProfile on current profile to 1
+			
+			accessProfile.AccessProfileAsBytes[3] |= (byte)((mainListWordsCount & 0x3) << 6); // set mainlistwords
+			accessProfile.AccessProfileAsBytes[2] |= (byte)((mainListWordsCount & 0x3FC) >> 2); // set mainlistwords
+			
+			accessProfile.AccessProfileAsBytes[3] |= (byte)selectedProfileType; // set profiletype
+			
+			accessProfile.AccessProfileAsBytes = ConvToLittleEndian(accessProfile.AccessProfileAsBytes);
+			
+			AccessProfiles.Add(accessProfile);
+			
+			SelectedAccessProfile = accessProfile;
+			
+			#endregion
+		}
 		
 		public ICommand EditMainListCommand { get { return new RelayCommand(OnNewEditMainListCommand); }}
 		private void OnNewEditMainListCommand()
@@ -74,13 +113,15 @@ namespace RFiDGear.Plugins
 						            	
 						            	OnOk = (sender) =>
 						            	{
+						            		accessProfile = new AccessProfile();
+						            		
 						            		int lidCount = sender.ProfileText.Replace(" ",string.Empty).Replace(";",string.Empty).Split(',').Count();
 						            		int[] lids = Array.ConvertAll<string, int>(sender.ProfileText.Replace(" ",string.Empty).Replace(";",string.Empty).Split(','), new Converter<string, int>((x) => {return int.Parse(x);}));
 						            		double bytesCount = (double)lids.Max() / 8;
 
-						            		mainListWords = new byte[Convert.ToInt32((Convert.ToInt32(Math.Ceiling(bytesCount)) % 2 == 0)
-						            		                                         ? (Math.Ceiling(bytesCount))
-						            		                                         : (Math.Ceiling(bytesCount) +1))];
+						            		accessProfile.MainListWords = new byte[Convert.ToInt32((Convert.ToInt32(Math.Ceiling(bytesCount)) % 2 == 0)
+						            		                                                       ? (Math.Ceiling(bytesCount))
+						            		                                                       : (Math.Ceiling(bytesCount) +1))];
 						            		
 						            		lids = lids.OrderBy((x) => { return x;}).ToArray();
 						            		
@@ -90,11 +131,11 @@ namespace RFiDGear.Plugins
 						            			//int bitMaskTest = (8 * ceilTest) - lids[i]; //(((byte)lids[i] - 1) / (Convert.ToInt32(Math.Ceiling((double)lids[i] / 8))));
 						            			//int bytePosTest = (Convert.ToInt32(Math.Ceiling((double)lids[i] / 8)) - 1);
 						            			
-						            			mainListWords[(Convert.ToInt32(Math.Ceiling((double)lids[i] / 8)) - 1)]
+						            			accessProfile.MainListWords[(Convert.ToInt32(Math.Ceiling((double)lids[i] / 8)) - 1)]
 						            				|= Reverse((byte)(1 << (byte)((8 * (Convert.ToInt32(Math.Ceiling((double)lids[i] / 8)))) - lids[i])));
 						            		}
 						            		
-						            		MainListWordsCount = mainListWords.Length / 2;
+						            		MainListWordsCount = accessProfile.MainListWords.Length / 2;
 						            		
 						            		//mainListWords = ConvToLittleEndian(mainListWords);
 						            		
@@ -150,22 +191,6 @@ namespace RFiDGear.Plugins
 
 			idAsBytes = CustomConverter.GetBytes(CustomConverter.HexToString(cardType) + CardID + ForHostUse, out err);
 			
-			#region accessprofile
-			
-			Array.Clear(accessProfileAsBytes, 0, 4);
-			
-			accessProfileAsBytes[0] |= 0x01; //set isLastProfile manually to 1
-			
-			accessProfileAsBytes[3] |= (byte)((mainListWordsCount & 0x3) << 6); // set mainlistwords
-			accessProfileAsBytes[2] |= (byte)((mainListWordsCount & 0x3FC) >> 2); // set mainlistwords
-			
-			accessProfileAsBytes[3] |= (byte)selectedProfileType; // set profiletype
-			
-			accessProfileAsBytes = ConvToLittleEndian(accessProfileAsBytes);
-			
-			#endregion
-
-			
 			#region siconf
 			
 			Array.Clear(sIConfAsBytes, 0, 2);
@@ -182,6 +207,7 @@ namespace RFiDGear.Plugins
 			sIConfAsBytes[1] = noEntryWhenALFull ? (sIConfAsBytes[1] |= 0x04) : (sIConfAsBytes[1] &= 0xFB);
 			
 			sIConfAsBytes = ConvToLittleEndian(sIConfAsBytes);
+			
 			#endregion
 			
 			accessFileAsByte = new byte[
@@ -196,8 +222,8 @@ namespace RFiDGear.Plugins
 					+ "0000" //blacklist addr
 					+ "000000000000" // reserved
 					+ "00"
-					+ CustomConverter.HexToString(accessProfileAsBytes)
-					+ CustomConverter.HexToString(mainListWords)
+					+ CustomConverter.HexToString(SelectedAccessProfile.AccessProfileAsBytes) //CustomConverter.HexToString(SelectedAccessProfile.AccessProfileAsBytes)
+					+ CustomConverter.HexToString(SelectedAccessProfile.MainListWords)
 					+ "00000000" // week schedules
 					+ "0000" // extra door list
 					+ "0000" // neg excpt. list
@@ -214,8 +240,8 @@ namespace RFiDGear.Plugins
 				+ "0000" //blacklist addr
 				+ "000000000000" // reserved
 				+ CustomConverter.HexToString((byte)(Math.Ceiling((double)accessFileAsByte.Length / 16))) // size
-				+ CustomConverter.HexToString(accessProfileAsBytes)
-				+ CustomConverter.HexToString(mainListWords)
+				+ CustomConverter.HexToString(SelectedAccessProfile.AccessProfileAsBytes)
+				+ CustomConverter.HexToString(SelectedAccessProfile.MainListWords)
 				+ "00000000" // week schedules
 				+ "0000" // extra door list
 				+ "0000", // neg excpt. list
@@ -240,6 +266,9 @@ namespace RFiDGear.Plugins
 			                             CustomConverter.HexToString(idAsBytes),
 			                             CustomConverter.HexToString(accessFileAsByte));
 		}
+		
+		
+		#endregion
 
 		#region IDFile
 		
@@ -679,6 +708,55 @@ namespace RFiDGear.Plugins
 
 		#region accessProfiles
 
+		/// <summary>
+		/// 
+		/// </summary>
+		public ObservableCollection<AccessProfile> AccessProfiles
+		{
+			get
+			{
+				return accessProfiles;
+			}
+			set
+			{
+				accessProfiles = value;
+				RaisePropertyChanged("AccessProfiles");
+			}
+		} private ObservableCollection<AccessProfile> accessProfiles;
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public byte[] CombinedAccessProfileAsBytes
+		{
+			get
+			{
+				return combinedAccessProfileAsBytes;
+			}
+			set
+			{
+				combinedAccessProfileAsBytes = value;
+				RaisePropertyChanged("CombinedAccessProfileAsBytes");
+			}
+		} private byte[] combinedAccessProfileAsBytes;
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public AccessProfile SelectedAccessProfile
+		{
+			get
+			{
+				return selectedAccessProfile;
+			}
+			set
+			{
+				selectedAccessProfile = value;
+				RaisePropertyChanged("SelectedAccessProfile");
+			}
+		}
+		private AccessProfile selectedAccessProfile;
+		
 		/// <summary>
 		/// 
 		/// </summary>

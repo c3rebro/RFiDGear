@@ -1,4 +1,4 @@
-﻿using RFiDGear.Plugins;
+﻿using VCNEditor;
 
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace RFiDGear.Plugins
     {
         public override void Load()
         {
-			Bind<PluginBase>().To<VCNEditor>().Named("MifareClassicTaskPlugin");
+			Bind<PluginBase>().To<VCNEditor.VCNEditor>().Named("MifareClassicTaskPlugin");
         }
     }
 }
