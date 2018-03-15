@@ -11,7 +11,7 @@ using System.Xml.Serialization;
 namespace RFiDGear.DataAccessLayer
 {
     /// <summary>
-    /// Description of Class1.
+    /// Serialize and Deserialize Chips and Tasks
     /// </summary>
     public class DatabaseReaderWriter
     {

@@ -100,8 +100,8 @@ namespace VCNEditor.ViewModel
 		public void Close()
 		{
 			profileEditorView.Close();
-//			if (this.DialogClosing != null)
-//				this.DialogClosing(this, new EventArgs());
+			//if (this.DialogClosing != null)
+			//	this.DialogClosing(this, new EventArgs());
 		}
 
 		public void Show(IList<IDialogViewModel> collection)

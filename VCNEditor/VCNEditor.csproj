@@ -78,7 +78,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataAccessLayer\CRC32.cs" />
-    <Compile Include="DataAccessLayer\CustomConverter.cs" />
     <Compile Include="DataAccessLayer\LogWriter.cs" />
     <Compile Include="Model\AccessProfile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -101,6 +100,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\ByteArray\ByteArray.csproj">
+      <Project>{bdd5df8c-6fc1-4882-8151-924820fdbc05}</Project>
+      <Name>ByteArray</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MVVMDialogs\MVVMDialogs.csproj">
       <Project>{0bd61aaa-7545-4566-894a-fa73212baecb}</Project>
       <Name>MVVMDialogs</Name>

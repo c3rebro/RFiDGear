@@ -1,4 +1,6 @@
-﻿using VCNEditor.DataAccessLayer;
+﻿using ByteArrayHelper;
+using ByteArrayHelper.Extensions;
+
 using VCNEditor.Model;
 using VCNEditor.View;
 using VCNEditor.ViewModel;
@@ -8,6 +10,7 @@ using MvvmDialogs.ViewModels;
 using CRC_IT;
 
 using System;
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
@@ -20,7 +23,6 @@ namespace VCNEditor.ViewModel
 {
 	public class VCNEditorViewModel : PluginViewModelBase<VCNEditor>
 	{
-		private byte[] idFileAsByte;
 		private byte[] accessFileAsByte;
 		private AccessProfile accessProfile;
 		
@@ -91,9 +93,11 @@ namespace VCNEditor.ViewModel
 			
 			accessProfile.AccessProfileAsBytes[3] |= (byte)selectedProfileType; // set profiletype
 			
-			accessProfile.AccessProfileAsBytes = ConvToLittleEndian(accessProfile.AccessProfileAsBytes);
+			accessProfile.AccessProfileAsBytes = ByteConverter.Reverse(accessProfile.AccessProfileAsBytes);
 			
 			AccessProfiles.Add(accessProfile);
+
+			AccessProfiles = new ObservableCollection<AccessProfile>(AccessProfiles);
 			
 			SelectedAccessProfile = accessProfile;
 			
@@ -127,17 +131,11 @@ namespace VCNEditor.ViewModel
 						            		
 						            		for (int i = 0; i < lids.Count(); i++)
 						            		{
-						            			//int ceilTest = (Convert.ToInt32(Math.Ceiling((double)lids[i] / 8)));
-						            			//int bitMaskTest = (8 * ceilTest) - lids[i]; //(((byte)lids[i] - 1) / (Convert.ToInt32(Math.Ceiling((double)lids[i] / 8))));
-						            			//int bytePosTest = (Convert.ToInt32(Math.Ceiling((double)lids[i] / 8)) - 1);
-						            			
 						            			accessProfile.MainListWords[(Convert.ToInt32(Math.Ceiling((double)lids[i] / 8)) - 1)]
-						            				|= Reverse((byte)(1 << (byte)((8 * (Convert.ToInt32(Math.Ceiling((double)lids[i] / 8)))) - lids[i])));
+						            				|= ByteConverter.Reverse((byte)(1 << (byte)((8 * (Convert.ToInt32(Math.Ceiling((double)lids[i] / 8)))) - lids[i])));
 						            		}
 						            		
 						            		MainListWordsCount = accessProfile.MainListWords.Length / 2;
-						            		
-						            		//mainListWords = ConvToLittleEndian(mainListWords);
 						            		
 						            		sender.Close();
 						            	},
@@ -163,7 +161,7 @@ namespace VCNEditor.ViewModel
 				}
 			}
 			
-			catch (Exception e)
+			catch
 			{
 				//LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 				//dialogs.Clear();
@@ -176,20 +174,23 @@ namespace VCNEditor.ViewModel
 			var err = 0;
 			var rnd = new Random();
 			var idAsBytes = new byte[10];
+			string combinedAccessProfile = "";
+			
+			ObservableCollection<ByteArray> copyOfAccessProfiles = new ObservableCollection<ByteArray>();
 			
 			for (int i = 0; i < idAsBytes.Length; i++)
 			{
 				idAsBytes[i] = (byte)rnd.Next(0,255);
 			}
 			
-			CardID = CustomConverter.HexToString(idAsBytes);
+			CardID = ByteConverter.HexToString(idAsBytes);
 			
 			idAsBytes = new byte[
-				CustomConverter.GetByteCount(CardID)
-				+ CustomConverter.GetByteCount(ForHostUse)
+				ByteConverter.GetByteCount(CardID)
+				+ ByteConverter.GetByteCount(ForHostUse)
 				+ 1];
 
-			idAsBytes = CustomConverter.GetBytes(CustomConverter.HexToString(cardType) + CardID + ForHostUse, out err);
+			idAsBytes = ByteConverter.GetBytes(ByteConverter.HexToString(cardType) + CardID + ForHostUse, out err);
 			
 			#region siconf
 			
@@ -206,45 +207,48 @@ namespace VCNEditor.ViewModel
 			sIConfAsBytes[1] = suppressBeeping ? (sIConfAsBytes[1] |= 0x08) : (sIConfAsBytes[1] &= 0xF7);
 			sIConfAsBytes[1] = noEntryWhenALFull ? (sIConfAsBytes[1] |= 0x04) : (sIConfAsBytes[1] &= 0xFB);
 			
-			sIConfAsBytes = ConvToLittleEndian(sIConfAsBytes);
+			sIConfAsBytes = ByteConverter.Reverse(sIConfAsBytes);
 			
 			#endregion
 			
+			foreach( AccessProfile ap in AccessProfiles)
+			{				
+				combinedAccessProfile +=
+					((ByteConverter.HexToString(ap.AccessProfileAsBytes)
+					  + ByteConverter.HexToString(ap.MainListWords)
+//					  + "00000000" // week schedules
+//					  + "0000" // extra door list
+//					  + "0000"
+					 )); // neg excpt. list
+			}
+			
 			accessFileAsByte = new byte[
-				CustomConverter.GetByteCount(
-					CustomConverter.HexToString(fileFormatRelease) // CRC32_Begin; fileFormat major plus minor
+				ByteConverter.GetByteCount(
+					ByteConverter.HexToString(fileFormatRelease) // CRC32_Begin; fileFormat major plus minor
 					+ "00" //content identifier
-					+ CustomConverter.HexToString(areaIDAsBytes)
-					+ CustomConverter.HexToString(sIConfAsBytes)
+					+ ByteConverter.HexToString(areaIDAsBytes)
+					+ ByteConverter.HexToString(sIConfAsBytes)
 					+ "000000" // valid from
 					+ "000000" // expiry
-					+ CustomConverter.HexToString(sICardConfAsByte)
+					+ ByteConverter.HexToString(sICardConfAsByte)
 					+ "0000" //blacklist addr
 					+ "000000000000" // reserved
 					+ "00"
-					+ CustomConverter.HexToString(SelectedAccessProfile.AccessProfileAsBytes) //CustomConverter.HexToString(SelectedAccessProfile.AccessProfileAsBytes)
-					+ CustomConverter.HexToString(SelectedAccessProfile.MainListWords)
-					+ "00000000" // week schedules
-					+ "0000" // extra door list
-					+ "0000" // neg excpt. list
+					+ combinedAccessProfile
 				)];
 			
-			accessFileAsByte = CustomConverter.GetBytes(
-				CustomConverter.HexToString(fileFormatRelease) // fileFormat major plus minor
+			accessFileAsByte = ByteConverter.GetBytes(
+				ByteConverter.HexToString(fileFormatRelease) // fileFormat major plus minor
 				+ "02" //content identifier
-				+ CustomConverter.HexToString(areaIDAsBytes)
-				+ CustomConverter.HexToString(sIConfAsBytes)
+				+ ByteConverter.HexToString(areaIDAsBytes)
+				+ ByteConverter.HexToString(sIConfAsBytes)
 				+ "000000" // valid from
 				+ "000000" // expiry
-				+ CustomConverter.HexToString(sICardConfAsByte)
+				+ ByteConverter.HexToString(sICardConfAsByte)
 				+ "0000" //blacklist addr
 				+ "000000000000" // reserved
-				+ CustomConverter.HexToString((byte)(Math.Ceiling((double)accessFileAsByte.Length / 16))) // size
-				+ CustomConverter.HexToString(SelectedAccessProfile.AccessProfileAsBytes)
-				+ CustomConverter.HexToString(SelectedAccessProfile.MainListWords)
-				+ "00000000" // week schedules
-				+ "0000" // extra door list
-				+ "0000", // neg excpt. list
+				+ ByteConverter.HexToString((byte)(Math.Ceiling((double)(accessFileAsByte.Length / 16)+4))) // size of accessFile + 4bytes CRC32 which is added afterwards
+				+ combinedAccessProfile,
 				
 				out err);
 
@@ -257,14 +261,14 @@ namespace VCNEditor.ViewModel
 				Crc32 crc = new Crc32();
 				byte[] crc32AsByte = crc.ComputeHash(arrToUse);
 				
-				CRC32 = CustomConverter.HexToString(ConvToLittleEndian(crc32AsByte));
+				CRC32 = ByteConverter.HexToString(ByteConverter.Reverse(crc32AsByte));
 				
-				accessFileAsByte = CustomConverter.GetBytes(CustomConverter.HexToString(crc32AsByte) + CustomConverter.HexToString(accessFileAsByte), out err);
+				accessFileAsByte = ByteConverter.GetBytes(ByteConverter.HexToString(crc32AsByte) + ByteConverter.HexToString(accessFileAsByte), out err);
 			}
 			
 			Plugin1Value = string.Format("IDFile: {0}\nAccessFile: {1}",
-			                             CustomConverter.HexToString(idAsBytes),
-			                             CustomConverter.HexToString(accessFileAsByte));
+			                             ByteConverter.HexToString(idAsBytes),
+			                             ByteConverter.HexToString(accessFileAsByte));
 		}
 		
 		
@@ -849,25 +853,7 @@ namespace VCNEditor.ViewModel
 		
 		#region extensions
 		
-		private byte[] ConvToLittleEndian(byte[] bigEndian)
-		{
-			if (BitConverter.IsLittleEndian)
-				Array.Reverse(bigEndian);
-			
-			return bigEndian;
-		}
-		
-		private byte Reverse(byte x)
-		{
-			byte y = 0;
-			for (byte i = 0; i < 8; ++i)
-			{
-				y <<= 1;
-				y |= (byte)(x & 1);
-				x >>= 1;
-			}
-			return y;
-		}
+
 		
 		#endregion
 	}

@@ -6,7 +6,7 @@
  * 
  * To change this template use Tools | Options | Coding | Edit Standard Headers.
  */
-using VCNEditor.DataAccessLayer;
+using ByteArrayHelper.Extensions;
  
 using System;
 using System.Collections;
@@ -33,84 +33,6 @@ namespace VCNEditor.Model
 		
 		public byte[] MainListWords { get; set; }
 		
-		public string ProfileDesc { get { return string.Format("{0}:{1}:{2}",ProfileType, CustomConverter.HexToString(AccessProfileAsBytes), CustomConverter.HexToString(MainListWords)); }}
+		public string ProfileDesc { get { return string.Format("{0}:{1}:{2}",ProfileType, ByteConverter.HexToString(AccessProfileAsBytes), ByteConverter.HexToString(MainListWords)); }}
 	}
-
-//	// Collection of Person objects. This class
-//	// implements IEnumerable so that it can be used
-//	// with ForEach syntax.
-//	public class AccessProfile : IEnumerable
-//	{
-//		private Profile[] profile;
-//		
-//		public AccessProfile(Profile[] pArray = null)
-//		{
-//			profile = new Profile[pArray.Length];
-//
-//			for (int i = 0; i < pArray.Length; i++)
-//			{
-//				profile[i] = pArray[i];
-//			}
-//		}
-//
-//		// Implementation for the GetEnumerator method.
-//		IEnumerator IEnumerable.GetEnumerator()
-//		{
-//			return (IEnumerator) GetEnumerator();
-//		}
-//
-//		public ProfileEnum GetEnumerator()
-//		{
-//			return new ProfileEnum(profile);
-//		}
-//	}
-//
-//	// When you implement IEnumerable, you must also implement IEnumerator.
-//	public class ProfileEnum : IEnumerator
-//	{
-//		public Profile[] profile;
-//
-//		// Enumerators are positioned before the first element
-//		// until the first MoveNext() call.
-//		int position = -1;
-//
-//		public ProfileEnum(Profile[] list)
-//		{
-//			profile = list;
-//		}
-//
-//		public bool MoveNext()
-//		{
-//			position++;
-//			return (position < profile.Length);
-//		}
-//
-//		public void Reset()
-//		{
-//			position = -1;
-//		}
-//
-//		object IEnumerator.Current
-//		{
-//			get
-//			{
-//				return Current;
-//			}
-//		}
-//
-//		public Profile Current
-//		{
-//			get
-//			{
-//				try
-//				{
-//					return profile[position];
-//				}
-//				catch (IndexOutOfRangeException)
-//				{
-//					throw new InvalidOperationException();
-//				}
-//			}
-//		}
-//	}
 }
