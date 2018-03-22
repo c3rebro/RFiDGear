@@ -1,4 +1,4 @@
-﻿using RFiDGear.DataAccessLayer;
+﻿
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
 
-namespace RFiDGear
+namespace VCNEditor
 {
 	/// <summary>
 	/// Description of ResourceLoaderViewModel.
@@ -65,11 +65,11 @@ namespace RFiDGear
 		{
 			this.Type = type;
 
-			settings = new SettingsReaderWriter();
-			resManager = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
-			settings.ReadSettings();
+			//settings = new SettingsReaderWriter();
+			resManager = new ResourceManager("VCNEditor.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
+			//settings.ReadSettings();
 
-			cultureInfo = (new DefaultSpecification().DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
+			cultureInfo = new CultureInfo("de"); //(new DefaultSpecification().DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
 		}
 
 		/// <summary>
@@ -104,10 +104,10 @@ namespace RFiDGear
 		public ResourceLoader()
 		{
 			//settings = new SettingsReaderWriter();
-			resManager = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
+			resManager = new ResourceManager("VCNEditor.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
 			//settings.ReadSettings();
 
-			//cultureInfo = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
+			cultureInfo = new CultureInfo("de"); //(settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
 		}
 
 		/// <summary>
@@ -146,7 +146,7 @@ namespace RFiDGear
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				//LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 
 				throw new Exception(
 					string.Format("parameter:{0}\nvalue:{1}",
@@ -199,18 +199,19 @@ namespace RFiDGear
 		{
 			try
 			{
-				using (SettingsReaderWriter settings = new SettingsReaderWriter())
-				{
-					settings.ReadSettings();
-					
-					return new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
-						.GetString(resName, (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en"));
-				}
-				
+//				using (SettingsReaderWriter settings = new SettingsReaderWriter())
+//				{
+//					//settings.ReadSettings();
+//					
+//					return new ResourceManager("VCNEditor.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
+//						.GetString(resName, (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en"));
+//				}
+				return new ResourceManager("VCNEditor.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
+						.GetString(resName, new CultureInfo("de"));
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				//LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 				return string.Empty;
 			}
 		}

@@ -1,7 +1,9 @@
-﻿using VCNEditor.View;
-using VCNEditor.ViewModel;
+﻿using VCNEditor.ViewModel;
+
+using MefMvvm.SharedContracts;
 
 using System;
+using System.ComponentModel.Composition;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,16 +17,16 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace VCNEditor
+namespace VCNEditor.View
 {
-    /// <summary>
-    /// Interaction logic for UserControl1.xaml
-    /// </summary>
-    public partial class UserControl1 : UserControl
-    {
-        public UserControl1()
-        {
-            InitializeComponent();
-        }
-    }
+	/// <summary>
+	/// Interaction logic for VCNEditorView.xaml
+	/// </summary>
+	public partial class VCNEditorView : UserControl
+	{		
+		public VCNEditorView()
+		{
+			InitializeComponent();
+		}
+	}
 }

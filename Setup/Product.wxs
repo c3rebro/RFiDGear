@@ -22,6 +22,7 @@
 	
 	<!-- The URL for add/remove programs -->
 	<?define InfoURL="http://rfidgear.hyperstack.de" ?>
+	<?define RFIDGear_ProgramDataDir = "CommonAppDataFolder" ?>
 	
 	<!-- 32-bit / 64-bit variables -->
 	<?if $(var.Platform) = x64 ?>
@@ -58,26 +59,13 @@
 		
 		<PropertyRef Id="WIX_IS_NETFRAMEWORK_452_OR_LATER_INSTALLED" />
 		
+		<Property Id="HAS_RFIDGEAR_PROGRAMDATADIR">
+			<DirectorySearch Id="ProgramDataPathSearch" Path="$(var.RFIDGear_ProgramDataDir)" />
+		</Property>
+		
 		<Property Id="SYSTEM_HAS_ISLOG">
 			<DirectorySearch Id="ProgramFilesPathSearch" Path="$(var.ISLOG_ProgramDataDir)" />
 		</Property>
-		
-		<!--		<Property Id="VCREDIST_IS_INSTALLED_ON_64BIT_MACHINE">
-			<RegistrySearch Id="HasVCPP2010Search" Root="HKLM" Key="SOFTWAREMicrosoftVisualStudio10.0VCVCRedistx86" Name="Installed" Type="raw" />
-		</Property>-->
-		
-		<!--	<Property Id="LSM_IS_INSTALLED_ON_64BIT_MACHINE">
-			<RegistrySearch Id="LSMInstallDir1" Name="WindowsInstaller" Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products\1DECAC39A6FA3A1458DE98EDEB3412EF\InstallProperties" Type="raw" Win64="yes">
-			</RegistrySearch>
-		</Property>-->
-		
-		<!--	<Property Id="LSM_IS_INSTALLED_ON_32BIT_MACHINE">
-			<RegistrySearch Id="LSMInstallDir2" Name="WindowsInstaller" Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products\1DECAC39A6FA3A1458DE98EDEB3412EF\InstallProperties" Type="raw" Win64="no">
-				<DirectorySearch
-					Id="InstallPathSearch"
-					Path='[LSM_IS_INSTALLED]'/>
-			</RegistrySearch>
-		</Property>-->
 		
 		<!-- Set properties for add/remove programs -->
 		<Property Id="ARPPRODUCTICON" Value="Icon.exe" />
@@ -189,14 +177,11 @@
 						<!-- Main program file -->
 						<!-- Configuration file -->
 						<!--<Component Id="uberAgent.conf_comp" Guid="7448780e-b66a-43d3-be5a-eeba38a821ef">
-																	<File Source="$(var.ProjectDir)..\uberAgent\Config file\Standalone mode\uberAgent.conf" Id="uberAgentConf" KeyPath="yes" />
-																	<IniFile Id="ConfigFile" Action="addLine" Directory="INSTALLDIR" Name="uberAgent.conf" Section="Receiver" Key="Servers" Value="[SERVERS]" />
-																</Component>-->
+																															<File Source="$(var.ProjectDir)..\uberAgent\Config file\Standalone mode\uberAgent.conf" Id="uberAgentConf" KeyPath="yes" />
+																															<IniFile Id="ConfigFile" Action="addLine" Directory="INSTALLDIR" Name="uberAgent.conf" Section="Receiver" Key="Servers" Value="[SERVERS]" />
+																														</Component>-->
 						<Component Id="GalaSoftMvvmLightDll" Guid="40A4382E-00AA-479A-923F-0B45401700BB" DiskId="1">
 							<File Id="GalaSoft.MvvmLight.dll" Name="GalaSoft.MvvmLight.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.dll" KeyPath="yes" />
-						</Component>
-						<Component Id="GalaSoftMvvmLightExtrasDll" Guid="74344499-41B1-4417-9CF3-57CCEEBB0AFD" DiskId="1">
-							<File Id="GalaSoft.MvvmLight.Extras.dll" Name="GalaSoft.MvvmLight.Extras.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.Extras.dll" KeyPath="yes" />
 						</Component>
 						<Component Id="InteropLibLogicalAccessDll" Guid="266E1A03-2C6B-444E-8017-1DBE01B19B24" DiskId="1">
 							<File Id="Interop.LibLogicalAccess.dll" Name="Interop.LibLogicalAccess.dll" Source="..\RFiDGear\bin\Release\Interop.LibLogicalAccess.dll" KeyPath="yes" />
@@ -227,25 +212,39 @@
 						<Component Id="MVVMDialogsDll" Guid="1E11FAF7-1CD6-49A4-AC0C-ED87A237C1CD" DiskId="1">
 							<File Id="MVVMDialogs.dll" Name="MVVMDialogs.dll" Source="..\RFiDGear\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
 						</Component>
-						<Component Id="NinjectDll" Guid="48E1E589-51DE-4422-92B5-B5DE48E80C84" DiskId="1">
-							<File Id="Ninject.dll" Name="Ninject.dll" Source="..\RFiDGear\bin\Release\Ninject.dll" KeyPath="yes" />
-						</Component>
 						<Component Id="PluginSystemDll" Guid="B6782BE0-4826-4FDD-AAF0-5660ECAAE6AA" DiskId="1">
 							<File Id="PluginSystem.dll" Name="PluginSystem.dll" Source="..\RFiDGear\bin\Release\PluginSystem.dll" KeyPath="yes" />
 						</Component>
 						<Component Id="CommonServiceLocatorDll" Guid="5CA5CB50-8EA8-4EBF-AA40-6BC120B61AC7" DiskId="1">
 							<File Id="CommonServiceLocator.dll" Name="CommonServiceLocator.dll" Source="..\RFiDGear\bin\Release\CommonServiceLocator.dll" KeyPath="yes" />
 						</Component>
-						<Component Id="GalaSoftMvvmLightPlatformDll" Guid="F1BC217E-D278-487D-957A-1A7C2837F779" DiskId="1">
-							<File Id="GalaSoft.MvvmLight.Platform.dll" Name="GalaSoft.MvvmLight.Platform.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.Platform.dll" KeyPath="yes" />
-						</Component>
+					</Directory>
+				</Directory>
+			</Directory>
+			<Directory Id="$(var.RFIDGear_ProgramDataDir)" Name="plugins">
+				<!-- All folders from here on are relative to their parent. -->
+				<!-- Define components, the building blocks of MSIs. -->
+				<!-- Rule: A component should only contain items that belong together so strongly that they always need to be installed or removed together. -->
+				<!-- If this means a single file, then your components will contain a single file each. This is not only normal but exactly what you're -->
+				<!-- to do. Don't be afraid, Windows Installer can efficiently handle thousands of components or more, if needed. -->
+				<!-- Installation directory as a component so it can be emptied during uninstall (by default files added by someone other than Windows Installer are not removed) -->
+				<Directory Id="RFiDGearProgramDataFolder" Name="!(loc.ApplicationName)">
+					<Directory Id="RFiDGearExtensionsFolder" Name="Extensions">
+						<Directory Id="RFiDGearExtionsVCNEditor" Name="VCNEditor">
+							<Component Id="ByteArrayDll" Guid="0907B20F-F549-4005-89A2-645C550BB7E7" DiskId="1">
+								<File Id="ByteArray.dll" Name="ByteArray.dll" Source="..\VCNEditor\bin\Release\ByteArray.dll" KeyPath="yes" />
+							</Component>
+							<Component Id="VCNEditorDll" Guid="DF58305F-6D10-49D0-865E-F0DC41224925" DiskId="1">
+								<File Id="VCNEditor.dll" Name="VCNEditor.dll" Source="..\VCNEditor\bin\Release\VCNEditor.dll" KeyPath="yes" />
+							</Component>
+						</Directory>
 					</Directory>
 				</Directory>
 			</Directory>
 			<!-- Registry entries -->
 			<Component Id="RegValInstallLocation_comp" Guid="7448780e-b66a-43d3-be5a-eeba38a821ee">
 				<!-- Do NOT use the application's default registry key here, because THIS key will be removed on uninstall
-										                 (important when installing a newer version, because that is uninstall followed by install) -->
+																								                 (important when installing a newer version, because that is uninstall followed by install) -->
 				<RegistryKey Root="HKLM" Key="Software\!(loc.ManufacturerName)\InstalledProducts\!(loc.ApplicationName)">
 					<RegistryValue Name="InstallLocation" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
 				</RegistryKey>
@@ -268,7 +267,6 @@
 			<!-- A feature block for the main (GUI) program and all its dependencies -->
 			<Feature Id="MainProgram" Title="!(loc.FeatureMainProgramTitle)" Description="!(loc.FeatureMainProgramDescription)" Level="1">
 				<ComponentRef Id="GalaSoftMvvmLightDll" />
-				<ComponentRef Id="GalaSoftMvvmLightExtrasDll" />
 				<ComponentRef Id="InteropLibLogicalAccessDll" />
 				<ComponentRef Id="IonicZipReducedDll" />
 				<ComponentRef Id="CommonServiceLocatorDll" />
@@ -277,10 +275,7 @@
 				<ComponentRef Id="SystemWindowsInteractivityDll" />
 				<ComponentRef Id="RFiDGearresourcesDll" />
 				<ComponentRef Id="EnRFiDGearresourcesDll" />
-				
-				<ComponentRef Id="GalaSoftMvvmLightPlatformDll" />
 				<ComponentRef Id="PluginSystemDll" />
-				<ComponentRef Id="NinjectDll" />
 				<ComponentRef Id="MVVMDialogsDll" />
 				
 				<ComponentRef Id="RegValInstallLocation_comp" />
@@ -288,6 +283,12 @@
 			
 			<Feature Id="StartMenu" Title="!(loc.FeatureStartMenuTitle)" Description="!(loc.FeatureStartMenuDescription)" Level="1">
 				<ComponentRef Id="StartMenuShortcuts" />
+			</Feature>
+			
+			<Feature Id="Plugins" Title="!(loc.FeaturePluginsTitle)" Description="!(loc.FeaturePluginsDescription)" Level="1">
+				<!--<ComponentRef Id="RFiDGearProgramDataFolder" />-->
+				<ComponentRef Id="ByteArrayDll" />
+				<ComponentRef Id="VCNEditorDll" />
 			</Feature>
 		</Feature>
 		<UI>

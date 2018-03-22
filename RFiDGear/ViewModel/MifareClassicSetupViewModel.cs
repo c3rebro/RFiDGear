@@ -22,8 +22,6 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
-using PluginSystem;
-
 namespace RFiDGear.ViewModel
 {
 	/// <summary>
@@ -817,47 +815,7 @@ namespace RFiDGear.ViewModel
 		#endregion DataExplorer
 
 		#region Plugins
-		[XmlIgnore]
-		public bool HasPlugins
-		{
-			get {
-				return hasPlugins;
-			}
-			set
-			{
-				hasPlugins = value;
-				RaisePropertyChanged("HasPlugins");
-			}
-		} private bool hasPlugins;
-		
-		private List<PluginBase> _Plugins = new List<PluginBase>();
 
-		/// <summary>
-		/// Gets the Plugins property.
-		/// Changes to that property's value raise the PropertyChanged event.
-		/// This property's value is broadcasted by the Messenger's default instance when it changes.
-		/// </summary>
-		[XmlIgnore]
-		public List<PluginBase> Plugins
-		{
-			get
-			{
-				return _Plugins;
-			}
-
-			set
-			{
-				if (_Plugins == value)
-				{
-					return;
-				}
-
-				_Plugins = value;
-
-				// Update bindings, no broadcast
-				RaisePropertyChanged("Plugins");
-			}
-		}
 		#endregion
 		
 		#region General Properties

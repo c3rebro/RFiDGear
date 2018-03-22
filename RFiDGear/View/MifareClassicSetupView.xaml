@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Window
-	x:Class="RFiDGear.View.MifareClassicSetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:PluginSystem="clr-namespace:PluginSystem;assembly=PluginSystem" xmlns:PluginSystem_Controls="clr-namespace:PluginSystem.Controls;assembly=PluginSystem" xmlns:v="clr-namespace:RFiDGear.View" xmlns:local="clr-namespace:RFiDGear" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+	x:Class="RFiDGear.View.MifareClassicSetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:v="clr-namespace:RFiDGear.View" xmlns:local="clr-namespace:RFiDGear" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
 	Title="{Binding Caption}"
 	MinWidth="998"
 	WindowStartupLocation="CenterOwner"
@@ -72,7 +72,6 @@
 				<TabItem Header="Plugins" Visibility="{Binding HasPlugins, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">
 					<Grid>
 						<ListBox x:Name="listBox" VerticalAlignment="Top" ItemsSource="{Binding Plugins}" ItemsPanel="{DynamicResource MenuItemsPanelTemplate}" ItemTemplate="{DynamicResource MenuItemTemplate}" SelectedIndex="0" Height="25"/>
-						<PluginSystem_Controls:AnimatedContentControl Margin="0,25,0,0" AnimatedContent="{Binding SelectedItem, ElementName=listBox}"/>
 					</Grid>
 				</TabItem>
 			</TabControl>

@@ -11,22 +11,39 @@
 	WindowStartupLocation="CenterScreen"
 	FontWeight="Normal"
 	MouseLeftButtonDown="WindowMouseLeftButtonDown"
-	DataContext="{Binding Source={StaticResource Locator}, Path=Main}"
+	DataContext="{Binding Source={StaticResource Locator}, Path=MainWin}"
 	MinWidth="500"
 	MinHeight="500"
 	Height="500"
 	Width="900">
-	
 	<Window.InputBindings>
-		<KeyBinding Key="Escape" Command="{Binding CloseApplication}" />
-		<KeyBinding Key="F1" Command="{Binding ShowHelpCommand}"/>
-		<KeyBinding Modifiers="Control" Key="R" Command="{Binding ReadChipCommand}"/>
-		<KeyBinding Modifiers="Control" Key="O" Command="{Binding NewOpenFileDialogCommand}"/>
-		<KeyBinding Modifiers="Control" Key="S" Command="{Binding SaveTaskDialogCommand}"/>
-		<KeyBinding Modifiers="Control" Key="X" Command="{Binding WriteToChipOnceCommand}"/>
-		<KeyBinding Modifiers="Control" Key="Q" Command="{Binding ExecuteQuickCheckCommand}"/>
+		<KeyBinding
+			Key="Escape"
+			Command="{Binding CloseApplication}" />
+		<KeyBinding
+			Key="F1"
+			Command="{Binding ShowHelpCommand}" />
+		<KeyBinding
+			Modifiers="Control"
+			Key="R"
+			Command="{Binding ReadChipCommand}" />
+		<KeyBinding
+			Modifiers="Control"
+			Key="O"
+			Command="{Binding NewOpenFileDialogCommand}" />
+		<KeyBinding
+			Modifiers="Control"
+			Key="S"
+			Command="{Binding SaveTaskDialogCommand}" />
+		<KeyBinding
+			Modifiers="Control"
+			Key="X"
+			Command="{Binding WriteToChipOnceCommand}" />
+		<KeyBinding
+			Modifiers="Control"
+			Key="Q"
+			Command="{Binding ExecuteQuickCheckCommand}" />
 	</Window.InputBindings>
-	
 	<!--
 	WindowStyle="None"
 	ResizeMode="CanResizeWithGrip"
@@ -35,16 +52,18 @@
 	BorderBrush="Black"
 	Opacity="0.98"
  	-->
-	
 	<Window.Resources>
 		<local:BindingProxy
 			x:Key="proxy"
 			Data="{Binding}" />
 		<local:ResourceLoader
 			x:Key="Localization" />
-		<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+		<ContextMenu
+			x:Key="RowMenu"
+			ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 			<ContextMenu.ItemContainerStyle>
-				<Style TargetType="MenuItem">
+				<Style
+					TargetType="MenuItem">
 					<Setter
 						Property="HorizontalContentAlignment"
 						Value="Left" />
@@ -64,7 +83,8 @@
 			Margin="15,36,8,40">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition
-					Width="auto" MinWidth="200" />
+					Width="auto"
+					MinWidth="200" />
 				<ColumnDefinition
 					Width="5" />
 				<ColumnDefinition
@@ -386,14 +406,16 @@
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Stretch"
 				Margin="3,0,0,0">
-				
 				<DataGrid.Resources>
 					<SolidColorBrush
 						x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
 						Color="DodgerBlue" />
-					<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+					<ContextMenu
+						x:Key="RowMenu"
+						ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 						<ContextMenu.ItemContainerStyle>
-							<Style TargetType="MenuItem" >
+							<Style
+								TargetType="MenuItem">
 								<Setter
 									Property="HorizontalContentAlignment"
 									Value="Left" />
@@ -404,13 +426,14 @@
 						</ContextMenu.ItemContainerStyle>
 					</ContextMenu>
 				</DataGrid.Resources>
-				
 				<DataGrid.RowStyle>
-					<Style TargetType="{x:Type DataGridRow}">
-						<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />
+					<Style
+						TargetType="{x:Type DataGridRow}">
+						<Setter
+							Property="ContextMenu"
+							Value="{StaticResource RowMenu}" />
 					</Style>
 				</DataGrid.RowStyle>
-				
 				<DataGrid.RowHeaderTemplate>
 					<DataTemplate>
 						<Image
@@ -447,7 +470,6 @@
 						</DataTemplate.Triggers>
 					</DataTemplate>
 				</DataGrid.RowHeaderTemplate>
-				
 				<DataGrid.Columns>
 					<!-- <DataGridTextColumn
 					Header="{Binding Data.LocalizationResourceSet,
@@ -457,37 +479,32 @@
 					IsReadOnly="True"
 					Binding="{Binding Path=DoorMonitoringTrigger, Converter={StaticResource Localization}, ConverterParameter={x:Type local:DoorMonEventType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />  -->
 					<DataGridTextColumn
-						Header="{Binding Data.LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='dataGridHeaderMainWindowTaskIndex',
-						Source={StaticResource proxy}}"
+						Header="{Binding Data.LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='dataGridHeaderMainWindowTaskIndex',&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Source={StaticResource proxy}}"
 						IsReadOnly="True"
-						Binding="{Binding Path=SelectedTaskIndex}" >
+						Binding="{Binding Path=SelectedTaskIndex}">
 						<DataGridTextColumn.HeaderStyle>
 							<Style
 								TargetType="{x:Type DataGridColumnHeader}">
-								<Setter Property="HorizontalContentAlignment" Value="Center" />
+								<Setter
+									Property="HorizontalContentAlignment"
+									Value="Center" />
 							</Style>
 						</DataGridTextColumn.HeaderStyle>
 						<DataGridTextColumn.ElementStyle>
 							<Style
 								TargetType="{x:Type TextBlock}">
-								<Setter Property="HorizontalAlignment" Value="Center" />
+								<Setter
+									Property="HorizontalAlignment"
+									Value="Center" />
 							</Style>
 						</DataGridTextColumn.ElementStyle>
 					</DataGridTextColumn>
 					<DataGridTextColumn
-						Header="{Binding Data.LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='dataGridHeaderMainWindowTaskType',
-						Source={StaticResource proxy}}"
+						Header="{Binding Data.LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='dataGridHeaderMainWindowTaskType',&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Source={StaticResource proxy}}"
 						IsReadOnly="True"
 						Binding="{Binding Path=SelectedTaskType, Converter={StaticResource Localization}}" />
 					<DataGridTextColumn
-						Header="{Binding Data.LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='dataGridHeaderMainWindowTaskDescription',
-						Source={StaticResource proxy}}"
+						Header="{Binding Data.LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='dataGridHeaderMainWindowTaskDescription',&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Source={StaticResource proxy}}"
 						IsReadOnly="True"
 						Binding="{Binding Path=SelectedTaskDescription}" />
 				</DataGrid.Columns>
@@ -500,190 +517,112 @@
 				Background="{x:Null}"
 				HorizontalContentAlignment="Right">
 				<MenuItem
-					Header="{Binding LocalizationResourceSet,
-					Converter={StaticResource Localization},
-					ConverterParameter='menuItemFileHeader' }"
+					Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemFileHeader' }"
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top">
 					<MenuItem
 						Command="{Binding NewOpenFileDialogCommand}"
-						InputGestureText="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemShortcutOpenProject'}"
-						Header="{Binding LocalizationResourceSet,
-					Converter={StaticResource Localization},
-					ConverterParameter='menuItemOpenProject'}"/>
+						InputGestureText="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemShortcutOpenProject'}"
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemOpenProject'}" />
 					<MenuItem
 						Command="{Binding SaveTaskDialogCommand}"
-						InputGestureText="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemShortcutSaveTask'}"
-						Header="{Binding LocalizationResourceSet,
-					Converter={StaticResource Localization},
-					ConverterParameter='menuItemSaveTask'}"/>
+						InputGestureText="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemShortcutSaveTask'}"
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemSaveTask'}" />
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemSaveChip' }"
-						Command="{Binding SaveChipDialogCommand}">
-					</MenuItem>
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemSaveChip' }"
+						Command="{Binding SaveChipDialogCommand}"></MenuItem>
 					<Separator />
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemExitHeader' }"
-						Command="{Binding CloseApplication}">
-					</MenuItem>
-				</MenuItem> <!-- File -->
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemExitHeader' }"
+						Command="{Binding CloseApplication}"></MenuItem>
+				</MenuItem>
+				<!-- File -->
 				<MenuItem
-					Header="{Binding LocalizationResourceSet,
-					Converter={StaticResource Localization},
-					ConverterParameter='menuItemEditHeader' }"
+					Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemEditHeader' }"
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top">
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemCreateTaskHeader' }">
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemCreateTaskHeader' }">
 						<MenuItem
-							Header="{Binding LocalizationResourceSet,
-							Converter={StaticResource Localization},
-							ConverterParameter='menuItemMifareHeader' }">
+							Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemMifareHeader' }">
 							<MenuItem
-								Header="{Binding LocalizationResourceSet,
-								Converter={StaticResource Localization},
-								ConverterParameter='menuItemAddEditMifareClassicTaskHeader' }"
-								Command="{Binding CreateClassicTaskCommand}">
-							</MenuItem>
+								Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemAddEditMifareClassicTaskHeader' }"
+								Command="{Binding CreateClassicTaskCommand}"></MenuItem>
 							<MenuItem
-								Header="{Binding LocalizationResourceSet,
-								Converter={StaticResource Localization},
-								ConverterParameter='menuItemAddEditMifareDesfireTaskHeader' }"
-								Command="{Binding CreateDesfireTaskCommand}">
-							</MenuItem>
+								Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemAddEditMifareDesfireTaskHeader' }"
+								Command="{Binding CreateDesfireTaskCommand}"></MenuItem>
 							<MenuItem
-								Header="{Binding LocalizationResourceSet,
-								Converter={StaticResource Localization},
-								ConverterParameter='menuItemAddEditMifarePlusTaskHeader' }"
-								IsEnabled="False">
-							</MenuItem>
+								Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemAddEditMifarePlusTaskHeader' }"
+								IsEnabled="False"></MenuItem>
 							<MenuItem
-								Header="{Binding LocalizationResourceSet,
-								Converter={StaticResource Localization},
-								ConverterParameter='menuItemAddEditMifareSAMTaskHeader' }"
-								IsEnabled="False">
-							</MenuItem>
+								Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemAddEditMifareSAMTaskHeader' }"
+								IsEnabled="False"></MenuItem>
 							<MenuItem
-								Header="{Binding LocalizationResourceSet,
-								Converter={StaticResource Localization},
-								ConverterParameter='menuItemAddEditMifareUltralightTaskHeader' }"
-								IsEnabled="False">
-							</MenuItem>
+								Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemAddEditMifareUltralightTaskHeader' }"
+								IsEnabled="False"></MenuItem>
 						</MenuItem>
 						<MenuItem
-							Header="{Binding LocalizationResourceSet,
-							Converter={StaticResource Localization},
-							ConverterParameter='menuItemTagItHeader' }"
+							Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemTagItHeader' }"
 							IsEnabled="False">
 							<MenuItem
-								Header="{Binding LocalizationResourceSet,
-								Converter={StaticResource Localization},
-								ConverterParameter='menuItemAddEditTagitHFIPlusTaskHeader' }"
-								IsEnabled="False">
-							</MenuItem>
+								Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemAddEditTagitHFIPlusTaskHeader' }"
+								IsEnabled="False"></MenuItem>
 						</MenuItem>
 					</MenuItem>
-					<Separator/>
+					<Separator />
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemRemoveCardsHeader' }"
-						Command="{Binding RemoveChipsFromTreeCommand}">
-					</MenuItem>
-				</MenuItem> <!-- Edit -->
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemRemoveCardsHeader' }"
+						Command="{Binding RemoveChipsFromTreeCommand}"></MenuItem>
+				</MenuItem>
+				<!-- Edit -->
 				<MenuItem
-					Header="{Binding LocalizationResourceSet,
-					Converter={StaticResource Localization},
-					ConverterParameter='menuItemProgrammingHeader' }"
+					Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemProgrammingHeader' }"
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top"
 					RenderTransformOrigin="0.5,0.5">
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemReadChipPublic'}"
-						InputGestureText="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemShortcutReadChipPublic'}"
-						Command="{Binding ReadChipCommand}"/>
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemReadChipPublic'}"
+						InputGestureText="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemShortcutReadChipPublic'}"
+						Command="{Binding ReadChipCommand}" />
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemExecuteQuickCheck'}"
-						InputGestureText="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemShortcutExecuteQuickCheck'}"
-						Command="{Binding ExecuteQuickCheckCommand}"/>
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemExecuteQuickCheck'}"
+						InputGestureText="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemShortcutExecuteQuickCheck'}"
+						Command="{Binding ExecuteQuickCheckCommand}" />
 					<Separator />
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemRunAllTasksOnce' }"
-						InputGestureText="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemShortcutWriteToChipOnce'}"
-						Command="{Binding WriteToChipOnceCommand}">
-					</MenuItem>
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemRunAllTasksOnce' }"
+						InputGestureText="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemShortcutWriteToChipOnce'}"
+						Command="{Binding WriteToChipOnceCommand}"></MenuItem>
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemRunSelectedTaskOnce' }"
-						Command="{Binding WriteSelectedTaskToChipOnceCommand}"
-					>
-					</MenuItem>
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemRunSelectedTaskOnce' }"
+						Command="{Binding WriteSelectedTaskToChipOnceCommand}"></MenuItem>
 					<Separator />
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemRunSelectedTaskAutomatically' }"
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemRunSelectedTaskAutomatically' }"
 						Command="{Binding WriteSelectedTaskToChipAutoCommand}"
-						IsChecked="{Binding IsWriteSelectedToChipAutoChecked, Mode=OneWay}">
-					</MenuItem>
+						IsChecked="{Binding IsWriteSelectedToChipAutoChecked, Mode=OneWay}"></MenuItem>
 					<MenuItem
 						IsCheckable="True"
 						IsChecked="{Binding IsWriteToAllChipAutoChecked, Mode=OneWay}"
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemRunAllTasksAutomatically' }"
-						Command="{Binding WriteToAllChipAutoCommand}">
-					</MenuItem>
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemRunAllTasksAutomatically' }"
+						Command="{Binding WriteToAllChipAutoCommand}"></MenuItem>
 					<Separator />
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemSetTaskStatusToUndone' }"
-						Command="{Binding ResetTaskStatusCommand}">
-					</MenuItem>
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemSetTaskStatusToUndone' }"
+						Command="{Binding ResetTaskStatusCommand}"></MenuItem>
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemRemoveAllTasks' }"
-						Command="{Binding RemoveAllTasksCommand}">
-					</MenuItem>
-				</MenuItem> <!-- Programming -->
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemRemoveAllTasks' }"
+						Command="{Binding RemoveAllTasksCommand}"></MenuItem>
+				</MenuItem>
+				<!-- Programming -->
 				<MenuItem
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top"
 					RenderTransformOrigin="0.5,0.5"
-					Header="{Binding LocalizationResourceSet,
-					Converter={StaticResource Localization},
-					ConverterParameter='menuItemOptionsHeader' }">
+					Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemOptionsHeader' }">
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemReaderSettingsHeader' }"
-						Command="{Binding NewReaderSetupDialogCommand}">
-					</MenuItem>
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemReaderSettingsHeader' }"
+						Command="{Binding NewReaderSetupDialogCommand}"></MenuItem>
 					<MenuItem
 						Header="_Language">
 						<RadioButton
@@ -697,26 +636,20 @@
 							IsChecked="{Binding RadioButtonEnglishLanguageSelectedState, Mode=TwoWay}"
 							Command="{Binding SwitchLanguageToEnglish}" />
 					</MenuItem>
-				</MenuItem> <!-- Options -->
+				</MenuItem>
+				<!-- Options -->
 				<MenuItem
-					Header="{Binding LocalizationResourceSet,
-					Converter={StaticResource Localization},
-					ConverterParameter='menuItemHelpHeader' }"
+					Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemHelpHeader' }"
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top">
 					<MenuItem
 						IsCheckable="True"
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemCheckForUpdates' }"
-						IsChecked="{Binding IsCheckForUpdatesChecked, Mode=TwoWay}">
-					</MenuItem>
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemCheckForUpdates' }"
+						IsChecked="{Binding IsCheckForUpdatesChecked, Mode=TwoWay}"></MenuItem>
 					<MenuItem
-						Header="{Binding LocalizationResourceSet,
-						Converter={StaticResource Localization},
-						ConverterParameter='menuItemHelpHeader' }">
-					</MenuItem>
-				</MenuItem> <!-- Help -->
+						Header="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='menuItemHelpHeader' }"></MenuItem>
+				</MenuItem>
+				<!-- Help -->
 			</Menu>
 		</DockPanel>
 		<DockPanel>
@@ -725,9 +658,7 @@
 				VerticalAlignment="Bottom">
 				<StatusBarItem>
 					<Label
-						Content="{Binding LocalizationResourceSet,
-					Converter={StaticResource Localization},
-					ConverterParameter='labelSelectedReader' }" />
+						Content="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='labelSelectedReader' }" />
 				</StatusBarItem>
 				<StatusBarItem>
 					<TextBlock
@@ -735,9 +666,7 @@
 				</StatusBarItem>
 				<StatusBarItem>
 					<Label
-						Content="{Binding LocalizationResourceSet,
-					Converter={StaticResource Localization},
-					ConverterParameter='labelReaderStatus' }" />
+						Content="{Binding LocalizationResourceSet,&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;Converter={StaticResource Localization},&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;ConverterParameter='labelReaderStatus' }" />
 				</StatusBarItem>
 				<StatusBarItem>
 					<TextBlock

@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Window
-	x:Class="RFiDGear.View.MifareDesfireSetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:RFiDGear" xmlns:v="clr-namespace:RFiDGear.View" xmlns:PluginSystem_Controls="clr-namespace:PluginSystem.Controls;assembly=PluginSystem" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+	x:Class="RFiDGear.View.MifareDesfireSetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:RFiDGear" xmlns:v="clr-namespace:RFiDGear.View" xmlns:vm="clr-namespace:MefMvvm.SharedContracts.ViewModel;assembly=PluginSystem" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
+	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
 	Title="{Binding Caption}"
 	SizeToContent="WidthAndHeight"
 	MinWidth="800"
 	MinHeight="620"
 	WindowStartupLocation="CenterOwner">
 	<Window.Resources>
-		<BooleanToVisibilityConverter x:Key="BoolToVisConv"/>
+		<vm:ViewModelLocator
+			x:Key="Locator" />
+		<BooleanToVisibilityConverter
+			x:Key="BoolToVisConv" />
 		<local:BindingProxy
 			x:Key="proxy"
 			Data="{Binding}" />
@@ -205,10 +209,33 @@
 					Header="Data Explorer">
 					<v:TabPageMifareDesfireDataExplorerView />
 				</TabItem>
-				<TabItem Header="Plugins" Visibility="{Binding HasPlugins, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">
+				<TabItem
+					Header="Plugins" Visibility="{Binding HasPlugins, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">
 					<Grid>
-						<ListBox x:Name="listBox" VerticalAlignment="Top" ItemsSource="{Binding Plugins}" ItemsPanel="{DynamicResource MenuItemsPanelTemplate}" ItemTemplate="{DynamicResource MenuItemTemplate}" SelectedIndex="0" Height="25"/>
-						<PluginSystem_Controls:AnimatedContentControl Margin="0,25,0,0" AnimatedContent="{Binding SelectedItem, ElementName=listBox}"/>
+						<ComboBox
+							ItemsSource="{Binding Items}"
+							DisplayMemberPath="Metadata.Name"
+							SelectedItem="{Binding SelectedPlugin}"
+							Height="23"
+							Grid.Column="0"
+							Grid.Row="0"
+							HorizontalAlignment="Stretch"
+							VerticalAlignment="Top"
+							Margin="8,5,3,0" />
+						<Grid
+							Grid.Column="0"
+							Grid.Row="1"
+							HorizontalAlignment="Stretch"
+							VerticalAlignment="Stretch"
+							Margin="0,9,0,7">
+							<Frame Source="{Binding SelectedPlugin.Metadata.Uri, UpdateSourceTrigger=PropertyChanged}" />
+						</Grid>
+						<Grid.RowDefinitions>
+							<RowDefinition
+								Height="37" />
+							<RowDefinition
+								Height="0.785887688659717*" />
+						</Grid.RowDefinitions>
 					</Grid>
 				</TabItem>
 			</TabControl>

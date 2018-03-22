@@ -8,20 +8,23 @@ using VCNEditor.ViewModel;
 using MvvmDialogs.ViewModels;
 
 using CRC_IT;
-
+using MefMvvm.SharedContracts.ViewModel;
 using System;
-using System.Collections;
+using System.ComponentModel.Composition;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Windows.Input;
 using GalaSoft.MvvmLight;
+using GalaSoft.MvvmLight.Messaging;
 using GalaSoft.MvvmLight.Command;
-using PluginSystem;
+
 
 namespace VCNEditor.ViewModel
 {
-	public class VCNEditorViewModel : PluginViewModelBase<VCNEditor>
+	[ExportViewModel("VCNEditor", false)]
+	public class VCNEditorViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		private byte[] accessFileAsByte;
 		private AccessProfile accessProfile;
@@ -31,9 +34,14 @@ namespace VCNEditor.ViewModel
 		private byte sICardConfAsByte = 0x00;
 		private byte fileFormatRelease = 0x00;
 		
-		public VCNEditorViewModel(VCNEditor plugin)
-			: base(plugin)
+		private byte[] expiryAsBytes = new byte[3];
+		private byte[] validFromAsBytes = new byte[3];
+		
+		[ImportingConstructor]
+		public VCNEditorViewModel()
 		{
+			//MessengerInstance.Register<ObservableCollection<IDialogViewModel>>(this, AddDialogBinding);
+			
 			cardType = 1;
 			forHostUse = "0000000000";
 			
@@ -59,10 +67,12 @@ namespace VCNEditor.ViewModel
 
 		#region Dialogs
 
+		public string WindowName = "VCNEditor";
+		
 		/// <summary>
 		/// 
 		/// </summary>
-		public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
+		public ObservableCollection<IDialogViewModel> Dialogs { get {	return dialogs;	}}
 		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
 
 		#endregion Dialogs
@@ -168,6 +178,47 @@ namespace VCNEditor.ViewModel
 			}
 		}
 
+		public ICommand EditWeekSchedulesCommand { get { return new RelayCommand(OnNewEditWeekSchedulesCommand); }}
+		private void OnNewEditWeekSchedulesCommand()
+		{
+			try
+			{
+				Dialogs.Add(new ScheduleConfigurationDialogViewModel()
+				            {
+				            	
+				            	OnOk = (sender) =>
+				            	{
+				            		Expires = string.Format("{0} ({1} quarter hours since 01.01.2015)", sender.EndDate.ToString(), ((Int32)(sender.EndDate - new DateTime(2015, 01, 01)).TotalHours * 4));
+				            		ValidFrom = string.Format("{0} ({1} quarter hours since 01.01.2015)", sender.BeginDate.ToString(), ((Int32)(sender.BeginDate - new DateTime(2015, 01, 01)).TotalHours * 4));
+				            		
+				            		validFromAsBytes = ByteConverter.Reverse(BitConverter.GetBytes((Int32)(sender.BeginDate - new DateTime(2015, 01, 01)).TotalHours * 4));
+				            		expiryAsBytes = ByteConverter.Reverse(BitConverter.GetBytes((Int32)(sender.EndDate - new DateTime(2015, 01, 01)).TotalHours * 4));
+				            		
+				            		sender.Close();
+				            	},
+
+				            	OnCancel = (sender) =>
+				            	{
+				            		sender.Close();
+				            	},
+
+				            	OnCloseRequest = (sender) =>
+				            	{
+				            		sender.Close();
+				            	}
+				            });
+				
+				
+
+			}
+			
+			catch (Exception e)
+			{
+				//LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				//dialogs.Clear();
+			}
+		}
+		
 		public ICommand GenerateRandomIDCommand { get { return new RelayCommand(OnNewGenerateRandomIDCommand); }}
 		private void OnNewGenerateRandomIDCommand()
 		{
@@ -212,7 +263,7 @@ namespace VCNEditor.ViewModel
 			#endregion
 			
 			foreach( AccessProfile ap in AccessProfiles)
-			{				
+			{
 				combinedAccessProfile +=
 					((ByteConverter.HexToString(ap.AccessProfileAsBytes)
 					  + ByteConverter.HexToString(ap.MainListWords)
@@ -228,8 +279,8 @@ namespace VCNEditor.ViewModel
 					+ "00" //content identifier
 					+ ByteConverter.HexToString(areaIDAsBytes)
 					+ ByteConverter.HexToString(sIConfAsBytes)
-					+ "000000" // valid from
-					+ "000000" // expiry
+					+ ByteConverter.HexToString(validFromAsBytes) // valid from
+					+ ByteConverter.HexToString(expiryAsBytes) // expiry
 					+ ByteConverter.HexToString(sICardConfAsByte)
 					+ "0000" //blacklist addr
 					+ "000000000000" // reserved
@@ -242,8 +293,8 @@ namespace VCNEditor.ViewModel
 				+ "02" //content identifier
 				+ ByteConverter.HexToString(areaIDAsBytes)
 				+ ByteConverter.HexToString(sIConfAsBytes)
-				+ "000000" // valid from
-				+ "000000" // expiry
+				+ ByteConverter.HexToString(validFromAsBytes) // valid from
+				+ ByteConverter.HexToString(expiryAsBytes) // expiry
 				+ ByteConverter.HexToString(sICardConfAsByte)
 				+ "0000" //blacklist addr
 				+ "000000000000" // reserved
@@ -271,7 +322,50 @@ namespace VCNEditor.ViewModel
 			                             ByteConverter.HexToString(accessFileAsByte));
 		}
 		
-		
+		public ICommand SetExpiryCommand { get { return new RelayCommand(OnNewSetExpiryCommand); } }
+		private void OnNewSetExpiryCommand()
+		{
+			try
+			{
+				Dialogs.Add(new ScheduleConfigurationDialogViewModel()
+				            {
+				            	
+				            	OnOk = (sender) =>
+				            	{
+				            		Expires = string.Format("{0} ({1} quarter hours since 01.01.2015)", sender.EndDate.ToString(), (Math.Round((sender.EndDate - new DateTime(2015,01,01)).TotalHours * 4)));
+				            		ValidFrom = string.Format("{0} ({1} quarter hours since 01.01.2015)", sender.BeginDate.ToString(), (Math.Round((sender.BeginDate - new DateTime(2015,01,01)).TotalHours * 4)));
+				            		
+				            		Array.Copy(BitConverter.GetBytes((Int32)(sender.EndDate - new DateTime(2015,01,01)).TotalHours * 4), expiryAsBytes, 3);
+				            		//expiryAsBytes = ByteConverter.Reverse(expiryAsBytes);
+				            		
+				            		Array.Copy(BitConverter.GetBytes((Int32)(sender.BeginDate - new DateTime(2015, 01, 01)).TotalHours * 4), validFromAsBytes, 3);
+				            		//validFromAsBytes = ByteConverter.Reverse(validFromAsBytes);
+				            		
+				            		sender.Close();
+				            	},
+
+				            	OnCancel = (sender) =>
+				            	{
+				            		sender.Close();
+				            	},
+
+				            	OnCloseRequest = (sender) =>
+				            	{
+				            		sender.Close();
+				            	}
+				            });
+				
+				
+				
+
+			}
+			
+			catch (Exception e)
+			{
+				//LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				//dialogs.Clear();
+			}
+		}
 		#endregion
 
 		#region IDFile
@@ -803,6 +897,37 @@ namespace VCNEditor.ViewModel
 			get { return new int[3]{0,1,2}; }
 		}
 		
+		/// <summary>
+		/// 
+		/// </summary>
+		public string Expires
+		{
+			get
+			{
+				return expires;
+			}
+			set
+			{
+				expires = value;
+				RaisePropertyChanged("Expires");
+			}
+		} private string expires;
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public string ValidFrom
+		{
+			get
+			{
+				return validFrom;
+			}
+			set
+			{
+				validFrom = value;
+				RaisePropertyChanged("ValidFrom");
+			}
+		} private string validFrom;
 		
 		#endregion
 		
@@ -851,10 +976,59 @@ namespace VCNEditor.ViewModel
 		} private string _Plugin1Value;
 		#endregion
 		
-		#region extensions
-		
+		#region IUserDialogViewModel Implementation
 
-		
-		#endregion
+		public bool IsModal { get; private set; }
+
+		public virtual void RequestClose()
+		{
+			if (this.OnCloseRequest != null)
+				OnCloseRequest(this);
+			else
+				Close();
+		}
+
+		public event EventHandler DialogClosing;
+
+		public ICommand OKCommand { get { return new RelayCommand(Ok); } }
+
+		protected virtual void Ok()
+		{
+			if (this.OnOk != null)
+				this.OnOk(this);
+			else
+				Close();
+		}
+
+		public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
+
+		protected virtual void Cancel()
+		{
+			if (this.OnCancel != null)
+				this.OnCancel(this);
+			else
+				Close();
+		}
+
+		public Action<VCNEditorViewModel> OnOk { get; set; }
+
+		public Action<VCNEditorViewModel> OnCancel { get; set; }
+
+		public Action<VCNEditorViewModel> OnAuth { get; set; }
+
+		public Action<VCNEditorViewModel> OnCloseRequest { get; set; }
+
+		public void Close()
+		{
+			if (this.DialogClosing != null)
+				this.DialogClosing(this, new EventArgs());
+		}
+
+		public void Show(IList<IDialogViewModel> collection)
+		{
+			collection.Add(this);
+		}
+
+		#endregion IUserDialogViewModel Implementation
 	}
 }

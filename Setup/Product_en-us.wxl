@@ -6,7 +6,7 @@
 	<String Id="ManufacturerName">Messgeraetetechnik Hansen</String>
 	<String Id="ManufacturerFullName">Messgeraetetechnik Hansen</String>
 	<String Id="ProductDescription">Read Write Modify RFID Tags</String>
-	<String Id="Comments">Installs RFidGear Application</String>
+	<String Id="Comments">Installs RFiDGear Application</String>
 	
 	<String Id="LicenseRtf" Overridable="yes">license.rtf</String>
 	
@@ -20,11 +20,11 @@
 	<String Id="FeatureCompleteDescription">The complete package.</String>
 	
 	<String Id="FeatureMainProgramDescription">The main version including all dependencies.</String>
-	<String Id="FeatureMainProgramTitle">Main program</String>
+	<String Id="FeatureMainProgramTitle">RFiDGear Main Program</String>
 	
 	<String Id="FeatureStartMenuDescription">A Shortcut in the Start Menu</String>
 	<String Id="FeatureStartMenuTitle">Shortcut</String>
-
-	<String Id="FeatureEventCMDDescription">Communication Platform between LSM and EventMessenger</String>
-	<String Id="FeatureEventCMDTitle">Event_CMD.exe</String>
+	
+	<String Id="FeaturePluginsTitle">Plugins</String>
+	<String Id="FeaturePluginsDescription">Available Extensions</String>
 </WixLocalization>

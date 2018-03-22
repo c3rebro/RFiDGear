@@ -1,38 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
-    <ProjectGuid>{909DB876-4A74-42AC-BACF-C681017D0C77}</ProjectGuid>
+    <ProjectGuid>{0BD61AAA-7545-4566-894A-FA73212BAECB}</ProjectGuid>
     <ProjectTypeGuids>{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
-    <RootNamespace>VCNEditor</RootNamespace>
-    <AssemblyName>VCNEditor</AssemblyName>
+    <RootNamespace>MVVMDialogs</RootNamespace>
+    <AssemblyName>MVVMDialogs</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <NoWin32Manifest>False</NoWin32Manifest>
-    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
-    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
-    <NoStdLib>False</NoStdLib>
-    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
-    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <BaseAddress>4194304</BaseAddress>
-    <RegisterForComInterop>False</RegisterForComInterop>
-    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
-    <FileAlignment>4096</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <OutputPath>..\RFiDGear\bin\Debug\</OutputPath>
+    <OutputPath>bin\Debug\</OutputPath>
     <DebugSymbols>True</DebugSymbols>
     <DebugType>Full</DebugType>
     <Optimize>False</Optimize>
     <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <BaseIntermediateOutputPath>obj\</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <OutputPath>bin\Release\</OutputPath>
@@ -65,9 +53,6 @@
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.ComponentModel.Composition">
-      <RequiredTargetFramework>4.0</RequiredTargetFramework>
-    </Reference>
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -92,70 +77,30 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DataAccessLayer\CRC32.cs" />
-    <Compile Include="DataAccessLayer\LogWriter.cs" />
-    <Compile Include="DataAccessLayer\ResourceLoader.cs" />
-    <Compile Include="Model\AccessProfile.cs" />
-    <Compile Include="Model\Period.cs" />
-    <Compile Include="Model\VCNEditor.cs" />
-    <Compile Include="Model\WeekSchedule.cs" />
+    <Compile Include="Behaviors\DialogBehavior.cs" />
+    <Compile Include="Presenters\IDialogBoxPresenter.cs" />
+    <Compile Include="Presenters\MessageBoxPresenter.cs" />
+    <Compile Include="Presenters\OpenFileDialogPresenter.cs" />
+    <Compile Include="Presenters\SaveFileDialogPresenter.cs" />
+    <Compile Include="ViewModel\CustomDialogViewModel.cs" />
+    <Compile Include="ViewModel\IDialogViewModel.cs" />
+    <Compile Include="ViewModel\IUserDialogViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ViewModel\ProfileEditorViewModel.cs" />
-    <Compile Include="ViewModel\ScheduleConfigurationDialogViewModel.cs" />
-    <Compile Include="ViewModel\VCNEditorViewModel.cs" />
-    <Compile Include="View\ProfileEditor.xaml.cs">
-      <DependentUpon>ProfileEditor.xaml</DependentUpon>
-      <SubType>Code</SubType>
+    <Compile Include="ViewModel\MessageBoxViewModel.cs" />
+    <Compile Include="ViewModel\OpenFileDialogViewModel.cs" />
+    <Compile Include="ViewModel\SaveFileDialogViewModel.cs" />
+    <Compile Include="View\CustomDialogBox.xaml.cs">
+      <DependentUpon>CustomDialogBox.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\ScheduleConfigurationDataGrid.xaml.cs">
-      <DependentUpon>ScheduleConfigurationDataGrid.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="View\ScheduleConfigurationDialog.xaml.cs">
-      <DependentUpon>ScheduleConfigurationDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="View\VCNEditorView.xaml.cs">
-      <DependentUpon>VCNEditorView.xaml</DependentUpon>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="View\ProfileEditor.xaml" />
-    <Page Include="View\ScheduleConfigurationDataGrid.xaml" />
-    <Page Include="View\ScheduleConfigurationDialog.xaml" />
-    <Page Include="View\VCNEditorView.xaml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="PostBuild.cmd" />
-    <None Include="Resources\gpl_v3_license.rtf" />
-    <None Include="Resources\license.rtf" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ByteArray\ByteArray.csproj">
-      <Project>{bdd5df8c-6fc1-4882-8151-924820fdbc05}</Project>
-      <Name>ByteArray</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MVVMDialogs\MVVMDialogs.csproj">
-      <Project>{0bd61aaa-7545-4566-894a-fa73212baecb}</Project>
-      <Name>MVVMDialogs</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PluginSystem\PluginSystem.csproj">
-      <Project>{e99b606a-25b8-4113-9e75-5016ccfdb410}</Project>
-      <Name>PluginSystem</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="DataAccessLayer" />
-    <Folder Include="Model" />
-    <Folder Include="Resources" />
-    <Folder Include="ViewModel" />
     <Folder Include="View" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Manifest.de.resx" />
-    <EmbeddedResource Include="Resources\Manifest.en.resx" />
+    <Page Include="View\CustomDialogBox.xaml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>"$(ProjectDir)postbuild.cmd" $(ProjectName) "$(TargetPath)"</PostBuildEvent>
-  </PropertyGroup>
 </Project>

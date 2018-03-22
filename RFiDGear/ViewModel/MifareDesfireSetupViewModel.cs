@@ -7,12 +7,14 @@
 
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+using MefMvvm.SharedContracts;
 using MvvmDialogs.ViewModels;
 using LibLogicalAccess;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using RFiDGear.ViewModel;
 using System;
+using System.ComponentModel.Composition;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -21,8 +23,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
-
-using PluginSystem;
 
 namespace RFiDGear.ViewModel
 {
@@ -50,6 +50,7 @@ namespace RFiDGear.ViewModel
 			
 			childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(app, null, CARD_TYPE.DESFire, new ObservableCollection<IDialogViewModel>(), true);
 			childNodeViewModelTemp = new RFiDChipChildLayerViewModel(app, null, CARD_TYPE.DESFire, new ObservableCollection<IDialogViewModel>(), true);
+			
 		}
 
 		/// <summary>
@@ -59,107 +60,118 @@ namespace RFiDGear.ViewModel
 		/// <param name="_dialogs"></param>
 		public MifareDesfireSetupViewModel(object _selectedSetupViewModel, ObservableCollection<IDialogViewModel> _dialogs)
 		{
-			dialogs = _dialogs;
-			
-			chip = new MifareDesfireChipModel(string.Format("Task Description: {0}", ""), CARD_TYPE.DESFire);
-			app = new MifareDesfireAppModel(0);
-			
-			childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(app, null, CARD_TYPE.DESFire, _dialogs, true);
-			childNodeViewModelTemp = new RFiDChipChildLayerViewModel(app, null, CARD_TYPE.DESFire, _dialogs, true);
-			
-			if(_selectedSetupViewModel is MifareDesfireSetupViewModel)
-			{
-				PropertyInfo[] properties = typeof(MifareDesfireSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+			//dialogs = _dialogs;
 
-				foreach (PropertyInfo p in properties)
+			try
+			{
+				MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
+				
+				chip = new MifareDesfireChipModel(string.Format("Task Description: {0}", ""), CARD_TYPE.DESFire);
+				app = new MifareDesfireAppModel(0);
+				
+				childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(app, null, CARD_TYPE.DESFire, _dialogs, true);
+				childNodeViewModelTemp = new RFiDChipChildLayerViewModel(app, null, CARD_TYPE.DESFire, _dialogs, true);
+				
+				if(_selectedSetupViewModel is MifareDesfireSetupViewModel)
 				{
-					// If not writable then cannot null it; if not readable then cannot check it's value
-					if (!p.CanWrite || !p.CanRead) { continue; }
+					PropertyInfo[] properties = typeof(MifareDesfireSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-					MethodInfo mget = p.GetGetMethod(false);
-					MethodInfo mset = p.GetSetMethod(false);
+					foreach (PropertyInfo p in properties.Where(x => x.PropertyType != items.GetType()))
+					{
+						// If not writable then cannot null it; if not readable then cannot check it's value
+						if (!p.CanWrite || !p.CanRead) { continue; }
 
-					// Get and set methods have to be public
-					if (mget == null) { continue; }
-					if (mset == null) { continue; }
+						MethodInfo mget = p.GetGetMethod(false);
+						MethodInfo mset = p.GetSetMethod(false);
 
-					p.SetValue(this, p.GetValue(_selectedSetupViewModel));
+						// Get and set methods have to be public
+						if (mget == null) { continue; }
+						if (mset == null) { continue; }
+
+						p.SetValue(this, p.GetValue(_selectedSetupViewModel));
+					}
 				}
+				
+				else
+				{
+					DesfireMasterKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey).Key;
+					SelectedDesfireMasterKeyEncryptionTypeCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey).EncryptionType;
+
+					DesfireMasterKeyTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key;
+					SelectedDesfireMasterKeyEncryptionTypeTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey).EncryptionType;
+
+					DesfireAppKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key;
+					SelectedDesfireAppKeyEncryptionTypeCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType;
+
+					DesfireAppKeyTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key;
+					SelectedDesfireAppKeyEncryptionTypeTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType;
+
+					DesfireReadKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey).Key;
+					
+					DesfireWriteKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey).Key;
+					
+					accessRights = new DESFireAccessRights();
+
+					AppNumberNew = "1";
+					AppNumberCurrent = "0";
+					AppNumberTarget = "0";
+					
+					SelectedDesfireAppKeyNumberTarget = MifareDesfireKeyNumber.MifareDesfireKey01;
+					SelectedDesfireAppMaxNumberOfKeys = MifareDesfireKeyNumber.MifareDesfireKey01;
+
+					IsValidDesfireMasterKeyCurrent = null;
+					IsValidDesfireMasterKeyTarget = null;
+
+					IsValidDesfireAppKeyCurrent = null;
+					IsValidDesfireAppKeyTarget = null;
+
+					IsValidAppNumberCurrent = null;
+					IsValidAppNumberTarget = null;
+					IsValidAppNumberNew = null;
+
+					IsValidDesfireReadKeyCurrent = null;
+					IsValidDesfireWriteKeyCurrent = null;
+					
+					SelectedTaskIndex = "0";
+					SelectedTaskDescription = "Enter a Description for this Task";
+					
+					FileNumberCurrent = "0";
+					FileSizeCurrent = "16";
+					
+					IsValidFileNumberCurrent = null;
+					IsValidFileSizeCurrent = null;
+					
+					IsDesfireFileAuthoringTabEnabled = false;
+					IsDataExplorerEditTabEnabled = false;
+					IsDesfirePICCAuthoringTabEnabled = false;
+					IsDesfireAuthenticationTabEnabled = false;
+					IsDesfireAppAuthenticationTabEnabled = false;
+					IsDesfireAppAuthoringTabEnabled = false;
+					IsDesfireAppCreationTabEnabled = false;
+				}
+				
+				HasPlugins = items.Any();
+				
+				if (HasPlugins)
+					SelectedPlugin = Items.FirstOrDefault();
+				
 			}
-			
-			else
+			catch (Exception e)
 			{
-				DesfireMasterKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey).Key;
-				SelectedDesfireMasterKeyEncryptionTypeCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey).EncryptionType;
-
-				DesfireMasterKeyTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key;
-				SelectedDesfireMasterKeyEncryptionTypeTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey).EncryptionType;
-
-				DesfireAppKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key;
-				SelectedDesfireAppKeyEncryptionTypeCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType;
-
-				DesfireAppKeyTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key;
-				SelectedDesfireAppKeyEncryptionTypeTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType;
-
-				DesfireReadKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey).Key;
 				
-				DesfireWriteKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey).Key;
-				
-				accessRights = new DESFireAccessRights();
-
-				AppNumberNew = "1";
-				AppNumberCurrent = "0";
-				AppNumberTarget = "0";
-				
-				SelectedDesfireAppKeyNumberTarget = MifareDesfireKeyNumber.MifareDesfireKey01;
-				SelectedDesfireAppMaxNumberOfKeys = MifareDesfireKeyNumber.MifareDesfireKey01;
-
-				IsValidDesfireMasterKeyCurrent = null;
-				IsValidDesfireMasterKeyTarget = null;
-
-				IsValidDesfireAppKeyCurrent = null;
-				IsValidDesfireAppKeyTarget = null;
-
-				IsValidAppNumberCurrent = null;
-				IsValidAppNumberTarget = null;
-				IsValidAppNumberNew = null;
-
-				IsValidDesfireReadKeyCurrent = null;
-				IsValidDesfireWriteKeyCurrent = null;
-				
-				SelectedTaskIndex = "0";
-				SelectedTaskDescription = "Enter a Description for this Task";
-				
-				FileNumberCurrent = "0";
-				FileSizeCurrent = "16";
-				
-				IsValidFileNumberCurrent = null;
-				IsValidFileSizeCurrent = null;
-				
-				IsDesfireFileAuthoringTabEnabled = false;
-				IsDataExplorerEditTabEnabled = false;
-				IsDesfirePICCAuthoringTabEnabled = false;
-				IsDesfireAuthenticationTabEnabled = false;
-				IsDesfireAppAuthenticationTabEnabled = false;
-				IsDesfireAppAuthoringTabEnabled = false;
-				IsDesfireAppCreationTabEnabled = false;
 			}
 
+			
 		}
 
 		
 		#region Dialogs
 
-		/// <summary>
-		/// 
-		/// </summary>
-		[XmlIgnore]
-		public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
-		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
-
-		#endregion Dialogs
-		
 		#region Plugins
+
+		/// <summary>
+		/// True if Count of Imported Views is > 0; See constructor
+		/// </summary>
 		[XmlIgnore]
 		public bool HasPlugins
 		{
@@ -173,35 +185,51 @@ namespace RFiDGear.ViewModel
 			}
 		} private bool hasPlugins;
 		
-		private List<PluginBase> _Plugins = new List<PluginBase>();
-
 		/// <summary>
-		/// Gets the Plugins property.
-		/// Changes to that property's value raise the PropertyChanged event.
-		/// This property's value is broadcasted by the Messenger's default instance when it changes.
+		/// Selected Plugin in ComboBox
 		/// </summary>
 		[XmlIgnore]
-		public List<PluginBase> Plugins
+		public object SelectedPlugin
+		{
+			get {return selectedPlugin;}
+			set {
+				selectedPlugin = value;
+				RaisePropertyChanged("SelectedPlugin");
+			}
+		} private object selectedPlugin;
+		
+		/// <summary>
+		/// Imported Views by URI
+		/// </summary>
+		[XmlIgnore]
+		[ImportMany()]
+		public Lazy<IUIExtension, IUIExtensionDetails>[] Items
 		{
 			get
 			{
-				return _Plugins;
+				return items;
 			}
-
+			
 			set
 			{
-				if (_Plugins == value)
-				{
-					return;
-				}
-
-				_Plugins = value;
-
-				// Update bindings, no broadcast
-				RaisePropertyChanged("Plugins");
+				items = (from g in value
+				         orderby g.Metadata.SortOrder, g.Metadata.Name
+				         select g).ToArray();
+				
+				RaisePropertyChanged("Items");
 			}
-		}
+		} private Lazy<IUIExtension, IUIExtensionDetails>[] items;
+
 		#endregion
+
+		/// <summary>
+		/// 
+		/// </summary>
+		[XmlIgnore]
+		public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
+		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+		
+		#endregion Dialogs
 		
 		#region Key Properties Card Master
 
@@ -901,7 +929,7 @@ namespace RFiDGear.ViewModel
 		/// </summary>
 		public RFiDChipGrandChildLayerViewModel GrandChildNodeViewModel
 		{
-			get { return ChildNodeViewModelTemp.Children.Single(x => x.DesfireFile != null); }
+			get { return ChildNodeViewModelTemp.Children.Count > 0 ? ChildNodeViewModelTemp.Children.Single(x => x.DesfireFile != null) : null; }
 		}
 		
 		/// <summary>

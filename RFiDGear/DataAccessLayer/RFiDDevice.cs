@@ -64,16 +64,20 @@ namespace RFiDGear
 		{
 			get
 			{
-				if (instance == null)
+				lock (RFiDDevice.syncRoot)
 				{
-					instance = new RFiDDevice();
-					return instance;
+					if (instance == null)
+					{
+						instance = new RFiDDevice();
+						return instance;
+					}
+					else
+						return null;
 				}
-				else
-					return null;
 			}
 		}
-
+		
+		private static object syncRoot = new object();
 		private static RFiDDevice instance;
 
 		public RFiDDevice() : this(ReaderTypes.None)

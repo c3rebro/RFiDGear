@@ -1,10 +1,14 @@
 ﻿using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+using MefMvvm.SharedContracts;
+using MefMvvm.SharedContracts.ViewModel;
 using MvvmDialogs.ViewModels;
 using RedCell.Diagnostics.Update;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using System;
+using System.ComponentModel.Composition;
+using System.ComponentModel.Composition.Hosting;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -16,15 +20,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
-using Ninject;
-using Ninject.Modules;
-using PluginSystem;
 
 namespace RFiDGear.ViewModel
 {
 	/// <summary>
 	/// Description of MainWindowViewModel.
 	/// </summary>
+	[ExportViewModel("MainWin", false)]
 	public class MainWindowViewModel : ViewModelBase
 	{
 		private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -45,33 +47,7 @@ namespace RFiDGear.ViewModel
 		private Mutex mutex; //one reader, one instance - only
 
 		#region Plugins
-		private List<PluginBase> _Plugins = new List<PluginBase>();
 
-		/// <summary>
-		/// Gets the Plugins property.
-		/// Changes to that property's value raise the PropertyChanged event.
-		/// This property's value is broadcasted by the Messenger's default instance when it changes.
-		/// </summary>
-		public List<PluginBase> Plugins
-		{
-			get
-			{
-				return _Plugins;
-			}
-
-			set
-			{
-				if (_Plugins == value)
-				{
-					return;
-				}
-
-				_Plugins = value;
-
-				// Update bindings, no broadcast
-				RaisePropertyChanged("Plugins");
-			}
-		}
 		#endregion
 		
 		#region events / delegates
@@ -150,7 +126,7 @@ namespace RFiDGear.ViewModel
 		#endregion Constructors
 
 		#region Dialogs
-
+		
 		/// <summary>
 		/// 
 		/// </summary>
@@ -285,8 +261,6 @@ namespace RFiDGear.ViewModel
 						                 {
 						                 	Caption = ResourceLoader.getResource("windowCaptionAddEditMifareClassicTask"),
 						                 	IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
-						                 	Plugins = Plugins,
-						                 	HasPlugins = Plugins.Any(x => x.Name == "VCNEditor"),
 
 						                 	OnOk = (sender) =>
 						                 	{
@@ -339,6 +313,7 @@ namespace RFiDGear.ViewModel
 		public ICommand CreateDesfireTaskCommand { get { return new RelayCommand(OnNewCreateDesfireTaskCommand); } }
 		private void OnNewCreateDesfireTaskCommand()
 		{
+			
 			bool timerState = triggerReadChip.IsEnabled;
 
 			triggerReadChip.IsEnabled = false;
@@ -349,47 +324,46 @@ namespace RFiDGear.ViewModel
 			{
 				if (device != null)
 				{
-					this.dialogs.Add(new MifareDesfireSetupViewModel(SelectedSetupViewModel, dialogs)
-					                 {
-					                 	Caption = ResourceLoader.getResource("windowCaptionAddEditMifareDesfireTask"),
-					                 	Plugins = Plugins,
-					                 	HasPlugins = Plugins.Any(x => x.Name == "VCNEditor"),
-					                 	
-					                 	OnOk = (sender) =>
-					                 	{
-					                 		if (sender.SelectedTaskType == TaskType_MifareDesfireTask.ChangeDefault)
-					                 			sender.Settings.SaveSettings();
+					
+					Dialogs.Add(new MifareDesfireSetupViewModel(SelectedSetupViewModel, dialogs)
+					            {
+					            	Caption = ResourceLoader.getResource("windowCaptionAddEditMifareDesfireTask"),
+					            	
+					            	OnOk = (sender) =>
+					            	{
+					            		if (sender.SelectedTaskType == TaskType_MifareDesfireTask.ChangeDefault)
+					            			sender.Settings.SaveSettings();
 
-					                 		if (sender.SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard ||
-					                 		    sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover ||
-					                 		    sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover ||
-					                 		    sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication ||
-					                 		    sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateApplication ||
-					                 		    sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteFile ||
-					                 		    sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateFile ||
-					                 		    sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadData ||
-					                 		    sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData)
-					                 		{
-					                 			ChipTasks.TaskCollection.Add(sender);
+					            		if (sender.SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard ||
+					            		    sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover ||
+					            		    sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover ||
+					            		    sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication ||
+					            		    sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateApplication ||
+					            		    sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteFile ||
+					            		    sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateFile ||
+					            		    sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadData ||
+					            		    sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData)
+					            		{
+					            			ChipTasks.TaskCollection.Add(sender);
 
-					                 			ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt));
+					            			ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt));
 
-					                 			RaisePropertyChanged("ChipTasks");
+					            			RaisePropertyChanged("ChipTasks");
 
-					                 			sender.Close();
-					                 		}
-					                 	},
+					            			sender.Close();
+					            		}
+					            	},
 
-					                 	OnCancel = (sender) =>
-					                 	{
-					                 		sender.Close();
-					                 	},
+					            	OnCancel = (sender) =>
+					            	{
+					            		sender.Close();
+					            	},
 
-					                 	OnCloseRequest = (sender) =>
-					                 	{
-					                 		sender.Close();
-					                 	}
-					                 });
+					            	OnCloseRequest = (sender) =>
+					            	{
+					            		sender.Close();
+					            	}
+					            });
 				}
 			}
 
@@ -1393,7 +1367,7 @@ namespace RFiDGear.ViewModel
 
 		}
 
-		//Only one instance is allowed due to the pipeserver listening for event_cmd.exe
+		//Only one instance is allowed due to the singleton pattern of the reader class
 		private void RunMutex(object sender, StartupEventArgs e)
 		{
 			bool aIsNewInstance = false;
@@ -1405,6 +1379,7 @@ namespace RFiDGear.ViewModel
 			}
 
 		}
+		
 		private void LoadCompleted(object sender, EventArgs e)
 		{
 			mw = (MainWindow)Application.Current.MainWindow;
@@ -1415,9 +1390,10 @@ namespace RFiDGear.ViewModel
 				firstRun = false;
 				
 				try{
-					IKernel kernel = new StandardKernel(new RFiDGear.Plugins.MainModule());
-
-					Plugins = kernel.GetAll<PluginBase>("MifareClassicTaskPlugin").ToList();
+					//var catalog = new AssemblyCatalog(System.Reflection.Assembly.GetExecutingAssembly());
+					//var container = new CompositionContainer(catalog);
+					
+					//container.Compose(this);
 				}
 				
 				catch (Exception e2)

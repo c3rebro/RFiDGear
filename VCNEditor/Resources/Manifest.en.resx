@@ -1,0 +1,720 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="toolTipTextBoxCardStatus" xml:space="preserve">
+    <value>Current card state</value>
+  </data>
+  <data name="textBoxCardStatus" xml:space="preserve">
+    <value>not connected</value>
+  </data>
+  <data name="textBoxCardStatus_Removed" xml:space="preserve">
+    <value>card removed</value>
+  </data>
+  <data name="textBoxCardStatus_Inserted" xml:space="preserve">
+    <value>card detected</value>
+  </data>
+  <data name="toolTipSelectReaderComboBox" xml:space="preserve">
+    <value>Please select a contactless
+slot of an available reader</value>
+  </data>
+  <data name="toolTipCaption" xml:space="preserve">
+    <value>Hint:</value>
+  </data>
+  <data name="cardStatusToolStripLabel" xml:space="preserve">
+    <value>not connected</value>
+  </data>
+  <data name="cardStatusToolStripLabel_Inserted" xml:space="preserve">
+    <value>card detected</value>
+  </data>
+  <data name="cardStatusToolStripLabel_Removed" xml:space="preserve">
+    <value>card removed</value>
+  </data>
+  <data name="groupBoxEditClassicCardAccessBits" xml:space="preserve">
+    <value>sectortrailer configuration</value>
+  </data>
+  <data name="groupBoxAccessRights" xml:space="preserve">
+    <value>access bits</value>
+  </data>
+  <data name="groupBoxChangeKeys" xml:space="preserve">
+    <value>change keys</value>
+  </data>
+  <data name="checkBoxAllowChanges" xml:space="preserve">
+    <value>allow changes</value>
+  </data>
+  <data name="buttonSaveAndExitReaderSetupText" xml:space="preserve">
+    <value>Save and Exit</value>
+  </data>
+  <data name="buttonCancelReaderSetupText" xml:space="preserve">
+    <value>Abort</value>
+  </data>
+  <data name="labelEditWndSectorTrailer" xml:space="preserve">
+    <value>sectortrailer</value>
+  </data>
+  <data name="buttonConnectToReaderText" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="messageBoxRestartRequiredCaption" xml:space="preserve">
+    <value>Restart Required</value>
+  </data>
+  <data name="messageBoxRestartRequiredMessage" xml:space="preserve">
+    <value>The Software needs to be restarted in Order to apply these changes. Click 'OK' to proceed.</value>
+  </data>
+  <data name="menuItemFileHeader" xml:space="preserve">
+    <value>_File</value>
+  </data>
+  <data name="menuItemExitHeader" xml:space="preserve">
+    <value>_Exit</value>
+  </data>
+  <data name="menuItemEditHeader" xml:space="preserve">
+    <value>_Edit</value>
+  </data>
+  <data name="menuItemOptionsHeader" xml:space="preserve">
+    <value>_Tools</value>
+  </data>
+  <data name="menuItemReaderSettingsHeader" xml:space="preserve">
+    <value>_Settings...</value>
+  </data>
+  <data name="ENUM.ReaderTypes.Gunnebo" xml:space="preserve">
+    <value>Gunnebo</value>
+  </data>
+  <data name="ENUM.ReaderTypes.None" xml:space="preserve">
+    <value>Kein Leser ausgewählt</value>
+  </data>
+  <data name="ENUM.ReaderTypes.Promag" xml:space="preserve">
+    <value>Promag</value>
+  </data>
+  <data name="ENUM.ReaderTypes.SmartID" xml:space="preserve">
+    <value>SmartID</value>
+  </data>
+  <data name="ENUM.ReaderTypes.STidPRG" xml:space="preserve">
+    <value>STidPRG</value>
+  </data>
+  <data name="ENUM.ReaderTypes.Rpleth" xml:space="preserve">
+    <value>RPleth</value>
+  </data>
+  <data name="ENUM.ReaderTypes.SCIEL" xml:space="preserve">
+    <value>SCIEL</value>
+  </data>
+  <data name="ENUM.ReaderTypes.AxessTMC13" xml:space="preserve">
+    <value>AxessTMC13</value>
+  </data>
+  <data name="ENUM.ReaderTypes.PCSC" xml:space="preserve">
+    <value>PCSC</value>
+  </data>
+  <data name="ENUM.ReaderTypes.IdOnDemand" xml:space="preserve">
+    <value>IdOnDemand</value>
+  </data>
+  <data name="ENUM.ReaderTypes.Deister" xml:space="preserve">
+    <value>Deister</value>
+  </data>
+  <data name="ENUM.ReaderTypes.Admitto" xml:space="preserve">
+    <value>Admitto</value>
+  </data>
+  <data name="ENUM.ReaderTypes.RFIDeas" xml:space="preserve">
+    <value>RFIDeas</value>
+  </data>
+  <data name="ENUM.DESFireKeyType.DF_KEY_AES" xml:space="preserve">
+    <value>AES</value>
+  </data>
+  <data name="ENUM.DESFireKeyType.DF_KEY_DES" xml:space="preserve">
+    <value>DES</value>
+  </data>
+  <data name="ENUM.DESFireKeyType.DF_KEY_3K3DES" xml:space="preserve">
+    <value>3DES</value>
+  </data>
+  <data name="ENUM.TaskType_MifareClassicTask.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="ENUM.TaskType_MifareClassicTask.ChangeDefault" xml:space="preserve">
+    <value>Change Default Values</value>
+  </data>
+  <data name="ENUM.TaskType_MifareClassicTask.ReadData" xml:space="preserve">
+    <value>Read Data</value>
+  </data>
+  <data name="ENUM.TaskType_MifareClassicTask.WriteData" xml:space="preserve">
+    <value>Write Data</value>
+  </data>
+  <data name="ENUM.TaskType_MifareClassicTask.ChangeSecuritySettings" xml:space="preserve">
+    <value>Edit Sectortrailer and Keys</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.ReadData" xml:space="preserve">
+    <value>Read Data</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.ChangeDefault" xml:space="preserve">
+    <value>Change Default Values</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.WriteData" xml:space="preserve">
+    <value>Write Data</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.DeleteFile" xml:space="preserve">
+    <value>Delete File</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.CreateApplication" xml:space="preserve">
+    <value>Create Application</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.CreateFile" xml:space="preserve">
+    <value>Create File</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.DeleteApplication" xml:space="preserve">
+    <value>Delete Application</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey15" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey11" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey01" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey09" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey05" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey06" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey02" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey12" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey13" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey03" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey10" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey14" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey04" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey00" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey07" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey08" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey00" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey15" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey01" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey02" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey03" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey04" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey05" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey06" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey07" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey08" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey09" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey10" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey11" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey12" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey13" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey14" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.FormatDesfireCard" xml:space="preserve">
+    <value>Format Desfire Card</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.PICCMasterKeyChangeover" xml:space="preserve">
+    <value>Change PICC Master Key</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.ApplicationKeyChangeover" xml:space="preserve">
+    <value>Change Application Key</value>
+  </data>
+  <data name="ENUM.FileType_MifareDesfireFileType.StdDataFile" xml:space="preserve">
+    <value>Standard Data File</value>
+  </data>
+  <data name="ENUM.FileType_MifareDesfireFileType.ValueFile" xml:space="preserve">
+    <value>Value File</value>
+  </data>
+  <data name="ENUM.FileType_MifareDesfireFileType.BackupFile" xml:space="preserve">
+    <value>Backup File</value>
+  </data>
+  <data name="ENUM.FileType_MifareDesfireFileType.LinearRecordFile" xml:space="preserve">
+    <value>Linear Record File</value>
+  </data>
+  <data name="ENUM.FileType_MifareDesfireFileType.CyclicRecordFile" xml:space="preserve">
+    <value>Cyclic Record File</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_NEVER" xml:space="preserve">
+    <value>not Allowed</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_FREE" xml:space="preserve">
+    <value>without Key</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY10" xml:space="preserve">
+    <value>Key 10</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY0" xml:space="preserve">
+    <value>Key 0</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY1" xml:space="preserve">
+    <value>Key 1</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY2" xml:space="preserve">
+    <value>Key 2</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY3" xml:space="preserve">
+    <value>Key 3</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY4" xml:space="preserve">
+    <value>Key 4</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY5" xml:space="preserve">
+    <value>Key 5</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY6" xml:space="preserve">
+    <value>Key 6</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY7" xml:space="preserve">
+    <value>Key 7</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY8" xml:space="preserve">
+    <value>Key 8</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY9" xml:space="preserve">
+    <value>Key 9</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY13" xml:space="preserve">
+    <value>Key 13</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY11" xml:space="preserve">
+    <value>Key 11</value>
+  </data>
+  <data name="ENUM.TaskAccessRights.AR_KEY12" xml:space="preserve">
+    <value>Key 12</value>
+  </data>
+  <data name="ENUM.EncryptionMode.CM_UNKNOWN" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="ENUM.EncryptionMode.CM_MAC" xml:space="preserve">
+    <value>MAC</value>
+  </data>
+  <data name="ENUM.EncryptionMode.CM_ENCRYPT" xml:space="preserve">
+    <value>Encrypted</value>
+  </data>
+  <data name="ENUM.EncryptionMode.CM_PLAIN" xml:space="preserve">
+    <value>Plain</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB" xml:space="preserve">
+    <value>Key A oder B</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareClassicSectorTrailer.NotApplicable" xml:space="preserve">
+    <value>Not Applicable</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA" xml:space="preserve">
+    <value>Key A</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareClassicSectorTrailer.NotAllowed" xml:space="preserve">
+    <value>Not Allowed</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyB" xml:space="preserve">
+    <value>Key B</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo" xml:space="preserve">
+    <value>Change Key using KeyNo</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK" xml:space="preserve">
+    <value>Change Key using MK</value>
+  </data>
+  <data name="ENUM.AccessCondition_MifareDesfireAppCreation.ChangeKeyFrozen" xml:space="preserve">
+    <value>Keychange frozen</value>
+  </data>
+  <data name="ENUM.SectorTrailer_DataBlock.Block1" xml:space="preserve">
+    <value>Block 1</value>
+  </data>
+  <data name="ENUM.SectorTrailer_DataBlock.BlockAll" xml:space="preserve">
+    <value>Combined</value>
+  </data>
+  <data name="ENUM.SectorTrailer_DataBlock.Block2" xml:space="preserve">
+    <value>Block 2</value>
+  </data>
+  <data name="ENUM.SectorTrailer_DataBlock.Block0" xml:space="preserve">
+    <value>Block 0</value>
+  </data>
+  <data name="ENUM.DataExplorer_DataBlock.Block1" xml:space="preserve">
+    <value>Block 1</value>
+  </data>
+  <data name="ENUM.DataExplorer_DataBlock.Block3" xml:space="preserve">
+    <value>Sector Trailer</value>
+  </data>
+  <data name="ENUM.DataExplorer_DataBlock.Block0" xml:space="preserve">
+    <value>Block 0</value>
+  </data>
+  <data name="ENUM.DataExplorer_DataBlock.Block2" xml:space="preserve">
+    <value>Block 2</value>
+  </data>
+  <data name="labelReaderStatus" xml:space="preserve">
+    <value>Reader Status:</value>
+  </data>
+  <data name="labelSelectedReader" xml:space="preserve">
+    <value>Selected Reader:</value>
+  </data>
+  <data name="menuItemHelpHeader" xml:space="preserve">
+    <value>_Help</value>
+  </data>
+  <data name="menuItemCheckForUpdates" xml:space="preserve">
+    <value>_Check for Updates</value>
+  </data>
+  <data name="menuItemSetTaskStatusToUndone" xml:space="preserve">
+    <value>_Set Taskstatus to 'Undone'</value>
+  </data>
+  <data name="menuItemRunAllTasksAutomatically" xml:space="preserve">
+    <value>_Run All Tasks Automatically</value>
+  </data>
+  <data name="menuItemRunSelectedTaskAutomatically" xml:space="preserve">
+    <value>Run Selected _Task Automatically</value>
+  </data>
+  <data name="menuItemRunSelectedTaskOnce" xml:space="preserve">
+    <value>Run _Selected Task on Chip Just Once</value>
+  </data>
+  <data name="menuItemRunAllTasksOnce" xml:space="preserve">
+    <value>Run _All Tasks On Selected Chip Just Once</value>
+  </data>
+  <data name="menuItemOpenProject" xml:space="preserve">
+    <value>_Open Project...</value>
+  </data>
+  <data name="menuItemSaveTask" xml:space="preserve">
+    <value>_Save Tasks...</value>
+  </data>
+  <data name="menuItemSaveChip" xml:space="preserve">
+    <value>Save _Chips...</value>
+  </data>
+  <data name="menuItemReadChipPublic" xml:space="preserve">
+    <value>_Read Chip Public</value>
+  </data>
+  <data name="toolTipButtonCardReaderEstablishConnection" xml:space="preserve">
+    <value>Try to Connect to the CardReader. Note: A RFID Tag with matching technology must be present on the reader.</value>
+  </data>
+  <data name="tabPageHeaderMisc" xml:space="preserve">
+    <value>Miscellaneous Settings</value>
+  </data>
+  <data name="tabPageHeaderReaderSetup" xml:space="preserve">
+    <value>Reader Settings</value>
+  </data>
+  <data name="labelAvailableReaders" xml:space="preserve">
+    <value>Available Reader Providers</value>
+  </data>
+  <data name="menuItemAddEditMifareClassicTaskHeader" xml:space="preserve">
+    <value>Add/Edit Mifare _Classic Task</value>
+  </data>
+  <data name="menuItemAddEditMifareDesfireTaskHeader" xml:space="preserve">
+    <value>Add/Edit Mifare _Desfire Task</value>
+  </data>
+  <data name="dataGridHeaderMainWindowTaskIndex" xml:space="preserve">
+    <value>Task Nr.</value>
+  </data>
+  <data name="dataGridHeaderMainWindowTaskType" xml:space="preserve">
+    <value>Task Type</value>
+  </data>
+  <data name="dataGridHeaderMainWindowTaskDescription" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="windowCaptionOpenProject" xml:space="preserve">
+    <value>Open Project...</value>
+  </data>
+  <data name="filterStringSaveTasks" xml:space="preserve">
+    <value>Project files (*.xml)|*.xml</value>
+  </data>
+  <data name="windowCaptionSaveTasks" xml:space="preserve">
+    <value>Save Tasks to File...</value>
+  </data>
+  <data name="menuItemContextMenuParentNodeQuickCheck" xml:space="preserve">
+    <value>QuickCheck</value>
+  </data>
+  <data name="toolTipContextMenuParentNodeMifareClassicQuickCheck" xml:space="preserve">
+    <value>Try to get read access to all DataBlocks on the Card
+Place the Result in a Database including SectorTrailer (Block 3)
+Use a csv file to acuire default keys for authentication</value>
+  </data>
+  <data name="toolTipContextMenuParentNodeMifareDesfireQuickCheck" xml:space="preserve">
+    <value>Try to get all Application IDs and Chip Key Settings</value>
+  </data>
+  <data name="messageBoxUpdateAvailableCaption" xml:space="preserve">
+    <value>Update Available</value>
+  </data>
+  <data name="messageBoxUpdateAvailableMessage" xml:space="preserve">
+    <value>A newer Version of RFiDGear was found. Would you like to Download an Install the Update?</value>
+  </data>
+  <data name="menuItemProgrammingHeader" xml:space="preserve">
+    <value>_Programming</value>
+  </data>
+  <data name="menuItemCreateTaskHeader" xml:space="preserve">
+    <value>RFiD Tasks</value>
+  </data>
+  <data name="menuItemMifareHeader" xml:space="preserve">
+    <value>Mifare</value>
+  </data>
+  <data name="menuItemRemoveCardsHeader" xml:space="preserve">
+    <value>Remove Cards</value>
+  </data>
+  <data name="menuItemAddEditMifareUltralightTaskHeader" xml:space="preserve">
+    <value>Add/Edit Mifare _Ultralight Task</value>
+  </data>
+  <data name="menuItemAddEditMifareSAMTaskHeader" xml:space="preserve">
+    <value>Add/Edit Mifare _SAM Task</value>
+  </data>
+  <data name="menuItemAddEditMifarePlusTaskHeader" xml:space="preserve">
+    <value>Add/Edit Mifare _Plus Task</value>
+  </data>
+  <data name="menuItemTagItHeader" xml:space="preserve">
+    <value>Tag It</value>
+  </data>
+  <data name="menuItemAddEditTagitHFIPlusTaskHeader" xml:space="preserve">
+    <value>Add/Edit TagIt _HF-I Plus Task</value>
+  </data>
+  <data name="contextMenuItemAddOrEditTask" xml:space="preserve">
+    <value>Edit Task...</value>
+  </data>
+  <data name="contextMenuItemDeleteSelectedItem" xml:space="preserve">
+    <value>Remove Task</value>
+  </data>
+  <data name="menuItemRemoveAllTasks" xml:space="preserve">
+    <value>Remove All Tasks</value>
+  </data>
+  <data name="menuItemShortcutOpenProject" xml:space="preserve">
+    <value>Ctrl + O</value>
+  </data>
+  <data name="menuItemShortcutSaveTask" xml:space="preserve">
+    <value>Ctrl + S</value>
+  </data>
+  <data name="menuItemShortcutReadChipPublic" xml:space="preserve">
+    <value>Ctrl + R</value>
+  </data>
+  <data name="menuItemShortcutWriteToChipOnce" xml:space="preserve">
+    <value>Ctrl + X</value>
+  </data>
+  <data name="menuItemExecuteQuickCheck" xml:space="preserve">
+    <value>Perform Quick _Check</value>
+  </data>
+  <data name="menuItemShortcutExecuteQuickCheck" xml:space="preserve">
+    <value>Ctrl + Q</value>
+  </data>
+  <data name="windowCaptionReaderSetup" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="windowCaptionAddEditMifareClassicTask" xml:space="preserve">
+    <value>Add / Edit Mifare Classic Task</value>
+  </data>
+  <data name="windowCaptionAddEditMifareDesfireTask" xml:space="preserve">
+    <value>Add / Edit Mifare Desfire Task</value>
+  </data>
+  <data name="tabPageHeaderMifareClassicKeys" xml:space="preserve">
+    <value>Mifare Classic Keys</value>
+  </data>
+  <data name="tabPageHeaderMifareClassicDataExplorer" xml:space="preserve">
+    <value>Data Explorer</value>
+  </data>
+  <data name="tabPageHeaderMifareClassicSectorTrailerEditor" xml:space="preserve">
+    <value>Sector Trailer Editor</value>
+  </data>
+  <data name="groupBoxHeaderMifareClassicSetupTaskConfiguration" xml:space="preserve">
+    <value>Task Configuration</value>
+  </data>
+  <data name="labelContentMifareClassicSetupTaskConfigurationType" xml:space="preserve">
+    <value>Task Type</value>
+  </data>
+  <data name="labelContentMifareClassicSetupTaskConfigurationDescription" xml:space="preserve">
+    <value>Task Description</value>
+  </data>
+  <data name="labelContentMifareClassicSetupTaskConfigurationIndex" xml:space="preserve">
+    <value>Task Index</value>
+  </data>
+  <data name="buttonContentMifareClassicSetupOKButton" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="buttonContentMifareClassicSetupCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireSetupTaskConfiguration" xml:space="preserve">
+    <value>Task Configuration</value>
+  </data>
+  <data name="labelContentMifareDesfireSetupTaskConfigurationType" xml:space="preserve">
+    <value>Task Type</value>
+  </data>
+  <data name="labelContentMifareDesfireSetupTaskConfigurationDescription" xml:space="preserve">
+    <value>Task Description</value>
+  </data>
+  <data name="labelContentMifareDesfireSetupTaskConfigurationIndex" xml:space="preserve">
+    <value>Task Index</value>
+  </data>
+  <data name="groupBoxHeaderMifareClassicSetupKeySetup" xml:space="preserve">
+    <value>Key Configuration</value>
+  </data>
+  <data name="labelContentMifareClassicSetupKeyANumber" xml:space="preserve">
+    <value>A Key Nr.</value>
+  </data>
+  <data name="labelContentMifareClassicSetupKeyBValue" xml:space="preserve">
+    <value>B Key</value>
+  </data>
+  <data name="labelContentMifareClassicSetupKeyBNumber" xml:space="preserve">
+    <value>B Key Nr.</value>
+  </data>
+  <data name="labelContentMifareClassicSetupKeyAValue" xml:space="preserve">
+    <value>A Key</value>
+  </data>
+  <data name="labelContentMifareClassicSetupSectorNumber" xml:space="preserve">
+    <value>Sector Nr.</value>
+  </data>
+</root>

@@ -10,6 +10,11 @@
     <AssemblyName>PluginSystem</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
+    <NoWin32Manifest>False</NoWin32Manifest>
+    <SignAssembly>False</SignAssembly>
+    <AssemblyOriginatorKeyFile>MefMvvm.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>False</DelaySign>
+    <AssemblyOriginatorKeyMode>File</AssemblyOriginatorKeyMode>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -53,6 +58,9 @@
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -80,21 +88,21 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Controls\AnimatedContentControl.xaml.cs">
-      <DependentUpon>AnimatedContentControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="PluginBase.cs" />
-    <Compile Include="PluginViewModelBase.cs" />
+    <Compile Include="MefHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Controls" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="Controls\AnimatedContentControl.xaml" />
+    <Compile Include="UIExtensions\IUIExtension.cs" />
+    <Compile Include="UIExtensions\IUIExtensionDetails.cs" />
+    <Compile Include="UIExtensions\UiExtensionAttribute.cs" />
+    <Compile Include="ViewModelLocator\ExportViewModel.cs" />
+    <Compile Include="ViewModelLocator\IViewModelMetadata.cs" />
+    <Compile Include="ViewModelLocator\ViewModelLocator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="UIExtensions" />
+    <Folder Include="ViewModelLocator" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
