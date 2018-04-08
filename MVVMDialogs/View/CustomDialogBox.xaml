@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window
+	x:Class="MvvmDialogs.View.CustomDialogBox"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	WindowStartupLocation="CenterOwner"
+	Title="{Binding Caption}"
+	Height="170"
+	Width="300"
+	ResizeMode="NoResize">
+    <Grid>
+        <Grid>
+            <TextBlock
+				TextWrapping="Wrap"
+				Text="{Binding Message}"
+				Width="274"
+				Height="82"
+				Grid.Column="0"
+				Grid.Row="0"
+				HorizontalAlignment="Left"
+				VerticalAlignment="Top"
+				Margin="8,8,0,0" />
+            <Button
+				Content="Cancel"
+				Command="{Binding CancelCommand}"
+				HorizontalAlignment="Left"
+				Margin="171,98,0,0"
+				VerticalAlignment="Top"
+				Width="75"
+				IsDefault="True" />
+            <Button
+				Content="Ok"
+				Command="{Binding OkCommand}"
+				HorizontalAlignment="Left"
+				Margin="49,98,0,0"
+				VerticalAlignment="Top"
+				Width="75" />
+        </Grid>
+    </Grid>
+</Window>

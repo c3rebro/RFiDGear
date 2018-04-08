@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="de-de" Codepage="1252" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+	<String Id="Language">1031</String>         <!-- Supported language and codepage codes can be found here: http://www.tramontana.co.hu/wix/lesson2.php#2.4 -->
+	
+	<String Id="ApplicationName">RFiDGear</String>
+	<String Id="ManufacturerName">Messgeraetetechnik Hansen</String>
+	<String Id="ManufacturerFullName">Messgeraetetechnik Hansen</String>
+	<String Id="ProductDescription">Read Write Modify RFID Tags</String>
+	<String Id="Comments">Installiert die RFiDGear Applikation</String>
+	
+	<String Id="LicenseRtf" Overridable="yes">license.rtf</String>
+	
+	<String Id="OS2Old">Dieses Produkt benötigt mindestens Windows 7 oder Server 2008 R2.</String>
+	<String Id="NewerInstalled">Diese oder eine neuere Version ist bereits installiert.</String>
+	<String Id="x64VersionRequired">Sie benötigen die 64bit Version dieses Produktes.</String>
+	<String Id="x86VersionRequired">Sie benötigen die 32bit Version dieses Produktes.</String>
+	<String Id="LibLogicalAccessRequired">Es konnte keine gültige LibLogicalAccess installation gefuden werden.</String>
+	<String Id="NetFramework452Required">Dieses Produkt benötigt mindestens das .NET Framework 4.5.2</String>
+	
+	<String Id="FeatureCompleteDescription">Das vollständige Paket.</String>
+	
+	<String Id="FeatureMainProgramDescription">Das Hauptprogramm mit allen notwendigen Abhängikeiten.</String>
+	<String Id="FeatureMainProgramTitle">RFiDGear Hauptanwendung</String>
+	
+	<String Id="FeatureStartMenuDescription">Eine verknüpfing im Startmenü erstellen.</String>
+	<String Id="FeatureStartMenuTitle">Verknüpfung</String>
+
+	<String Id="FeaturePluginsTitle">Plugins</String>
+	<String Id="FeaturePluginsDescription">Verfügbare Programmerweiterungen</String>
+</WixLocalization>
