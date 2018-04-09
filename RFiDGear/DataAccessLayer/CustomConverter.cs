@@ -1,6 +1,7 @@
 ﻿using RFiDGear.DataAccessLayer;
 
 using System;
+using System.Collections.Generic;
 
 namespace RFiDGear
 {
@@ -292,6 +293,14 @@ namespace RFiDGear
 
 		#region Extensions
 
+		public static IEnumerable<string> GenerateStringSequence(int n1, int n2)
+		{
+			while (n1 <= n2)
+			{
+				yield return  n1++.ToString();
+			}
+		}
+		
 		private static byte HexToByte(string hex)
 		{
 			if (hex.Length > 2 || hex.Length <= 0)
@@ -336,6 +345,70 @@ namespace RFiDGear
 			return new_st;
 		}
 
+		/// 
+		/// Class for calculating CRC8 checksums...
+		/// 
+		public class CRC8Calc {
+			private byte[] table = new byte[256];
+			
+			public byte Checksum(params byte[] val )
+			{
+				if(val == null)
+					throw new ArgumentNullException("val");
+				
+				byte crc = 0xc7;
+
+				foreach ( byte b in val )
+				{
+					crc = table[(byte)(crc ^ b)];
+				}
+				
+				return crc;
+			}
+
+			public byte[] Table
+			{
+				get
+				{
+					return this.table;
+				}
+				set
+				{
+					this.table = value;
+				}
+			}
+			
+			public byte[] GenerateTable(CRC8_POLY polynomial)
+			{
+				byte[] csTable = new byte[256];
+				
+				for ( int i = 0; i < 256; ++i )
+				{
+					int curr = i;
+					
+					for ( int j = 0; j < 8; ++j )
+					{
+						if ((curr & 0x80) != 0)
+						{
+							curr = (curr << 1) ^ (byte)polynomial;
+						}
+						else
+						{
+							curr <<= 1;
+						}
+					}
+					
+					csTable[i] = (byte)(curr & 0xFF);
+				}
+				
+				return csTable;
+			}
+			
+			public CRC8Calc(CRC8_POLY polynomial)
+			{
+				this.table = this.GenerateTable(polynomial);
+			}
+		}
 		#endregion Extensions
 	}
 }

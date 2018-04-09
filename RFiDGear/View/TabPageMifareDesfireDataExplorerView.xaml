@@ -605,8 +605,8 @@
 						Margin="9,3,7,7"
 						Content="Write Key No." />
 					<ComboBox
-						ItemsSource="{dal:Enumerate {x:Type dal:MifareDesfireKeyNumber}}"
-						SelectedItem="{Binding SelectedDesfireReadKeyNumber,Converter={StaticResource Localization},ConverterParameter={x:Type dal:MifareDesfireKeyNumber},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+						ItemsSource="{Binding MifareDesfireKeys}"
+						SelectedItem="{Binding SelectedDesfireReadKeyNumber,UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						Height="26"
 						Grid.Column="3"
 						Grid.Row="1"
@@ -614,8 +614,8 @@
 						VerticalAlignment="Bottom"
 						Margin="9,0,7,7" />
 					<ComboBox
-						ItemsSource="{dal:Enumerate {x:Type dal:MifareDesfireKeyNumber}}"
-						SelectedItem="{Binding SelectedDesfireWriteKeyNumber,Converter={StaticResource Localization},ConverterParameter={x:Type dal:MifareDesfireKeyNumber},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+						ItemsSource="{Binding MifareDesfireKeys}"
+						SelectedItem="{Binding SelectedDesfireWriteKeyNumber, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						Height="26"
 						Grid.Column="3"
 						Grid.Row="3"

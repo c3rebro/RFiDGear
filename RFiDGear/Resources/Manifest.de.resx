@@ -256,54 +256,6 @@ ein Kartenlesegerät auswählen</value>
   <data name="ENUM.ReaderTypes.RFIDeas" xml:space="preserve">
     <value>RFIDeas</value>
   </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey09" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey05" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey03" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey14" xml:space="preserve">
-    <value>14</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey01" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey12" xml:space="preserve">
-    <value>12</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey10" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey08" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey06" xml:space="preserve">
-    <value>6</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey07" xml:space="preserve">
-    <value>7</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey04" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey15" xml:space="preserve">
-    <value>15</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey02" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey13" xml:space="preserve">
-    <value>13</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey00" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="ENUM.MifareClassicKeyNumber.MifareClassicKey11" xml:space="preserve">
-    <value>11</value>
-  </data>
   <data name="ENUM.TaskType_MifareClassicTask.ReadData" xml:space="preserve">
     <value>Daten lesen</value>
   </data>
@@ -351,54 +303,6 @@ ein Kartenlesegerät auswählen</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.CreateApplication" xml:space="preserve">
     <value>Applikation erstellen</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey06" xml:space="preserve">
-    <value>6</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey02" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey15" xml:space="preserve">
-    <value>15</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey05" xml:space="preserve">
-    <value>5</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey01" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey12" xml:space="preserve">
-    <value>12</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey09" xml:space="preserve">
-    <value>9</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey00" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey14" xml:space="preserve">
-    <value>14</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey04" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey08" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey07" xml:space="preserve">
-    <value>7</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey10" xml:space="preserve">
-    <value>10</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey11" xml:space="preserve">
-    <value>11</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey13" xml:space="preserve">
-    <value>13</value>
-  </data>
-  <data name="ENUM.MifareDesfireKeyNumber.MifareDesfireKey03" xml:space="preserve">
-    <value>3</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.FormatDesfireCard" xml:space="preserve">
     <value>Karte Formatieren</value>

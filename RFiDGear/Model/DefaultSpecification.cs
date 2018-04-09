@@ -40,22 +40,22 @@ namespace RFiDGear.Model
 
             mifareClassicDefaultSecuritySettings = new List<MifareClassicDefaultKeys>
             {
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey00, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey01, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey02, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey03, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey04, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey05, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey06, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey07, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey08, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey09, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey10, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey11, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey12, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey13, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey14, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(MifareClassicKeyNumber.MifareClassicKey15, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF")
+                new MifareClassicDefaultKeys(0, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(1, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(2, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(3, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(4, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(5, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(6, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(7, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(8, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(9, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(10, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(11, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(12, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(13, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(14, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
+                new MifareClassicDefaultKeys(15, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF")
             };
 
             mifareDesfireDefaultSecuritySettings = new List<MifareDesfireDefaultKeys>

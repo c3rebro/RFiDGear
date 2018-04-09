@@ -62,16 +62,16 @@
 						TabIndex="4" />
 				</TabItem>
 				<TabItem
+					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicMADEditor' }">
+					<v:TabPageMifareClassicMADAppCreationView />
+				</TabItem>
+				<TabItem
 					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicDataExplorer' }">
 					<v:TabPageMifareClassicDataExplorerView />
 				</TabItem>
 				<TabItem
 					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicSectorTrailerEditor' }">
 					<v:TabPageMifareClassicSectorAccessBitsView />
-				</TabItem>
-				<TabItem
-					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicMADEditor' }">
-					<v:TabPageMifareClassicMADAppCreationView />
 				</TabItem>
 				<TabItem
 					Header="Plugins" Visibility="{Binding HasPlugins, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">

@@ -657,34 +657,41 @@ namespace RFiDGear
 							}
 
 							SectorAccessBits sab = new SectorAccessBits();
+							sab.d_data_block0_access_bits.c1 = 1;
+							sab.d_data_block1_access_bits.c1 = 1;
+							sab.d_data_block2_access_bits.c1 = 1;
+							sab.d_sector_trailer_access_bits.c2 = 1;
+							sab.d_sector_trailer_access_bits.c3 = 1;
 							
-							MifareLocation mlocation = new MifareLocationClass();
+							MifareLocation mlocation = card.CreateLocation() as MifareLocation;
 							mlocation.MADApplicationID = (ushort)madApplicationID;
 							mlocation.UseMAD = useMAD;
-							mlocation.Sector = 2;
-							//mlocation.Byte = 2;
-							
-							MifareAccessInfo aiToUse = new MifareAccessInfoClass();
-							aiToUse.UseMAD = false;
-							aiToUse.KeyA = mAKeyToUse;
-							aiToUse.KeyB = mBKeyToUse;
-							//aiToUse.SAB = sab;
-							//aiToUse.MADKeyA = mAKeyToUse;
-							//aiToUse.MADKeyB = mBKeyToUse;
+							//mlocation.Block = 0;
+							mlocation.Sector = 1;
+							//mlocation.Byte = 200;
 							
 							MifareAccessInfo aiToWrite = new MifareAccessInfoClass();
-							aiToWrite.UseMAD = useMAD;
-							aiToWrite.MADKeyA = mAKeyToWrite;
-							aiToWrite.MADKeyB = mBKeyToWrite;
+							aiToWrite.UseMAD = true;
+							//aiToWrite.MADKeyA = mAKeyToUse;
+							//aiToWrite.MADKeyB = mBKeyToWrite;
 							//aiToWrite.SAB = sab;
+							//aiToWrite.KeyA = mAKeyToWrite;
+							//aiToWrite.KeyB = mAKeyToWrite;
+							aiToWrite.MADGPB = 0xc1;
 							
-							aiToWrite.GenerateInfos();
+							//aiToWrite.GenerateInfos();
 							
-							var cmd = card.Commands as MifareCommands;
+							var cmd = card.Commands as IMifareCommands;
 							var cardService = card.GetService(CardServiceType.CST_STORAGE) as IStorageCardService;
 							
-							//var accessInfo = card.CreateAccessInfo();
-							
+							var aiToUse = new MifareAccessInfoClass();
+							aiToUse.UseMAD = false;
+							aiToUse.KeyA = mAKeyToUse;
+							aiToUse.KeyB = mBKeyToWrite;
+							aiToUse.SAB = sab;
+							//aiToUse.MADKeyA = mAKeyToUse;
+							//aiToUse.MADKeyB = mBKeyToWrite;
+							//aiToUse.MADGPB = 0xc1;
 							//card.CreateLocation();
 							
 							try
@@ -692,9 +699,12 @@ namespace RFiDGear
 								var x = card.CreateLocation() as MifareLocation;
 								var y = card.CreateAccessInfo() as MifareAccessInfo;
 								
+								//var data = cardService.ReadData(mlocation,aiToUse, 48, CardBehavior.CB_DEFAULT);
+								//RawFormat format = new RawFormat();
+								//IAccessControlCardService service = card.GetService(CardServiceType.CST_STORAGE) as IAccessControlCardService;
 								
-								//var data = cardService.ReadData(mlocation,aiToUse, 2, CardBehavior.CB_DEFAULT);
-								cardService.WriteData(mlocation, aiToUse, aiToWrite, buffer, buffer.Length, CardBehavior.CB_DEFAULT);
+								cardService.WriteData(mlocation, aiToUse, aiToWrite, buffer, buffer.Length, CardBehavior.CB_AUTOSWITCHAREA);
+								
 							}
 							catch (Exception e)
 							{
@@ -1067,7 +1077,7 @@ namespace RFiDGear
 			return ERROR.IOError;
 		}
 		
-		public ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, MifareDesfireKeyNumber _keyNumber, int _appID = 0)
+		public ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0)
 		{
 			try
 			{

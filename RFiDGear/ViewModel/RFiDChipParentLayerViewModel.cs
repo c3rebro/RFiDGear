@@ -273,9 +273,9 @@ namespace RFiDGear.ViewModel
 							}
 						}
 
-						if (device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_AES, MifareDesfireKeyNumber.MifareDesfireKey00) == ERROR.NoError ||
-						    device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_3K3DES, MifareDesfireKeyNumber.MifareDesfireKey00) == ERROR.NoError ||
-						    device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_DES, MifareDesfireKeyNumber.MifareDesfireKey00) == ERROR.NoError)
+						if (device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_AES, 0) == ERROR.NoError ||
+						    device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_3K3DES, 0) == ERROR.NoError ||
+						    device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_DES, 0) == ERROR.NoError)
 						{
 							Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("PICC MasterKey NOT Set"));
 						}

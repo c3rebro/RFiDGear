@@ -72,8 +72,8 @@
 						VerticalAlignment="Stretch"
 						Margin="8,3,0,7" />
 					<ComboBox
-						ItemsSource="{dal:Enumerate {x:Type dal:MifareDesfireKeyNumber}}"
-						SelectedItem="{Binding SelectedDesfireAppMaxNumberOfKeys,Converter={StaticResource Localization},ConverterParameter={x:Type dal:MifareDesfireKeyNumber},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+						ItemsSource="{Binding MifareDesfireKeys}"
+						SelectedItem="{Binding SelectedDesfireAppMaxNumberOfKeys,UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						Width="100"
 						Grid.Column="1"
 						Grid.Row="2"

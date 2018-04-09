@@ -223,16 +223,10 @@
     <EmbeddedResource Include="Resources\Manifest.en.resx" />
   </ItemGroup>
   <ItemGroup>
-    <COMReference Include="LibLogicalAccess">
-      <Guid>{9B9E09AD-A354-4D6F-93A8-DA32D71525A4}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>57</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-    </COMReference>
-  </ItemGroup>
-  <ItemGroup>
+    <ProjectReference Include="..\..\ByteArray\ByteArray.csproj">
+      <Project>{bdd5df8c-6fc1-4882-8151-924820fdbc05}</Project>
+      <Name>ByteArray</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MVVMDialogs\MVVMDialogs.csproj">
       <Project>{ef56252e-257f-41d1-974b-c9015071ce7e}</Project>
       <Name>MVVMDialogs</Name>
@@ -241,6 +235,16 @@
       <Project>{e99b606a-25b8-4113-9e75-5016ccfdb410}</Project>
       <Name>PluginSystem</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="LibLogicalAccess">
+      <Guid>{9B9E09AD-A354-4D6F-93A8-DA32D71525A4}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>57</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

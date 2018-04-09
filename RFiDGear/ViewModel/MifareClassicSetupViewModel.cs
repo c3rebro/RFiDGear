@@ -201,6 +201,10 @@ namespace RFiDGear.ViewModel
 			
 			Selected_Sector_AccessCondition = sectorTrailer_AccessBits[4];
 			Selected_DataBlock_AccessCondition = dataBlock_AccessBits[0];
+			
+			MifareClassicKeys = CustomConverter.GenerateStringSequence(0,16).ToArray();
+			
+			SelectedClassicSectorCurrent = "0";
 		}
 
 		/// <summary>
@@ -233,7 +237,7 @@ namespace RFiDGear.ViewModel
 
 				sectorModel.AccessBitsAsString = settings.DefaultSpecification.MifareClassicDefaultSectorTrailer;
 
-				sectorModel.SectorNumber = (int)selectedClassicSectorCurrent;
+				sectorModel.SectorNumber = selectedClassicSectorCurrentAsInt;
 
 				childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(sectorModel, this);
 				childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, this);
@@ -276,7 +280,9 @@ namespace RFiDGear.ViewModel
 					SelectedTaskDescription = "Enter a Description";
 				}
 				
+				MifareClassicKeys = CustomConverter.GenerateStringSequence(0,16).ToArray();
 				
+				SelectedClassicSectorCurrent = "0";
 				
 				HasPlugins = items != null ? items.Any() : false;
 				
@@ -513,6 +519,9 @@ namespace RFiDGear.ViewModel
 
 		#region KeySetup
 
+		[XmlIgnore]
+		public string[] MifareClassicKeys { get; set;}
+
 		/// <summary>
 		///
 		/// </summary>
@@ -575,7 +584,7 @@ namespace RFiDGear.ViewModel
 				IsValidClassicKeyAKeyCurrent = (CustomConverter.IsInHexFormat(value) && value.Length == 12);
 				if (IsValidClassicKeyAKeyCurrent && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
 				{
-					string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[(int)SelectedClassicKeyANumberCurrent].AccessBits;
+					string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyANumberCurrentAsInt].AccessBits;
 					currentSectorTrailer = string.Join(",", new[]
 					                                   {
 					                                   	classicKeyAKeyCurrent,
@@ -583,7 +592,7 @@ namespace RFiDGear.ViewModel
 					                                   	currentSectorTrailer.Split(new[] {',',';'})[2]
 					                                   });
 
-					settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[(int)SelectedClassicKeyANumberCurrent] = new MifareClassicDefaultKeys(SelectedClassicKeyANumberCurrent, currentSectorTrailer);
+					settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyANumberCurrentAsInt] = new MifareClassicDefaultKeys(selectedClassicKeyANumberCurrentAsInt, currentSectorTrailer);
 				}
 				else if (IsValidClassicKeyAKeyCurrent)
 					sectorModel.KeyA = classicKeyAKeyCurrent;
@@ -626,7 +635,7 @@ namespace RFiDGear.ViewModel
 				IsValidClassicKeyBKeyCurrent = (CustomConverter.IsInHexFormat(value) && value.Length == 12);
 				if (IsValidClassicKeyBKeyCurrent && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
 				{
-					string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[(int)SelectedClassicKeyBNumberCurrent].AccessBits;
+					string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyBNumberCurrentAsInt].AccessBits;
 					currentSectorTrailer = string.Join(",", new[]
 					                                   {
 					                                   	currentSectorTrailer.Split(new[] {',',';'})[0],
@@ -634,7 +643,7 @@ namespace RFiDGear.ViewModel
 					                                   	classicKeyBKeyCurrent
 					                                   });
 
-					settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[(int)SelectedClassicKeyBNumberCurrent] = new MifareClassicDefaultKeys(SelectedClassicKeyBNumberCurrent, currentSectorTrailer);
+					settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyBNumberCurrentAsInt] = new MifareClassicDefaultKeys(selectedClassicKeyBNumberCurrentAsInt, currentSectorTrailer);
 				}
 				else if (IsValidClassicKeyBKeyCurrent)
 					sectorModel.KeyB = classicKeyBKeyCurrent;
@@ -664,47 +673,63 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		///
 		/// </summary>
-		public MifareClassicKeyNumber SelectedClassicKeyANumberCurrent
+		public string SelectedClassicKeyANumberCurrent
 		{
-			get { return selectedClassicKeyANumberCurrent; }
+			get
+			{
+				return selectedClassicKeyANumberCurrent;
+			}
 			set
 			{
-				selectedClassicKeyANumberCurrent = value;
+				if(int.TryParse(value, out selectedClassicKeyANumberCurrentAsInt))
+				{
+					selectedClassicKeyANumberCurrent = value;
+					RaisePropertyChanged("SelectedClassicKeyANumberCurrent");
+				}
 //				if(SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
 //				{
 //					ClassicKeyAKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
 //						First(x => x.KeyType == SelectedClassicKeyANumberCurrent).AccessBits.Split(new[] { ',', ';' })[0];
 //				}
-
-				RaisePropertyChanged("SelectedClassicKeyANumberCurrent");
 			}
 		}
-		private MifareClassicKeyNumber selectedClassicKeyANumberCurrent;
+		private string selectedClassicKeyANumberCurrent;
+		private int selectedClassicKeyANumberCurrentAsInt;
 
 		/// <summary>
 		///
 		/// </summary>
-		public MifareClassicKeyNumber SelectedClassicKeyBNumberCurrent
+		public string SelectedClassicKeyBNumberCurrent
 		{
-			get { return selectedClassicKeyBNumberCurrent; }
+			get
+			{
+				return selectedClassicKeyBNumberCurrent;
+			}
 			set
 			{
-				selectedClassicKeyBNumberCurrent = value;
+				if(int.TryParse(value, out selectedClassicKeyBNumberCurrentAsInt))
+				{
+					selectedClassicKeyBNumberCurrent = value;
+					RaisePropertyChanged("SelectedClassicKeyBNumberCurrent");
+				}
 
 //				ClassicKeyBKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
 //					First(x => x.KeyType == SelectedClassicKeyBNumberCurrent).AccessBits.Split(new[] { ',', ';' })[2];
 
-				RaisePropertyChanged("SelectedClassicKeyBNumberCurrent");
 			}
 		}
-		private MifareClassicKeyNumber selectedClassicKeyBNumberCurrent;
+		private string selectedClassicKeyBNumberCurrent;
+		private int selectedClassicKeyBNumberCurrentAsInt;
 
 		/// <summary>
 		///
 		/// </summary>
-		public MifareClassicKeyNumber SelectedClassicSectorCurrent
+		public string SelectedClassicSectorCurrent
 		{
-			get { return selectedClassicSectorCurrent; }
+			get
+			{
+				return selectedClassicSectorCurrent;
+			}
 			set
 			{
 				//sectorModel.SectorNumber = (int)selectedClassicSectorCurrent;
@@ -717,11 +742,15 @@ namespace RFiDGear.ViewModel
 				}
 				//(parentNodeViewModel as RFiDChipParentLayerViewModel).Children.First(x => x.SectorNumber == (int)SelectedClassicSectorCurrent).IsTask = true;
 
-				selectedClassicSectorCurrent = value;
-				RaisePropertyChanged("SelectedClassicSectorCurrent");
+				if(int.TryParse(value, out selectedClassicSectorCurrentAsInt))
+				{
+					selectedClassicSectorCurrent = value;
+					RaisePropertyChanged("SelectedClassicSectorCurrent");
+				}
 			}
 		}
-		private MifareClassicKeyNumber selectedClassicSectorCurrent;
+		private string selectedClassicSectorCurrent;
+		private int selectedClassicSectorCurrentAsInt;
 
 		public bool DataBlockIsCombinedToggleButtonIsChecked
 		{
@@ -1064,7 +1093,7 @@ namespace RFiDGear.ViewModel
 
 				         			//Mouse.OverrideCursor = Cursors.Wait;
 
-				         			device.WriteMiFareClassicWithMAD(2,"ffffffffffff","ffffffffffff","ffffffffffff","ffffffffffff", new byte[2] {0x44, 0x55}, true);
+				         			device.WriteMiFareClassicWithMAD(0x0125,"ffffffffffff","ffffffffffff","ffffffffffff","ffffffffffff", new byte[] {0x44, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55}, true); // a0a1a2a3a4a5
 
 				         			//RaisePropertyChanged("DataAsByteArray");
 
@@ -1120,16 +1149,16 @@ namespace RFiDGear.ViewModel
 				         			
 				         			
 				         			if (device.ReadMiFareClassicSingleSector(
-				         				(int)SelectedClassicSectorCurrent,
+				         				selectedClassicSectorCurrentAsInt,
 				         				ClassicKeyAKeyCurrent,
 				         				ClassicKeyBKeyCurrent) == ERROR.NoError)
 				         			{
 				         				StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
 
-				         				childNodeViewModelFromChip.SectorNumber = (int)SelectedClassicSectorCurrent;
-				         				childNodeViewModelTemp.SectorNumber = (int)SelectedClassicSectorCurrent;
+				         				childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
+				         				childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
 				         				
-				         				StatusText = StatusText + string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, (int)SelectedClassicSectorCurrent);
+				         				StatusText = StatusText + string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 				         				
 				         				for (int i = 0; i < device.Sector.DataBlock.Count; i++)
 				         				{
@@ -1148,7 +1177,7 @@ namespace RFiDGear.ViewModel
 				         						TaskErr = ERROR.NoError;
 				         					}
 				         					else
-				         						StatusText = StatusText + string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, (int)SelectedClassicSectorCurrent, device.Sector.DataBlock[i - 1].DataBlockNumberChipBased);
+				         						StatusText = StatusText + string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i - 1].DataBlockNumberChipBased);
 				         				}
 				         				
 				         				TaskErr = ERROR.NoError;
@@ -1157,7 +1186,7 @@ namespace RFiDGear.ViewModel
 				         			}
 				         			else
 				         			{
-				         				StatusText = StatusText + string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, (int)SelectedClassicSectorCurrent);
+				         				StatusText = StatusText + string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 				         				TaskErr = ERROR.AuthenticationError;
 				         				return;
 				         			}
@@ -1213,8 +1242,8 @@ namespace RFiDGear.ViewModel
 				         		{
 				         			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
 
-				         			childNodeViewModelFromChip.SectorNumber = (int)SelectedClassicSectorCurrent;
-				         			childNodeViewModelTemp.SectorNumber = (int)SelectedClassicSectorCurrent;
+				         			childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
+				         			childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
 				         			
 				         			if (device.WriteMiFareClassicSingleBlock(childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlock.DataBlockNumberChipBased,
 				         			                                         ClassicKeyAKeyCurrent,

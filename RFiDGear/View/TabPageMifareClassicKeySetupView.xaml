@@ -38,39 +38,22 @@
 				Margin="8,8,8,8">
 				<Grid>
 					<Label
-						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareClassicSetupKeyANumber' }"
-						Grid.Column="0"
-						Grid.Row="1"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="8,3,7,7" />
-					<ComboBox
-						ItemsSource="{dal:Enumerate {x:Type dal:MifareClassicKeyNumber}}"
-						SelectedItem="{Binding SelectedClassicKeyANumberCurrent,Converter={StaticResource Localization},ConverterParameter={x:Type dal:MifareClassicKeyNumber},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
-						IsEnabled="{Binding IsFixedKeyNumber}"
-						Grid.Column="1"
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareClassicSetupKeyBValue' }"
+						Grid.Column="3"
 						Grid.Row="1"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Stretch"
 						Margin="9,3,7,7" />
-					<Label
-						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareClassicSetupKeyBValue' }"
-						Width="80"
-						Grid.Column="3"
-						Grid.Row="4"
-						HorizontalAlignment="Left"
-						VerticalAlignment="Stretch"
-						Margin="9,3,0,7" />
 					<TextBox
 						Text="{Binding ClassicKeyBKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						FontFamily="Lucida Console"
-						Grid.Column="4"
-						Grid.Row="4"
-						HorizontalAlignment="Stretch"
 						HorizontalContentAlignment="Left"
-						VerticalAlignment="Stretch"
 						VerticalContentAlignment="Center"
-						Margin="7,3,7,7">
+						Grid.Column="4"
+						Grid.Row="1"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="9,3,7,7">
 						<TextBox.Resources>
 							<Style
 								TargetType="TextBox">
@@ -106,39 +89,22 @@
 						</TextBox.Resources>
 					</TextBox>
 					<Label
-						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareClassicSetupKeyBNumber' }"
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareClassicSetupKeyAValue' }"
 						Grid.Column="0"
-						Grid.Row="2"
+						Grid.Row="1"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Stretch"
 						Margin="8,3,7,7" />
-					<ComboBox
-						ItemsSource="{dal:Enumerate {x:Type dal:MifareClassicKeyNumber}}"
-						SelectedItem="{Binding SelectedClassicKeyBNumberCurrent,Converter={StaticResource Localization},ConverterParameter={x:Type dal:MifareClassicKeyNumber},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
-						IsEnabled="{Binding IsFixedKeyNumber}"
-						Grid.Column="1"
-						Grid.Row="2"
-						Height="26"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="9,3,7,7" />
-					<Label
-						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareClassicSetupKeyAValue' }"
-						Grid.Column="0"
-						Grid.Row="4"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="8,3,10,7" />
 					<TextBox
 						Text="{Binding ClassicKeyAKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						FontFamily="Lucida Console"
+						HorizontalContentAlignment="Left"
+						VerticalContentAlignment="Center"
 						Grid.Column="1"
 						Grid.ColumnSpan="2"
-						Grid.Row="4"
+						Grid.Row="1"
 						HorizontalAlignment="Stretch"
-						HorizontalContentAlignment="Left"
 						VerticalAlignment="Stretch"
-						VerticalContentAlignment="Center"
 						Margin="9,3,7,7">
 						<TextBox.Resources>
 							<Style
@@ -183,14 +149,14 @@
 						VerticalAlignment="Stretch"
 						Margin="8,8,8,8" />
 					<ComboBox
-						ItemsSource="{dal:Enumerate {x:Type dal:MifareClassicKeyNumber}}"
-						SelectedItem="{Binding SelectedClassicSectorCurrent,Converter={StaticResource Localization},ConverterParameter={x:Type dal:MifareClassicKeyNumber},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+						ItemsSource="{Binding MifareClassicKeys}"
+						SelectedItem="{Binding SelectedClassicSectorCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						IsEnabled="{Binding IsFixedKeyNumber}"
 						Grid.Column="1"
 						Grid.Row="0"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Stretch"
-						Margin="9,9,7,7" />
+						Margin="9,9,7,7"></ComboBox>
 					<Button
 						Command="{Binding ReadDataCommand}"
 						Content="Read"
@@ -201,6 +167,118 @@
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Bottom"
 						Margin="8,0,7,7" />
+					<CheckBox
+						Content="Enable MAD"
+						Height="15"
+						Grid.Column="0"
+						Grid.ColumnSpan="2"
+						Grid.Row="2"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Top"
+						Margin="8,9,7,0" />
+					<Label
+						Grid.Column="0"
+						Grid.Row="3"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="8,3,7,7"
+						Content="MAD Key A" />
+					<Label
+						Grid.Column="3"
+						Grid.Row="3"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="9,3,7,7"
+						Content="MAD Key B" />
+					<TextBox
+						Text="{Binding ClassicKeyAKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+						FontFamily="Lucida Console"
+						HorizontalContentAlignment="Left"
+						VerticalContentAlignment="Center"
+						Grid.Column="1"
+						Grid.ColumnSpan="2"
+						Grid.Row="3"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="9,3,7,7">
+						<!--<TextBox.Resources>
+							<Style
+								TargetType="TextBox">
+								<Style.Triggers>
+									<DataTrigger
+										Binding="{Binding IsValidClassicKeyAKeyCurrent}"
+										Value="True">
+										<Setter
+											Property="Foreground"
+											Value="Green" />
+										<Setter
+											Property="Background"
+											Value="White" />
+										<Setter
+											Property="FontWeight"
+											Value="Normal" />
+									</DataTrigger>
+									<DataTrigger
+										Binding="{Binding IsValidClassicKeyAKeyCurrent}"
+										Value="False">
+										<Setter
+											Property="Foreground"
+											Value="Black" />
+										<Setter
+											Property="Background"
+											Value="Red" />
+										<Setter
+											Property="FontWeight"
+											Value="Normal" />
+									</DataTrigger>
+								</Style.Triggers>
+							</Style>
+						</TextBox.Resources>-->
+					</TextBox>
+					<TextBox
+						Text="{Binding ClassicKeyBKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+						FontFamily="Lucida Console"
+						HorizontalContentAlignment="Left"
+						VerticalContentAlignment="Center"
+						Grid.Column="4"
+						Grid.Row="3"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="9,3,7,7">
+						<!--<TextBox.Resources>
+							<Style
+								TargetType="TextBox">
+								<Style.Triggers>
+									<DataTrigger
+										Binding="{Binding IsValidClassicKeyBKeyCurrent}"
+										Value="True">
+										<Setter
+											Property="Foreground"
+											Value="Green" />
+										<Setter
+											Property="Background"
+											Value="White" />
+										<Setter
+											Property="FontWeight"
+											Value="Normal" />
+									</DataTrigger>
+									<DataTrigger
+										Binding="{Binding IsValidClassicKeyBKeyCurrent}"
+										Value="False">
+										<Setter
+											Property="Foreground"
+											Value="Black" />
+										<Setter
+											Property="Background"
+											Value="Red" />
+										<Setter
+											Property="FontWeight"
+											Value="Normal" />
+									</DataTrigger>
+								</Style.Triggers>
+							</Style>
+						</TextBox.Resources>-->
+					</TextBox>
 					<Grid.RowDefinitions>
 						<RowDefinition
 							Height="42" />
