@@ -48,7 +48,7 @@ namespace RFiDGear
 				{
 					foreach (object o in item.Items)
 					{
-						if (o is RFiDChipParentLayerViewModel)
+						if (o is RFiDChipParentLayerViewModel && (o as RFiDChipParentLayerViewModel).Children != null)
 						{
 							foreach (RFiDChipChildLayerViewModel child in (o as RFiDChipParentLayerViewModel).Children)
 							{

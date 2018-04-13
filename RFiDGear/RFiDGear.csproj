@@ -123,9 +123,10 @@
     <Compile Include="Model\ChipTaskHandlerModel.cs" />
     <Compile Include="Model\MifareClassicDataBlockModel.cs" />
     <Compile Include="Model\DefaultSpecification.cs" />
+    <Compile Include="Model\MifareClassicMADModel.cs" />
     <Compile Include="Model\MifareClassicSectorModel.cs" />
     <Compile Include="Model\MifareClassicChipModel.cs" />
-    <Compile Include="Model\MifareDesfireAppIdTreeViewModel.cs" />
+    <Compile Include="Model\MifareDesfireAppModel.cs" />
     <Compile Include="Model\MifareDesfireFileModel.cs" />
     <Compile Include="Model\MifareDesfireChipModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -152,9 +153,6 @@
     <Compile Include="View\TabPageMifareClassicKeySetupView.xaml.cs">
       <DependentUpon>TabPageMifareClassicKeySetupView.xaml</DependentUpon>
       <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="View\TabPageMifareClassicMADAppCreationView.xaml.cs">
-      <DependentUpon>TabPageMifareClassicMADAppCreationView.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\TabPageMifareClassicSectorAccessBitsView.xaml.cs">
       <DependentUpon>TabPageMifareClassicSectorAccessBitsView.xaml</DependentUpon>
@@ -207,7 +205,6 @@
     <Page Include="View\MifareClassicSetupView.xaml" />
     <Page Include="View\TabPageMifareClassicDataExplorerView.xaml" />
     <Page Include="View\TabPageMifareClassicKeySetupView.xaml" />
-    <Page Include="View\TabPageMifareClassicMADAppCreationView.xaml" />
     <Page Include="View\TabPageMifareClassicSectorAccessBitsView.xaml" />
     <Page Include="View\TabPageMifareDesfireAppCreationView.xaml" />
     <Page Include="View\TabPageMifareDesfireApplicationMasteringView.xaml" />

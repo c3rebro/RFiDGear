@@ -6,21 +6,21 @@
 	<?define NetFx451MinRelease = 378675 ?>
 	<!-- The URL for add/remove programs -->
 	<?define InfoURL="http://rfidgear.hyperstack.de" ?>
-	<?define ISLOG_ProgramDataDir = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.0.1024" ?>
+	<?define ISLOG_ProgramDataDir = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.3.0214" ?>
 	<!-- 32-bit / 64-bit variables -->
 	<?if $(var.Platform) = x64 ?>
 	<?define Win64 = "yes" ?>
 	<?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
 	<?define RFiDGearExeSourcePath = "$(var.ProjectDir)..\RFiDGear\bin\Release\RFiDGear.exe" ?>
-	<?define ISLOG_RegistrySearch_Value = "C:\Program Files\Common Files\ISLOG\LibLogicalAccess\1.87.0.1024\liblogicalaccess.com.dll" ?>
+	<?define ISLOG_RegistrySearch_Value = "C:\Program Files\Common Files\ISLOG\LibLogicalAccess\1.87.3.0214\liblogicalaccess.com.dll" ?>
 	<?else ?>
 	<?define Win64 = "no" ?>
 	<?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
 	<?define RFiDGearExeSourcePath = "$(var.ProjectDir)..\RFiDGear\bin\Release\RFiDGear.exe" ?>
-	<?define ISLOG_RegistrySearch_Value = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.0.1024\liblogicalaccess.com.dll" ?>
+	<?define ISLOG_RegistrySearch_Value = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.3.0214\liblogicalaccess.com.dll" ?>
 	<?endif ?>
 	
-	<Bundle Name="$(var.RFiDGear.ProjectName)" Version="$(var.VersionNumber)" Manufacturer="Messgeraetetechnik Hansen" UpgradeCode="$(var.UpgradeCode)" Copyright="Messgeraetetechnik Hansen 2017" IconSourceFile="$(var.RFiDGear.ProjectDir)Resources\logo.ico" AboutUrl="http://rfidgear.hyperstack.de">
+	<Bundle Name="$(var.RFiDGear.ProjectName)" Version="$(var.VersionNumber)" Manufacturer="Messgeraetetechnik Hansen" UpgradeCode="$(var.UpgradeCode)" Copyright="Messgeraetetechnik Hansen 2018" IconSourceFile="$(var.RFiDGear.ProjectDir)Resources\logo.ico" AboutUrl="http://rfidgear.hyperstack.de">
 		<BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
 			<bal:WixStandardBootstrapperApplication LicenseFile="$(var.RFiDGear.ProjectDir)Resources\gpl_v3_license.rtf" LogoFile="setuplogo.ico" ThemeFile="rtftheme.xml"/>
 		</BootstrapperApplicationRef>

@@ -2,7 +2,7 @@
 <Window
 	x:Class="RFiDGear.View.MifareClassicSetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:v="clr-namespace:RFiDGear.View" xmlns:local="clr-namespace:RFiDGear" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
 	Title="{Binding Caption}"
-	MinWidth="998"
+	MinWidth="1000"
 	WindowStartupLocation="CenterOwner"
 	MinHeight="650"
 	mc:Ignorable="d">
@@ -61,17 +61,19 @@
 					<v:TabPageMifareClassicKeySetupView
 						TabIndex="4" />
 				</TabItem>
-				<TabItem
-					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicMADEditor' }">
+<!--				<TabItem
+					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicMADEditor' }"
+					Visibility="{Binding UseMAD, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">
 					<v:TabPageMifareClassicMADAppCreationView />
+				</TabItem>-->
+				<TabItem
+					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicSectorTrailerEditor' }"
+					Visibility="{Binding UseMADInvert, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">
+					<v:TabPageMifareClassicSectorAccessBitsView />
 				</TabItem>
 				<TabItem
 					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicDataExplorer' }">
 					<v:TabPageMifareClassicDataExplorerView />
-				</TabItem>
-				<TabItem
-					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicSectorTrailerEditor' }">
-					<v:TabPageMifareClassicSectorAccessBitsView />
 				</TabItem>
 				<TabItem
 					Header="Plugins" Visibility="{Binding HasPlugins, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">

@@ -476,6 +476,10 @@ namespace RFiDGear.ViewModel
 							
 							break;
 							
+						case CARD_TYPE.MifareUltralight:
+							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(string.Format("Mifare Ultralight {0}",device.CardInfo.uid)));
+							break;
+							
 						case CARD_TYPE.ISO15693:
 							device.ReadISO15693Chip();
 							break;
@@ -488,7 +492,7 @@ namespace RFiDGear.ViewModel
 					treeViewParentNodes.First(x => x.UidNumber == device.CardInfo.uid).IsSelected = true;
 				}
 			}
-
+			
 			Mouse.OverrideCursor = null;
 			
 			triggerReadChip.IsEnabled = timerState;

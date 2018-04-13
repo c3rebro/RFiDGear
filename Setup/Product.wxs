@@ -28,12 +28,12 @@
 	<?if $(var.Platform) = x64 ?>
 	<?define Win64 = "yes" ?>
 	<?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
-	<?define ISLOG_ProgramDataDir = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.0.1024" ?>
+	<?define ISLOG_ProgramDataDir = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.3.0214" ?>
 	<?define RFiDGearExeSourcePath = "$(var.ProjectDir)..\RFiDGear\bin\Release\RFiDGear.exe" ?>
 	<?else ?>
 	<?define Win64 = "no" ?>
 	<?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
-	<?define ISLOG_ProgramDataDir = "C:\Program Files\Common Files\ISLOG\LibLogicalAccess\1.87.0.1024" ?>
+	<?define ISLOG_ProgramDataDir = "C:\Program Files\Common Files\ISLOG\LibLogicalAccess\1.87.3.0214" ?>
 	<?define RFiDGearExeSourcePath = "$(var.ProjectDir)..\RFiDGear\bin\Release\RFiDGear.exe" ?>
 	<?endif ?>
 	

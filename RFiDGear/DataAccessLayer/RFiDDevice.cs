@@ -32,7 +32,7 @@ namespace RFiDGear
 
 		public CARD_INFO CardInfo { get; private set; }
 
-		public byte[] DataBlockData { get; private set; }
+		public byte[] MifareClassicData { get; private set; }
 
 		public bool DataBlockSuccessfullyRead { get; private set; }
 
@@ -42,7 +42,7 @@ namespace RFiDGear
 
 		public bool SectorSuccesfullyAuth { get; private set; }
 
-		public byte[] DESFireFileData { get; private set; }
+		public byte[] MifareDESFireData { get; private set; }
 
 		public uint[] AppIDList { get; private set; }
 
@@ -160,7 +160,7 @@ namespace RFiDGear
 							{
 								try {
 									CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
-									
+									//readerUnit.Disconnect();
 									return ERROR.NoError;
 								}
 								catch (Exception e) {
@@ -582,7 +582,7 @@ namespace RFiDGear
 								{ //try to Auth with Keytype A
 									cmd.AuthenticateKeyNo((byte)(_blockNumber), (byte)0, MifareKeyType.KT_KEY_A); // FIXME same as '303
 
-									DataBlockData = (byte[])cmd.ReadBinary((byte)(_blockNumber), 48);
+									MifareClassicData = (byte[])cmd.ReadBinary((byte)(_blockNumber), 48);
 
 									return ERROR.NoError;
 								}
@@ -595,7 +595,7 @@ namespace RFiDGear
 									{
 										cmd.AuthenticateKeyNo((byte)(_blockNumber), (byte)0, MifareKeyType.KT_KEY_B); // FIXME same as '303
 
-										DataBlockData = (byte[])cmd.ReadBinary((byte)(_blockNumber), 48);
+										MifareClassicData = (byte[])cmd.ReadBinary((byte)(_blockNumber), 48);
 
 										return ERROR.NoError;
 									}
@@ -622,18 +622,112 @@ namespace RFiDGear
 			return ERROR.IOError;
 		}
 		
-		public ERROR WriteMiFareClassicWithMAD(int madApplicationID, string aKeyToUse, string bKeyToUse, string aKeyToWrite, string bKeyToWrite, byte[] buffer, bool useMAD = false)
+		public ERROR WriteMiFareClassicWithMAD(int _madApplicationID, int _madStartSector,
+		                                       string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
+		                                       string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
+		                                       byte[] buffer, byte _madGPB, bool _useMADToAuth = false)
 		{
 			var settings = new SettingsReaderWriter();
 			Sector = new MifareClassicSectorModel();
 
 			settings.ReadSettings();
 
-			var mAKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(aKeyToUse) ? aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKeyToUse) };
-			var mBKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(bKeyToUse) ? bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKeyToUse) };
+			var mAKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_aKeyToUse) ? _aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToUse) };
+			var mBKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_bKeyToUse) ? _bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToUse) };
 
-			var mAKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(aKeyToWrite) ? aKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKeyToWrite) };
-			var mBKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(bKeyToWrite) ? bKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKeyToWrite) };
+			var mAKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_aKeyToWrite) ? _aKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToWrite) };
+			var mBKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_bKeyToWrite) ? _bKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToWrite) };
+			
+			var madAKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madAKeyToUse) ? _madAKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToUse) };
+			var madBKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madBKeyToUse) ? _madBKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToUse) };
+
+			var madAKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madAKeyToWrite) ? _madAKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToWrite) };
+			var madBKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madBKeyToWrite) ? _madBKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToWrite) };
+				
+			try
+			{
+				if (readerUnit.ConnectToReader()) {
+					if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))	{
+						if (readerUnit.Connect())
+						{
+							ReaderUnitName = readerUnit.ConnectedName;
+							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+
+							card = readerUnit.GetSingleChip();
+
+							if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
+							{
+								try {
+									CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
+								}
+								catch (Exception e) {
+									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+								}
+							}
+
+							MifareLocation mlocation = new MifareLocationClass(); //card.CreateLocation() as MifareLocation;
+							mlocation.MADApplicationID = (ushort)_madApplicationID;
+							mlocation.UseMAD = true;
+							mlocation.Sector = _madStartSector;
+							
+							MifareAccessInfo aiToWrite = new MifareAccessInfoClass();
+							aiToWrite.UseMAD = true;
+							aiToWrite.MADKeyA.Value = _madAKeyToUse == _madAKeyToWrite ? madAKeyToUse.Value : madAKeyToWrite.Value; // only set new madkey if mad key has changed
+							aiToWrite.MADKeyB.Value = _madBKeyToUse == _madBKeyToWrite ? madBKeyToUse.Value : madBKeyToWrite.Value; // only set new madkey if mad key has changed
+							aiToWrite.KeyA.Value = _aKeyToUse == _aKeyToWrite ? mAKeyToUse.Value : mAKeyToWrite.Value;
+							aiToWrite.KeyB.Value = _bKeyToUse == _bKeyToWrite ? mBKeyToUse.Value : mBKeyToWrite.Value;
+							aiToWrite.MADGPB = _madGPB;
+							
+							var aiToUse = new MifareAccessInfoClass();
+							aiToUse.UseMAD = _useMADToAuth;
+							aiToUse.KeyA = mAKeyToUse;
+							aiToUse.KeyB = mBKeyToUse;
+							
+							if(_useMADToAuth)
+							{
+								aiToUse.MADKeyA = madAKeyToUse;
+								aiToUse.MADKeyB = madBKeyToUse;
+								aiToUse.MADGPB = _madGPB;
+							}
+
+							
+							var cmd = card.Commands as IMifareCommands;
+							var cardService = card.GetService(CardServiceType.CST_STORAGE) as IStorageCardService;
+							
+							try
+							{
+								cardService.WriteData(mlocation, aiToUse, aiToWrite, buffer, buffer.Length, CardBehavior.CB_AUTOSWITCHAREA);
+								
+							}
+							catch (Exception e)
+							{
+								return ERROR.AuthenticationError;
+							}
+							return ERROR.NoError;
+						}
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				return ERROR.AuthenticationError;
+			}
+			return ERROR.NoError;
+		}
+		
+		public ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length)
+		{
+			var settings = new SettingsReaderWriter();
+			Sector = new MifareClassicSectorModel();
+
+			settings.ReadSettings();
+
+			var mAKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_aKeyToUse) ? _aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToUse) };
+			var mBKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_bKeyToUse) ? _bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToUse) };
+
+			var madAKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madAKeyToUse) ? _madAKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToUse) };
+			var madBKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madBKeyToUse) ? _madBKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToUse) };
 			
 			try
 			{
@@ -656,59 +750,27 @@ namespace RFiDGear
 								}
 							}
 
-							SectorAccessBits sab = new SectorAccessBits();
-							sab.d_data_block0_access_bits.c1 = 1;
-							sab.d_data_block1_access_bits.c1 = 1;
-							sab.d_data_block2_access_bits.c1 = 1;
-							sab.d_sector_trailer_access_bits.c2 = 1;
-							sab.d_sector_trailer_access_bits.c3 = 1;
-							
 							MifareLocation mlocation = card.CreateLocation() as MifareLocation;
 							mlocation.MADApplicationID = (ushort)madApplicationID;
-							mlocation.UseMAD = useMAD;
-							//mlocation.Block = 0;
-							mlocation.Sector = 1;
-							//mlocation.Byte = 200;
+							mlocation.UseMAD = true;
 							
-							MifareAccessInfo aiToWrite = new MifareAccessInfoClass();
-							aiToWrite.UseMAD = true;
-							//aiToWrite.MADKeyA = mAKeyToUse;
-							//aiToWrite.MADKeyB = mBKeyToWrite;
-							//aiToWrite.SAB = sab;
-							//aiToWrite.KeyA = mAKeyToWrite;
-							//aiToWrite.KeyB = mAKeyToWrite;
-							aiToWrite.MADGPB = 0xc1;
-							
-							//aiToWrite.GenerateInfos();
+							var aiToUse = new MifareAccessInfoClass();
+							aiToUse.UseMAD = true;
+							aiToUse.KeyA = mAKeyToUse;
+							aiToUse.KeyB = mBKeyToUse;
+							aiToUse.MADKeyA = madAKeyToUse;
+							aiToUse.MADKeyB = madBKeyToUse;
 							
 							var cmd = card.Commands as IMifareCommands;
 							var cardService = card.GetService(CardServiceType.CST_STORAGE) as IStorageCardService;
 							
-							var aiToUse = new MifareAccessInfoClass();
-							aiToUse.UseMAD = false;
-							aiToUse.KeyA = mAKeyToUse;
-							aiToUse.KeyB = mBKeyToWrite;
-							aiToUse.SAB = sab;
-							//aiToUse.MADKeyA = mAKeyToUse;
-							//aiToUse.MADKeyB = mBKeyToWrite;
-							//aiToUse.MADGPB = 0xc1;
-							//card.CreateLocation();
-							
 							try
 							{
-								var x = card.CreateLocation() as MifareLocation;
-								var y = card.CreateAccessInfo() as MifareAccessInfo;
-								
-								//var data = cardService.ReadData(mlocation,aiToUse, 48, CardBehavior.CB_DEFAULT);
-								//RawFormat format = new RawFormat();
-								//IAccessControlCardService service = card.GetService(CardServiceType.CST_STORAGE) as IAccessControlCardService;
-								
-								cardService.WriteData(mlocation, aiToUse, aiToWrite, buffer, buffer.Length, CardBehavior.CB_AUTOSWITCHAREA);
-								
+								MifareClassicData = (byte[])cardService.ReadData(mlocation, aiToUse, _length, CardBehavior.CB_AUTOSWITCHAREA);
 							}
 							catch (Exception e)
 							{
-								return ERROR.NoError;
+								return ERROR.AuthenticationError;
 							}
 							return ERROR.NoError;
 						}
@@ -739,14 +801,26 @@ namespace RFiDGear
 						{
 							ReaderUnitName = readerUnit.ConnectedName;
 							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+							RawFormatClass format = new RawFormatClass();
+							
+							var chip = readerUnit.GetSingleChip() as IMifareUltralightChip;
 
-							card = readerUnit.GetSingleChip();
-
+							var service = chip.GetService(CardServiceType.CST_STORAGE) as StorageCardService;
+							
+							ILocation location = chip.CreateLocation() as ILocation;
+							
+							
+							MifareAccessInfoClass aiToUse = new MifareAccessInfoClass();
+							
+							object header = service.ReadDataHeader(location, aiToUse);
+							
 							if (card.Type == "MifareUltralight")
 							{
-								var cmd = card.Commands as MifareUltralightCCommands;// IMifareUltralightCommands;
-
-								object appIDsObject = cmd.ReadPages(0, 3);
+								object appIDsObject;
+								var cmd = card.Commands as MifareUltralightCommands;// IMifareUltralightCommands;
+								readerUnit.Disconnect();
+								if(readerUnit.Connect())
+									appIDsObject = cmd.ReadPages(0, 3);
 								//object res = cmd.ReadPage(4);
 
 								//appIDs = (appIDsObject as UInt32[]);
@@ -965,7 +1039,7 @@ namespace RFiDGear
 									
 									DesfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
 									
-									DESFireFileData = (byte[])cmd.ReadData((byte)_fileNo,0, DesfireFileSetting.dataFile.fileSize, EncryptionMode.CM_ENCRYPT);
+									MifareDESFireData = (byte[])cmd.ReadData((byte)_fileNo,0, DesfireFileSetting.dataFile.fileSize, EncryptionMode.CM_ENCRYPT);
 								}
 								catch
 								{
@@ -973,7 +1047,7 @@ namespace RFiDGear
 									
 									cmd.Authenticate((byte)_readKeyNo, aiToWrite.ReadKey);
 									
-									DESFireFileData = (byte[])cmd.ReadData((byte)_fileNo,0, (uint)_fileSize, EncryptionMode.CM_ENCRYPT);
+									MifareDESFireData = (byte[])cmd.ReadData((byte)_fileNo,0, (uint)_fileSize, EncryptionMode.CM_ENCRYPT);
 								}
 								
 								return ERROR.NoError;

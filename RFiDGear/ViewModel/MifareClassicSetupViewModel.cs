@@ -172,6 +172,8 @@ namespace RFiDGear.ViewModel
 		private DatabaseReaderWriter databaseReaderWriter;
 		private SettingsReaderWriter settings = new SettingsReaderWriter();
 
+		private byte madGPB = 0xC1;
+		
 		#endregion fields
 
 		#region constructors
@@ -274,15 +276,40 @@ namespace RFiDGear.ViewModel
 					ClassicKeyAKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[0];
 					ClassicKeyBKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[2];
 
+					ClassicKeyAKeyTarget = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[0];
+					ClassicKeyBKeyTarget = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[2];
+					
 					IsWriteFromMemoryToChipChecked = true;
 
 					SelectedTaskIndex = "0";
 					SelectedTaskDescription = "Enter a Description";
 				}
 				
-				MifareClassicKeys = CustomConverter.GenerateStringSequence(0,16).ToArray();
+				MifareClassicKeys = CustomConverter.GenerateStringSequence(0,39).ToArray();
+				MADVersions = CustomConverter.GenerateStringSequence(1,3).ToArray();
+				MADSectors = CustomConverter.GenerateStringSequence(1,39).ToArray();
+				AppNumber = "1";
 				
 				SelectedClassicSectorCurrent = "0";
+				SelectedMADSector = "1";
+				SelectedMADVersion = "1";
+				
+				ClassicMADKeyAKeyCurrent = "FFFFFFFFFFFF";
+				ClassicMADKeyBKeyCurrent = "FFFFFFFFFFFF";
+				ClassicMADKeyAKeyTarget = "FFFFFFFFFFFF";
+				ClassicMADKeyBKeyTarget = "FFFFFFFFFFFF";
+				
+				IsValidClassicKeyAKeyCurrent = null;
+				IsValidClassicKeyBKeyCurrent = null;
+				IsValidClassicMADKeyAKeyCurrent = null;
+				IsValidClassicMADKeyBKeyCurrent = null;
+				IsValidClassicKeyAKeyTarget = null;
+				IsValidClassicKeyBKeyTarget = null;
+				IsValidClassicMADKeyAKeyTarget = null;
+				IsValidClassicMADKeyBKeyTarget = null;
+				IsValidAppNumber = null;
+				
+				UseMAD = false;
 				
 				HasPlugins = items != null ? items.Any() : false;
 				
@@ -517,11 +544,467 @@ namespace RFiDGear.ViewModel
 
 		#endregion AccessBitsTab
 
+		#region MADEditor
+		
+		[XmlIgnore]
+		public string[] MADVersions { get; set; }
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public string SelectedMADVersion
+		{
+			get
+			{
+				return selectedMADVersion;
+			}
+			set
+			{
+				if(byte.TryParse(value, out selectedMADVersionAsByte))
+				{
+					selectedMADVersion = value;
+					
+					madGPB = (byte)((madGPB &= 0xFC) | selectedMADVersionAsByte);
+				}
+
+				RaisePropertyChanged("SelectedMADVersion");
+			}
+			
+		}
+		private string selectedMADVersion;
+		private byte selectedMADVersionAsByte;
+
+		
+		[XmlIgnore]
+		public string[] MADSectors { get; set; }
+		
+		/// <summary>
+		/// Change MAD GPB
+		/// </summary>
+		public bool IsMultiApplication
+		{
+			get { return isMultiApplication; }
+			set
+			{
+				isMultiApplication = value;
+				if (value)
+					madGPB |= 0x40;
+				else
+					madGPB &= 0xBF;
+				RaisePropertyChanged("IsMultiApplication");
+			}
+		} private bool isMultiApplication;
+		
+		/// <summary>
+		/// Do authenticate to MAD or not before performing a write operation?
+		/// </summary>
+		public bool UseMadAuth
+		{
+			get
+			{
+				return useMADAuth;
+			}
+			set
+			{
+				useMADAuth = value;
+				RaisePropertyChanged("UseMadAuth");
+			}
+		} private bool useMADAuth;
+		
+		/// <summary>
+		///
+		/// </summary>
+		public string FileSize
+		{
+			get { return fileSize; }
+			set
+			{
+				fileSize = value;
+				IsValidFileSize = (int.TryParse(value, out fileSizeAsInt) && fileSizeAsInt <= 4200);
+				
+				if(IsValidFileSize != false)
+				{
+					if(childNodeViewModelFromChip.Children.Any(x => x.MifareClassicMAD != null))
+					{
+						try
+						{
+							childNodeViewModelFromChip.Children.Single().MifareClassicMAD = new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt);
+							childNodeViewModelTemp.Children.Single().MifareClassicMAD = new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt);
+							
+							childNodeViewModelTemp.Children.Single().RequestRefresh();
+							childNodeViewModelFromChip.Children.Single().RequestRefresh();
+						}
+						catch
+						{
+							
+						}
+						
+					}
+					else
+					{
+						childNodeViewModelFromChip.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt),null));
+						childNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt), null));
+					}
+				}
+				
+				RaisePropertyChanged("FileSize");
+			}
+		}
+		private string fileSize;
+		private int fileSizeAsInt;
+
+		/// <summary>
+		///
+		/// </summary>
+		public bool? IsValidFileSize
+		{
+			get
+			{
+				return isValidFileSize;
+			}
+			set
+			{
+				isValidFileSize = value;
+				RaisePropertyChanged("IsValidFileSize");
+			}
+		} private bool? isValidFileSize;
+		
+		/// <summary>
+		///
+		/// </summary>
+		public string AppNumber
+		{
+			get { return appNumber; }
+			set
+			{
+				appNumber = value;
+				IsValidAppNumber = (int.TryParse(value, out appNumberAsInt) && appNumberAsInt <= 0xFFFF);
+				RaisePropertyChanged("AppNumberNew");
+			}
+		}
+		private string appNumber;
+		private int appNumberAsInt;
+
+		/// <summary>
+		///
+		/// </summary>
+		public bool? IsValidAppNumber
+		{
+			get
+			{
+				return isValidAppNumber;
+			}
+			set
+			{
+				isValidAppNumber = value;
+				RaisePropertyChanged("IsValidAppNumber");
+			}
+		}
+		private bool? isValidAppNumber;
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public string SelectedMADSector
+		{
+			get { return selectedMADSector; }
+			
+			set
+			{
+				if(int.TryParse(value,out selectedMADSectorAsInt))
+					selectedMADSector = value;
+				RaisePropertyChanged("SelectedMADSector");
+			}
+		}
+		private string selectedMADSector;
+		private int selectedMADSectorAsInt;
+		
+		/// <summary>
+		///
+		/// </summary>
+		public string ClassicMADKeyAKeyCurrent
+		{
+			get
+			{
+				return classicMADKeyAKeyCurrent;
+			}
+			set
+			{
+				classicMADKeyAKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+				
+				IsValidClassicMADKeyAKeyCurrent = (CustomConverter.IsInHexFormat(classicMADKeyAKeyCurrent) && classicMADKeyAKeyCurrent.Length == 12);
+
+				RaisePropertyChanged("ClassicMADKeyAKeyCurrent");
+			}
+		}
+		private string classicMADKeyAKeyCurrent;
+
+		/// <summary>
+		///
+		/// </summary>
+		public bool? IsValidClassicMADKeyAKeyCurrent
+		{
+			get
+			{
+				return isValidClassicMADKeyAKeyCurrent;
+			}
+			set
+			{
+				isValidClassicMADKeyAKeyCurrent = value;
+				RaisePropertyChanged("IsValidClassicMADKeyAKeyCurrent");
+			}
+		}
+		private bool? isValidClassicMADKeyAKeyCurrent;
+
+		/// <summary>
+		///
+		/// </summary>
+		public string ClassicMADKeyBKeyCurrent
+		{
+			get
+			{
+				return classicMADKeyBKeyCurrent;
+			}
+			set
+			{
+				classicMADKeyBKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+
+				IsValidClassicMADKeyBKeyCurrent = (CustomConverter.IsInHexFormat(classicMADKeyBKeyCurrent) && classicMADKeyBKeyCurrent.Length == 12);
+				
+				RaisePropertyChanged("ClassicMADKeyBKeyCurrent");
+			}
+		}
+		private string classicMADKeyBKeyCurrent;
+
+		/// <summary>
+		///
+		/// </summary>
+		public bool? IsValidClassicMADKeyBKeyCurrent
+		{
+			get
+			{
+				return isValidClassicMADKeyBKeyCurrent;
+			}
+			set
+			{
+				isValidClassicMADKeyBKeyCurrent = value;
+				RaisePropertyChanged("IsValidClassicMADKeyBKeyCurrent");
+			}
+		}
+		private bool? isValidClassicMADKeyBKeyCurrent;
+
+		/// <summary>
+		///
+		/// </summary>
+		public string ClassicMADKeyAKeyTarget
+		{
+			get
+			{
+				return classicMADKeyAKeyTarget;
+			}
+			set
+			{
+				classicMADKeyAKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+				
+				IsValidClassicMADKeyAKeyTarget = (CustomConverter.IsInHexFormat(classicMADKeyAKeyTarget) && classicMADKeyAKeyTarget.Length == 12);
+
+				RaisePropertyChanged("ClassicMADKeyAKeyTarget");
+			}
+		}
+		private string classicMADKeyAKeyTarget;
+
+		/// <summary>
+		///
+		/// </summary>
+		public bool? IsValidClassicMADKeyAKeyTarget
+		{
+			get
+			{
+				return isValidClassicMADKeyAKeyTarget;
+			}
+			set
+			{
+				isValidClassicMADKeyAKeyTarget = value;
+				RaisePropertyChanged("IsValidClassicMADKeyAKeyTarget");
+			}
+		}
+		private bool? isValidClassicMADKeyAKeyTarget;
+
+		/// <summary>
+		///
+		/// </summary>
+		public string ClassicMADKeyBKeyTarget
+		{
+			get
+			{
+				return classicMADKeyBKeyTarget;
+			}
+			set
+			{
+				classicMADKeyBKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+
+				IsValidClassicMADKeyBKeyTarget = (CustomConverter.IsInHexFormat(classicMADKeyBKeyTarget) && classicMADKeyBKeyTarget.Length == 12);
+				
+				RaisePropertyChanged("ClassicMADKeyBKeyTarget");
+			}
+		}
+		private string classicMADKeyBKeyTarget;
+
+		/// <summary>
+		///
+		/// </summary>
+		public bool? IsValidClassicMADKeyBKeyTarget
+		{
+			get
+			{
+				return isValidClassicMADKeyBKeyTarget;
+			}
+			set
+			{
+				isValidClassicMADKeyBKeyTarget = value;
+				RaisePropertyChanged("IsValidClassicMADKeyBKeyTarget");
+			}
+		}
+		private bool? isValidClassicMADKeyBKeyTarget;
+
+		/// <summary>
+		///
+		/// </summary>
+		public string ClassicKeyAKeyTarget
+		{
+			get
+			{
+				return classicKeyAKeyTarget;
+			}
+			set
+			{
+				classicKeyAKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+				
+				IsValidClassicKeyAKeyTarget = (CustomConverter.IsInHexFormat(classicKeyAKeyTarget) && classicKeyAKeyTarget.Length == 12);
+
+				RaisePropertyChanged("ClassicKeyAKeyTarget");
+			}
+		}
+		private string classicKeyAKeyTarget;
+
+		/// <summary>
+		///
+		/// </summary>
+		public bool? IsValidClassicKeyAKeyTarget
+		{
+			get
+			{
+				return isValidClassicKeyAKeyTarget;
+			}
+			set
+			{
+				isValidClassicKeyAKeyTarget = value;
+				RaisePropertyChanged("IsValidClassicKeyAKeyTarget");
+			}
+		}
+		private bool? isValidClassicKeyAKeyTarget;
+
+		/// <summary>
+		///
+		/// </summary>
+		public string ClassicKeyBKeyTarget
+		{
+			get
+			{
+				return classicKeyBKeyTarget;
+			}
+			set
+			{
+				classicKeyBKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+
+				IsValidClassicKeyBKeyTarget = (CustomConverter.IsInHexFormat(classicKeyBKeyTarget) && classicKeyBKeyTarget.Length == 12);
+				
+				RaisePropertyChanged("ClassicKeyBKeyTarget");
+			}
+		}
+		private string classicKeyBKeyTarget;
+
+		/// <summary>
+		///
+		/// </summary>
+		public bool? IsValidClassicKeyBKeyTarget
+		{
+			get
+			{
+				return isValidClassicKeyBKeyTarget;
+			}
+			set
+			{
+				isValidClassicKeyBKeyTarget = value;
+				RaisePropertyChanged("IsValidClassicKeyBKeyTarget");
+			}
+		}
+		private bool? isValidClassicKeyBKeyTarget;
+
+		#endregion
+		
 		#region KeySetup
 
 		[XmlIgnore]
 		public string[] MifareClassicKeys { get; set;}
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool UseMAD
+		{
+			get { return useMAD; }
+			set
+			{
+				useMAD = value;
+				if(UseMAD)
+				{
+					ChildNodeViewModelTemp.Children.Clear();
+					ChildNodeViewModelFromChip.Children.Clear();
+					
+					ChildNodeViewModelFromChip.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(0,1),this));
+					
+					ChildNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(0,1),this));
+				}
+				else
+				{
+					ChildNodeViewModelTemp.Children.Clear();
+					ChildNodeViewModelFromChip.Children.Clear();
+					
+					sectorModel = new MifareClassicSectorModel(4,
+					                                           AccessCondition_MifareClassicSectorTrailer.NotAllowed,
+					                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+					                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+					                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+					                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+					                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA);
 
+					sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block0, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+					sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block1, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+					sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block2, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+					sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.BlockAll, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+
+					childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(sectorModel, this);
+					childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, this);
+					
+					RaisePropertyChanged("ChildNodeViewModelFromChip");
+					RaisePropertyChanged("ChildNodeViewModelTemp");
+				}
+				
+				RaisePropertyChanged("UseMAD");
+				RaisePropertyChanged("UseMADInvert");
+			}
+		}
+		private bool useMAD;
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool UseMADInvert
+		{
+			get { return !UseMAD;}
+		}
+		
 		/// <summary>
 		///
 		/// </summary>
@@ -579,10 +1062,11 @@ namespace RFiDGear.ViewModel
 			}
 			set
 			{
-				classicKeyAKeyCurrent = value.ToUpper();
+				classicKeyAKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
 
-				IsValidClassicKeyAKeyCurrent = (CustomConverter.IsInHexFormat(value) && value.Length == 12);
-				if (IsValidClassicKeyAKeyCurrent && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
+				IsValidClassicKeyAKeyCurrent = (CustomConverter.IsInHexFormat(classicKeyAKeyCurrent) && classicKeyAKeyCurrent.Length == 12);
+				
+				if (IsValidClassicKeyAKeyCurrent != false && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
 				{
 					string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyANumberCurrentAsInt].AccessBits;
 					currentSectorTrailer = string.Join(",", new[]
@@ -594,7 +1078,7 @@ namespace RFiDGear.ViewModel
 
 					settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyANumberCurrentAsInt] = new MifareClassicDefaultKeys(selectedClassicKeyANumberCurrentAsInt, currentSectorTrailer);
 				}
-				else if (IsValidClassicKeyAKeyCurrent)
+				else if (IsValidClassicKeyAKeyCurrent != false)
 					sectorModel.KeyA = classicKeyAKeyCurrent;
 
 				RaisePropertyChanged("ClassicKeyAKeyCurrent");
@@ -605,7 +1089,7 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		///
 		/// </summary>
-		public bool IsValidClassicKeyAKeyCurrent
+		public bool? IsValidClassicKeyAKeyCurrent
 		{
 			get
 			{
@@ -617,7 +1101,7 @@ namespace RFiDGear.ViewModel
 				RaisePropertyChanged("IsValidClassicKeyAKeyCurrent");
 			}
 		}
-		private bool isValidClassicKeyAKeyCurrent;
+		private bool? isValidClassicKeyAKeyCurrent;
 
 		/// <summary>
 		///
@@ -630,10 +1114,10 @@ namespace RFiDGear.ViewModel
 			}
 			set
 			{
-				classicKeyBKeyCurrent = value.ToUpper();
+				classicKeyBKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
 
-				IsValidClassicKeyBKeyCurrent = (CustomConverter.IsInHexFormat(value) && value.Length == 12);
-				if (IsValidClassicKeyBKeyCurrent && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
+				IsValidClassicKeyBKeyCurrent = (CustomConverter.IsInHexFormat(classicKeyBKeyCurrent) && classicKeyBKeyCurrent.Length == 12);
+				if (IsValidClassicKeyBKeyCurrent != false && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
 				{
 					string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyBNumberCurrentAsInt].AccessBits;
 					currentSectorTrailer = string.Join(",", new[]
@@ -645,7 +1129,7 @@ namespace RFiDGear.ViewModel
 
 					settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyBNumberCurrentAsInt] = new MifareClassicDefaultKeys(selectedClassicKeyBNumberCurrentAsInt, currentSectorTrailer);
 				}
-				else if (IsValidClassicKeyBKeyCurrent)
+				else if (IsValidClassicKeyBKeyCurrent != false)
 					sectorModel.KeyB = classicKeyBKeyCurrent;
 
 				RaisePropertyChanged("ClassicKeyBKeyCurrent");
@@ -656,7 +1140,7 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		///
 		/// </summary>
-		public bool IsValidClassicKeyBKeyCurrent
+		public bool? IsValidClassicKeyBKeyCurrent
 		{
 			get
 			{
@@ -668,7 +1152,7 @@ namespace RFiDGear.ViewModel
 				RaisePropertyChanged("IsValidClassicKeyBKeyCurrent");
 			}
 		}
-		private bool isValidClassicKeyBKeyCurrent;
+		private bool? isValidClassicKeyBKeyCurrent;
 
 		/// <summary>
 		///
@@ -1075,61 +1559,6 @@ namespace RFiDGear.ViewModel
 		#region Commands
 
 		/// <summary>
-		/// return new RelayCommand<RFiDDevice>((_device) => OnNewCreateAppCommand(_device));
-		/// </summary>
-		public ICommand CreateAppCommand { get { return new RelayCommand(OnNewCreateAppCommand); } }
-		private void OnNewCreateAppCommand()
-		{
-			TaskErr = ERROR.Empty;
-
-			Task desfireTask =
-				new Task(() =>
-				         {
-				         	using (RFiDDevice device = RFiDDevice.Instance)
-				         	{
-				         		if (device != null)
-				         		{
-				         			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
-
-				         			//Mouse.OverrideCursor = Cursors.Wait;
-
-				         			device.WriteMiFareClassicWithMAD(0x0125,"ffffffffffff","ffffffffffff","ffffffffffff","ffffffffffff", new byte[] {0x44, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55, 0x55, 0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55,0x44, 0x55}, true); // a0a1a2a3a4a5
-
-				         			//RaisePropertyChanged("DataAsByteArray");
-
-				         			//Mouse.OverrideCursor = null;
-				         		}
-				         		else
-				         		{
-				         			TaskErr = ERROR.DeviceNotReadyError;
-				         			return;
-				         		}
-				         	}
-				         });
-
-			if (TaskErr == ERROR.Empty)
-			{
-				TaskErr = ERROR.DeviceNotReadyError;
-
-				desfireTask.ContinueWith((x) =>
-				                         {
-				                         	if (TaskErr == ERROR.NoError)
-				                         	{
-				                         		IsTaskCompletedSuccessfully = true;
-				                         	}
-				                         	else
-				                         	{
-				                         		IsTaskCompletedSuccessfully = false;
-				                         	}
-				                         });
-
-				desfireTask.Start();
-			}
-
-			return;
-		}
-		
-		/// <summary>
 		/// 
 		/// </summary>
 		public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
@@ -1145,51 +1574,95 @@ namespace RFiDGear.ViewModel
 				         	{
 				         		if(device != null && device.ReadChipPublic() == ERROR.NoError)
 				         		{
-				         			StatusText = "";
+				         			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
 				         			
-				         			
-				         			if (device.ReadMiFareClassicSingleSector(
-				         				selectedClassicSectorCurrentAsInt,
-				         				ClassicKeyAKeyCurrent,
-				         				ClassicKeyBKeyCurrent) == ERROR.NoError)
+				         			if(!useMAD)
 				         			{
-				         				StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
-
-				         				childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
-				         				childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
-				         				
-				         				StatusText = StatusText + string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
-				         				
-				         				for (int i = 0; i < device.Sector.DataBlock.Count; i++)
+				         				if (device.ReadMiFareClassicSingleSector(
+				         					selectedClassicSectorCurrentAsInt,
+				         					ClassicKeyAKeyCurrent,
+				         					ClassicKeyBKeyCurrent) == ERROR.NoError)
 				         				{
-				         					childNodeViewModelFromChip.Children[i].DataBlockNumber = i;
-				         					childNodeViewModelTemp.Children[i].DataBlockNumber = i;
 				         					
-				         					childNodeViewModelFromChip.Children[i].DataBlock.DataBlockNumberChipBased = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == i).DataBlockNumberChipBased;
+				         					childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
+				         					childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
 				         					
-				         					if (device.Sector.DataBlock[i].IsAuthenticated)
+				         					StatusText = StatusText + string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
+				         					
+				         					for (int i = 0; i < device.Sector.DataBlock.Count; i++)
 				         					{
-				         						StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n", DateTime.Now, device.Sector.DataBlock[i].DataBlockNumberChipBased, CustomConverter.HexToString(device.Sector.DataBlock[i].Data));
-				         						childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).DataBlockContent = device.Sector.DataBlock[i].Data;
-
-				         						childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).DataBlockContent = device.Sector.DataBlock[i].Data;
-
-				         						TaskErr = ERROR.NoError;
+				         						childNodeViewModelFromChip.Children[i].DataBlockNumber = i;
+				         						childNodeViewModelTemp.Children[i].DataBlockNumber = i;
+				         						
+				         						childNodeViewModelFromChip.Children[i].MifareClassicDataBlock.DataBlockNumberChipBased = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == i).DataBlockNumberChipBased;
+				         						
+				         						if (device.Sector.DataBlock[i].IsAuthenticated)
+				         						{
+				         							StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n", DateTime.Now, device.Sector.DataBlock[i].DataBlockNumberChipBased, CustomConverter.HexToString(device.Sector.DataBlock[i].Data));
+				         							childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = device.Sector.DataBlock[i].Data;
+				         							childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
+				         							
+				         							childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = device.Sector.DataBlock[i].Data;
+				         							childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
+				         							
+				         							TaskErr = ERROR.NoError;
+				         						}
+				         						else
+				         							StatusText = StatusText + string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i - 1].DataBlockNumberChipBased);
 				         					}
-				         					else
-				         						StatusText = StatusText + string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i - 1].DataBlockNumberChipBased);
+				         					
+				         					TaskErr = ERROR.NoError;
+
+
 				         				}
 				         				
-				         				TaskErr = ERROR.NoError;
-
-
+				         				else
+				         				{
+				         					StatusText = StatusText + string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
+				         					TaskErr = ERROR.AuthenticationError;
+				         					return;
+				         				}
 				         			}
+				         			
 				         			else
 				         			{
-				         				StatusText = StatusText + string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
-				         				TaskErr = ERROR.AuthenticationError;
-				         				return;
+				         				if (device.ReadMiFareClassicSingleSector(
+				         					0,
+				         					ClassicMADKeyAKeyCurrent,
+				         					ClassicMADKeyBKeyCurrent) == ERROR.NoError)
+				         				{
+				         					
+				         					StatusText = StatusText + string.Format("{0}: Successfully Authenticated to MAD\n", DateTime.Now);
+				         					
+				         					ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
+				         					ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
+				         					
+				         					if(device.ReadMiFareClassicWithMAD(appNumberAsInt, ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, ClassicMADKeyAKeyCurrent ,ClassicMADKeyBKeyCurrent, fileSizeAsInt) == ERROR.NoError)
+				         					{
+				         						ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
+				         						ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
+				         						
+				         						ChildNodeViewModelTemp.Children.Single().RequestRefresh();
+				         						ChildNodeViewModelFromChip.Children.Single().RequestRefresh();
+				         						
+				         						StatusText = StatusText + string.Format("{0}: Successfully Read Data from MAD\n", DateTime.Now);
+				         					}
+
+				         					
+				         					TaskErr = ERROR.NoError;
+				         					
+
+				         				}
+				         				
+				         				else
+				         				{
+				         					StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
+				         					TaskErr = ERROR.AuthenticationError;
+				         					return;
+				         				}
 				         			}
+
+
 				         		}
 				         		
 				         		else
@@ -1236,34 +1709,75 @@ namespace RFiDGear.ViewModel
 				         {
 				         	using (RFiDDevice device = RFiDDevice.Instance)
 				         	{
-				         		StatusText = "";
-
-				         		if (device != null)
+				         		StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+				         		
+				         		if(!UseMAD)
 				         		{
-				         			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
-
-				         			childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
-				         			childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
-				         			
-				         			if (device.WriteMiFareClassicSingleBlock(childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlock.DataBlockNumberChipBased,
-				         			                                         ClassicKeyAKeyCurrent,
-				         			                                         ClassicKeyBKeyCurrent,
-				         			                                         childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].DataBlockContent) == ERROR.NoError)
+				         			if (device != null)
 				         			{
-				         				StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
-				         				                                        DateTime.Now,
-				         				                                        childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
-				         				                                        CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].DataBlockContent));
-				         				TaskErr = ERROR.NoError;
+				         				childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
+				         				childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
+				         				
+				         				if (device.WriteMiFareClassicSingleBlock(childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.DataBlockNumberChipBased,
+				         				                                         ClassicKeyAKeyCurrent,
+				         				                                         ClassicKeyBKeyCurrent,
+				         				                                         childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data) == ERROR.NoError)
+				         				{
+				         					StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
+				         					                                        DateTime.Now,
+				         					                                        childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
+				         					                                        CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data));
+				         					TaskErr = ERROR.NoError;
+				         				}
+				         				else
+				         					TaskErr = ERROR.AuthenticationError;
+
 				         			}
 				         			else
-				         				TaskErr = ERROR.AuthenticationError;
-
+				         			{
+				         				StatusText = "Unable to Auth";
+				         				TaskErr = ERROR.DeviceNotReadyError;
+				         			}
 				         		}
+
 				         		else
 				         		{
-				         			StatusText = "Unable to Auth";
-				         			TaskErr = ERROR.DeviceNotReadyError;
+				         			if (device.ReadMiFareClassicSingleSector(
+				         				0,
+				         				ClassicMADKeyAKeyCurrent,
+				         				ClassicMADKeyBKeyCurrent) == ERROR.NoError)
+				         			{
+				         				
+				         				StatusText = StatusText + string.Format("{0}: Successfully Authenticated to MAD\n", DateTime.Now);
+				         				
+				         				ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
+				         				ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
+				         				
+				         				
+				         				
+				         				if(device.WriteMiFareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
+				         				                                    ClassicMADKeyAKeyCurrent ,ClassicMADKeyBKeyCurrent,
+				         				                                    ClassicMADKeyAKeyTarget, ClassicMADKeyBKeyTarget,
+				         				                                    ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent,
+				         				                                    ClassicKeyAKeyTarget, ClassicKeyBKeyTarget,
+				         				                                    ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data, 
+				         				                                    madGPB, UseMadAuth) == ERROR.NoError)
+				         				{
+				         					StatusText = StatusText + string.Format("{0}: Wrote n bytes to MAD ID x\n", DateTime.Now);
+				         				}
+
+				         				
+				         				TaskErr = ERROR.NoError;
+				         				
+
+				         			}
+				         			
+				         			else
+				         			{
+				         				StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
+				         				TaskErr = ERROR.AuthenticationError;
+				         				return;
+				         			}
 				         		}
 				         	}
 				         });

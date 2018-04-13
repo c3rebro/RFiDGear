@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <UserControl
 	x:Class="RFiDGear.View.TabPageMifareDesfireDataExplorerView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:RFiDGear" xmlns:vm="clr-namespace:RFiDGear.ViewModel" xmlns:v="clr-namespace:RFiDGear.View" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer" xmlns:islog="clr-namespace:LibLogicalAccess;assembly=Interop.LibLogicalAccess" xmlns:_3rdP="clr-namespace:RFiDGear._3rdParty">
 	<UserControl.Resources>

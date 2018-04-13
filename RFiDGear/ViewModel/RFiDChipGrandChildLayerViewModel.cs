@@ -1,6 +1,7 @@
 ﻿using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using MvvmDialogs.ViewModels;
+using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using System;
 using System.Collections.Generic;
@@ -22,34 +23,29 @@ namespace RFiDGear.ViewModel
 
 		public RFiDChipGrandChildLayerViewModel()
 		{
-			dataBlock = new MifareClassicDataBlockModel();
-			dataBlock.Data = new byte[16];
-			
-			desfireFile = new MifareDesfireFileModel();
-
 			children = new ObservableCollection<RFiDChipGrandGrandChildLayerViewModel>();
 		}
 
 		/// <summary>
 		/// Task Constructor
 		/// </summary>
-		/// <param name="_dataBlock"></param>
+		/// <param name="_mifareClassicDataBlock"></param>
 		/// <param name="_setupViewModel"></param>
-		public RFiDChipGrandChildLayerViewModel(MifareClassicDataBlockModel _dataBlock, MifareClassicSetupViewModel _setupViewModel)
+		public RFiDChipGrandChildLayerViewModel(MifareClassicDataBlockModel _mifareClassicDataBlock, MifareClassicSetupViewModel _setupViewModel)
 		{
-			if (_dataBlock != null && _dataBlock.Data != null)
-				dataBlock = _dataBlock;
+			if (_mifareClassicDataBlock != null && _mifareClassicDataBlock.Data != null)
+				mifareClassicDataBlock = _mifareClassicDataBlock;
 			else
 			{
-				dataBlock = new MifareClassicDataBlockModel();
-				dataBlock.Data = new byte[16];
+				mifareClassicDataBlock = new MifareClassicDataBlockModel();
+				mifareClassicDataBlock.Data = new byte[16];
 			}
 
 			setupViewModel = _setupViewModel;
 
 			IsVisible = true;
 
-			dataBlock.DataBlockNumberChipBased = _dataBlock.DataBlockNumberChipBased;
+			mifareClassicDataBlock.DataBlockNumberChipBased = _mifareClassicDataBlock.DataBlockNumberChipBased;
 
 			DataAsHexString = "00000000000000000000000000000000";
 			DataAsCharString = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
@@ -70,23 +66,22 @@ namespace RFiDGear.ViewModel
 		{
 			if (_dataBlock != null )
 			{
-				dataBlock = _dataBlock;
-				if(dataBlock.Data == null)
-					dataBlock.Data = new byte[16];
-				IsDataBlock = true;
+				mifareClassicDataBlock = _dataBlock;
+				if(mifareClassicDataBlock.Data == null)
+					mifareClassicDataBlock.Data = new byte[16];
 			}
 			
 			
 			else
 			{
-				dataBlock = new MifareClassicDataBlockModel();
-				dataBlock.Data = new byte[16];
+				mifareClassicDataBlock = new MifareClassicDataBlockModel();
+				mifareClassicDataBlock.Data = new byte[16];
 			}
 
 			IsVisible = true;
 
 			parent = _parentSector;
-			dataBlock.DataBlockNumberChipBased = _dataBlock.DataBlockNumberChipBased;
+			mifareClassicDataBlock.DataBlockNumberChipBased = _dataBlock.DataBlockNumberChipBased;
 
 			DataAsHexString = "00000000000000000000000000000000";
 			DataAsCharString = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
@@ -98,6 +93,11 @@ namespace RFiDGear.ViewModel
 			children = new ObservableCollection<RFiDChipGrandGrandChildLayerViewModel>();
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="_desfireFile"></param>
+		/// <param name="_parentSector"></param>
 		public RFiDChipGrandChildLayerViewModel(MifareDesfireFileModel _desfireFile, RFiDChipChildLayerViewModel _parentSector)
 		{
 			desfireFile = _desfireFile;
@@ -115,13 +115,43 @@ namespace RFiDGear.ViewModel
 			DataAsCharString = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 			
 			IsValidDataContent = null;
+			
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="_madApp"></param>
+		/// <param name="_setupViewModel"></param>
+		public RFiDChipGrandChildLayerViewModel(MifareClassicMADModel _madApp, MifareClassicSetupViewModel _setupViewModel)
+		{
+			mifareClassicMAD = _madApp;
+			children = new ObservableCollection<RFiDChipGrandGrandChildLayerViewModel>();
+			
+			setupViewModel = _setupViewModel;
+			
+			if (mifareClassicMAD == null)
+			{
+				mifareClassicMAD = new MifareClassicMADModel();
+			}
+			
+			mifareClassicMAD.Data = new byte[16];
+			DataAsHexString = "00000000000000000000000000000000";
+			DataAsCharString = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+			
+			IsValidDataContent = null;
+			
+		}
+
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="_displayItem"></param>
 		public RFiDChipGrandChildLayerViewModel(string _displayItem)
 		{
 			children = new ObservableCollection<RFiDChipGrandGrandChildLayerViewModel>();
 			grandChildNodeHeader = _displayItem;
-			IsDataBlock = false;
 			isVisible = false;
 		}
 
@@ -172,29 +202,43 @@ namespace RFiDGear.ViewModel
 		{
 			get
 			{
-				if (DataBlockContent != null && DataBlockContent.Length == 16 && dataBlockAsCharString.Length == 16)
+				if (mifareClassicDataBlock != null && mifareClassicDataBlock.Data.Length == 16 && dataBlockAsCharString.Length == 16)
 				{
-					char[] tempString = new char[DataBlockContent.Length];
-					for (int i = 0; i < DataBlockContent.Length; i++)
+					char[] tempString = new char[mifareClassicDataBlock.Data.Length];
+					for (int i = 0; i < mifareClassicDataBlock.Data.Length; i++)
 					{
-						if (DataBlockContent[i] < 27 | DataBlockContent[i] > 127)
+						if (mifareClassicDataBlock.Data[i] < 27 | mifareClassicDataBlock.Data[i] > 127)
 							tempString[i] = (char)248;
 						else
-							tempString[i] = (char)DataBlockContent[i];
+							tempString[i] = (char)mifareClassicDataBlock.Data[i];
 					}
 
 					dataBlockAsCharString = new string(tempString);
 				}
 				
-				else if(DataFileContent != null)
+				else if(desfireFile != null)
 				{
-					char[] tempString = new char[DataFileContent.Length];
-					for (int i = 0; i < DataFileContent.Length; i++)
+					char[] tempString = new char[desfireFile.Data.Length];
+					for (int i = 0; i < desfireFile.Data.Length; i++)
 					{
-						if (DataFileContent[i] < 27 | DataFileContent[i] > 127)
+						if (desfireFile.Data[i] < 27 | desfireFile.Data[i] > 127)
 							tempString[i] = (char)248;
 						else
-							tempString[i] = (char)DataFileContent[i];
+							tempString[i] = (char)desfireFile.Data[i];
+					}
+
+					dataBlockAsCharString = new string(tempString);
+				}
+
+				else if(mifareClassicMAD != null)
+				{
+					char[] tempString = new char[mifareClassicMAD.Data.Length];
+					for (int i = 0; i < mifareClassicMAD.Data.Length; i++)
+					{
+						if (mifareClassicMAD.Data[i] < 27 | mifareClassicMAD.Data[i] > 127)
+							tempString[i] = (char)248;
+						else
+							tempString[i] = (char)mifareClassicMAD.Data[i];
 					}
 
 					dataBlockAsCharString = new string(tempString);
@@ -207,38 +251,52 @@ namespace RFiDGear.ViewModel
 				
 				dataBlockAsCharString = value;
 
-				if (dataBlockAsCharString.Length == 16 || DesfireFile != null)
+				if (dataBlockAsCharString.Length == 16 || desfireFile != null || mifareClassicMAD != null)
 				{
 					char[] tempString = value.ToCharArray();
 
 					try
 					{
-						if (DataBlockContent != null)
+						if (mifareClassicDataBlock != null)
 						{
-							for (int i = 0; i < DataBlockContent.Length; i++)
+							for (int i = 0; i < mifareClassicDataBlock.Data.Length; i++)
 							{
-								if ( DataBlockContent != null &&
-								    ((char)DataBlockContent[i] != value[i])
+								if ( mifareClassicDataBlock.Data != null &&
+								    ((char)mifareClassicDataBlock.Data[i] != value[i])
 								    && (
-								    	(!((char)DataBlockContent[i] < 27 | (char)DataBlockContent[i] > 127))//do not perform overwrite datablockat position 'i' if non printable character...
+								    	(!((char)mifareClassicDataBlock.Data[i] < 27 | (char)mifareClassicDataBlock.Data[i] > 127))//do not perform overwrite datablockat position 'i' if non printable character...
 								    	|| (value[i] > 27 && value[i] < 127) //..except if a printable character was entered at the same position
 								    ))
 								{
-									DataBlockContent[i] = (byte)value[i];
+									mifareClassicDataBlock.Data[i] = (byte)value[i];
 								}
 							}
 						}
 						
-						else if (DataFileContent != null)
+						else if (desfireFile != null)
 						{
-							for (int i = 0; i < DataFileContent.Length; i++)
+							for (int i = 0; i < desfireFile.Data.Length; i++)
 							{
-								if ((char)DataFileContent[i] != value[i]
-								    && (!((char)DataFileContent[i] < 27 | (char)DataFileContent[i] > 127))//do not perform overwrite datablockat position 'i' if non printable character...
+								if ((char)desfireFile.Data[i] != value[i]
+								    && (!((char)desfireFile.Data[i] < 27 | (char)desfireFile.Data[i] > 127))//do not perform overwrite datablockat position 'i' if non printable character...
 								    || (value[i] > 27 && value[i] < 127) //..except if a printable character was entered at the same position
 								   )
 								{
-									DataFileContent[i] = (byte)value[i];
+									desfireFile.Data[i] = (byte)value[i];
+								}
+							}
+						}
+						
+						else if (mifareClassicMAD != null)
+						{
+							for (int i = 0; i < mifareClassicMAD.Data.Length; i++)
+							{
+								if ((char)mifareClassicMAD.Data[i] != value[i]
+								    && (!((char)mifareClassicMAD.Data[i] < 27 | (char)desfireFile.Data[i] > 127))//do not perform overwrite datablockat position 'i' if non printable character...
+								    || (value[i] > 27 && value[i] < 127) //..except if a printable character was entered at the same position
+								   )
+								{
+									mifareClassicMAD.Data[i] = (byte)value[i];
 								}
 							}
 						}
@@ -272,17 +330,21 @@ namespace RFiDGear.ViewModel
 		{
 			get
 			{
-				if (DataBlockContent != null &&
-				    DataBlockContent.Length == 16 &&
+				if (mifareClassicDataBlock != null &&
+				    mifareClassicDataBlock.Data.Length == 16 &&
 				    dataBlockAsHexString.Length == 32)
 				{
-					dataBlockAsHexString = CustomConverter.HexToString(DataBlockContent);
+					dataBlockAsHexString = CustomConverter.HexToString(mifareClassicDataBlock.Data);
 				}
-				else if(DataFileContent != null && (dataBlockAsHexString.Length % 2 == 0))
+				else if(desfireFile != null && (dataBlockAsHexString.Length % 2 == 0))
 				{
-					dataBlockAsHexString = CustomConverter.HexToString(DataFileContent);
+					dataBlockAsHexString = CustomConverter.HexToString(desfireFile.Data);
 				}
-
+				
+				else if(mifareClassicMAD != null && (dataBlockAsHexString.Length % 2 == 0))
+				{
+					dataBlockAsHexString = CustomConverter.HexToString(mifareClassicMAD.Data);
+				}
 				return dataBlockAsHexString;
 			}
 			set
@@ -291,15 +353,21 @@ namespace RFiDGear.ViewModel
 				
 				dataBlockAsHexString = value;
 				
-				if(DataBlockContent != null && value.Length == 32 && CustomConverter.IsInHexFormat(value))
+				if(mifareClassicDataBlock != null && value.Length == 32 && CustomConverter.IsInHexFormat(value))
 				{
-					DataBlockContent = CustomConverter.GetBytes(value, out discardedChars);
+					mifareClassicDataBlock.Data = CustomConverter.GetBytes(value, out discardedChars);
 					IsValidDataContent = null;
 				}
 
-				else if(DataFileContent != null && (dataBlockAsHexString.Length % 2 == 0))
+				else if(mifareClassicMAD != null && (dataBlockAsHexString.Length % 2 == 0))
 				{
-					DataFileContent = CustomConverter.GetBytes(value, out discardedChars);
+					mifareClassicMAD.Data = CustomConverter.GetBytes(value, out discardedChars);
+					IsValidDataContent = null;
+				}
+				
+				else if(desfireFile != null && (dataBlockAsHexString.Length % 2 == 0))
+				{
+					desfireFile.Data = CustomConverter.GetBytes(value, out discardedChars);
 					IsValidDataContent = null;
 				}
 				
@@ -333,44 +401,21 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		/// 
 		/// </summary>
-		[XmlIgnore]
-		public byte[] DataBlockContent
+		public MifareClassicMADModel MifareClassicMAD
 		{
-			get { return dataBlock != null ? dataBlock.Data : null; }       //_dataBlock != null ? _dataBlock.Data : new byte[16]; }
-			set
-			{
-				dataBlock.Data = value;
-				RaisePropertyChanged("DataBlockContent");
-				RaisePropertyChanged("DataAsHexString");
-				RaisePropertyChanged("DataAsCharString");
-			}
-		}
+			get { return mifareClassicMAD; }
+			set { mifareClassicMAD = value; }
+		} private MifareClassicMADModel mifareClassicMAD;
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		public MifareClassicDataBlockModel MifareClassicDataBlock
+		{
+			get { return mifareClassicDataBlock; }
+			set { mifareClassicDataBlock = value; }
+		} private MifareClassicDataBlockModel mifareClassicDataBlock;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public MifareClassicDataBlockModel DataBlock
-		{
-			get { return dataBlock; }
-			set { dataBlock = value; }
-		} private MifareClassicDataBlockModel dataBlock;
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		[XmlIgnore]
-		public byte[] DataFileContent
-		{
-			get { return desfireFile != null ? desfireFile.Data : new byte[16]; }
-			set
-			{
-				desfireFile.Data = value;
-				RaisePropertyChanged("DataFileContent");
-				RaisePropertyChanged("DataAsHexString");
-				RaisePropertyChanged("DataAsCharString");
-			}
-		}
-		
 		/// <summary>
 		/// 
 		/// </summary>
@@ -380,14 +425,12 @@ namespace RFiDGear.ViewModel
 			set
 			{
 				desfireFile = value;
-				//DataBlockContent = value.Data;
 				RaisePropertyChanged("DesfireFile");
-				RaisePropertyChanged("DataFileContent");
 				RaisePropertyChanged("DataAsHexString");
 				RaisePropertyChanged("DataAsCharString");
 			}
 		} private MifareDesfireFileModel desfireFile;
-
+		
 		/// <summary>
 		/// 
 		/// </summary>
@@ -405,8 +448,10 @@ namespace RFiDGear.ViewModel
 		{
 			get
 			{
-				if (dataBlock != null)
-					grandChildNodeHeader = string.Format("Block: [{0}; ({1})]", dataBlock.DataBlockNumberSectorBased, dataBlock.DataBlockNumberChipBased);
+				if (mifareClassicDataBlock != null)
+					grandChildNodeHeader = string.Format("Block: [{0}; ({1})]", mifareClassicDataBlock.DataBlockNumberSectorBased, mifareClassicDataBlock.DataBlockNumberChipBased);
+				else if(mifareClassicMAD != null)
+					grandChildNodeHeader = string.Format("MAD ID: [{0}]", mifareClassicMAD.MADApp.ToString("D3"));
 				else if (desfireFile != null)
 					grandChildNodeHeader = string.Format("File No.: [{0}]", DesfireFile.FileID.ToString("D3")); //dataBlockContent.dataBlockNumber.ToString("D3"), dataBlockContent.dataBlockNumber+16.ToString("D3")
 
@@ -492,10 +537,11 @@ namespace RFiDGear.ViewModel
 		/// </summary>
 		public int DataBlockNumber
 		{
-			get { return dataBlock != null ? dataBlock.DataBlockNumberSectorBased : 0; }
+			get { return mifareClassicDataBlock != null ? mifareClassicDataBlock.DataBlockNumberSectorBased : 0; }
 			set
 			{
-				dataBlock.DataBlockNumberSectorBased = value;
+				if(mifareClassicDataBlock != null)
+					mifareClassicDataBlock.DataBlockNumberSectorBased = value;
 				RaisePropertyChanged("DataBlockNumber");
 				RaisePropertyChanged("GrandChildNodeHeader");
 			}
@@ -592,16 +638,6 @@ namespace RFiDGear.ViewModel
 			}
 		} private bool? isVisible;
 
-		public bool IsDataBlock
-		{
-			get { return isDataBlock; }
-			set
-			{
-				isDataBlock = value;
-				RaisePropertyChanged("IsDataBlock");
-			}
-		} private bool isDataBlock;
-
 		#endregion View Switches
 
 		#region IUserDialogViewModel Implementation
@@ -609,6 +645,13 @@ namespace RFiDGear.ViewModel
 		[XmlIgnore]
 		public bool IsModal { get; private set; }
 
+		public virtual void RequestRefresh()
+		{
+			RaisePropertyChanged("DataAsHexString");
+			RaisePropertyChanged("DataAsCharString");
+			RaisePropertyChanged("GrandChildNodeHeader");
+		}
+		
 		public virtual void RequestClose()
 		{
 			if (this.OnCloseRequest != null)

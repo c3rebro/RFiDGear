@@ -431,7 +431,7 @@ namespace RFiDGear.ViewModel
 				{
 					appNumberNew = value.ToUpper();
 				}
-				IsValidAppNumberNew = (int.TryParse(value, out appNumberNewAsInt) && appNumberNewAsInt <= 65535);
+				IsValidAppNumberNew = (int.TryParse(value, out appNumberNewAsInt) && appNumberNewAsInt <= 0xFFFFFF);
 				RaisePropertyChanged("AppNumberNew");
 			}
 		}
@@ -1678,13 +1678,13 @@ namespace RFiDGear.ViewModel
 				         					                                     DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType, selectedDesfireWriteKeyNumberAsInt,
 				         					                                     EncryptionMode.CM_ENCRYPT, FileNumberCurrentAsInt, AppNumberCurrentAsInt, FileSizeCurrentAsInt) == ERROR.NoError)
 				         					{
-				         						FileSizeCurrent = device.DESFireFileData.Length.ToString();
+				         						FileSizeCurrent = device.MifareDESFireData.Length.ToString();
 				         						
 				         						StatusText += string.Format("{0}: Successfully Read {2} Bytes Data from FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
 				         						
-				         						childNodeViewModelFromChip.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel(device.DESFireFileData, (byte)FileNumberCurrentAsInt);
+				         						childNodeViewModelFromChip.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
 				         						
-				         						childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel(device.DESFireFileData, (byte)FileNumberCurrentAsInt);
+				         						childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
 
 				         						RaisePropertyChanged("ChildNodeViewModelTemp");
 				         						RaisePropertyChanged("ChildNodeViewModelFromChip");
@@ -1807,7 +1807,7 @@ namespace RFiDGear.ViewModel
 				         					                                      DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent,
 				         					                                      DesfireReadKeyCurrent, SelectedDesfireReadKeyEncryptionType, selectedDesfireReadKeyNumberAsInt,
 				         					                                      DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType, selectedDesfireWriteKeyNumberAsInt,
-				         					                                      EncryptionMode.CM_ENCRYPT, FileNumberCurrentAsInt, AppNumberCurrentAsInt, childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DataFileContent) == ERROR.NoError)
+				         					                                      EncryptionMode.CM_ENCRYPT, FileNumberCurrentAsInt, AppNumberCurrentAsInt, childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile.Data) == ERROR.NoError)
 				         					{
 				         						StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
 				         						TaskErr = ERROR.NoError;

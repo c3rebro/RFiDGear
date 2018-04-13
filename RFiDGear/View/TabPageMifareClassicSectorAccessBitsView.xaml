@@ -30,11 +30,11 @@
 			Grid.Column="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition
-					Width="*" />
+					Width="0.55*" />
                 <ColumnDefinition
 					Width="5" />
                 <ColumnDefinition
-					Width="*" />
+					Width="0.45*" />
             </Grid.ColumnDefinitions>
             <GridSplitter
 				ResizeBehavior="PreviousAndNext"

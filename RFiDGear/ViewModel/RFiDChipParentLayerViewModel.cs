@@ -49,6 +49,16 @@ namespace RFiDGear.ViewModel
 			mifareDesfireUidModel = new MifareDesfireChipModel();
 		}
 
+		public RFiDChipParentLayerViewModel(string _text)
+		{
+			ID = new Random().Next();
+
+			mifareClassicUidModel = new MifareClassicChipModel();
+			mifareDesfireUidModel = new MifareDesfireChipModel();
+			
+			ParentNodeHeader = _text;
+		}
+		
 		public RFiDChipParentLayerViewModel(MifareClassicChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
 		{
 			ID = new Random().Next();
@@ -175,13 +185,13 @@ namespace RFiDGear.ViewModel
 							break;
 						}
 
-						foreach (RFiDChipGrandChildLayerViewModel gcVM in cnVM.Children.Where(x => x.IsDataBlock))
+						foreach (RFiDChipGrandChildLayerViewModel gcVM in cnVM.Children.Where(x => x.MifareClassicDataBlock != null))
 						{
 							if (device.Sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber)) // (gcVM.DataBlockContent != null)
 							{
 								if (device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data != null)
 								{
-									gcVM.DataBlockContent = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data; //device.currentSector[gcVM.DataBlockNumber];
+									gcVM.MifareClassicDataBlock.Data = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data; //device.currentSector[gcVM.DataBlockNumber];
 									gcVM.IsAuthenticated = true;
 								}
 								else
@@ -517,7 +527,7 @@ namespace RFiDGear.ViewModel
 						{
 							for(int j = 0; j < _children[i].Children.Count(); j++)
 							{
-								_children[i].Children[j].DataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].DataBlock.DataBlockNumberSectorBased);
+								_children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
 							}
 						}
 
@@ -537,7 +547,7 @@ namespace RFiDGear.ViewModel
 						{
 							for(int j = 0; j < _children[i].Children.Count(); j++)
 							{
-								_children[i].Children[j].DataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].DataBlock.DataBlockNumberSectorBased);
+								_children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
 							}
 						}
 					}
@@ -556,7 +566,7 @@ namespace RFiDGear.ViewModel
 						{
 							for(int j = 0; j < _children[i].Children.Count(); j++)
 							{
-								_children[i].Children[j].DataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].DataBlock.DataBlockNumberSectorBased);
+								_children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
 							}
 						}
 					}
