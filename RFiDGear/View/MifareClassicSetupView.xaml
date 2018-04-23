@@ -4,7 +4,8 @@
 	Title="{Binding Caption}"
 	MinWidth="1000"
 	WindowStartupLocation="CenterOwner"
-	MinHeight="650"
+	MinHeight="850"
+	Width="1100"
 	mc:Ignorable="d">
 	<Window.Resources>
 		<BooleanToVisibilityConverter x:Key="BoolToVisConv"/>

@@ -11,6 +11,7 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -70,6 +71,8 @@ namespace RFiDGear.ViewModel
 				CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
 					? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
 					: settings.DefaultSpecification.DefaultReaderName;
+				
+				culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 			}
 
 			updater = new Updater();
@@ -135,7 +138,9 @@ namespace RFiDGear.ViewModel
 		#endregion Dialogs
 
 		#region Localization
-
+		[ExportViewModel("Culture")]
+		private CultureInfo culture;		
+		
 		private ResourceLoader resLoader;
 		
 		/// <summary>

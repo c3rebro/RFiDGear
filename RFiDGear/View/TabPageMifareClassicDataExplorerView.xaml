@@ -114,41 +114,89 @@
 								ConverterParameter='dataGridHeaderMainWindowEventName',
 								Source={StaticResource proxy}}-->
 						<DataGrid.Columns>
-							<DataGridTextColumn
-								Header="Hex"
-								Binding="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-								FontFamily="Lucida Console"
-								IsReadOnly="True">
-								<DataGridTextColumn.ElementStyle>
-									<Style
-										TargetType="{x:Type TextBlock}">
-										<Setter
-											Property="VerticalAlignment"
-											Value="Center" />
-										<Setter
-											Property="HorizontalAlignment"
-											Value="Center" />
-									</Style>
-								</DataGridTextColumn.ElementStyle>
-							</DataGridTextColumn>
-							<DataGridTextColumn
-								Header="String"
-								Binding="{Binding DataAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-								FontFamily="Lucida Console"
-								IsReadOnly="True">
-								<DataGridTextColumn.ElementStyle>
-									<Style
-										TargetType="{x:Type TextBlock}">
-										<Setter
-											Property="VerticalAlignment"
-											Value="Center" />
-										<Setter
-											Property="HorizontalAlignment"
-											Value="Center" />
-										<!--<EventSetter Event="KeyDown" Handler="{Binding StaticResource proxy}" />-->
-									</Style>
-								</DataGridTextColumn.ElementStyle>
-							</DataGridTextColumn>
+							<DataGridTemplateColumn
+								Header="Hex">
+								<DataGridTemplateColumn.CellTemplate>
+									<DataTemplate>
+										<_3rdP:SelectionBindingTextBox
+											Text="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+											VerticalContentAlignment="Top"
+											HorizontalContentAlignment="Left"
+											BindableSelectionStart="{Binding SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+											BindableSelectionLength="{Binding SelectedDataLength, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+											FontFamily="Lucida Console"
+											BorderThickness="0"
+											IsFocused="{Binding IsFocused}">
+											<_3rdP:SelectionBindingTextBox.Style>
+												<Style
+													TargetType="{x:Type TextBox}">
+													<Setter
+														Property="TextWrapping"
+														Value="Wrap" />
+													<Setter
+														Property="MaxWidth"
+														Value="250"/>
+													<Setter
+														Property="VerticalAlignment"
+														Value="Top" />
+													<Setter
+														Property="HorizontalAlignment"
+														Value="Left" />
+													<Setter
+														Property="IsReadOnly"
+														Value="True"/>
+												</Style>
+											</_3rdP:SelectionBindingTextBox.Style>
+										</_3rdP:SelectionBindingTextBox>
+									</DataTemplate>
+								</DataGridTemplateColumn.CellTemplate>
+							</DataGridTemplateColumn>
+							<DataGridTemplateColumn
+								Header="String">
+								<DataGridTemplateColumn.CellTemplate>
+									<DataTemplate>
+										<_3rdP:SelectionBindingTextBox
+											Text="{Binding DataAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+											MaxWidth="180"
+											MaxHeight="100"
+											VerticalContentAlignment="Top"
+											HorizontalContentAlignment="Left"
+											FontFamily="Lucida Console"
+											BorderThickness="0">
+											<_3rdP:SelectionBindingTextBox.Style>
+												<Style
+													TargetType="{x:Type TextBox}">
+													<Setter
+														Property="TextWrapping"
+														Value="Wrap" />
+													<Setter
+														Property="VerticalScrollBarVisibility"
+														Value="Auto" />
+													<Setter
+														Property="IsReadOnly"
+														Value="True" />
+													<!--<Style.Triggers>
+														<DataTrigger
+															Binding="{Binding IsValidSelectedDataIndexAndLength}"
+															Value="True">
+															<Setter
+																Property="Foreground"
+																Value="Black" />
+														</DataTrigger>
+														<DataTrigger
+															Binding="{Binding IsValidSelectedDataIndexAndLength}"
+															Value="False">
+															<Setter
+																Property="Foreground"
+																Value="Red" />
+														</DataTrigger>
+													</Style.Triggers>-->
+												</Style>
+											</_3rdP:SelectionBindingTextBox.Style>
+										</_3rdP:SelectionBindingTextBox>
+									</DataTemplate>
+								</DataGridTemplateColumn.CellTemplate>
+							</DataGridTemplateColumn>
 						</DataGrid.Columns>
 					</DataGrid>
 				</Grid>
@@ -230,8 +278,8 @@
 									<DataTemplate>
 										<_3rdP:SelectionBindingTextBox
 											Text="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-											VerticalContentAlignment="Center"
-											HorizontalContentAlignment="Center"
+											VerticalContentAlignment="Top"
+											HorizontalContentAlignment="Left"
 											BindableSelectionStart="{Binding SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 											BindableSelectionLength="{Binding SelectedDataLength, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 											FontFamily="Lucida Console"
@@ -240,6 +288,18 @@
 											<_3rdP:SelectionBindingTextBox.Style>
 												<Style
 													TargetType="{x:Type TextBox}">
+													<Setter
+														Property="TextWrapping"
+														Value="Wrap" />
+													<Setter
+														Property="MaxWidth"
+														Value="250"/>
+													<Setter
+														Property="VerticalAlignment"
+														Value="Top" />
+													<Setter
+														Property="HorizontalAlignment"
+														Value="Left" />
 													<Style.Triggers>
 														<DataTrigger
 															Binding="{Binding IsValidSelectedDataIndexAndLength}"
@@ -262,26 +322,49 @@
 									</DataTemplate>
 								</DataGridTemplateColumn.CellTemplate>
 							</DataGridTemplateColumn>
-							<DataGridTextColumn
-								Header="String"
-								Binding="{Binding DataAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-								FontFamily="Lucida Console">
-								<DataGridTextColumn.ElementStyle>
-									<Style
-										TargetType="{x:Type TextBlock}">
-										<Setter
-											Property="VerticalAlignment"
-											Value="Center" />
-										<Setter
-											Property="FontFamily"
-											Value="Lucida Console" />
-										<Setter
-											Property="HorizontalAlignment"
-											Value="Center" />
-										<!--<EventSetter Event="KeyDown" Handler="{Binding StaticResource proxy}" />-->
-									</Style>
-								</DataGridTextColumn.ElementStyle>
-							</DataGridTextColumn>
+							<DataGridTemplateColumn
+								Header="String">
+								<DataGridTemplateColumn.CellTemplate>
+									<DataTemplate>
+										<_3rdP:SelectionBindingTextBox
+											Text="{Binding DataAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+											MaxWidth="180"
+											MaxHeight="100"
+											VerticalContentAlignment="Top"
+											HorizontalContentAlignment="Left"
+											FontFamily="Lucida Console"
+											BorderThickness="0">
+											<_3rdP:SelectionBindingTextBox.Style>
+												<Style
+													TargetType="{x:Type TextBox}">
+													<Setter
+														Property="TextWrapping"
+														Value="Wrap" />
+													<Setter
+														Property="VerticalScrollBarVisibility"
+														Value="Auto" />
+													<!--<Style.Triggers>
+														<DataTrigger
+															Binding="{Binding IsValidSelectedDataIndexAndLength}"
+															Value="True">
+															<Setter
+																Property="Foreground"
+																Value="Black" />
+														</DataTrigger>
+														<DataTrigger
+															Binding="{Binding IsValidSelectedDataIndexAndLength}"
+															Value="False">
+															<Setter
+																Property="Foreground"
+																Value="Red" />
+														</DataTrigger>
+													</Style.Triggers>-->
+												</Style>
+											</_3rdP:SelectionBindingTextBox.Style>
+										</_3rdP:SelectionBindingTextBox>
+									</DataTemplate>
+								</DataGridTemplateColumn.CellTemplate>
+							</DataGridTemplateColumn>
 						</DataGrid.Columns>
 					</DataGrid>
 				</Grid>

@@ -59,7 +59,7 @@ public sealed class MefHelper : IDisposable
         }
 
         #if (DEBUG)
-        _ExtensionsPath = Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).ToString()).ToString()).ToString()).ToString(), @"VCNEditor\bin\Debug");
+        _ExtensionsPath = Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).ToString()).ToString()).ToString()).ToString()).ToString(), @"VCNEditor\bin\Debug");
         #endif
     }
 

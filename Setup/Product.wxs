@@ -177,9 +177,9 @@
 						<!-- Main program file -->
 						<!-- Configuration file -->
 						<!--<Component Id="uberAgent.conf_comp" Guid="7448780e-b66a-43d3-be5a-eeba38a821ef">
-																																	<File Source="$(var.ProjectDir)..\uberAgent\Config file\Standalone mode\uberAgent.conf" Id="uberAgentConf" KeyPath="yes" />
-																																	<IniFile Id="ConfigFile" Action="addLine" Directory="INSTALLDIR" Name="uberAgent.conf" Section="Receiver" Key="Servers" Value="[SERVERS]" />
-																																</Component>-->
+																																			<File Source="$(var.ProjectDir)..\uberAgent\Config file\Standalone mode\uberAgent.conf" Id="uberAgentConf" KeyPath="yes" />
+																																			<IniFile Id="ConfigFile" Action="addLine" Directory="INSTALLDIR" Name="uberAgent.conf" Section="Receiver" Key="Servers" Value="[SERVERS]" />
+																																		</Component>-->
 						<Component Id="GalaSoftMvvmLightDll" Guid="40A4382E-00AA-479A-923F-0B45401700BB" DiskId="1">
 							<File Id="GalaSoft.MvvmLight.dll" Name="GalaSoft.MvvmLight.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.dll" KeyPath="yes" />
 						</Component>
@@ -232,23 +232,33 @@
 					<Directory Id="RFiDGearExtensionsFolder" Name="Extensions">
 						<Directory Id="RFiDGearExtionsVCNEditor" Name="VCNEditor">
 							<Component Id="ByteArrayDll" Guid="0907B20F-F549-4005-89A2-645C550BB7E7" DiskId="1">
-								<File Id="ByteArray.dll" Name="ByteArray.dll" Source="..\VCNEditor\bin\Release\ByteArray.dll" KeyPath="yes" />
+								<File Id="ByteArray.dll" Name="ByteArray.dll" Source="..\..\VCNEditor\bin\Release\ByteArray.dll" KeyPath="yes" />
 							</Component>
 							<Component Id="VCNEditorDll" Guid="DF58305F-6D10-49D0-865E-F0DC41224925" DiskId="1">
-								<File Id="VCNEditor.dll" Name="VCNEditor.dll" Source="..\VCNEditor\bin\Release\VCNEditor.dll" KeyPath="yes" />
+								<File Id="VCNEditor.dll" Name="VCNEditor.dll" Source="..\..\VCNEditor\bin\Release\VCNEditor.dll" KeyPath="yes" />
 							</Component>
 							<Component Id="ReleaseGalaSoftMvvmLightDll" Guid="3F4A8963-C15E-449B-B701-CC7A680CAB6E" DiskId="1">
-								<File Id="Release.GalaSoft.MvvmLight.dll" Name="GalaSoft.MvvmLight.dll" Source="..\VCNEditor\bin\Release\GalaSoft.MvvmLight.dll" KeyPath="yes" />
+								<File Id="Release.GalaSoft.MvvmLight.dll" Name="GalaSoft.MvvmLight.dll" Source="..\..\VCNEditor\bin\Release\GalaSoft.MvvmLight.dll" KeyPath="yes" />
 							</Component>
 							<Component Id="ReleaseMVVMDialogsDll" Guid="5118101C-03AA-4014-A620-513D2E581042" DiskId="1">
-								<File Id="Release.MVVMDialogs.dll" Name="MVVMDialogs.dll" Source="..\VCNEditor\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
+								<File Id="Release.MVVMDialogs.dll" Name="MVVMDialogs.dll" Source="..\..\VCNEditor\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
 							</Component>
 							<Component Id="ReleasePluginSystemDll" Guid="AF8C7A46-7867-47C5-9D02-533D7808B48F" DiskId="1">
-								<File Id="Release.PluginSystem.dll" Name="PluginSystem.dll" Source="..\VCNEditor\bin\Release\PluginSystem.dll" KeyPath="yes" />
+								<File Id="Release.PluginSystem.dll" Name="PluginSystem.dll" Source="..\..\VCNEditor\bin\Release\PluginSystem.dll" KeyPath="yes" />
 							</Component>
 							<Component Id="ReleaseSystemWindowsInteractivityDll" Guid="D87D399C-EC03-4B71-BE10-C7E8477D6325" DiskId="1">
-								<File Id="Release.System.Windows.Interactivity.dll" Name="System.Windows.Interactivity.dll" Source="..\VCNEditor\bin\Release\System.Windows.Interactivity.dll" KeyPath="yes" />
+								<File Id="Release.System.Windows.Interactivity.dll" Name="System.Windows.Interactivity.dll" Source="..\..\VCNEditor\bin\Release\System.Windows.Interactivity.dll" KeyPath="yes" />
 							</Component>
+							<Directory Id="de_DE" Name="de-DE">
+								<Component Id="VCNEditorresourcesDll" Guid="7748ED31-8581-46D7-9D72-49631DF34E8C" DiskId="1">
+									<File Id="VCNEditor.resources.dll" Name="VCNEditor.resources.dll" Source="..\..\VCNEditor\bin\Release\de-DE\VCNEditor.resources.dll" KeyPath="yes" />
+								</Component>
+							</Directory>
+							<Directory Id="en_US" Name="en-US">
+								<Component Id="En_USVCNEditorresourcesDll" Guid="6FE862FD-7B7D-4F77-BC0F-6884B5A68235" DiskId="1">
+									<File Id="en_US.VCNEditor.resources.dll" Name="VCNEditor.resources.dll" Source="..\..\VCNEditor\bin\Release\en-US\VCNEditor.resources.dll" KeyPath="yes" />
+								</Component>
+							</Directory>
 						</Directory>
 					</Directory>
 				</Directory>
@@ -256,7 +266,7 @@
 			<!-- Registry entries -->
 			<Component Id="RegValInstallLocation_comp" Guid="7448780e-b66a-43d3-be5a-eeba38a821ee">
 				<!-- Do NOT use the application's default registry key here, because THIS key will be removed on uninstall
-																										                 (important when installing a newer version, because that is uninstall followed by install) -->
+																												                 (important when installing a newer version, because that is uninstall followed by install) -->
 				<RegistryKey Root="HKLM" Key="Software\!(loc.ManufacturerName)\InstalledProducts\!(loc.ApplicationName)">
 					<RegistryValue Name="InstallLocation" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
 				</RegistryKey>
@@ -305,6 +315,8 @@
 				<ComponentRef Id="ReleaseMVVMDialogsDll" />
 				<ComponentRef Id="ReleasePluginSystemDll" />
 				<ComponentRef Id="ReleaseSystemWindowsInteractivityDll" />
+				<ComponentRef Id="En_USVCNEditorresourcesDll" />
+				<ComponentRef Id="VCNEditorresourcesDll" />
 			</Feature>
 		</Feature>
 		<UI>

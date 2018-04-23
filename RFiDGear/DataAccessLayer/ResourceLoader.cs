@@ -199,7 +199,7 @@ namespace RFiDGear.DataAccessLayer
 		public static string getResource(string resName)
 		{
 			try
-			{
+			{			
 				using (SettingsReaderWriter settings = new SettingsReaderWriter())
 				{
 					settings.ReadSettings();

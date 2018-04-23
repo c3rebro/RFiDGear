@@ -363,12 +363,14 @@
 					<CheckBox
 						Content="Multi Application"
 						IsChecked="{Binding IsMultiApplication, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-						Width="95"
-						Grid.Column="3"
+						Height="15"
+						Width="187"
+						Grid.Column="2"
+						Grid.ColumnSpan="2"
 						Grid.Row="0"
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
-						Margin="9,16,0,0" />
+						Margin="8.5,14,0,0" />
 				</Grid>
 			</GroupBox>
 			<GroupBox
