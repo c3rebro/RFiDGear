@@ -559,7 +559,7 @@
 								IsEnabled="False"></MenuItem>
 							<MenuItem
 								Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemAddEditMifareUltralightTaskHeader' }"
-								IsEnabled="False"></MenuItem>
+								Command="{Binding CreateUltralightTaskCommand}"></MenuItem>
 						</MenuItem>
 						<MenuItem
 							Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemTagItHeader' }"

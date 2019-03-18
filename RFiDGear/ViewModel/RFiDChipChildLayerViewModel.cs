@@ -29,6 +29,7 @@ namespace RFiDGear.ViewModel
 		private MifareClassicSetupViewModel setupViewModel;
 		private MifareClassicSectorModel sectorModel;
 		private MifareDesfireAppModel appModel;
+		private MifareUltralightPageModel pageModel;
 
 		#region Constructors
 
@@ -40,18 +41,18 @@ namespace RFiDGear.ViewModel
 			children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 		}
 
-		public RFiDChipChildLayerViewModel(
-			MifareClassicSectorModel _sectorModel,
-			MifareClassicSetupViewModel _setupViewModel)
-		{
-			sectorModel = _sectorModel;
-			setupViewModel = _setupViewModel;
-
-			isTask = true;
-			children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
-
-			LoadChildren();
-		}
+//		public RFiDChipChildLayerViewModel(
+//			MifareClassicSectorModel _sectorModel,
+//			MifareClassicSetupViewModel _setupViewModel)
+//		{
+//			sectorModel = _sectorModel;
+//			setupViewModel = _setupViewModel;
+//
+//			isTask = true;
+//			children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
+//
+//			LoadChildren();
+//		}
 
 		public RFiDChipChildLayerViewModel(
 			MifareClassicSectorModel _sectorModel,
@@ -128,6 +129,44 @@ namespace RFiDGear.ViewModel
 			LoadChildren();
 		}
 
+		public RFiDChipChildLayerViewModel(
+			MifareUltralightPageModel _pageModel,
+			RFiDChipParentLayerViewModel parentUID,
+			CARD_TYPE cardType,
+			ObservableCollection<IDialogViewModel> _dialogs = null,
+			bool? _isTask = null)
+		{
+			if (_dialogs != null)
+				dialogs = _dialogs;
+
+			isTask = _isTask;
+
+			//device = _device;
+			pageModel = _pageModel;
+			_cardType = cardType;
+			_parentUid = parentUID != null ? parentUID.UidNumber : null;
+
+			_cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
+			_cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
+
+			ContextMenuItems = new List<MenuItem>();
+			ContextMenuItems.Add(new MenuItem()
+			                     {
+			                     	Header = "Read Sector using default Configuration",
+			                     	Command = _cmdReadSectorWithDefaults
+			                     });
+
+			ContextMenuItems.Add(new MenuItem()
+			                     {
+			                     	Header = "Edit Authentication Settings and Modify Sector",
+			                     	Command = _cmdEditAuthAndModifySector
+			                     });
+
+			children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
+
+			LoadChildren();
+		}
+		
 		public RFiDChipChildLayerViewModel(string _childNodeHeader)
 		{
 			ChildNodeHeader = _childNodeHeader;
@@ -321,9 +360,24 @@ namespace RFiDGear.ViewModel
 		public int SectorNumber
 		{
 			get { return sectorModel != null ? sectorModel.SectorNumber : -1; }
-			set { sectorModel.SectorNumber = value; }
+			set {
+				if(value >= 0)
+					sectorModel.SectorNumber = value;
+			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		public int PageNumber
+		{
+			get { return pageModel != null ? pageModel.PageNumber : -1; }
+			set {
+				if(value >= 0)
+					pageModel.PageNumber = value;
+			}
+		}
+		
 		/// <summary>
 		///
 		/// </summary>
@@ -373,7 +427,10 @@ namespace RFiDGear.ViewModel
 				{
 					childNodeHeader = string.Format("AppID: {0}", appModel.appID);
 				}
-
+				else if (_cardType == CARD_TYPE.MifareUltralight)
+				{
+					childNodeHeader = string.Format("Page: {0}", pageModel.PageNumber);
+				}
 				return childNodeHeader;
 			}
 			set

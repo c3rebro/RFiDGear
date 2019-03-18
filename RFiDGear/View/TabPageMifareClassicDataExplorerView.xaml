@@ -68,8 +68,7 @@
 						CanUserSortColumns="False"
 						CanUserAddRows="False"
 						Background="Transparent"
-						AlternatingRowBackground="LightGray">
-						<!--SelectedItem="{Binding SelectedDataGridItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"-->
+						CanUserDeleteRows="False">
 						<DataGrid.RowStyle>
 							<Style
 								TargetType="{x:Type DataGridRow}">
@@ -85,6 +84,7 @@
 								<Setter
 									Property="VerticalContentAlignment"
 									Value="Center" />
+								
 								<Style.Triggers>
 									<DataTrigger
 										Binding="{Binding IsValidDataContent}"
@@ -136,12 +136,15 @@
 													<Setter
 														Property="MaxWidth"
 														Value="250"/>
-													<Setter
+<!--													<Setter
 														Property="VerticalAlignment"
 														Value="Top" />
 													<Setter
 														Property="HorizontalAlignment"
 														Value="Left" />
+													<Setter
+														Property="Background"
+														Value="Transparent" />-->
 													<Setter
 														Property="IsReadOnly"
 														Value="True"/>
@@ -175,6 +178,7 @@
 													<Setter
 														Property="IsReadOnly"
 														Value="True" />
+													
 													<!--<Style.Triggers>
 														<DataTrigger
 															Binding="{Binding IsValidSelectedDataIndexAndLength}"
@@ -219,8 +223,7 @@
 						CanUserReorderColumns="False"
 						CanUserSortColumns="False"
 						CanUserAddRows="False"
-						Background="Transparent"
-						AlternatingRowBackground="LightGray">
+						Background="Transparent">
 						<!--SelectedItem="{Binding SelectedDataGridItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"-->
 						<DataGrid.RowStyle>
 							<Style
@@ -237,6 +240,9 @@
 								<Setter
 									Property="VerticalContentAlignment"
 									Value="Center" />
+								<Setter
+									Property="Background"
+									Value="Transparent" />
 								<Style.Triggers>
 									<DataTrigger
 										Binding="{Binding IsValidDataContent}"
@@ -294,12 +300,15 @@
 													<Setter
 														Property="MaxWidth"
 														Value="250"/>
-													<Setter
+<!--													<Setter
 														Property="VerticalAlignment"
 														Value="Top" />
 													<Setter
 														Property="HorizontalAlignment"
 														Value="Left" />
+													<Setter
+														Property="Background"
+														Value="Transparent" />-->
 													<Style.Triggers>
 														<DataTrigger
 															Binding="{Binding IsValidSelectedDataIndexAndLength}"

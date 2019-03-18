@@ -61,6 +61,20 @@ namespace RFiDGear.DataAccessLayer
 		ChangeDefault
 	}
 
+	/// <summary>
+	///
+	/// </summary>
+	public enum TaskType_MifareUltralightTask
+	{
+		None,
+		ReadData,
+		WriteData,
+		ChangeDefault
+	}
+	
+	/// <summary>
+	/// 
+	/// </summary>
 	public enum TaskType_MifareDesfireTask
 	{
 		None,

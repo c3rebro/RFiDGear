@@ -639,4 +639,22 @@ Soll die Aktualisierung jetzt herunter geladen und installiert werden?</value>
   <data name="tabPageHeaderMifareClassicMADEditor" xml:space="preserve">
     <value>MAD Editor</value>
   </data>
+  <data name="ENUM.TaskType_MifareUltralightTask.ChangeDefault" xml:space="preserve">
+    <value>Standardwerte ändern</value>
+  </data>
+  <data name="ENUM.TaskType_MifareUltralightTask.ReadData" xml:space="preserve">
+    <value>Daten lesen</value>
+  </data>
+  <data name="ENUM.TaskType_MifareUltralightTask.WriteData" xml:space="preserve">
+    <value>Daten schreiben</value>
+  </data>
+  <data name="ENUM.TaskType_MifareUltralightTask.None" xml:space="preserve">
+    <value>Kein</value>
+  </data>
+  <data name="textBoxStatusTextBoxDllLoaded" xml:space="preserve">
+    <value>Treiber erfolgreich geladen</value>
+  </data>
+  <data name="textBoxStatusTextBoxUnableToAuthenticate" xml:space="preserve">
+    <value>Authentifizierungsfehler</value>
+  </data>
 </root>

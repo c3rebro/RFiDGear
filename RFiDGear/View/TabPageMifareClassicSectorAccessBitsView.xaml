@@ -139,7 +139,7 @@
                     <DataGrid
 						ItemsSource="{Binding DataBlockSource}"
 						AutoGenerateColumns="False"
-						SelectedItem="{Binding Path=Selected_DataBlock_AccessCondition}"
+						SelectedItem="{Binding Path=Selected_DataBlock_AccessCondition, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						CanUserReorderColumns="True"
 						AlternatingRowBackground="LightGray"
 						CanUserAddRows="False"

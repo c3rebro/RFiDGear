@@ -47,6 +47,8 @@ namespace RFiDGear
 		public uint[] AppIDList { get; private set; }
 
 		public byte[] FileIDList { get; private set; }
+		
+		public byte[] MifareUltralightPageData { get; private set; }
 
 		public byte MaxNumberOfAppKeys { get; private set; }
 
@@ -348,15 +350,17 @@ namespace RFiDGear
 							}
 							return ERROR.NoError;
 						}
+						return ERROR.DeviceNotReadyError;
 					}
+					return ERROR.DeviceNotReadyError;
 				}
+				return ERROR.DeviceNotReadyError;
 			}
 			catch (Exception e)
 			{
 				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 				return ERROR.AuthenticationError;
 			}
-			return ERROR.NoError;
 		}
 
 		public ERROR WriteMiFareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer)
@@ -643,7 +647,7 @@ namespace RFiDGear
 
 			var madAKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madAKeyToWrite) ? _madAKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToWrite) };
 			var madBKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madBKeyToWrite) ? _madBKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToWrite) };
-				
+			
 			try
 			{
 				if (readerUnit.ConnectToReader()) {
@@ -789,7 +793,7 @@ namespace RFiDGear
 
 		#region mifare ultralight
 
-		public ERROR ReadMifareUltralight()
+		public ERROR ReadMifareUltralightSinglePage(int _pageNo)
 		{
 			try
 			{
@@ -809,21 +813,10 @@ namespace RFiDGear
 							
 							ILocation location = chip.CreateLocation() as ILocation;
 							
-							
-							MifareAccessInfoClass aiToUse = new MifareAccessInfoClass();
-							
-							object header = service.ReadDataHeader(location, aiToUse);
-							
-							if (card.Type == "MifareUltralight")
+							if (chip.Type == "MifareUltralight")
 							{
-								object appIDsObject;
-								var cmd = card.Commands as MifareUltralightCommands;// IMifareUltralightCommands;
-								readerUnit.Disconnect();
-								if(readerUnit.Connect())
-									appIDsObject = cmd.ReadPages(0, 3);
-								//object res = cmd.ReadPage(4);
-
-								//appIDs = (appIDsObject as UInt32[]);
+								var cmd = chip.Commands as MifareUltralightCommands;// IMifareUltralightCommands;
+								MifareUltralightPageData = cmd.ReadPages(_pageNo, _pageNo) as byte[];
 							}
 
 							return ERROR.NoError;
@@ -1285,7 +1278,7 @@ namespace RFiDGear
 			}
 		}
 
-		public ERROR CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID)
+		public ERROR CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
 		{
 			try
 			{
@@ -1323,7 +1316,10 @@ namespace RFiDGear
 								try
 								{
 									cmd.SelectApplication(0);
-									cmd.Authenticate(0, aiToUse.MasterCardKey);
+
+									if(authenticateToPICCFirst)
+										cmd.Authenticate(0, aiToUse.MasterCardKey);
+									
 									cmd.CreateApplicationEV1((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys, false, _keyTypeTargetApplication, 0, 0);
 									//cmd.CreateApplication((uint)_appID,_keySettings,(byte)_maxNbKeys);
 									//cmd.SelectApplication((uint)_appID);
@@ -1349,7 +1345,7 @@ namespace RFiDGear
 			}
 		}
 
-		public ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent, string _applicationMasterKeyTarget, int _keyNumberTarget, DESFireKeyType _keyTypeTarget, int _appIDCurrent = 0, int _appIDTarget = 0)
+		public ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent, string _applicationMasterKeyTarget, int _keyNumberTarget, DESFireKeyType _keyTypeTarget, int _appIDCurrent = 0, int _appIDTarget = 0, DESFireKeySettings keySettings = (DESFireKeySettings.KS_DEFAULT | DESFireKeySettings.KS_FREE_CREATE_DELETE_WITHOUT_MK))
 		{
 			try
 			{
@@ -1378,6 +1374,7 @@ namespace RFiDGear
 
 				DESFireKey applicationMasterKeyTarget = new DESFireKeyClass();
 				applicationMasterKeyTarget.KeyType = _keyTypeTarget;
+				
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
 				applicationMasterKeyTarget.Value = CustomConverter.DesfireKeyToCheck;
 
@@ -1404,6 +1401,7 @@ namespace RFiDGear
 									if (_appIDCurrent == 0 && _appIDTarget == 0)
 									{
 										cmd.Authenticate(0, aiToUse.MasterCardKey);
+										cmd.ChangeKeySettings(keySettings);
 										cmd.ChangeKey((byte)0, applicationMasterKeyTarget);
 									}
 									else if (_appIDCurrent == 0 && _appIDTarget > 0)

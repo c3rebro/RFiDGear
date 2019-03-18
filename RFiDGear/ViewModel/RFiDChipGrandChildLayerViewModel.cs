@@ -292,7 +292,7 @@ namespace RFiDGear.ViewModel
 							for (int i = 0; i < mifareClassicMAD.Data.Length; i++)
 							{
 								if ((char)mifareClassicMAD.Data[i] != value[i]
-								    && (!((char)mifareClassicMAD.Data[i] < 27 | (char)desfireFile.Data[i] > 127))//do not perform overwrite datablockat position 'i' if non printable character...
+								    && (!((char)mifareClassicMAD.Data[i] < 27 | (char)mifareClassicMAD.Data[i] > 127))//do not perform overwrite datablockat position 'i' if non printable character...
 								    || (value[i] > 27 && value[i] < 127) //..except if a printable character was entered at the same position
 								   )
 								{

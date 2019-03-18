@@ -1,4 +1,5 @@
-﻿using GalaSoft.MvvmLight;
+﻿using ByteArrayHelper.Extensions;
+using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using LibLogicalAccess;
 using MvvmDialogs.ViewModels;
@@ -30,14 +31,16 @@ namespace RFiDGear.ViewModel
 		private readonly List<MenuItem> ContextMenuItems;
 
 		private readonly RelayCommand _cmdReadAllSectorsWithDefaultKeys;
+		private readonly RelayCommand _cmdReadAllPages;
 		private readonly RelayCommand _cmdDeleteThisNode;
 
 		private readonly RelayCommand _cmdCreateApp;
 		private readonly RelayCommand _cmdEraseDesfireCard;
 		//private readonly string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 
-		private MifareClassicChipModel mifareClassicUidModel { get; set; }
-		private MifareDesfireChipModel mifareDesfireUidModel { get; set; }
+		private MifareClassicChipModel mifareClassicUidModel;
+		private MifareDesfireChipModel mifareDesfireUidModel;
+		private MifareUltralightChipModel mifareUltralightUidModel;
 
 		#region Constructors
 
@@ -55,6 +58,7 @@ namespace RFiDGear.ViewModel
 
 			mifareClassicUidModel = new MifareClassicChipModel();
 			mifareDesfireUidModel = new MifareDesfireChipModel();
+			mifareUltralightUidModel = new MifareUltralightChipModel();
 			
 			ParentNodeHeader = _text;
 		}
@@ -100,8 +104,9 @@ namespace RFiDGear.ViewModel
 
 			if (mifareClassicUidModel != null)
 				ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareClassicUidModel.UidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
-			else
-				ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareDesfireUidModel.uidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
+//			else if(mifareDesfireUidModel != null)
+//				ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareDesfireUidModel.uidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
+
 		}
 
 		public RFiDChipParentLayerViewModel(MifareDesfireChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
@@ -142,9 +147,53 @@ namespace RFiDGear.ViewModel
 			IsSelected = true;
 
 			if (mifareDesfireUidModel != null)
-				ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareDesfireUidModel.uidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
+				ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareDesfireUidModel.UidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
 		}
 
+		public RFiDChipParentLayerViewModel(MifareUltralightChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
+		{
+			ID = new Random().Next();
+
+			if (_dialogs != null)
+				dialogs = _dialogs;
+
+			isTask = _isTask;
+			settings = new SettingsReaderWriter();
+			mifareUltralightUidModel = _uidModel;
+			CardType = mifareUltralightUidModel.CardType;
+
+			_cmdReadAllPages = new RelayCommand(MifareUltralightQuickCheck);
+			_cmdDeleteThisNode = new RelayCommand(DeleteMeCommand);
+
+			ContextMenuItems = new List<MenuItem>();
+			ContextMenuItems.Add(new MenuItem()
+			                     {
+			                     	Header = ResourceLoader.getResource("menuItemContextMenuParentNodeQuickCheck"),
+			                     	Command = _cmdReadAllPages,
+			                     	ToolTip = new ToolTip()
+			                     	{
+			                     		Content = ResourceLoader.getResource("toolTipContextMenuParentNodeMifareClassicQuickCheck")
+			                     	}
+			                     });
+
+			ContextMenuItems.Add(new MenuItem()
+			                     {
+			                     	Header = "Delete Node",
+			                     	Command = _cmdDeleteThisNode
+			                     });
+
+			_children = new ObservableCollection<RFiDChipChildLayerViewModel>();
+
+			if (!isTask)
+				LoadChildren();
+
+			IsSelected = true;
+
+			if (mifareUltralightUidModel != null)
+				ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareUltralightUidModel.UidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
+
+		}
+		
 		#endregion Constructors
 
 		#region Context Menu Items
@@ -302,6 +351,64 @@ namespace RFiDGear.ViewModel
 			}
 		}
 
+		private void MifareUltralightQuickCheck()
+		{
+			if (!isTask)
+			{
+				using (RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
+				{
+					Mouse.OverrideCursor = Cursors.Wait;
+
+					foreach (RFiDChipChildLayerViewModel cnVM in this.Children)
+					{
+
+						if (device.ReadMifareUltralightSinglePage(cnVM.PageNumber) == ERROR.NoError)
+						{
+							string dataToShow = ByteConverter.HexToString(device.MifareUltralightPageData);
+							
+							for (int i = (ByteConverter.HexToString(device.MifareUltralightPageData).Length) - 2; i > 0; i -= 2)
+								dataToShow = dataToShow.Insert(i, " ");
+							
+							cnVM.Children.Add(
+								new RFiDChipGrandChildLayerViewModel(
+									string.Format("Data: {0}", dataToShow)));
+									
+									cnVM.IsAuthenticated = true;
+								}
+						else
+						{
+							cnVM.IsAuthenticated = false;
+							continue;
+						}
+
+						foreach (RFiDChipGrandChildLayerViewModel gcVM in cnVM.Children.Where(x => x.MifareClassicDataBlock != null))
+						{
+							if (device.Sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber)) // (gcVM.DataBlockContent != null)
+							{
+								if (device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data != null)
+								{
+									gcVM.MifareClassicDataBlock.Data = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data; //device.currentSector[gcVM.DataBlockNumber];
+									gcVM.IsAuthenticated = true;
+								}
+								else
+								{
+									gcVM.IsAuthenticated = false;
+								}
+							}
+							else
+							{
+								gcVM.IsAuthenticated = false;
+							}
+						}
+					}
+
+					this.IsExpanded = true;
+
+					Mouse.OverrideCursor = null;
+				}
+			}
+		}
+		
 		private void EraseDesfireCard()
 		{
 			if (!isTask)
@@ -398,8 +505,12 @@ namespace RFiDGear.ViewModel
 			{
 				if (mifareClassicUidModel != null)
 					return mifareClassicUidModel.UidNumber;
+				else if(mifareDesfireUidModel != null)
+					return mifareDesfireUidModel.UidNumber;
+				else if(mifareUltralightUidModel != null)
+					return mifareUltralightUidModel.UidNumber;
 				else
-					return mifareDesfireUidModel.uidNumber;
+					return "";
 			}
 		}
 
@@ -409,13 +520,20 @@ namespace RFiDGear.ViewModel
 
 		public CARD_TYPE CardType
 		{
-			get { return mifareClassicUidModel != null ? mifareClassicUidModel.CardType : (mifareDesfireUidModel != null ? mifareDesfireUidModel.CardType : CARD_TYPE.Unspecified); }
+			get
+			{
+				return mifareClassicUidModel != null ? mifareClassicUidModel.CardType :
+					(mifareDesfireUidModel != null ? mifareDesfireUidModel.CardType :
+					 (mifareUltralightUidModel != null ? mifareUltralightUidModel.CardType : CARD_TYPE.Unspecified)
+					);}
 			set
 			{
 				if (mifareClassicUidModel != null)
 					mifareClassicUidModel.CardType = value;
 				else if (mifareDesfireUidModel != null)
 					mifareDesfireUidModel.CardType = value;
+				else if (mifareUltralightUidModel != null)
+					mifareUltralightUidModel.CardType = value;
 				RaisePropertyChanged("CardType");
 			}
 		}
@@ -580,6 +698,17 @@ namespace RFiDGear.ViewModel
 							new RFiDChipChildLayerViewModel(
 								new MifareDesfireAppModel(0), this, CardType, dialogs));
 					}
+					break;
+					
+				case CARD_TYPE.MifareUltralight:
+					
+					for(int i = 0; i < 15; i++)
+					{
+						_children.Add(
+							new RFiDChipChildLayerViewModel(
+								new MifareUltralightPageModel(new byte[4], i),this, CardType, dialogs));
+					}
+
 					break;
 			}
 		}

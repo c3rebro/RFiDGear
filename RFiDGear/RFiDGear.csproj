@@ -121,20 +121,24 @@
     <Compile Include="DataAccessLayer\RFiDDevice.cs" />
     <Compile Include="DataAccessLayer\SettingsReaderWriter.cs" />
     <Compile Include="Model\ChipTaskHandlerModel.cs" />
+    <Compile Include="Model\MifareClassicDataBlockAccessConditionModel.cs" />
     <Compile Include="Model\MifareClassicDataBlockModel.cs" />
     <Compile Include="Model\DefaultSpecification.cs" />
     <Compile Include="Model\MifareClassicMADModel.cs" />
+    <Compile Include="Model\MifareClassicSectorAccessConditionModel.cs" />
     <Compile Include="Model\MifareClassicSectorModel.cs" />
     <Compile Include="Model\MifareClassicChipModel.cs" />
     <Compile Include="Model\MifareDesfireAppModel.cs" />
     <Compile Include="Model\MifareDesfireFileModel.cs" />
     <Compile Include="Model\MifareDesfireChipModel.cs" />
+    <Compile Include="Model\MifareUltralightChipModel.cs" />
     <Compile Include="Model\MifareUltralightPageModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\WPFAssemblyInfo.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
     <Compile Include="ViewModel\MifareClassicSetupViewModel.cs" />
     <Compile Include="ViewModel\MifareDesfireSetupViewModel.cs" />
+    <Compile Include="ViewModel\MifareUltralightSetupViewModel.cs" />
     <Compile Include="ViewModel\SetupViewModel.cs" />
     <Compile Include="ViewModel\RFiDChipChildLayerViewModel.cs" />
     <Compile Include="ViewModel\RFiDChipGrandChildLayerViewModel.cs" />
@@ -145,6 +149,10 @@
     </Compile>
     <Compile Include="View\MifareClassicSetupView.xaml.cs">
       <DependentUpon>MifareClassicSetupView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\MifareUltralightSetupView.xaml.cs">
+      <DependentUpon>MifareUltralightSetupView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="View\TabPageMifareClassicDataExplorerView.xaml.cs">
@@ -187,6 +195,10 @@
       <DependentUpon>TabPageMifareDesfireDataExplorerView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="View\TabPageMifareUltralightDataExplorerView.xaml.cs">
+      <DependentUpon>TabPageMifareUltralightDataExplorerView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="View\TabPageReaderSettingsView.xaml.cs">
       <DependentUpon>TabPageReaderSettingsView.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -204,6 +216,7 @@
   <ItemGroup>
     <Page Include="View\MainWindow.xaml" />
     <Page Include="View\MifareClassicSetupView.xaml" />
+    <Page Include="View\MifareUltralightSetupView.xaml" />
     <Page Include="View\TabPageMifareClassicDataExplorerView.xaml" />
     <Page Include="View\TabPageMifareClassicKeySetupView.xaml" />
     <Page Include="View\TabPageMifareClassicSectorAccessBitsView.xaml" />
@@ -214,6 +227,7 @@
     <Page Include="View\MifareDesfireSetupView.xaml" />
     <Page Include="View\SetupView.xaml" />
     <Page Include="View\TabPageMifareDesfireDataExplorerView.xaml" />
+    <Page Include="View\TabPageMifareUltralightDataExplorerView.xaml" />
     <Page Include="View\TabPageReaderSettingsView.xaml" />
   </ItemGroup>
   <ItemGroup>

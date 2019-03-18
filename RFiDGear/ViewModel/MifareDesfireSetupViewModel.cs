@@ -1249,7 +1249,7 @@ namespace RFiDGear.ViewModel
 						IsDesfireAuthenticationTabEnabled = true;
 						IsDesfireAppAuthenticationTabEnabled = true;
 						IsDesfireAppAuthoringTabEnabled = true;
-						IsDesfireAppCreationTabEnabled = false;
+						IsDesfireAppCreationTabEnabled = true;
 						break;
 						
 					case TaskType_MifareDesfireTask.ChangeDefault:
@@ -1471,7 +1471,7 @@ namespace RFiDGear.ViewModel
 				         	{
 				         		if (device != null)
 				         		{
-				         			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
 				         			//Mouse.OverrideCursor = Cursors.Wait;
 
@@ -1514,9 +1514,34 @@ namespace RFiDGear.ViewModel
 				         				}
 				         				else
 				         				{
-				         					StatusText += "Unable to Auth";
-				         					TaskErr = ERROR.AuthenticationError;
-				         					return;
+				         					StatusText += string.Format("{0}: Authentication to PICC failed. Try without Authentication...\n", DateTime.Now);
+
+				         					DESFireKeySettings keySettings = DESFireKeySettings.KS_ALLOW_CHANGE_MK;
+				         					keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
+
+				         					keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
+				         					keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
+				         					keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
+				         					keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
+
+				         					if (device.CreateMifareDesfireApplication(
+				         						DesfireMasterKeyCurrent,
+				         						keySettings,
+				         						SelectedDesfireMasterKeyEncryptionTypeCurrent,
+				         						SelectedDesfireAppKeyEncryptionTypeCreateNewApp,
+				         						selectedDesfireAppMaxNumberOfKeysAsInt,
+				         						AppNumberNewAsInt, false) == ERROR.NoError)
+				         					{
+				         						StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
+				         						TaskErr = ERROR.NoError;
+				         						return;
+				         					}
+				         					else
+				         					{
+				         						StatusText += "Unable to Create App";
+				         						TaskErr = ERROR.AuthenticationError;
+				         						return;
+				         					}
 				         				}
 				         			}
 
@@ -1574,7 +1599,7 @@ namespace RFiDGear.ViewModel
 				         	{
 				         		if (device != null)
 				         		{
-				         			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
 				         			//Mouse.OverrideCursor = Cursors.Wait;
 
@@ -1659,7 +1684,7 @@ namespace RFiDGear.ViewModel
 				         	{
 				         		if (device != null)
 				         		{
-				         			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
 				         			//Mouse.OverrideCursor = Cursors.Wait;
 
@@ -1667,7 +1692,7 @@ namespace RFiDGear.ViewModel
 				         			{
 				         				if (IsValidAppNumberNew != false &&
 				         				    device.AuthToMifareDesfireApplication(
-				         				    	DesfireMasterKeyCurrent,
+				         				    	DesfireAppKeyCurrent,
 				         				    	SelectedDesfireMasterKeyEncryptionTypeCurrent,
 				         				    	selectedDesfireAppKeyNumberCurrentAsInt,AppNumberCurrentAsInt) == ERROR.NoError)
 				         				{
@@ -1789,7 +1814,7 @@ namespace RFiDGear.ViewModel
 				         	{
 				         		if (device != null)
 				         		{
-				         			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
 				         			//Mouse.OverrideCursor = Cursors.Wait;
 
@@ -1876,7 +1901,7 @@ namespace RFiDGear.ViewModel
 			                            	{
 			                            		if (device != null)
 			                            		{
-			                            			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+			                            			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
 			                            			//Mouse.OverrideCursor = Cursors.Wait;
 
@@ -1893,13 +1918,21 @@ namespace RFiDGear.ViewModel
 			                            				{
 			                            					StatusText += string.Format("{0}: Successfully Authenticated to AppID {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
+			                            					DESFireKeySettings keySettings = DESFireKeySettings.KS_DEFAULT;
+			                            					keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
+
+			                            					keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
+			                            					keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
+			                            					keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
+			                            					keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
+			                            					
 			                            					if (device.ChangeMifareDesfireApplicationKey(DesfireAppKeyCurrent,
 			                            					                                             selectedDesfireAppKeyNumberCurrentAsInt,
 			                            					                                             SelectedDesfireAppKeyEncryptionTypeCurrent,
 			                            					                                             DesfireAppKeyTarget,
 			                            					                                             selectedDesfireAppKeyNumberTargetAsInt,
 			                            					                                             SelectedDesfireAppKeyEncryptionTypeTarget,
-			                            					                                             AppNumberCurrentAsInt, AppNumberTargetAsInt) == ERROR.NoError)
+			                            					                                             AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings) == ERROR.NoError)
 			                            					{
 			                            						StatusText += string.Format("{0}: Successfully Changed Key {1} of AppID {2}\n", DateTime.Now, selectedDesfireAppKeyNumberTargetAsInt, AppNumberTargetAsInt);
 			                            						TaskErr = ERROR.NoError;
@@ -1968,7 +2001,7 @@ namespace RFiDGear.ViewModel
 			                            	{
 			                            		if (device != null)
 			                            		{
-			                            			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+			                            			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
 			                            			//Mouse.OverrideCursor = Cursors.Wait;
 
@@ -2053,7 +2086,7 @@ namespace RFiDGear.ViewModel
 			                            	{
 			                            		if (device != null)
 			                            		{
-			                            			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+			                            			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
 			                            			//Mouse.OverrideCursor = Cursors.Wait;
 
@@ -2138,7 +2171,7 @@ namespace RFiDGear.ViewModel
 			                            	{
 			                            		if (device != null && device.GetMiFareDESFireChipAppIDs() == ERROR.NoError)
 			                            		{
-			                            			StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+			                            			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
 			                            			//Mouse.OverrideCursor = Cursors.Wait;
 			                            			//Thread.Sleep(10000);
@@ -2226,7 +2259,7 @@ namespace RFiDGear.ViewModel
 			{
 				if (device != null)
 				{
-					StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+					StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
 					Mouse.OverrideCursor = Cursors.Wait;
 
@@ -2267,7 +2300,7 @@ namespace RFiDGear.ViewModel
 					{
 						if (device != null)
 						{
-							StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+							StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
 							//Mouse.OverrideCursor = Cursors.Wait;
 
@@ -2309,7 +2342,7 @@ namespace RFiDGear.ViewModel
 								}
 								else
 								{
-									StatusText += "Unable to Auth";
+									StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxUnableToAuthenticate"));
 									TaskErr = ERROR.AuthenticationError;
 									return;
 								}
@@ -2357,7 +2390,7 @@ namespace RFiDGear.ViewModel
 			{
 				if (device != null)
 				{
-					StatusText = string.Format("{0}: Connection to Reader successfully established\n", DateTime.Now);
+					StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
 					Mouse.OverrideCursor = Cursors.Wait;
 
@@ -2371,7 +2404,7 @@ namespace RFiDGear.ViewModel
 							StatusText += string.Format("{0}: Successfully Authenticated to App 0\n", DateTime.Now);
 						}
 						else
-							StatusText += "Unable to Auth";
+							StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxUnableToAuthenticate"));;
 					}
 
 					//RaisePropertyChanged("DataAsByteArray");

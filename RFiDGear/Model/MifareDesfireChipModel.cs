@@ -21,11 +21,11 @@ namespace RFiDGear.Model
 
         public MifareDesfireChipModel(string uid, CARD_TYPE cardType)
         {
-            uidNumber = uid;
+            UidNumber = uid;
             CardType = cardType;
         }
 
-        public string uidNumber { get; set; }
+        public string UidNumber { get; set; }
 
         public CARD_TYPE CardType { get; set; }
     }
