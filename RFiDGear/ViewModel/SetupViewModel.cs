@@ -33,7 +33,7 @@ namespace RFiDGear.ViewModel
                 device = _device;
 
                 selectedReader = settings.DefaultSpecification.DefaultReaderProvider;
-
+                comPort = "10";
                 ConnectToReaderCommand.Execute(null);
             }
         }
@@ -92,8 +92,49 @@ namespace RFiDGear.ViewModel
             get { return selectedReader; }
             set { selectedReader = value; }
         }
-
         private ReaderTypes selectedReader;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedBaudRate
+        {
+            get
+            {
+                return selectedBaudRate;
+            }
+            set
+            {
+                selectedBaudRate = value;
+                int.TryParse(value, out selectedBaudRateAsInt);
+            }
+        }
+        private string selectedBaudRate;
+
+        /// <summary>
+        /// Selected Baud Rate as Integer Value
+        /// </summary>
+        public int SelectedBaudRateAsInt
+        { get { return selectedBaudRateAsInt; } }
+        private int selectedBaudRateAsInt;
+
+        /// <summary>
+        /// ComPort for Readers that use VCP or Serial
+        /// </summary>
+        public string ComPort
+        {
+            get { return comPort; }
+            set { comPort = value; }
+        }
+        private string comPort;
+
+        /// <summary>
+        /// BaudRate for Readers that use VCP or Serial
+        /// </summary>
+        public string[] BaudRates
+        {
+            get { return new string[] {"1200", "2400", "4800", "9600", "115000"}; }
+        }
 
         public string ReaderStatus
         {
@@ -107,7 +148,6 @@ namespace RFiDGear.ViewModel
                 RaisePropertyChanged("ReaderStatus");
             }
         }
-
         private string readerStatus;
 
         public string DefaultReader

@@ -5,7 +5,6 @@
 	MinWidth="1000"
 	WindowStartupLocation="CenterOwner"
 	MinHeight="850"
-	Width="1100"
 	mc:Ignorable="d">
 	<Window.Resources>
 		<BooleanToVisibilityConverter x:Key="BoolToVisConv"/>
@@ -58,7 +57,7 @@
 			<TabControl>
 				<TabItem
 					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicKeys' }"
-					TabIndex="4">
+					TabIndex="4" MinWidth="50">
 					<v:TabPageMifareClassicKeySetupView
 						TabIndex="4" />
 				</TabItem>
@@ -73,8 +72,9 @@
 					<v:TabPageMifareClassicSectorAccessBitsView />
 				</TabItem>
 				<TabItem
-					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicDataExplorer' }">
+					MinWidth="50" Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderMifareClassicDataExplorer' }">
 					<v:TabPageMifareClassicDataExplorerView />
+                    
 				</TabItem>
 				<TabItem
 					Header="Plugins" Visibility="{Binding HasPlugins, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">

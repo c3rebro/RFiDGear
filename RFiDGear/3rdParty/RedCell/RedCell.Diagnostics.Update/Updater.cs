@@ -35,7 +35,7 @@ namespace RedCell.Diagnostics.Update
         #endregion
 
         #region Fields
-        private SettingsReaderWriter _settings;
+        //private readonly SettingsReaderWriter settings;
         private Timer _timer;
         private volatile bool _updating;
         private readonly Manifest _localConfig;
@@ -43,17 +43,17 @@ namespace RedCell.Diagnostics.Update
         private readonly FileInfo _localConfigFile;
 
 
-        private Process thisprocess = Process.GetCurrentProcess();
-        private string me;
+        private readonly Process thisprocess = Process.GetCurrentProcess();
+        private readonly string me;
 
-        public bool allowUpdate { get; set; }
-        public bool isUserNotified { get; set; }
+        public bool AllowUpdate { get; set; }
+        public bool IsUserNotified { get; set; }
 
         #endregion
 
         #region events
 
-        public event EventHandler newVersionAvailable;
+        public event EventHandler NewVersionAvailable;
 
         #endregion
 
@@ -72,27 +72,34 @@ namespace RedCell.Diagnostics.Update
         /// <param name="configFile">The configuration file.</param>
         public Updater(FileInfo configFile)
         {
-            me = thisprocess.MainModule.FileName;
-
-            _settings = new SettingsReaderWriter();
-
-            Log.Debug = true;
-
-            _localConfigFile = configFile;
-            Log.Write("Loaded.");
-            Log.Write("Initializing using file '{0}'.", configFile.FullName);
-            if (!configFile.Exists)
+            try
             {
-                Log.Write("Config file '{0}' does not exist, stopping.", configFile.Name);
-                return;
+                me = thisprocess.MainModule.FileName;
+
+                //settings = new SettingsReaderWriter();
+
+                Log.Debug = true;
+
+                _localConfigFile = configFile;
+                Log.Write("Loaded.");
+                Log.Write("Initializing using file '{0}'.", configFile.FullName);
+                if (!configFile.Exists)
+                {
+                    Log.Write("Config file '{0}' does not exist, stopping.", configFile.Name);
+                    return;
+                }
+
+                string data = File.ReadAllText(configFile.FullName, new UTF8Encoding(false));
+                this._localConfig = new Manifest(data);
+
+                var rootDirectory = new DirectoryInfo(Path.GetDirectoryName(me));
+                var rootFiles = rootDirectory.GetFiles("*.*", SearchOption.TopDirectoryOnly);
             }
 
-            string data = File.ReadAllText(configFile.FullName, new UTF8Encoding(false));
-            this._localConfig = new Manifest(data);
-
-            var rootDirectory = new DirectoryInfo(Path.GetDirectoryName(me));
-            var rootFiles = rootDirectory.GetFiles("*.*", SearchOption.TopDirectoryOnly);
-
+            catch(Exception e)
+            {
+                LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+            }
             //LogWriter.CreateLogEntry(string.Format("{0}\n{1}",e.Message, e.InnerException != null ? e.InnerException.Message : ""));
         }
         #endregion
@@ -133,17 +140,17 @@ namespace RedCell.Diagnostics.Update
         {
             try
             {
-                if (isUserNotified && !allowUpdate)
+                if (IsUserNotified && !AllowUpdate)
                     return;
 
-                if (allowUpdate && !_updating)
+                if (AllowUpdate && !_updating)
                 {
                     _timer.Change(5000, DefaultCheckInterval * 1000);
 
                     _updating = true;
                     Update();
                     _updating = false;
-                    isUserNotified = false;
+                    IsUserNotified = false;
                     Log.Write("Check ending.");
                     return;
                 }
@@ -166,7 +173,15 @@ namespace RedCell.Diagnostics.Update
 
                     if (!http.Success)
                     {
-                        Log.Write("Fetch error: {0}", http.Response.StatusDescription);
+                        try
+                        {
+                            Log.Write("Fetch error: {0}", http.Response != null ? http.Response.StatusDescription : "");
+                        }
+                        
+                        catch
+                        {
+                            Log.Write("Fetch error: Unknown http Err");
+                        }
                         this._remoteConfig = null;
                         return;
                     }
@@ -182,7 +197,7 @@ namespace RedCell.Diagnostics.Update
                 string data = Encoding.UTF8.GetString(http.ResponseData);
                 this._remoteConfig = new Manifest(data);
 
-                //string.Format("{0}{1}",this._localConfig.RemoteConfigUri,_settings.DefaultLanguage == "german" ? "/de-de" : "/en-us")
+                //string.Format("{0}{1}",this._localConfig.RemoteConfigUri,settings.DefaultLanguage == "german" ? "/de-de" : "/en-us")
                 if (this._remoteConfig == null)
                     return;
 
@@ -211,10 +226,10 @@ namespace RedCell.Diagnostics.Update
                 Log.Write("Remote version is newer. Updating.");
                 _timer.Change(0, 1000);
 
-                if (!allowUpdate && !isUserNotified)
+                if (!AllowUpdate && !IsUserNotified)
                 {
-                    isUserNotified = true;
-                    newVersionAvailable(this, null);
+                    IsUserNotified = true;
+                    NewVersionAvailable(this, null);
                     return;
                 }
             }
@@ -262,7 +277,7 @@ namespace RedCell.Diagnostics.Update
             foreach (string update in this._remoteConfig.Payloads)
             {
                 Log.Write("Fetching '{0}'.", update);
-                var url = this._remoteConfig.BaseUri  + update; //TODO: make this localizable e.g. + (_settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/")
+                var url = this._remoteConfig.BaseUri  + update; //TODO: make this localizable e.g. + (settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/")
                 var file = Fetch.Get(url);
                 if (file == null)
                 {
@@ -291,12 +306,14 @@ namespace RedCell.Diagnostics.Update
                 }
             }
 
-            if (isUserNotified && allowUpdate)
+            if (IsUserNotified && AllowUpdate)
             {
                 Process p = new Process();
-                ProcessStartInfo info = new ProcessStartInfo(Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe"));
-                //info.Arguments = string.Format("/i {0}", Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe"));
-                info.UseShellExecute = false;
+                ProcessStartInfo info = new ProcessStartInfo(Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe"))
+                {
+                    //info.Arguments = string.Format("/i {0}", Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe"));
+                    UseShellExecute = false
+                };
 
                 try
                 {

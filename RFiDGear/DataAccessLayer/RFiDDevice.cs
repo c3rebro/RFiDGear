@@ -96,8 +96,8 @@ namespace RFiDGear
 
 					readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
 					readerUnit = readerProvider.CreateReaderUnit();
-				}
-			}
+                }
+			} 
 			catch (Exception e)
 			{
 				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
@@ -116,8 +116,8 @@ namespace RFiDGear
 				{
 					try
 					{
-						readerUnit.DisconnectFromReader();
-						readerProvider.ReleaseInstance();
+                        readerUnit.DisconnectFromReader();
+                        readerProvider.ReleaseInstance();
 					}
 					catch
 					{
@@ -129,8 +129,8 @@ namespace RFiDGear
 
 				try
 				{
-					readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
-					readerUnit = readerProvider.CreateReaderUnit();
+                    readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
+                    readerUnit = readerProvider.CreateReaderUnit();
 
 					return ERROR.NoError;
 				}
@@ -184,7 +184,7 @@ namespace RFiDGear
 
 				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 
-				return ERROR.NoError;
+				return ERROR.IOError;
 			}
 
 			return ERROR.IOError;
@@ -705,7 +705,8 @@ namespace RFiDGear
 							}
 							catch (Exception e)
 							{
-								return ERROR.AuthenticationError;
+                                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                                return ERROR.AuthenticationError;
 							}
 							return ERROR.NoError;
 						}
@@ -774,7 +775,8 @@ namespace RFiDGear
 							}
 							catch (Exception e)
 							{
-								return ERROR.AuthenticationError;
+                                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                                return ERROR.AuthenticationError;
 							}
 							return ERROR.NoError;
 						}
@@ -873,11 +875,16 @@ namespace RFiDGear
 							    card.Type == "DESFireEV2")
 							{
 								var cmd = card.Commands as IDESFireEV1Commands;
+                                try
+                                {
+                                    object appIDsObject = cmd.GetApplicationIDs();
+                                    AppIDList = (appIDsObject as UInt32[]);
+                                    FreeMemory = cmd.GetFreeMemory();
+                                }
+                                catch
+                                {
 
-								object appIDsObject = cmd.GetApplicationIDs();
-								AppIDList = (appIDsObject as UInt32[]);
-								FreeMemory = cmd.GetFreeMemory();
-
+                                }
 								return ERROR.NoError;
 							}
 							else
@@ -923,37 +930,40 @@ namespace RFiDGear
 							    card.Type == "DESFireEV1" ||
 							    card.Type == "DESFireEV2")
 							{
-								var cmd = card.Commands as IDESFireCommands;
 								try
 								{
-									//cmd.SelectApplication(0);
-									//cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+                                    var cmd = card.Commands as IDESFireCommands;
 
-									cmd.SelectApplication((uint)_appID);
-									cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+                                    try
+                                    {
+                                        cmd.SelectApplication((uint)_appID);
+                                        cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+                                    }
+                                    catch
+                                    {
+                                        switch (_fileType)
+                                        {
+                                            case FileType_MifareDesfireFileType.StdDataFile:
+                                                cmd.CreateStdDataFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+                                                break;
 
-									switch (_fileType)
-									{
-										case FileType_MifareDesfireFileType.StdDataFile:
-											cmd.CreateStdDataFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
-											break;
+                                            case FileType_MifareDesfireFileType.BackupFile:
+                                                cmd.CreateBackupFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+                                                break;
 
-										case FileType_MifareDesfireFileType.BackupFile:
-											cmd.CreateBackupFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
-											break;
+                                            case FileType_MifareDesfireFileType.ValueFile:
+                                                cmd.CreateValueFile((byte)_fileNo, _encMode, accessRights, (uint)_minValue, (uint)_maxValue, (uint)_initValue, _isValueLimited);
+                                                break;
 
-										case FileType_MifareDesfireFileType.ValueFile:
-											cmd.CreateValueFile((byte)_fileNo, _encMode, accessRights, (uint)_minValue, (uint)_maxValue, (uint)_initValue, _isValueLimited);
-											break;
+                                            case FileType_MifareDesfireFileType.CyclicRecordFile:
+                                                cmd.CreateCyclicRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+                                                break;
 
-										case FileType_MifareDesfireFileType.CyclicRecordFile:
-											cmd.CreateCyclicRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
-											break;
-
-										case FileType_MifareDesfireFileType.LinearRecordFile:
-											cmd.CreateLinearRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
-											break;
-									}
+                                            case FileType_MifareDesfireFileType.LinearRecordFile:
+                                                cmd.CreateLinearRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+                                                break;
+                                        }
+                                    }
 
 									return ERROR.NoError;
 								}
@@ -999,16 +1009,16 @@ namespace RFiDGear
 			IDESFireAccessInfo aiToWrite = new DESFireAccessInfo();
 			CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
 			aiToWrite.MasterApplicationKey.Value = CustomConverter.DesfireKeyToCheck;
-			aiToWrite.MasterApplicationKey.KeyType = _keyTypeAppMasterKey;
+			aiToWrite.MasterApplicationKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeAppMasterKey;
 
 			CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
 			aiToWrite.ReadKey.Value = CustomConverter.DesfireKeyToCheck;
-			aiToWrite.ReadKey.KeyType = _keyTypeAppReadKey;
+			aiToWrite.ReadKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeAppReadKey;
 			aiToWrite.ReadKeyNo = (byte)_readKeyNo;
 
 			CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
 			aiToWrite.WriteKey.Value = CustomConverter.DesfireKeyToCheck;
-			aiToWrite.WriteKey.KeyType = _keyTypeAppWriteKey;
+			aiToWrite.WriteKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeAppWriteKey;
 			aiToWrite.WriteKeyNo = (byte)_writeKeyNo;
 
 			if (readerUnit.ConnectToReader())
@@ -1160,7 +1170,7 @@ namespace RFiDGear
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
-				aiToUse.MasterCardKey.KeyType = _keyType;
+				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
 
 				if (readerUnit.ConnectToReader())
 				{
@@ -1216,7 +1226,7 @@ namespace RFiDGear
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
-				aiToUse.MasterCardKey.KeyType = _keyType;
+				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
 
 				if (readerUnit.ConnectToReader())
 				{
@@ -1295,7 +1305,7 @@ namespace RFiDGear
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_piccMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
-				aiToUse.MasterCardKey.KeyType = _keyTypePiccMasterKey;
+				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypePiccMasterKey;
 
 				if (readerUnit.ConnectToReader())
 				{
@@ -1320,7 +1330,7 @@ namespace RFiDGear
 									if(authenticateToPICCFirst)
 										cmd.Authenticate(0, aiToUse.MasterCardKey);
 									
-									cmd.CreateApplicationEV1((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys, false, _keyTypeTargetApplication, 0, 0);
+									cmd.CreateApplicationEV1((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys, false, (LibLogicalAccess.DESFireKeyType)_keyTypeTargetApplication, 0, 0);
 									//cmd.CreateApplication((uint)_appID,_keySettings,(byte)_maxNbKeys);
 									//cmd.SelectApplication((uint)_appID);
 									//cmd.AuthenticateKeyNo(0);
@@ -1328,8 +1338,12 @@ namespace RFiDGear
 
 									return ERROR.NoError;
 								}
-								catch
+								catch(Exception e)
 								{
+                                    if(e.Message != "" && e.Message.Contains("exist"))
+                                    {
+                                        return ERROR.ItemAlreadyExistError;
+                                    }
 									return ERROR.AuthenticationError;
 								}
 							}
@@ -1363,17 +1377,17 @@ namespace RFiDGear
 				{
 					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
 					aiToUse.MasterApplicationKey.Value = CustomConverter.DesfireKeyToCheck;
-					aiToUse.MasterApplicationKey.KeyType = _keyTypeCurrent;
+					aiToUse.MasterApplicationKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeCurrent;
 				}
 				else
 				{
 					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
 					aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
-					aiToUse.MasterCardKey.KeyType = _keyTypeCurrent;
+					aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeCurrent;
 				}
 
 				DESFireKey applicationMasterKeyTarget = new DESFireKeyClass();
-				applicationMasterKeyTarget.KeyType = _keyTypeTarget;
+				applicationMasterKeyTarget.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeTarget;
 				
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
 				applicationMasterKeyTarget.Value = CustomConverter.DesfireKeyToCheck;
@@ -1400,9 +1414,35 @@ namespace RFiDGear
 
 									if (_appIDCurrent == 0 && _appIDTarget == 0)
 									{
-										cmd.Authenticate(0, aiToUse.MasterCardKey);
-										cmd.ChangeKeySettings(keySettings);
-										cmd.ChangeKey((byte)0, applicationMasterKeyTarget);
+                                        try
+                                        {
+                                            cmd.Authenticate(0, aiToUse.MasterCardKey);
+                                            cmd.ChangeKey((byte)0, applicationMasterKeyTarget);
+                                            cmd.Authenticate(0, aiToUse.MasterCardKey);
+                                            cmd.ChangeKeySettings(keySettings);
+                                        }
+
+                                        catch
+                                        {
+                                            try
+                                            {
+                                                cmd.Authenticate(0, aiToUse.MasterCardKey);
+                                                cmd.ChangeKeySettings(keySettings);
+                                                cmd.Authenticate(0, aiToUse.MasterCardKey);
+                                                cmd.ChangeKey((byte)0, applicationMasterKeyTarget);
+                                                return ERROR.NoError;
+                                            }
+
+                                            catch (Exception e)
+                                            {
+                                                if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+                                                {
+                                                    return ERROR.NotAllowed;
+                                                }
+                                                else
+                                                    return ERROR.AuthenticationError;
+                                            }
+                                        }
 									}
 									else if (_appIDCurrent == 0 && _appIDTarget > 0)
 									{
@@ -1413,15 +1453,47 @@ namespace RFiDGear
 									}
 									else
 									{
-										cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
-										cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+                                        try
+                                        {
+                                            cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
+                                            cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+                                            cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
+                                            cmd.ChangeKeySettings(keySettings);
+                                        }
+
+                                        catch
+                                        {
+                                            try
+                                            {
+                                                cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
+                                                cmd.ChangeKeySettings(keySettings);
+                                                cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
+                                                cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+                                                return ERROR.NoError;
+                                            }
+
+                                            catch (Exception e)
+                                            {
+                                                if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+                                                {
+                                                    return ERROR.NotAllowed;
+                                                }
+                                                else
+                                                    return ERROR.AuthenticationError;
+                                            }
+                                        }
 									}
 
 									return ERROR.NoError;
 								}
-								catch
+								catch (Exception e)
 								{
-									return ERROR.AuthenticationError;
+                                    if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+                                    {
+                                        return ERROR.NotAllowed;
+                                    }
+                                    else
+                                        return ERROR.AuthenticationError;
 								}
 							}
 							return ERROR.AuthenticationError;
@@ -1510,7 +1582,7 @@ namespace RFiDGear
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
-				aiToUse.MasterCardKey.KeyType = _keyType;
+				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
 
 				if (readerUnit.ConnectToReader())
 				{
@@ -1529,12 +1601,22 @@ namespace RFiDGear
 							{
 								try
 								{
-									var cmd = card.Commands as IDESFireCommands;
-									cmd.SelectApplication((uint)_appID);
-									cmd.Authenticate(0, aiToUse.MasterCardKey);
+                                    var cmd = card.Commands as IDESFireCommands;
 
-									cmd.DeleteFile((byte)_fileID);
-									return ERROR.NoError;
+                                    try
+                                    {
+                                        cmd.SelectApplication((uint)_appID);
+                                        cmd.Authenticate(0, aiToUse.MasterCardKey);
+                                    }
+
+                                    catch
+                                    {
+                                        cmd.DeleteFile((byte)_fileID);
+                                        return ERROR.NoError;
+                                    }
+
+                                    cmd.DeleteFile((byte)_fileID);
+                                    return ERROR.NoError;
 								}
 								catch
 								{
@@ -1569,7 +1651,7 @@ namespace RFiDGear
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
-				aiToUse.MasterCardKey.KeyType = _keyType;
+				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
 
 				if (readerUnit.ConnectToReader())
 				{
@@ -1701,7 +1783,7 @@ namespace RFiDGear
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
-				aiToUse.MasterCardKey.KeyType = _keyType;
+				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
 
 				if (readerUnit.ConnectToReader())
 				{
@@ -1804,7 +1886,48 @@ namespace RFiDGear
 				return ERROR.IOError;
 			}
 		}
-		
-		#endregion
-	}
+
+        #endregion
+
+        #region EM4135
+
+        public ERROR ReadEM4135ChipPublic()
+        {
+            try
+            {
+                if (readerUnit.ConnectToReader())
+                {
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    {
+                        if (readerUnit.Connect())
+                        {
+                            ReaderUnitName = readerUnit.ConnectedName;
+                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
+
+                            card = readerUnit.GetSingleChip();
+
+
+                            if (true) //card.Type == "ISO15693"
+                            {
+                                var cmd = (card as EM4135Chip).ChipIdentifier;// IMifareUltralightCommands;
+                                //object res = cmd.ReadPage(4);
+
+                                //appIDs = (appIDsObject as UInt32[]);
+                            }
+
+                            return ERROR.NoError;
+                        }
+                    }
+                }
+                return ERROR.NoError;
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                return ERROR.IOError;
+            }
+        }
+
+        #endregion
+    }
 }

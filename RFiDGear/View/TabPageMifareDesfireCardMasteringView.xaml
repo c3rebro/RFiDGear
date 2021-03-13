@@ -1,14 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <UserControl
-	x:Class="RFiDGear.View.TabPageMifareDesfireCardMasteringView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:RFiDGear" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer" xmlns:islog="clr-namespace:LibLogicalAccess;assembly=Interop.LibLogicalAccess"
-	mc:Ignorable="d">
-	<UserControl.Resources>
-		<dal:BindingProxy
+	x:Class="RFiDGear.View.TabPageMifareDesfireCardMasteringView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="clr-namespace:RFiDGear"
+    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+    xmlns:islog="clr-namespace:LibLogicalAccess;assembly=Interop.LibLogicalAccess"
+	mc:Ignorable="d" Height="303.027">
+    <UserControl.Resources>
+        <dal:BindingProxy
 			x:Key="proxy"
 			Data="{Binding}" />
-		<dal:ResourceLoader
+        <dal:ResourceLoader
 			x:Key="Localization" />
-		<!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+        <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 			<ContextMenu.ItemContainerStyle>
 				<Style TargetType="MenuItem">
 					<Setter
@@ -20,33 +27,33 @@
 				</Style>
 			</ContextMenu.ItemContainerStyle>
 		</ContextMenu>-->
-	</UserControl.Resources>
-	<Grid>
-		<Grid
+    </UserControl.Resources>
+    <Grid>
+        <Grid
 			Grid.Column="0"
 			Grid.Row="0"
 			HorizontalAlignment="Stretch"
 			VerticalAlignment="Stretch"
-			Margin="0,0,0,0">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition
+			Margin="0,0,0.4,0.2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition
 					Width="*" />
-				<ColumnDefinition
+                <ColumnDefinition
 					Width="5" />
-				<ColumnDefinition
+                <ColumnDefinition
 					Width="*" />
-			</Grid.ColumnDefinitions>
-			<GroupBox
+            </Grid.ColumnDefinitions>
+            <GroupBox
 				IsEnabled="{Binding IsDesfirePICCAuthoringTabEnabled}"
-				Header="Mifare DESFire Card Master Settings - Target"
+				Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='groupBoxheaderMifareDesfireCardMasterSettingTarget' }"
 				Grid.Column="2"
 				Grid.Row="0"
-				Margin="8,0,0,0"
+				Margin="8,8,8,8"
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Stretch">
-				<Grid>
-					<Label
-						Content="Set New Master key"
+                <Grid>
+                    <Label
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireCurrentMasterKey' }"
 						Height="26"
 						Width="140"
 						Grid.Column="0"
@@ -54,7 +61,7 @@
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
 						Margin="8,9,0,0" />
-					<TextBox
+                    <TextBox
 						Text="{Binding DesfireMasterKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						HorizontalContentAlignment="Left"
 						VerticalContentAlignment="Center"
@@ -63,43 +70,43 @@
 						Grid.Row="0"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Top"
-						Margin="8,9,10,0">
-						<TextBox.Resources>
-							<Style
+						Margin="9,8,7,0">
+                        <TextBox.Resources>
+                            <Style
 								TargetType="TextBox">
-								<Style.Triggers>
-									<DataTrigger
+                                <Style.Triggers>
+                                    <DataTrigger
 										Binding="{Binding IsValidDesfireMasterKeyTarget}"
 										Value="True">
-										<Setter
+                                        <Setter
 											Property="Foreground"
 											Value="Green" />
-										<Setter
+                                        <Setter
 											Property="Background"
 											Value="White" />
-										<Setter
+                                        <Setter
 											Property="FontWeight"
 											Value="Normal" />
-									</DataTrigger>
-									<DataTrigger
+                                    </DataTrigger>
+                                    <DataTrigger
 										Binding="{Binding IsValidDesfireMasterKeyTarget}"
 										Value="False">
-										<Setter
+                                        <Setter
 											Property="Foreground"
 											Value="Black" />
-										<Setter
+                                        <Setter
 											Property="Background"
 											Value="Red" />
-										<Setter
+                                        <Setter
 											Property="FontWeight"
 											Value="Normal" />
-									</DataTrigger>
-								</Style.Triggers>
-							</Style>
-						</TextBox.Resources>
-					</TextBox>
-					<Label
-						Content="Target Key Type"
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Resources>
+                    </TextBox>
+                    <Label
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireCurrentKeyType' }"
 						Width="116"
 						Height="26"
 						Grid.Column="0"
@@ -107,7 +114,7 @@
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
 						Margin="8,3,0,0" />
-					<ComboBox
+                    <ComboBox
 						ItemsSource="{dal:Enumerate {x:Type islog:DESFireKeyType}}"
 						SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeTarget,Converter={StaticResource Localization},ConverterParameter={x:Type islog:DESFireKeyType},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
 						Width="100"
@@ -116,36 +123,142 @@
 						Grid.Row="1"
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
-						Margin="9,3,0,0" />
-					<Button
-						Content="Change Key"
+						Margin="9,3,7,0" />
+                    <CheckBox
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelAllowChangeMK' }"
+						IsChecked="{Binding IsAllowChangeMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+						Grid.Column="0"
+						Grid.Row="3"
+                        Grid.ColumnSpan="2"
+						VerticalAlignment="Top"
+						Margin="8,12,0,0" 
+                        HorizontalAlignment="Left">
+                        <CheckBox.Style>
+                            <Style>
+                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                            </Style>
+                        </CheckBox.Style>
+                        <CheckBox.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock
+							FontWeight="Normal"
+							Text="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='toolTipCheckBoxAllowChangeMK' }" />
+                                </StackPanel>
+                            </ToolTip>
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+                    <CheckBox
+                        Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelAllowListing' }"
+						IsChecked="{Binding IsAllowListingWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+						Grid.Column="0"
+						Grid.Row="4"
+                        Grid.ColumnSpan="2"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,12,0,0">
+                        <CheckBox.Style>
+                            <Style>
+                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                            </Style>
+                        </CheckBox.Style>
+                        <CheckBox.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock
+							FontWeight="Normal"
+							Text="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='toolTipCheckBoxAllowListing' }" />
+                                </StackPanel>
+                            </ToolTip>
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+                    <CheckBox
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelAllowCreateDelete' }"
+						IsChecked="{Binding IsAllowCreateDelWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+						Grid.Column="0"
+						Grid.Row="5"
+                        Grid.ColumnSpan="2"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,12,0,0">
+                        <CheckBox.Style>
+                            <Style>
+                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                            </Style>
+                        </CheckBox.Style>
+                        <CheckBox.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock
+							FontWeight="Normal"
+							Text="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='toolTipCheckBoxAllowCreateDelete' }" />
+                                </StackPanel>
+                            </ToolTip>
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+                    <CheckBox
+                        Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelAllowConfigChange' }"
+						IsChecked="{Binding IsAllowConfigChangableChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+						Grid.Column="0"
+						Grid.Row="6"
+                        Grid.ColumnSpan="2"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="8,13,0,0">
+                        <CheckBox.Style>
+                            <Style>
+                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                            </Style>
+                        </CheckBox.Style>
+                        <CheckBox.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock
+							FontWeight="Normal"
+							Text="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='toolTipCheckBoxConfigChangeable' }" />
+                                </StackPanel>
+                            </ToolTip>
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+                    <Button
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='buttonContentMifareDesfireChangePICCMasterKey' }"
 						Command="{Binding ChangeMasterCardKeyCommand}"
 						Height="26"
 						Grid.Column="0"
 						Grid.ColumnSpan="2"
-						Grid.Row="3"
+						Grid.Row="8"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Bottom"
 						Margin="8,0,8,7" />
-					<Grid.RowDefinitions>
-						<RowDefinition
+                    <Grid.RowDefinitions>
+                        <RowDefinition
 							Height="42" />
-						<RowDefinition
+                        <RowDefinition
 							Height="36" />
-						<RowDefinition
-							Height="36" />
-						<RowDefinition
+                        <RowDefinition
+							Height="16" />
+                        <RowDefinition
+							Height="32" />
+                        <RowDefinition
+							Height="32" />
+                        <RowDefinition
+							Height="32" />
+                        <RowDefinition
+							Height="32" />
+                        <RowDefinition
+							Height="16" />
+                        <RowDefinition
 							Height="*" />
-					</Grid.RowDefinitions>
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition
-							Width="154.757272747508" />
-						<ColumnDefinition
-							Width="0.876829488818367*" />
-					</Grid.ColumnDefinitions>
-				</Grid>
-			</GroupBox>
-			<GridSplitter
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+							Width="150" />
+                        <ColumnDefinition
+							Width="*" MinWidth="100"/>
+                    </Grid.ColumnDefinitions>
+                </Grid>
+            </GroupBox>
+            <GridSplitter
 				ResizeBehavior="PreviousAndNext"
 				ResizeDirection="Auto"
 				Background="#FFD9D9DB"
@@ -155,17 +268,17 @@
 				Grid.Row="0"
 				Grid.Column="1"
 				Width="5" />
-			<GroupBox
+            <GroupBox
 				IsEnabled="{Binding IsDesfireAuthenticationTabEnabled}"
-				Header="Mifare DESFire Card Master Settings - Current"
+				Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='groupBoxHeaderMifareDesfireCardMasterSettingCurrent' }"
 				Grid.Column="0"
 				Grid.Row="0"
-				Margin="0,0,8,0"
+				Margin="8,8,8,8"
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Stretch">
-				<Grid>
-					<Label
-						Content="Current Master Key"
+                <Grid>
+                    <Label
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireCurrentMasterKey' }"
 						Height="26"
 						Width="115"
 						Grid.Column="0"
@@ -173,7 +286,7 @@
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
 						Margin="8,9,0,0" />
-					<TextBox
+                    <TextBox
 						Text="{Binding DesfireMasterKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						HorizontalContentAlignment="Left"
 						VerticalContentAlignment="Center"
@@ -182,43 +295,43 @@
 						Grid.Row="0"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Top"
-						Margin="9,3,7,0">
-						<TextBox.Resources>
-							<Style
+						Margin="9,8,10,0">
+                        <TextBox.Resources>
+                            <Style
 								TargetType="TextBox">
-								<Style.Triggers>
-									<DataTrigger
+                                <Style.Triggers>
+                                    <DataTrigger
 										Binding="{Binding IsValidDesfireMasterKeyCurrent}"
 										Value="True">
-										<Setter
+                                        <Setter
 											Property="Foreground"
 											Value="Green" />
-										<Setter
+                                        <Setter
 											Property="Background"
 											Value="White" />
-										<Setter
+                                        <Setter
 											Property="FontWeight"
 											Value="Normal" />
-									</DataTrigger>
-									<DataTrigger
+                                    </DataTrigger>
+                                    <DataTrigger
 										Binding="{Binding IsValidDesfireMasterKeyCurrent}"
 										Value="False">
-										<Setter
+                                        <Setter
 											Property="Foreground"
 											Value="Black" />
-										<Setter
+                                        <Setter
 											Property="Background"
 											Value="Red" />
-										<Setter
+                                        <Setter
 											Property="FontWeight"
 											Value="Normal" />
-									</DataTrigger>
-								</Style.Triggers>
-							</Style>
-						</TextBox.Resources>
-					</TextBox>
-					<Button
-						Content="Authenticate with Current Key"
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Resources>
+                    </TextBox>
+                    <Button
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='buttonContentMifareDesfireAuthenticateWithCurrentKey' }"
 						Command="{Binding AuthenticateToCardMasterApplicationCommand}"
 						Height="26"
 						Grid.Column="0"
@@ -227,25 +340,25 @@
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Bottom"
 						Margin="8,0,8,8" />
-					<Label
-						Content="Current Key Type"
+                    <Label
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireCurrentKeyType' }"
 						Grid.Column="0"
 						Grid.Row="1"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Stretch"
-						Margin="8,1,21,7" />
-					<ComboBox
+						Margin="8,1.4,12.2,6.6" />
+                    <ComboBox
 						ItemsSource="{dal:Enumerate {x:Type islog:DESFireKeyType}}"
 						SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent,Converter={StaticResource Localization},ConverterParameter={x:Type islog:DESFireKeyType},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
-						Width="100"
+						Width="81"
 						Height="26"
 						Grid.Column="1"
 						Grid.Row="1"
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
-						Margin="9,3,0,0" />
-					<Button
-						Content="Format Card"
+						Margin="9,3.4,0,0" />
+                    <Button
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='buttonContentMifareDesfireCardMasteringFormatButton' }"
 						Command="{Binding FormatDesfireCardCommand}"
 						Height="26"
 						Grid.Column="0"
@@ -254,26 +367,26 @@
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Bottom"
 						Margin="8,0,8,7" />
-					<Grid.RowDefinitions>
-						<RowDefinition
+                    <Grid.RowDefinitions>
+                        <RowDefinition
 							Height="42" />
-						<RowDefinition
+                        <RowDefinition
 							Height="36" />
-						<RowDefinition
+                        <RowDefinition
 							Height="36" />
-						<RowDefinition
-							Height="0.753246753246753*" />
-						<RowDefinition
+                        <RowDefinition
+							Height="753246753246753*" />
+                        <RowDefinition
 							Height="36" />
-					</Grid.RowDefinitions>
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition
-							Width="134.884612848075" />
-						<ColumnDefinition
-							Width="*" />
-					</Grid.ColumnDefinitions>
-				</Grid>
-			</GroupBox>
-		</Grid>
-	</Grid>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
+							Width="150" />
+                        <ColumnDefinition
+							Width="*" MinWidth="100"/>
+                    </Grid.ColumnDefinitions>
+                </Grid>
+            </GroupBox>
+        </Grid>
+    </Grid>
 </UserControl>

@@ -8,7 +8,7 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>RFiDGear</RootNamespace>
     <AssemblyName>RFiDGear</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <TargetFrameworkProfile />
     <NoWin32Manifest>False</NoWin32Manifest>
@@ -18,7 +18,7 @@
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <WarningLevel>4</WarningLevel>
     <ReferencePath>C:\Program Files\Microsoft SDKs\Windows\v8.1A\bin\</ReferencePath>
-    <SignAssembly>False</SignAssembly>
+    <SignAssembly>false</SignAssembly>
     <DelaySign>False</DelaySign>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     <RunCodeAnalysis>False</RunCodeAnalysis>
@@ -199,6 +199,9 @@
       <DependentUpon>TabPageMifareUltralightDataExplorerView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="View\TabPageMiscReaderSettingsView.xaml.cs">
+      <DependentUpon>TabPageMiscReaderSettingsView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\TabPageReaderSettingsView.xaml.cs">
       <DependentUpon>TabPageReaderSettingsView.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -228,6 +231,9 @@
     <Page Include="View\SetupView.xaml" />
     <Page Include="View\TabPageMifareDesfireDataExplorerView.xaml" />
     <Page Include="View\TabPageMifareUltralightDataExplorerView.xaml" />
+    <Page Include="View\TabPageMiscReaderSettingsView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="View\TabPageReaderSettingsView.xaml" />
   </ItemGroup>
   <ItemGroup>
@@ -252,10 +258,11 @@
     <COMReference Include="LibLogicalAccess">
       <Guid>{9B9E09AD-A354-4D6F-93A8-DA32D71525A4}</Guid>
       <VersionMajor>1</VersionMajor>
-      <VersionMinor>57</VersionMinor>
+      <VersionMinor>87</VersionMinor>
       <Lcid>0</Lcid>
       <WrapperTool>tlbimp</WrapperTool>
       <Isolated>False</Isolated>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

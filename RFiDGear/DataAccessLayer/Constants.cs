@@ -6,7 +6,6 @@
  */
 
 using LibLogicalAccess;
-
 using System;
 
 namespace RFiDGear.DataAccessLayer
@@ -23,12 +22,13 @@ namespace RFiDGear.DataAccessLayer
 	public static class Constants
 	{
 		public const int MAX_WAIT_INSERTION = 200; //timeout for chip response in ms
-		public const string TITLE_SUFFIX = "DEVELOPER PREVIEW"; //turns out special app versions
+		public const string TITLE_SUFFIX = ""; //turns out special app versions
+																//public const string TITLE_SUFFIX = "DEVELOPER PREVIEW"; //turns out special app versions
 	}
-	
-	///
+
+	/// <summary>
 	/// This enum is used to indicate what kind of checksum you will be calculating.
-	/// 
+	/// </summary>
 	public enum CRC8_POLY
 	{
 		CRC8 = 0xd5,
@@ -148,7 +148,7 @@ namespace RFiDGear.DataAccessLayer
 	}
 
 	/// <summary>
-	///
+	/// UID and Type of Cardtechnology
 	/// </summary>
 	public struct CARD_INFO
 	{
@@ -163,7 +163,7 @@ namespace RFiDGear.DataAccessLayer
 	}
 
 	/// <summary>
-	/// Description of Constants.
+	/// Available Cardtechnologies
 	/// </summary>
 	public enum CARD_TYPE
 	{
@@ -178,11 +178,12 @@ namespace RFiDGear.DataAccessLayer
 		MifarePlus_SL3_1K,
 		MifarePlus_SL3_2K,
 		MifarePlus_SL3_4K,
-		MifareUltralight
+		MifareUltralight,
+        GENERIC_T_CL_A
 	};
 
 	/// <summary>
-	///
+	/// Error Messages
 	/// </summary>
 	public enum ERROR
 	{
@@ -190,11 +191,13 @@ namespace RFiDGear.DataAccessLayer
 		NoError,
 		AuthenticationError,
 		DeviceNotReadyError,
-		IOError
+		IOError,
+        ItemAlreadyExistError,
+        NotAllowed
 	}
 
 	/// <summary>
-	///
+	/// Key Formatting Errors
 	/// </summary>
 	public enum KEY_ERROR
 	{
@@ -204,25 +207,30 @@ namespace RFiDGear.DataAccessLayer
 		NO_ERROR
 	};
 
+    /// <summary>
+    /// Available Readers
+    /// </summary>
 	[Flags]
 	public enum ReaderTypes
 	{
-		None = 0,
-		Admitto = 1,
-		AxessTMC13 = 2,
-		Deister = 3,
-		Gunnebo = 4,
-		IdOnDemand = 5,
-		PCSC = 6,
-		Promag = 7,
-		RFIDeas = 8,
-		Rpleth = 9,
-		SCIEL = 10,
-		SmartID = 11,
-		STidPRG = 12
+		None,
+		Admitto,
+		AxessTMC13,
+		Deister,
+        Elatec,
+        GigaTMS,
+        Gunnebo,
+		IdOnDemand,
+		PCSC,
+		Promag,
+		RFIDeas,
+		Rpleth,
+		SCIEL,
+		SmartID,
+		STidPRG
 	};
 
-	public enum KeyType_MifareDesFireKeyType
+    public enum KeyType_MifareDesFireKeyType
 	{
 		DefaultDesfireCardCardMasterKey,
 		DefaultDesfireCardApplicationMasterKey,
@@ -241,9 +249,10 @@ namespace RFiDGear.DataAccessLayer
 
 		public KeyType_MifareDesFireKeyType KeyType;
 		public DESFireKeyType EncryptionType;
+        
 		public string Key;
 	}
-
+    
 	public struct MifareClassicDefaultKeys
 	{
 		public MifareClassicDefaultKeys(int _keyNumber, string _accessBits)
@@ -257,4 +266,58 @@ namespace RFiDGear.DataAccessLayer
 		public int KeyNumber;
 		public string AccessBits { get { return accessBits; } set { accessBits = value; } }
 	}
+
+
+    #region LibLogicalAccess enums
+
+    /*
+    /// <summary>
+    /// 
+    /// </summary>
+    [Flags]
+    public enum DESFireKeyType
+    {
+        DF_KEY_3K3DES,
+        DF_KEY_AES,
+        DF_KEY_DES
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    [Flags]
+    public enum TaskAccessRights
+    {
+        AR_KEY0 = 0,
+        AR_KEY1 = 1,
+        AR_KEY2 = 2,
+        AR_KEY3 = 3,
+        AR_KEY4 = 4,
+        AR_KEY5 = 5,
+        AR_KEY6 = 6,
+        AR_KEY7 = 7,
+        AR_KEY8 = 8,
+        AR_KEY9 = 9,
+        AR_KEY10 = 10,
+        AR_KEY11 = 11,
+        AR_KEY12 = 12,
+        AR_KEY13 = 13,
+        AR_FREE = 14,
+        AR_NEVER = 15
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    [Flags]
+    public enum EncryptionMode
+    {
+        CM_ENCRYPT = 3,
+        CM_MAC = 1,
+        CM_PLAIN = 0,
+        CM_UNKNOWN = 255
+    }
+    */
+    #endregion
 }
+

@@ -5,6 +5,8 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Collections.Generic;
 
+using PluginSystem.DataAccessLayer;
+
 // Template version 1.2.0.2. Code developed for framework v2.0.50727.3074
 // This code is copyright (c) 2009 Computer DJ. All rights reserved.
 
@@ -21,7 +23,7 @@ using System.Collections.Generic;
 public sealed class MefHelper : IDisposable
 {
 
-    #region Constructor / Deconstructor
+    #region Constructor / Destructor
 
     /// <summary>
     /// The starting point for this class
@@ -43,8 +45,9 @@ public sealed class MefHelper : IDisposable
             if (Directory.Exists(_ExtensionsPath) == false)
                 Directory.CreateDirectory(_ExtensionsPath);
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
+            LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
         }
 
         _ExtensionsPath = Path.Combine(_ExtensionsPath, "Extensions");
@@ -54,8 +57,9 @@ public sealed class MefHelper : IDisposable
             if (Directory.Exists(_ExtensionsPath) == false)
                 Directory.CreateDirectory(_ExtensionsPath);
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
+            LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
         }
 
         #if (DEBUG)

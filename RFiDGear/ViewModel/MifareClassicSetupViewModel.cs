@@ -1349,7 +1349,27 @@ namespace RFiDGear.ViewModel
 			}
 		} private Lazy<IUIExtension, IUIExtensionDetails>[] items;
 		#endregion
-		
+
+		#region Visual Properties
+
+		/// <summary>
+		///
+		/// </summary>
+		public bool IsFocused
+		{
+			get
+			{
+				return isFocused;
+			}
+			set
+			{
+				isFocused = value;
+			}
+		}
+		private bool isFocused;
+
+		#endregion
+
 		#region General Properties
 
 		/// <summary>

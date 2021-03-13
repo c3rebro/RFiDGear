@@ -657,4 +657,197 @@ Soll die Aktualisierung jetzt herunter geladen und installiert werden?</value>
   <data name="textBoxStatusTextBoxUnableToAuthenticate" xml:space="preserve">
     <value>Authentifizierungsfehler</value>
   </data>
+  <data name="ENUM.ReaderTypes.Elatec" xml:space="preserve">
+    <value>Elatec TWN4</value>
+  </data>
+  <data name="ENUM.ReaderDrivers.Elatec" xml:space="preserve">
+    <value>Elatec</value>
+  </data>
+  <data name="ENUM.ReaderDrivers.LibLogicalAccess" xml:space="preserve">
+    <value>LibLogicalAccess</value>
+  </data>
+  <data name="labelSelectedBaudRate" xml:space="preserve">
+    <value>Baudrate:</value>
+  </data>
+  <data name="labelSelectedComPort" xml:space="preserve">
+    <value>Com Port:</value>
+  </data>
+  <data name="buttonContentMifareDesfireCardMasteringFormatButton" xml:space="preserve">
+    <value>Formatieren</value>
+  </data>
+  <data name="toolTipSelectedKeySetupTaskIndex" xml:space="preserve">
+    <value>Legt die Reihenfolge der Abarbeitung erstellter Aufgaben fest
+Erlaubte Werte: Freitext
+Sortierrerihenfolge: Alphabetisch
+Beispiel: 0; 0.0; A1</value>
+  </data>
+  <data name="buttonCancelMifareDesfireSetupViewCaption" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="labelAllowChangeMK" xml:space="preserve">
+    <value>PICC / App MasterKey änderbar</value>
+  </data>
+  <data name="labelAllowConfigChange" xml:space="preserve">
+    <value>Konfiguration ist änderbar</value>
+  </data>
+  <data name="labelAllowCreateDelete" xml:space="preserve">
+    <value>Apps / Dateien ohne PICC / App MasterKey anlegbar</value>
+  </data>
+  <data name="labelAllowListing" xml:space="preserve">
+    <value>Verzeichnis ohne PICC / App MasterKey einsehbar</value>
+  </data>
+  <data name="tabPageHeaderApplicationKeySetup" xml:space="preserve">
+    <value>App Schlüssel Einstellungen</value>
+  </data>
+  <data name="tabPageHeaderApplicationSetup" xml:space="preserve">
+    <value>App Einstellungen</value>
+  </data>
+  <data name="tabPageHeaderFileExplorer" xml:space="preserve">
+    <value>Datei Editor</value>
+  </data>
+  <data name="tabPageHeaderFileSetup" xml:space="preserve">
+    <value>Datei Einstellungen</value>
+  </data>
+  <data name="tabPageHeaderPICCMasterKeySetup" xml:space="preserve">
+    <value>PICC Schlüssel Einstellungen</value>
+  </data>
+  <data name="toolTipCheckBoxConfigChangeable" xml:space="preserve">
+    <value>Sind diese Einstellungen nachträglich editierbar?</value>
+  </data>
+  <data name="toolTipTabItemApplicationKeySetup" xml:space="preserve">
+    <value>Verwendungszweck:
+- Schlüssel bestehender Applikationen ändern
+Benötigt:
+- App Master Key oder bisheringen Schlüssel (dieser Reiter in der Gruppierung "Mifare DESFire App Schlüsseleinstellungen - IST") wenn die Sicherheitseinstellungen dies erfordern (optional)
+Wird benötigt von:
+- diesem Reiter beim Ändern von Schlüsseln
+- Reiter "Datei erstellen"
+Hinweise:
+- Schlüssel "0" ist der "App Master Key"
+</value>
+  </data>
+  <data name="toolTipTabItemApplicationSetup" xml:space="preserve">
+    <value>Verwendungszweck:
+- Neue Applikation anlegen und bestehende löschen
+Benötigt:
+- PICC Master Key (Reiter "PICC Master Key Setup") wenn die Sicherheitseinstellungen dies erfordern (optional)
+Wird benötigt von:
+- Reiter "Application Key Changeover" beim Ändern von Schlüsseln
+</value>
+  </data>
+  <data name="toolTipTabItemFileSetup" xml:space="preserve">
+    <value>Verwendungszweck
+- Neue Dateien anlegen und bestehende löschen 
+Benötigt:
+- App Master Key und App ID (Reiter "App Schlüssel Einstellungen" -&gt; Gruppierung "Mifare DESFire App Einstellungen - IST")
+Wird benötigt von:
+- Reiter "Daten Editor" zum lesen und schreiben von Daten in Dateien</value>
+  </data>
+  <data name="toolTipTabItemPICCMasterKeySetup" xml:space="preserve">
+    <value>Verwendungszweck:
+- PICC Master Key setzen oder ändern
+- Speicherplatz freigeben / Karte formatieren
+Benötigt:
+- k.A.
+Wird benötigt von:
+- Reiter "Application Setup" wenn die Sicherheitseinstellungen dies erfordern</value>
+  </data>
+  <data name="buttonContentMifareDesfireAuthenticateWithCurrentKey" xml:space="preserve">
+    <value>Mit PICC MasterKey Authentifizieren</value>
+  </data>
+  <data name="buttonContentMifareDesfireChangePICCMasterKey" xml:space="preserve">
+    <value>Schlüssel ändern</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireCardMasterSettingCurrent" xml:space="preserve">
+    <value>Mifare DESFire PICC Key Einstellungen - IST</value>
+  </data>
+  <data name="labelContentMifareDesfireCurrentKeyType" xml:space="preserve">
+    <value>Schlüsseltyp</value>
+  </data>
+  <data name="labelContentMifareDesfireCurrentMasterKey" xml:space="preserve">
+    <value>PICC Master Key</value>
+  </data>
+  <data name="groupBoxheaderMifareDesfireCardMasterSettingTarget" xml:space="preserve">
+    <value>Mifare DESFire PICC Key Einstellungen - SOLL</value>
+  </data>
+  <data name="buttonContentMifareDesfireAppCreationCreateApp" xml:space="preserve">
+    <value>Applikation erstellen</value>
+  </data>
+  <data name="buttonContentMifareDesfireAppCreationDeleteApp" xml:space="preserve">
+    <value>Applikation löschen</value>
+  </data>
+  <data name="buttonContentMifareDesfireKeyChangeAuthenticate" xml:space="preserve">
+    <value>Mit App Schlüssel Authentifizieren</value>
+  </data>
+  <data name="buttonContentMifareDesfireKeyChangeChangeKey" xml:space="preserve">
+    <value>Schlüssel ändern</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireAppCreation" xml:space="preserve">
+    <value>Mifare DESFire Applikation - Anlegen / Bearbeiten</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireAppSettingsCurrent" xml:space="preserve">
+    <value>Mifare DESFire App Einstellungen - IST</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireAppSettingsTarget" xml:space="preserve">
+    <value>Mifare DESFire App Einstellungen - SOLL</value>
+  </data>
+  <data name="labelContentMifareDesfireAppKey" xml:space="preserve">
+    <value>App Schlüssel</value>
+  </data>
+  <data name="labelContentMifareDesfireKeyNumber" xml:space="preserve">
+    <value>Schlüsselnummer</value>
+  </data>
+  <data name="labelMifareDesfireAppSetupKeySettings" xml:space="preserve">
+    <value>Schlüsseleinstellungen</value>
+  </data>
+  <data name="textBoxPleaseEnterTaskDescription" xml:space="preserve">
+    <value>Beschreibung hier eingeben...</value>
+  </data>
+  <data name="toolTipCheckBoxAllowChangeMK" xml:space="preserve">
+    <value>Erlaubt nachträgliche PICC bzw. App Masterkey änderungen</value>
+  </data>
+  <data name="toolTipCheckBoxAllowCreateDelete" xml:space="preserve">
+    <value>Erlaubt das nachträglich Anlegen und Löschen ohne MasterKey Authentifizierung
+(Empfohlene Einstellung für PICC Ebene - NICHT für App Ebene)</value>
+  </data>
+  <data name="toolTipCheckBoxAllowListing" xml:space="preserve">
+    <value>Erlaubt Einsehen der vorhanden Apps und Schlüsselnummern
+(aber nicht die Schlüssel als solche)</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireFileSettings" xml:space="preserve">
+    <value>Mifare DESFire Dateien - Anlegen / Bearbeiten</value>
+  </data>
+  <data name="labelContentMifareDesfireFileNumber" xml:space="preserve">
+    <value>Datei Nr.</value>
+  </data>
+  <data name="labelContentMifareDesfireFileSize" xml:space="preserve">
+    <value>Dateigröße</value>
+  </data>
+  <data name="labelContentMifareDesfireFileType" xml:space="preserve">
+    <value>Dateityp</value>
+  </data>
+  <data name="buttonContentMifareDesfireFileMasteringCreateFile" xml:space="preserve">
+    <value>Datei erstellen</value>
+  </data>
+  <data name="buttonContentMifareDesfireFileMasteringDeleteFile" xml:space="preserve">
+    <value>Datei löschen</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireFileDataOnChip" xml:space="preserve">
+    <value>Daten - IST</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireFileDataOnMemory" xml:space="preserve">
+    <value>Daten - SOLL</value>
+  </data>
+  <data name="buttonContentMifareDesfireFileSetupOpenDataFile" xml:space="preserve">
+    <value>Datendatei Öffnen...</value>
+  </data>
+  <data name="buttonContentMifareDesfireFileSetupReadData" xml:space="preserve">
+    <value>Datei lesen</value>
+  </data>
+  <data name="buttonContentMifareDesfireFileSetupWriteData" xml:space="preserve">
+    <value>Datei schreiben</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireFileReadWriteData" xml:space="preserve">
+    <value>Schreib- / Leseschlüssel</value>
+  </data>
 </root>

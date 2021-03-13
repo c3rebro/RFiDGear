@@ -58,11 +58,11 @@ namespace RFiDGear.DataAccessLayer
 		/// </summary>
 		public Type Type { get; set; }
 
-		/// <summary>
-		///
-		/// </summary>
-		/// <param name="type"></param>
-		public EnumerateExtension(Type type)
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="type"></param>
+        public EnumerateExtension(Type type)
 		{
 			this.Type = type;
 

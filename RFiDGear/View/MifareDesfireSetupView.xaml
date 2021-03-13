@@ -4,20 +4,20 @@
 	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
 	Title="{Binding Caption}"
 	SizeToContent="WidthAndHeight"
-	MinWidth="800"
-	MinHeight="620"
+	MinWidth="900"
+	MinHeight="700"
 	WindowStartupLocation="CenterOwner">
-	<Window.Resources>
-		<vm:ViewModelLocator
+    <Window.Resources>
+        <vm:ViewModelLocator
 			x:Key="Locator" />
-		<BooleanToVisibilityConverter
+        <BooleanToVisibilityConverter
 			x:Key="BoolToVisConv" />
-		<dal:BindingProxy
+        <dal:BindingProxy
 			x:Key="proxy"
 			Data="{Binding}" />
-		<dal:ResourceLoader
+        <dal:ResourceLoader
 			x:Key="Localization" />
-		<!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+        <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 			<ContextMenu.ItemContainerStyle>
 				<Style TargetType="MenuItem">
 					<Setter
@@ -29,19 +29,19 @@
 				</Style>
 			</ContextMenu.ItemContainerStyle>
 		</ContextMenu>-->
-	</Window.Resources>
-	<Grid>
-		<Grid.RowDefinitions>
-			<RowDefinition
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition
 				Height="110.066450667812" />
-			<RowDefinition
+            <RowDefinition
 				Height="*" />
-			<RowDefinition
+            <RowDefinition
 				Height="11" />
-			<RowDefinition
+            <RowDefinition
 				Height="0.3*" />
-		</Grid.RowDefinitions>
-		<GridSplitter
+        </Grid.RowDefinitions>
+        <GridSplitter
 			ResizeBehavior="PreviousAndNext"
 			ResizeDirection="Rows"
 			Background="#FFD9D9DB"
@@ -52,14 +52,14 @@
 			Grid.Column="0"
 			Height="5"
 			Width="Auto" />
-		<Grid
+        <Grid
 			Height="106"
 			Grid.Column="0"
 			Grid.Row="0"
 			HorizontalAlignment="Stretch"
 			VerticalAlignment="Top"
 			Margin="0,0,0,0">
-			<GroupBox
+            <GroupBox
 				Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='groupBoxHeaderMifareDesfireSetupTaskConfiguration' }"
 				Height="106"
 				Grid.Column="0"
@@ -67,13 +67,13 @@
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Top"
 				Margin="9,0,8,0">
-				<Grid
+                <Grid
 					VerticalAlignment="Stretch"
 					HorizontalAlignment="Stretch"
 					Margin="0,0,0,0"
 					Grid.Column="0"
 					Grid.Row="0">
-					<Label
+                    <Label
 						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireSetupTaskConfigurationType' }"
 						Height="26"
 						Width="117"
@@ -82,7 +82,7 @@
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
 						Margin="10,7,0,0" />
-					<ComboBox
+                    <ComboBox
 						ItemsSource="{dal:Enumerate {x:Type dal:TaskType_MifareDesfireTask}}"
 						SelectedItem="{Binding SelectedTaskType,Converter={StaticResource Localization},ConverterParameter={x:Type dal:TaskType_MifareDesfireTask},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
 						Width="252"
@@ -92,127 +92,195 @@
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
 						Margin="8,7,0,0"></ComboBox>
-					<Label
+                    <Label
 						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireSetupTaskConfigurationDescription' }"
 						RenderTransformOrigin="0.5085,0.4231"
-						Height="26"
-						Width="97"
 						Grid.Column="2"
 						Grid.Row="1"
-						HorizontalAlignment="Left"
-						VerticalAlignment="Top"
-						Margin="10,10,0,0" />
-					<TextBox
+						Margin="8,2.6,0,0" Height="26" VerticalAlignment="Top" HorizontalAlignment="Left" Width="182" />
+                    <TextBox
 						Text="{Binding SelectedTaskDescription}"
 						Height="26"
 						Grid.Column="3"
 						Grid.Row="1"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Top"
-						Margin="9,10,12,0" />
-					<Label
+						Margin="9,2.6,7.8,0" />
+                    <Label
 						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireSetupTaskConfigurationIndex' }"
 						RenderTransformOrigin="0.5085,0.4231"
 						Height="26"
-						Width="95"
+						Width="181"
 						Grid.Column="2"
 						Grid.Row="0"
 						HorizontalAlignment="Left"
 						VerticalAlignment="Top"
-						Margin="9,7,0,0" />
-					<TextBox
+						Margin="9,8,0,0"/>
+                    <TextBox
 						Text="{Binding SelectedTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 						Height="26"
 						Grid.Column="3"
 						Grid.Row="0"
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Top"
-						Margin="9,7,12,0">
-						<TextBox.Resources>
-							<Style
+						Margin="9,8,7.8,0">
+                        <TextBox.Resources>
+                            <Style
 								x:Key="IsValidSelectedKeySetupTaskIndex"
 								TargetType="TextBox">
-								<Style.Triggers>
-									<DataTrigger
+                                <Style.Triggers>
+                                    <DataTrigger
 										Binding="{Binding IsValidSelectedKeySetupTaskIndex}"
 										Value="True">
-										<Setter
+                                        <Setter
 											Property="Foreground"
 											Value="Green" />
-										<Setter
+                                        <Setter
 											Property="Background"
 											Value="White" />
-										<Setter
+                                        <Setter
 											Property="FontWeight"
 											Value="Normal" />
-									</DataTrigger>
-									<DataTrigger
+                                    </DataTrigger>
+                                    <DataTrigger
 										Binding="{Binding IsValidSelectedKeySetupTaskIndex}"
 										Value="False">
-										<Setter
+                                        <Setter
 											Property="Foreground"
 											Value="Black" />
-										<Setter
+                                        <Setter
 											Property="Background"
 											Value="Red" />
-										<Setter
+                                        <Setter
 											Property="FontWeight"
 											Value="Normal" />
-									</DataTrigger>
-								</Style.Triggers>
-							</Style>
-						</TextBox.Resources>
-					</TextBox>
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Resources>
+                        <TextBox.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock
+								FontWeight="Bold"
+								Text="{Binding LocalizationResourceSet,
+							Converter={StaticResource Localization},
+							ConverterParameter='toolTipSelectedKeySetupTaskIndex' }" />
+                                </StackPanel>
+                            </ToolTip>
+                        </TextBox.ToolTip>
+                    </TextBox>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition
 							Width="140" />
-						<ColumnDefinition
-							Width="280" />
-						<ColumnDefinition
-							Width="120" />
-						<ColumnDefinition
-							Width="0.241549838813732*" />
-					</Grid.ColumnDefinitions>
-					<Grid.RowDefinitions>
-						<RowDefinition
+                        <ColumnDefinition Width="280" />
+                        <ColumnDefinition Width="160" />
+                        <ColumnDefinition Width="*" MinWidth="150"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition
 							Height="38" />
-						<RowDefinition
+                        <RowDefinition
 							Height="0.286848072562358*" />
-					</Grid.RowDefinitions>
-				</Grid>
-			</GroupBox>
-		</Grid>
-		<Grid
+                    </Grid.RowDefinitions>
+                </Grid>
+            </GroupBox>
+        </Grid>
+        <Grid
 			Grid.Column="0"
 			Grid.Row="1"
 			HorizontalAlignment="Stretch"
 			Margin="0,0,0,0"
 			VerticalAlignment="Stretch">
-			<TabControl>
-				<TabItem
-					Header="PICC Master Key Setup">
-					<v:TabPageMifareDesfireCardMasteringView />
-				</TabItem>
-				<TabItem
-					Header="Application Setup">
-					<v:TabPageMifareDesfireAppCreationView />
-				</TabItem>
-				<TabItem
-					Header="Application Key Changeover">
-					<v:TabPageMifareDesfireApplicationMasteringView />
-				</TabItem>
-				<TabItem
-					Header="File Setup">
-					<v:TabPageMifareDesfireFileMasteringView />
-				</TabItem>
-				<TabItem
-					Header="Data Explorer">
-					<v:TabPageMifareDesfireDataExplorerView />
-				</TabItem>
-				<TabItem
-					Header="Plugins" Visibility="{Binding HasPlugins, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">
-					<Grid>
-						<ComboBox
+            <TabControl>
+                <TabItem MinWidth="50">
+                    <TabItem.Header>
+                        <TextBlock Text="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderPICCMasterKeySetup' }"
+                                   ToolTip="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='toolTipTabItemPICCMasterKeySetup' }"
+                                   ToolTipService.ShowDuration="60000" />
+                    </TabItem.Header>
+                    <v:TabPageMifareDesfireCardMasteringView Height="Auto" Margin="0,-1,0,-0.2" />
+                    <TabItem.Style>
+                        <Style>
+                            <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                        </Style>
+                    </TabItem.Style>
+                </TabItem>
+                <TabItem MinWidth="50">
+                    <TabItem.Header>
+                        <TextBlock Text="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderApplicationSetup' }"
+                                   ToolTip="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='toolTipTabItemApplicationSetup' }" 
+                                   ToolTipService.ShowDuration="60000"/>
+                    </TabItem.Header>
+                    <TabItem.Style>
+                        <Style>
+                            <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                        </Style>
+                    </TabItem.Style>
+                    <v:TabPageMifareDesfireAppCreationView />
+                    <!--<TabItem.ToolTip>
+                        <ToolTip>
+                            <StackPanel>
+                                <TextBlock
+							FontWeight="Normal"
+							Text="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='toolTipTabItemApplicationSetup' }" />
+                            </StackPanel>
+                        </ToolTip>
+                    </TabItem.ToolTip>-->
+                </TabItem>
+                <TabItem MinWidth="50">
+                    <TabItem.Header>
+                        <TextBlock Text="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderApplicationKeySetup' }"
+                                   ToolTip="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='toolTipTabItemApplicationKeySetup' }"
+                                   ToolTipService.ShowDuration="60000" />
+                    </TabItem.Header>
+                    <TabItem.Style>
+                        <Style>
+                            <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                        </Style>
+                    </TabItem.Style>
+                    <v:TabPageMifareDesfireApplicationMasteringView />
+                </TabItem>
+                <TabItem MinWidth="50">
+                    <TabItem.Header>
+                        <TextBlock Text="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderFileSetup' }"
+                                   ToolTip="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='toolTipTabItemFileSetup' }"
+                                   ToolTipService.ShowDuration="60000"/>
+                    </TabItem.Header>
+                    <TabItem.Style>
+                        <Style>
+                            <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                        </Style>
+                    </TabItem.Style>
+                    <v:TabPageMifareDesfireFileMasteringView />
+                </TabItem>
+                <TabItem MinWidth="50">
+                    <TabItem.Header>
+                        <TextBlock Text="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabPageHeaderFileExplorer' }"
+                                 ToolTip="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='toolTipTabItemDataExplorer' }"
+                                 ToolTipService.ShowDuration="60000"/>
+                    </TabItem.Header>
+                    <TabItem.Style>
+                        <Style>
+                            <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                        </Style>
+                    </TabItem.Style>
+                    <v:TabPageMifareDesfireDataExplorerView />
+                </TabItem>
+                <TabItem MinWidth="50"
+                         Visibility="{Binding HasPlugins, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">
+                    <TabItem.Header>
+                        <TextBlock Text="Plugins"
+                                 ToolTip="a tooltip"
+                                 ToolTipService.ShowDuration="60000" />
+                    </TabItem.Header>
+                    <TabItem.Style>
+                        <Style>
+                            <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                        </Style>
+                    </TabItem.Style>
+                    <Grid>
+                        <ComboBox
 							ItemsSource="{Binding Items}"
 							DisplayMemberPath="Metadata.Name"
 							SelectedItem="{Binding SelectedPlugin}"
@@ -222,31 +290,31 @@
 							HorizontalAlignment="Stretch"
 							VerticalAlignment="Top"
 							Margin="8,5,3,0" />
-						<Grid
+                        <Grid
 							Grid.Column="0"
 							Grid.Row="1"
 							HorizontalAlignment="Stretch"
 							VerticalAlignment="Stretch"
 							Margin="0,9,0,7">
-							<Frame Source="{Binding SelectedPlugin.Metadata.Uri, UpdateSourceTrigger=PropertyChanged}" />
-						</Grid>
-						<Grid.RowDefinitions>
-							<RowDefinition
+                            <Frame Source="{Binding SelectedPlugin.Metadata.Uri, UpdateSourceTrigger=PropertyChanged}" />
+                        </Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition
 								Height="37" />
-							<RowDefinition
+                            <RowDefinition
 								Height="0.785887688659717*" />
-						</Grid.RowDefinitions>
-					</Grid>
-				</TabItem>
-			</TabControl>
-		</Grid>
-		<Grid
+                        </Grid.RowDefinitions>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Grid>
+        <Grid
 			Grid.Column="0"
 			Grid.Row="3"
 			HorizontalAlignment="Stretch"
 			VerticalAlignment="Stretch"
 			Margin="0,0,0,0">
-			<TextBox
+            <TextBox
 				Text="{Binding StatusText}"
 				FontFamily="Lucida Console"
 				IsReadOnly="True"
@@ -257,7 +325,7 @@
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Stretch"
 				Margin="8,0,8,39" />
-			<Button
+            <Button
 				Content="OK"
 				Command="{Binding OKCommand}"
 				Height="23"
@@ -267,8 +335,8 @@
 				HorizontalAlignment="Left"
 				VerticalAlignment="Bottom"
 				Margin="9,0,0,8" />
-			<Button
-				Content="Cancel"
+            <Button
+				Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='buttonCancelMifareDesfireSetupViewCaption' }"
 				Command="{Binding CancelCommand}"
 				Height="23"
 				Width="140"
@@ -277,6 +345,6 @@
 				HorizontalAlignment="Left"
 				VerticalAlignment="Bottom"
 				Margin="157,0,0,8" />
-		</Grid>
-	</Grid>
+        </Grid>
+    </Grid>
 </Window>

@@ -1,6 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <UserControl
-	x:Class="RFiDGear.View.TabPageMifareDesfireDataExplorerView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:RFiDGear" xmlns:vm="clr-namespace:RFiDGear.ViewModel" xmlns:v="clr-namespace:RFiDGear.View" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer" xmlns:islog="clr-namespace:LibLogicalAccess;assembly=Interop.LibLogicalAccess" xmlns:_3rdP="clr-namespace:RFiDGear._3rdParty">
+	x:Class="RFiDGear.View.TabPageMifareDesfireDataExplorerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:RFiDGear"
+    xmlns:vm="clr-namespace:RFiDGear.ViewModel"
+    xmlns:v="clr-namespace:RFiDGear.View"
+    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+    xmlns:islog="clr-namespace:LibLogicalAccess;assembly=Interop.LibLogicalAccess"
+    xmlns:_3rdP="clr-namespace:RFiDGear._3rdParty">
+
 	<UserControl.Resources>
 		<dal:BindingProxy
 			x:Key="proxy"
@@ -29,7 +38,7 @@
 			Grid.Column="0">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition
-					Width="*" />
+					Width="*" MinWidth="150"/>
 				<ColumnDefinition
 					Width="5" />
 				<ColumnDefinition
@@ -48,12 +57,12 @@
 				Grid.RowSpan="2" />
 			<GroupBox
 				IsEnabled="{Binding IsDataExplorerEditTabEnabled}"
-				Header="Data on Chip"
+				Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='groupBoxHeaderMifareDesfireFileDataOnChip'}"
 				Grid.Column="0"
 				Grid.Row="0"
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Stretch"
-				Margin="8,0,8,0">
+				Margin="8,8,8,8">
 				<Grid
 					VerticalAlignment="Stretch"
 					Margin="0,0,0,0"
@@ -76,12 +85,15 @@
 								<Setter
 									Property="Header"
 									Value="{Binding GrandChildNodeHeader}" />
+                                <Setter
+									Property="MaxHeight"
+									Value="140" />
 								<Setter
 									Property="HorizontalContentAlignment"
-									Value="Center" />
+									Value="Stretch" />
 								<Setter
 									Property="VerticalContentAlignment"
-									Value="Center" />
+									Value="Stretch" />
 							</Style>
 						</DataGrid.RowStyle>
 						<!--	{Binding Data.LocalizationResourceSet,
@@ -96,9 +108,9 @@
 										<_3rdP:SelectionBindingTextBox
 											Text="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 											MaxWidth="180"
-											MaxHeight="100"
 											VerticalContentAlignment="Top"
 											HorizontalContentAlignment="Left"
+                                            VerticalScrollBarVisibility="Auto"
 											FontFamily="Lucida Console"
 											BorderThickness="0">
 											<_3rdP:SelectionBindingTextBox.Style>
@@ -113,7 +125,13 @@
 													<Setter
 														Property="IsReadOnly"
 														Value="True" />
-													<!--<Style.Triggers>
+                                                    <Setter
+														Property="HorizontalAlignment"
+														Value="Stretch" />
+                                                    <Setter
+														Property="VerticalAlignment"
+														Value="Stretch" />
+                                                    <!--<Style.Triggers>
 														<DataTrigger
 															Binding="{Binding IsValidSelectedDataIndexAndLength}"
 															Value="True">
@@ -129,7 +147,7 @@
 																Value="Red" />
 														</DataTrigger>
 													</Style.Triggers>-->
-												</Style>
+                                                </Style>
 											</_3rdP:SelectionBindingTextBox.Style>
 										</_3rdP:SelectionBindingTextBox>
 									</DataTemplate>
@@ -142,7 +160,6 @@
 										<_3rdP:SelectionBindingTextBox
 											Text="{Binding DataAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 											MaxWidth="180"
-											MaxHeight="100"
 											VerticalContentAlignment="Top"
 											HorizontalContentAlignment="Left"
 											FontFamily="Lucida Console"
@@ -159,7 +176,13 @@
 													<Setter
 														Property="IsReadOnly"
 														Value="True" />
-													<!--<Style.Triggers>
+                                                    <Setter
+														Property="HorizontalAlignment"
+														Value="Stretch" />
+                                                    <Setter
+														Property="VerticalAlignment"
+														Value="Stretch" />
+                                                    <!--<Style.Triggers>
 														<DataTrigger
 															Binding="{Binding IsValidSelectedDataIndexAndLength}"
 															Value="True">
@@ -233,12 +256,12 @@
 			</GroupBox>
 			<GroupBox
 				IsEnabled="{Binding IsDataExplorerEditTabEnabled}"
-				Header="Data in Memory/File"
+				Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='groupBoxHeaderMifareDesfireFileDataOnMemory'}"
 				Grid.Column="0"
 				Grid.Row="1"
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Stretch"
-				Margin="8,0,8,8">
+				Margin="8,8,8,8">
 				<Grid
 					VerticalAlignment="Stretch"
 					Margin="0,0,0,0"
@@ -300,15 +323,15 @@
 								Header="Hex">
 								<DataGridTemplateColumn.CellTemplate>
 									<DataTemplate>
-										<_3rdP:SelectionBindingTextBox
+                                        <_3rdP:SelectionBindingTextBox
 											Text="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 											VerticalContentAlignment="Top"
 											HorizontalContentAlignment="Left"
 											BindableSelectionStart="{Binding SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 											BindableSelectionLength="{Binding SelectedDataLength, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 											FontFamily="Lucida Console"
-											BorderThickness="0"
-											IsFocused="{Binding IsFocused}">
+											BorderThickness="0">
+                                            <!--IsFocused="{Binding IsFocused}">-->
 											<_3rdP:SelectionBindingTextBox.Style>
 												<Style
 													TargetType="{x:Type TextBox}">
@@ -350,15 +373,15 @@
 								Header="String">
 								<DataGridTemplateColumn.CellTemplate>
 									<DataTemplate>
-										<_3rdP:SelectionBindingTextBox
+                                        <_3rdP:SelectionBindingTextBox
 											Text="{Binding DataAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 											VerticalContentAlignment="Top"
 											HorizontalContentAlignment="Left"
+                                            VerticalScrollBarVisibility="Auto"
 											FontFamily="Lucida Console"
-											MaxHeight="100"
 											MaxWidth="180"
-											BorderThickness="0"
-											IsFocused="{Binding IsFocused}">
+											BorderThickness="0">
+                                            <!--IsFocused="{Binding IsFocused}">-->
 											<_3rdP:SelectionBindingTextBox.Style>
 												<Style
 													TargetType="{x:Type TextBox}">
@@ -368,7 +391,13 @@
 													<Setter
 														Property="VerticalScrollBarVisibility"
 														Value="Auto" />
-													<!--<Style.Triggers>
+                                                    <Setter
+														Property="HorizontalAlignment"
+														Value="Stretch" />
+                                                    <Setter
+														Property="VerticalAlignment"
+														Value="Stretch" />
+                                                    <!--<Style.Triggers>
 														<DataTrigger
 															Binding="{Binding IsValidSelectedDataIndexAndLength}"
 															Value="True">
@@ -421,9 +450,9 @@
 				</Grid>
 			</GroupBox>
 			<GroupBox
-				Header="Read | Write Data"
+				Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='groupBoxHeaderMifareDesfireFileReadWriteData'}"
 				IsEnabled="{Binding IsDataExplorerEditTabEnabled}"
-				Margin="7,8,8,8"
+				Margin="8,8,8,8"
 				VerticalAlignment="Stretch"
 				HorizontalAlignment="Stretch"
 				Grid.Row="0"
@@ -435,7 +464,7 @@
 					HorizontalAlignment="Stretch">
 					<Button
 						Command="{Binding WriteDataCommand}"
-						Content="Write"
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='buttonContentMifareDesfireFileSetupReadData'}"
 						Height="23"
 						Grid.Column="0"
 						Grid.ColumnSpan="5"
@@ -445,7 +474,7 @@
 						Grid.Row="7" />
 					<Button
 						Command="{Binding ReadDataCommand}"
-						Content="Read"
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='buttonContentMifareDesfireFileSetupWriteData'}"
 						Height="23"
 						Grid.Column="0"
 						Grid.ColumnSpan="5"
@@ -664,7 +693,7 @@
 						HorizontalAlignment="Stretch"
 						VerticalAlignment="Bottom"
 						Margin="8,0,7,7"
-						Content="Get Data From File" />
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='buttonContentMifareDesfireFileSetupOpenDataFile'}"/>
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition
 							Width="180" />

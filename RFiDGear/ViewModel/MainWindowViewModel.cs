@@ -123,7 +123,7 @@ namespace RFiDGear.ViewModel
 			});
 			
 			Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
-			updater.newVersionAvailable += new EventHandler(AskForUpdateNow);
+			updater.NewVersionAvailable += new EventHandler(AskForUpdateNow);
 
 			//reminder: any dialog boxes added in the constructor won't appear until DialogBehavior.DialogViewModels gets bound to the Dialogs collection.
 		}
@@ -635,7 +635,7 @@ namespace RFiDGear.ViewModel
 									case TaskType_MifareClassicTask.ReadData:
 										switch ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr) {
 											case ERROR.AuthenticationError:
-			                       									//FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       				//FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
 												(taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr = ERROR.Empty;
 												break;
 
@@ -1324,9 +1324,9 @@ namespace RFiDGear.ViewModel
 				Buttons = MessageBoxButton.YesNo,
 				Image = MessageBoxImage.Question
 			}.Show(this.Dialogs) == MessageBoxResult.Yes)
-				(sender as Updater).allowUpdate = true;
+				(sender as Updater).AllowUpdate = true;
 			else {
-				(sender as Updater).allowUpdate = false;
+				(sender as Updater).AllowUpdate = false;
 			}
 
 		}

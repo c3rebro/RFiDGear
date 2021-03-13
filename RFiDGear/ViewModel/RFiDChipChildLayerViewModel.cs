@@ -26,7 +26,7 @@ namespace RFiDGear.ViewModel
 		private readonly RelayCommand _cmdEditAuthAndModifySector;
 		private readonly string _parentUid;
 
-		private MifareClassicSetupViewModel setupViewModel;
+		//private MifareClassicSetupViewModel setupViewModel;
 		private MifareClassicSectorModel sectorModel;
 		private MifareDesfireAppModel appModel;
 		private MifareUltralightPageModel pageModel;
@@ -383,7 +383,7 @@ namespace RFiDGear.ViewModel
 		/// </summary>
 		public int BlockCount
 		{
-			get { return sectorModel.SectorNumber > 31 ? 16 : 4; }
+			get { return sectorModel != null ? sectorModel.SectorNumber > 31 ? 16 : 4 : -1; }
 		}
 
 		/// <summary>
@@ -395,7 +395,7 @@ namespace RFiDGear.ViewModel
 			{
 				try
 				{
-					return appModel.appID;
+					return appModel != null ? appModel.appID : 999999;
 				}
 				catch
 				{
@@ -486,7 +486,7 @@ namespace RFiDGear.ViewModel
 				case CARD_TYPE.Unspecified: //TODO: Add Card Type "TASK_MF_Classic" for every type
 					for (int i = 0; i <= 3; i++)
 					{
-						children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0,i), setupViewModel));
+						children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0,i), new MifareClassicSetupViewModel()));
 					}
 					break;
 			}

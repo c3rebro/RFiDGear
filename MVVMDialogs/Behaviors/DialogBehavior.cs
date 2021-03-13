@@ -264,7 +264,7 @@ namespace MvvmDialogs.Behaviors
 				}
 			}
 			
-			catch (Exception e)
+			catch
 			{
 				
 			}

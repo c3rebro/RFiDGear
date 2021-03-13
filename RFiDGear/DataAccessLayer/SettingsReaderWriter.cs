@@ -228,10 +228,20 @@ namespace RFiDGear
             {
                 if (disposing)
                 {
-                    xmlWriter.Close();
-                    defaultSpecification = null;
-                    // Dispose any managed objects
-                    // ...
+                    try
+                    {
+                        if(xmlWriter != null)
+                            xmlWriter.Close();
+
+                        defaultSpecification = null;
+                        // Dispose any managed objects
+                        // ...
+                    }
+
+                    catch(Exception e)
+                    {
+                        LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    }
                 }
 
                 // Now disposed of any unmanaged objects

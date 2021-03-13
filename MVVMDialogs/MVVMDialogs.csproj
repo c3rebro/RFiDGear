@@ -8,8 +8,9 @@
     <OutputType>Library</OutputType>
     <RootNamespace>MVVMDialogs</RootNamespace>
     <AssemblyName>MVVMDialogs</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -90,9 +91,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="View" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Page Include="View\CustomDialogBox.xaml" />
   </ItemGroup>
