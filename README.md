@@ -13,5 +13,3 @@ Requirements:
    + Omnikey 5321 
    + Sciel SCL3711
    + ACR 122U
-   
-   + Identive PS-OSB TL1509
