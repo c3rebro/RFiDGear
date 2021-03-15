@@ -500,7 +500,11 @@ namespace RFiDGear.ViewModel
 						case CARD_TYPE.MifareUltralight:
 							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareUltralightChipModel(device.CardInfo.uid, device.CardInfo.CardType), Dialogs));
 							break;
-							
+
+						case CARD_TYPE.GENERIC_T_CL_A:
+							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.CardInfo.uid, device.CardInfo.CardType), Dialogs));
+							break;
+
 						case CARD_TYPE.ISO15693:
 							device.ReadISO15693Chip();
 							break;

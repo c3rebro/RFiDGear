@@ -52,6 +52,8 @@ namespace RFiDGear
 
 		public byte MaxNumberOfAppKeys { get; private set; }
 
+		public byte EncryptionType { get; private set; }
+
 		public uint FreeMemory { get; private set; }
 
 		public FileSetting DesfireFileSetting { get; private set; }
@@ -868,11 +870,11 @@ namespace RFiDGear
 
 								object appIDsObject = cmd.GetApplicationIDs();
 								AppIDList = (appIDsObject as UInt32[]);
-
+								
 								return ERROR.NoError;
 							}
 							if (card.Type == "DESFireEV1" ||
-							    card.Type == "DESFireEV2")
+							    card.Type == "DESFireEV2" || card.Type == "GENERIC_T_CL_A")
 							{
 								var cmd = card.Commands as IDESFireEV1Commands;
                                 try
@@ -964,6 +966,29 @@ namespace RFiDGear
                                                 break;
                                         }
                                     }
+
+									switch (_fileType)
+									{
+										case FileType_MifareDesfireFileType.StdDataFile:
+											cmd.CreateStdDataFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+											break;
+
+										case FileType_MifareDesfireFileType.BackupFile:
+											cmd.CreateBackupFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+											break;
+
+										case FileType_MifareDesfireFileType.ValueFile:
+											cmd.CreateValueFile((byte)_fileNo, _encMode, accessRights, (uint)_minValue, (uint)_maxValue, (uint)_initValue, _isValueLimited);
+											break;
+
+										case FileType_MifareDesfireFileType.CyclicRecordFile:
+											cmd.CreateCyclicRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+											break;
+
+										case FileType_MifareDesfireFileType.LinearRecordFile:
+											cmd.CreateLinearRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+											break;
+									}
 
 									return ERROR.NoError;
 								}
@@ -1255,7 +1280,8 @@ namespace RFiDGear
 										try
 										{
 											cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
-											MaxNumberOfAppKeys = maxNbrOfKeys;
+											MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
+											EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
 											DesfireAppKeySetting = keySettings;
 
 											return ERROR.NoError;
@@ -1266,7 +1292,8 @@ namespace RFiDGear
 										}
 									}
 									cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
-									MaxNumberOfAppKeys = maxNbrOfKeys;
+									MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
+									EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
 									DesfireAppKeySetting = keySettings;
 
 									return ERROR.NoError;
@@ -1472,14 +1499,23 @@ namespace RFiDGear
                                                 return ERROR.NoError;
                                             }
 
-                                            catch (Exception e)
+                                            catch
                                             {
-                                                if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+												try
                                                 {
-                                                    return ERROR.NotAllowed;
-                                                }
-                                                else
-                                                    return ERROR.AuthenticationError;
+													cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
+													cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+												}
+
+												catch(Exception e)
+                                                {
+													if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+													{
+														return ERROR.NotAllowed;
+													}
+													else
+														return ERROR.AuthenticationError;
+												}
                                             }
                                         }
 									}
