@@ -464,7 +464,7 @@
 					HorizontalAlignment="Stretch">
 					<Button
 						Command="{Binding WriteDataCommand}"
-						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='buttonContentMifareDesfireFileSetupWriteData'}"
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='buttonContentMifareDesfireFileSetupReadData'}"
 						Height="23"
 						Grid.Column="0"
 						Grid.ColumnSpan="5"
@@ -474,7 +474,7 @@
 						Grid.Row="7" />
 					<Button
 						Command="{Binding ReadDataCommand}"
-						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='buttonContentMifareDesfireFileSetupReadData'}"
+						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='buttonContentMifareDesfireFileSetupWriteData'}"
 						Height="23"
 						Grid.Column="0"
 						Grid.ColumnSpan="5"
