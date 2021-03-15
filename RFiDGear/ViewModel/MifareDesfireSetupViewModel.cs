@@ -55,7 +55,12 @@ namespace RFiDGear.ViewModel
 			
 			MifareDesfireKeys = CustomConverter.GenerateStringSequence(0,16).ToArray();
             MifareDesfireKeyCount = CustomConverter.GenerateStringSequence(1, 16).ToArray();
-        }
+
+			isAllowChangeMKChecked = true;
+			isAllowConfigChangableChecked = true;
+			isAllowListingWithoutMKChecked = true;
+
+		}
 
 		/// <summary>
 		///
@@ -79,7 +84,11 @@ namespace RFiDGear.ViewModel
 				MifareDesfireKeys = CustomConverter.GenerateStringSequence(0,16).ToArray();
                 MifareDesfireKeyCount = CustomConverter.GenerateStringSequence(1, 16).ToArray();
 
-                if (_selectedSetupViewModel is MifareDesfireSetupViewModel)
+				isAllowChangeMKChecked = true;
+				isAllowConfigChangableChecked = true;
+				isAllowListingWithoutMKChecked = true;
+
+				if (_selectedSetupViewModel is MifareDesfireSetupViewModel)
 				{
 					PropertyInfo[] properties = typeof(MifareDesfireSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
