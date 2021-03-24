@@ -32,20 +32,20 @@ namespace RFiDGear.ViewModel
 	{
 		private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 		
-		private MainWindow mw;
-		private Updater updater;
-		private DatabaseReaderWriter databaseReaderWriter;
-		private DispatcherTimer triggerReadChip;
-		private DispatcherTimer taskTimeout;
+		private protected MainWindow mw;
+		private protected Updater updater;
+		private protected DatabaseReaderWriter databaseReaderWriter;
+		private protected DispatcherTimer triggerReadChip;
+		private protected DispatcherTimer taskTimeout;
 
 		private ChipTaskHandlerModel taskHandler;
-		private List<MifareClassicChipModel> mifareClassicUidModels = new List<MifareClassicChipModel>();
-		private List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
+		private protected List<MifareClassicChipModel> mifareClassicUidModels = new List<MifareClassicChipModel>();
+		private protected List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
 
 		private int taskIndex = 0;
 		//if programming takes too long; quit the process
 		private bool firstRun = true;
-		private Mutex mutex;
+		private protected Mutex mutex;
 		//one reader, one instance - only
 
 		#region Plugins
@@ -78,8 +78,10 @@ namespace RFiDGear.ViewModel
 
 			updater = new Updater();
 
-			triggerReadChip = new DispatcherTimer();
-			triggerReadChip.Interval = new TimeSpan(0, 0, 0, 0, 500);
+            triggerReadChip = new DispatcherTimer
+            {
+                Interval = new TimeSpan(0, 0, 0, 0, 500)
+            };
 
 			triggerReadChip.Tick += UpdateChip;
 
@@ -87,10 +89,12 @@ namespace RFiDGear.ViewModel
 			triggerReadChip.IsEnabled = false;
 			triggerReadChip.Tag = triggerReadChip.IsEnabled;
 
-			taskTimeout = new DispatcherTimer();
-			taskTimeout.Interval = new TimeSpan(0, 0, 0, 10, 0);
+            taskTimeout = new DispatcherTimer
+            {
+                Interval = new TimeSpan(0, 0, 0, 10, 0)
+            };
 
-			taskTimeout.Tick += TaskTimeout;
+            taskTimeout.Tick += TaskTimeout;
 			taskTimeout.Start();
 			taskTimeout.IsEnabled = false;
 
@@ -103,14 +107,16 @@ namespace RFiDGear.ViewModel
 			resLoader = new ResourceLoader();
 
 			rowContextMenuItems = new ObservableCollection<MenuItem>();
-			emptySpaceContextMenuItems = new ObservableCollection<MenuItem>();
-			
-			emptySpaceContextMenuItems.Add(new MenuItem() {
-				Header = "bla", //resLoader.getResource("contextMenuItemAddNewEvent"),
-				Command = null
-			});
-			
-			rowContextMenuItems.Add(new MenuItem() {
+            emptySpaceContextMenuItems = new ObservableCollection<MenuItem>
+            {
+                new MenuItem()
+                {
+                    Header = "contextMenuItemAddNewEvent", //resLoader.getResource("contextMenuItemAddNewEvent"),
+                    Command = null
+                }
+            };
+
+            rowContextMenuItems.Add(new MenuItem() {
 				Header = ResourceLoader.getResource("contextMenuItemAddOrEditTask"),
 				Command = (selectedSetupViewModel is MifareClassicSetupViewModel) ? CreateClassicTaskCommand : CreateDesfireTaskCommand
 			});
@@ -135,16 +141,16 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		/// 
 		/// </summary>
-		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+		private protected ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
 		public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
 		
 		#endregion Dialogs
 
 		#region Localization
 		[ExportViewModel("Culture")]
-		private CultureInfo culture;
+		private protected CultureInfo culture;
 		
-		private ResourceLoader resLoader;
+		private protected ResourceLoader resLoader;
 		
 		/// <summary>
 		/// Expose translated strings from ResourceLoader
@@ -236,11 +242,74 @@ namespace RFiDGear.ViewModel
 		{
 			TreeViewParentNodes.Clear();
 		}
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand CreateClassicTaskCommand { get { return new RelayCommand(OnNewCreateClassicTaskCommand); } }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand NewCreateReportCommand { get { return new RelayCommand(OnNewNewCreateReportCommand); } }
+        private void OnNewNewCreateReportCommand()
+        {
+            var dlg = new SaveFileDialogViewModel
+            {
+                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
+                Filter = ResourceLoader.getResource("filterStringSaveTasks")
+            };
+
+            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+            {
+                CARD_INFO card;
+
+                Mouse.OverrideCursor = Cursors.AppStarting;
+
+                ReportReaderWriter reportReaderWriter = new ReportReaderWriter();
+
+                try
+                {
+                    //try to get singleton instance
+                    using (RFiDDevice device = RFiDDevice.Instance)
+                    {
+                        //reader was ready - proceed
+                        if (device != null)
+                        {
+                            device.ReadChipPublic();
+
+                            card = device.CardInfo;
+
+                            reportReaderWriter.CreateReport(device, dlg.FileName);
+                        }
+                        else
+                            card = new CARD_INFO(CARD_TYPE.Unspecified, "");
+                    }
+
+                }
+
+                catch { }
+
+
+
+                //IRandomAccessSource source = new RandomAccessSourceFactory().CreateSource(new byte[1] { 3});
+                //PdfDocument pdfDoc = new PdfDocument(new PdfReader(source, new ReaderProperties()), new PdfWriter(dlg.FileName));
+                //PdfAcroForm form = PdfAcroForm.GetAcroForm(pdfDoc, true);
+
+                //form.GetField("test1")
+                //    .SetValue("A B C D E F\nG H I J K L M N\nO P Q R S T U\r\nV W X Y Z\n\nAlphabet street");
+
+                // If no fields have been explicitly included, then all fields are flattened.
+                // Otherwise only the included fields are flattened.
+                //form.FlattenFields();
+
+                //pdfDoc.Close();
+
+                Mouse.OverrideCursor = null;
+            }
+
+            RaisePropertyChanged("ChipTasks");
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand CreateClassicTaskCommand { get { return new RelayCommand(OnNewCreateClassicTaskCommand); } }
 		private void OnNewCreateClassicTaskCommand()
 		{
 			bool timerState = triggerReadChip.IsEnabled;
@@ -886,7 +955,7 @@ namespace RFiDGear.ViewModel
 									case TaskType_MifareDesfireTask.ReadData:
 										switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr) {
 											case ERROR.AuthenticationError:
-			                       									//FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+			                       									//FIXME: (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
 												(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr = ERROR.Empty;
 												break;
 
@@ -1338,8 +1407,7 @@ namespace RFiDGear.ViewModel
 		//Only one instance is allowed due to the singleton pattern of the reader class
 		private void RunMutex(object sender, StartupEventArgs e)
 		{
-			bool aIsNewInstance = false;
-			mutex = new Mutex(true, "App", out aIsNewInstance);
+			mutex = new Mutex(true, "App", out bool aIsNewInstance);
 
 			if (!aIsNewInstance) {
 				Environment.Exit(0);

@@ -183,6 +183,35 @@
 						<Component Id="GalaSoftMvvmLightDll" Guid="40A4382E-00AA-479A-923F-0B45401700BB" DiskId="1">
 							<File Id="GalaSoft.MvvmLight.dll" Name="GalaSoft.MvvmLight.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.dll" KeyPath="yes" />
 						</Component>
+
+            <Component Id="ITextBarcodesDll" Guid="40A4382E-00AA-478A-923F-0B45401700BB" DiskId="1">
+              <File Id="itext.barcodes.dll" Name="itext.barcodes.dll" Source="..\RFiDGear\bin\Release\itext.barcodes.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="ITextFormsDll" Guid="40A4382E-02AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="itext.forms.dll" Name="itext.forms.dll" Source="..\RFiDGear\bin\Release\itext.forms.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="ITextIODll" Guid="40A4382E-04AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="itext.io.dll" Name="itext.io.dll" Source="..\RFiDGear\bin\Release\itext.io.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="ITextKernelDll" Guid="40A4382E-06AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="itext.kernel.dll" Name="itext.kernel.dll" Source="..\RFiDGear\bin\Release\itext.kernel.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="ITextLayoutDll" Guid="40A4382E-09AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="itext.layout.dll" Name="itext.layout.dll" Source="..\RFiDGear\bin\Release\itext.layout.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="ITextPdfaDll" Guid="40FF382E-00AA-478A-923F-0B45401700BB" DiskId="1">
+              <File Id="itext.pdfa.dll" Name="itext.pdfa.dll" Source="..\RFiDGear\bin\Release\itext.pdfa.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="ITextSignDll" Guid="40ABC82E-02AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="itext.sign.dll" Name="itext.sign.dll" Source="..\RFiDGear\bin\Release\itext.sign.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="ITextStyledxmlparserDll" Guid="40ACC82E-04AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="itext.styledxmlparser.dll" Name="itext.styledxmlparser.dll" Source="..\RFiDGear\bin\Release\itext.styledxmlparser.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="ITextSvgDll" Guid="40A438DD-06AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="itext.svg.dll" Name="itext.svg.dll" Source="..\RFiDGear\bin\Release\itext.svg.dll" KeyPath="yes" />
+            </Component>
+            
 						<Component Id="InteropLibLogicalAccessDll" Guid="266E1A03-2C6B-444E-8017-1DBE01B19B24" DiskId="1">
 							<File Id="Interop.LibLogicalAccess.dll" Name="Interop.LibLogicalAccess.dll" Source="..\RFiDGear\bin\Release\Interop.LibLogicalAccess.dll" KeyPath="yes" />
 						</Component>
@@ -299,7 +328,17 @@
 				<ComponentRef Id="EnRFiDGearresourcesDll" />
 				<ComponentRef Id="PluginSystemDll" />
 				<ComponentRef Id="MVVMDialogsDll" />
-				
+
+        <ComponentRef Id="ITextBarcodesDll" />
+        <ComponentRef Id="ITextFormsDll" />
+        <ComponentRef Id="ITextIODll" />
+        <ComponentRef Id="ITextKernelDll" />
+        <ComponentRef Id="ITextLayoutDll" />
+        <ComponentRef Id="ITextPdfaDll" />
+        <ComponentRef Id="ITextSignDll" />
+        <ComponentRef Id="ITextStyledxmlparserDll" />
+        <ComponentRef Id="ITextSvgDll" />
+        
 				<ComponentRef Id="RegValInstallLocation_comp" />
 			</Feature>
 			
