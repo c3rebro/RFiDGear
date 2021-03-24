@@ -635,7 +635,10 @@
 					<MenuItem
 						Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemReaderSettingsHeader' }"
 						Command="{Binding NewReaderSetupDialogCommand}"></MenuItem>
-					<MenuItem
+                    <MenuItem
+						Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemCreateReportHeader' }"
+						Command="{Binding NewCreateReportCommand}"></MenuItem>
+                    <MenuItem
 						Header="_Language">
 						<RadioButton
 							x:Name="radioButtonGerman"

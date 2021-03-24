@@ -252,7 +252,7 @@ namespace RFiDGear.ViewModel
             var dlg = new SaveFileDialogViewModel
             {
                 Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-                Filter = ResourceLoader.getResource("filterStringSaveTasks")
+                Filter = ResourceLoader.getResource("filterStringSaveReport")
             };
 
             if (dlg.Show(this.Dialogs) && dlg.FileName != null)

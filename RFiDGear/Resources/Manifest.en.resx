@@ -843,4 +843,10 @@ Needed by:
   <data name="groupBoxHeaderMifareDesfireFileReadWriteData" xml:space="preserve">
     <value>Read / Write Keys</value>
   </data>
+  <data name="filterStringSaveReport" xml:space="preserve">
+    <value>PDF Files (*.pdf)|*.pdf</value>
+  </data>
+  <data name="menuItemCreateReportHeader" xml:space="preserve">
+    <value>Create Report...</value>
+  </data>
 </root>

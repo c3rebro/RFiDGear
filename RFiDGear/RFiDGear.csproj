@@ -249,6 +249,9 @@
       <DependentUpon>TabPageReaderSettingsView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="View\TabPageReportSettingsView.xaml.cs">
+      <DependentUpon>TabPageReportSettingsView.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="3rdParty\RedCell\RedCell.Diagnostics.Update\Update.cd" />
@@ -278,6 +281,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\TabPageReaderSettingsView.xaml" />
+    <Page Include="View\TabPageReportSettingsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Manifest.de.resx" />

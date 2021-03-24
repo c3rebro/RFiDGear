@@ -850,4 +850,10 @@ Wird benötigt von:
   <data name="groupBoxHeaderMifareDesfireFileReadWriteData" xml:space="preserve">
     <value>Schreib- / Leseschlüssel</value>
   </data>
+  <data name="filterStringSaveReport" xml:space="preserve">
+    <value>PDF Dateien (*.pdf)|*.pdf</value>
+  </data>
+  <data name="menuItemCreateReportHeader" xml:space="preserve">
+    <value>Bericht erstellen...</value>
+  </data>
 </root>
