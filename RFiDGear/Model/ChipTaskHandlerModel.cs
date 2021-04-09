@@ -20,6 +20,7 @@ namespace RFiDGear.Model
     /// </summary>
     [XmlInclude(typeof(MifareDesfireSetupViewModel))]
     [XmlInclude(typeof(MifareClassicSetupViewModel))]
+    [XmlInclude(typeof(ReportTaskViewModel))]
     public class ChipTaskHandlerModel : ViewModelBase
     {
         private Version Version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -30,7 +31,7 @@ namespace RFiDGear.Model
             ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
         }
 
-        public Type GetTaskType { get { return (TaskCollection != null && TaskCollection.Count > 0) ? TaskCollection[0].GetType() : null; } }
+        public Type GetTaskType(int _index = 0) { return (TaskCollection != null && TaskCollection.Count > 0) ? TaskCollection[_index].GetType() : null; }
 
         /// <summary>
         ///

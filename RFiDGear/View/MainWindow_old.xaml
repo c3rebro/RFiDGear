@@ -1,19 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Window
-	x:Class="RFiDGear.MainWindow" 
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
-    xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity" 
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-    xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
-    
-	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}" 
-    xmlns:local="clr-namespace:RFiDGear" 
-    xmlns:m="clr-namespace:RFiDGear.Model" 
-    xmlns:vm="clr-namespace:RFiDGear.ViewModel" 
-    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    
+	x:Class="RFiDGear.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
+	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}" xmlns:local="clr-namespace:RFiDGear" xmlns:m="clr-namespace:RFiDGear.Model" xmlns:vm="clr-namespace:RFiDGear.ViewModel" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
 	x:Name="homeWindow"
 	mc:Ignorable="d"
 	Title="RFiDGear"
@@ -24,7 +12,7 @@
 	FontWeight="Normal"
 	MouseLeftButtonDown="WindowMouseLeftButtonDown"
 	DataContext="{Binding Source={StaticResource Locator}, Path=MainWin}"
-	MinWidth="900"
+	MinWidth="500"
 	MinHeight="500"
 	Height="500"
 	Width="900">
@@ -146,13 +134,13 @@
 					</Style>
 				</TreeView.ItemContainerStyle>
 				<TreeView.Resources>
-					<!--<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
+					<!--					<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
                       Color="White" />
 					<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
                       Color="Black" />
 					<FontWeightConverter x:Key="{x:Static FontWeights.Bold}" />-->
-                    <HierarchicalDataTemplate
-						DataType="{x:Type vm:RFiDChipParentLayerViewModel}"
+					<HierarchicalDataTemplate
+						DataType="{x:Type local:ViewModel.RFiDChipParentLayerViewModel}"
 						ItemsSource="{Binding Children}">
 						<!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\Region.png" /> -->
 						<HierarchicalDataTemplate.Resources>
@@ -210,8 +198,8 @@
 							</TextBlock.ContextMenu>
 						</TextBlock>
 					</HierarchicalDataTemplate>
-                    <HierarchicalDataTemplate
-						DataType="{x:Type vm:RFiDChipChildLayerViewModel}"
+					<HierarchicalDataTemplate
+						DataType="{x:Type local:ViewModel.RFiDChipChildLayerViewModel}"
 						ItemsSource="{Binding Children}">
 						<HierarchicalDataTemplate.Resources>
 							<Style
@@ -549,20 +537,13 @@
 						Command="{Binding CloseApplication}"></MenuItem>
 				</MenuItem>
 				<!-- File -->
-                <MenuItem
+				<MenuItem
 					Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemEditHeader' }"
 					VerticalContentAlignment="Center"
 					VerticalAlignment="Top">
-                    <MenuItem
-						MinWidth="50"
-                        Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemCreateCommonTaskHeader' }">
-                        <MenuItem
-							Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemCreateReportTaskHeader'}" Command="{Binding CreateReportTaskCommand}">
-                        </MenuItem>
-                    </MenuItem>
-                    <MenuItem
+					<MenuItem
 						Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemCreateTaskHeader' }">
-                        <MenuItem
+						<MenuItem
 							Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemMifareHeader' }">
 							<MenuItem
 								Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemAddEditMifareClassicTaskHeader' }"
@@ -588,8 +569,8 @@
 								IsEnabled="False"></MenuItem>
 						</MenuItem>
 					</MenuItem>
-                    <Separator/>
-                    <MenuItem
+					<Separator />
+					<MenuItem
 						Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemRemoveCardsHeader' }"
 						Command="{Binding RemoveChipsFromTreeCommand}"></MenuItem>
 				</MenuItem>
@@ -642,10 +623,7 @@
 					<MenuItem
 						Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemReaderSettingsHeader' }"
 						Command="{Binding NewReaderSetupDialogCommand}"></MenuItem>
-                    <MenuItem
-						Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemCreateReportHeader' }"
-						Command="{Binding NewCreateReportCommand}"></MenuItem>
-                    <MenuItem
+					<MenuItem
 						Header="_Language">
 						<RadioButton
 							x:Name="radioButtonGerman"

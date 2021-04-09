@@ -53,6 +53,16 @@ namespace RFiDGear.DataAccessLayer
 	/// <summary>
 	///
 	/// </summary>
+	public enum TaskType_CommonTask
+	{
+		None,
+		CreateReport,
+		ChangeDefault
+	}
+
+	/// <summary>
+	///
+	/// </summary>
 	public enum TaskType_MifareClassicTask
 	{
 		None,

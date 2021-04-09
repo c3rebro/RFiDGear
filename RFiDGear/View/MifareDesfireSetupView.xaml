@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Window
-	x:Class="RFiDGear.View.MifareDesfireSetupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:RFiDGear" xmlns:v="clr-namespace:RFiDGear.View" xmlns:vm="clr-namespace:MefMvvm.SharedContracts.ViewModel;assembly=PluginSystem" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
+	x:Class="RFiDGear.View.MifareDesfireSetupView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:RFiDGear"
+    xmlns:v="clr-namespace:RFiDGear.View"
+    xmlns:vm="clr-namespace:MefMvvm.SharedContracts.ViewModel;assembly=PluginSystem"
+    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+    xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
 	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
 	Title="{Binding Caption}"
 	SizeToContent="WidthAndHeight"

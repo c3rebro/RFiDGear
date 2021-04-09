@@ -33,10 +33,10 @@ namespace RFiDGear.ViewModel
 	/// </summary>
 	public class MifareDesfireSetupViewModel : ViewModelBase, IUserDialogViewModel
 	{
-		private SettingsReaderWriter settings = new SettingsReaderWriter();
+		private protected SettingsReaderWriter settings = new SettingsReaderWriter();
 
-		private MifareDesfireChipModel chip;
-		private MifareDesfireAppModel app;
+		private protected MifareDesfireChipModel chip;
+		private protected MifareDesfireAppModel app;
 		private DESFireAccessRights accessRights;
 
 		public ERROR TaskErr { get; set; }

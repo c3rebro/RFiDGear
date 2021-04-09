@@ -1,33 +1,34 @@
-<Application x:Class="RFiDGear.App"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:RFiDGear"
-             xmlns:vm="clr-namespace:RFiDGear.ViewModel"
-             xmlns:mainvm="clr-namespace:MefMvvm.SharedContracts.ViewModel;assembly=PluginSystem"
-             xmlns:dialogsvm="clr-namespace:MvvmDialogs.ViewModels;assembly=MVVMDialogs"
-             xmlns:dialogsview="clr-namespace:MvvmDialogs.View;assembly=MVVMDialogs"
-             xmlns:pre="clr-namespace:MvvmDialogs.Presenters;assembly=MVVMDialogs"
-             xmlns:mainview="clr-namespace:RFiDGear.View"
-             
-             StartupUri="View/MainWindow.xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             d1p1:Ignorable="d"
-             xmlns:d1p1="http://schemas.openxmlformats.org/markup-compatibility/2006">
-	
-	<Application.Resources>
-		<ResourceDictionary>
-			<mainvm:ViewModelLocator x:Key="Locator" d:IsDataSource="True" />
-			
-			<dialogsview:CustomDialogBox x:Key="{x:Type dialogsvm:CustomDialogViewModel}" x:Shared="False" />
-			<mainview:MifareClassicSetupView x:Key="{x:Type vm:MifareClassicSetupViewModel}" x:Shared="False" />
-			<mainview:MifareDesfireSetupView x:Key="{x:Type vm:MifareDesfireSetupViewModel}" x:Shared="False" />
-			<mainview:MifareUltralightSetupView x:Key="{x:Type vm:MifareUltralightSetupViewModel}" x:Shared="False" />
-			<mainview:SetupView x:Key="{x:Type vm:SetupViewModel}" x:Shared="False" />
-			
-			<pre:MessageBoxPresenter x:Key="{x:Type dialogsvm:MessageBoxViewModel}" />
-			<pre:OpenFileDialogPresenter x:Key="{x:Type dialogsvm:OpenFileDialogViewModel}" />
-			<pre:SaveFileDialogPresenter x:Key="{x:Type dialogsvm:SaveFileDialogViewModel}" />
+<Application
+    x:Class="RFiDGear.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:d1p1="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:dialogsview="clr-namespace:MvvmDialogs.View;assembly=MVVMDialogs"
+    xmlns:dialogsvm="clr-namespace:MvvmDialogs.ViewModels;assembly=MVVMDialogs"
+    xmlns:local="clr-namespace:RFiDGear"
+    xmlns:mainview="clr-namespace:RFiDGear.View"
+    xmlns:mainvm="clr-namespace:MefMvvm.SharedContracts.ViewModel;assembly=PluginSystem"
+    xmlns:pre="clr-namespace:MvvmDialogs.Presenters;assembly=MVVMDialogs"
+    xmlns:vm="clr-namespace:RFiDGear.ViewModel"
+    d1p1:Ignorable="d"
+    StartupUri="View/MainWindow.xaml">
 
-		</ResourceDictionary>
-	</Application.Resources>
+    <Application.Resources>
+        <ResourceDictionary>
+            <mainvm:ViewModelLocator x:Key="Locator" d:IsDataSource="True" />
+
+            <dialogsview:CustomDialogBox x:Key="{x:Type dialogsvm:CustomDialogViewModel}" x:Shared="False" />
+            <mainview:MifareClassicSetupView x:Key="{x:Type vm:MifareClassicSetupViewModel}" x:Shared="False" />
+            <mainview:MifareDesfireSetupView x:Key="{x:Type vm:MifareDesfireSetupViewModel}" x:Shared="False" />
+            <mainview:MifareUltralightSetupView x:Key="{x:Type vm:MifareUltralightSetupViewModel}" x:Shared="False" />
+            <mainview:SetupView x:Key="{x:Type vm:SetupViewModel}" x:Shared="False" />
+            <mainview:CreateReportTaskView x:Key="{x:Type vm:ReportTaskViewModel}" x:Shared="False" />
+
+            <pre:MessageBoxPresenter x:Key="{x:Type dialogsvm:MessageBoxViewModel}" />
+            <pre:OpenFileDialogPresenter x:Key="{x:Type dialogsvm:OpenFileDialogViewModel}" />
+            <pre:SaveFileDialogPresenter x:Key="{x:Type dialogsvm:SaveFileDialogViewModel}" />
+
+        </ResourceDictionary>
+    </Application.Resources>
 </Application>

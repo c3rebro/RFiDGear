@@ -849,4 +849,49 @@ Needed by:
   <data name="menuItemCreateReportHeader" xml:space="preserve">
     <value>Create Report...</value>
   </data>
+  <data name="menuItemCreateCommonTaskHeader" xml:space="preserve">
+    <value>Common Tasks...</value>
+  </data>
+  <data name="menuItemCreateReportTaskHeader" xml:space="preserve">
+    <value>Create Report Task...</value>
+  </data>
+  <data name="labelAddTestPoint" xml:space="preserve">
+    <value>Add / Edit Testpoint</value>
+  </data>
+  <data name="labelSelectReportTemplate" xml:space="preserve">
+    <value>Report Template</value>
+  </data>
+  <data name="tabPageHeaderReportSettingsView" xml:space="preserve">
+    <value>Create / Edit Report</value>
+  </data>
+  <data name="ENUM.ERROR.AuthenticationError" xml:space="preserve">
+    <value>Authentication Error</value>
+  </data>
+  <data name="ENUM.ERROR.DeviceNotReadyError" xml:space="preserve">
+    <value>Device Not Ready</value>
+  </data>
+  <data name="ENUM.ERROR.Empty" xml:space="preserve">
+    <value>null Error</value>
+  </data>
+  <data name="ENUM.ERROR.IOError" xml:space="preserve">
+    <value>IO Error</value>
+  </data>
+  <data name="ENUM.ERROR.ItemAlreadyExistError" xml:space="preserve">
+    <value>Item Already Exist Error</value>
+  </data>
+  <data name="ENUM.ERROR.NoError" xml:space="preserve">
+    <value>No Error</value>
+  </data>
+  <data name="ENUM.ERROR.NotAllowed" xml:space="preserve">
+    <value>Not Allowed</value>
+  </data>
+  <data name="ENUM.TaskType_CommonTask.ChangeDefault" xml:space="preserve">
+    <value>Change Default Values</value>
+  </data>
+  <data name="ENUM.TaskType_CommonTask.CreateReport" xml:space="preserve">
+    <value>Create Report</value>
+  </data>
+  <data name="ENUM.TaskType_CommonTask.None" xml:space="preserve">
+    <value>Empty</value>
+  </data>
 </root>

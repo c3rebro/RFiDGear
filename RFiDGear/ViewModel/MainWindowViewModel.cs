@@ -118,7 +118,10 @@ namespace RFiDGear.ViewModel
 
             rowContextMenuItems.Add(new MenuItem() {
 				Header = ResourceLoader.getResource("contextMenuItemAddOrEditTask"),
-				Command = (selectedSetupViewModel is MifareClassicSetupViewModel) ? CreateClassicTaskCommand : CreateDesfireTaskCommand
+				Command = 
+                (selectedSetupViewModel is MifareClassicSetupViewModel) ? CreateClassicTaskCommand :
+                (selectedSetupViewModel is MifareDesfireSetupViewModel) ? CreateDesfireTaskCommand :
+                (selectedSetupViewModel is MifareUltralightSetupViewModel) ? CreateUltralightTaskCommand : CreateReportTaskCommand
 			});
 
 			rowContextMenuItems.Add(new MenuItem() {
@@ -223,15 +226,22 @@ namespace RFiDGear.ViewModel
 			}
 		}
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
 		private void TaskTimeout(object sender, EventArgs e)
 		{
 			taskTimeout.IsEnabled = false;
 			taskTimeout.Stop();
-			if (taskHandler.GetTaskType == typeof(MifareDesfireSetupViewModel))
+			if (taskHandler.GetTaskType(taskIndex) == typeof(MifareDesfireSetupViewModel))
 				(taskHandler.TaskCollection[(int)taskTimeout.Tag] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
-			else if (taskHandler.GetTaskType == typeof(MifareClassicSetupViewModel))
+			else if (taskHandler.GetTaskType(taskIndex) == typeof(MifareClassicSetupViewModel))
 				(taskHandler.TaskCollection[(int)taskTimeout.Tag] as MifareClassicSetupViewModel).IsTaskCompletedSuccessfully = false;
-			taskIndex = int.MaxValue;
+            else if (taskHandler.GetTaskType(taskIndex) == typeof(ReportTaskViewModel))
+                (taskHandler.TaskCollection[(int)taskTimeout.Tag] as ReportTaskViewModel).IsTaskCompletedSuccessfully = false;
+            taskIndex = int.MaxValue;
 		}
 		
 		/// <summary>
@@ -246,62 +256,79 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand NewCreateReportCommand { get { return new RelayCommand(OnNewNewCreateReportCommand); } }
-        private void OnNewNewCreateReportCommand()
+        public ICommand CreateReportTaskCommand { get { return new RelayCommand(OnNewNewCreateReportTaskCommand); } }
+        private void OnNewNewCreateReportTaskCommand()
         {
-            var dlg = new SaveFileDialogViewModel
-            {
-                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-                Filter = ResourceLoader.getResource("filterStringSaveReport")
-            };
+			bool timerState = triggerReadChip.IsEnabled;
 
-            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
-            {
-                CARD_INFO card;
+			triggerReadChip.IsEnabled = false;
 
-                Mouse.OverrideCursor = Cursors.AppStarting;
+			Mouse.OverrideCursor = Cursors.AppStarting;
 
-                ReportReaderWriter reportReaderWriter = new ReportReaderWriter();
+			try
+			{
+				using (RFiDDevice device = RFiDDevice.Instance)
+				{
+					// only call dialog if device is ready
+					if (device != null)
+					{
+						this.dialogs.Add(new ReportTaskViewModel(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
+						{
+							Caption = ResourceLoader.getResource("windowCaptionAddEditMifareClassicTask"),
+							//IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
 
-                try
-                {
-                    //try to get singleton instance
-                    using (RFiDDevice device = RFiDDevice.Instance)
-                    {
-                        //reader was ready - proceed
-                        if (device != null)
-                        {
-                            device.ReadChipPublic();
+							OnOk = (sender) => {
+								if (sender.SelectedTaskType == TaskType_CommonTask.ChangeDefault)
+									sender.Settings.SaveSettings();
 
-                            card = device.CardInfo;
+                            if (sender.SelectedTaskType == TaskType_CommonTask.CreateReport)
+                            {
+                                if ((ChipTasks.TaskCollection.OfType<ReportTaskViewModel>().Where(x => (x as ReportTaskViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
+                                {
+                                        ChipTasks.TaskCollection.RemoveAt(sender.SelectedTaskIndexAsInt);
+                                }
 
-                            reportReaderWriter.CreateReport(device, dlg.FileName);
-                        }
-                        else
-                            card = new CARD_INFO(CARD_TYPE.Unspecified, "");
-                    }
+                                ChipTasks.TaskCollection.Add(sender);
 
-                }
+                                    //ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OfType<ReportTaskViewModel>().OrderBy(x =>(x as ReportTaskViewModel).SelectedTaskIndexAsInt));
 
-                catch { }
+                                    ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x =>
+                            
+                                        (x is ReportTaskViewModel) ?
+                                        (x as ReportTaskViewModel).SelectedTaskIndexAsInt : 
+                                        (x is MifareDesfireSetupViewModel) ? 
+                                        (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt : 
+                                        (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt)
+                                        ) ;
 
+									RaisePropertyChanged("ChipTasks");
+								}
+								sender.Close();
+							},
 
+							OnCancel = (sender) => {
+								sender.Close();
+							},
 
-                //IRandomAccessSource source = new RandomAccessSourceFactory().CreateSource(new byte[1] { 3});
-                //PdfDocument pdfDoc = new PdfDocument(new PdfReader(source, new ReaderProperties()), new PdfWriter(dlg.FileName));
-                //PdfAcroForm form = PdfAcroForm.GetAcroForm(pdfDoc, true);
+							OnAuth = (sender) => {
+							},
 
-                //form.GetField("test1")
-                //    .SetValue("A B C D E F\nG H I J K L M N\nO P Q R S T U\r\nV W X Y Z\n\nAlphabet street");
+							OnCloseRequest = (sender) => {
+								sender.Close();
+							}
+						});
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				dialogs.Clear();
+			}
 
-                // If no fields have been explicitly included, then all fields are flattened.
-                // Otherwise only the included fields are flattened.
-                //form.FlattenFields();
+			Mouse.OverrideCursor = null;
 
-                //pdfDoc.Close();
-
-                Mouse.OverrideCursor = null;
-            }
+			triggerReadChip.IsEnabled = timerState;
 
             RaisePropertyChanged("ChipTasks");
         }
@@ -332,7 +359,13 @@ namespace RFiDGear.ViewModel
 
 								if (sender.SelectedTaskType == TaskType_MifareClassicTask.WriteData ||
 								                     sender.SelectedTaskType == TaskType_MifareClassicTask.ReadData) {
-									ChipTasks.TaskCollection.Add(sender);
+
+                                    if ((ChipTasks.TaskCollection.OfType<MifareClassicSetupViewModel>().Where(x => (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
+                                    {
+                                        ChipTasks.TaskCollection.RemoveAt(sender.SelectedTaskIndexAsInt);
+                                    }
+
+                                    ChipTasks.TaskCollection.Add(sender);
 
 									ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt));
 
@@ -395,8 +428,14 @@ namespace RFiDGear.ViewModel
 							                sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteFile ||
 							                sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateFile ||
 							                sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadData ||
-							                sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData) {
-								ChipTasks.TaskCollection.Add(sender);
+							                sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData) 
+                            {
+                                if ((ChipTasks.TaskCollection.OfType<MifareDesfireSetupViewModel>().Where(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
+                                {
+                                    ChipTasks.TaskCollection.RemoveAt(sender.SelectedTaskIndexAsInt);
+                                }
+
+                                ChipTasks.TaskCollection.Add(sender);
 
 								ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt));
 
@@ -422,7 +461,7 @@ namespace RFiDGear.ViewModel
 			triggerReadChip.IsEnabled = timerState;
 		}
 
-				/// <summary>
+		/// <summary>
 		/// 
 		/// </summary>
 		public ICommand CreateUltralightTaskCommand { get { return new RelayCommand(OnNewCreateUltralightTaskCommand); } }
@@ -446,8 +485,14 @@ namespace RFiDGear.ViewModel
 								sender.Settings.SaveSettings();
 
 							if (sender.SelectedTaskType == TaskType_MifareUltralightTask.ReadData ||
-							                sender.SelectedTaskType == TaskType_MifareUltralightTask.WriteData) {
-								ChipTasks.TaskCollection.Add(sender);
+							                sender.SelectedTaskType == TaskType_MifareUltralightTask.WriteData)
+                            {
+                                if ((ChipTasks.TaskCollection.OfType<MifareUltralightSetupViewModel>().Where(x => (x as MifareUltralightSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
+                                {
+                                    ChipTasks.TaskCollection.RemoveAt(sender.SelectedTaskIndexAsInt);
+                                }
+
+                                ChipTasks.TaskCollection.Add(sender);
 
 								ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt));
 
@@ -657,10 +702,14 @@ namespace RFiDGear.ViewModel
 		{
 			taskIndex = 0;
 
-			taskTimeout.IsEnabled = true;
-			taskTimeout.Start();
+#if DEBUG
+            taskTimeout.IsEnabled = false;
+#else
+            taskTimeout.IsEnabled = true;
+            taskTimeout.Start();
+#endif
 
-			triggerReadChip.Tag = triggerReadChip.IsEnabled;
+            triggerReadChip.Tag = triggerReadChip.IsEnabled;
 			triggerReadChip.IsEnabled = false;
 
 			Task thread = new Task(() => {
@@ -695,15 +744,19 @@ namespace RFiDGear.ViewModel
 								} else if (SelectedSetupViewModel is MifareDesfireSetupViewModel
 								                               && (SelectedSetupViewModel as MifareDesfireSetupViewModel).IsValidSelectedTaskIndex != false) {
 									taskIndex = (SelectedSetupViewModel as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt;
-								}
-							}
+								} else if (SelectedSetupViewModel is ReportTaskViewModel
+                                                             && (SelectedSetupViewModel as ReportTaskViewModel).IsValidSelectedTaskIndex != false)
+                                {
+                                    taskIndex = (SelectedSetupViewModel as ReportTaskViewModel).SelectedTaskIndexAsInt;
+                                }
+                            }
 
 							Thread.Sleep(100);
 
 							taskTimeout.Tag = taskIndex;
 
-							//decide what type of card to process
-							if (taskHandler.GetTaskType == typeof(MifareClassicSetupViewModel)) {
+							//decide what type of task to process
+							if (taskHandler.GetTaskType(taskIndex) == typeof(MifareClassicSetupViewModel)) {
 								switch ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedTaskType) {
 									case TaskType_MifareClassicTask.ReadData:
 										switch ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr) {
@@ -761,7 +814,7 @@ namespace RFiDGear.ViewModel
 										break;
 								}
 							}
-							if (taskHandler.GetTaskType == typeof(MifareDesfireSetupViewModel)) {
+							if (taskHandler.GetTaskType(taskIndex) == typeof(MifareDesfireSetupViewModel)) {
 								switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedTaskType) {
 									case TaskType_MifareDesfireTask.FormatDesfireCard:
 										switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr) {
@@ -1007,12 +1060,60 @@ namespace RFiDGear.ViewModel
 										break;
 								}
 							}
-			                       				
-			                       				
-							if (_runSelectedOnly)
+                            if (taskHandler.GetTaskType(taskIndex) == typeof(ReportTaskViewModel))
+                            {
+                                switch ((taskHandler.TaskCollection[taskIndex] as ReportTaskViewModel).SelectedTaskType)
+                                {
+                                    case TaskType_CommonTask.CreateReport:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as ReportTaskViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                //FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+                                                (taskHandler.TaskCollection[taskIndex] as ReportTaskViewModel).TaskErr = ERROR.Empty;
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                break;
+
+                                            case ERROR.IOError:
+                                                break;
+
+                                            case ERROR.NoError:
+                                                (taskHandler.TaskCollection[taskIndex] as ReportTaskViewModel).IsTaskCompletedSuccessfully = true;
+                                                taskIndex++;
+                                                //taskTimeout.IsEnabled = false;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                //taskTimeout.Start();
+
+                                                var dlg = new SaveFileDialogViewModel
+                                                {
+                                                    Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
+                                                    Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                };
+
+                                                if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                {
+                                                    (taskHandler.TaskCollection[taskIndex] as ReportTaskViewModel).WriteReportCommand.Execute(dlg.FileName);
+
+                                                }
+
+                                                //Mouse.OverrideCursor = Cursors.AppStarting;
+
+                                                break;
+                                        }
+                                        break;
+                                }
+                            }
+
+                            if (_runSelectedOnly)
 								break;
 						}
-					} else {
+					} 
+                    
+                    else {
 						if (treeViewParentNodes.Any(x => x.IsSelected))
 							treeViewParentNodes.First(x => x.IsSelected).IsSelected = false;
 					}
@@ -1020,6 +1121,7 @@ namespace RFiDGear.ViewModel
 					RaisePropertyChanged("TreeViewParentNodes");
 
 					taskTimeout.Stop();
+
 				} catch (Exception e) {
 					LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 				}
@@ -1206,9 +1308,9 @@ namespace RFiDGear.ViewModel
 			App.Current.Shutdown();
 		}
 
-		#endregion Menu Commands
+#endregion Menu Commands
 
-		#region Dependency Properties
+#region Dependency Properties
 
 		/// <summary>
 		/// expose contextmenu on row click
@@ -1385,9 +1487,9 @@ namespace RFiDGear.ViewModel
 			}
 		}
 
-		#endregion Dependency Properties
+#endregion Dependency Properties
 
-		#region Extensions
+#region Extensions
 		
 		private void AskForUpdateNow(object sender, EventArgs e)
 		{
@@ -1439,7 +1541,7 @@ namespace RFiDGear.ViewModel
 
 			}
 
-			#endregion
+#endregion
 		}
 	}
 }
