@@ -7,6 +7,7 @@ using RedCell.Diagnostics.Update;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using System;
+using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Collections.Generic;
@@ -130,8 +131,9 @@ namespace RFiDGear.ViewModel
 					taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
 				})
 			});
-			
-			Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
+
+            Application.Current.MainWindow.Closing += new CancelEventHandler(CloseThreads);
+            Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
 			updater.NewVersionAvailable += new EventHandler(AskForUpdateNow);
 
 			//reminder: any dialog boxes added in the constructor won't appear until DialogBehavior.DialogViewModels gets bound to the Dialogs collection.
@@ -160,16 +162,17 @@ namespace RFiDGear.ViewModel
 		/// </summary>
 		public string LocalizationResourceSet { get; set; }
 
-		#endregion Localization
+        #endregion Localization
 
-		#region Menu Commands
+        #region Menu Commands
 
-		/// <summary>
-		/// here we perform all tasks on cards with a periodic check for new cards to work with
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void UpdateChip(object sender, EventArgs e)
+        /// <summary>
+        /// Here we perform all tasks on cards with a periodic check for new cards to work with.
+        /// Added to Timer.Tick Event @ "triggerReadChip.Tick += UpdateChip;"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void UpdateChip(object sender, EventArgs e)
 		{
 			CARD_INFO card;
 
@@ -227,7 +230,7 @@ namespace RFiDGear.ViewModel
 		}
 
         /// <summary>
-        /// 
+        /// What to do if timer has ended without success i.e. ErrorLevel != ERROR.NoError ?
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -239,13 +242,13 @@ namespace RFiDGear.ViewModel
 				(taskHandler.TaskCollection[(int)taskTimeout.Tag] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
 			else if (taskHandler.GetTaskType(taskIndex) == typeof(MifareClassicSetupViewModel))
 				(taskHandler.TaskCollection[(int)taskTimeout.Tag] as MifareClassicSetupViewModel).IsTaskCompletedSuccessfully = false;
-            else if (taskHandler.GetTaskType(taskIndex) == typeof(ReportTaskViewModel))
-                (taskHandler.TaskCollection[(int)taskTimeout.Tag] as ReportTaskViewModel).IsTaskCompletedSuccessfully = false;
+            else if (taskHandler.GetTaskType(taskIndex) == typeof(CreateCommonTaskView))
+                (taskHandler.TaskCollection[(int)taskTimeout.Tag] as CreateCommonTaskView).IsTaskCompletedSuccessfully = false;
             taskIndex = int.MaxValue;
 		}
 		
 		/// <summary>
-		/// 
+		/// "Remove all listed Chips from listing" was called
 		/// </summary>
 		public ICommand RemoveChipsFromTreeCommand { get { return new RelayCommand(OnNewRemoveChipsFromTreeCommand); } }
 		private void OnNewRemoveChipsFromTreeCommand()
@@ -254,7 +257,87 @@ namespace RFiDGear.ViewModel
 		}
 
         /// <summary>
-        /// 
+        /// Create a new "Common" Task of Type "Report Creator"
+        /// </summary>
+        public ICommand CreateCommonTaskCommand { get { return new RelayCommand(OnNewCreateCommonTaskCommand); } }
+        private void OnNewCreateCommonTaskCommand()
+        {
+            bool timerState = triggerReadChip.IsEnabled;
+
+            triggerReadChip.IsEnabled = false;
+
+            Mouse.OverrideCursor = Cursors.AppStarting;
+
+            try
+            {
+                using (RFiDDevice device = RFiDDevice.Instance)
+                {
+                    // only call dialog if device is ready
+                    if (device != null)
+                    {
+                        this.dialogs.Add(new CreateGenericChipTaskView(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
+                        {
+                            Caption = ResourceLoader.getResource("windowCaptionAddEditMifareClassicTask"),
+                            //IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
+
+                            OnOk = (sender) => {
+                                if (sender.SelectedTaskType == TaskType_CommonTask.ChangeDefault)
+                                    sender.Settings.SaveSettings();
+
+                                if (sender.SelectedTaskType == TaskType_CommonTask.ChipIsOfType)
+                                {
+                                    if ((ChipTasks.TaskCollection.OfType<CreateGenericChipTaskView>().Where(x => (x as CreateGenericChipTaskView).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
+                                    {
+                                        ChipTasks.TaskCollection.RemoveAt(sender.SelectedTaskIndexAsInt);
+                                    }
+
+                                    ChipTasks.TaskCollection.Add(sender);
+
+                                    //ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OfType<ReportTaskViewModel>().OrderBy(x =>(x as ReportTaskViewModel).SelectedTaskIndexAsInt));
+
+                                    ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x =>
+
+                                        (x is CreateCommonTaskView) ?
+                                        (x as CreateCommonTaskView).SelectedTaskIndexAsInt :
+                                        (x is MifareDesfireSetupViewModel) ?
+                                        (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt :
+                                        (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt)
+                                        );
+
+                                    RaisePropertyChanged("ChipTasks");
+                                }
+                                sender.Close();
+                            },
+
+                            OnCancel = (sender) => {
+                                sender.Close();
+                            },
+
+                            OnAuth = (sender) => {
+                            },
+
+                            OnCloseRequest = (sender) => {
+                                sender.Close();
+                            }
+                        });
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                dialogs.Clear();
+            }
+
+            Mouse.OverrideCursor = null;
+
+            triggerReadChip.IsEnabled = timerState;
+
+            RaisePropertyChanged("ChipTasks");
+        }
+
+        /// <summary>
+        /// Create a new "Common" Task of Type "Report Creator"
         /// </summary>
         public ICommand CreateReportTaskCommand { get { return new RelayCommand(OnNewNewCreateReportTaskCommand); } }
         private void OnNewNewCreateReportTaskCommand()
@@ -272,18 +355,18 @@ namespace RFiDGear.ViewModel
 					// only call dialog if device is ready
 					if (device != null)
 					{
-						this.dialogs.Add(new ReportTaskViewModel(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
+						this.dialogs.Add(new CreateCommonTaskView(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
 						{
 							Caption = ResourceLoader.getResource("windowCaptionAddEditMifareClassicTask"),
 							//IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
 
 							OnOk = (sender) => {
-								if (sender.SelectedTaskType == TaskType_CommonTask.ChangeDefault)
+								if (sender.SelectedTaskType == TaskType_ReportTask.ChangeDefault)
 									sender.Settings.SaveSettings();
 
-                            if (sender.SelectedTaskType == TaskType_CommonTask.CreateReport)
+                            if (sender.SelectedTaskType == TaskType_ReportTask.CreateReport)
                             {
-                                if ((ChipTasks.TaskCollection.OfType<ReportTaskViewModel>().Where(x => (x as ReportTaskViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
+                                if ((ChipTasks.TaskCollection.OfType<CreateCommonTaskView>().Where(x => (x as CreateCommonTaskView).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
                                 {
                                         ChipTasks.TaskCollection.RemoveAt(sender.SelectedTaskIndexAsInt);
                                 }
@@ -294,8 +377,8 @@ namespace RFiDGear.ViewModel
 
                                     ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x =>
                             
-                                        (x is ReportTaskViewModel) ?
-                                        (x as ReportTaskViewModel).SelectedTaskIndexAsInt : 
+                                        (x is CreateCommonTaskView) ?
+                                        (x as CreateCommonTaskView).SelectedTaskIndexAsInt : 
                                         (x is MifareDesfireSetupViewModel) ? 
                                         (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt : 
                                         (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt)
@@ -334,7 +417,7 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// 
+        /// Creates a new Task of Type Mifare Classic Card
         /// </summary>
         public ICommand CreateClassicTaskCommand { get { return new RelayCommand(OnNewCreateClassicTaskCommand); } }
 		private void OnNewCreateClassicTaskCommand()
@@ -402,8 +485,7 @@ namespace RFiDGear.ViewModel
 		/// </summary>
 		public ICommand CreateDesfireTaskCommand { get { return new RelayCommand(OnNewCreateDesfireTaskCommand); } }
 		private void OnNewCreateDesfireTaskCommand()
-		{
-			
+		{		
 			bool timerState = triggerReadChip.IsEnabled;
 
 			triggerReadChip.IsEnabled = false;
@@ -744,10 +826,10 @@ namespace RFiDGear.ViewModel
 								} else if (SelectedSetupViewModel is MifareDesfireSetupViewModel
 								                               && (SelectedSetupViewModel as MifareDesfireSetupViewModel).IsValidSelectedTaskIndex != false) {
 									taskIndex = (SelectedSetupViewModel as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt;
-								} else if (SelectedSetupViewModel is ReportTaskViewModel
-                                                             && (SelectedSetupViewModel as ReportTaskViewModel).IsValidSelectedTaskIndex != false)
+								} else if (SelectedSetupViewModel is CreateCommonTaskView
+                                                             && (SelectedSetupViewModel as CreateCommonTaskView).IsValidSelectedTaskIndex != false)
                                 {
-                                    taskIndex = (SelectedSetupViewModel as ReportTaskViewModel).SelectedTaskIndexAsInt;
+                                    taskIndex = (SelectedSetupViewModel as CreateCommonTaskView).SelectedTaskIndexAsInt;
                                 }
                             }
 
@@ -1060,16 +1142,16 @@ namespace RFiDGear.ViewModel
 										break;
 								}
 							}
-                            if (taskHandler.GetTaskType(taskIndex) == typeof(ReportTaskViewModel))
+                            if (taskHandler.GetTaskType(taskIndex) == typeof(CreateCommonTaskView))
                             {
-                                switch ((taskHandler.TaskCollection[taskIndex] as ReportTaskViewModel).SelectedTaskType)
+                                switch ((taskHandler.TaskCollection[taskIndex] as CreateCommonTaskView).SelectedTaskType)
                                 {
-                                    case TaskType_CommonTask.CreateReport:
-                                        switch ((taskHandler.TaskCollection[taskIndex] as ReportTaskViewModel).TaskErr)
+                                    case TaskType_ReportTask.CreateReport:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as CreateCommonTaskView).TaskErr)
                                         {
                                             case ERROR.AuthenticationError:
                                                 //FIXME (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
-                                                (taskHandler.TaskCollection[taskIndex] as ReportTaskViewModel).TaskErr = ERROR.Empty;
+                                                (taskHandler.TaskCollection[taskIndex] as CreateCommonTaskView).TaskErr = ERROR.Empty;
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
@@ -1079,7 +1161,7 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.NoError:
-                                                (taskHandler.TaskCollection[taskIndex] as ReportTaskViewModel).IsTaskCompletedSuccessfully = true;
+                                                (taskHandler.TaskCollection[taskIndex] as CreateCommonTaskView).IsTaskCompletedSuccessfully = true;
                                                 taskIndex++;
                                                 //taskTimeout.IsEnabled = false;
                                                 taskTimeout.Start();
@@ -1096,7 +1178,7 @@ namespace RFiDGear.ViewModel
 
                                                 if (dlg.Show(this.Dialogs) && dlg.FileName != null)
                                                 {
-                                                    (taskHandler.TaskCollection[taskIndex] as ReportTaskViewModel).WriteReportCommand.Execute(dlg.FileName);
+                                                    (taskHandler.TaskCollection[taskIndex] as CreateCommonTaskView).WriteReportCommand.Execute(dlg.FileName);
 
                                                 }
 
@@ -1305,12 +1387,12 @@ namespace RFiDGear.ViewModel
 		public ICommand CloseApplication { get { return new RelayCommand(OnCloseRequest); } }
 		private void OnCloseRequest()
 		{
-			App.Current.Shutdown();
+            Environment.Exit(0);
 		}
 
 #endregion Menu Commands
 
-#region Dependency Properties
+        #region Dependency Properties
 
 		/// <summary>
 		/// expose contextmenu on row click
@@ -1489,7 +1571,7 @@ namespace RFiDGear.ViewModel
 
 #endregion Dependency Properties
 
-#region Extensions
+        #region Extensions
 		
 		private void AskForUpdateNow(object sender, EventArgs e)
 		{
@@ -1516,8 +1598,13 @@ namespace RFiDGear.ViewModel
 			}
 
 		}
-		
-		private void LoadCompleted(object sender, EventArgs e)
+
+        private void CloseThreads(object sender, CancelEventArgs e)
+        {
+            Environment.Exit(0);
+        }
+
+        private void LoadCompleted(object sender, EventArgs e)
 		{
 			mw = (MainWindow)Application.Current.MainWindow;
 			mw.Title = string.Format("RFiDGear {0}.{1}.{2} {3}", Version.Major, Version.Minor, Version.Build, Constants.TITLE_SUFFIX);

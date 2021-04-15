@@ -14,9 +14,9 @@ namespace RFiDGear.View
     /// <summary>
     /// Interaction logic for CreateReportTaskView.xaml
     /// </summary>
-    public partial class CreateReportTaskView : Window
+    public partial class CreateCommonTaskView : Window
     {
-        public CreateReportTaskView()
+        public CreateCommonTaskView()
         {
             InitializeComponent();
         }

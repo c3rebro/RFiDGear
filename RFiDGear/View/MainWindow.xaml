@@ -563,6 +563,10 @@
                     <MenuItem
 						Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemCreateTaskHeader' }">
                         <MenuItem
+                            Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemCreateGenericTaskHeader'}"
+                            Command="{Binding CreateCommonTaskCommand}">
+                        </MenuItem>
+                        <MenuItem
 							Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemMifareHeader' }">
 							<MenuItem
 								Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemAddEditMifareClassicTaskHeader' }"

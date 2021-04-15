@@ -7,6 +7,7 @@ using RFiDGear.Model;
 using RFiDGear.ViewModel;
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -135,7 +136,17 @@ namespace RFiDGear.DataAccessLayer
 
                 //form.GetField("Strasse_1").SetValue("1232test");
 
-                ObservableCollection<string> temp = new ObservableCollection<string>(form.GetFormFields().Keys);
+                ObservableCollection<string> temp = new ObservableCollection<string>(); ; // = new ObservableCollection<string>(form.GetFormFields().Keys);
+
+                foreach(KeyValuePair<string, PdfFormField> _form in form.GetFormFields())
+                {
+                    PdfFormField _fieldValue = _form.Value;
+                    if (!_fieldValue.IsReadOnly())
+                    {
+                        temp.Add(_form.Key);
+                    }
+                }
+                
                 pdfDoc.Close();
 
                 return temp;
@@ -167,6 +178,7 @@ namespace RFiDGear.DataAccessLayer
                     //form.GetField("test2").SetValue(VALUE, font, 12f);
 
                     form.GetField(_field).SetValue(_value);
+                    form.GetField(_field).SetReadOnly(true);
 
                     pdfDoc.Close();
 

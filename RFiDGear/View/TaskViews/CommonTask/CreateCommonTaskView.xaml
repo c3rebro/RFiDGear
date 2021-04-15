@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="RFiDGear.View.CreateCommonTaskView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+    xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
+    xmlns:local="clr-namespace:RFiDGear"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:v="clr-namespace:RFiDGear.View"
+    Title="{Binding Caption}"
+    dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+        <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
+        <dal:ResourceLoader x:Key="Localization" />
+        <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+			<ContextMenu.ItemContainerStyle>
+				<Style TargetType="MenuItem">
+					<Setter
+						Property="HorizontalContentAlignment"
+						Value="Left" />
+					<Setter
+						Property="VerticalContentAlignment"
+						Value="Center" />
+				</Style>
+			</ContextMenu.ItemContainerStyle>
+		</ContextMenu>-->
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="110.066450667812" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="11" />
+            <RowDefinition Height="0.3*" />
+        </Grid.RowDefinitions>
+        <GridSplitter
+            Grid.Row="2"
+            Grid.Column="0"
+            Width="Auto"
+            Height="5"
+            Margin="0,0,0,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            Background="#FFD9D9DB"
+            ResizeBehavior="PreviousAndNext"
+            ResizeDirection="Rows" />
+        <Grid
+            Grid.Row="1"
+            Grid.Column="0"
+            Margin="0,0,0,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+            <TabControl>
+                <TabItem MinWidth="50" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderReportSettingsView'}">
+                    <v:TabPageReportSettingsView />
+                </TabItem>
+            </TabControl>
+        </Grid>
+        <Grid
+            Grid.Row="0"
+            Grid.Column="0"
+            Height="106"
+            Margin="0,0,0,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Top">
+            <GroupBox
+                Grid.Row="0"
+                Grid.Column="0"
+                Height="106"
+                Margin="9,0,8,0"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Top"
+                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareClassicSetupTaskConfiguration'}">
+                <Grid
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Margin="0,0,0,0"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch">
+                    <Label
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Width="117"
+                        Height="26"
+                        Margin="10,7,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareClassicSetupTaskConfigurationType'}" />
+                    <ComboBox
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Width="252"
+                        Height="26"
+                        Margin="8,7,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        ItemsSource="{dal:Enumerate {x:Type dal:TaskType_ReportTask}}"
+                        SelectedItem="{Binding SelectedTaskType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskType_ReportTask}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        TabIndex="1" />
+                    <Label
+                        Grid.Row="1"
+                        Grid.Column="2"
+                        Width="97"
+                        Height="26"
+                        Margin="10,10,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareClassicSetupTaskConfigurationDescription'}" />
+                    <TextBox
+                        Grid.Row="1"
+                        Grid.Column="3"
+                        Height="26"
+                        Margin="9,10,12,0"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Top"
+                        TabIndex="3"
+                        Text="{Binding SelectedTaskDescription}" />
+                    <Label
+                        Grid.Row="0"
+                        Grid.Column="2"
+                        Width="95"
+                        Height="26"
+                        Margin="9,7,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareClassicSetupTaskConfigurationIndex'}"
+                        RenderTransformOrigin="0.5085,0.4231" />
+                    <TextBox
+                        Grid.Row="0"
+                        Grid.Column="3"
+                        Height="26"
+                        Margin="9,7,12,0"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Top"
+                        TabIndex="2"
+                        Text="{Binding SelectedTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                        <TextBox.Resources>
+                            <Style x:Key="IsValidSelectedKeySetupTaskIndex" TargetType="TextBox">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsValidSelectedKeySetupTaskIndex}" Value="True">
+                                        <Setter Property="Foreground" Value="Green" />
+                                        <Setter Property="Background" Value="White" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsValidSelectedKeySetupTaskIndex}" Value="False">
+                                        <Setter Property="Foreground" Value="Black" />
+                                        <Setter Property="Background" Value="Red" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Resources>
+                    </TextBox>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140" />
+                        <ColumnDefinition Width="280" />
+                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="*" MinWidth="150" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="38" />
+                        <RowDefinition Height="0.286848072562358*" />
+                    </Grid.RowDefinitions>
+                </Grid>
+            </GroupBox>
+        </Grid>
+        <Grid
+            Grid.Row="3"
+            Grid.Column="0"
+            Margin="0,0,0,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+            <TextBox
+                Grid.Row="0"
+                Grid.Column="0"
+                Margin="8,8,8,39"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                FontFamily="Lucida Console"
+                HorizontalScrollBarVisibility="Auto"
+                IsReadOnly="True"
+                Text="{Binding StatusText}"
+                VerticalScrollBarVisibility="Visible" />
+            <Button
+                Grid.Row="0"
+                Grid.Column="0"
+                Width="140"
+                Height="23"
+                Margin="9,0,0,8"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Command="{Binding OKCommand}"
+                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareClassicSetupOKButton'}"
+                IsDefault="True" />
+            <Button
+                Grid.Row="0"
+                Grid.Column="0"
+                Width="140"
+                Height="23"
+                Margin="157,0,0,8"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Command="{Binding CancelCommand}"
+                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareClassicSetupCancelButton'}"
+                IsCancel="True" />
+        </Grid>
+    </Grid>
+</Window>

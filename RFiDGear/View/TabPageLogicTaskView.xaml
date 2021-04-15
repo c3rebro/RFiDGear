@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <UserControl
-    x:Class="RFiDGear.View.TabPageReportSettingsView"
+    x:Class="RFiDGear.View.TabPageLogicTaskView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer">
@@ -25,7 +25,7 @@
                 Margin="8,8,8,8"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Header="Report Setup">
+                Header="Logic Task Setup">
                 <Grid
                     Grid.Row="0"
                     Grid.Column="0"
@@ -40,7 +40,7 @@
                         Margin="8,8,8,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
-                        Header="Template File">
+                        Header="State Type">
                         <Grid
                             Grid.Row="0"
                             Grid.Column="0"
@@ -57,11 +57,22 @@
                                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectReportTemplate'}"
                                 DataContext="{Binding}"
                                 Foreground="Black" />
-
+                            <ComboBox
+                                xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
+                                xmlns:local="clr-namespace:RFiDGear"
+                                xmlns:system="clr-namespace:System;assembly=mscorlib"
+                                xmlns:v="clr-namespace:RFiDGear.View"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Height="26"
+                                Margin="8,0,8,8"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Bottom"
+                                ItemsSource="{dal:Enumerate {x:Type dal:ERROR}}"
+                                SelectedItem="{Binding SelectedErrorLevel, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:ERROR}, Mode=TwoWay}" />
                             <Label
                                 Grid.Row="1"
                                 Grid.Column="0"
-                                Grid.ColumnSpan="2"
                                 Height="26"
                                 Margin="8,3,10,0"
                                 VerticalAlignment="Top"
@@ -69,14 +80,6 @@
                                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectedReader'}"
                                 DataContext="{Binding}"
                                 Foreground="Black" />
-
-                            <Button
-                                Grid.Column="1"
-                                Height="26"
-                                Margin="10,6,10,0"
-                                VerticalAlignment="Top"
-                                Command="{Binding OpenReportTemplateCommand}"
-                                Content="Open File" />
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="165" />
                                 <ColumnDefinition />
@@ -221,13 +224,10 @@
                             </Grid.RowDefinitions>
                         </Grid>
                     </GroupBox>
-
                     <Grid.RowDefinitions>
-
                         <RowDefinition Height="120" />
                         <RowDefinition Height="0.5*" />
                     </Grid.RowDefinitions>
-
                 </Grid>
             </GroupBox>
             <GridSplitter

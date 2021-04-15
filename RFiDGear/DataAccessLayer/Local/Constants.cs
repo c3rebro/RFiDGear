@@ -39,7 +39,7 @@ namespace RFiDGear.DataAccessLayer
 	};
 	
 	/// <summary>
-	///
+	/// The available FileTypes for DesFire Chips 
 	/// </summary>
 	public enum FileType_MifareDesfireFileType
 	{
@@ -50,10 +50,21 @@ namespace RFiDGear.DataAccessLayer
 		LinearRecordFile
 	}
 
+    /// <summary>
+    /// The availbale "Common Tasks"
+    /// </summary>
+    public enum TaskType_CommonTask
+    {
+        None,
+        ChipIsOfType,
+		CheckUID,
+        ChangeDefault
+    }
+
 	/// <summary>
-	///
+	/// The availbale "Report Tasks"
 	/// </summary>
-	public enum TaskType_CommonTask
+	public enum TaskType_ReportTask
 	{
 		None,
 		CreateReport,
@@ -61,7 +72,7 @@ namespace RFiDGear.DataAccessLayer
 	}
 
 	/// <summary>
-	///
+	/// The availbale "Mifare Classic Tasks"
 	/// </summary>
 	public enum TaskType_MifareClassicTask
 	{
@@ -72,7 +83,7 @@ namespace RFiDGear.DataAccessLayer
 	}
 
 	/// <summary>
-	///
+	/// The availbale "Mifare Ultralight" Tasks
 	/// </summary>
 	public enum TaskType_MifareUltralightTask
 	{
@@ -81,9 +92,9 @@ namespace RFiDGear.DataAccessLayer
 		WriteData,
 		ChangeDefault
 	}
-	
+
 	/// <summary>
-	/// 
+	/// The availbale "Mifare Desfire Tasks"
 	/// </summary>
 	public enum TaskType_MifareDesfireTask
 	{
@@ -113,7 +124,7 @@ namespace RFiDGear.DataAccessLayer
 	}
 
 	/// <summary>
-	/// Select DataBlock in Sector Trailer Access Bits
+	/// Build a SectorTrailer / Select DataBlock in Sector Trailer Access Bits
 	/// </summary>
 	public enum SectorTrailer_DataBlock
 	{
@@ -123,6 +134,9 @@ namespace RFiDGear.DataAccessLayer
 		BlockAll = 3
 	}
 
+	/// <summary>
+	/// Build a "SectorTrailer" / Determine Access To DataBlocks
+	/// </summary>
 	[Flags]
 	public enum SectorTrailer_AccessType
 	{
@@ -207,6 +221,18 @@ namespace RFiDGear.DataAccessLayer
 	}
 
 	/// <summary>
+	/// The Possible Logical States
+	/// </summary>
+	public enum LOGIC_STATE
+    {
+		AND,
+		OR,
+		NAND,
+		NOR,
+		NOT
+    };
+
+	/// <summary>
 	/// Key Formatting Errors
 	/// </summary>
 	public enum KEY_ERROR
@@ -276,7 +302,6 @@ namespace RFiDGear.DataAccessLayer
 		public int KeyNumber;
 		public string AccessBits { get { return accessBits; } set { accessBits = value; } }
 	}
-
 
     #region LibLogicalAccess enums
 

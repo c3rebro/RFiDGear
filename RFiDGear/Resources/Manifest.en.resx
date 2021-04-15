@@ -888,10 +888,67 @@ Needed by:
   <data name="ENUM.TaskType_CommonTask.ChangeDefault" xml:space="preserve">
     <value>Change Default Values</value>
   </data>
-  <data name="ENUM.TaskType_CommonTask.CreateReport" xml:space="preserve">
-    <value>Create Report</value>
-  </data>
   <data name="ENUM.TaskType_CommonTask.None" xml:space="preserve">
     <value>Empty</value>
+  </data>
+  <data name="ENUM.TaskType_ReportTask.ChangeDefault" xml:space="preserve">
+    <value>Change Default Values</value>
+  </data>
+  <data name="ENUM.TaskType_ReportTask.CreateReport" xml:space="preserve">
+    <value>Create Report</value>
+  </data>
+  <data name="ENUM.TaskType_ReportTask.None" xml:space="preserve">
+    <value>Empty</value>
+  </data>
+  <data name="menuItemCreateGenericTaskHeader" xml:space="preserve">
+    <value>Generic</value>
+  </data>
+  <data name="labelSelectIsChipOfType" xml:space="preserve">
+    <value>Is Chip Of Type</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFire" xml:space="preserve">
+    <value>Desfire EV0</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV1" xml:space="preserve">
+    <value>Desfire EV1</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV2" xml:space="preserve">
+    <value>Desfire EV2</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.GENERIC_T_CL_A" xml:space="preserve">
+    <value>Other 13.56Mhz</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.ISO15693" xml:space="preserve">
+    <value>ISO15693</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.Mifare1K" xml:space="preserve">
+    <value>Mifare 1K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.Mifare2K" xml:space="preserve">
+    <value>Mifare 2K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.Mifare4K" xml:space="preserve">
+    <value>Mifare 4K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL3_1K" xml:space="preserve">
+    <value>Mifare Plus 1K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL3_2K" xml:space="preserve">
+    <value>Mifare Plus 2K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL3_4K" xml:space="preserve">
+    <value>Mifare Plus 4K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifareUltralight" xml:space="preserve">
+    <value>Mifare Ultralight</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.Unspecified" xml:space="preserve">
+    <value>Not Specified</value>
+  </data>
+  <data name="ENUM.TaskType_CommonTask.CheckUID" xml:space="preserve">
+    <value>Check UID</value>
+  </data>
+  <data name="ENUM.TaskType_CommonTask.ChipIsOfType" xml:space="preserve">
+    <value>Check Type Of Chip</value>
   </data>
 </root>

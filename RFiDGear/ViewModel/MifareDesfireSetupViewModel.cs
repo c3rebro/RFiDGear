@@ -28,10 +28,10 @@ using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
 {
-	/// <summary>
-	/// Description of MifareDesfireSetupViewModel.
-	/// </summary>
-	public class MifareDesfireSetupViewModel : ViewModelBase, IUserDialogViewModel
+    /// <summary>
+    /// Description of MifareDesfireSetupViewModel.
+    /// </summary>
+    public class MifareDesfireSetupViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		private protected SettingsReaderWriter settings = new SettingsReaderWriter();
 

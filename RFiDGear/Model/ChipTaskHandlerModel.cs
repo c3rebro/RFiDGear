@@ -20,7 +20,7 @@ namespace RFiDGear.Model
     /// </summary>
     [XmlInclude(typeof(MifareDesfireSetupViewModel))]
     [XmlInclude(typeof(MifareClassicSetupViewModel))]
-    [XmlInclude(typeof(ReportTaskViewModel))]
+    [XmlInclude(typeof(CreateCommonTaskView))]
     public class ChipTaskHandlerModel : ViewModelBase
     {
         private Version Version = Assembly.GetExecutingAssembly().GetName().Version;

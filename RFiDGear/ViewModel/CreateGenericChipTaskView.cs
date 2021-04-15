@@ -28,9 +28,9 @@ using System.Xml.Serialization;
 namespace RFiDGear.ViewModel
 {
 	/// <summary>
-	/// Description of ReportTaskViewModel.
+	/// Description of CommonTaskViewModel.
 	/// </summary>
-	public class ReportTaskViewModel : ViewModelBase, IUserDialogViewModel
+	public class CreateGenericChipTaskView : ViewModelBase, IUserDialogViewModel
 	{
 		#region fields
 
@@ -46,7 +46,7 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		///
 		/// </summary>
-		public ReportTaskViewModel()
+		public CreateGenericChipTaskView()
 		{
 			checkpoint = new Checkpoint();
 			Checkpoints = new ObservableCollection<Checkpoint>();
@@ -58,7 +58,7 @@ namespace RFiDGear.ViewModel
 		/// </summary>
 		/// <param name="_selectedSetupViewModel"></param>
 		/// <param name="_dialogs"></param>
-		public ReportTaskViewModel(object _selectedSetupViewModel, ObservableCollection<object> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
+		public CreateGenericChipTaskView(object _selectedSetupViewModel, ObservableCollection<object> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
 		{
 			try
 			{
@@ -68,9 +68,9 @@ namespace RFiDGear.ViewModel
 
 				Checkpoints = new ObservableCollection<Checkpoint>();
 
-				if(_selectedSetupViewModel is ReportTaskViewModel)
+				if(_selectedSetupViewModel is CreateGenericChipTaskView)
 				{
-					PropertyInfo[] properties = typeof(ReportTaskViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+					PropertyInfo[] properties = typeof(CreateGenericChipTaskView).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
 					foreach (PropertyInfo p in properties)
 					{
@@ -376,7 +376,7 @@ namespace RFiDGear.ViewModel
 
 						break;
 
-					case TaskType_CommonTask.CreateReport:
+					case TaskType_CommonTask.ChipIsOfType:
 
 						break;
 
@@ -633,16 +633,16 @@ namespace RFiDGear.ViewModel
 		}
 
 		[XmlIgnore]
-		public Action<ReportTaskViewModel> OnOk { get; set; }
+		public Action<CreateGenericChipTaskView> OnOk { get; set; }
 
 		[XmlIgnore]
-		public Action<ReportTaskViewModel> OnCancel { get; set; }
+		public Action<CreateGenericChipTaskView> OnCancel { get; set; }
 
 		[XmlIgnore]
-		public Action<ReportTaskViewModel> OnAuth { get; set; }
+		public Action<CreateGenericChipTaskView> OnAuth { get; set; }
 
 		[XmlIgnore]
-		public Action<ReportTaskViewModel> OnCloseRequest { get; set; }
+		public Action<CreateGenericChipTaskView> OnCloseRequest { get; set; }
 
 		public void Close()
 		{
