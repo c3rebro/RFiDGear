@@ -14,11 +14,16 @@ namespace RFiDGear.View
     /// <summary>
     /// Interaction logic for CreateReportTaskView.xaml
     /// </summary>
-    public partial class CreateGenericChipTaskView : Window
+    public partial class CommonTaskView : Window
     {
-        public CreateGenericChipTaskView()
+        public CommonTaskView()
         {
             InitializeComponent();
+        }
+
+        private void OnAutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e)
+        {
+            e.Column.Header = ((PropertyDescriptor)e.PropertyDescriptor).DisplayName;
         }
     }
 }

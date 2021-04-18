@@ -563,8 +563,9 @@
                     <MenuItem
 						Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemCreateTaskHeader' }">
                         <MenuItem
-                            Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemCreateGenericTaskHeader'}"
-                            Command="{Binding CreateCommonTaskCommand}">
+                            Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemCreateGenericChipTaskHeader'}"
+                            Command="{Binding CreateGenericChipTaskCommand}">
+                            
                         </MenuItem>
                         <MenuItem
 							Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='menuItemMifareHeader' }">

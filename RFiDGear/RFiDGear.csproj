@@ -24,6 +24,8 @@
     <RunCodeAnalysis>False</RunCodeAnalysis>
     <SourceAnalysisOverrideSettingsFile>C:\Users\C3rebro\AppData\Roaming\ICSharpCode\SharpDevelop5\Settings.SourceAnalysis</SourceAnalysisOverrideSettingsFile>
     <ApplicationIcon>Resources\logo.ico</ApplicationIcon>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -127,6 +129,8 @@
     <Reference Include="System.Data.DataSetExtensions">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\MvvmLightLibs.5.4.1.1\lib\net45\System.Windows.Interactivity.dll</HintPath>
     </Reference>
@@ -156,33 +160,33 @@
       <SubType>Code</SubType>
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="DataAccessLayer\Constants.cs" />
-    <Compile Include="DataAccessLayer\CustomConverter.cs" />
-    <Compile Include="DataAccessLayer\DatabaseReaderWriter.cs" />
-    <Compile Include="DataAccessLayer\LogWriter.cs" />
-    <Compile Include="DataAccessLayer\ReportReaderWriter.cs" />
-    <Compile Include="DataAccessLayer\ResourceLoader.cs" />
-    <Compile Include="DataAccessLayer\RFiDDevice.cs" />
-    <Compile Include="DataAccessLayer\SettingsReaderWriter.cs" />
+    <Compile Include="DataAccessLayer\Local\Constants.cs" />
+    <Compile Include="DataAccessLayer\Local\CustomConverter.cs" />
+    <Compile Include="DataAccessLayer\Remote\FromFile\DatabaseReaderWriter.cs" />
+    <Compile Include="DataAccessLayer\Remote\FromFile\LogWriter.cs" />
+    <Compile Include="DataAccessLayer\Remote\FromFile\ReportReaderWriter.cs" />
+    <Compile Include="DataAccessLayer\Local\ResourceLoader.cs" />
+    <Compile Include="DataAccessLayer\Remote\FromIO\RFiDDevice.cs" />
+    <Compile Include="DataAccessLayer\Remote\FromFile\SettingsReaderWriter.cs" />
     <Compile Include="Model\Checkpoint.cs" />
     <Compile Include="Model\ChipTaskHandlerModel.cs" />
-    <Compile Include="Model\MifareClassicDataBlockAccessConditionModel.cs" />
-    <Compile Include="Model\MifareClassicDataBlockModel.cs" />
+    <Compile Include="Model\MifareClassic\MifareClassicDataBlockAccessConditionModel.cs" />
+    <Compile Include="Model\MifareClassic\MifareClassicDataBlockModel.cs" />
     <Compile Include="Model\DefaultSpecification.cs" />
-    <Compile Include="Model\MifareClassicMADModel.cs" />
-    <Compile Include="Model\MifareClassicSectorAccessConditionModel.cs" />
-    <Compile Include="Model\MifareClassicSectorModel.cs" />
-    <Compile Include="Model\MifareClassicChipModel.cs" />
-    <Compile Include="Model\MifareDesfireAppModel.cs" />
-    <Compile Include="Model\MifareDesfireFileModel.cs" />
-    <Compile Include="Model\MifareDesfireChipModel.cs" />
-    <Compile Include="Model\MifareUltralightChipModel.cs" />
-    <Compile Include="Model\MifareUltralightPageModel.cs" />
+    <Compile Include="Model\MifareClassic\MifareClassicMADModel.cs" />
+    <Compile Include="Model\MifareClassic\MifareClassicSectorAccessConditionModel.cs" />
+    <Compile Include="Model\MifareClassic\MifareClassicSectorModel.cs" />
+    <Compile Include="Model\MifareClassic\MifareClassicChipModel.cs" />
+    <Compile Include="Model\MifareDesfie\MifareDesfireAppModel.cs" />
+    <Compile Include="Model\MifareDesfie\MifareDesfireFileModel.cs" />
+    <Compile Include="Model\MifareDesfie\MifareDesfireChipModel.cs" />
+    <Compile Include="Model\MifareUltralight\MifareUltralightChipModel.cs" />
+    <Compile Include="Model\MifareUltralight\MifareUltralightPageModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\WPFAssemblyInfo.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
-    <Compile Include="ViewModel\CreateGenericChipTaskView.cs" />
-    <Compile Include="ViewModel\CreateCommonTaskView.cs" />
+    <Compile Include="ViewModel\GenericChipTaskViewModel.cs" />
+    <Compile Include="ViewModel\CommonTaskViewModel.cs" />
     <Compile Include="ViewModel\MifareClassicSetupViewModel.cs" />
     <Compile Include="ViewModel\MifareDesfireSetupViewModel.cs" />
     <Compile Include="ViewModel\MifareUltralightSetupViewModel.cs" />
@@ -191,14 +195,14 @@
     <Compile Include="ViewModel\RFiDChipGrandChildLayerViewModel.cs" />
     <Compile Include="ViewModel\RFiDChipGrandGrandChildLayerViewModel.cs" />
     <Compile Include="ViewModel\RFiDChipParentLayerViewModel.cs" />
-    <Compile Include="View\TaskViews\RFIDTasks\GenericChip\CreateGenericChipTaskView.xaml.cs">
-      <DependentUpon>CreateGenericChipTaskView.xaml</DependentUpon>
+    <Compile Include="View\TaskViews\RFIDTasks\GenericChipTask\GenericChipTaskView.xaml.cs">
+      <DependentUpon>GenericChipTaskView.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\TaskViews\CommonTasks\CreateCommonTaskView.xaml.cs">
-      <DependentUpon>CreateCommonTaskView.xaml</DependentUpon>
+    <Compile Include="View\TaskViews\CommonTask\CommonTaskView.xaml.cs">
+      <DependentUpon>CommonTaskView.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicSetupView.xaml.cs">
       <DependentUpon>MifareClassicSetupView.xaml</DependentUpon>
@@ -208,31 +212,31 @@
       <DependentUpon>MifareUltralightSetupView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTabPages\TabPageMifareClassicDataExplorerView.xaml.cs">
+    <Compile Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTaskTabPages\TabPageMifareClassicDataExplorerView.xaml.cs">
       <DependentUpon>TabPageMifareClassicDataExplorerView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTabPages\TabPageMifareClassicKeySetupView.xaml.cs">
+    <Compile Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTaskTabPages\TabPageMifareClassicKeySetupView.xaml.cs">
       <DependentUpon>TabPageMifareClassicKeySetupView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTabPages\TabPageMifareClassicSectorAccessBitsView.xaml.cs">
+    <Compile Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTaskTabPages\TabPageMifareClassicSectorAccessBitsView.xaml.cs">
       <DependentUpon>TabPageMifareClassicSectorAccessBitsView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTabPages\TabPageMifareDesfireAppCreationView.xaml.cs">
+    <Compile Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTaskTabPages\TabPageMifareDesfireAppCreationView.xaml.cs">
       <DependentUpon>TabPageMifareDesfireAppCreationView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTabPages\TabPageMifareDesfireApplicationMasteringView.xaml.cs">
+    <Compile Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTaskTabPages\TabPageMifareDesfireApplicationMasteringView.xaml.cs">
       <DependentUpon>TabPageMifareDesfireApplicationMasteringView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTabPages\TabPageMifareDesfireCardMasteringView.xaml.cs">
+    <Compile Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTaskTabPages\TabPageMifareDesfireCardMasteringView.xaml.cs">
       <DependentUpon>TabPageMifareDesfireCardMasteringView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTabPages\TabPageMifareDesfireFileMasteringView.xaml.cs">
+    <Compile Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTaskTabPages\TabPageMifareDesfireFileMasteringView.xaml.cs">
       <DependentUpon>TabPageMifareDesfireFileMasteringView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
@@ -244,11 +248,11 @@
       <DependentUpon>SetupView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTabPages\TabPageMifareDesfireDataExplorerView.xaml.cs">
+    <Compile Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTaskTabPages\TabPageMifareDesfireDataExplorerView.xaml.cs">
       <DependentUpon>TabPageMifareDesfireDataExplorerView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="View\TaskViews\RFIDTasks\MifareUltralightTask\MifareUltralightTabPages\TabPageMifareUltralightDataExplorerView.xaml.cs">
+    <Compile Include="View\TaskViews\RFIDTasks\MifareUltralightTask\MifareUltralightTaskTabPages\TabPageMifareUltralightDataExplorerView.xaml.cs">
       <DependentUpon>TabPageMifareUltralightDataExplorerView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
@@ -259,13 +263,13 @@
       <DependentUpon>TabPageReaderSettingsView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="View\TaskViews\RFIDTasks\GenericChip\GenericChipTabPages\TabPageBasicChipCheckUpView.xaml.cs">
+    <Compile Include="View\TaskViews\RFIDTasks\GenericChipTask\GenericChipTaskTabPages\TabPageBasicChipCheckUpView.xaml.cs">
       <DependentUpon>TabPageBasicChipCheckUpView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\TabPageLogicTaskView.xaml.cs">
+    <Compile Include="View\TaskViews\CommonTask\CommonTasksTabPages\TabPageLogicTaskView.xaml.cs">
       <DependentUpon>TabPageLogicTaskView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="View\TaskViews\CommonTasks\CommonTasksTabPages\TabPageReportSettingsView.xaml.cs">
+    <Compile Include="View\TaskViews\CommonTask\CommonTasksTabPages\TabPageReportSettingsView.xaml.cs">
       <DependentUpon>TabPageReportSettingsView.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
@@ -279,39 +283,39 @@
     <Resource Include="Resources\logo.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="View\TaskViews\RFIDTasks\GenericChip\CreateGenericChipTaskView.xaml">
+    <Page Include="View\TaskViews\RFIDTasks\GenericChipTask\GenericChipTaskView.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\MainWindow.xaml" />
-    <Page Include="View\TaskViews\CommonTasks\CreateCommonTaskView.xaml">
+    <Page Include="View\TaskViews\CommonTask\CommonTaskView.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicSetupView.xaml" />
     <Page Include="View\TaskViews\RFIDTasks\MifareUltralightTask\MifareUltralightSetupView.xaml" />
-    <Page Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTabPages\TabPageMifareClassicDataExplorerView.xaml" />
-    <Page Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTabPages\TabPageMifareClassicKeySetupView.xaml" />
-    <Page Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTabPages\TabPageMifareClassicSectorAccessBitsView.xaml" />
-    <Page Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTabPages\TabPageMifareDesfireAppCreationView.xaml" />
-    <Page Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTabPages\TabPageMifareDesfireApplicationMasteringView.xaml" />
-    <Page Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTabPages\TabPageMifareDesfireCardMasteringView.xaml" />
-    <Page Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTabPages\TabPageMifareDesfireFileMasteringView.xaml" />
+    <Page Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTaskTabPages\TabPageMifareClassicDataExplorerView.xaml" />
+    <Page Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTaskTabPages\TabPageMifareClassicKeySetupView.xaml" />
+    <Page Include="View\TaskViews\RFIDTasks\MifareClassicTask\MifareClassicTaskTabPages\TabPageMifareClassicSectorAccessBitsView.xaml" />
+    <Page Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTaskTabPages\TabPageMifareDesfireAppCreationView.xaml" />
+    <Page Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTaskTabPages\TabPageMifareDesfireApplicationMasteringView.xaml" />
+    <Page Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTaskTabPages\TabPageMifareDesfireCardMasteringView.xaml" />
+    <Page Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTaskTabPages\TabPageMifareDesfireFileMasteringView.xaml" />
     <Page Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireSetupView.xaml" />
     <Page Include="View\SetupView.xaml" />
-    <Page Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTabPages\TabPageMifareDesfireDataExplorerView.xaml" />
-    <Page Include="View\TaskViews\RFIDTasks\MifareUltralightTask\MifareUltralightTabPages\TabPageMifareUltralightDataExplorerView.xaml" />
+    <Page Include="View\TaskViews\RFIDTasks\MifareDesfireTask\MifareDesfireTaskTabPages\TabPageMifareDesfireDataExplorerView.xaml" />
+    <Page Include="View\TaskViews\RFIDTasks\MifareUltralightTask\MifareUltralightTaskTabPages\TabPageMifareUltralightDataExplorerView.xaml" />
     <Page Include="View\TabPageMiscReaderSettingsView.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Include="View\TabPageReaderSettingsView.xaml" />
-    <Page Include="View\TaskViews\RFIDTasks\GenericChip\GenericChipTabPages\TabPageBasicChipCheckUpView.xaml">
+    <Page Include="View\TaskViews\RFIDTasks\GenericChipTask\GenericChipTaskTabPages\TabPageBasicChipCheckUpView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\TabPageLogicTaskView.xaml">
+    <Page Include="View\TaskViews\CommonTask\CommonTasksTabPages\TabPageLogicTaskView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\TaskViews\CommonTasks\CommonTasksTabPages\TabPageReportSettingsView.xaml">
+    <Page Include="View\TaskViews\CommonTask\CommonTasksTabPages\TabPageReportSettingsView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -324,6 +328,8 @@
     <ProjectReference Include="..\..\ByteArray\ByteArray.csproj">
       <Project>{bdd5df8c-6fc1-4882-8151-924820fdbc05}</Project>
       <Name>ByteArray</Name>
+      <Private>True</Private>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </ProjectReference>
     <ProjectReference Include="..\MVVMDialogs\MVVMDialogs.csproj">
       <Project>{ef56252e-257f-41d1-974b-c9015071ce7e}</Project>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Window
-    x:Class="RFiDGear.View.CreateCommonTaskView"
+    x:Class="RFiDGear.View.GenericChipTaskView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -56,7 +56,7 @@
             VerticalAlignment="Stretch">
             <TabControl>
                 <TabItem MinWidth="50" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderReportSettingsView'}">
-                    <v:TabPageReportSettingsView />
+                    <v:TabPageBasicChipCheckUpView />
                 </TabItem>
             </TabControl>
         </Grid>
@@ -98,8 +98,8 @@
                         Margin="8,7,0,0"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Top"
-                        ItemsSource="{dal:Enumerate {x:Type dal:TaskType_ReportTask}}"
-                        SelectedItem="{Binding SelectedTaskType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskType_ReportTask}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        ItemsSource="{dal:Enumerate {x:Type dal:TaskType_GenericChipTask}}"
+                        SelectedItem="{Binding SelectedTaskType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskType_GenericChipTask}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                         TabIndex="1" />
                     <Label
                         Grid.Row="1"

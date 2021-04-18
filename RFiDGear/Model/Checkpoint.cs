@@ -19,7 +19,6 @@ namespace RFiDGear.Model
 		public Checkpoint()
 		{
 			ErrorLevel = ERROR.Empty;
-			
 		}
 		
 		public ERROR ErrorLevel { get; set; }

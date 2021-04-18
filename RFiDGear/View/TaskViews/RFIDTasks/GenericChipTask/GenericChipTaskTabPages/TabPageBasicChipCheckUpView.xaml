@@ -46,7 +46,7 @@
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Bottom"
                                 ItemsSource="{dal:Enumerate {x:Type dal:CARD_TYPE}}"
-						        SelectedItem="{Binding SelectedTaskType,Converter={StaticResource Localization},ConverterParameter={x:Type dal:CARD_TYPE},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"/>
+						        SelectedItem="{Binding SelectedChipType,Converter={StaticResource Localization},ConverterParameter={x:Type dal:CARD_TYPE},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"/>
 
                         <Label
                                 Grid.Row="0"

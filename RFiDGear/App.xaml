@@ -19,8 +19,8 @@
             <mainvm:ViewModelLocator x:Key="Locator" d:IsDataSource="True" />
 
             <dialogsview:CustomDialogBox x:Key="{x:Type dialogsvm:CustomDialogViewModel}" x:Shared="False" />
-            <mainview:CreateGenericChipTaskView x:Key="{x:Type vm:CreateGenericChipTaskView}" x:Shared="False" />
-            <mainview:CreateCommonTaskView x:Key="{x:Type vm:CreateCommonTaskView}" x:Shared="False" />
+            <mainview:CommonTaskView x:Key="{x:Type vm:CommonTaskViewModel}" x:Shared="False" />
+            <mainview:GenericChipTaskView x:Key="{x:Type vm:GenericChipTaskViewModel}" x:Shared="False" />
             <mainview:MifareClassicSetupView x:Key="{x:Type vm:MifareClassicSetupViewModel}" x:Shared="False" />
             <mainview:MifareDesfireSetupView x:Key="{x:Type vm:MifareDesfireSetupViewModel}" x:Shared="False" />
             <mainview:MifareUltralightSetupView x:Key="{x:Type vm:MifareUltralightSetupViewModel}" x:Shared="False" />

@@ -1448,7 +1448,7 @@ namespace RFiDGear
                                         {
                                             cmd.Authenticate(0, aiToUse.MasterCardKey);
                                             cmd.ChangeKey((byte)0, applicationMasterKeyTarget);
-                                            cmd.Authenticate(0, aiToUse.MasterCardKey);
+                                            cmd.Authenticate(0, applicationMasterKeyTarget);
                                             cmd.ChangeKeySettings(keySettings);
                                         }
 

@@ -30,7 +30,7 @@ namespace RFiDGear.ViewModel
 	/// <summary>
 	/// Description of ReportTaskViewModel.
 	/// </summary>
-	public class CreateCommonTaskView : ViewModelBase, IUserDialogViewModel
+	public class CommonTaskViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		#region fields
 
@@ -46,7 +46,7 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		///
 		/// </summary>
-		public CreateCommonTaskView()
+		public CommonTaskViewModel()
 		{
 			checkpoint = new Checkpoint();
 			Checkpoints = new ObservableCollection<Checkpoint>();
@@ -58,7 +58,7 @@ namespace RFiDGear.ViewModel
 		/// </summary>
 		/// <param name="_selectedSetupViewModel"></param>
 		/// <param name="_dialogs"></param>
-		public CreateCommonTaskView(object _selectedSetupViewModel, ObservableCollection<object> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
+		public CommonTaskViewModel(object _selectedSetupViewModel, ObservableCollection<object> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
 		{
 			try
 			{
@@ -68,9 +68,9 @@ namespace RFiDGear.ViewModel
 
 				Checkpoints = new ObservableCollection<Checkpoint>();
 
-				if(_selectedSetupViewModel is CreateCommonTaskView)
+				if(_selectedSetupViewModel is CommonTaskViewModel)
 				{
-					PropertyInfo[] properties = typeof(CreateCommonTaskView).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+					PropertyInfo[] properties = typeof(CommonTaskViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
 					foreach (PropertyInfo p in properties)
 					{
@@ -140,185 +140,13 @@ namespace RFiDGear.ViewModel
 		}
 		private bool isFocused;
 
-        #endregion
+		#endregion
 
-        #region Dependency Properties
+		#region Dependency Properties
 
-        /// <summary>
-        /// Collection of Tasks that were created. Select One to add a report entry. Called "Checkpoint"
-        /// </summary>
-        [XmlIgnore]
-        public ObservableCollection<string> AvailableTaskIndices
-        {
-            get
-            {
-                return
-                    new ObservableCollection<string>(_availableTasks.Where(x => x is MifareDesfireSetupViewModel).Select(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndex));
-            }
-        }
-        
-        /// <summary>
-        /// 
-        /// </summary>
-        public string ReportTemplatePath
-        {
-            get { return reportTemplatePath; }
-            set
-            {
-                reportTemplatePath = value;
-                RaisePropertyChanged("ReportTemplatePath");
-            }
-        }
-        private string reportTemplatePath;
+		#region Common Task Properties
 
-        /// <summary>
-        /// Available Fields in the Report PDF
-        /// </summary>
-        public ObservableCollection<string> TemplateFields
-        {
-            get { return templateFields; }
-            set
-            {
-                templateFields = value;
-                RaisePropertyChanged("TemplateFields");
-            }
-        }
-        private ObservableCollection<string> templateFields;
-
-        /// <summary>
-        /// The Selected Error Level that Trigger the Field in the PDF to be filled
-        /// </summary>
-        public ERROR SelectedErrorLevel
-        {
-            get { return selectedErrorLevel; }
-            set
-            {
-                selectedErrorLevel = value;
-                RaisePropertyChanged("SelectedErrorLevel");
-            }
-        }
-        private ERROR selectedErrorLevel;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public string SelectedTaskIndexFromAvailableTasks
-        {
-            get
-            {
-                return selectedTaskIndexFromAvailableTasks;
-            }
-
-            set
-            {
-                selectedTaskIndexFromAvailableTasks = value;
-                RaisePropertyChanged("SelectedTaskIndexFromAvailableTasks");
-            }
-        }
-        private string selectedTaskIndexFromAvailableTasks;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public string SelectedTaskIndex
-        {
-            get
-            {
-                return selectedTaskIndex;
-            }
-
-            set
-            {
-                selectedTaskIndex = value;
-                IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
-                RaisePropertyChanged("SelectedTaskIndexForThisReport");
-            }
-        }
-        private string selectedTaskIndex;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public string SelectedTemplateField
-        {
-            get
-            {
-                return selectedTemplateField;
-            }
-
-            set
-            {
-                selectedTemplateField = value;
-                RaisePropertyChanged("SelectedTemplateField");
-            }
-        }
-        private string selectedTemplateField;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public string Content
-        {
-            get
-            {
-                return content;
-            }
-
-            set
-            {
-                content = value;
-                RaisePropertyChanged("Content");
-            }
-        }
-        private string content;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public ObservableCollection<Checkpoint> Checkpoints
-        {
-            get
-            {
-                return checkpoints;
-            }
-            set
-            {
-                checkpoints = value;
-                RaisePropertyChanged("Checkpoints");
-            }
-        }
-        private ObservableCollection<Checkpoint> checkpoints;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public Checkpoint SelectedCheckpoint
-        {
-            get
-            {
-                return selectedCheckpoint;
-            }
-            set
-            {
-                selectedCheckpoint = value;
-                if(selectedCheckpoint != null)
-                {
-                    Content = selectedCheckpoint.Content;
-                    SelectedErrorLevel = selectedCheckpoint.ErrorLevel;
-                    SelectedTaskIndexFromAvailableTasks = selectedCheckpoint.TaskIndex;
-                    SelectedTemplateField = selectedCheckpoint.TemplateField;
-                }
-
-                RaisePropertyChanged("SelectedCheckpoint");
-            }
-        }
-        private Checkpoint selectedCheckpoint;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        [XmlIgnore]
-		public ERROR TaskErr { get; set; }
+		#region Task Properties
 
 		/// <summary>
 		///
@@ -361,7 +189,7 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		///
 		/// </summary>
-		public TaskType_ReportTask SelectedTaskType
+		public TaskType_CommonTask SelectedTaskType
 		{
 			get
 			{
@@ -372,22 +200,22 @@ namespace RFiDGear.ViewModel
 				selectedTaskType = value;
 				switch (value)
 				{
-					case TaskType_ReportTask.None:
+					case TaskType_CommonTask.None:
 
 						break;
 
-					case TaskType_ReportTask.CreateReport:
+					case TaskType_CommonTask.CreateReport:
 
 						break;
 
-					case TaskType_ReportTask.ChangeDefault:
+					case TaskType_CommonTask.ChangeDefault:
 
 						break;
 				}
 				RaisePropertyChanged("SelectedTaskType");
 			}
 		}
-		private TaskType_ReportTask selectedTaskType;
+		private TaskType_CommonTask selectedTaskType;
 
 		/// <summary>
 		///
@@ -407,6 +235,213 @@ namespace RFiDGear.ViewModel
 		private string selectedTaskDescription;
 
 		/// <summary>
+		/// The Indexnumber of the Task As String
+		/// </summary>
+		public string SelectedTaskIndex
+		{
+			get
+			{
+				return selectedTaskIndex;
+			}
+
+			set
+			{
+				selectedTaskIndex = value;
+				IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
+				RaisePropertyChanged("SelectedTaskIndexForThisReport");
+			}
+		}
+		private string selectedTaskIndex;
+
+		/// <summary>
+		/// Result of this Task
+		/// </summary>
+		[XmlIgnore]
+		public ERROR TaskErr { get; set; }
+
+		#endregion
+
+		#region Shared Properties
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public ObservableCollection<Checkpoint> Checkpoints
+		{
+			get
+			{
+				return checkpoints;
+			}
+			set
+			{
+				checkpoints = value;
+				RaisePropertyChanged("Checkpoints");
+			}
+		}
+		private ObservableCollection<Checkpoint> checkpoints;
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public Checkpoint SelectedCheckpoint
+		{
+			get
+			{
+				return selectedCheckpoint;
+			}
+			set
+			{
+				selectedCheckpoint = value;
+				if (selectedCheckpoint != null)
+				{
+					Content = selectedCheckpoint.Content;
+					SelectedErrorLevel = selectedCheckpoint.ErrorLevel;
+					SelectedTaskIndexFromAvailableTasks = selectedCheckpoint.TaskIndex;
+					SelectedTemplateField = selectedCheckpoint.TemplateField;
+				}
+
+				RaisePropertyChanged("SelectedCheckpoint");
+			}
+		}
+		private Checkpoint selectedCheckpoint;
+
+		/// <summary>
+		/// Collection of Tasks that were created. Select One to add a report entry. Called "Checkpoint"
+		/// </summary>
+		[XmlIgnore]
+		public ObservableCollection<string> AvailableTaskIndices
+		{
+			get
+			{
+				return
+					new ObservableCollection<string>(_availableTasks.Where(x => x is MifareDesfireSetupViewModel).Select(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndex));
+			}
+		}
+
+		/// <summary>
+		/// The Selected Error Level that Trigger the Field in the PDF to be filled
+		/// </summary>
+		public ERROR SelectedErrorLevel
+		{
+			get { return selectedErrorLevel; }
+			set
+			{
+				selectedErrorLevel = value;
+				RaisePropertyChanged("SelectedErrorLevel");
+			}
+		}
+		private ERROR selectedErrorLevel;
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public string SelectedTaskIndexFromAvailableTasks
+		{
+			get
+			{
+				return selectedTaskIndexFromAvailableTasks;
+			}
+
+			set
+			{
+				selectedTaskIndexFromAvailableTasks = value;
+				RaisePropertyChanged("SelectedTaskIndexFromAvailableTasks");
+			}
+		}
+		private string selectedTaskIndexFromAvailableTasks;
+
+		#endregion
+
+		#endregion
+
+		#region Logic Task Editor
+
+		/// <summary>
+		/// The LOGIC Condition that will be applied between every added (RFID)Task e.g. "MifareDesfireTask" Object
+		/// </summary>
+		public LOGIC_STATE SelectedLogicCondition
+		{
+			get
+			{
+				return selectedLogicCondition;
+			}
+			set
+			{
+				selectedLogicCondition = value;
+				RaisePropertyChanged("SelectedLogicCondition");
+			}
+		}
+		private LOGIC_STATE selectedLogicCondition;
+
+        #endregion
+
+        #region Report Task Editor
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string ReportTemplatePath
+        {
+            get { return reportTemplatePath; }
+            set
+            {
+                reportTemplatePath = value;
+                RaisePropertyChanged("ReportTemplatePath");
+            }
+        }
+        private string reportTemplatePath;
+
+        /// <summary>
+        /// Available Fields in the Report PDF
+        /// </summary>
+        public ObservableCollection<string> TemplateFields
+        {
+            get { return templateFields; }
+            set
+            {
+                templateFields = value;
+                RaisePropertyChanged("TemplateFields");
+            }
+        }
+        private ObservableCollection<string> templateFields;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string SelectedTemplateField
+        {
+            get
+            {
+                return selectedTemplateField;
+            }
+
+            set
+            {
+                selectedTemplateField = value;
+                RaisePropertyChanged("SelectedTemplateField");
+            }
+        }
+        private string selectedTemplateField;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Content
+        {
+            get
+            {
+                return content;
+            }
+
+            set
+            {
+                content = value;
+                RaisePropertyChanged("Content");
+            }
+        }
+        private string content;
+
+		/// <summary>
 		/// 
 		/// </summary>
 		[XmlIgnore]
@@ -415,14 +450,17 @@ namespace RFiDGear.ViewModel
 			get { return settings; }
 		}
 
-		#endregion General Properties
 
-		#region Commands
+        #endregion
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand OpenReportTemplateCommand { get { return new RelayCommand(OnNewOpenReportTemplateCommand); } }
+        #endregion General Properties
+
+        #region Commands
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand OpenReportTemplateCommand { get { return new RelayCommand(OnNewOpenReportTemplateCommand); } }
 		private void OnNewOpenReportTemplateCommand()
         {
 			var dlg = new OpenFileDialogViewModel
@@ -633,16 +671,16 @@ namespace RFiDGear.ViewModel
 		}
 
 		[XmlIgnore]
-		public Action<CreateCommonTaskView> OnOk { get; set; }
+		public Action<CommonTaskViewModel> OnOk { get; set; }
 
 		[XmlIgnore]
-		public Action<CreateCommonTaskView> OnCancel { get; set; }
+		public Action<CommonTaskViewModel> OnCancel { get; set; }
 
 		[XmlIgnore]
-		public Action<CreateCommonTaskView> OnAuth { get; set; }
+		public Action<CommonTaskViewModel> OnAuth { get; set; }
 
 		[XmlIgnore]
-		public Action<CreateCommonTaskView> OnCloseRequest { get; set; }
+		public Action<CommonTaskViewModel> OnCloseRequest { get; set; }
 
 		public void Close()
 		{

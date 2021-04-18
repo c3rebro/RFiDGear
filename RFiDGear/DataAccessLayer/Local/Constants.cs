@@ -53,7 +53,7 @@ namespace RFiDGear.DataAccessLayer
     /// <summary>
     /// The availbale "Common Tasks"
     /// </summary>
-    public enum TaskType_CommonTask
+    public enum TaskType_GenericChipTask
     {
         None,
         ChipIsOfType,
@@ -64,7 +64,7 @@ namespace RFiDGear.DataAccessLayer
 	/// <summary>
 	/// The availbale "Report Tasks"
 	/// </summary>
-	public enum TaskType_ReportTask
+	public enum TaskType_CommonTask
 	{
 		None,
 		CreateReport,
@@ -172,7 +172,7 @@ namespace RFiDGear.DataAccessLayer
 	}
 
 	/// <summary>
-	/// UID and Type of Cardtechnology
+	/// Chip Struct. A Chip holds UID and Type Info
 	/// </summary>
 	public struct CARD_INFO
 	{
@@ -187,7 +187,7 @@ namespace RFiDGear.DataAccessLayer
 	}
 
 	/// <summary>
-	/// Available Cardtechnologies
+	/// Currently Available Cardtechnologies
 	/// </summary>
 	public enum CARD_TYPE
 	{
@@ -207,7 +207,7 @@ namespace RFiDGear.DataAccessLayer
 	};
 
 	/// <summary>
-	/// Error Messages
+	/// Currently Available Error Conditions
 	/// </summary>
 	public enum ERROR
 	{
@@ -217,6 +217,8 @@ namespace RFiDGear.DataAccessLayer
 		DeviceNotReadyError,
 		IOError,
         ItemAlreadyExistError,
+		IsNotTrue,
+		IsNotFalse,
         NotAllowed
 	}
 

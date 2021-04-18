@@ -68,8 +68,8 @@
                                 Margin="8,0,8,8"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Bottom"
-                                ItemsSource="{dal:Enumerate {x:Type dal:ERROR}}"
-                                SelectedItem="{Binding SelectedErrorLevel, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:ERROR}, Mode=TwoWay}" />
+                                ItemsSource="{dal:Enumerate {x:Type dal:LOGIC_STATE}}"
+                                SelectedItem="{Binding SelectedLogicCondition, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:LOGIC_STATE}, Mode=TwoWay}" />
                             <Label
                                 Grid.Row="1"
                                 Grid.Column="0"
@@ -104,22 +104,6 @@
                             Margin="8,8,8,8"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch">
-                            <TextBox
-                                Grid.Row="3"
-                                Grid.Column="1"
-                                Height="23"
-                                Margin="9,6,7,0"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Top"
-                                Text="{Binding Content, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
-                            <Label
-                                Grid.Row="3"
-                                Grid.Column="0"
-                                Height="26"
-                                Margin="8,0,8,6"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Bottom"
-                                Content="Content" />
                             <ComboBox
                                 xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
                                 xmlns:local="clr-namespace:RFiDGear"
@@ -158,31 +142,6 @@
                                 VerticalAlignment="Bottom"
                                 ItemsSource="{dal:Enumerate {x:Type dal:ERROR}}"
                                 SelectedItem="{Binding SelectedErrorLevel, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:ERROR}, Mode=TwoWay}" />
-                            <Label
-                                xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
-                                xmlns:local="clr-namespace:RFiDGear"
-                                xmlns:system="clr-namespace:System;assembly=mscorlib"
-                                xmlns:v="clr-namespace:RFiDGear.View"
-                                Grid.Row="2"
-                                Grid.Column="0"
-                                Height="26"
-                                Margin="8,9,8,0"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Top"
-                                Content="TemplateField" />
-                            <ComboBox
-                                xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
-                                xmlns:local="clr-namespace:RFiDGear"
-                                xmlns:system="clr-namespace:System;assembly=mscorlib"
-                                xmlns:v="clr-namespace:RFiDGear.View"
-                                Grid.Row="2"
-                                Grid.Column="1"
-                                Height="26"
-                                Margin="8,0,8,8"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Bottom"
-                                ItemsSource="{Binding TemplateFields, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                SelectedValue="{Binding SelectedTemplateField, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
 
                             <Label
                                 Grid.Row="0"
@@ -308,41 +267,6 @@
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="HorizontalAlignment" Value="Left" />
                                                     <Setter Property="VerticalAlignment" Value="Center" />
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="TemplateField">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock
-                                            MaxWidth="180"
-                                            FontFamily="Lucida Console"
-                                            Text="{Binding TemplateField, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                                            <TextBlock.Style>
-                                                <Style TargetType="{x:Type TextBlock}">
-                                                    <Setter Property="HorizontalAlignment" Value="Left" />
-                                                    <Setter Property="VerticalAlignment" Value="Center" />
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="Content">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock
-                                            MaxWidth="180"
-                                            FontFamily="Lucida Console"
-                                            Text="{Binding Content, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                                            <TextBlock.Style>
-                                                <Style TargetType="{x:Type TextBlock}">
-                                                    <Setter Property="HorizontalAlignment" Value="Left" />
-                                                    <Setter Property="VerticalAlignment" Value="Center" />
-
                                                 </Style>
                                             </TextBlock.Style>
                                         </TextBlock>

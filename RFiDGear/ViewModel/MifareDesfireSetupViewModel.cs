@@ -39,8 +39,6 @@ namespace RFiDGear.ViewModel
 		private protected MifareDesfireAppModel app;
 		private DESFireAccessRights accessRights;
 
-		public ERROR TaskErr { get; set; }
-
 		/// <summary>
 		///
 		/// </summary>
@@ -246,7 +244,7 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		/// 
 		/// </summary>
-//		[XmlIgnore]
+		//		[XmlIgnore]
 //		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
 //		public ObservableCollection<IDialogViewModel> Dialogs
 //		{
@@ -1465,6 +1463,12 @@ namespace RFiDGear.ViewModel
 			}
 		}
 		private string statusText;
+
+		/// <summary>
+		/// Result of this Task
+		/// </summary>
+		[XmlIgnore]
+		public ERROR TaskErr { get; set; }
 
 		#endregion general props
 

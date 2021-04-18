@@ -28,9 +28,9 @@ using System.Xml.Serialization;
 namespace RFiDGear.ViewModel
 {
 	/// <summary>
-	/// Description of CommonTaskViewModel.
+	/// Description of ReportTaskViewModel.
 	/// </summary>
-	public class CreateGenericChipTaskView : ViewModelBase, IUserDialogViewModel
+	public class ReportTaskViewModel : ViewModelBase, IUserDialogViewModel
 	{
 		#region fields
 
@@ -46,7 +46,7 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		///
 		/// </summary>
-		public CreateGenericChipTaskView()
+		public ReportTaskViewModel()
 		{
 			checkpoint = new Checkpoint();
 			Checkpoints = new ObservableCollection<Checkpoint>();
@@ -58,7 +58,7 @@ namespace RFiDGear.ViewModel
 		/// </summary>
 		/// <param name="_selectedSetupViewModel"></param>
 		/// <param name="_dialogs"></param>
-		public CreateGenericChipTaskView(object _selectedSetupViewModel, ObservableCollection<object> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
+		public ReportTaskViewModel(object _selectedSetupViewModel, ObservableCollection<object> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
 		{
 			try
 			{
@@ -68,9 +68,9 @@ namespace RFiDGear.ViewModel
 
 				Checkpoints = new ObservableCollection<Checkpoint>();
 
-				if(_selectedSetupViewModel is CreateGenericChipTaskView)
+				if(_selectedSetupViewModel is ReportTaskViewModel)
 				{
-					PropertyInfo[] properties = typeof(CreateGenericChipTaskView).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+					PropertyInfo[] properties = typeof(ReportTaskViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
 					foreach (PropertyInfo p in properties)
 					{
@@ -361,7 +361,7 @@ namespace RFiDGear.ViewModel
 		/// <summary>
 		///
 		/// </summary>
-		public TaskType_CommonTask SelectedTaskType
+		public TaskType_ReportTask SelectedTaskType
 		{
 			get
 			{
@@ -372,22 +372,22 @@ namespace RFiDGear.ViewModel
 				selectedTaskType = value;
 				switch (value)
 				{
-					case TaskType_CommonTask.None:
+					case TaskType_ReportTask.None:
 
 						break;
 
-					case TaskType_CommonTask.ChipIsOfType:
+					case TaskType_ReportTask.CreateReport:
 
 						break;
 
-					case TaskType_CommonTask.ChangeDefault:
+					case TaskType_ReportTask.ChangeDefault:
 
 						break;
 				}
 				RaisePropertyChanged("SelectedTaskType");
 			}
 		}
-		private TaskType_CommonTask selectedTaskType;
+		private TaskType_ReportTask selectedTaskType;
 
 		/// <summary>
 		///
@@ -633,16 +633,16 @@ namespace RFiDGear.ViewModel
 		}
 
 		[XmlIgnore]
-		public Action<CreateGenericChipTaskView> OnOk { get; set; }
+		public Action<ReportTaskViewModel> OnOk { get; set; }
 
 		[XmlIgnore]
-		public Action<CreateGenericChipTaskView> OnCancel { get; set; }
+		public Action<ReportTaskViewModel> OnCancel { get; set; }
 
 		[XmlIgnore]
-		public Action<CreateGenericChipTaskView> OnAuth { get; set; }
+		public Action<ReportTaskViewModel> OnAuth { get; set; }
 
 		[XmlIgnore]
-		public Action<CreateGenericChipTaskView> OnCloseRequest { get; set; }
+		public Action<ReportTaskViewModel> OnCloseRequest { get; set; }
 
 		public void Close()
 		{
