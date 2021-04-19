@@ -401,8 +401,8 @@ namespace RFiDGear.ViewModel
                             {
                                 if ((ChipTasks.TaskCollection.OfType<CommonTaskViewModel>().Where(x => (x as CommonTaskViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
                                 {
-                                        ChipTasks.TaskCollection.RemoveAt(sender.SelectedTaskIndexAsInt);
-                                }
+										ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
+									}
 
                                 ChipTasks.TaskCollection.Add(sender);
 
@@ -480,8 +480,8 @@ namespace RFiDGear.ViewModel
 
                                     if ((ChipTasks.TaskCollection.OfType<MifareClassicSetupViewModel>().Where(x => (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
                                     {
-                                        ChipTasks.TaskCollection.RemoveAt(sender.SelectedTaskIndexAsInt);
-                                    }
+										ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
+									}
 
                                     ChipTasks.TaskCollection.Add(sender);
 
@@ -549,8 +549,8 @@ namespace RFiDGear.ViewModel
                             {
                                 if ((ChipTasks.TaskCollection.OfType<MifareDesfireSetupViewModel>().Where(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
                                 {
-                                    ChipTasks.TaskCollection.RemoveAt(sender.SelectedTaskIndexAsInt);
-                                }
+									ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
+								}
 
                                 ChipTasks.TaskCollection.Add(sender);
 
@@ -606,8 +606,8 @@ namespace RFiDGear.ViewModel
                             {
                                 if ((ChipTasks.TaskCollection.OfType<MifareUltralightSetupViewModel>().Where(x => (x as MifareUltralightSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
                                 {
-                                    ChipTasks.TaskCollection.RemoveAt(sender.SelectedTaskIndexAsInt);
-                                }
+									ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
+								}
 
                                 ChipTasks.TaskCollection.Add(sender);
 
@@ -759,12 +759,29 @@ namespace RFiDGear.ViewModel
 		private void OnNewResetTaskStatusCommand()
 		{
 			foreach (object chipTask in taskHandler.TaskCollection) {
-				if (chipTask is MifareClassicSetupViewModel) {
-					(chipTask as MifareClassicSetupViewModel).IsTaskCompletedSuccessfully = null;
-					(chipTask as MifareClassicSetupViewModel).TaskErr = ERROR.Empty;
-				} else if (chipTask is MifareDesfireSetupViewModel) {
-					(chipTask as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = null;
-					(chipTask as MifareDesfireSetupViewModel).TaskErr = ERROR.Empty;
+
+				switch (chipTask)
+                {
+					case CommonTaskViewModel ssVM:
+						ssVM.IsTaskCompletedSuccessfully = null;
+						ssVM.TaskErr = ERROR.Empty;
+						break;
+					case GenericChipTaskViewModel ssVM:
+						ssVM.IsTaskCompletedSuccessfully = null;
+						ssVM.TaskErr = ERROR.Empty;
+						break;
+					case MifareClassicSetupViewModel ssVM:
+						ssVM.IsTaskCompletedSuccessfully = null;
+						ssVM.TaskErr = ERROR.Empty;
+						break;
+					case MifareDesfireSetupViewModel ssVM:
+						ssVM.IsTaskCompletedSuccessfully = null;
+						ssVM.TaskErr = ERROR.Empty;
+						break;
+					case MifareUltralightSetupViewModel ssVM:
+						ssVM.IsTaskCompletedSuccessfully = null;
+						ssVM.TaskErr = ERROR.Empty;
+						break;
 				}
 			}
 		}
@@ -863,19 +880,19 @@ namespace RFiDGear.ViewModel
 										break;
 									case CommonTaskViewModel ssVM:
 										if (ssVM.IsValidSelectedTaskIndex != false)
-											taskIndex = ssVM.SelectedTaskIndexAsInt;
+											taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
 										break;
 									case MifareClassicSetupViewModel ssVM:
 										if (ssVM.IsValidSelectedTaskIndex != false)
-											taskIndex = ssVM.SelectedTaskIndexAsInt;
+											taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
 										break;
 									case MifareDesfireSetupViewModel ssVM:
 										if (ssVM.IsValidSelectedTaskIndex != false)
-											taskIndex = ssVM.SelectedTaskIndexAsInt;
+											taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
 										break;
 									case MifareUltralightSetupViewModel ssVM:
 										if (ssVM.IsValidSelectedTaskIndex != false)
-											taskIndex = ssVM.SelectedTaskIndexAsInt;
+											taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
 										break;
 								}
 							}
@@ -919,6 +936,10 @@ namespace RFiDGear.ViewModel
 
 													//Mouse.OverrideCursor = Cursors.AppStarting;
 
+													break;
+
+												case ERROR.IsNotTrue:
+													taskIndex++;
 													break;
 											}
 											break;

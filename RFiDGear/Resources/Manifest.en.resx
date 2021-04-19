@@ -885,23 +885,23 @@ Needed by:
   <data name="ENUM.ERROR.NotAllowed" xml:space="preserve">
     <value>Not Allowed</value>
   </data>
+  <data name="ENUM.TaskType_GenericChipTask.ChangeDefault" xml:space="preserve">
+    <value>Change Default Values</value>
+  </data>
+  <data name="ENUM.TaskType_GenericChipTask.None" xml:space="preserve">
+    <value>Empty</value>
+  </data>
   <data name="ENUM.TaskType_CommonTask.ChangeDefault" xml:space="preserve">
     <value>Change Default Values</value>
+  </data>
+  <data name="ENUM.TaskType_CommonTask.CreateReport" xml:space="preserve">
+    <value>Create / Edit Report</value>
   </data>
   <data name="ENUM.TaskType_CommonTask.None" xml:space="preserve">
     <value>Empty</value>
   </data>
-  <data name="ENUM.TaskType_ReportTask.ChangeDefault" xml:space="preserve">
-    <value>Change Default Values</value>
-  </data>
-  <data name="ENUM.TaskType_ReportTask.CreateReport" xml:space="preserve">
-    <value>Create Report</value>
-  </data>
-  <data name="ENUM.TaskType_ReportTask.None" xml:space="preserve">
-    <value>Empty</value>
-  </data>
-  <data name="menuItemCreateGenericTaskHeader" xml:space="preserve">
-    <value>Generic</value>
+  <data name="menuItemCreateGenericChipTaskHeader" xml:space="preserve">
+    <value>Add / Edit Generic Chip Task...</value>
   </data>
   <data name="labelSelectIsChipOfType" xml:space="preserve">
     <value>Is Chip Of Type</value>
@@ -945,10 +945,37 @@ Needed by:
   <data name="ENUM.CARD_TYPE.Unspecified" xml:space="preserve">
     <value>Not Specified</value>
   </data>
-  <data name="ENUM.TaskType_CommonTask.CheckUID" xml:space="preserve">
+  <data name="ENUM.TaskType_GenericChipTask.CheckUID" xml:space="preserve">
     <value>Check UID</value>
   </data>
-  <data name="ENUM.TaskType_CommonTask.ChipIsOfType" xml:space="preserve">
+  <data name="ENUM.TaskType_GenericChipTask.ChipIsOfType" xml:space="preserve">
     <value>Check Type Of Chip</value>
+  </data>
+  <data name="ENUM.ERROR.IsNotFalse" xml:space="preserve">
+    <value>Is Not False</value>
+  </data>
+  <data name="ENUM.ERROR.IsNotTrue" xml:space="preserve">
+    <value>Is Not True</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.AND" xml:space="preserve">
+    <value>AND</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.NAND" xml:space="preserve">
+    <value>NAND</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.NOR" xml:space="preserve">
+    <value>NOR</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.NOT" xml:space="preserve">
+    <value>NOT</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.OR" xml:space="preserve">
+    <value>OR</value>
+  </data>
+  <data name="tabPageHeaderLogicTaskSettingsView" xml:space="preserve">
+    <value>Create / Edit Logic Block</value>
+  </data>
+  <data name="ENUM.TaskType_CommonTask.CreateLogicBlock" xml:space="preserve">
+    <value>Check Logic Block</value>
   </data>
 </root>

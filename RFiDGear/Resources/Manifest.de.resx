@@ -892,26 +892,26 @@ Wird benötigt von:
   <data name="ENUM.ERROR.NotAllowed" xml:space="preserve">
     <value>Not Allowed</value>
   </data>
-  <data name="ENUM.TaskType_CommonTask.ChangeDefault" xml:space="preserve">
-    <value>Change Default Values</value>
+  <data name="ENUM.TaskType_GenericChipTask.ChangeDefault" xml:space="preserve">
+    <value>Standardwerte ändern</value>
   </data>
-  <data name="ENUM.TaskType_CommonTask.ChipIsOfType" xml:space="preserve">
+  <data name="ENUM.TaskType_GenericChipTask.ChipIsOfType" xml:space="preserve">
     <value>Prüfung des Kartentyps</value>
   </data>
+  <data name="ENUM.TaskType_GenericChipTask.None" xml:space="preserve">
+    <value>Kein</value>
+  </data>
+  <data name="ENUM.TaskType_CommonTask.ChangeDefault" xml:space="preserve">
+    <value>Standardwerte ändern</value>
+  </data>
+  <data name="ENUM.TaskType_CommonTask.CreateReport" xml:space="preserve">
+    <value>Bericht erstellen / bearbeiten</value>
+  </data>
   <data name="ENUM.TaskType_CommonTask.None" xml:space="preserve">
-    <value>Empty</value>
+    <value>Kein</value>
   </data>
-  <data name="ENUM.TaskType_ReportTask.ChangeDefault" xml:space="preserve">
-    <value>Change Default Values</value>
-  </data>
-  <data name="ENUM.TaskType_ReportTask.CreateReport" xml:space="preserve">
-    <value>Create Report</value>
-  </data>
-  <data name="ENUM.TaskType_ReportTask.None" xml:space="preserve">
-    <value>Empty</value>
-  </data>
-  <data name="menuItemCreateGenericTaskHeader" xml:space="preserve">
-    <value>Generisch</value>
+  <data name="menuItemCreateGenericChipTaskHeader" xml:space="preserve">
+    <value>Generischen Typ erstellen / bearbeiten....</value>
   </data>
   <data name="labelSelectIsChipOfType" xml:space="preserve">
     <value>Kartentyp</value>
@@ -955,7 +955,34 @@ Wird benötigt von:
   <data name="ENUM.CARD_TYPE.Unspecified" xml:space="preserve">
     <value>Unspezifiziert</value>
   </data>
-  <data name="ENUM.TaskType_CommonTask.CheckUID" xml:space="preserve">
+  <data name="ENUM.TaskType_GenericChipTask.CheckUID" xml:space="preserve">
     <value>Prüfung der UID</value>
+  </data>
+  <data name="ENUM.ERROR.IsNotFalse" xml:space="preserve">
+    <value>Ist Nicht Unwahr</value>
+  </data>
+  <data name="ENUM.ERROR.IsNotTrue" xml:space="preserve">
+    <value>Ist Nicht Wahr</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.AND" xml:space="preserve">
+    <value>UND</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.NAND" xml:space="preserve">
+    <value>Nicht UND</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.NOR" xml:space="preserve">
+    <value>Nicht ODER</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.NOT" xml:space="preserve">
+    <value>Nicht</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.OR" xml:space="preserve">
+    <value>ODER</value>
+  </data>
+  <data name="tabPageHeaderLogicTaskSettingsView" xml:space="preserve">
+    <value>Logikbaustein erstellen / bearbeiten</value>
+  </data>
+  <data name="ENUM.TaskType_CommonTask.CreateLogicBlock" xml:space="preserve">
+    <value>Logikbaustein prüfen</value>
   </data>
 </root>
