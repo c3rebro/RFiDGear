@@ -92,6 +92,8 @@ namespace RFiDGear.ViewModel
 				{
 					SelectedTaskIndex = "0";
 					SelectedTaskDescription = "Enter a Description";
+                    SelectedExecuteConditionErrorLevel = ERROR.Empty;
+                    SelectedExecuteConditionTaskIndex = "0";
 				}
 				
 			}
@@ -140,18 +142,82 @@ namespace RFiDGear.ViewModel
 		}
 		private bool isFocused;
 
-		#endregion
+        #endregion
 
-		#region Dependency Properties
+        #region Dependency Properties
 
-		#region Common Task Properties
+        #region Common Task Properties
 
-		#region Task Properties
+        #region Task Properties
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsTaskCompletedSuccessfully
+        /// <summary>
+        /// The Indexnumber of the ExecuteCondition Task As String
+        /// </summary>
+        public string SelectedExecuteConditionTaskIndex
+        {
+            get
+            {
+                return selectedExecuteConditionTaskIndex;
+            }
+
+            set
+            {
+                selectedExecuteConditionTaskIndex = value;
+                IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
+                RaisePropertyChanged("SelectedExecuteConditionTaskIndex");
+            }
+        }
+        private string selectedExecuteConditionTaskIndex;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidSelectedExecuteConditionTaskIndex
+        {
+            get
+            {
+                return isValidSelectedExecuteConditionTaskIndex;
+            }
+            set
+            {
+                isValidSelectedExecuteConditionTaskIndex = value;
+                RaisePropertyChanged("IsValidSelectedExecuteConditionTaskIndex");
+            }
+        }
+        private bool? isValidSelectedExecuteConditionTaskIndex;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int SelectedExecuteConditionTaskIndexAsInt
+        { get { return selectedExecuteConditionTaskIndexAsInt; } }
+        private int selectedExecuteConditionTaskIndexAsInt;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ERROR SelectedExecuteConditionErrorLevel
+        {
+            get
+            {
+                return selectedExecuteConditionErrorLevel;
+            }
+
+            set
+            {
+                selectedExecuteConditionErrorLevel = value;
+                RaisePropertyChanged("SelectedExecuteConditionErrorLevel");
+            }
+        }
+        private ERROR selectedExecuteConditionErrorLevel;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsTaskCompletedSuccessfully
 		{
 			get { return isTaskCompletedSuccessfully; }
 			set
@@ -162,17 +228,19 @@ namespace RFiDGear.ViewModel
 		}
 		private bool? isTaskCompletedSuccessfully;
 
-		/// <summary>
-		///
-		/// </summary>
-		public int SelectedTaskIndexAsInt
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int SelectedTaskIndexAsInt
 		{ get { return selectedTaskIndexAsInt; } }
 		private int selectedTaskIndexAsInt;
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidSelectedTaskIndex
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidSelectedTaskIndex
 		{
 			get
 			{
@@ -313,15 +381,36 @@ namespace RFiDGear.ViewModel
 		{
 			get
 			{
-				return
-					new ObservableCollection<string>(_availableTasks.Where(x => x is MifareDesfireSetupViewModel).Select(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndex));
+                var availableTaskIndices = new ObservableCollection<string>();
+                foreach (object ssVMO in _availableTasks)
+                {
+                    switch (ssVMO)
+                    {
+                        case CommonTaskViewModel ssVM:
+                            availableTaskIndices.Add(ssVM.SelectedTaskIndex);
+                            break;
+                        case GenericChipTaskViewModel ssVM:
+                            availableTaskIndices.Add(ssVM.SelectedTaskIndex);
+                            break;
+                        case MifareClassicSetupViewModel ssVM:
+                            availableTaskIndices.Add(ssVM.SelectedTaskIndex);
+                            break;
+                        case MifareDesfireSetupViewModel ssVM:
+                            availableTaskIndices.Add(ssVM.SelectedTaskIndex);
+                            break;
+                        case MifareUltralightSetupViewModel ssVM:
+                            availableTaskIndices.Add(ssVM.SelectedTaskIndex);
+                            break;
+                    }
+                }
+                return availableTaskIndices;
 			}
 		}
 
-		/// <summary>
-		/// The Selected Error Level that Trigger the Field in the PDF to be filled
-		/// </summary>
-		public ERROR SelectedErrorLevel
+        /// <summary>
+        /// The Selected Error Level that Trigger the Field in the PDF to be filled
+        /// </summary>
+        public ERROR SelectedErrorLevel
 		{
 			get { return selectedErrorLevel; }
 			set
@@ -591,28 +680,166 @@ namespace RFiDGear.ViewModel
             }
 
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public ICommand AddEditCheckpointCommand { get { return new RelayCommand(OnNewAddEditCheckpointCommand); } }
 		private void OnNewAddEditCheckpointCommand()
         {
             try
             {
+                checkpoint = new Checkpoint();
 
                 checkpoint.ErrorLevel = ERROR.Empty;
 
-                #region checkpoint
+                if (SelectedTaskType == TaskType_CommonTask.CreateReport)
+                {
+                    checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
+                    checkpoint.ErrorLevel = SelectedErrorLevel;
+                    checkpoint.TemplateField = SelectedTemplateField;
+                    checkpoint.Content = Content;
 
-                checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
-                checkpoint.ErrorLevel = SelectedErrorLevel;
-                checkpoint.TemplateField = SelectedTemplateField;
-                checkpoint.Content = Content;
-                //Array.Clear(checkpoint.checkpointAsBytes, 0, 4);
+                    Checkpoints.Add(checkpoint);
+                }
 
-                Checkpoints.Add(checkpoint);
+                else if (SelectedTaskType == TaskType_CommonTask.CheckLogicCondition)
+                {
+                    checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
+
+                    Checkpoints.Add(checkpoint);
+                }
+
                 RaisePropertyChanged("Checkpoints");
 
                 //SelectedCheckpoint = checkpoint;
 
-                #endregion
+            }
+
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+            }
+
+            return;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand CheckLogicCondition { get { return new RelayCommand<ObservableCollection<object>>(OnNewCheckLogicConditionCommand); } }
+        private void OnNewCheckLogicConditionCommand(ObservableCollection<object> _tasks = null)
+        {
+            try
+            {
+                TaskErr = ERROR.Empty;
+
+                // here we are about to compare the results of the added "Checkpoints" in the "Check Condition" Task with the actual 
+                // conditions from the live tasks
+
+                //lets fill a new vector with the results of all so far executed tasks... We will re-use the checkpoint objects for this
+                ObservableCollection<Checkpoint> results = new ObservableCollection<Checkpoint>();
+
+                foreach (object task in _tasks)
+                {
+                    switch (task)
+                    {
+                        case CommonTaskViewModel ssVM:
+                            results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+                            break;
+                        case GenericChipTaskViewModel ssVM:
+                            results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+                            break;
+                        case MifareClassicSetupViewModel ssVM:
+                            results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+                            break;
+                        case MifareDesfireSetupViewModel ssVM:
+                            results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+                            break;
+                        case MifareUltralightSetupViewModel ssVM:
+                            results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+                            break;
+                    }
+                }
+
+                switch (SelectedLogicCondition)
+                {
+                    case LOGIC_STATE.AND:
+
+                        foreach (Checkpoint cp in Checkpoints)
+                        {
+                            if (cp.ErrorLevel == results.Where<Checkpoint>(x => x.TaskIndex == cp.TaskIndex).Single().ErrorLevel)
+                                continue;
+                            else
+                            {
+                                TaskErr = ERROR.IsNotTrue;
+                                return;
+                            }
+                            
+                        }
+
+                        TaskErr = ERROR.NoError;
+                        break;
+
+
+                    case LOGIC_STATE.NAND:
+
+                        foreach (Checkpoint cp in Checkpoints)
+                        {
+                            for (int i = 0; i < Checkpoints.Count(); i++)
+                            {
+                                if ((cp.ErrorLevel == Checkpoints[i].ErrorLevel))
+                                    continue;
+                                else
+                                {
+                                    TaskErr = ERROR.NoError;
+                                    return;
+                                }
+                            }
+
+                        }
+
+                        TaskErr = ERROR.IsNotTrue;
+
+                        break;
+
+                    case LOGIC_STATE.NOR:
+
+                        foreach (Checkpoint cp in Checkpoints)
+                        {
+                            for (int i = 0; i < Checkpoints.Count(); i++)
+                            {
+                                if ((cp.ErrorLevel == Checkpoints[i].ErrorLevel))
+                                {
+                                    TaskErr = ERROR.IsNotTrue;
+                                    return;
+                                }
+                            }
+                        }
+
+                        TaskErr = ERROR.NoError;
+
+                        break;
+
+                    case LOGIC_STATE.NOT:
+
+                        break;
+
+                    case LOGIC_STATE.OR:
+
+                        foreach (Checkpoint cp in Checkpoints)
+                        {
+                            if (cp.ErrorLevel == results.Where<Checkpoint>(x => x.TaskIndex == cp.TaskIndex).Single().ErrorLevel)
+                            {
+                                TaskErr = ERROR.NoError;
+                                return;
+                            }
+                        }
+
+                        TaskErr = ERROR.IsNotTrue;
+
+                        break;
+                }
             }
 
             catch (Exception e)
@@ -625,9 +852,9 @@ namespace RFiDGear.ViewModel
 
         #endregion Commands
 
-		#region IUserDialogViewModel Implementation
+        #region IUserDialogViewModel Implementation
 
-		[XmlIgnore]
+        [XmlIgnore]
 		public bool IsModal { get; private set; }
 		
 		public virtual void RequestClose()

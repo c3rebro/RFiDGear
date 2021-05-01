@@ -84,7 +84,9 @@ namespace RFiDGear.ViewModel
 				{
 					SelectedTaskIndex = "0";
 					SelectedTaskDescription = "Enter a Description";
-				}
+                    SelectedExecuteConditionErrorLevel = ERROR.Empty;
+                    SelectedExecuteConditionTaskIndex = "0";
+                }
 				
 			}
 			catch (Exception e)
@@ -137,6 +139,69 @@ namespace RFiDGear.ViewModel
         #region Dependency Properties
 
         /// <summary>
+        /// The Indexnumber of the ExecuteCondition Task As String
+        /// </summary>
+        public string SelectedExecuteConditionTaskIndex
+        {
+            get
+            {
+                return selectedExecuteConditionTaskIndex;
+            }
+
+            set
+            {
+                selectedExecuteConditionTaskIndex = value;
+                IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
+                RaisePropertyChanged("SelectedExecuteConditionTaskIndex");
+            }
+        }
+        private string selectedExecuteConditionTaskIndex;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidSelectedExecuteConditionTaskIndex
+        {
+            get
+            {
+                return isValidSelectedExecuteConditionTaskIndex;
+            }
+            set
+            {
+                isValidSelectedExecuteConditionTaskIndex = value;
+                RaisePropertyChanged("IsValidSelectedExecuteConditionTaskIndex");
+            }
+        }
+        private bool? isValidSelectedExecuteConditionTaskIndex;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int SelectedExecuteConditionTaskIndexAsInt
+        { get { return selectedExecuteConditionTaskIndexAsInt; } }
+        private int selectedExecuteConditionTaskIndexAsInt;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ERROR SelectedExecuteConditionErrorLevel
+        {
+            get
+            {
+                return selectedExecuteConditionErrorLevel;
+            }
+
+            set
+            {
+                selectedExecuteConditionErrorLevel = value;
+                RaisePropertyChanged("SelectedExecuteConditionErrorLevel");
+            }
+        }
+        private ERROR selectedExecuteConditionErrorLevel;
+
+        /// <summary>
         /// 
         /// </summary>
         public CARD_TYPE SelectedChipType
@@ -175,10 +240,11 @@ namespace RFiDGear.ViewModel
         [XmlIgnore]
 		public ERROR TaskErr { get; set; }
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsTaskCompletedSuccessfully
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsTaskCompletedSuccessfully
 		{
 			get { return isTaskCompletedSuccessfully; }
 			set
@@ -189,17 +255,19 @@ namespace RFiDGear.ViewModel
 		}
 		private bool? isTaskCompletedSuccessfully;
 
-		/// <summary>
-		///
-		/// </summary>
-		public int SelectedTaskIndexAsInt
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int SelectedTaskIndexAsInt
 		{ get { return selectedTaskIndexAsInt; } }
 		private int selectedTaskIndexAsInt;
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidSelectedTaskIndex
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidSelectedTaskIndex
 		{
 			get
 			{

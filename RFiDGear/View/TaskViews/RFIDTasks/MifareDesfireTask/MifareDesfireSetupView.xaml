@@ -40,7 +40,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition
-				Height="110.066450667812" />
+				Height="165" />
             <RowDefinition
 				Height="*" />
             <RowDefinition
@@ -60,135 +60,163 @@
 			Height="5"
 			Width="Auto" />
         <Grid
-			Height="106"
-			Grid.Column="0"
-			Grid.Row="0"
-			HorizontalAlignment="Stretch"
-			VerticalAlignment="Top"
-			Margin="0,0,0,0">
+            Grid.Row="0"
+            Grid.Column="0"
+            Margin="0,0,0,0"
+            HorizontalAlignment="Stretch">
             <GroupBox
-				Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='groupBoxHeaderMifareDesfireSetupTaskConfiguration' }"
-				Height="106"
-				Grid.Column="0"
-				Grid.Row="0"
-				HorizontalAlignment="Stretch"
-				VerticalAlignment="Top"
-				Margin="9,0,8,0">
+                Grid.Row="0"
+                Grid.Column="0"
+                Margin="9,0,8,0"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareClassicSetupTaskConfiguration'}">
                 <Grid
-					VerticalAlignment="Stretch"
-					HorizontalAlignment="Stretch"
-					Margin="0,0,0,0"
-					Grid.Column="0"
-					Grid.Row="0">
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Margin="0,0,0,0"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch">
                     <Label
-						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireSetupTaskConfigurationType' }"
-						Height="26"
-						Width="117"
-						Grid.Column="0"
-						Grid.Row="0"
-						HorizontalAlignment="Left"
-						VerticalAlignment="Top"
-						Margin="10,7,0,0" />
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Width="170"
+                        Height="26"
+                        Margin="10,7,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareClassicSetupTaskConfigurationType'}" />
                     <ComboBox
-						ItemsSource="{dal:Enumerate {x:Type dal:TaskType_MifareDesfireTask}}"
-						SelectedItem="{Binding SelectedTaskType,Converter={StaticResource Localization},ConverterParameter={x:Type dal:TaskType_MifareDesfireTask},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
-						Width="252"
-						Height="26"
-						Grid.Column="1"
-						Grid.Row="0"
-						HorizontalAlignment="Left"
-						VerticalAlignment="Top"
-						Margin="8,7,0,0"></ComboBox>
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Width="212"
+                        Height="26"
+                        Margin="8,7,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        ItemsSource="{dal:Enumerate {x:Type dal:TaskType_MifareDesfireTask}}"
+                        SelectedItem="{Binding SelectedTaskType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskType_MifareDesfireTask}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        TabIndex="1" />
                     <Label
-						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireSetupTaskConfigurationDescription' }"
-						RenderTransformOrigin="0.5085,0.4231"
-						Grid.Column="2"
-						Grid.Row="1"
-						Margin="8,2.6,0,0" Height="26" VerticalAlignment="Top" HorizontalAlignment="Left" Width="182" />
+                        Grid.Row="1"
+                        Width="170"
+                        Height="26"
+                        Margin="10,7,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareClassicSetupTaskConfigurationDescription'}" />
                     <TextBox
-						Text="{Binding SelectedTaskDescription}"
-						Height="26"
-						Grid.Column="3"
-						Grid.Row="1"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Top"
-						Margin="9,2.6,7.8,0" />
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Height="26"
+                        Margin="8,7,12,0"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Top"
+                        TabIndex="3"
+                        Text="{Binding SelectedTaskDescription}" Grid.ColumnSpan="3" />
                     <Label
-						Content="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='labelContentMifareDesfireSetupTaskConfigurationIndex' }"
-						RenderTransformOrigin="0.5085,0.4231"
-						Height="26"
-						Width="181"
-						Grid.Column="2"
-						Grid.Row="0"
-						HorizontalAlignment="Left"
-						VerticalAlignment="Top"
-						Margin="9,8,0,0"/>
+                        Grid.Row="0"
+                        Grid.Column="2"
+                        Width="131"
+                        Height="26"
+                        Margin="9,7,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareClassicSetupTaskConfigurationIndex'}"
+                        RenderTransformOrigin="0.5085,0.4231" />
                     <TextBox
-						Text="{Binding SelectedTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-						Height="26"
-						Grid.Column="3"
-						Grid.Row="0"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Top"
-						Margin="9,8,7.8,0">
+                        Grid.Row="0"
+                        Grid.Column="3"
+                        Height="26"
+                        Margin="9,7,12,0"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Top"
+                        TabIndex="2"
+                        Text="{Binding SelectedTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.Resources>
-                            <Style
-								x:Key="IsValidSelectedKeySetupTaskIndex"
-								TargetType="TextBox">
+                            <Style x:Key="IsValidSelectedKeySetupTaskIndex" TargetType="TextBox">
                                 <Style.Triggers>
-                                    <DataTrigger
-										Binding="{Binding IsValidSelectedKeySetupTaskIndex}"
-										Value="True">
-                                        <Setter
-											Property="Foreground"
-											Value="Green" />
-                                        <Setter
-											Property="Background"
-											Value="White" />
-                                        <Setter
-											Property="FontWeight"
-											Value="Normal" />
+                                    <DataTrigger Binding="{Binding IsValidSelectedKeySetupTaskIndex}" Value="True">
+                                        <Setter Property="Foreground" Value="Green" />
+                                        <Setter Property="Background" Value="White" />
+                                        <Setter Property="FontWeight" Value="Normal" />
                                     </DataTrigger>
-                                    <DataTrigger
-										Binding="{Binding IsValidSelectedKeySetupTaskIndex}"
-										Value="False">
-                                        <Setter
-											Property="Foreground"
-											Value="Black" />
-                                        <Setter
-											Property="Background"
-											Value="Red" />
-                                        <Setter
-											Property="FontWeight"
-											Value="Normal" />
+                                    <DataTrigger Binding="{Binding IsValidSelectedKeySetupTaskIndex}" Value="False">
+                                        <Setter Property="Foreground" Value="Black" />
+                                        <Setter Property="Background" Value="Red" />
+                                        <Setter Property="FontWeight" Value="Normal" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                        <TextBox.ToolTip>
-                            <ToolTip>
-                                <StackPanel>
-                                    <TextBlock
-								FontWeight="Bold"
-								Text="{Binding LocalizationResourceSet,
-							Converter={StaticResource Localization},
-							ConverterParameter='toolTipSelectedKeySetupTaskIndex' }" />
-                                </StackPanel>
-                            </ToolTip>
-                        </TextBox.ToolTip>
                     </TextBox>
+                    <GroupBox 
+                        x:Name="groupBox" 
+                        Header="ExecuteCondition" 
+                        Margin="8,0,8,0" 
+                        Grid.Row="2" 
+                        Grid.ColumnSpan="4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="175"/>
+                                <ColumnDefinition Width="233"/>
+                                <ColumnDefinition Width="149"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Label
+                            Height="26"
+                            Margin="10,7,0,0"
+                            VerticalAlignment="Top"
+                            Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentExecuteConditionErrorType, Converter={StaticResource Localization}}" HorizontalAlignment="Left" Width="155" />
+                            <TextBox
+                            Height="26"
+                            Margin="10,7,10,0"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Top"
+                            TabIndex="2"
+                            Text="{Binding SelectedExecuteConditionTaskIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.Column="3">
+                                <TextBox.Resources>
+                                    <Style x:Key="IsValidSelectedKeySetupTaskIndex" TargetType="{x:Type TextBox}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsValidSelectedKeySetupTaskIndex}" Value="True">
+                                                <Setter Property="Foreground" Value="Green" />
+                                                <Setter Property="Background" Value="White" />
+                                                <Setter Property="FontWeight" Value="Normal" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsValidSelectedKeySetupTaskIndex}" Value="False">
+                                                <Setter Property="Foreground" Value="Black" />
+                                                <Setter Property="Background" Value="Red" />
+                                                <Setter Property="FontWeight" Value="Normal" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBox.Resources>
+                            </TextBox>
+                            <Label
+                                Height="26"
+                                Margin="10,7,0,0"
+                                VerticalAlignment="Top"
+                                Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentExecuteConditionTaskIndex, Converter={StaticResource Localization}}" HorizontalAlignment="Left" Width="129" Grid.Column="2" />
+                            <ComboBox
+                                Grid.Column="1"
+                                Height="26"
+                                Margin="10,7,10,0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Top"
+                                ItemsSource="{dal:Enumerate {x:Type dal:ERROR}}"
+                                SelectedItem="{Binding SelectedExecuteConditionErrorLevel, ConverterParameter={x:Type dal:ERROR}, Converter={StaticResource Localization}, Mode=TwoWay}" />
+                        </Grid>
+                    </GroupBox>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition
-							Width="140" />
-                        <ColumnDefinition Width="280" />
-                        <ColumnDefinition Width="160" />
-                        <ColumnDefinition Width="*" MinWidth="150"/>
+                        <ColumnDefinition Width="190" />
+                        <ColumnDefinition Width="230" />
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition MinWidth="150" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition
-							Height="38" />
-                        <RowDefinition
-							Height="0.286848072562358*" />
+                        <RowDefinition Height="38" />
+                        <RowDefinition Height="38" />
+                        <RowDefinition Height="47*"/>
                     </Grid.RowDefinitions>
                 </Grid>
             </GroupBox>

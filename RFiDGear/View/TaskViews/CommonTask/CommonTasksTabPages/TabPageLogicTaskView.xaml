@@ -32,8 +32,6 @@
                     Margin="8,8,8,8"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch">
-
-
                     <GroupBox
                         Grid.Row="0"
                         Grid.Column="0"
@@ -58,10 +56,6 @@
                                 DataContext="{Binding}"
                                 Foreground="Black" />
                             <ComboBox
-                                xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
-                                xmlns:local="clr-namespace:RFiDGear"
-                                xmlns:system="clr-namespace:System;assembly=mscorlib"
-                                xmlns:v="clr-namespace:RFiDGear.View"
                                 Grid.Row="0"
                                 Grid.Column="1"
                                 Height="26"
@@ -105,10 +99,6 @@
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch">
                             <ComboBox
-                                xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
-                                xmlns:local="clr-namespace:RFiDGear"
-                                xmlns:system="clr-namespace:System;assembly=mscorlib"
-                                xmlns:v="clr-namespace:RFiDGear.View"
                                 Grid.Row="0"
                                 Grid.Column="1"
                                 Height="26"
@@ -118,10 +108,6 @@
                                 ItemsSource="{Binding AvailableTaskIndices, UpdateSourceTrigger=PropertyChanged}"
                                 SelectedItem="{Binding SelectedTaskIndexFromAvailableTasks, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                             <Label
-                                xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
-                                xmlns:local="clr-namespace:RFiDGear"
-                                xmlns:system="clr-namespace:System;assembly=mscorlib"
-                                xmlns:v="clr-namespace:RFiDGear.View"
                                 Grid.Row="1"
                                 Grid.Column="0"
                                 Height="26"
@@ -130,10 +116,6 @@
                                 VerticalAlignment="Top"
                                 Content="ErrorLevel" />
                             <ComboBox
-                                xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
-                                xmlns:local="clr-namespace:RFiDGear"
-                                xmlns:system="clr-namespace:System;assembly=mscorlib"
-                                xmlns:v="clr-namespace:RFiDGear.View"
                                 Grid.Row="1"
                                 Grid.Column="1"
                                 Height="26"

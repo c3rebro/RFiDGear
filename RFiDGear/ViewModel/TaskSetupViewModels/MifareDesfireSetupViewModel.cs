@@ -33,16 +33,20 @@ namespace RFiDGear.ViewModel
     /// </summary>
     public class MifareDesfireSetupViewModel : ViewModelBase, IUserDialogViewModel
 	{
-		private protected SettingsReaderWriter settings = new SettingsReaderWriter();
+
+        #region Fields
+        private protected SettingsReaderWriter settings = new SettingsReaderWriter();
 
 		private protected MifareDesfireChipModel chip;
 		private protected MifareDesfireAppModel app;
 		private DESFireAccessRights accessRights;
+        #endregion
 
-		/// <summary>
-		///
-		/// </summary>
-		public MifareDesfireSetupViewModel()
+        #region Constructors
+        /// <summary>
+        ///
+        /// </summary>
+        public MifareDesfireSetupViewModel()
 		{
 			accessRights = new DESFireAccessRights();
 			chip = new MifareDesfireChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.DESFire);
@@ -180,10 +184,10 @@ namespace RFiDGear.ViewModel
 
 			
 		}
+        #endregion
 
-		
-		#region Dialogs
-		[XmlIgnore]
+        #region Dialogs
+        [XmlIgnore]
 		public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; }}
 		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
 		#region Plugins
@@ -253,894 +257,76 @@ namespace RFiDGear.ViewModel
 //		}
 		
 		#endregion Dialogs
-		
-		#region Key Properties Card Master
 
-		[XmlIgnore]
-		public string[] MifareDesfireKeys { get; set; }
+        #region Dependency Properties
 
+        /// <summary>
+        /// The Indexnumber of the ExecuteCondition Task As String
+        /// </summary>
+        public string SelectedExecuteConditionTaskIndex
+        {
+            get
+            {
+                return selectedExecuteConditionTaskIndex;
+            }
+
+            set
+            {
+                selectedExecuteConditionTaskIndex = value;
+                IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
+                RaisePropertyChanged("SelectedExecuteConditionTaskIndex");
+            }
+        }
+        private string selectedExecuteConditionTaskIndex;
+
+        /// <summary>
+        ///
+        /// </summary>
         [XmlIgnore]
-        public string[] MifareDesfireKeyCount { get; set; }
+        public bool? IsValidSelectedExecuteConditionTaskIndex
+        {
+            get
+            {
+                return isValidSelectedExecuteConditionTaskIndex;
+            }
+            set
+            {
+                isValidSelectedExecuteConditionTaskIndex = value;
+                RaisePropertyChanged("IsValidSelectedExecuteConditionTaskIndex");
+            }
+        }
+        private bool? isValidSelectedExecuteConditionTaskIndex;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int SelectedExecuteConditionTaskIndexAsInt
+        { get { return selectedExecuteConditionTaskIndexAsInt; } }
+        private int selectedExecuteConditionTaskIndexAsInt;
 
         /// <summary>
         /// 
         /// </summary>
-        public DESFireKeyType SelectedDesfireMasterKeyEncryptionTypeCurrent
-		{
-			get { return selectedDesfireMasterKeyEncryptionTypeCurrent; }
-			set
-			{
-				selectedDesfireMasterKeyEncryptionTypeCurrent = value;
-				RaisePropertyChanged("SelectedDesfireMasterKeyEncryptionTypeCurrent");
-			}
-		}
-		private DESFireKeyType selectedDesfireMasterKeyEncryptionTypeCurrent;
+        public ERROR SelectedExecuteConditionErrorLevel
+        {
+            get
+            {
+                return selectedExecuteConditionErrorLevel;
+            }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public string DesfireMasterKeyCurrent
-		{
-			get { return desfireMasterKeyCurrent; }
-			set
-			{
-				try
-				{
-					desfireMasterKeyCurrent = value.ToUpper().Remove(32);
-				}
-				catch
-				{
-					desfireMasterKeyCurrent = value.ToUpper();
-				}
-				IsValidDesfireMasterKeyCurrent = (CustomConverter.IsInHexFormat(desfireMasterKeyCurrent) && desfireMasterKeyCurrent.Length == 32);
-				RaisePropertyChanged("DesfireMasterKeyCurrent");
-			}
-		}
-		private string desfireMasterKeyCurrent;
+            set
+            {
+                selectedExecuteConditionErrorLevel = value;
+                RaisePropertyChanged("SelectedExecuteConditionErrorLevel");
+            }
+        }
+        private ERROR selectedExecuteConditionErrorLevel;
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidDesfireMasterKeyCurrent
-		{
-			get
-			{
-				return isValidDesfireMasterKeyCurrent;
-			}
-			set
-			{
-				isValidDesfireMasterKeyCurrent = value;
-				RaisePropertyChanged("IsValidDesfireMasterKeyCurrent");
-			}
-		}
-		private bool? isValidDesfireMasterKeyCurrent;
-
-		/// <summary>
-		/// 
-		/// </summary>
-		public DESFireKeyType SelectedDesfireMasterKeyEncryptionTypeTarget
-		{
-			get { return selectedDesfireMasterKeyEncryptionTypeTarget; }
-			set
-			{
-				selectedDesfireMasterKeyEncryptionTypeTarget = value;
-				RaisePropertyChanged("SelectedDesfireMasterKeyEncryptionTypeCurrent");
-			}
-		}
-		private DESFireKeyType selectedDesfireMasterKeyEncryptionTypeTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string DesfireMasterKeyTarget
-		{
-			get { return desfireMasterKeyTarget; }
-			set
-			{
-				try
-				{
-					desfireMasterKeyTarget = value.ToUpper().Remove(32);
-				}
-				catch
-				{
-					desfireMasterKeyTarget = value.ToUpper();
-				}
-
-				IsValidDesfireMasterKeyTarget = (
-					CustomConverter.IsInHexFormat(desfireMasterKeyTarget) &&
-					desfireMasterKeyTarget.Length == 32);
-				RaisePropertyChanged("DesfireMasterKeyTarget");
-			}
-		}
-		private string desfireMasterKeyTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidDesfireMasterKeyTarget
-		{
-			get
-			{
-				return isValidDesfireMasterKeyTarget;
-			}
-			set
-			{
-				isValidDesfireMasterKeyTarget = value;
-				RaisePropertyChanged("IsValidDesfireMasterKeyTarget");
-			}
-		}
-		private bool? isValidDesfireMasterKeyTarget;
-
-		#endregion Key Properties Card Master
-
-		#region Key Properties App Master
-
-		#region App Creation
-
-		/// <summary>
-		///
-		/// </summary>
-		public DESFireKeyType SelectedDesfireAppKeyEncryptionTypeCreateNewApp
-		{
-			get { return selectedCreateDesfireAppKeyEncryptionTypeCurrent; }
-			set
-			{
-				selectedCreateDesfireAppKeyEncryptionTypeCurrent = value;
-				RaisePropertyChanged("SelectedDesfireAppKeyEncryptionTypeCreateNewApp");
-			}
-		}
-		private DESFireKeyType selectedCreateDesfireAppKeyEncryptionTypeCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedDesfireAppMaxNumberOfKeys
-		{
-			get
-			{
-				return selectedDesfireAppMaxNumberOfKeys;
-			}
-			set
-			{
-				if(int.TryParse(value, out selectedDesfireAppMaxNumberOfKeysAsInt))
-				{
-					selectedDesfireAppMaxNumberOfKeys = value;
-				}
-				RaisePropertyChanged("SelectedDesfireAppMaxNumberOfKeys");
-			}
-		}
-		private string selectedDesfireAppMaxNumberOfKeys;
-		private int selectedDesfireAppMaxNumberOfKeysAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public AccessCondition_MifareDesfireAppCreation SelectedDesfireAppKeySettingsCreateNewApp
-		{
-			get { return selectedDesfireAppKeySettingsTarget; }
-			set
-			{
-				selectedDesfireAppKeySettingsTarget = value;
-				//selectedDesfireAppKeySettingsTarget |= DESFireKeySettings.KS_ALLOW_CHANGE_MK;
-				RaisePropertyChanged("SelectedDesfireAppKeySettingsCreateNewApp");
-			}
-		}
-		private AccessCondition_MifareDesfireAppCreation selectedDesfireAppKeySettingsTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string AppNumberNew
-		{
-			get { return appNumberNew; }
-			set
-			{
-				try
-				{
-					appNumberNew = value.ToUpper().Remove(32);
-				}
-				catch
-				{
-					appNumberNew = value.ToUpper();
-				}
-				IsValidAppNumberNew = (int.TryParse(value, out appNumberNewAsInt) && appNumberNewAsInt <= 0xFFFFFF);
-				RaisePropertyChanged("AppNumberNew");
-			}
-		}
-		private string appNumberNew;
-
-		/// <summary>
-		///
-		/// </summary>
-		public int AppNumberNewAsInt
-		{ get { return appNumberNewAsInt; } }
-		private int appNumberNewAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidAppNumberNew
-		{
-			get
-			{
-				return isValidAppNumberNew;
-			}
-			set
-			{
-				isValidAppNumberNew = value;
-				RaisePropertyChanged("IsValidAppNumberNew");
-			}
-		}
-		private bool? isValidAppNumberNew;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool IsAllowChangeMKChecked
-		{
-			get { return isAllowChangeMKChecked; }
-			set
-			{
-				isAllowChangeMKChecked = value;
-				RaisePropertyChanged("IsAllowChangeMKChecked");
-			}
-		}
-		private bool isAllowChangeMKChecked;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool IsAllowListingWithoutMKChecked
-		{
-			get { return isAllowListingWithoutMKChecked; }
-			set
-			{
-				isAllowListingWithoutMKChecked = value;
-				RaisePropertyChanged("IsAllowListingWithoutMKChecked");
-			}
-		}
-		private bool isAllowListingWithoutMKChecked;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool IsAllowCreateDelWithoutMKChecked
-		{
-			get { return isAllowCreateDelWithoutMKChecked; }
-			set
-			{
-				isAllowCreateDelWithoutMKChecked = value;
-				RaisePropertyChanged("IsAllowCreateDelWithoutMKChecked");
-			}
-		}
-		private bool isAllowCreateDelWithoutMKChecked;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool IsAllowConfigChangableChecked
-		{
-			get { return isAllowConfigChangableChecked; }
-			set
-			{
-				isAllowConfigChangableChecked = value;
-				RaisePropertyChanged("IsAllowConfigChangableChecked");
-			}
-		}
-		private bool isAllowConfigChangableChecked;
-
-		#endregion App Creation
-
-		#region Key Properties App Master Current
-
-		/// <summary>
-		///
-		/// </summary>
-		public DESFireKeyType SelectedDesfireAppKeyEncryptionTypeCurrent
-		{
-			get { return selectedDesfireAppKeyEncryptionTypeCurrent; }
-			set
-			{
-				selectedDesfireAppKeyEncryptionTypeCurrent = value;
-				RaisePropertyChanged("SelectedDesfireAppKeyEncryptionTypeCurrent");
-			}
-		} private DESFireKeyType selectedDesfireAppKeyEncryptionTypeCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedDesfireAppKeyNumberCurrent
-		{
-			get
-			{
-				return selectedDesfireAppKeyNumberCurrent;
-			}
-			set
-			{
-				if(int.TryParse(value, out selectedDesfireAppKeyNumberCurrentAsInt))
-				{
-					selectedDesfireAppKeyNumberCurrent = value;
-				}
-				RaisePropertyChanged("SelectedDesfireAppKeyNumberCurrent");
-			}
-		}
-		private string selectedDesfireAppKeyNumberCurrent;
-		private int selectedDesfireAppKeyNumberCurrentAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string DesfireAppKeyCurrent
-		{
-			get { return desfireAppKeyCurrent; }
-			set
-			{
-				try
-				{
-					desfireAppKeyCurrent = value.ToUpper().Remove(32);
-				}
-				catch
-				{
-					desfireAppKeyCurrent = value.ToUpper();
-				}
-				IsValidDesfireAppKeyCurrent = (CustomConverter.IsInHexFormat(desfireAppKeyCurrent) && desfireAppKeyCurrent.Length == 32);
-				RaisePropertyChanged("DesfireAppKeyCurrent");
-			}
-		} private string desfireAppKeyCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidDesfireAppKeyCurrent
-		{
-			get
-			{
-				return isValidDesfireAppKeyCurrent;
-			}
-			set
-			{
-				isValidDesfireAppKeyCurrent = value;
-				RaisePropertyChanged("IsValidDesfireAppKeyCurrent");
-			}
-		} private bool? isValidDesfireAppKeyCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string AppNumberCurrent
-		{
-			get { return appNumberCurrent; }
-			set
-			{
-				try
-				{
-					appNumberCurrent = value.ToUpper().Remove(32);
-				}
-				catch
-				{
-					appNumberCurrent = value.ToUpper();
-				}
-				IsValidAppNumberCurrent = (int.TryParse(value, out appNumberCurrentAsInt) && appNumberCurrentAsInt <= 65535);
-				RaisePropertyChanged("AppNumberCurrent");
-			}
-		} private string appNumberCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public int AppNumberCurrentAsInt
-		{ get { return appNumberCurrentAsInt; } } private int appNumberCurrentAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidAppNumberCurrent
-		{
-			get
-			{
-				return isValidAppNumberCurrent;
-			}
-			set
-			{
-				isValidAppNumberCurrent = value;
-				RaisePropertyChanged("IsValidAppNumberCurrent");
-			}
-		} private bool? isValidAppNumberCurrent;
-
-		#endregion Key Properties App Master Current
-
-		#region Key Properties App Master Target
-
-		/// <summary>
-		///
-		/// </summary>
-		public DESFireKeyType SelectedDesfireAppKeyEncryptionTypeTarget
-		{
-			get { return selectedDesfireAppKeyEncryptionTypeTarget; }
-			set
-			{
-				selectedDesfireAppKeyEncryptionTypeTarget = value;
-				RaisePropertyChanged("SelectedDesfireAppKeyEncryptionTypeTarget");
-			}
-		} private DESFireKeyType selectedDesfireAppKeyEncryptionTypeTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedDesfireAppKeyNumberTarget
-		{
-			get
-			{
-				return selectedDesfireAppKeyNumberTarget;
-			}
-			set
-			{
-				if(int.TryParse(value, out selectedDesfireAppKeyNumberTargetAsInt))
-				{
-					selectedDesfireAppKeyNumberTarget = value;
-				}
-				RaisePropertyChanged("SelectedDesfireAppKeyNumberTarget");
-			}
-		}
-		private string selectedDesfireAppKeyNumberTarget;
-		private int selectedDesfireAppKeyNumberTargetAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string DesfireAppKeyTarget
-		{
-			get { return desfireAppKeyTarget; }
-			set
-			{
-				try
-				{
-					desfireAppKeyTarget = value.ToUpper().Remove(32);
-				}
-				catch
-				{
-					desfireAppKeyTarget = value.ToUpper();
-				}
-
-				IsValidDesfireAppKeyTarget = (
-					CustomConverter.IsInHexFormat(desfireAppKeyTarget) &&
-					desfireAppKeyTarget.Length == 32);
-				RaisePropertyChanged("DesfireAppKeyTarget");
-			}
-		} private string desfireAppKeyTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidDesfireAppKeyTarget
-		{
-			get
-			{
-				return isValidDesfireAppKeyTarget;
-			}
-			set
-			{
-				isValidDesfireAppKeyTarget = value;
-				RaisePropertyChanged("IsValidDesfireAppKeyTarget");
-			}
-		} private bool? isValidDesfireAppKeyTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string AppNumberTarget
-		{
-			get { return appNumberTarget; }
-			set
-			{
-				try
-				{
-					appNumberTarget = value.ToUpper().Remove(32);
-				}
-				catch
-				{
-					appNumberTarget = value.ToUpper();
-				}
-				IsValidAppNumberTarget = (int.TryParse(value, out appNumberTargetAsInt) && appNumberTargetAsInt <= 65535);
-				RaisePropertyChanged("AppNumberTarget");
-			}
-		} private string appNumberTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public int AppNumberTargetAsInt
-		{ get { return appNumberTargetAsInt; } } private int appNumberTargetAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidAppNumberTarget
-		{
-			get
-			{
-				return isValidAppNumberTarget;
-			}
-			set
-			{
-				isValidAppNumberTarget = value;
-				RaisePropertyChanged("IsValidAppNumberTarget");
-			}
-		} private bool? isValidAppNumberTarget;
-
-		#endregion Key Properties App Master Target
-
-		#endregion Key Properties App Master
-
-		#region Key Properties File Master
-
-		#region File Creation
-
-		/// <summary>
-		///
-		/// </summary>
-		public TaskAccessRights SelectedDesfireFileAccessRightReadWrite
-		{
-			get { return selectedDesfireFileAccessRightReadWrite; }
-			set
-			{
-				selectedDesfireFileAccessRightReadWrite = value;
-				RaisePropertyChanged("SelectedDesfireFileAccessRightReadWrite");
-			}
-		} private TaskAccessRights selectedDesfireFileAccessRightReadWrite;
-
-		/// <summary>
-		///
-		/// </summary>
-		public TaskAccessRights SelectedDesfireFileAccessRightChange
-		{
-			get { return selectedDesfireFileAccessRightChange; }
-			set
-			{
-				selectedDesfireFileAccessRightChange = value;
-				RaisePropertyChanged("SelectedDesfireFileAccessRightChange");
-			}
-		} private TaskAccessRights selectedDesfireFileAccessRightChange;
-
-		/// <summary>
-		///
-		/// </summary>
-		public TaskAccessRights SelectedDesfireFileAccessRightRead
-		{
-			get { return selectedDesfireFileAccessRightRead; }
-			set
-			{
-				selectedDesfireFileAccessRightRead = value;
-				RaisePropertyChanged("SelectedDesfireFileAccessRightRead");
-			}
-		} private TaskAccessRights selectedDesfireFileAccessRightRead;
-
-		/// <summary>
-		///
-		/// </summary>
-		public TaskAccessRights SelectedDesfireFileAccessRightWrite
-		{
-			get { return selectedDesfireFileAccessRightWrite; }
-			set
-			{
-				selectedDesfireFileAccessRightWrite = value;
-				RaisePropertyChanged("SelectedDesfireFileAccessRightWrite");
-			}
-		} private TaskAccessRights selectedDesfireFileAccessRightWrite;
-
-		/// <summary>
-		///
-		/// </summary>
-		public EncryptionMode SelectedDesfireFileCryptoMode
-		{
-			get { return selectedDesfireFileCryptoMode; }
-			set
-			{
-				selectedDesfireFileCryptoMode = value;
-				RaisePropertyChanged("SelectedDesfireFileCryptoMode");
-			}
-		} private EncryptionMode selectedDesfireFileCryptoMode;
-
-		/// <summary>
-		///
-		/// </summary>
-		public FileType_MifareDesfireFileType SelectedDesfireFileType
-		{
-			get { return selectedDesfireFileType; }
-			set
-			{
-				selectedDesfireFileType = value;
-				RaisePropertyChanged("SelectedDesfireFileType");
-			}
-		} private FileType_MifareDesfireFileType selectedDesfireFileType;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string FileNumberCurrent
-		{
-			get { return fileNumberCurrent; }
-			set
-			{
-				fileNumberCurrent = value;
-				IsValidFileNumberCurrent = (int.TryParse(value, out fileNumberCurrentAsInt) && fileNumberCurrentAsInt <= 8000);
-				RaisePropertyChanged("FileNumberCurrent");
-			}
-		} private string fileNumberCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public int FileNumberCurrentAsInt
-		{ get { return fileNumberCurrentAsInt; } } private int fileNumberCurrentAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidFileNumberCurrent
-		{
-			get
-			{
-				return isValidFileNumberCurrent;
-			}
-			set
-			{
-				isValidFileNumberCurrent = value;
-				RaisePropertyChanged("IsValidFileNumberCurrent");
-			}
-		} private bool? isValidFileNumberCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string FileSizeCurrent
-		{
-			get { return fileSizeCurrent; }
-			set
-			{
-				fileSizeCurrent = value;
-				IsValidFileSizeCurrent = (int.TryParse(value, out fileSizeCurrentAsInt) && fileSizeCurrentAsInt <= 8000);
-				
-				if(IsValidFileSizeCurrent != false)
-				{
-					if(childNodeViewModelFromChip.Children.Any(x => x.DesfireFile != null))
-					{
-						try
-						{
-							childNodeViewModelFromChip.Children.Single(y => y.DesfireFile.FileID == FileNumberCurrentAsInt).DesfireFile = new MifareDesfireFileModel(new byte[FileSizeCurrentAsInt],0);
-							childNodeViewModelTemp.Children.Single(y => y.DesfireFile.FileID == FileNumberCurrentAsInt).DesfireFile = new MifareDesfireFileModel(new byte[FileSizeCurrentAsInt],0);
-						}
-						catch
-						{
-							
-						}
-						
-					}
-					else
-					{
-						childNodeViewModelFromChip.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(new byte[FileSizeCurrentAsInt],0), null));
-						childNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(new byte[FileSizeCurrentAsInt],0), null));
-					}
-				}
-				
-				RaisePropertyChanged("FileSizeCurrent");
-			}
-		} private string fileSizeCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public int FileSizeCurrentAsInt
-		{ get { return fileSizeCurrentAsInt; } } private int fileSizeCurrentAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidFileSizeCurrent
-		{
-			get
-			{
-				return isValidFileSizeCurrent;
-			}
-			set
-			{
-				isValidFileSizeCurrent = value;
-				RaisePropertyChanged("IsValidFileSizeCurrent");
-			}
-		} private bool? isValidFileSizeCurrent;
-
-		#endregion File Creation
-
-		#endregion Key Properties File Master
-
-		#region DataExplorer
-		
-		/// <summary>
-		///
-		/// </summary>
-		public RFiDChipChildLayerViewModel ChildNodeViewModelFromChip
-		{
-			get { return childNodeViewModelFromChip; }
-			set { childNodeViewModelFromChip = value; }
-		} private RFiDChipChildLayerViewModel childNodeViewModelFromChip;
-
-		/// <summary>
-		///
-		/// </summary>
-		public RFiDChipChildLayerViewModel ChildNodeViewModelTemp
-		{
-			get { return childNodeViewModelTemp; }
-			set {
-				childNodeViewModelTemp = value;
-				RaisePropertyChanged("ChildNodeViewModelTemp");
-			}
-		} private RFiDChipChildLayerViewModel childNodeViewModelTemp;
-		
-		/// <summary>
-		///
-		/// </summary>
-		public RFiDChipGrandChildLayerViewModel GrandChildNodeViewModel
-		{
-			get { return ChildNodeViewModelTemp.Children.Count > 0 ? ChildNodeViewModelTemp.Children.Single(x => x.DesfireFile != null) : null; }
-		}
-		
-		/// <summary>
-		///
-		/// </summary>
-		public string DesfireReadKeyCurrent
-		{
-			get { return desfireReadKeyCurrent; }
-			set
-			{
-				try
-				{
-					desfireReadKeyCurrent = value.ToUpper().Remove(32);
-				}
-				catch
-				{
-					desfireReadKeyCurrent = value.ToUpper();
-				}
-
-				IsValidDesfireReadKeyCurrent = (
-					CustomConverter.IsInHexFormat(desfireReadKeyCurrent) &&
-					desfireReadKeyCurrent.Length == 32);
-				
-				RaisePropertyChanged("DesfireReadKeyCurrent");
-			}
-		} private string desfireReadKeyCurrent;
-		
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedDesfireReadKeyNumber
-		{
-			get
-			{
-				return  selectedDesfireReadKeyNumber;
-			}
-			set
-			{
-				if(int.TryParse(value, out selectedDesfireReadKeyNumberAsInt))
-				{
-					selectedDesfireReadKeyNumber = value;
-				}
-				RaisePropertyChanged("SelectedDesfireReadKeyNumber");
-			}
-		}
-		private string  selectedDesfireReadKeyNumber;
-		private int selectedDesfireReadKeyNumberAsInt;
-		
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidDesfireReadKeyCurrent
-		{
-			get
-			{
-				return isValidDesfireReadKeyCurrent;
-			}
-			set
-			{
-				isValidDesfireReadKeyCurrent = value;
-				RaisePropertyChanged("IsValidDesfireReadKeyCurrent");
-			}
-		} private bool? isValidDesfireReadKeyCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string DesfireWriteKeyCurrent
-		{
-			get { return desfireWriteKeyCurrent; }
-			set
-			{
-				try
-				{
-					desfireWriteKeyCurrent = value.ToUpper().Remove(32);
-				}
-				catch
-				{
-					desfireWriteKeyCurrent = value.ToUpper();
-				}
-
-				IsValidDesfireWriteKeyCurrent = (
-					CustomConverter.IsInHexFormat(desfireWriteKeyCurrent) &&
-					desfireWriteKeyCurrent.Length == 32);
-				
-				RaisePropertyChanged("DesfireWriteKeyCurrent");
-			}
-		} private string desfireWriteKeyCurrent;
-		
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedDesfireWriteKeyNumber
-		{
-			get
-			{
-				return  selectedDesfireWriteKeyNumber;
-			}
-			set
-			{
-				if(int.TryParse(value, out selectedDesfireWriteKeyNumberAsInt))
-				{
-					selectedDesfireWriteKeyNumber = value;
-				}
-				RaisePropertyChanged("SelectedDesfireWriteKeyNumber");
-			}
-		}
-		private string  selectedDesfireWriteKeyNumber;
-		private int selectedDesfireWriteKeyNumberAsInt;
-		
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidDesfireWriteKeyCurrent
-		{
-			get
-			{
-				return isValidDesfireWriteKeyCurrent;
-			}
-			set
-			{
-				isValidDesfireWriteKeyCurrent = value;
-				RaisePropertyChanged("IsValidDesfireWriteKeyCurrent");
-			}
-		} private bool? isValidDesfireWriteKeyCurrent;
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public DESFireKeyType SelectedDesfireReadKeyEncryptionType
-		{
-			get { return selectedDesfireReadKeyEncryptionType; }
-			set
-			{
-				selectedDesfireReadKeyEncryptionType = value;
-				RaisePropertyChanged("SelectedDesfireReadKeyEncryptionType");
-			}
-		} private DESFireKeyType selectedDesfireReadKeyEncryptionType;
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public DESFireKeyType SelectedDesfireWriteKeyEncryptionType
-		{
-			get { return selectedDesfireWriteKeyEncryptionType; }
-			set
-			{
-				selectedDesfireWriteKeyEncryptionType = value;
-				RaisePropertyChanged("SelectedDesfireWriteKeyEncryptionType");
-			}
-		} private DESFireKeyType selectedDesfireWriteKeyEncryptionType;
-		#endregion
-		
-		#region general props
-
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool IsDesfireFileAuthoringTabEnabled
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool IsDesfireFileAuthoringTabEnabled
 		{
 			get { return isDesfireFileAuthoringTabEnabled; }
 			set {
@@ -1376,17 +562,19 @@ namespace RFiDGear.ViewModel
 		}
 		private string selectedAccessBitsTaskIndex;
 
-		/// <summary>
-		///
-		/// </summary>
-		public int SelectedTaskIndexAsInt
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int SelectedTaskIndexAsInt
 		{ get { return selectedTaskIndexAsInt; } }
 		private int selectedTaskIndexAsInt;
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidSelectedTaskIndex
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidSelectedTaskIndex
 		{
 			get
 			{
@@ -1417,10 +605,11 @@ namespace RFiDGear.ViewModel
 		}
 		private string selectedAccessBitsTaskDescription;
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsTaskCompletedSuccessfully
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsTaskCompletedSuccessfully
 		{
 			get { return isTaskCompletedSuccessfully; }
 			set
@@ -1431,10 +620,11 @@ namespace RFiDGear.ViewModel
 		}
 		private bool? isTaskCompletedSuccessfully;
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool IsValidSelectedAccessBitsTaskIndex
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool IsValidSelectedAccessBitsTaskIndex
 		{
 			get
 			{
@@ -1470,14 +660,945 @@ namespace RFiDGear.ViewModel
 		[XmlIgnore]
 		public ERROR TaskErr { get; set; }
 
-		#endregion general props
+        #region Key Properties Card Master
 
-		#region Commands
+        [XmlIgnore]
+        public string[] MifareDesfireKeys { get; set; }
 
-		/// <summary>
-		/// return new RelayCommand<RFiDDevice>((_device) => OnNewCreateAppCommand(_device));
-		/// </summary>
-		public ICommand CreateAppCommand { get { return new RelayCommand(OnNewCreateAppCommand); } }
+        [XmlIgnore]
+        public string[] MifareDesfireKeyCount { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DESFireKeyType SelectedDesfireMasterKeyEncryptionTypeCurrent
+        {
+            get { return selectedDesfireMasterKeyEncryptionTypeCurrent; }
+            set
+            {
+                selectedDesfireMasterKeyEncryptionTypeCurrent = value;
+                RaisePropertyChanged("SelectedDesfireMasterKeyEncryptionTypeCurrent");
+            }
+        }
+        private DESFireKeyType selectedDesfireMasterKeyEncryptionTypeCurrent;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string DesfireMasterKeyCurrent
+        {
+            get { return desfireMasterKeyCurrent; }
+            set
+            {
+                try
+                {
+                    desfireMasterKeyCurrent = value.ToUpper().Remove(32);
+                }
+                catch
+                {
+                    desfireMasterKeyCurrent = value.ToUpper();
+                }
+                IsValidDesfireMasterKeyCurrent = (CustomConverter.IsInHexFormat(desfireMasterKeyCurrent) && desfireMasterKeyCurrent.Length == 32);
+                RaisePropertyChanged("DesfireMasterKeyCurrent");
+            }
+        }
+        private string desfireMasterKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidDesfireMasterKeyCurrent
+        {
+            get
+            {
+                return isValidDesfireMasterKeyCurrent;
+            }
+            set
+            {
+                isValidDesfireMasterKeyCurrent = value;
+                RaisePropertyChanged("IsValidDesfireMasterKeyCurrent");
+            }
+        }
+        private bool? isValidDesfireMasterKeyCurrent;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DESFireKeyType SelectedDesfireMasterKeyEncryptionTypeTarget
+        {
+            get { return selectedDesfireMasterKeyEncryptionTypeTarget; }
+            set
+            {
+                selectedDesfireMasterKeyEncryptionTypeTarget = value;
+                RaisePropertyChanged("SelectedDesfireMasterKeyEncryptionTypeCurrent");
+            }
+        }
+        private DESFireKeyType selectedDesfireMasterKeyEncryptionTypeTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string DesfireMasterKeyTarget
+        {
+            get { return desfireMasterKeyTarget; }
+            set
+            {
+                try
+                {
+                    desfireMasterKeyTarget = value.ToUpper().Remove(32);
+                }
+                catch
+                {
+                    desfireMasterKeyTarget = value.ToUpper();
+                }
+
+                IsValidDesfireMasterKeyTarget = (
+                    CustomConverter.IsInHexFormat(desfireMasterKeyTarget) &&
+                    desfireMasterKeyTarget.Length == 32);
+                RaisePropertyChanged("DesfireMasterKeyTarget");
+            }
+        }
+        private string desfireMasterKeyTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidDesfireMasterKeyTarget
+        {
+            get
+            {
+                return isValidDesfireMasterKeyTarget;
+            }
+            set
+            {
+                isValidDesfireMasterKeyTarget = value;
+                RaisePropertyChanged("IsValidDesfireMasterKeyTarget");
+            }
+        }
+        private bool? isValidDesfireMasterKeyTarget;
+
+        #endregion Key Properties Card Master
+
+        #region Key Properties App Master
+
+        #region App Creation
+
+        /// <summary>
+        ///
+        /// </summary>
+        public DESFireKeyType SelectedDesfireAppKeyEncryptionTypeCreateNewApp
+        {
+            get { return selectedCreateDesfireAppKeyEncryptionTypeCurrent; }
+            set
+            {
+                selectedCreateDesfireAppKeyEncryptionTypeCurrent = value;
+                RaisePropertyChanged("SelectedDesfireAppKeyEncryptionTypeCreateNewApp");
+            }
+        }
+        private DESFireKeyType selectedCreateDesfireAppKeyEncryptionTypeCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedDesfireAppMaxNumberOfKeys
+        {
+            get
+            {
+                return selectedDesfireAppMaxNumberOfKeys;
+            }
+            set
+            {
+                if (int.TryParse(value, out selectedDesfireAppMaxNumberOfKeysAsInt))
+                {
+                    selectedDesfireAppMaxNumberOfKeys = value;
+                }
+                RaisePropertyChanged("SelectedDesfireAppMaxNumberOfKeys");
+            }
+        }
+        private string selectedDesfireAppMaxNumberOfKeys;
+        private int selectedDesfireAppMaxNumberOfKeysAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public AccessCondition_MifareDesfireAppCreation SelectedDesfireAppKeySettingsCreateNewApp
+        {
+            get { return selectedDesfireAppKeySettingsTarget; }
+            set
+            {
+                selectedDesfireAppKeySettingsTarget = value;
+                //selectedDesfireAppKeySettingsTarget |= DESFireKeySettings.KS_ALLOW_CHANGE_MK;
+                RaisePropertyChanged("SelectedDesfireAppKeySettingsCreateNewApp");
+            }
+        }
+        private AccessCondition_MifareDesfireAppCreation selectedDesfireAppKeySettingsTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string AppNumberNew
+        {
+            get { return appNumberNew; }
+            set
+            {
+                try
+                {
+                    appNumberNew = value.ToUpper().Remove(32);
+                }
+                catch
+                {
+                    appNumberNew = value.ToUpper();
+                }
+                IsValidAppNumberNew = (int.TryParse(value, out appNumberNewAsInt) && appNumberNewAsInt <= 0xFFFFFF);
+                RaisePropertyChanged("AppNumberNew");
+            }
+        }
+        private string appNumberNew;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int AppNumberNewAsInt
+        { get { return appNumberNewAsInt; } }
+        private int appNumberNewAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidAppNumberNew
+        {
+            get
+            {
+                return isValidAppNumberNew;
+            }
+            set
+            {
+                isValidAppNumberNew = value;
+                RaisePropertyChanged("IsValidAppNumberNew");
+            }
+        }
+        private bool? isValidAppNumberNew;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool IsAllowChangeMKChecked
+        {
+            get { return isAllowChangeMKChecked; }
+            set
+            {
+                isAllowChangeMKChecked = value;
+                RaisePropertyChanged("IsAllowChangeMKChecked");
+            }
+        }
+        private bool isAllowChangeMKChecked;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool IsAllowListingWithoutMKChecked
+        {
+            get { return isAllowListingWithoutMKChecked; }
+            set
+            {
+                isAllowListingWithoutMKChecked = value;
+                RaisePropertyChanged("IsAllowListingWithoutMKChecked");
+            }
+        }
+        private bool isAllowListingWithoutMKChecked;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool IsAllowCreateDelWithoutMKChecked
+        {
+            get { return isAllowCreateDelWithoutMKChecked; }
+            set
+            {
+                isAllowCreateDelWithoutMKChecked = value;
+                RaisePropertyChanged("IsAllowCreateDelWithoutMKChecked");
+            }
+        }
+        private bool isAllowCreateDelWithoutMKChecked;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool IsAllowConfigChangableChecked
+        {
+            get { return isAllowConfigChangableChecked; }
+            set
+            {
+                isAllowConfigChangableChecked = value;
+                RaisePropertyChanged("IsAllowConfigChangableChecked");
+            }
+        }
+        private bool isAllowConfigChangableChecked;
+
+        #endregion App Creation
+
+        #region Key Properties App Master Current
+
+        /// <summary>
+        ///
+        /// </summary>
+        public DESFireKeyType SelectedDesfireAppKeyEncryptionTypeCurrent
+        {
+            get { return selectedDesfireAppKeyEncryptionTypeCurrent; }
+            set
+            {
+                selectedDesfireAppKeyEncryptionTypeCurrent = value;
+                RaisePropertyChanged("SelectedDesfireAppKeyEncryptionTypeCurrent");
+            }
+        }
+        private DESFireKeyType selectedDesfireAppKeyEncryptionTypeCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedDesfireAppKeyNumberCurrent
+        {
+            get
+            {
+                return selectedDesfireAppKeyNumberCurrent;
+            }
+            set
+            {
+                if (int.TryParse(value, out selectedDesfireAppKeyNumberCurrentAsInt))
+                {
+                    selectedDesfireAppKeyNumberCurrent = value;
+                }
+                RaisePropertyChanged("SelectedDesfireAppKeyNumberCurrent");
+            }
+        }
+        private string selectedDesfireAppKeyNumberCurrent;
+        private int selectedDesfireAppKeyNumberCurrentAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string DesfireAppKeyCurrent
+        {
+            get { return desfireAppKeyCurrent; }
+            set
+            {
+                try
+                {
+                    desfireAppKeyCurrent = value.ToUpper().Remove(32);
+                }
+                catch
+                {
+                    desfireAppKeyCurrent = value.ToUpper();
+                }
+                IsValidDesfireAppKeyCurrent = (CustomConverter.IsInHexFormat(desfireAppKeyCurrent) && desfireAppKeyCurrent.Length == 32);
+                RaisePropertyChanged("DesfireAppKeyCurrent");
+            }
+        }
+        private string desfireAppKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidDesfireAppKeyCurrent
+        {
+            get
+            {
+                return isValidDesfireAppKeyCurrent;
+            }
+            set
+            {
+                isValidDesfireAppKeyCurrent = value;
+                RaisePropertyChanged("IsValidDesfireAppKeyCurrent");
+            }
+        }
+        private bool? isValidDesfireAppKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string AppNumberCurrent
+        {
+            get { return appNumberCurrent; }
+            set
+            {
+                try
+                {
+                    appNumberCurrent = value.ToUpper().Remove(32);
+                }
+                catch
+                {
+                    appNumberCurrent = value.ToUpper();
+                }
+                IsValidAppNumberCurrent = (int.TryParse(value, out appNumberCurrentAsInt) && appNumberCurrentAsInt <= 65535);
+                RaisePropertyChanged("AppNumberCurrent");
+            }
+        }
+        private string appNumberCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int AppNumberCurrentAsInt
+        { get { return appNumberCurrentAsInt; } }
+        private int appNumberCurrentAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidAppNumberCurrent
+        {
+            get
+            {
+                return isValidAppNumberCurrent;
+            }
+            set
+            {
+                isValidAppNumberCurrent = value;
+                RaisePropertyChanged("IsValidAppNumberCurrent");
+            }
+        }
+        private bool? isValidAppNumberCurrent;
+
+        #endregion Key Properties App Master Current
+
+        #region Key Properties App Master Target
+
+        /// <summary>
+        ///
+        /// </summary>
+        public DESFireKeyType SelectedDesfireAppKeyEncryptionTypeTarget
+        {
+            get { return selectedDesfireAppKeyEncryptionTypeTarget; }
+            set
+            {
+                selectedDesfireAppKeyEncryptionTypeTarget = value;
+                RaisePropertyChanged("SelectedDesfireAppKeyEncryptionTypeTarget");
+            }
+        }
+        private DESFireKeyType selectedDesfireAppKeyEncryptionTypeTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedDesfireAppKeyNumberTarget
+        {
+            get
+            {
+                return selectedDesfireAppKeyNumberTarget;
+            }
+            set
+            {
+                if (int.TryParse(value, out selectedDesfireAppKeyNumberTargetAsInt))
+                {
+                    selectedDesfireAppKeyNumberTarget = value;
+                }
+                RaisePropertyChanged("SelectedDesfireAppKeyNumberTarget");
+            }
+        }
+        private string selectedDesfireAppKeyNumberTarget;
+        private int selectedDesfireAppKeyNumberTargetAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string DesfireAppKeyTarget
+        {
+            get { return desfireAppKeyTarget; }
+            set
+            {
+                try
+                {
+                    desfireAppKeyTarget = value.ToUpper().Remove(32);
+                }
+                catch
+                {
+                    desfireAppKeyTarget = value.ToUpper();
+                }
+
+                IsValidDesfireAppKeyTarget = (
+                    CustomConverter.IsInHexFormat(desfireAppKeyTarget) &&
+                    desfireAppKeyTarget.Length == 32);
+                RaisePropertyChanged("DesfireAppKeyTarget");
+            }
+        }
+        private string desfireAppKeyTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidDesfireAppKeyTarget
+        {
+            get
+            {
+                return isValidDesfireAppKeyTarget;
+            }
+            set
+            {
+                isValidDesfireAppKeyTarget = value;
+                RaisePropertyChanged("IsValidDesfireAppKeyTarget");
+            }
+        }
+        private bool? isValidDesfireAppKeyTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string AppNumberTarget
+        {
+            get { return appNumberTarget; }
+            set
+            {
+                try
+                {
+                    appNumberTarget = value.ToUpper().Remove(32);
+                }
+                catch
+                {
+                    appNumberTarget = value.ToUpper();
+                }
+                IsValidAppNumberTarget = (int.TryParse(value, out appNumberTargetAsInt) && appNumberTargetAsInt <= 65535);
+                RaisePropertyChanged("AppNumberTarget");
+            }
+        }
+        private string appNumberTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int AppNumberTargetAsInt
+        { get { return appNumberTargetAsInt; } }
+        private int appNumberTargetAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidAppNumberTarget
+        {
+            get
+            {
+                return isValidAppNumberTarget;
+            }
+            set
+            {
+                isValidAppNumberTarget = value;
+                RaisePropertyChanged("IsValidAppNumberTarget");
+            }
+        }
+        private bool? isValidAppNumberTarget;
+
+        #endregion Key Properties App Master Target
+
+        #endregion
+
+        #region Key Properties File Master
+
+        #region File Creation
+
+        /// <summary>
+        ///
+        /// </summary>
+        public TaskAccessRights SelectedDesfireFileAccessRightReadWrite
+        {
+            get { return selectedDesfireFileAccessRightReadWrite; }
+            set
+            {
+                selectedDesfireFileAccessRightReadWrite = value;
+                RaisePropertyChanged("SelectedDesfireFileAccessRightReadWrite");
+            }
+        }
+        private TaskAccessRights selectedDesfireFileAccessRightReadWrite;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public TaskAccessRights SelectedDesfireFileAccessRightChange
+        {
+            get { return selectedDesfireFileAccessRightChange; }
+            set
+            {
+                selectedDesfireFileAccessRightChange = value;
+                RaisePropertyChanged("SelectedDesfireFileAccessRightChange");
+            }
+        }
+        private TaskAccessRights selectedDesfireFileAccessRightChange;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public TaskAccessRights SelectedDesfireFileAccessRightRead
+        {
+            get { return selectedDesfireFileAccessRightRead; }
+            set
+            {
+                selectedDesfireFileAccessRightRead = value;
+                RaisePropertyChanged("SelectedDesfireFileAccessRightRead");
+            }
+        }
+        private TaskAccessRights selectedDesfireFileAccessRightRead;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public TaskAccessRights SelectedDesfireFileAccessRightWrite
+        {
+            get { return selectedDesfireFileAccessRightWrite; }
+            set
+            {
+                selectedDesfireFileAccessRightWrite = value;
+                RaisePropertyChanged("SelectedDesfireFileAccessRightWrite");
+            }
+        }
+        private TaskAccessRights selectedDesfireFileAccessRightWrite;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public EncryptionMode SelectedDesfireFileCryptoMode
+        {
+            get { return selectedDesfireFileCryptoMode; }
+            set
+            {
+                selectedDesfireFileCryptoMode = value;
+                RaisePropertyChanged("SelectedDesfireFileCryptoMode");
+            }
+        }
+        private EncryptionMode selectedDesfireFileCryptoMode;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public FileType_MifareDesfireFileType SelectedDesfireFileType
+        {
+            get { return selectedDesfireFileType; }
+            set
+            {
+                selectedDesfireFileType = value;
+                RaisePropertyChanged("SelectedDesfireFileType");
+            }
+        }
+        private FileType_MifareDesfireFileType selectedDesfireFileType;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string FileNumberCurrent
+        {
+            get { return fileNumberCurrent; }
+            set
+            {
+                fileNumberCurrent = value;
+                IsValidFileNumberCurrent = (int.TryParse(value, out fileNumberCurrentAsInt) && fileNumberCurrentAsInt <= 8000);
+                RaisePropertyChanged("FileNumberCurrent");
+            }
+        }
+        private string fileNumberCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int FileNumberCurrentAsInt
+        { get { return fileNumberCurrentAsInt; } }
+        private int fileNumberCurrentAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidFileNumberCurrent
+        {
+            get
+            {
+                return isValidFileNumberCurrent;
+            }
+            set
+            {
+                isValidFileNumberCurrent = value;
+                RaisePropertyChanged("IsValidFileNumberCurrent");
+            }
+        }
+        private bool? isValidFileNumberCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string FileSizeCurrent
+        {
+            get { return fileSizeCurrent; }
+            set
+            {
+                fileSizeCurrent = value;
+                IsValidFileSizeCurrent = (int.TryParse(value, out fileSizeCurrentAsInt) && fileSizeCurrentAsInt <= 8000);
+
+                if (IsValidFileSizeCurrent != false)
+                {
+                    if (childNodeViewModelFromChip.Children.Any(x => x.DesfireFile != null))
+                    {
+                        try
+                        {
+                            childNodeViewModelFromChip.Children.Single(y => y.DesfireFile.FileID == FileNumberCurrentAsInt).DesfireFile = new MifareDesfireFileModel(new byte[FileSizeCurrentAsInt], 0);
+                            childNodeViewModelTemp.Children.Single(y => y.DesfireFile.FileID == FileNumberCurrentAsInt).DesfireFile = new MifareDesfireFileModel(new byte[FileSizeCurrentAsInt], 0);
+                        }
+                        catch
+                        {
+
+                        }
+
+                    }
+                    else
+                    {
+                        childNodeViewModelFromChip.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(new byte[FileSizeCurrentAsInt], 0), null));
+                        childNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(new byte[FileSizeCurrentAsInt], 0), null));
+                    }
+                }
+
+                RaisePropertyChanged("FileSizeCurrent");
+            }
+        }
+        private string fileSizeCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int FileSizeCurrentAsInt
+        { get { return fileSizeCurrentAsInt; } }
+        private int fileSizeCurrentAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidFileSizeCurrent
+        {
+            get
+            {
+                return isValidFileSizeCurrent;
+            }
+            set
+            {
+                isValidFileSizeCurrent = value;
+                RaisePropertyChanged("IsValidFileSizeCurrent");
+            }
+        }
+        private bool? isValidFileSizeCurrent;
+
+        #endregion File Creation
+
+        #endregion Key Properties File Master
+
+        #region DataExplorer
+
+        /// <summary>
+        ///
+        /// </summary>
+        public RFiDChipChildLayerViewModel ChildNodeViewModelFromChip
+        {
+            get { return childNodeViewModelFromChip; }
+            set { childNodeViewModelFromChip = value; }
+        }
+        private RFiDChipChildLayerViewModel childNodeViewModelFromChip;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public RFiDChipChildLayerViewModel ChildNodeViewModelTemp
+        {
+            get { return childNodeViewModelTemp; }
+            set
+            {
+                childNodeViewModelTemp = value;
+                RaisePropertyChanged("ChildNodeViewModelTemp");
+            }
+        }
+        private RFiDChipChildLayerViewModel childNodeViewModelTemp;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public RFiDChipGrandChildLayerViewModel GrandChildNodeViewModel
+        {
+            get { return ChildNodeViewModelTemp.Children.Count > 0 ? ChildNodeViewModelTemp.Children.Single(x => x.DesfireFile != null) : null; }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string DesfireReadKeyCurrent
+        {
+            get { return desfireReadKeyCurrent; }
+            set
+            {
+                try
+                {
+                    desfireReadKeyCurrent = value.ToUpper().Remove(32);
+                }
+                catch
+                {
+                    desfireReadKeyCurrent = value.ToUpper();
+                }
+
+                IsValidDesfireReadKeyCurrent = (
+                    CustomConverter.IsInHexFormat(desfireReadKeyCurrent) &&
+                    desfireReadKeyCurrent.Length == 32);
+
+                RaisePropertyChanged("DesfireReadKeyCurrent");
+            }
+        }
+        private string desfireReadKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedDesfireReadKeyNumber
+        {
+            get
+            {
+                return selectedDesfireReadKeyNumber;
+            }
+            set
+            {
+                if (int.TryParse(value, out selectedDesfireReadKeyNumberAsInt))
+                {
+                    selectedDesfireReadKeyNumber = value;
+                }
+                RaisePropertyChanged("SelectedDesfireReadKeyNumber");
+            }
+        }
+        private string selectedDesfireReadKeyNumber;
+        private int selectedDesfireReadKeyNumberAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidDesfireReadKeyCurrent
+        {
+            get
+            {
+                return isValidDesfireReadKeyCurrent;
+            }
+            set
+            {
+                isValidDesfireReadKeyCurrent = value;
+                RaisePropertyChanged("IsValidDesfireReadKeyCurrent");
+            }
+        }
+        private bool? isValidDesfireReadKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string DesfireWriteKeyCurrent
+        {
+            get { return desfireWriteKeyCurrent; }
+            set
+            {
+                try
+                {
+                    desfireWriteKeyCurrent = value.ToUpper().Remove(32);
+                }
+                catch
+                {
+                    desfireWriteKeyCurrent = value.ToUpper();
+                }
+
+                IsValidDesfireWriteKeyCurrent = (
+                    CustomConverter.IsInHexFormat(desfireWriteKeyCurrent) &&
+                    desfireWriteKeyCurrent.Length == 32);
+
+                RaisePropertyChanged("DesfireWriteKeyCurrent");
+            }
+        }
+        private string desfireWriteKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedDesfireWriteKeyNumber
+        {
+            get
+            {
+                return selectedDesfireWriteKeyNumber;
+            }
+            set
+            {
+                if (int.TryParse(value, out selectedDesfireWriteKeyNumberAsInt))
+                {
+                    selectedDesfireWriteKeyNumber = value;
+                }
+                RaisePropertyChanged("SelectedDesfireWriteKeyNumber");
+            }
+        }
+        private string selectedDesfireWriteKeyNumber;
+        private int selectedDesfireWriteKeyNumberAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidDesfireWriteKeyCurrent
+        {
+            get
+            {
+                return isValidDesfireWriteKeyCurrent;
+            }
+            set
+            {
+                isValidDesfireWriteKeyCurrent = value;
+                RaisePropertyChanged("IsValidDesfireWriteKeyCurrent");
+            }
+        }
+        private bool? isValidDesfireWriteKeyCurrent;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DESFireKeyType SelectedDesfireReadKeyEncryptionType
+        {
+            get { return selectedDesfireReadKeyEncryptionType; }
+            set
+            {
+                selectedDesfireReadKeyEncryptionType = value;
+                RaisePropertyChanged("SelectedDesfireReadKeyEncryptionType");
+            }
+        }
+        private DESFireKeyType selectedDesfireReadKeyEncryptionType;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DESFireKeyType SelectedDesfireWriteKeyEncryptionType
+        {
+            get { return selectedDesfireWriteKeyEncryptionType; }
+            set
+            {
+                selectedDesfireWriteKeyEncryptionType = value;
+                RaisePropertyChanged("SelectedDesfireWriteKeyEncryptionType");
+            }
+        }
+        private DESFireKeyType selectedDesfireWriteKeyEncryptionType;
+
+        #endregion
+
+        #endregion
+
+        #region Commands
+
+        /// <summary>
+        /// return new RelayCommand<RFiDDevice>((_device) => OnNewCreateAppCommand(_device));
+        /// </summary>
+        public ICommand CreateAppCommand { get { return new RelayCommand(OnNewCreateAppCommand); } }
 		private void OnNewCreateAppCommand()
 		{
 			TaskErr = ERROR.Empty;

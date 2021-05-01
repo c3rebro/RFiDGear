@@ -68,6 +68,7 @@ namespace RFiDGear.DataAccessLayer
 	{
 		None,
 		CreateReport,
+        CheckLogicCondition,
 		ChangeDefault
 	}
 

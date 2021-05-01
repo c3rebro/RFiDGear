@@ -185,16 +185,16 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\WPFAssemblyInfo.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
-    <Compile Include="ViewModel\GenericChipTaskViewModel.cs" />
-    <Compile Include="ViewModel\CommonTaskViewModel.cs" />
-    <Compile Include="ViewModel\MifareClassicSetupViewModel.cs" />
-    <Compile Include="ViewModel\MifareDesfireSetupViewModel.cs" />
-    <Compile Include="ViewModel\MifareUltralightSetupViewModel.cs" />
+    <Compile Include="ViewModel\TaskSetupViewModels\GenericChipTaskViewModel.cs" />
+    <Compile Include="ViewModel\TaskSetupViewModels\CommonTaskViewModel.cs" />
+    <Compile Include="ViewModel\TaskSetupViewModels\MifareClassicSetupViewModel.cs" />
+    <Compile Include="ViewModel\TaskSetupViewModels\MifareDesfireSetupViewModel.cs" />
+    <Compile Include="ViewModel\TaskSetupViewModels\MifareUltralightSetupViewModel.cs" />
     <Compile Include="ViewModel\SetupViewModel.cs" />
-    <Compile Include="ViewModel\RFiDChipChildLayerViewModel.cs" />
-    <Compile Include="ViewModel\RFiDChipGrandChildLayerViewModel.cs" />
-    <Compile Include="ViewModel\RFiDChipGrandGrandChildLayerViewModel.cs" />
-    <Compile Include="ViewModel\RFiDChipParentLayerViewModel.cs" />
+    <Compile Include="ViewModel\HirarchicalDataTemplateViewModels\RFiDChipChildLayerViewModel.cs" />
+    <Compile Include="ViewModel\HirarchicalDataTemplateViewModels\RFiDChipGrandChildLayerViewModel.cs" />
+    <Compile Include="ViewModel\HirarchicalDataTemplateViewModels\RFiDChipGrandGrandChildLayerViewModel.cs" />
+    <Compile Include="ViewModel\HirarchicalDataTemplateViewModels\RFiDChipParentLayerViewModel.cs" />
     <Compile Include="View\TaskViews\RFIDTasks\GenericChipTask\GenericChipTaskView.xaml.cs">
       <DependentUpon>GenericChipTaskView.xaml</DependentUpon>
     </Compile>

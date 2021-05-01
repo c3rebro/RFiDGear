@@ -975,7 +975,13 @@ Needed by:
   <data name="tabPageHeaderLogicTaskSettingsView" xml:space="preserve">
     <value>Create / Edit Logic Block</value>
   </data>
-  <data name="ENUM.TaskType_CommonTask.CreateLogicBlock" xml:space="preserve">
+  <data name="ENUM.TaskType_CommonTask.CheckLogicCondition" xml:space="preserve">
     <value>Check Logic Block</value>
+  </data>
+  <data name="labelContentExecuteConditionErrorType" xml:space="preserve">
+    <value>Target Result</value>
+  </data>
+  <data name="labelContentExecuteConditionTaskIndex" xml:space="preserve">
+    <value>Targeted Task Index</value>
   </data>
 </root>

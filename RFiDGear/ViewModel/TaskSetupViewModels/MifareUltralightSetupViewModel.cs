@@ -31,7 +31,7 @@ namespace RFiDGear.ViewModel
 	/// </summary>
 	public class MifareUltralightSetupViewModel : ViewModelBase, IUserDialogViewModel
 	{
-		#region fields
+		#region Fields
 
 		private MifareUltralightChipModel chipModel;
 		private MifareUltralightPageModel pageModel;
@@ -41,7 +41,7 @@ namespace RFiDGear.ViewModel
 
 		#endregion fields
 
-		#region constructors
+		#region Constructors
 		
 		/// <summary>
 		///
@@ -238,14 +238,75 @@ namespace RFiDGear.ViewModel
 				RaisePropertyChanged("Items");
 			}
 		} private Lazy<IUIExtension, IUIExtensionDetails>[] items;
-		#endregion
-		
-		#region General Properties
+        #endregion
 
-		/// <summary>
-		/// 
-		/// </summary>
-		[XmlIgnore]
+        #region Dependency Properties
+
+        /// <summary>
+        /// The Indexnumber of the ExecuteCondition Task As String
+        /// </summary>
+        public string SelectedExecuteConditionTaskIndex
+        {
+            get
+            {
+                return selectedExecuteConditionTaskIndex;
+            }
+
+            set
+            {
+                selectedExecuteConditionTaskIndex = value;
+                IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
+                RaisePropertyChanged("SelectedExecuteConditionTaskIndex");
+            }
+        }
+        private string selectedExecuteConditionTaskIndex;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool? IsValidSelectedExecuteConditionTaskIndex
+        {
+            get
+            {
+                return isValidSelectedExecuteConditionTaskIndex;
+            }
+            set
+            {
+                isValidSelectedExecuteConditionTaskIndex = value;
+                RaisePropertyChanged("IsValidSelectedExecuteConditionTaskIndex");
+            }
+        }
+        private bool? isValidSelectedExecuteConditionTaskIndex;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public int SelectedExecuteConditionTaskIndexAsInt
+        { get { return selectedExecuteConditionTaskIndexAsInt; } }
+        private int selectedExecuteConditionTaskIndexAsInt;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ERROR SelectedExecuteConditionErrorLevel
+        {
+            get
+            {
+                return selectedExecuteConditionErrorLevel;
+            }
+
+            set
+            {
+                selectedExecuteConditionErrorLevel = value;
+                RaisePropertyChanged("SelectedExecuteConditionErrorLevel");
+            }
+        }
+        private ERROR selectedExecuteConditionErrorLevel;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [XmlIgnore]
 		public ERROR TaskErr { get; set; }
 
 		/// <summary>

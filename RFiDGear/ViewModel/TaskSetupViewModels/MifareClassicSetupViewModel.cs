@@ -176,7 +176,7 @@ namespace RFiDGear.ViewModel
 		
 		#endregion fields
 
-		#region constructors
+		#region Constructors
 		
 		/// <summary>
 		///
@@ -507,710 +507,6 @@ namespace RFiDGear.ViewModel
 
 		#endregion AccessBitsTab
 
-		#region MADEditor
-		
-		[XmlIgnore]
-		public string[] MADVersions { get; set; }
-
-		/// <summary>
-		/// 
-		/// </summary>
-		public string SelectedMADVersion
-		{
-			get
-			{
-				return selectedMADVersion;
-			}
-			set
-			{
-				if(byte.TryParse(value, out selectedMADVersionAsByte))
-				{
-					selectedMADVersion = value;
-					
-					madGPB = (byte)((madGPB &= 0xFC) | selectedMADVersionAsByte);
-				}
-
-				RaisePropertyChanged("SelectedMADVersion");
-			}
-			
-		}
-		private string selectedMADVersion;
-		private byte selectedMADVersionAsByte;
-
-		
-		[XmlIgnore]
-		public string[] MADSectors { get; set; }
-		
-		/// <summary>
-		/// Change MAD GPB
-		/// </summary>
-		public bool IsMultiApplication
-		{
-			get { return isMultiApplication; }
-			set
-			{
-				isMultiApplication = value;
-				if (value)
-					madGPB |= 0x40;
-				else
-					madGPB &= 0xBF;
-				RaisePropertyChanged("IsMultiApplication");
-			}
-		} private bool isMultiApplication;
-		
-		/// <summary>
-		/// Do authenticate to MAD or not before performing a write operation?
-		/// </summary>
-		public bool UseMadAuth
-		{
-			get
-			{
-				return useMADAuth;
-			}
-			set
-			{
-				useMADAuth = value;
-				RaisePropertyChanged("UseMadAuth");
-			}
-		} private bool useMADAuth;
-		
-		/// <summary>
-		///
-		/// </summary>
-		public string FileSize
-		{
-			get { return fileSize; }
-			set
-			{
-				fileSize = value;
-				IsValidFileSize = (int.TryParse(value, out fileSizeAsInt) && fileSizeAsInt <= 4200);
-				
-				if(IsValidFileSize != false)
-				{
-					if(childNodeViewModelFromChip.Children.Any(x => x.MifareClassicMAD != null))
-					{
-						try
-						{
-							childNodeViewModelFromChip.Children.Single().MifareClassicMAD = new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt);
-							childNodeViewModelTemp.Children.Single().MifareClassicMAD = new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt);
-							
-							childNodeViewModelTemp.Children.Single().RequestRefresh();
-							childNodeViewModelFromChip.Children.Single().RequestRefresh();
-						}
-						catch
-						{
-							
-						}
-						
-					}
-					else
-					{
-						childNodeViewModelFromChip.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt),null));
-						childNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt), null));
-					}
-				}
-				
-				RaisePropertyChanged("FileSize");
-			}
-		}
-		private string fileSize;
-		private int fileSizeAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidFileSize
-		{
-			get
-			{
-				return isValidFileSize;
-			}
-			set
-			{
-				isValidFileSize = value;
-				RaisePropertyChanged("IsValidFileSize");
-			}
-		} private bool? isValidFileSize;
-		
-		/// <summary>
-		///
-		/// </summary>
-		public string AppNumber
-		{
-			get { return appNumber; }
-			set
-			{
-				appNumber = value;
-				IsValidAppNumber = (int.TryParse(value, out appNumberAsInt) && appNumberAsInt <= 0xFFFF);
-				RaisePropertyChanged("AppNumberNew");
-			}
-		}
-		private string appNumber;
-		private int appNumberAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidAppNumber
-		{
-			get
-			{
-				return isValidAppNumber;
-			}
-			set
-			{
-				isValidAppNumber = value;
-				RaisePropertyChanged("IsValidAppNumber");
-			}
-		}
-		private bool? isValidAppNumber;
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public string SelectedMADSector
-		{
-			get { return selectedMADSector; }
-			
-			set
-			{
-				if(int.TryParse(value,out selectedMADSectorAsInt))
-					selectedMADSector = value;
-				RaisePropertyChanged("SelectedMADSector");
-			}
-		}
-		private string selectedMADSector;
-		private int selectedMADSectorAsInt;
-		
-		/// <summary>
-		///
-		/// </summary>
-		public string ClassicMADKeyAKeyCurrent
-		{
-			get
-			{
-				return classicMADKeyAKeyCurrent;
-			}
-			set
-			{
-				classicMADKeyAKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
-				
-				IsValidClassicMADKeyAKeyCurrent = (CustomConverter.IsInHexFormat(classicMADKeyAKeyCurrent) && classicMADKeyAKeyCurrent.Length == 12);
-
-				RaisePropertyChanged("ClassicMADKeyAKeyCurrent");
-			}
-		}
-		private string classicMADKeyAKeyCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidClassicMADKeyAKeyCurrent
-		{
-			get
-			{
-				return isValidClassicMADKeyAKeyCurrent;
-			}
-			set
-			{
-				isValidClassicMADKeyAKeyCurrent = value;
-				RaisePropertyChanged("IsValidClassicMADKeyAKeyCurrent");
-			}
-		}
-		private bool? isValidClassicMADKeyAKeyCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string ClassicMADKeyBKeyCurrent
-		{
-			get
-			{
-				return classicMADKeyBKeyCurrent;
-			}
-			set
-			{
-				classicMADKeyBKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
-
-				IsValidClassicMADKeyBKeyCurrent = (CustomConverter.IsInHexFormat(classicMADKeyBKeyCurrent) && classicMADKeyBKeyCurrent.Length == 12);
-				
-				RaisePropertyChanged("ClassicMADKeyBKeyCurrent");
-			}
-		}
-		private string classicMADKeyBKeyCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidClassicMADKeyBKeyCurrent
-		{
-			get
-			{
-				return isValidClassicMADKeyBKeyCurrent;
-			}
-			set
-			{
-				isValidClassicMADKeyBKeyCurrent = value;
-				RaisePropertyChanged("IsValidClassicMADKeyBKeyCurrent");
-			}
-		}
-		private bool? isValidClassicMADKeyBKeyCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string ClassicMADKeyAKeyTarget
-		{
-			get
-			{
-				return classicMADKeyAKeyTarget;
-			}
-			set
-			{
-				classicMADKeyAKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
-				
-				IsValidClassicMADKeyAKeyTarget = (CustomConverter.IsInHexFormat(classicMADKeyAKeyTarget) && classicMADKeyAKeyTarget.Length == 12);
-
-				RaisePropertyChanged("ClassicMADKeyAKeyTarget");
-			}
-		}
-		private string classicMADKeyAKeyTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidClassicMADKeyAKeyTarget
-		{
-			get
-			{
-				return isValidClassicMADKeyAKeyTarget;
-			}
-			set
-			{
-				isValidClassicMADKeyAKeyTarget = value;
-				RaisePropertyChanged("IsValidClassicMADKeyAKeyTarget");
-			}
-		}
-		private bool? isValidClassicMADKeyAKeyTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string ClassicMADKeyBKeyTarget
-		{
-			get
-			{
-				return classicMADKeyBKeyTarget;
-			}
-			set
-			{
-				classicMADKeyBKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
-
-				IsValidClassicMADKeyBKeyTarget = (CustomConverter.IsInHexFormat(classicMADKeyBKeyTarget) && classicMADKeyBKeyTarget.Length == 12);
-				
-				RaisePropertyChanged("ClassicMADKeyBKeyTarget");
-			}
-		}
-		private string classicMADKeyBKeyTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidClassicMADKeyBKeyTarget
-		{
-			get
-			{
-				return isValidClassicMADKeyBKeyTarget;
-			}
-			set
-			{
-				isValidClassicMADKeyBKeyTarget = value;
-				RaisePropertyChanged("IsValidClassicMADKeyBKeyTarget");
-			}
-		}
-		private bool? isValidClassicMADKeyBKeyTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string ClassicKeyAKeyTarget
-		{
-			get
-			{
-				return classicKeyAKeyTarget;
-			}
-			set
-			{
-				classicKeyAKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
-				
-				IsValidClassicKeyAKeyTarget = (CustomConverter.IsInHexFormat(classicKeyAKeyTarget) && classicKeyAKeyTarget.Length == 12);
-
-				RaisePropertyChanged("ClassicKeyAKeyTarget");
-			}
-		}
-		private string classicKeyAKeyTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidClassicKeyAKeyTarget
-		{
-			get
-			{
-				return isValidClassicKeyAKeyTarget;
-			}
-			set
-			{
-				isValidClassicKeyAKeyTarget = value;
-				RaisePropertyChanged("IsValidClassicKeyAKeyTarget");
-			}
-		}
-		private bool? isValidClassicKeyAKeyTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string ClassicKeyBKeyTarget
-		{
-			get
-			{
-				return classicKeyBKeyTarget;
-			}
-			set
-			{
-				classicKeyBKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
-
-				IsValidClassicKeyBKeyTarget = (CustomConverter.IsInHexFormat(classicKeyBKeyTarget) && classicKeyBKeyTarget.Length == 12);
-				
-				RaisePropertyChanged("ClassicKeyBKeyTarget");
-			}
-		}
-		private string classicKeyBKeyTarget;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidClassicKeyBKeyTarget
-		{
-			get
-			{
-				return isValidClassicKeyBKeyTarget;
-			}
-			set
-			{
-				isValidClassicKeyBKeyTarget = value;
-				RaisePropertyChanged("IsValidClassicKeyBKeyTarget");
-			}
-		}
-		private bool? isValidClassicKeyBKeyTarget;
-
-		#endregion
-		
-		#region KeySetup
-
-		[XmlIgnore]
-		public string[] MifareClassicKeys { get; set;}
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool UseMAD
-		{
-			get { return useMAD; }
-			set
-			{
-				useMAD = value;
-				if(UseMAD)
-				{
-					ChildNodeViewModelTemp.Children.Clear();
-					ChildNodeViewModelFromChip.Children.Clear();
-					
-					ChildNodeViewModelFromChip.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(0,1),this));
-					
-					ChildNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(0,1),this));
-					
-					FileSize = "100";
-				}
-				else
-				{
-					ChildNodeViewModelTemp.Children.Clear();
-					ChildNodeViewModelFromChip.Children.Clear();
-					
-					sectorModel = new MifareClassicSectorModel(4,
-					                                           AccessCondition_MifareClassicSectorTrailer.NotAllowed,
-					                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-					                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-					                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-					                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
-					                                           AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA);
-
-					sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block0, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
-					sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block1, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
-					sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block2, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
-					sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.BlockAll, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
-
-					childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
-					childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
-					
-					RaisePropertyChanged("ChildNodeViewModelFromChip");
-					RaisePropertyChanged("ChildNodeViewModelTemp");
-				}
-				
-				RaisePropertyChanged("UseMAD");
-				RaisePropertyChanged("UseMADInvert");
-			}
-		}
-		private bool useMAD;
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool UseMADInvert
-		{
-			get { return !UseMAD;}
-		}
-		
-		/// <summary>
-		///
-		/// </summary>
-		public bool IsClassicAuthInfoEnabled
-		{
-			get { return isClassicAuthInfoEnabled; }
-			set
-			{
-				isClassicAuthInfoEnabled = value;
-				RaisePropertyChanged("IsClassicAuthInfoEnabled");
-			}
-		}
-		private bool isClassicAuthInfoEnabled = false;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool IsClassicKeyEditingEnabled
-		{
-			get { return isClassicKeyEditingEnabled; }
-			set
-			{
-				isClassicKeyEditingEnabled = value;
-				RaisePropertyChanged("IsClassicKeyEditingEnabled");
-			}
-		}
-		private bool isClassicKeyEditingEnabled;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool IsValidSelectedKeySetupTaskIndex
-		{
-			get
-			{
-				//classicKeyAKeyCurrent = SectorTrailer.Split(',')[0];
-				return isValidSelectedKeySetupTaskIndex;
-			}
-			set
-			{
-				isValidSelectedKeySetupTaskIndex = value;
-				RaisePropertyChanged("IsValidSelectedKeySetupTaskIndex");
-			}
-		}
-		private bool isValidSelectedKeySetupTaskIndex;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string ClassicKeyAKeyCurrent
-		{
-			get
-			{
-				return classicKeyAKeyCurrent;
-			}
-			set
-			{
-				classicKeyAKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
-
-				IsValidClassicKeyAKeyCurrent = (CustomConverter.IsInHexFormat(classicKeyAKeyCurrent) && classicKeyAKeyCurrent.Length == 12);
-				
-				if (IsValidClassicKeyAKeyCurrent != false && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
-				{
-					string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyANumberCurrentAsInt].AccessBits;
-					currentSectorTrailer = string.Join(",", new[]
-					                                   {
-					                                   	classicKeyAKeyCurrent,
-					                                   	currentSectorTrailer.Split(new[] {',',';'})[1],
-					                                   	currentSectorTrailer.Split(new[] {',',';'})[2]
-					                                   });
-
-					settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyANumberCurrentAsInt] = new MifareClassicDefaultKeys(selectedClassicKeyANumberCurrentAsInt, currentSectorTrailer);
-				}
-				else if (IsValidClassicKeyAKeyCurrent != false)
-					sectorModel.KeyA = classicKeyAKeyCurrent;
-
-				RaisePropertyChanged("ClassicKeyAKeyCurrent");
-			}
-		}
-		private string classicKeyAKeyCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidClassicKeyAKeyCurrent
-		{
-			get
-			{
-				return isValidClassicKeyAKeyCurrent;
-			}
-			set
-			{
-				isValidClassicKeyAKeyCurrent = value;
-				RaisePropertyChanged("IsValidClassicKeyAKeyCurrent");
-			}
-		}
-		private bool? isValidClassicKeyAKeyCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string ClassicKeyBKeyCurrent
-		{
-			get
-			{
-				return classicKeyBKeyCurrent;
-			}
-			set
-			{
-				classicKeyBKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
-
-				IsValidClassicKeyBKeyCurrent = (CustomConverter.IsInHexFormat(classicKeyBKeyCurrent) && classicKeyBKeyCurrent.Length == 12);
-				if (IsValidClassicKeyBKeyCurrent != false && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
-				{
-					string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyBNumberCurrentAsInt].AccessBits;
-					currentSectorTrailer = string.Join(",", new[]
-					                                   {
-					                                   	currentSectorTrailer.Split(new[] {',',';'})[0],
-					                                   	currentSectorTrailer.Split(new[] {',',';'})[1],
-					                                   	classicKeyBKeyCurrent
-					                                   });
-
-					settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyBNumberCurrentAsInt] = new MifareClassicDefaultKeys(selectedClassicKeyBNumberCurrentAsInt, currentSectorTrailer);
-				}
-				else if (IsValidClassicKeyBKeyCurrent != false)
-					sectorModel.KeyB = classicKeyBKeyCurrent;
-
-				RaisePropertyChanged("ClassicKeyBKeyCurrent");
-			}
-		}
-		private string classicKeyBKeyCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidClassicKeyBKeyCurrent
-		{
-			get
-			{
-				return isValidClassicKeyBKeyCurrent;
-			}
-			set
-			{
-				isValidClassicKeyBKeyCurrent = value;
-				RaisePropertyChanged("IsValidClassicKeyBKeyCurrent");
-			}
-		}
-		private bool? isValidClassicKeyBKeyCurrent;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedClassicKeyANumberCurrent
-		{
-			get
-			{
-				return selectedClassicKeyANumberCurrent;
-			}
-			set
-			{
-				if(int.TryParse(value, out selectedClassicKeyANumberCurrentAsInt))
-				{
-					selectedClassicKeyANumberCurrent = value;
-					RaisePropertyChanged("SelectedClassicKeyANumberCurrent");
-				}
-//				if(SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
-//				{
-//					ClassicKeyAKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
-//						First(x => x.KeyType == SelectedClassicKeyANumberCurrent).AccessBits.Split(new[] { ',', ';' })[0];
-//				}
-			}
-		}
-		private string selectedClassicKeyANumberCurrent;
-		private int selectedClassicKeyANumberCurrentAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedClassicKeyBNumberCurrent
-		{
-			get
-			{
-				return selectedClassicKeyBNumberCurrent;
-			}
-			set
-			{
-				if(int.TryParse(value, out selectedClassicKeyBNumberCurrentAsInt))
-				{
-					selectedClassicKeyBNumberCurrent = value;
-					RaisePropertyChanged("SelectedClassicKeyBNumberCurrent");
-				}
-
-//				ClassicKeyBKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
-//					First(x => x.KeyType == SelectedClassicKeyBNumberCurrent).AccessBits.Split(new[] { ',', ';' })[2];
-
-			}
-		}
-		private string selectedClassicKeyBNumberCurrent;
-		private int selectedClassicKeyBNumberCurrentAsInt;
-
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedClassicSectorCurrent
-		{
-			get
-			{
-				return selectedClassicSectorCurrent;
-			}
-			set
-			{
-				if(int.TryParse(value, out selectedClassicSectorCurrentAsInt))
-				{
-					selectedClassicSectorCurrent = value;
-					RaisePropertyChanged("SelectedClassicSectorCurrent");
-				}
-			}
-		}
-		private string selectedClassicSectorCurrent;
-		private int selectedClassicSectorCurrentAsInt;
-
-		public bool DataBlockIsCombinedToggleButtonIsChecked
-		{
-			get { return dataBlockIsCombinedToggleButtonIsChecked; }
-			set
-			{
-				dataBlockIsCombinedToggleButtonIsChecked = value;
-
-				if (value)
-					Selected_DataBlockType = SectorTrailer_DataBlock.BlockAll;
-
-				RaisePropertyChanged("SelectedDataBlockItem");
-				RaisePropertyChanged("DataBlockIsCombinedToggleButtonIsChecked");
-				RaisePropertyChanged("DataBlockSelectionComboBoxIsEnabled");
-				RaisePropertyChanged("DataBlockSelection");
-			}
-		}
-		private bool dataBlockIsCombinedToggleButtonIsChecked;
-
-		#endregion KeySetup
-
 		#region DataExplorer
 
 		/// <summary>
@@ -1368,20 +664,84 @@ namespace RFiDGear.ViewModel
 		}
 		private bool isFocused;
 
-		#endregion
+        #endregion
 
-		#region General Properties
+        #region Dependency Properties
 
-		/// <summary>
-		/// 
-		/// </summary>
-		[XmlIgnore]
+        /// <summary>
+        /// The Indexnumber of the ExecuteCondition Task As String
+        /// </summary>
+        public string SelectedExecuteConditionTaskIndex
+        {
+            get
+            {
+                return selectedExecuteConditionTaskIndex;
+            }
+
+            set
+            {
+                selectedExecuteConditionTaskIndex = value;
+                IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
+                RaisePropertyChanged("SelectedExecuteConditionTaskIndex");
+            }
+        }
+        private string selectedExecuteConditionTaskIndex;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidSelectedExecuteConditionTaskIndex
+        {
+            get
+            {
+                return isValidSelectedExecuteConditionTaskIndex;
+            }
+            set
+            {
+                isValidSelectedExecuteConditionTaskIndex = value;
+                RaisePropertyChanged("IsValidSelectedExecuteConditionTaskIndex");
+            }
+        }
+        private bool? isValidSelectedExecuteConditionTaskIndex;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int SelectedExecuteConditionTaskIndexAsInt
+        { get { return selectedExecuteConditionTaskIndexAsInt; } }
+        private int selectedExecuteConditionTaskIndexAsInt;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ERROR SelectedExecuteConditionErrorLevel
+        {
+            get
+            {
+                return selectedExecuteConditionErrorLevel;
+            }
+
+            set
+            {
+                selectedExecuteConditionErrorLevel = value;
+                RaisePropertyChanged("SelectedExecuteConditionErrorLevel");
+            }
+        }
+        private ERROR selectedExecuteConditionErrorLevel;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [XmlIgnore]
 		public ERROR TaskErr { get; set; }
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsTaskCompletedSuccessfully
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsTaskCompletedSuccessfully
 		{
 			get { return isTaskCompletedSuccessfully; }
 			set
@@ -1425,17 +785,19 @@ namespace RFiDGear.ViewModel
 		}
 		private string selectedAccessBitsTaskIndex;
 
-		/// <summary>
-		///
-		/// </summary>
-		public int SelectedTaskIndexAsInt
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public int SelectedTaskIndexAsInt
 		{ get { return selectedTaskIndexAsInt; } }
 		private int selectedTaskIndexAsInt;
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidSelectedTaskIndex
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidSelectedTaskIndex
 		{
 			get
 			{
@@ -1529,15 +891,732 @@ namespace RFiDGear.ViewModel
 			get { return !dataBlockIsCombinedToggleButtonIsChecked; }
 		}
 
-		#endregion General Properties
+        #region KeySetup
 
-		#region Commands
+        [XmlIgnore]
+        public string[] MifareClassicKeys { get; set; }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
-		private void OnNewReadDataCommand()
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool UseMAD
+        {
+            get { return useMAD; }
+            set
+            {
+                useMAD = value;
+                if (UseMAD)
+                {
+                    ChildNodeViewModelTemp.Children.Clear();
+                    ChildNodeViewModelFromChip.Children.Clear();
+
+                    ChildNodeViewModelFromChip.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(0, 1), this));
+
+                    ChildNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(0, 1), this));
+
+                    FileSize = "100";
+                }
+                else
+                {
+                    ChildNodeViewModelTemp.Children.Clear();
+                    ChildNodeViewModelFromChip.Children.Clear();
+
+                    sectorModel = new MifareClassicSectorModel(4,
+                                                               AccessCondition_MifareClassicSectorTrailer.NotAllowed,
+                                                               AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+                                                               AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+                                                               AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+                                                               AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+                                                               AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA);
+
+                    sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block0, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+                    sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block1, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+                    sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block2, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+                    sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.BlockAll, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+
+                    childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
+                    childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
+
+                    RaisePropertyChanged("ChildNodeViewModelFromChip");
+                    RaisePropertyChanged("ChildNodeViewModelTemp");
+                }
+
+                RaisePropertyChanged("UseMAD");
+                RaisePropertyChanged("UseMADInvert");
+            }
+        }
+        private bool useMAD;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool UseMADInvert
+        {
+            get { return !UseMAD; }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool IsClassicAuthInfoEnabled
+        {
+            get { return isClassicAuthInfoEnabled; }
+            set
+            {
+                isClassicAuthInfoEnabled = value;
+                RaisePropertyChanged("IsClassicAuthInfoEnabled");
+            }
+        }
+        private bool isClassicAuthInfoEnabled = false;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool IsClassicKeyEditingEnabled
+        {
+            get { return isClassicKeyEditingEnabled; }
+            set
+            {
+                isClassicKeyEditingEnabled = value;
+                RaisePropertyChanged("IsClassicKeyEditingEnabled");
+            }
+        }
+        private bool isClassicKeyEditingEnabled;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool IsValidSelectedKeySetupTaskIndex
+        {
+            get
+            {
+                //classicKeyAKeyCurrent = SectorTrailer.Split(',')[0];
+                return isValidSelectedKeySetupTaskIndex;
+            }
+            set
+            {
+                isValidSelectedKeySetupTaskIndex = value;
+                RaisePropertyChanged("IsValidSelectedKeySetupTaskIndex");
+            }
+        }
+        private bool isValidSelectedKeySetupTaskIndex;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string ClassicKeyAKeyCurrent
+        {
+            get
+            {
+                return classicKeyAKeyCurrent;
+            }
+            set
+            {
+                classicKeyAKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+
+                IsValidClassicKeyAKeyCurrent = (CustomConverter.IsInHexFormat(classicKeyAKeyCurrent) && classicKeyAKeyCurrent.Length == 12);
+
+                if (IsValidClassicKeyAKeyCurrent != false && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
+                {
+                    string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyANumberCurrentAsInt].AccessBits;
+                    currentSectorTrailer = string.Join(",", new[]
+                                                       {
+                                                           classicKeyAKeyCurrent,
+                                                           currentSectorTrailer.Split(new[] {',',';'})[1],
+                                                           currentSectorTrailer.Split(new[] {',',';'})[2]
+                                                       });
+
+                    settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyANumberCurrentAsInt] = new MifareClassicDefaultKeys(selectedClassicKeyANumberCurrentAsInt, currentSectorTrailer);
+                }
+                else if (IsValidClassicKeyAKeyCurrent != false)
+                    sectorModel.KeyA = classicKeyAKeyCurrent;
+
+                RaisePropertyChanged("ClassicKeyAKeyCurrent");
+            }
+        }
+        private string classicKeyAKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidClassicKeyAKeyCurrent
+        {
+            get
+            {
+                return isValidClassicKeyAKeyCurrent;
+            }
+            set
+            {
+                isValidClassicKeyAKeyCurrent = value;
+                RaisePropertyChanged("IsValidClassicKeyAKeyCurrent");
+            }
+        }
+        private bool? isValidClassicKeyAKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string ClassicKeyBKeyCurrent
+        {
+            get
+            {
+                return classicKeyBKeyCurrent;
+            }
+            set
+            {
+                classicKeyBKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+
+                IsValidClassicKeyBKeyCurrent = (CustomConverter.IsInHexFormat(classicKeyBKeyCurrent) && classicKeyBKeyCurrent.Length == 12);
+                if (IsValidClassicKeyBKeyCurrent != false && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
+                {
+                    string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyBNumberCurrentAsInt].AccessBits;
+                    currentSectorTrailer = string.Join(",", new[]
+                                                       {
+                                                           currentSectorTrailer.Split(new[] {',',';'})[0],
+                                                           currentSectorTrailer.Split(new[] {',',';'})[1],
+                                                           classicKeyBKeyCurrent
+                                                       });
+
+                    settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyBNumberCurrentAsInt] = new MifareClassicDefaultKeys(selectedClassicKeyBNumberCurrentAsInt, currentSectorTrailer);
+                }
+                else if (IsValidClassicKeyBKeyCurrent != false)
+                    sectorModel.KeyB = classicKeyBKeyCurrent;
+
+                RaisePropertyChanged("ClassicKeyBKeyCurrent");
+            }
+        }
+        private string classicKeyBKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidClassicKeyBKeyCurrent
+        {
+            get
+            {
+                return isValidClassicKeyBKeyCurrent;
+            }
+            set
+            {
+                isValidClassicKeyBKeyCurrent = value;
+                RaisePropertyChanged("IsValidClassicKeyBKeyCurrent");
+            }
+        }
+        private bool? isValidClassicKeyBKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedClassicKeyANumberCurrent
+        {
+            get
+            {
+                return selectedClassicKeyANumberCurrent;
+            }
+            set
+            {
+                if (int.TryParse(value, out selectedClassicKeyANumberCurrentAsInt))
+                {
+                    selectedClassicKeyANumberCurrent = value;
+                    RaisePropertyChanged("SelectedClassicKeyANumberCurrent");
+                }
+                //				if(SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
+                //				{
+                //					ClassicKeyAKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
+                //						First(x => x.KeyType == SelectedClassicKeyANumberCurrent).AccessBits.Split(new[] { ',', ';' })[0];
+                //				}
+            }
+        }
+        private string selectedClassicKeyANumberCurrent;
+        private int selectedClassicKeyANumberCurrentAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedClassicKeyBNumberCurrent
+        {
+            get
+            {
+                return selectedClassicKeyBNumberCurrent;
+            }
+            set
+            {
+                if (int.TryParse(value, out selectedClassicKeyBNumberCurrentAsInt))
+                {
+                    selectedClassicKeyBNumberCurrent = value;
+                    RaisePropertyChanged("SelectedClassicKeyBNumberCurrent");
+                }
+
+                //				ClassicKeyBKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
+                //					First(x => x.KeyType == SelectedClassicKeyBNumberCurrent).AccessBits.Split(new[] { ',', ';' })[2];
+
+            }
+        }
+        private string selectedClassicKeyBNumberCurrent;
+        private int selectedClassicKeyBNumberCurrentAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedClassicSectorCurrent
+        {
+            get
+            {
+                return selectedClassicSectorCurrent;
+            }
+            set
+            {
+                if (int.TryParse(value, out selectedClassicSectorCurrentAsInt))
+                {
+                    selectedClassicSectorCurrent = value;
+                    RaisePropertyChanged("SelectedClassicSectorCurrent");
+                }
+            }
+        }
+        private string selectedClassicSectorCurrent;
+        private int selectedClassicSectorCurrentAsInt;
+
+        public bool DataBlockIsCombinedToggleButtonIsChecked
+        {
+            get { return dataBlockIsCombinedToggleButtonIsChecked; }
+            set
+            {
+                dataBlockIsCombinedToggleButtonIsChecked = value;
+
+                if (value)
+                    Selected_DataBlockType = SectorTrailer_DataBlock.BlockAll;
+
+                RaisePropertyChanged("SelectedDataBlockItem");
+                RaisePropertyChanged("DataBlockIsCombinedToggleButtonIsChecked");
+                RaisePropertyChanged("DataBlockSelectionComboBoxIsEnabled");
+                RaisePropertyChanged("DataBlockSelection");
+            }
+        }
+        private bool dataBlockIsCombinedToggleButtonIsChecked;
+
+        #endregion KeySetup
+
+        #region MADEditor
+
+        [XmlIgnore]
+        public string[] MADVersions { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string SelectedMADVersion
+        {
+            get
+            {
+                return selectedMADVersion;
+            }
+            set
+            {
+                if (byte.TryParse(value, out selectedMADVersionAsByte))
+                {
+                    selectedMADVersion = value;
+
+                    madGPB = (byte)((madGPB &= 0xFC) | selectedMADVersionAsByte);
+                }
+
+                RaisePropertyChanged("SelectedMADVersion");
+            }
+
+        }
+        private string selectedMADVersion;
+        private byte selectedMADVersionAsByte;
+
+        [XmlIgnore]
+        public string[] MADSectors { get; set; }
+
+        /// <summary>
+        /// Change MAD GPB
+        /// </summary>
+        public bool IsMultiApplication
+        {
+            get { return isMultiApplication; }
+            set
+            {
+                isMultiApplication = value;
+                if (value)
+                    madGPB |= 0x40;
+                else
+                    madGPB &= 0xBF;
+                RaisePropertyChanged("IsMultiApplication");
+            }
+        }
+        private bool isMultiApplication;
+
+        /// <summary>
+        /// Do authenticate to MAD or not before performing a write operation?
+        /// </summary>
+        public bool UseMadAuth
+        {
+            get
+            {
+                return useMADAuth;
+            }
+            set
+            {
+                useMADAuth = value;
+                RaisePropertyChanged("UseMadAuth");
+            }
+        }
+        private bool useMADAuth;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string FileSize
+        {
+            get { return fileSize; }
+            set
+            {
+                fileSize = value;
+                IsValidFileSize = (int.TryParse(value, out fileSizeAsInt) && fileSizeAsInt <= 4200);
+
+                if (IsValidFileSize != false)
+                {
+                    if (childNodeViewModelFromChip.Children.Any(x => x.MifareClassicMAD != null))
+                    {
+                        try
+                        {
+                            childNodeViewModelFromChip.Children.Single().MifareClassicMAD = new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt);
+                            childNodeViewModelTemp.Children.Single().MifareClassicMAD = new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt);
+
+                            childNodeViewModelTemp.Children.Single().RequestRefresh();
+                            childNodeViewModelFromChip.Children.Single().RequestRefresh();
+                        }
+                        catch
+                        {
+
+                        }
+
+                    }
+                    else
+                    {
+                        childNodeViewModelFromChip.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt), null));
+                        childNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(new byte[fileSizeAsInt], appNumberAsInt), null));
+                    }
+                }
+
+                RaisePropertyChanged("FileSize");
+            }
+        }
+        private string fileSize;
+        private int fileSizeAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidFileSize
+        {
+            get
+            {
+                return isValidFileSize;
+            }
+            set
+            {
+                isValidFileSize = value;
+                RaisePropertyChanged("IsValidFileSize");
+            }
+        }
+        private bool? isValidFileSize;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string AppNumber
+        {
+            get { return appNumber; }
+            set
+            {
+                appNumber = value;
+                IsValidAppNumber = (int.TryParse(value, out appNumberAsInt) && appNumberAsInt <= 0xFFFF);
+                RaisePropertyChanged("AppNumberNew");
+            }
+        }
+        private string appNumber;
+        private int appNumberAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidAppNumber
+        {
+            get
+            {
+                return isValidAppNumber;
+            }
+            set
+            {
+                isValidAppNumber = value;
+                RaisePropertyChanged("IsValidAppNumber");
+            }
+        }
+        private bool? isValidAppNumber;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string SelectedMADSector
+        {
+            get { return selectedMADSector; }
+
+            set
+            {
+                if (int.TryParse(value, out selectedMADSectorAsInt))
+                    selectedMADSector = value;
+                RaisePropertyChanged("SelectedMADSector");
+            }
+        }
+        private string selectedMADSector;
+        private int selectedMADSectorAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string ClassicMADKeyAKeyCurrent
+        {
+            get
+            {
+                return classicMADKeyAKeyCurrent;
+            }
+            set
+            {
+                classicMADKeyAKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+
+                IsValidClassicMADKeyAKeyCurrent = (CustomConverter.IsInHexFormat(classicMADKeyAKeyCurrent) && classicMADKeyAKeyCurrent.Length == 12);
+
+                RaisePropertyChanged("ClassicMADKeyAKeyCurrent");
+            }
+        }
+        private string classicMADKeyAKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidClassicMADKeyAKeyCurrent
+        {
+            get
+            {
+                return isValidClassicMADKeyAKeyCurrent;
+            }
+            set
+            {
+                isValidClassicMADKeyAKeyCurrent = value;
+                RaisePropertyChanged("IsValidClassicMADKeyAKeyCurrent");
+            }
+        }
+        private bool? isValidClassicMADKeyAKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string ClassicMADKeyBKeyCurrent
+        {
+            get
+            {
+                return classicMADKeyBKeyCurrent;
+            }
+            set
+            {
+                classicMADKeyBKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+
+                IsValidClassicMADKeyBKeyCurrent = (CustomConverter.IsInHexFormat(classicMADKeyBKeyCurrent) && classicMADKeyBKeyCurrent.Length == 12);
+
+                RaisePropertyChanged("ClassicMADKeyBKeyCurrent");
+            }
+        }
+        private string classicMADKeyBKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidClassicMADKeyBKeyCurrent
+        {
+            get
+            {
+                return isValidClassicMADKeyBKeyCurrent;
+            }
+            set
+            {
+                isValidClassicMADKeyBKeyCurrent = value;
+                RaisePropertyChanged("IsValidClassicMADKeyBKeyCurrent");
+            }
+        }
+        private bool? isValidClassicMADKeyBKeyCurrent;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string ClassicMADKeyAKeyTarget
+        {
+            get
+            {
+                return classicMADKeyAKeyTarget;
+            }
+            set
+            {
+                classicMADKeyAKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+
+                IsValidClassicMADKeyAKeyTarget = (CustomConverter.IsInHexFormat(classicMADKeyAKeyTarget) && classicMADKeyAKeyTarget.Length == 12);
+
+                RaisePropertyChanged("ClassicMADKeyAKeyTarget");
+            }
+        }
+        private string classicMADKeyAKeyTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidClassicMADKeyAKeyTarget
+        {
+            get
+            {
+                return isValidClassicMADKeyAKeyTarget;
+            }
+            set
+            {
+                isValidClassicMADKeyAKeyTarget = value;
+                RaisePropertyChanged("IsValidClassicMADKeyAKeyTarget");
+            }
+        }
+        private bool? isValidClassicMADKeyAKeyTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string ClassicMADKeyBKeyTarget
+        {
+            get
+            {
+                return classicMADKeyBKeyTarget;
+            }
+            set
+            {
+                classicMADKeyBKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+
+                IsValidClassicMADKeyBKeyTarget = (CustomConverter.IsInHexFormat(classicMADKeyBKeyTarget) && classicMADKeyBKeyTarget.Length == 12);
+
+                RaisePropertyChanged("ClassicMADKeyBKeyTarget");
+            }
+        }
+        private string classicMADKeyBKeyTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidClassicMADKeyBKeyTarget
+        {
+            get
+            {
+                return isValidClassicMADKeyBKeyTarget;
+            }
+            set
+            {
+                isValidClassicMADKeyBKeyTarget = value;
+                RaisePropertyChanged("IsValidClassicMADKeyBKeyTarget");
+            }
+        }
+        private bool? isValidClassicMADKeyBKeyTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string ClassicKeyAKeyTarget
+        {
+            get
+            {
+                return classicKeyAKeyTarget;
+            }
+            set
+            {
+                classicKeyAKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+
+                IsValidClassicKeyAKeyTarget = (CustomConverter.IsInHexFormat(classicKeyAKeyTarget) && classicKeyAKeyTarget.Length == 12);
+
+                RaisePropertyChanged("ClassicKeyAKeyTarget");
+            }
+        }
+        private string classicKeyAKeyTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidClassicKeyAKeyTarget
+        {
+            get
+            {
+                return isValidClassicKeyAKeyTarget;
+            }
+            set
+            {
+                isValidClassicKeyAKeyTarget = value;
+                RaisePropertyChanged("IsValidClassicKeyAKeyTarget");
+            }
+        }
+        private bool? isValidClassicKeyAKeyTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string ClassicKeyBKeyTarget
+        {
+            get
+            {
+                return classicKeyBKeyTarget;
+            }
+            set
+            {
+                classicKeyBKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+
+                IsValidClassicKeyBKeyTarget = (CustomConverter.IsInHexFormat(classicKeyBKeyTarget) && classicKeyBKeyTarget.Length == 12);
+
+                RaisePropertyChanged("ClassicKeyBKeyTarget");
+            }
+        }
+        private string classicKeyBKeyTarget;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidClassicKeyBKeyTarget
+        {
+            get
+            {
+                return isValidClassicKeyBKeyTarget;
+            }
+            set
+            {
+                isValidClassicKeyBKeyTarget = value;
+                RaisePropertyChanged("IsValidClassicKeyBKeyTarget");
+            }
+        }
+        private bool? isValidClassicKeyBKeyTarget;
+
+        #endregion
+
+        #endregion General Properties
+
+        #region Commands
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
+		private protected void OnNewReadDataCommand()
 		{
 			//Mouse.OverrideCursor = Cursors.Wait;
 			TaskErr = ERROR.Empty;
@@ -1673,7 +1752,7 @@ namespace RFiDGear.ViewModel
 		/// 
 		/// </summary>
 		public ICommand WriteDataCommand { get { return new RelayCommand(OnNewWriteDataCommand); } }
-		private void OnNewWriteDataCommand()
+		private protected void OnNewWriteDataCommand()
 		{
 			//Mouse.OverrideCursor = Cursors.Wait;
 
