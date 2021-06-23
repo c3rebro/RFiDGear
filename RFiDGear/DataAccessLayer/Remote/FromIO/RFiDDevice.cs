@@ -26,11 +26,13 @@ namespace RFiDGear
 
 		public MifareClassicDataBlockModel DataBlock { get; private set; }
 		
+        public GenericChipModel GenericChip { get; private set; }
+
 		public ReaderTypes ReaderProvider { get; private set; }
 
 		public string ReaderUnitName { get; private set; }
 
-		public CARD_INFO CardInfo { get; private set; }
+		//public CARD_INFO CardInfo { get; private set; }
 
 		public byte[] MifareClassicData { get; private set; }
 
@@ -54,7 +56,7 @@ namespace RFiDGear
 
 		public byte EncryptionType { get; private set; }
 
-		public uint FreeMemory { get; private set; }
+		//public uint FreeMemory { get; private set; }
 
 		public FileSetting DesfireFileSetting { get; private set; }
 
@@ -98,6 +100,8 @@ namespace RFiDGear
 
 					readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
 					readerUnit = readerProvider.CreateReaderUnit();
+
+                    GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
                 }
 			} 
 			catch (Exception e)
@@ -163,9 +167,10 @@ namespace RFiDGear
 							if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
 							{
 								try {
-									CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
+									//CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
 									//readerUnit.Disconnect();
-									return ERROR.NoError;
+                                    GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+                                    return ERROR.NoError;
 								}
 								catch (Exception e) {
 									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
@@ -253,8 +258,9 @@ namespace RFiDGear
 							if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
 							{
 								try {
-									CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
-								}
+                                    //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
+                                    GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+                                }
 								catch (Exception e) {
 									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 								}
@@ -269,12 +275,12 @@ namespace RFiDGear
 									cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A);
 
 									DataBlock = new MifareClassicDataBlockModel(
-										(byte)CustomConverter.GetChipBasedDataBlockNumber(CardInfo.CardType, sectorNumber, k),
+										(byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
 										k);
 
 									try
 									{
-										cmd.AuthenticateKeyNo((byte)CustomConverter.GetChipBasedDataBlockNumber(CardInfo.CardType, sectorNumber, k),
+										cmd.AuthenticateKeyNo((byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
 										                      (byte)0,
 										                      MifareKeyType.KT_KEY_A);
 
@@ -283,7 +289,7 @@ namespace RFiDGear
 										try
 										{
 											object data = cmd.ReadBinary(
-												(byte)CustomConverter.GetChipBasedDataBlockNumber(CardInfo.CardType, sectorNumber, k),
+												(byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
 												48);
 
 											DataBlock.Data = (byte[])data;
@@ -306,7 +312,7 @@ namespace RFiDGear
 											cmd.LoadKeyNo((byte)1, keyB, MifareKeyType.KT_KEY_B);
 
 											cmd.AuthenticateKeyNo(
-												(byte)CustomConverter.GetChipBasedDataBlockNumber(CardInfo.CardType, sectorNumber, k),
+												(byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
 												(byte)1,
 												MifareKeyType.KT_KEY_B);
 
@@ -315,7 +321,7 @@ namespace RFiDGear
 											try
 											{
 												object data = cmd.ReadBinary(
-													(byte)CustomConverter.GetChipBasedDataBlockNumber(CardInfo.CardType, sectorNumber, k),
+													(byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
 													48);
 
 												DataBlock.Data = (byte[])data;
@@ -388,8 +394,9 @@ namespace RFiDGear
 							if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
 							{
 								try {
-									CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
-								}
+                                    //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
+                                    GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+                                }
 								catch (Exception e) {
 									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 								}
@@ -407,14 +414,14 @@ namespace RFiDGear
 									try
 									{
 										cmd.AuthenticateKeyNo(
-											(byte)CustomConverter.GetChipBasedDataBlockNumber(CardInfo.CardType, sectorNumber, k),
+											(byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
 											(byte)0,
 											MifareKeyType.KT_KEY_A);
 
 										try
 										{
 											cmd.WriteBinary(
-												(byte)CustomConverter.GetChipBasedDataBlockNumber(CardInfo.CardType, sectorNumber, k),
+												(byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
 												buffer);
 
 											return ERROR.NoError;
@@ -429,14 +436,14 @@ namespace RFiDGear
 
 										try
 										{
-											cmd.AuthenticateKeyNo((byte)CustomConverter.GetChipBasedDataBlockNumber(CardInfo.CardType, sectorNumber, k),
+											cmd.AuthenticateKeyNo((byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
 											                      (byte)1,
 											                      MifareKeyType.KT_KEY_B);
 
 											try
 											{
 												cmd.WriteBinary(
-													(byte)CustomConverter.GetChipBasedDataBlockNumber(CardInfo.CardType, sectorNumber, k),
+													(byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
 													buffer);
 
 												return ERROR.NoError;
@@ -493,8 +500,9 @@ namespace RFiDGear
 							if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
 							{
 								try {
-									CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
-								}
+                                    //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
+                                    GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+                                }
 								catch (Exception e) {
 									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 								}
@@ -571,8 +579,9 @@ namespace RFiDGear
 							if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
 							{
 								try {
-									CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
-								}
+                                    //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
+                                    GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+                                }
 								catch (Exception e) {
 									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 								}
@@ -664,8 +673,9 @@ namespace RFiDGear
 							if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
 							{
 								try {
-									CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
-								}
+                                    //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
+                                    GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+                                }
 								catch (Exception e) {
 									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 								}
@@ -750,8 +760,9 @@ namespace RFiDGear
 							if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
 							{
 								try {
-									CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
-								}
+                                    //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
+                                    GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+                                }
 								catch (Exception e) {
 									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 								}
@@ -881,25 +892,45 @@ namespace RFiDGear
                                 {
                                     object appIDsObject = cmd.GetApplicationIDs();
                                     AppIDList = (appIDsObject as UInt32[]);
-                                    FreeMemory = cmd.GetFreeMemory();
-                                }
-                                catch
-                                {
+                                    //FreeMemory = cmd.GetFreeMemory();
+                                    GenericChip.FreeMemory = cmd.GetFreeMemory();
 
-                                }
-								return ERROR.NoError;
+                                    return ERROR.NoError;
+								}
+								catch (Exception e)
+								{
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
+								}
 							}
 							else
-								return ERROR.Empty;
+								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
 				return ERROR.DeviceNotReadyError;
 			}
+
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-				return ERROR.IOError;
+				if (e.Message != "" && e.Message.Contains("same number already exists"))
+				{
+					return ERROR.ItemAlreadyExistError;
+				}
+				else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+				{
+					return ERROR.AuthenticationError;
+				}
+				else
+					return ERROR.IOError;
 			}
 		}
 
@@ -928,13 +959,12 @@ namespace RFiDGear
 
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFire" ||
-							    card.Type == "DESFireEV1" ||
+							if (card.Type == "DESFireEV1" ||
 							    card.Type == "DESFireEV2")
 							{
 								try
 								{
-                                    var cmd = card.Commands as IDESFireCommands;
+                                    var cmd = card.Commands as IDESFireEV1Commands;
 
                                     try
                                     {
@@ -995,21 +1025,117 @@ namespace RFiDGear
 
 									return ERROR.NoError;
 								}
-								catch
+								catch (Exception e)
 								{
-									return ERROR.AuthenticationError;
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else if (e.Message != "" && e.Message.Contains("Insufficient NV-Memory"))
+									{
+										return ERROR.OutOfMemory;
+									}
+									else
+										return ERROR.IOError;
 								}
 							}
+							else if(card.Type == "DESFire")
+							{
+								try
+								{
+									var cmd = card.Commands as IDESFireCommands;
 
-							return ERROR.AuthenticationError;
+									try
+									{
+										cmd.SelectApplication((uint)_appID);
+										cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+									}
+									catch
+									{
+										switch (_fileType)
+										{
+											case FileType_MifareDesfireFileType.StdDataFile:
+												cmd.CreateStdDataFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+												break;
+
+											case FileType_MifareDesfireFileType.BackupFile:
+												cmd.CreateBackupFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+												break;
+
+											case FileType_MifareDesfireFileType.ValueFile:
+												cmd.CreateValueFile((byte)_fileNo, _encMode, accessRights, (uint)_minValue, (uint)_maxValue, (uint)_initValue, _isValueLimited);
+												break;
+
+											case FileType_MifareDesfireFileType.CyclicRecordFile:
+												cmd.CreateCyclicRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+												break;
+
+											case FileType_MifareDesfireFileType.LinearRecordFile:
+												cmd.CreateLinearRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+												break;
+										}
+
+										return ERROR.NoError;
+									}
+
+									switch (_fileType)
+									{
+										case FileType_MifareDesfireFileType.StdDataFile:
+											cmd.CreateStdDataFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+											break;
+
+										case FileType_MifareDesfireFileType.BackupFile:
+											cmd.CreateBackupFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+											break;
+
+										case FileType_MifareDesfireFileType.ValueFile:
+											cmd.CreateValueFile((byte)_fileNo, _encMode, accessRights, (uint)_minValue, (uint)_maxValue, (uint)_initValue, _isValueLimited);
+											break;
+
+										case FileType_MifareDesfireFileType.CyclicRecordFile:
+											cmd.CreateCyclicRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+											break;
+
+										case FileType_MifareDesfireFileType.LinearRecordFile:
+											cmd.CreateLinearRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+											break;
+									}
+
+
+									return ERROR.NoError;
+								}
+								catch (Exception e)
+								{
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else if (e.Message != "" && e.Message.Contains("Insufficient NV-Memory"))
+									{
+										return ERROR.OutOfMemory;
+									}
+									else
+										return ERROR.IOError;
+								}
+							}
+							else
+								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
-				return ERROR.IOError;
+				return ERROR.DeviceNotReadyError;
 			}
 			catch
 			{
-				return ERROR.AuthenticationError;
+				return ERROR.IOError;
 			}
 		}
 
@@ -1019,86 +1145,101 @@ namespace RFiDGear
 		                                       EncryptionMode _encMode,
 		                                       int _fileNo, int _appID, int _fileSize)
 		{
-			// The excepted memory tree
-			IDESFireLocation location = new DESFireLocation();
-			// The Application ID to use
-			location.aid = _appID;
-			// File 0 into this application
-			location.File = _fileNo;
-			// File communication requires encryption
-			location.SecurityLevel = _encMode;
+            try
+            {
+				// The excepted memory tree
+				IDESFireLocation location = new DESFireLocation();
+				// The Application ID to use
+				location.aid = _appID;
+				// File 0 into this application
+				location.File = _fileNo;
+				// File communication requires encryption
+				location.SecurityLevel = _encMode;
 
-			// Keys to use for authentication
+				// Keys to use for authentication
 
-			// Get the card storage service
-			IStorageCardService storage = (IStorageCardService)card.GetService(CardServiceType.CST_STORAGE);
+				// Get the card storage service
+				IStorageCardService storage = (IStorageCardService)card.GetService(CardServiceType.CST_STORAGE);
 
-			// Change keys with the following ones
-			IDESFireAccessInfo aiToWrite = new DESFireAccessInfo();
-			CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
-			aiToWrite.MasterApplicationKey.Value = CustomConverter.DesfireKeyToCheck;
-			aiToWrite.MasterApplicationKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeAppMasterKey;
+				// Change keys with the following ones
+				IDESFireAccessInfo aiToWrite = new DESFireAccessInfo();
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
+				aiToWrite.MasterApplicationKey.Value = CustomConverter.DesfireKeyToCheck;
+				aiToWrite.MasterApplicationKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeAppMasterKey;
 
-			CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
-			aiToWrite.ReadKey.Value = CustomConverter.DesfireKeyToCheck;
-			aiToWrite.ReadKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeAppReadKey;
-			aiToWrite.ReadKeyNo = (byte)_readKeyNo;
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
+				aiToWrite.ReadKey.Value = CustomConverter.DesfireKeyToCheck;
+				aiToWrite.ReadKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeAppReadKey;
+				aiToWrite.ReadKeyNo = (byte)_readKeyNo;
 
-			CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
-			aiToWrite.WriteKey.Value = CustomConverter.DesfireKeyToCheck;
-			aiToWrite.WriteKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeAppWriteKey;
-			aiToWrite.WriteKeyNo = (byte)_writeKeyNo;
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
+				aiToWrite.WriteKey.Value = CustomConverter.DesfireKeyToCheck;
+				aiToWrite.WriteKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeAppWriteKey;
+				aiToWrite.WriteKeyNo = (byte)_writeKeyNo;
 
-			if (readerUnit.ConnectToReader())
-			{
-				if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+				if (readerUnit.ConnectToReader())
 				{
-					if (readerUnit.Connect())
+					if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
 					{
-						if (card.Type == "DESFire" ||
-						    card.Type == "DESFireEV1" ||
-						    card.Type == "DESFireEV2")
+						if (readerUnit.Connect())
 						{
-							try {
-								var cmd = card.Commands as IDESFireCommands;
-								
-								try {
-									
-									cmd.SelectApplication((uint)_appID);
-									
-									cmd.Authenticate((byte)_readKeyNo, aiToWrite.ReadKey);
-									
-									DesfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
-									
-									MifareDESFireData = (byte[])cmd.ReadData((byte)_fileNo,0, DesfireFileSetting.dataFile.fileSize, EncryptionMode.CM_ENCRYPT);
-								}
-								catch
+							if (card.Type == "DESFire" ||
+								card.Type == "DESFireEV1" ||
+								card.Type == "DESFireEV2")
+							{
+								try
 								{
-									cmd.SelectApplication((uint)_appID);
-									
-									cmd.Authenticate((byte)_readKeyNo, aiToWrite.ReadKey);
-									
-									MifareDESFireData = (byte[])cmd.ReadData((byte)_fileNo,0, (uint)_fileSize, EncryptionMode.CM_ENCRYPT);
-								}
-								
-								return ERROR.NoError;
-							}
-							
-							catch {
-								
-							}
+									var cmd = card.Commands as IDESFireCommands;
 
-							
-							return ERROR.IOError;
+									try
+									{
+
+										cmd.SelectApplication((uint)_appID);
+
+										cmd.Authenticate((byte)_readKeyNo, aiToWrite.ReadKey);
+
+										DesfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
+
+										MifareDESFireData = (byte[])cmd.ReadData((byte)_fileNo, 0, DesfireFileSetting.dataFile.fileSize, EncryptionMode.CM_ENCRYPT);
+									}
+									catch
+									{
+										cmd.SelectApplication((uint)_appID);
+
+										cmd.Authenticate((byte)_readKeyNo, aiToWrite.ReadKey);
+
+										MifareDESFireData = (byte[])cmd.ReadData((byte)_fileNo, 0, (uint)_fileSize, EncryptionMode.CM_ENCRYPT);
+									}
+
+									return ERROR.NoError;
+								}
+
+								catch (Exception e)
+								{
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
+								}
+							}
+							else
+								return ERROR.DeviceNotReadyError;
 						}
-						else
-							return ERROR.AuthenticationError;
 					}
-					return ERROR.DeviceNotReadyError;
 				}
-				return ERROR.IOError;
+				return ERROR.DeviceNotReadyError;
 			}
-			return ERROR.IOError;
+
+			catch
+            {
+				return ERROR.IOError;
+			}		
 		}
 		
 		public ERROR WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
@@ -1108,78 +1249,96 @@ namespace RFiDGear
 		                                        EncryptionMode _encMode,
 		                                        int _fileNo, int _appID, byte[] _data)
 		{
-			// The excepted memory tree
-			IDESFireLocation location = new DESFireLocation();
-			// The Application ID to use
-			location.aid = _appID;
-			// File 0 into this application
-			location.File = _fileNo;
-			// File communication requires encryption
-			location.SecurityLevel = _encMode;
 
-			// Keys to use for authentication
+            try
+            {
+				// The excepted memory tree
+				IDESFireLocation location = new DESFireLocation();
+				// The Application ID to use
+				location.aid = _appID;
+				// File 0 into this application
+				location.File = _fileNo;
+				// File communication requires encryption
+				location.SecurityLevel = _encMode;
 
-			// Get the card storage service
-			IStorageCardService storage = (IStorageCardService)card.GetService(CardServiceType.CST_STORAGE);
+				// Keys to use for authentication
 
-			// Change keys with the following ones
-			IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
-			CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_cardMasterKey);
-			aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
-			aiToUse.MasterCardKey.KeyType = _keyTypeAppMasterKey;
+				// Get the card storage service
+				IStorageCardService storage = (IStorageCardService)card.GetService(CardServiceType.CST_STORAGE);
 
-			IDESFireAccessInfo aiToWrite = new DESFireAccessInfo();
-			aiToWrite.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
-			aiToWrite.MasterCardKey.KeyType = _keyTypeAppMasterKey;
-			
-			CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
-			aiToWrite.MasterApplicationKey.Value = CustomConverter.DesfireKeyToCheck;
-			aiToWrite.MasterApplicationKey.KeyType = _keyTypeAppMasterKey;
-			
-			CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
-			aiToWrite.ReadKey.Value = CustomConverter.DesfireKeyToCheck;
-			aiToWrite.ReadKey.KeyType = _keyTypeAppReadKey;
-			aiToWrite.ReadKeyNo = (byte)_readKeyNo;
+				// Change keys with the following ones
+				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_cardMasterKey);
+				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
+				aiToUse.MasterCardKey.KeyType = _keyTypeAppMasterKey;
 
-			CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
-			aiToWrite.WriteKey.Value = CustomConverter.DesfireKeyToCheck;
-			aiToWrite.WriteKey.KeyType = _keyTypeAppWriteKey;
-			aiToWrite.WriteKeyNo = (byte)_writeKeyNo;
+				IDESFireAccessInfo aiToWrite = new DESFireAccessInfo();
+				aiToWrite.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
+				aiToWrite.MasterCardKey.KeyType = _keyTypeAppMasterKey;
 
-			if (readerUnit.ConnectToReader())
-			{
-				if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
+				aiToWrite.MasterApplicationKey.Value = CustomConverter.DesfireKeyToCheck;
+				aiToWrite.MasterApplicationKey.KeyType = _keyTypeAppMasterKey;
+
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
+				aiToWrite.ReadKey.Value = CustomConverter.DesfireKeyToCheck;
+				aiToWrite.ReadKey.KeyType = _keyTypeAppReadKey;
+				aiToWrite.ReadKeyNo = (byte)_readKeyNo;
+
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
+				aiToWrite.WriteKey.Value = CustomConverter.DesfireKeyToCheck;
+				aiToWrite.WriteKey.KeyType = _keyTypeAppWriteKey;
+				aiToWrite.WriteKeyNo = (byte)_writeKeyNo;
+
+				if (readerUnit.ConnectToReader())
 				{
-					if (readerUnit.Connect())
+					if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
 					{
-						if (card.Type == "DESFire" ||
-						    card.Type == "DESFireEV1" ||
-						    card.Type == "DESFireEV2")
+						if (readerUnit.Connect())
 						{
-							try {
-								var cmd = card.Commands as IDESFireCommands;
+							if (card.Type == "DESFire" ||
+								card.Type == "DESFireEV1" ||
+								card.Type == "DESFireEV2")
+							{
+								try
+								{
+									var cmd = card.Commands as IDESFireCommands;
 
-								cmd.SelectApplication((uint)_appID);
-								
-								cmd.Authenticate((byte)_writeKeyNo, aiToWrite.WriteKey);
-								
-								cmd.WriteData((byte)_fileNo,0, (uint)_data.Length, EncryptionMode.CM_ENCRYPT, _data);
-								
-								return ERROR.NoError;
+									cmd.SelectApplication((uint)_appID);
+
+									cmd.Authenticate((byte)_writeKeyNo, aiToWrite.WriteKey);
+
+									cmd.WriteData((byte)_fileNo, 0, (uint)_data.Length, EncryptionMode.CM_ENCRYPT, _data);
+
+									return ERROR.NoError;
+								}
+
+								catch (Exception e)
+								{
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
+								}
 							}
-							
-							catch{
-								return ERROR.AuthenticationError;
-							}
+							else
+								return ERROR.DeviceNotReadyError;
 						}
-						else
-							return ERROR.DeviceNotReadyError;
 					}
-					return ERROR.DeviceNotReadyError;
 				}
+				return ERROR.DeviceNotReadyError;
+			}
+
+			catch
+			{
 				return ERROR.IOError;
 			}
-			return ERROR.IOError;
 		}
 		
 		public ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0)
@@ -1193,7 +1352,6 @@ namespace RFiDGear
 				// File communication requires encryption
 				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
 
-				IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
@@ -1211,11 +1369,9 @@ namespace RFiDGear
 
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFire" ||
-							    card.Type == "DESFireEV1" ||
-							    card.Type == "DESFireEV2")
+							if (card.Type == "DESFire")
 							{
-								cmd = card.Commands as IDESFireEV1Commands;
+								var cmd = card.Commands as IDESFireCommands;
 								try
 								{
 									cmd.SelectApplication((uint)_appID);
@@ -1225,21 +1381,60 @@ namespace RFiDGear
 										cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
 									return ERROR.NoError;
 								}
-								catch
+
+								catch (Exception e)
 								{
-									return ERROR.AuthenticationError;
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
 								}
 							}
 
-							return ERROR.AuthenticationError;
+							else if (card.Type == "DESFireEV1" ||
+									card.Type == "DESFireEV2")
+							{
+								var cmd = card.Commands as IDESFireEV1Commands;
+								try
+								{
+									cmd.SelectApplication((uint)_appID);
+									if (_appID > 0)
+										cmd.Authenticate((byte)_keyNumber, aiToUse.MasterCardKey);
+									else
+										cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+									return ERROR.NoError;
+								}
+
+								catch (Exception e)
+								{
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
+								}
+							}
+							else
+								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
-				return ERROR.IOError;
+				return ERROR.DeviceNotReadyError;
 			}
 			catch
 			{
-				return ERROR.AuthenticationError;
+				return ERROR.IOError;
 			}
 		}
 
@@ -1265,19 +1460,22 @@ namespace RFiDGear
 							ReaderUnitName = readerUnit.ConnectedName;
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFire" ||
-							    card.Type == "DESFireEV1" ||
-							    card.Type == "DESFireEV2" || card.Type == "GENERIC_T_CL_A")
+							if (card.Type == "DESFire" )
 							{
 								var cmd = card.Commands as IDESFireCommands;
+                                ReaderUnitName = readerUnit.ConnectedName;
+                                //readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
-								try
+                                try
 								{
 									cmd.SelectApplication((uint)_appID);
-									try
+                                    GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+
+                                    try
 									{
 										cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterCardKey);
 									}
+
 									catch
 									{
 										try
@@ -1289,9 +1487,18 @@ namespace RFiDGear
 
 											return ERROR.NoError;
 										}
-										catch
+										catch (Exception e)
 										{
-											return ERROR.AuthenticationError;
+											if (e.Message != "" && e.Message.Contains("same number already exists"))
+											{
+												return ERROR.ItemAlreadyExistError;
+											}
+											else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+											{
+												return ERROR.AuthenticationError;
+											}
+											else
+												return ERROR.IOError;
 										}
 									}
 									cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
@@ -1301,12 +1508,95 @@ namespace RFiDGear
 
 									return ERROR.NoError;
 								}
-								catch
+								catch (Exception e)
 								{
-									return ERROR.AuthenticationError;
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
 								}
 							}
-							return ERROR.AuthenticationError;
+
+							else if (card.Type == "DESFireEV1" ||
+									card.Type == "DESFireEV2" || card.Type == "GENERIC_T_CL_A")
+							{
+								var cmd = card.Commands as IDESFireEV1Commands;
+								ReaderUnitName = readerUnit.ConnectedName;
+								//readerSerialNumber = readerUnit.GetReaderSerialNumber();
+
+								try
+								{
+									cmd.SelectApplication((uint)_appID);
+									GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+
+									try
+									{
+										cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterCardKey);
+									}
+
+									catch
+									{
+										try
+										{
+											cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
+											MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
+											EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
+											DesfireAppKeySetting = keySettings;
+
+											try
+											{
+												GenericChip.FreeMemory = cmd.GetFreeMemory();
+											}
+
+											catch { }
+
+											return ERROR.NoError;
+										}
+										catch (Exception e)
+										{
+											if (e.Message != "" && e.Message.Contains("same number already exists"))
+											{
+												return ERROR.ItemAlreadyExistError;
+											}
+											else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+											{
+												return ERROR.AuthenticationError;
+											}
+											else
+												return ERROR.IOError;
+										}
+									}
+
+									cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
+									MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
+									EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
+									DesfireAppKeySetting = keySettings;
+
+									return ERROR.NoError;
+								}
+								catch (Exception e)
+								{
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
+								}
+							}
+
+							else
+								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
@@ -1330,7 +1620,7 @@ namespace RFiDGear
 				// File communication requires encryption
 				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
 
-				IDESFireEV1Commands cmd;
+				// IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_piccMasterKey);
@@ -1344,15 +1634,12 @@ namespace RFiDGear
 						if (readerUnit.Connect())
 						{
 							ReaderUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFire" ||
-							    card.Type == "DESFireEV1" ||
-							    card.Type == "DESFireEV2")
+							if (card.Type == "DESFire")
 							{
-								cmd = card.Commands as IDESFireEV1Commands;
+								var cmd = card.Commands as IDESFireCommands;
 								try
 								{
 									cmd.SelectApplication(0);
@@ -1360,32 +1647,68 @@ namespace RFiDGear
 									if(authenticateToPICCFirst)
 										cmd.Authenticate(0, aiToUse.MasterCardKey);
 									
-									cmd.CreateApplicationEV1((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys, false, (LibLogicalAccess.DESFireKeyType)_keyTypeTargetApplication, 0, 0);
-									//cmd.CreateApplication((uint)_appID,_keySettings,(byte)_maxNbKeys);
-									//cmd.SelectApplication((uint)_appID);
-									//cmd.AuthenticateKeyNo(0);
-									//cmd.ChangeKey(1,aiToUse.MasterCardKey);
+									cmd.CreateApplication((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys);
 
 									return ERROR.NoError;
 								}
-								catch(Exception e)
+								catch (Exception e)
 								{
-                                    if(e.Message != "" && e.Message.Contains("exist"))
-                                    {
-                                        return ERROR.ItemAlreadyExistError;
-                                    }
-									return ERROR.AuthenticationError;
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
 								}
 							}
-							return ERROR.AuthenticationError;
+
+							else if(card.Type == "DESFireEV1" ||
+									card.Type == "DESFireEV2")
+                            {
+								var cmd = card.Commands as IDESFireEV1Commands;
+								try
+								{
+									cmd.SelectApplication(0);
+
+									if (authenticateToPICCFirst)
+										cmd.Authenticate(0, aiToUse.MasterCardKey);
+
+									cmd.CreateApplicationEV1((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys, false, (LibLogicalAccess.DESFireKeyType)_keyTypeTargetApplication, 0, 0);
+
+									return ERROR.NoError;
+								}
+								catch (Exception e)
+								{
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else if (e.Message != "" && e.Message.Contains("Insufficient NV-Memory"))
+									{
+										return ERROR.OutOfMemory;
+									}
+									else
+										return ERROR.IOError;
+								}
+							}
+							else
+								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
-				return ERROR.IOError;
+				return ERROR.DeviceNotReadyError;
 			}
 			catch
 			{
-				return ERROR.AuthenticationError;
+				return ERROR.IOError;
 			}
 		}
 
@@ -1465,12 +1788,16 @@ namespace RFiDGear
 
                                             catch (Exception e)
                                             {
-                                                if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+												if (e.Message != "" && e.Message.Contains("same number already exists"))
+												{
+													return ERROR.ItemAlreadyExistError;
+												}
+												else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                                 {
-                                                    return ERROR.NotAllowed;
+                                                    return ERROR.AuthenticationError;
                                                 }
                                                 else
-                                                    return ERROR.AuthenticationError;
+                                                    return ERROR.IOError;
                                             }
                                         }
 									}
@@ -1487,8 +1814,13 @@ namespace RFiDGear
                                         {
                                             cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
                                             cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
-                                            cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
-                                            cmd.ChangeKeySettings(keySettings);
+                                            cmd.Authenticate((byte)_keyNumberCurrent, applicationMasterKeyTarget);
+
+											try
+                                            {
+												cmd.ChangeKeySettings(keySettings);
+											}
+                                            catch { }
                                         }
 
                                         catch
@@ -1511,12 +1843,16 @@ namespace RFiDGear
 												}
 												catch (Exception e)
 												{
-													if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+													if (e.Message != "" && e.Message.Contains("same number already exists"))
 													{
-														return ERROR.NotAllowed;
+														return ERROR.ItemAlreadyExistError;
+													}
+													else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+													{
+														return ERROR.AuthenticationError;
 													}
 													else
-														return ERROR.AuthenticationError;
+														return ERROR.IOError;
 												}
 											}
                                         }
@@ -1526,23 +1862,28 @@ namespace RFiDGear
 								}
 								catch (Exception e)
 								{
-                                    if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
-                                    {
-                                        return ERROR.NotAllowed;
-                                    }
-                                    else
-                                        return ERROR.AuthenticationError;
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
 								}
 							}
-							return ERROR.AuthenticationError;
+							else
+								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
-				return ERROR.IOError;
+				return ERROR.DeviceNotReadyError;
 			}
 			catch
 			{
-				return ERROR.AuthenticationError;
+				return ERROR.IOError;
 			}
 		}
 
@@ -1557,7 +1898,7 @@ namespace RFiDGear
 				// File communication requires encryption
 				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
 
-				IDESFireEV1Commands cmd;
+				// IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
@@ -1579,7 +1920,7 @@ namespace RFiDGear
 							    card.Type == "DESFireEV1" ||
 							    card.Type == "DESFireEV2")
 							{
-								cmd = card.Commands as IDESFireEV1Commands;
+								var cmd = card.Commands as IDESFireCommands;
 								try
 								{
 									cmd.SelectApplication(0);
@@ -1590,18 +1931,38 @@ namespace RFiDGear
 								}
 								catch
 								{
-									return ERROR.AuthenticationError;
+									try
+                                    {
+										cmd.SelectApplication((uint)_appID);
+										cmd.Authenticate(0, aiToUse.MasterCardKey);
+										cmd.DeleteApplication((uint)_appID);
+										return ERROR.NoError;
+									}
+
+									catch (Exception e)
+									{
+										if (e.Message != "" && e.Message.Contains("same number already exists"))
+										{
+											return ERROR.ItemAlreadyExistError;
+										}
+										else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+										{
+											return ERROR.AuthenticationError;
+										}
+										else
+											return ERROR.IOError;
+									}		
 								}
 							}
-							return ERROR.AuthenticationError;
+							return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
-				return ERROR.IOError;
+				return ERROR.DeviceNotReadyError;
 			}
 			catch
 			{
-				return ERROR.AuthenticationError;
+				return ERROR.IOError;
 			}
 		}
 
@@ -1656,20 +2017,30 @@ namespace RFiDGear
                                     cmd.DeleteFile((byte)_fileID);
                                     return ERROR.NoError;
 								}
-								catch
+								catch (Exception e)
 								{
-									return ERROR.AuthenticationError;
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
 								}
 							}
-							return ERROR.AuthenticationError;
+							else
+								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
-				return ERROR.IOError;
+				return ERROR.DeviceNotReadyError;
 			}
 			catch
 			{
-				return ERROR.AuthenticationError;
+				return ERROR.IOError;
 			}
 		}
 
@@ -1716,20 +2087,30 @@ namespace RFiDGear
 
 									return ERROR.NoError;
 								}
-								catch
+								catch (Exception e)
 								{
-									return ERROR.AuthenticationError;
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
 								}
 							}
-							return ERROR.AuthenticationError;
+							else
+								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
-				return ERROR.IOError;
+				return ERROR.DeviceNotReadyError;
 			}
 			catch
 			{
-				return ERROR.AuthenticationError;
+				return ERROR.IOError;
 			}
 		}
 
@@ -1744,7 +2125,7 @@ namespace RFiDGear
 				// File communication requires encryption
 				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
 
-				IDESFireEV1Commands cmd;
+				//IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
@@ -1768,7 +2149,7 @@ namespace RFiDGear
 							   card.Type == "DESFireEV1" ||
 							   card.Type == "DESFireEV2")
 							{
-								cmd = card.Commands as IDESFireEV1Commands;
+								var cmd = card.Commands as IDESFireCommands;
 								try
 								{
 									cmd.SelectApplication((uint)_appID);
@@ -1784,9 +2165,18 @@ namespace RFiDGear
 											FileIDList = (fileIDsObject as byte[]);
 											return ERROR.NoError;
 										}
-										catch
+										catch (Exception e)
 										{
-											return ERROR.AuthenticationError;
+											if (e.Message != "" && e.Message.Contains("same number already exists"))
+											{
+												return ERROR.ItemAlreadyExistError;
+											}
+											else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+											{
+												return ERROR.AuthenticationError;
+											}
+											else
+												return ERROR.IOError;
 										}
 									}
 
@@ -1795,20 +2185,30 @@ namespace RFiDGear
 
 									return ERROR.NoError;
 								}
-								catch
+								catch (Exception e)
 								{
-									return ERROR.AuthenticationError;
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
 								}
 							}
-							return ERROR.AuthenticationError;
+							else
+								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
-				return ERROR.IOError;
+				return ERROR.DeviceNotReadyError;
 			}
 			catch
 			{
-				return ERROR.AuthenticationError;
+				return ERROR.IOError;
 			}
 		}
 
@@ -1816,7 +2216,7 @@ namespace RFiDGear
 		{
 			try
 			{
-				IDESFireEV1Commands cmd;
+				// IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
@@ -1836,7 +2236,7 @@ namespace RFiDGear
 							    card.Type == "DESFireEV1" ||
 							    card.Type == "DESFireEV2")
 							{
-								cmd = card.Commands as IDESFireEV1Commands;
+								var cmd = card.Commands as IDESFireCommands;
 								try
 								{
 									cmd.SelectApplication((uint)_appID);
@@ -1852,21 +2252,40 @@ namespace RFiDGear
 
 											return ERROR.NoError;
 										}
-										catch
+										catch (Exception e)
 										{
-											return ERROR.AuthenticationError;
+											if (e.Message != "" && e.Message.Contains("same number already exists"))
+											{
+												return ERROR.ItemAlreadyExistError;
+											}
+											else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+											{
+												return ERROR.AuthenticationError;
+											}
+											else
+												return ERROR.IOError;
 										}
 									}
 									DesfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
 
 									return ERROR.NoError;
 								}
-								catch
+								catch (Exception e)
 								{
-									return ERROR.AuthenticationError;
+									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									{
+										return ERROR.ItemAlreadyExistError;
+									}
+									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									{
+										return ERROR.AuthenticationError;
+									}
+									else
+										return ERROR.IOError;
 								}
 							}
-							return ERROR.AuthenticationError;
+							else
+								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}

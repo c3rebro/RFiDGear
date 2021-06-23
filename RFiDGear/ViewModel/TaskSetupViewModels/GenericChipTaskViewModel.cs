@@ -20,6 +20,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -347,34 +348,28 @@ namespace RFiDGear.ViewModel
         {
 			TaskErr = ERROR.Empty;
 
-			Task desfireTask =
+			Task genericChipTask =
 				new Task(() =>
 				{
 					using (RFiDDevice device = RFiDDevice.Instance)
 					{
 						if (device != null)
 						{
-							//StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
-							//Mouse.OverrideCursor = Cursors.Wait;
+							ERROR result = device.ReadChipPublic();
 
-							if (device.ReadChipPublic() == ERROR.NoError)
+							if (result == ERROR.NoError)
 							{
-								//StatusText += string.Format("{0}: Successfully Authenticated to App 0\n", DateTime.Now);
-
-								if (device.CardInfo.CardType == SelectedChipType)
-									TaskErr = ERROR.NoError;
+								
+								if (device.GenericChip.CardType == SelectedChipType)
+									result = ERROR.NoError;
 								else
-									TaskErr = ERROR.IsNotTrue;
+									result = ERROR.IsNotTrue;
 
+								TaskErr = result;
 								return;
 
-								//StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
 							}
-
-							//RaisePropertyChanged("DataAsByteArray");
-
-							//Mouse.OverrideCursor = null;
 						}
 						else
 						{
@@ -388,7 +383,7 @@ namespace RFiDGear.ViewModel
 			{
 				TaskErr = ERROR.DeviceNotReadyError;
 
-				desfireTask.ContinueWith((x) =>
+				genericChipTask.ContinueWith((x) =>
 				{
 					if (TaskErr == ERROR.NoError)
 					{
@@ -399,13 +394,68 @@ namespace RFiDGear.ViewModel
 						IsTaskCompletedSuccessfully = false;
 					}
 				});
-
-				desfireTask.Start();
+				genericChipTask.RunSynchronously();
 			}
 
 			return;
 		}
 
+		public ICommand CheckChipUID { get { return new RelayCommand(OnNewCheckChipUIDCommand); } }
+		private void OnNewCheckChipUIDCommand()
+		{
+			TaskErr = ERROR.Empty;
+
+			Task genericChipTask =
+				new Task(() =>
+				{
+					using (RFiDDevice device = RFiDDevice.Instance)
+					{
+						if (device != null)
+						{
+
+							ERROR result = device.ReadChipPublic();
+
+							if (result == ERROR.NoError)
+							{
+
+								if (device.GenericChip.CardType == SelectedChipType)
+									result = ERROR.NoError;
+								else
+									result = ERROR.IsNotTrue;
+
+								TaskErr = result;
+								return;
+
+							}
+						}
+						else
+						{
+							TaskErr = ERROR.DeviceNotReadyError;
+							return;
+						}
+					}
+				});
+
+			if (TaskErr == ERROR.Empty)
+			{
+				TaskErr = ERROR.DeviceNotReadyError;
+
+				genericChipTask.ContinueWith((x) =>
+				{
+					if (TaskErr == ERROR.NoError)
+					{
+						IsTaskCompletedSuccessfully = true;
+					}
+					else
+					{
+						IsTaskCompletedSuccessfully = false;
+					}
+				});
+				genericChipTask.RunSynchronously();
+			}
+
+			return;
+		}
 		#endregion
 
 		#region IUserDialogViewModel Implementation

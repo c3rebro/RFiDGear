@@ -32,22 +32,29 @@ namespace RFiDGear.ViewModel
 	/// </summary>
 	public class CommonTaskViewModel : ViewModelBase, IUserDialogViewModel
 	{
-		#region fields
+		#region Fields
 
-		private protected SettingsReaderWriter settings = new SettingsReaderWriter();
         private protected ReportReaderWriter reportReaderWriter;
         private protected Checkpoint checkpoint;
-        private protected readonly ObservableCollection<object> _availableTasks;
 
-		#endregion fields
+		[XmlIgnore]
+        public ObservableCollection<object> AvailableTasks { get; set; }
 
-		#region constructors
-		
+		[XmlIgnore]
+        public GenericChipModel GenericChip { get; set; }
+		//public CARD_INFO CardInfo { get; set; }
+
+		#endregion
+
+		#region Constructors
+
 		/// <summary>
 		///
 		/// </summary>
 		public CommonTaskViewModel()
 		{
+			TaskErr = ERROR.Empty;
+
 			checkpoint = new Checkpoint();
 			Checkpoints = new ObservableCollection<Checkpoint>();
 
@@ -58,14 +65,13 @@ namespace RFiDGear.ViewModel
 		/// </summary>
 		/// <param name="_selectedSetupViewModel"></param>
 		/// <param name="_dialogs"></param>
-		public CommonTaskViewModel(object _selectedSetupViewModel, ObservableCollection<object> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
+		public CommonTaskViewModel(object _selectedSetupViewModel, ObservableCollection<object> _tasks = null, ObservableCollection<IDialogViewModel> _dialogs = null)
 		{
 			try
 			{
+				TaskErr = ERROR.Empty;
 
-				_availableTasks = _tasks;
 				checkpoint = new Checkpoint();
-
 				Checkpoints = new ObservableCollection<Checkpoint>();
 
 				if(_selectedSetupViewModel is CommonTaskViewModel)
@@ -86,6 +92,18 @@ namespace RFiDGear.ViewModel
 
 						p.SetValue(this, p.GetValue(_selectedSetupViewModel));
 					}
+
+					using (ReportReaderWriter reader = new ReportReaderWriter())
+                    {
+						if (!string.IsNullOrEmpty(reportTemplatePath))
+						{
+							reader.ReportTemplatePath = reportTemplatePath;
+							reader.OpenReport();
+							TemplateFields = reader.GetReportFields();
+
+							RaisePropertyChanged("SelectedTemplateField");
+						}
+					}
 				}
 				
 				else
@@ -94,9 +112,30 @@ namespace RFiDGear.ViewModel
 					SelectedTaskDescription = "Enter a Description";
                     SelectedExecuteConditionErrorLevel = ERROR.Empty;
                     SelectedExecuteConditionTaskIndex = "0";
+
+					try
+					{
+						//string templatePath = _tasks.OfType<CommonTaskViewModel>()
+                        //    .Where(x => x.ReportTemplatePath != null)
+                        //    .Where(y => y.IsFocused)
+                        //    .Select(x => x.ReportTemplatePath).Single();
+
+						reportReaderWriter = new ReportReaderWriter();
+						//reportReaderWriter.ReportTemplatePath = templatePath;
+						//reportReaderWriter.OpenReport();
+
+						//TemplateFields = reportReaderWriter.GetReportFields();
+					}
+
+					catch (Exception e)
+                    {
+
+                    }
 				}
-				
-			}
+
+                AvailableTasks = _tasks;
+
+            }
 			catch (Exception e)
 			{
 				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
@@ -382,7 +421,7 @@ namespace RFiDGear.ViewModel
 			get
 			{
                 var availableTaskIndices = new ObservableCollection<string>();
-                foreach (object ssVMO in _availableTasks)
+                foreach (object ssVMO in AvailableTasks)
                 {
                     switch (ssVMO)
                     {
@@ -483,21 +522,26 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// Available Fields in the Report PDF
         /// </summary>
-        public ObservableCollection<string> TemplateFields
+        [XmlIgnore]
+		public ObservableCollection<string> TemplateFields
         {
-            get { return templateFields; }
-            set
-            {
-                templateFields = value;
-                RaisePropertyChanged("TemplateFields");
-            }
-        }
-        private ObservableCollection<string> templateFields;
+			get
+			{
+				return templateFields;
+			}
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public string SelectedTemplateField
+			set
+			{
+				templateFields = value;
+				RaisePropertyChanged("TemplateFields");
+			}
+		}
+		private ObservableCollection<string> templateFields;
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public string SelectedTemplateField
         {
             get
             {
@@ -530,15 +574,6 @@ namespace RFiDGear.ViewModel
         }
         private string content;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		[XmlIgnore]
-		public SettingsReaderWriter Settings
-		{
-			get { return settings; }
-		}
-
 
         #endregion
 
@@ -552,129 +587,165 @@ namespace RFiDGear.ViewModel
         public ICommand OpenReportTemplateCommand { get { return new RelayCommand(OnNewOpenReportTemplateCommand); } }
 		private void OnNewOpenReportTemplateCommand()
         {
-			var dlg = new OpenFileDialogViewModel
-			{
-				Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-				Filter = ResourceLoader.getResource("filterStringSaveReport"),
-				Multiselect = false
-			};
 
-			
-			if (dlg.Show(this.Dialogs) && dlg.FileName != null)
-			{
-				CARD_INFO card;
+			TaskErr = ERROR.Empty;
 
-				Mouse.OverrideCursor = Cursors.AppStarting;
-
-                ReportTemplatePath = dlg.FileName;
-
-                if(!String.IsNullOrWhiteSpace(ReportTemplatePath))
-                {
-                    reportReaderWriter = new ReportReaderWriter(ReportTemplatePath);
-                }
-
-
-				try
+			try
+            {
+				var dlg = new OpenFileDialogViewModel
 				{
-					/*
-					//try to get singleton instance
-					using (RFiDDevice device = RFiDDevice.Instance)
+					Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
+					Filter = ResourceLoader.getResource("filterStringSaveReport"),
+					Multiselect = false
+				};
+
+
+				if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+				{
+					Mouse.OverrideCursor = Cursors.AppStarting;
+
+					string path = dlg.FileName;
+
+					if (!String.IsNullOrWhiteSpace(path))
 					{
-						//reader was ready - proceed
-						if (device != null)
-						{
-							device.ReadChipPublic();
+						ReportTemplatePath = path;
+						reportReaderWriter = new ReportReaderWriter();
+						reportReaderWriter.ReportTemplatePath = ReportTemplatePath;
+						reportReaderWriter.OpenReport();
 
-							card = device.CardInfo;
-
-							reportReaderWriter.CreateReport(device, dlg.FileName);
-						}
-						else
-							card = new CARD_INFO(CARD_TYPE.Unspecified, "");
+						TemplateFields = reportReaderWriter.GetReportFields();
 					}
-					*/
 
-					TemplateFields = reportReaderWriter.GetReportFields();
+					Mouse.OverrideCursor = null;
+
+					RaisePropertyChanged("TemplateFields");
 				}
+			}
 
-				catch { }
-
-
-
-				//IRandomAccessSource source = new RandomAccessSourceFactory().CreateSource(new byte[1] { 3});
-				//PdfDocument pdfDoc = new PdfDocument(new PdfReader(source, new ReaderProperties()), new PdfWriter(dlg.FileName));
-				//PdfAcroForm form = PdfAcroForm.GetAcroForm(pdfDoc, true);
-
-				//form.GetField("test1")
-				//    .SetValue("A B C D E F\nG H I J K L M N\nO P Q R S T U\r\nV W X Y Z\n\nAlphabet street");
-
-				// If no fields have been explicitly included, then all fields are flattened.
-				// Otherwise only the included fields are flattened.
-				//form.FlattenFields();
-
-				//pdfDoc.Close();
-
-				Mouse.OverrideCursor = null;
-
-                RaisePropertyChanged("TemplateFields");
-            }
 			
+			catch { }
 		}
 
         /// <summary>
         /// 
         /// </summary>
-        public ICommand WriteReportCommand { get { return new RelayCommand<string>(OnNewWriteReportCommand); } }
-        private void OnNewWriteReportCommand(string _path)
+        public ICommand WriteReportCommand { get { return new RelayCommand<ReportReaderWriter>(OnNewWriteReportCommand); } }
+        private void OnNewWriteReportCommand(ReportReaderWriter _reportReaderWriter)
         {
+			TaskErr = ERROR.Empty;
 
-            if (!String.IsNullOrWhiteSpace(_path))
+			if (_reportReaderWriter != null)
             {
-                CARD_INFO card;
 
-                //Mouse.OverrideCursor = Cursors.AppStarting;
+				Dictionary<string, int> taskIndices = new Dictionary<string, int>();
 
-                try
+				// create a new key,value pair of taskpositions <-> taskindex 
+				// (they could be different as because item at array position 0 can have index "100")
+				foreach (object o in AvailableTasks)
+				{
+					switch (o)
+					{
+						case GenericChipTaskViewModel ssVM:
+							if (ssVM.IsValidSelectedTaskIndex != false)
+								taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
+							break;
+						case CommonTaskViewModel ssVM:
+							if (ssVM.IsValidSelectedTaskIndex != false)
+								taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
+							break;
+						case MifareClassicSetupViewModel ssVM:
+							if (ssVM.IsValidSelectedTaskIndex != false)
+								taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
+							break;
+						case MifareDesfireSetupViewModel ssVM:
+							if (ssVM.IsValidSelectedTaskIndex != false)
+								taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
+							break;
+						case MifareUltralightSetupViewModel ssVM:
+							if (ssVM.IsValidSelectedTaskIndex != false)
+								taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
+							break;
+					}
+				}
+
+				try
                 {
-                    if (reportReaderWriter != null)
-                    {
-                        reportReaderWriter.ReportOutputPath = _path;
-                    }
-                    else
-                        reportReaderWriter = new ReportReaderWriter(ReportTemplatePath);
+                    reportReaderWriter = _reportReaderWriter;
+					if (string.IsNullOrEmpty(reportReaderWriter.ReportTemplatePath))
+						reportReaderWriter.ReportTemplatePath = this.ReportTemplatePath;
 
-                    reportReaderWriter.ReportOutputPath = _path;
-
-                    if (!String.IsNullOrWhiteSpace(reportReaderWriter.ReportOutputPath))
+					if (!String.IsNullOrWhiteSpace(reportReaderWriter.ReportTemplatePath))
                     {
-                        foreach (Checkpoint checkpoint in this.Checkpoints)
+						reportReaderWriter.OpenReport();
+
+						foreach (Checkpoint checkpoint in this.Checkpoints)
                         {
-                            reportReaderWriter.SetReportField(checkpoint.TemplateField, checkpoint.Content);
+							int targetIndex;
+
+							bool hasVariable = false;
+							string temporaryContent = "";
+
+							if(checkpoint.Content.Contains("%UID"))
+                            {
+								temporaryContent = checkpoint.Content.Replace("%UID", GenericChip.UID);
+								hasVariable = true;
+                            }
+
+							if (checkpoint.Content.Contains("%DATETIME"))
+							{
+								temporaryContent = checkpoint.Content.Replace("%DATETIME", DateTime.Now.ToString());
+								hasVariable = true;
+							}
+
+                            if (checkpoint.Content.Contains("%FREEMEM"))
+                            {
+								temporaryContent = checkpoint.Content.Replace("%FREEMEM", GenericChip.FreeMemory.ToString());
+								hasVariable = true;
+							}
+
+                            if (taskIndices.TryGetValue(checkpoint.TaskIndex, out targetIndex))
+							{
+								switch (AvailableTasks[targetIndex])
+								{
+									case GenericChipTaskViewModel tsVM:
+										if (tsVM.TaskErr == checkpoint.ErrorLevel)
+											reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+										break;
+									case CommonTaskViewModel tsVM:
+										if (tsVM.TaskErr == checkpoint.ErrorLevel)
+											reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+										break;
+									case MifareClassicSetupViewModel tsVM:
+										if (tsVM.TaskErr == checkpoint.ErrorLevel)
+											reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+										break;
+									case MifareDesfireSetupViewModel tsVM:
+										if (tsVM.TaskErr == checkpoint.ErrorLevel)
+											reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+										break;
+									case MifareUltralightSetupViewModel tsVM:
+										if (tsVM.TaskErr == checkpoint.ErrorLevel)
+											reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+										break;
+								}
+							}
                         }
+
+						reportReaderWriter.CloseReport();
                     }
-
-
-                    
                 }
 
-                catch { }
+                catch (Exception e)
+				{
+					TaskErr = ERROR.IOError;
+					IsTaskCompletedSuccessfully = false;
+                    RaisePropertyChanged("TemplateFields");
 
+                    return;
+                }
 
-
-                //IRandomAccessSource source = new RandomAccessSourceFactory().CreateSource(new byte[1] { 3});
-                //PdfDocument pdfDoc = new PdfDocument(new PdfReader(source, new ReaderProperties()), new PdfWriter(dlg.FileName));
-                //PdfAcroForm form = PdfAcroForm.GetAcroForm(pdfDoc, true);
-
-                //form.GetField("test1")
-                //    .SetValue("A B C D E F\nG H I J K L M N\nO P Q R S T U\r\nV W X Y Z\n\nAlphabet street");
-
-                // If no fields have been explicitly included, then all fields are flattened.
-                // Otherwise only the included fields are flattened.
-                //form.FlattenFields();
-
-                //pdfDoc.Close();
-
-                //Mouse.OverrideCursor = null;
+				TaskErr = ERROR.NoError;
+				IsTaskCompletedSuccessfully = true;
 
                 RaisePropertyChanged("TemplateFields");
             }
@@ -706,6 +777,7 @@ namespace RFiDGear.ViewModel
                 else if (SelectedTaskType == TaskType_CommonTask.CheckLogicCondition)
                 {
                     checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
+					checkpoint.ErrorLevel = SelectedErrorLevel;
 
                     Checkpoints.Add(checkpoint);
                 }
@@ -730,131 +802,169 @@ namespace RFiDGear.ViewModel
         public ICommand CheckLogicCondition { get { return new RelayCommand<ObservableCollection<object>>(OnNewCheckLogicConditionCommand); } }
         private void OnNewCheckLogicConditionCommand(ObservableCollection<object> _tasks = null)
         {
-            try
-            {
-                TaskErr = ERROR.Empty;
+			Task commonTask =
+				new Task(() =>
+				{
+					try
+					{
+						ERROR result = ERROR.Empty;
+						TaskErr = result;
 
-                // here we are about to compare the results of the added "Checkpoints" in the "Check Condition" Task with the actual 
-                // conditions from the live tasks
+						// here we are about to compare the results of the added "Checkpoints" in the "Check Condition" Task with the actual 
+						// conditions from the live tasks
 
-                //lets fill a new vector with the results of all so far executed tasks... We will re-use the checkpoint objects for this
-                ObservableCollection<Checkpoint> results = new ObservableCollection<Checkpoint>();
+						//lets fill a new vector with the results of all so far executed tasks... We will re-use the checkpoint objects for this
+						ObservableCollection<Checkpoint> results = new ObservableCollection<Checkpoint>();
 
-                foreach (object task in _tasks)
-                {
-                    switch (task)
-                    {
-                        case CommonTaskViewModel ssVM:
-                            results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
-                            break;
-                        case GenericChipTaskViewModel ssVM:
-                            results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
-                            break;
-                        case MifareClassicSetupViewModel ssVM:
-                            results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
-                            break;
-                        case MifareDesfireSetupViewModel ssVM:
-                            results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
-                            break;
-                        case MifareUltralightSetupViewModel ssVM:
-                            results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
-                            break;
-                    }
-                }
+						foreach (object task in _tasks)
+						{
+							switch (task)
+							{
+								case CommonTaskViewModel ssVM:
+									results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+									break;
+								case GenericChipTaskViewModel ssVM:
+									results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+									break;
+								case MifareClassicSetupViewModel ssVM:
+									results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+									break;
+								case MifareDesfireSetupViewModel ssVM:
+									results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+									break;
+								case MifareUltralightSetupViewModel ssVM:
+									results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+									break;
+							}
+						}
 
-                switch (SelectedLogicCondition)
-                {
-                    case LOGIC_STATE.AND:
+						switch (SelectedLogicCondition)
+						{
+							case LOGIC_STATE.AND:
 
-                        foreach (Checkpoint cp in Checkpoints)
-                        {
-                            if (cp.ErrorLevel == results.Where<Checkpoint>(x => x.TaskIndex == cp.TaskIndex).Single().ErrorLevel)
-                                continue;
-                            else
-                            {
-                                TaskErr = ERROR.IsNotTrue;
-                                return;
-                            }
-                            
-                        }
+								foreach (Checkpoint cp in Checkpoints)
+								{
+									if (cp.ErrorLevel == results.Where<Checkpoint>(x => x.TaskIndex == cp.TaskIndex).Single().ErrorLevel)
+										continue;
+									else
+									{
+										result = ERROR.IsNotTrue;
+										return;
+									}
 
-                        TaskErr = ERROR.NoError;
-                        break;
+								}
+
+								result = ERROR.NoError;
+								break;
 
 
-                    case LOGIC_STATE.NAND:
+							case LOGIC_STATE.NAND:
 
-                        foreach (Checkpoint cp in Checkpoints)
-                        {
-                            for (int i = 0; i < Checkpoints.Count(); i++)
-                            {
-                                if ((cp.ErrorLevel == Checkpoints[i].ErrorLevel))
-                                    continue;
-                                else
-                                {
-                                    TaskErr = ERROR.NoError;
-                                    return;
-                                }
-                            }
+								foreach (Checkpoint cp in Checkpoints)
+								{
+									for (int i = 0; i < Checkpoints.Count(); i++)
+									{
+										if ((cp.ErrorLevel == Checkpoints[i].ErrorLevel))
+											continue;
+										else
+										{
+											TaskErr = ERROR.NoError;
+											return;
+										}
+									}
 
-                        }
+								}
 
-                        TaskErr = ERROR.IsNotTrue;
+								result = ERROR.IsNotTrue;
+								break;
 
-                        break;
+							case LOGIC_STATE.NOR:
 
-                    case LOGIC_STATE.NOR:
+								foreach (Checkpoint cp in Checkpoints)
+								{
+									for (int i = 0; i < Checkpoints.Count(); i++)
+									{
+										if ((cp.ErrorLevel == Checkpoints[i].ErrorLevel))
+										{
+											TaskErr = ERROR.IsNotTrue;
+											return;
+										}
+									}
+								}
 
-                        foreach (Checkpoint cp in Checkpoints)
-                        {
-                            for (int i = 0; i < Checkpoints.Count(); i++)
-                            {
-                                if ((cp.ErrorLevel == Checkpoints[i].ErrorLevel))
-                                {
-                                    TaskErr = ERROR.IsNotTrue;
-                                    return;
-                                }
-                            }
-                        }
+								result = ERROR.NoError;
+								break;
 
-                        TaskErr = ERROR.NoError;
+							case LOGIC_STATE.NOT:
 
-                        break;
+								break;
 
-                    case LOGIC_STATE.NOT:
+							case LOGIC_STATE.OR:
 
-                        break;
+								foreach (Checkpoint outerCP in Checkpoints)
+								{
+									foreach (Checkpoint resultCP in results)
+									{
+										if (resultCP.TaskIndex == outerCP.TaskIndex && resultCP.ErrorLevel == outerCP.ErrorLevel)
+										{
+											TaskErr = ERROR.NoError;
+											return;
+										}
+										else
+											continue;
+									}
+								}
 
-                    case LOGIC_STATE.OR:
+								result = ERROR.IsNotTrue;
+								break;
+						}
 
-                        foreach (Checkpoint cp in Checkpoints)
-                        {
-                            if (cp.ErrorLevel == results.Where<Checkpoint>(x => x.TaskIndex == cp.TaskIndex).Single().ErrorLevel)
-                            {
-                                TaskErr = ERROR.NoError;
-                                return;
-                            }
-                        }
+						TaskErr = result;
+					}
 
-                        TaskErr = ERROR.IsNotTrue;
+					
+					catch (Exception e)
+					{
+						LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+					}
 
-                        break;
-                }
-            }
+				});
 
-            catch (Exception e)
-            {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-            }
+			if (TaskErr == ERROR.Empty)
+			{
+				TaskErr = ERROR.DeviceNotReadyError;
 
-            return;
+				commonTask.ContinueWith((x) =>
+				{
+					if (TaskErr == ERROR.NoError)
+					{
+						IsTaskCompletedSuccessfully = true;
+					}
+					else
+					{
+						IsTaskCompletedSuccessfully = false;
+					}
+				});
+				commonTask.RunSynchronously();
+			}
+
+			return;
         }
 
-        #endregion Commands
+		/// <summary>
+		/// 
+		/// </summary>
+		public ICommand RemoveCheckpointCommand { get { return new RelayCommand(OnNewRemoveCheckpointCommand); } }
+		private void OnNewRemoveCheckpointCommand()
+		{
+			Checkpoints.Remove(SelectedCheckpoint);
+		}
 
-        #region IUserDialogViewModel Implementation
+		#endregion Commands
 
-        [XmlIgnore]
+		#region IUserDialogViewModel Implementation
+
+		[XmlIgnore]
 		public bool IsModal { get; private set; }
 		
 		public virtual void RequestClose()

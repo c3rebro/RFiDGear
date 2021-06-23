@@ -984,4 +984,10 @@ Needed by:
   <data name="labelContentExecuteConditionTaskIndex" xml:space="preserve">
     <value>Targeted Task Index</value>
   </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.ReadAppSettings" xml:space="preserve">
+    <value>Read App Configuration</value>
+  </data>
+  <data name="ENUM.ERROR.OutOfMemory" xml:space="preserve">
+    <value>Out Of Memory</value>
+  </data>
 </root>

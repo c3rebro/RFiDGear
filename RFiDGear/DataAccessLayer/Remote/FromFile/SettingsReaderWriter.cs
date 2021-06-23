@@ -19,11 +19,11 @@ namespace RFiDGear
 
         private readonly string _settingsFileFileName = "settings.xml";
         private readonly string _updateConfigFileFileName = "update.xml";
-        private readonly string _updateURL = @"http://rfidgear.hyperstack.de/update.xml";
+        private readonly string _updateURL = @"http://hyperstack.de/rfidgear/update.xml";
         private readonly int _updateInterval = 900;
         private readonly string _securityToken = "D68EF3A7-E787-4CC4-B020-878BA649B4CD";
         private readonly string _payload = "update.zip";
-        private readonly string _baseUri = @"http://rfidgear.hyperstack.de/download/";
+        private readonly string _baseUri = @"http://hyperstack.de/rfidgear/download/";
 
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 

@@ -197,7 +197,7 @@
                                 Height="26"
                                 Margin="10,0,10,10"
                                 VerticalAlignment="Bottom"
-                                Command="{Binding OpenReportTemplateCommand}"
+                                Command="{Binding RemoveCheckpointCommand}"
                                 Content="Remove Checkpoint" />
                             <Button
                                 Grid.Row="5"

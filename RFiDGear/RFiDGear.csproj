@@ -180,6 +180,7 @@
     <Compile Include="Model\MifareDesfie\MifareDesfireAppModel.cs" />
     <Compile Include="Model\MifareDesfie\MifareDesfireFileModel.cs" />
     <Compile Include="Model\MifareDesfie\MifareDesfireChipModel.cs" />
+    <Compile Include="Model\GenericChipModel.cs" />
     <Compile Include="Model\MifareUltralight\MifareUltralightChipModel.cs" />
     <Compile Include="Model\MifareUltralight\MifareUltralightPageModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

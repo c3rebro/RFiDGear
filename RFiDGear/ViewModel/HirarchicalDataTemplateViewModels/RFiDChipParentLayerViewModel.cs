@@ -36,15 +36,15 @@ namespace RFiDGear.ViewModel
 
 		private readonly RelayCommand _cmdCreateApp;
 		private readonly RelayCommand _cmdEraseDesfireCard;
-		//private readonly string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
+        //private readonly string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 
-		private MifareClassicChipModel mifareClassicUidModel;
-		private MifareDesfireChipModel mifareDesfireUidModel;
-		private MifareUltralightChipModel mifareUltralightUidModel;
+        private protected MifareClassicChipModel mifareClassicUidModel; // { get; private set; }
+        private protected MifareDesfireChipModel mifareDesfireUidModel; // { get; private set; }
+        private protected MifareUltralightChipModel mifareUltralightUidModel; // { get; private set; }
 
-		#region Constructors
+        #region Constructors
 
-		public RFiDChipParentLayerViewModel()
+        public RFiDChipParentLayerViewModel()
 		{
 			ID = new Random().Next();
 
@@ -120,6 +120,7 @@ namespace RFiDGear.ViewModel
 			settings = new SettingsReaderWriter();
 
 			mifareDesfireUidModel = _uidModel;
+
 			CardType = mifareDesfireUidModel.CardType;
 
 			RelayCommand _cmdReadAppIds = new RelayCommand(MifareDesfireQuickCheck);
@@ -147,7 +148,7 @@ namespace RFiDGear.ViewModel
 			IsSelected = true;
 
 			if (mifareDesfireUidModel != null)
-				ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareDesfireUidModel.UidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
+				ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareDesfireUidModel.UID, Enum.GetName(typeof(CARD_TYPE), CardType));
 		}
 
 		public RFiDChipParentLayerViewModel(MifareUltralightChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
@@ -278,7 +279,7 @@ namespace RFiDGear.ViewModel
 
 						Children.Add(
 							new RFiDChipChildLayerViewModel(
-								string.Format("Available Space: {0}Byte", device.FreeMemory)));
+								string.Format("Available Space: {0}Byte(s)", device.GenericChip.FreeMemory)));
 
 						Children.Add(
 							new RFiDChipChildLayerViewModel(
@@ -529,7 +530,7 @@ namespace RFiDGear.ViewModel
 				if (mifareClassicUidModel != null)
 					return mifareClassicUidModel.UidNumber;
 				else if(mifareDesfireUidModel != null)
-					return mifareDesfireUidModel.UidNumber;
+					return mifareDesfireUidModel.UID;
 				else if(mifareUltralightUidModel != null)
 					return mifareUltralightUidModel.UidNumber;
 				else

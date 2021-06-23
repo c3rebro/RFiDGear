@@ -1735,8 +1735,6 @@ namespace RFiDGear.ViewModel
 
 			classicTask.ContinueWith((x) =>
 			                         {
-			                         	//Mouse.OverrideCursor = null;
-
 			                         	if (TaskErr == ERROR.NoError)
 			                         	{
 			                         		IsTaskCompletedSuccessfully = true;
@@ -1754,8 +1752,6 @@ namespace RFiDGear.ViewModel
 		public ICommand WriteDataCommand { get { return new RelayCommand(OnNewWriteDataCommand); } }
 		private protected void OnNewWriteDataCommand()
 		{
-			//Mouse.OverrideCursor = Cursors.Wait;
-
 			TaskErr = ERROR.Empty;
 
 			Task classicTask =
@@ -1838,12 +1834,8 @@ namespace RFiDGear.ViewModel
 
 			if (TaskErr == ERROR.Empty)
 			{
-				TaskErr = ERROR.DeviceNotReadyError;
-
 				classicTask.ContinueWith((x) =>
 				                         {
-				                         	//Mouse.OverrideCursor = null;
-
 				                         	if (TaskErr == ERROR.NoError)
 				                         	{
 				                         		IsTaskCompletedSuccessfully = true;

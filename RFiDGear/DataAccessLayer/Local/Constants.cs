@@ -100,6 +100,7 @@ namespace RFiDGear.DataAccessLayer
 	public enum TaskType_MifareDesfireTask
 	{
 		None,
+        ReadAppSettings,
 		FormatDesfireCard,
 		PICCMasterKeyChangeover,
 		ApplicationKeyChangeover,
@@ -172,20 +173,28 @@ namespace RFiDGear.DataAccessLayer
 		Allowed_With_KeyA_Or_KeyB
 	}
 
+    /*
 	/// <summary>
 	/// Chip Struct. A Chip holds UID and Type Info
 	/// </summary>
 	public struct CARD_INFO
 	{
-		public CARD_INFO(CARD_TYPE _type, string _uid)
+		public CARD_INFO(CARD_TYPE _type, string _uid, uint freeMemory = 0, DESFireKeyType keyType = DESFireKeyType.DF_KEY_DES, DESFireKeySettings keySettings = DESFireKeySettings.KS_DEFAULT)
 		{
 			CardType = _type;
-			uid = _uid;
+			UID = _uid;
+            FreeMemory = freeMemory;
+            KeySettings = keySettings;
+            KeyType = keyType;
 		}
 
-		public string uid;
+		public string UID;
+        public uint FreeMemory;
 		public CARD_TYPE CardType;
+        public DESFireKeySettings KeySettings;
+        public DESFireKeyType KeyType;
 	}
+    */
 
 	/// <summary>
 	/// Currently Available Cardtechnologies
@@ -220,7 +229,8 @@ namespace RFiDGear.DataAccessLayer
         ItemAlreadyExistError,
 		IsNotTrue,
 		IsNotFalse,
-        NotAllowed
+		OutOfMemory,
+		NotAllowed
 	}
 
 	/// <summary>
@@ -319,7 +329,7 @@ namespace RFiDGear.DataAccessLayer
         DF_KEY_AES,
         DF_KEY_DES
     }
-
+    
     /// <summary>
     /// 
     /// </summary>

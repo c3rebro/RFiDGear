@@ -141,7 +141,7 @@
                                 Height="26"
                                 Margin="10,0,10,10"
                                 VerticalAlignment="Bottom"
-                                Command="{Binding OpenReportTemplateCommand}"
+                                Command="{Binding RemoveCheckpointCommand}"
                                 Content="Remove Checkpoint" />
                             <Button
                                 Grid.Row="5"
@@ -157,8 +157,6 @@
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="42" />
-                                <RowDefinition Height="36" />
-                                <RowDefinition Height="36" />
                                 <RowDefinition Height="36" />
                                 <RowDefinition Height="*" />
                                 <RowDefinition Height="36" />

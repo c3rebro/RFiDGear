@@ -61,7 +61,7 @@ namespace RFiDGear.ViewModel
                                              + '\n'
                                              + "UID: {0} "
                                              + '\n'
-                                             + "Type: {1}", device.CardInfo.uid, Enum.GetName(typeof(CARD_TYPE), device.CardInfo.CardType));
+                                             + "Type: {1}", device.GenericChip.UID, Enum.GetName(typeof(CARD_TYPE), device.GenericChip.CardType));
             }
             else
                 ReaderStatus = "no Reader detected";
