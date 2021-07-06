@@ -308,15 +308,23 @@ namespace RFiDGear.ViewModel
 				switch (value)
 				{
 					case TaskType_CommonTask.None:
-
+						IsLogicCheckerTabEnabled = false;
+						IsReportSetupTabEnabled = false;
 						break;
 
 					case TaskType_CommonTask.CreateReport:
+						IsLogicCheckerTabEnabled = false;
+						IsReportSetupTabEnabled = true;
+						break;
 
+					case TaskType_CommonTask.CheckLogicCondition:
+						IsLogicCheckerTabEnabled = true;
+						IsReportSetupTabEnabled = false;
 						break;
 
 					case TaskType_CommonTask.ChangeDefault:
-
+						IsLogicCheckerTabEnabled = true;
+						IsReportSetupTabEnabled = true;
 						break;
 				}
 				RaisePropertyChanged("SelectedTaskType");
@@ -369,6 +377,38 @@ namespace RFiDGear.ViewModel
 		#endregion
 
 		#region Shared Properties
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool IsReportSetupTabEnabled
+		{
+			get
+			{
+				return isReportSetupTabEnabled;
+			}
+
+			set
+			{
+				isReportSetupTabEnabled = value;
+				RaisePropertyChanged("IsReportSetupTabEnabled");
+			}
+		}
+		private bool isReportSetupTabEnabled;
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool IsLogicCheckerTabEnabled
+		{
+			get { return isLogicCheckerTabEnabled; }
+			set
+			{
+				isLogicCheckerTabEnabled = value;
+				RaisePropertyChanged("IsLogicCheckerTabEnabled");
+			}
+		}
+		private bool isLogicCheckerTabEnabled;
 
 		/// <summary>
 		/// 

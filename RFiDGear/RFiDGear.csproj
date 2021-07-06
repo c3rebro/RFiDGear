@@ -177,9 +177,9 @@
     <Compile Include="Model\MifareClassic\MifareClassicSectorAccessConditionModel.cs" />
     <Compile Include="Model\MifareClassic\MifareClassicSectorModel.cs" />
     <Compile Include="Model\MifareClassic\MifareClassicChipModel.cs" />
-    <Compile Include="Model\MifareDesfie\MifareDesfireAppModel.cs" />
-    <Compile Include="Model\MifareDesfie\MifareDesfireFileModel.cs" />
-    <Compile Include="Model\MifareDesfie\MifareDesfireChipModel.cs" />
+    <Compile Include="Model\MifareDesfire\MifareDesfireAppModel.cs" />
+    <Compile Include="Model\MifareDesfire\MifareDesfireFileModel.cs" />
+    <Compile Include="Model\MifareDesfire\MifareDesfireChipModel.cs" />
     <Compile Include="Model\GenericChipModel.cs" />
     <Compile Include="Model\MifareUltralight\MifareUltralightChipModel.cs" />
     <Compile Include="Model\MifareUltralight\MifareUltralightPageModel.cs" />
@@ -196,11 +196,11 @@
     <Compile Include="ViewModel\HirarchicalDataTemplateViewModels\RFiDChipGrandChildLayerViewModel.cs" />
     <Compile Include="ViewModel\HirarchicalDataTemplateViewModels\RFiDChipGrandGrandChildLayerViewModel.cs" />
     <Compile Include="ViewModel\HirarchicalDataTemplateViewModels\RFiDChipParentLayerViewModel.cs" />
-    <Compile Include="View\TaskViews\RFIDTasks\GenericChipTask\GenericChipTaskView.xaml.cs">
-      <DependentUpon>GenericChipTaskView.xaml</DependentUpon>
-    </Compile>
     <Compile Include="View\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\TaskViews\RFIDTasks\GenericChipTask\GenericChipTaskView.xaml.cs">
+      <DependentUpon>GenericChipTaskView.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\TaskViews\CommonTask\CommonTaskView.xaml.cs">
       <DependentUpon>CommonTaskView.xaml</DependentUpon>
@@ -284,10 +284,13 @@
     <Resource Include="Resources\logo.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="View\MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="View\TaskViews\RFIDTasks\GenericChipTask\GenericChipTaskView.xaml">
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="View\MainWindow.xaml" />
     <Page Include="View\TaskViews\CommonTask\CommonTaskView.xaml">
       <SubType>Designer</SubType>
     </Page>

@@ -15,67 +15,67 @@
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
             <Grid
-                    Grid.Row="0"
+                Grid.Row="0"
+                Grid.Column="0"
+                Margin="8,8,8,8"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
+
+                <GroupBox
+                    Grid.Row="1"
                     Grid.Column="0"
                     Margin="8,8,8,8"
                     HorizontalAlignment="Stretch"
-                    VerticalAlignment="Stretch">
-
-                    <GroupBox
-                        Grid.Row="1"
+                    VerticalAlignment="Stretch"
+                    Header="Checkup Options">
+                    <Grid
+                        Grid.Row="0"
                         Grid.Column="0"
                         Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        Header="Checkup Options">
-                        <Grid
-                            Grid.Row="0"
-                            Grid.Column="0"
-                            Margin="8,8,8,8"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch">
+                        VerticalAlignment="Stretch">
                         <ComboBox
-                                xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
-                                xmlns:local="clr-namespace:RFiDGear"
-                                xmlns:system="clr-namespace:System;assembly=mscorlib"
-                                xmlns:v="clr-namespace:RFiDGear.View"
-                                Grid.Row="0"
-                                Grid.Column="1"
-                                Height="26"
-                                Margin="8,0,8,8"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Bottom"
-                                ItemsSource="{dal:Enumerate {x:Type dal:CARD_TYPE}}"
-						        SelectedItem="{Binding SelectedChipType,Converter={StaticResource Localization},ConverterParameter={x:Type dal:CARD_TYPE},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"/>
+                            xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
+                            xmlns:local="clr-namespace:RFiDGear"
+                            xmlns:system="clr-namespace:System;assembly=mscorlib"
+                            xmlns:v="clr-namespace:RFiDGear.View"
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Height="26"
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Bottom"
+                            ItemsSource="{dal:Enumerate {x:Type dal:CARD_TYPE}}"
+                            SelectedItem="{Binding SelectedChipType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:CARD_TYPE}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
 
                         <Label
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                Height="26"
-                                Margin="8,10,8,0"
-                                VerticalAlignment="Top"
-                                HorizontalContentAlignment="Stretch"
-                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectIsChipOfType'}"
-                                DataContext="{Binding}"
-                                Foreground="Black" />
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Height="26"
+                            Margin="8,10,8,0"
+                            VerticalAlignment="Top"
+                            HorizontalContentAlignment="Stretch"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectIsChipOfType'}"
+                            DataContext="{Binding}"
+                            Foreground="Black" />
                         <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="165" />
-                                <ColumnDefinition />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="42" />
-                                <RowDefinition Height="36" />
-                                <RowDefinition Height="36" />
-                                <RowDefinition Height="36" />
-                                <RowDefinition Height="*" />
-                                <RowDefinition Height="36" />
-                            </Grid.RowDefinitions>
-                        </Grid>
-                    </GroupBox>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                </Grid>
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="42" />
+                            <RowDefinition Height="36" />
+                            <RowDefinition Height="36" />
+                            <RowDefinition Height="36" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="36" />
+                        </Grid.RowDefinitions>
+                    </Grid>
+                </GroupBox>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

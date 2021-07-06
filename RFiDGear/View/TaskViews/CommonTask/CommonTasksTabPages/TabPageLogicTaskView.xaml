@@ -25,7 +25,8 @@
                 Margin="8,8,8,8"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Header="Logic Task Setup">
+                Header="Logic Task Setup"
+                IsEnabled="{Binding IsLogicCheckerTabEnabled}">
                 <Grid
                     Grid.Row="0"
                     Grid.Column="0"
@@ -186,7 +187,7 @@
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireAppSettingsCurrent'}"
-                IsEnabled="{Binding IsDesfireAppAuthenticationTabEnabled}">
+                IsEnabled="{Binding IsLogicCheckerTabEnabled}">
                 <Grid
                     Margin="0,0,0,0"
                     HorizontalAlignment="Stretch"

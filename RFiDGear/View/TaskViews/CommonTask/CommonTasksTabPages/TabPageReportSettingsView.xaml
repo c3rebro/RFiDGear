@@ -25,7 +25,8 @@
                 Margin="8,8,8,8"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Header="Report Setup">
+                Header="Report Setup"
+                IsEnabled="{Binding IsReportSetupTabEnabled}">
                 <Grid
                     Grid.Row="0"
                     Grid.Column="0"
@@ -244,7 +245,7 @@
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireAppSettingsCurrent'}"
-                IsEnabled="{Binding IsDesfireAppAuthenticationTabEnabled}">
+                IsEnabled="{Binding IsReportSetupTabEnabled}">
                 <Grid
                     Margin="0,0,0,0"
                     HorizontalAlignment="Stretch"
