@@ -1,11 +1,4 @@
-﻿/*
- * Created by SharpDevelop.
- * Date: 10/10/2017
- * Time: 20:31
- *
- */
-
-using GalaSoft.MvvmLight;
+﻿using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using MvvmDialogs.ViewModels;
 using RFiDGear.DataAccessLayer;
@@ -32,11 +25,8 @@ namespace RFiDGear.ViewModel
             {
                 device = _device;
 
-                SelectedReader = settings.DefaultSpecification.DefaultReaderProvider;
-                ComPort = settings.DefaultSpecification.LastUsedComPort;
-                LoadOnStart = settings.DefaultSpecification.AutoLoadProjectOnStart;
-                SelectedBaudRate = settings.DefaultSpecification.LastUsedBaudRate;
-
+                selectedReader = settings.DefaultSpecification.DefaultReaderProvider;
+                comPort = "10";
                 ConnectToReaderCommand.Execute(null);
             }
         }
@@ -127,14 +117,9 @@ namespace RFiDGear.ViewModel
         public string ComPort
         {
             get { return comPort; }
-            set 
-            { 
-                comPort = value;
-                uint.TryParse(comPort, out uint comPortAsUInt);
-            }
+            set { comPort = value; }
         }
         private string comPort;
-        private uint comPortAsUInt;
 
         /// <summary>
         /// BaudRate for Readers that use VCP or Serial
@@ -166,22 +151,6 @@ namespace RFiDGear.ViewModel
                 { return Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider); }
             }
         }
-
-        /// <summary>
-        ///
-        /// </summary>
-        public bool LoadOnStart
-        {
-            get
-            {
-                return loadOnStart;
-            }
-            set
-            {
-                loadOnStart = value;
-            }
-        }
-        private bool loadOnStart;
 
         #region IUserDialogViewModel Implementation
 

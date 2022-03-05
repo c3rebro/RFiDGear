@@ -174,7 +174,7 @@ namespace RFiDGear
                     if (verInfo > Convert.ToInt32(string.Format("{0}{1}{2}", Version.Major, Version.Minor, Version.Build)))
                     {
                         throw new Exception(
-                            string.Format("database that was tried to open is newer ({0}) than this version of eventmessenger ({1})"
+                            string.Format("database that was tried to open is newer ({0}) than this version of rfidgear ({1})"
                                           , verInfo, Convert.ToInt32(string.Format("{0}{1}{2}", Version.Major, Version.Minor, Version.Build))
                                          )
                         );

@@ -100,17 +100,20 @@ namespace RFiDGear.DataAccessLayer
 	public enum TaskType_MifareDesfireTask
 	{
 		None,
-        ReadAppSettings,
-		FormatDesfireCard,
+		ChangeDefault,
+		AppExistCheck,
+		ReadAppSettings,
 		PICCMasterKeyChangeover,
+		CreateApplication,
+		AuthenticateApplication,
 		ApplicationKeyChangeover,
+		CreateFile,
 		ReadData,
 		WriteData,
-		CreateApplication,
-		CreateFile,
+		DeleteFile, 
 		DeleteApplication,
-		DeleteFile,
-		ChangeDefault
+		FormatDesfireCard
+
 	}
 
 	/// <summary>
@@ -219,8 +222,23 @@ namespace RFiDGear.DataAccessLayer
 		OR,
 		NAND,
 		NOR,
-		NOT
+		NOT,
+		COUNT,
+		COMPARE
     };
+
+	/// <summary>
+	/// The Possible Logical States For Checkpoint Counter
+	/// </summary>
+	public enum EQUALITY_OPERATOR
+	{
+		EQUAL,
+		LESS_THAN,
+		MORE_THAN,
+		LESS_OR_EQUAL,
+		MORE_OR_EQUAL
+	};
+	
 
 	/// <summary>
 	/// Key Formatting Errors

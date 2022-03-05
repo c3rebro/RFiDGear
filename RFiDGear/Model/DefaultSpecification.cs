@@ -37,6 +37,10 @@ namespace RFiDGear.Model
             _defaultLanguage = "english";
             defaultAutoPerformTasksEnabled = false;
             autoCheckForUpdates = true;
+            _autoLoadProjectOnStart = false;
+            _lastUsedProjectPath = "";
+            LastUsedComPort = "0";
+            LastUsedBaudRate = "9600";
 
             mifareClassicDefaultSecuritySettings = new List<MifareClassicDefaultKeys>
             {
@@ -60,10 +64,10 @@ namespace RFiDGear.Model
 
             mifareDesfireDefaultSecuritySettings = new List<MifareDesfireDefaultKeys>
             {
-                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000"),
-                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000"),
-                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000"),
-                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000")
+                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey, DESFireKeyType.DF_KEY_DES, "00000000000000000000000000000000"),
+                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey, DESFireKeyType.DF_KEY_DES, "00000000000000000000000000000000"),
+                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey, DESFireKeyType.DF_KEY_DES, "00000000000000000000000000000000"),
+                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey, DESFireKeyType.DF_KEY_DES, "00000000000000000000000000000000")
             };
 
             _classicCardDefaultSectorTrailer = "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF";
@@ -162,7 +166,6 @@ namespace RFiDGear.Model
             get { return _classicCardDefaultSectorTrailer; }
             set { _classicCardDefaultSectorTrailer = value; }
         }
-
         private string _classicCardDefaultSectorTrailer;
 
         /// <summary>
@@ -175,6 +178,46 @@ namespace RFiDGear.Model
         }
 
         private List<string> _classicCardDefaultQuickCheckKeys;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool AutoLoadProjectOnStart
+        {
+            get { return _autoLoadProjectOnStart; }
+            set { _autoLoadProjectOnStart = value; }
+        }
+        private bool _autoLoadProjectOnStart;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string LastUsedProjectPath
+        {
+            get { return _lastUsedProjectPath; }
+            set { _lastUsedProjectPath = value; }
+        }
+        private string _lastUsedProjectPath;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string LastUsedBaudRate
+        {
+            get { return _lastUsedBaudRate; }
+            set { _lastUsedBaudRate = value; }
+        }
+        private string _lastUsedBaudRate;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string LastUsedComPort
+        {
+            get { return _lastUsedComPort; }
+            set { _lastUsedComPort = value; }
+        }
+        private string _lastUsedComPort;
 
         #endregion properties
 

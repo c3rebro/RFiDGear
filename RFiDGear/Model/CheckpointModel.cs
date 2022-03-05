@@ -8,31 +8,30 @@
  */
 
 using RFiDGear.DataAccessLayer;
-using System;
 
 namespace RFiDGear.Model
 {
-    /// <summary>
-    /// Description of Checkpoint.
-    /// </summary>
-    public class Checkpoint
+	/// <summary>
+	/// Description of Checkpoint.
+	/// </summary>
+	public class CheckpointModel
 	{
-		public int UUID { get; set; }
-
-		public Checkpoint()
+		public CheckpointModel()
 		{
-			Random rnd = new Random();
-			UUID = rnd.Next();
 			ErrorLevel = ERROR.Empty;
+			ContentSelector = CONTENT_CREATION_STATE.FIXED;
+			ContentGroup = "NoGroup";
 		}
-		
+
+		public CONTENT_CREATION_STATE ContentSelector{ get; set; }
+
 		public ERROR ErrorLevel { get; set; }
 
 		public string TaskIndex { get; set; }
 
-		public string Content { get; set; }
+		public string ContentGroup { get; set; }
 
-		public string CompareValue { get; set; }
+		public string Content { get; set; }
 
 		public string TemplateField { get; set; }
 	}

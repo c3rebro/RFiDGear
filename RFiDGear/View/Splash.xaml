@@ -1,0 +1,38 @@
+﻿<Window
+    x:Class="RFiDGear.View.Splash"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:RFiDGear.View"
+    xmlns:gif="http://wpfanimatedgif.codeplex.com"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Width="600"
+    Height="600"
+    d:DesignHeight="600"
+    d:DesignWidth="600"
+    AllowsTransparency="true"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="None"
+    mc:Ignorable="d">
+    <Window.Background>
+        <SolidColorBrush Opacity="0" Color="White" />
+    </Window.Background>
+    <Grid>
+        <Image
+            x:Name="image"
+            Width="600"
+            Height="600"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Opacity="1"
+            Source="/Resources/splash.png" />
+        <Label
+            x:Name="label"
+            Margin="238,286,0,0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Content="Loading Project..."
+            FontSize="14"
+            FontWeight="ExtraBold" />
+    </Grid>
+</Window>

@@ -25,73 +25,88 @@ using System.Windows.Threading;
 
 namespace RFiDGear.ViewModel
 {
-	/// <summary>
-	/// Description of MainWindowViewModel.
-	/// </summary>
-	[ExportViewModel("MainWin")]
-	public class MainWindowViewModel : ViewModelBase
-	{
-		private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
-		
-		private protected MainWindow mw;
-		private protected Updater updater;
-		private protected DatabaseReaderWriter databaseReaderWriter;
-		private protected ReportReaderWriter reportReaderWriter;
-		private protected DispatcherTimer triggerReadChip;
-		private protected DispatcherTimer taskTimeout;
-		private string reportOutputPath;
+    /// <summary>
+    /// Description of MainWindowViewModel.
+    /// </summary>
+    [ExportViewModel("MainWin")]
+    public class MainWindowViewModel : ViewModelBase
+    {
+        private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
-		private ChipTaskHandlerModel taskHandler;
-		private protected List<MifareClassicChipModel> mifareClassicUidModels = new List<MifareClassicChipModel>();
-		private protected List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
+        private protected MainWindow mw;
+        private protected Updater updater;
+        private protected DatabaseReaderWriter databaseReaderWriter;
+        private protected ReportReaderWriter reportReaderWriter;
+        private protected DispatcherTimer triggerReadChip;
+        private protected DispatcherTimer taskTimeout;
+        private string reportOutputPath;
 
-		private int taskIndex = 0;
-		// set if task was completed; indicates greenlight to continue execution
-		//if programming takes too long; quit the process
-		private bool firstRun = true;
-		private protected Mutex mutex;
-		//one reader, one instance - only
+        private ChipTaskHandlerModel taskHandler;
+        private protected List<MifareClassicChipModel> mifareClassicUidModels = new List<MifareClassicChipModel>();
+        private protected List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
 
-		#region Plugins
+        private int taskIndex = 0;
+        // set if task was completed; indicates greenlight to continue execution
+        //if programming takes too long; quit the process
+        private bool firstRun = true;
+        private protected Mutex mutex;
+        //one reader, one instance - only
 
-		#endregion
-		
-		#region Events / Delegates
+        #region Plugins
 
-		/// <summary>
-		/// will raise notifier to inform user about available updates
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		public delegate void updateReady(object sender, EventArgs e);
-		#endregion
+        #endregion
 
-		#region Constructors
+        #region Events / Delegates
 
-		public MainWindowViewModel()
-		{
-			RunMutex(this, null);
-			
-			using (SettingsReaderWriter settings = new SettingsReaderWriter()) {
-				CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
-					? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
-					: settings.DefaultSpecification.DefaultReaderName;
-				
-				culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
-			}
+        /// <summary>
+        /// will raise notifier to inform user about available updates
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public delegate void updateReady(object sender, EventArgs e);
+        #endregion
 
-			updater = new Updater();
+        #region Constructors
+
+        public MainWindowViewModel()
+        {
+            RunMutex(this, null);
+
+            bool autoLoadLastUsedDB;
+            string[] args = Environment.GetCommandLineArgs();
+
+            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            {
+                CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
+                    ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
+                    : settings.DefaultSpecification.DefaultReaderName;
+
+                culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
+
+                autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
+
+                if (args.Length == 2)
+                    if (File.Exists(args[1]))
+                    {
+                        settings.DefaultSpecification.LastUsedProjectPath = args[1];
+                        settings.SaveSettings();
+                    }
+
+
+            }
+
+            updater = new Updater();
 
             triggerReadChip = new DispatcherTimer
             {
                 Interval = new TimeSpan(0, 0, 0, 0, 500)
             };
 
-			triggerReadChip.Tick += UpdateChip;
+            triggerReadChip.Tick += UpdateChip;
 
-			triggerReadChip.Start();
-			triggerReadChip.IsEnabled = false;
-			triggerReadChip.Tag = triggerReadChip.IsEnabled;
+            triggerReadChip.Start();
+            triggerReadChip.IsEnabled = false;
+            triggerReadChip.Tag = triggerReadChip.IsEnabled;
 
 #if DEBUG
 			taskTimeout = new DispatcherTimer
@@ -104,19 +119,19 @@ namespace RFiDGear.ViewModel
                 Interval = new TimeSpan(0, 0, 0, 2, 0)
             };
 #endif
-			taskTimeout.Tick += TaskTimeout;
-			taskTimeout.Start();
-			taskTimeout.IsEnabled = false;
+            taskTimeout.Tick += TaskTimeout;
+            taskTimeout.Start();
+            taskTimeout.IsEnabled = false;
 
-			treeViewParentNodes = new ObservableCollection<RFiDChipParentLayerViewModel>();
+            treeViewParentNodes = new ObservableCollection<RFiDChipParentLayerViewModel>();
 
-			taskHandler = new ChipTaskHandlerModel();
+            taskHandler = new ChipTaskHandlerModel();
 
-			ReaderStatus = CurrentReader == "None" ? "" : "ready";
-			databaseReaderWriter = new DatabaseReaderWriter();
-			resLoader = new ResourceLoader();
+            ReaderStatus = CurrentReader == "None" ? "" : "ready";
+            databaseReaderWriter = new DatabaseReaderWriter();
+            resLoader = new ResourceLoader();
 
-			rowContextMenuItems = new ObservableCollection<MenuItem>();
+            rowContextMenuItems = new ObservableCollection<MenuItem>();
             emptySpaceContextMenuItems = new ObservableCollection<MenuItem>
             {
                 new MenuItem()
@@ -126,146 +141,191 @@ namespace RFiDGear.ViewModel
                 }
             };
 
-            rowContextMenuItems.Add(new MenuItem() {
-				Header = ResourceLoader.getResource("contextMenuItemAddOrEditTask"),
-				Command = GetAddEditCommand
-			});
+            rowContextMenuItems.Add(new MenuItem()
+            {
+                Header = ResourceLoader.getResource("contextMenuItemAddOrEditTask"),
+                Command = GetAddEditCommand
+            });
 
-			rowContextMenuItems.Add(new MenuItem() {
-				Header = ResourceLoader.getResource("contextMenuItemDeleteSelectedItem"),
-				Command = new RelayCommand(() => {
-					taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
-				})
-			});
+            rowContextMenuItems.Add(new MenuItem()
+            {
+                Header = ResourceLoader.getResource("contextMenuItemDeleteSelectedItem"),
+                Command = new RelayCommand(() =>
+                {
+                    taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
+                })
+            });
 
             Application.Current.MainWindow.Closing += new CancelEventHandler(CloseThreads);
             Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
-			updater.NewVersionAvailable += new EventHandler(AskForUpdateNow);
+            updater.NewVersionAvailable += new EventHandler(AskForUpdateNow);
 
-			//reminder: any dialog boxes added in the constructor won't appear until DialogBehavior.DialogViewModels gets bound to the Dialogs collection.
-		}
-
-#endregion Constructors
-
-#region Dialogs
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		private protected ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
-		public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
-		
-#endregion Dialogs
-
-#region Localization
-		[ExportViewModel("Culture")]
-		private protected CultureInfo culture;
-		
-		private protected ResourceLoader resLoader;
-		
-		/// <summary>
-		/// Expose translated strings from ResourceLoader
-		/// </summary>
-		public string LocalizationResourceSet { get; set; }
-
-#endregion Localization
-
-#region Local Commands
-
-		private ICommand GetAddEditCommand
-        {
-			get
-            {
-				return new RelayCommand(OnNewGetAddEditCommand);
-			}
+            //reminder: any dialog boxes added in the constructor won't appear until DialogBehavior.DialogViewModels gets bound to the Dialogs collection.
         }
-		private void OnNewGetAddEditCommand()
+
+        #endregion Constructors
+
+        #region Dialogs
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private protected ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+        public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
+
+        #endregion Dialogs
+
+        #region Localization
+        [ExportViewModel("Culture")]
+        private protected CultureInfo culture;
+
+        private protected ResourceLoader resLoader;
+
+        /// <summary>
+        /// Expose translated strings from ResourceLoader
+        /// </summary>
+        public string LocalizationResourceSet { get; set; }
+
+        #endregion Localization
+
+        #region Local Commands
+
+        private ICommand GetAddEditCommand
         {
-			switch (selectedSetupViewModel)
+            get
             {
-				case CommonTaskViewModel ssVM:
-					OnNewNewCreateReportTaskCommand();
-					break;
-				case GenericChipTaskViewModel ssVM:
-					OnNewCreateGenericChipTaskCommand();
-					break;
-				case MifareClassicSetupViewModel ssVM:
-					OnNewCreateClassicTaskCommand();
-					break;
-				case MifareDesfireSetupViewModel ssVM:
-					OnNewCreateDesfireTaskCommand();
-					break;
-				case MifareUltralightSetupViewModel ssVM:
-					OnNewCreateUltralightTaskCommand();
-					break;
-			}
-		}
-#endregion
+                return new RelayCommand(OnNewGetAddEditCommand);
+            }
+        }
+        private void OnNewGetAddEditCommand()
+        {
+            switch (selectedSetupViewModel)
+            {
+                case CommonTaskViewModel ssVM:
+                    OnNewNewCreateReportTaskCommand();
+                    break;
+                case GenericChipTaskViewModel ssVM:
+                    OnNewCreateGenericChipTaskCommand();
+                    break;
+                case MifareClassicSetupViewModel ssVM:
+                    OnNewCreateClassicTaskCommand();
+                    break;
+                case MifareDesfireSetupViewModel ssVM:
+                    OnNewCreateDesfireTaskCommand();
+                    break;
+                case MifareUltralightSetupViewModel ssVM:
+                    OnNewCreateUltralightTaskCommand();
+                    break;
+            }
+        }
 
-#region Menu Commands
+        private void OpenLastProjectFile()
+        {
+            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            {
+                bool autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
+                string lastUsedDBPath = settings.DefaultSpecification.LastUsedProjectPath;
 
-		/// <summary>
-		/// Here we perform all tasks on cards with a periodic check for new cards to work with.
-		/// Added to Timer.Tick Event @ "triggerReadChip.Tick += UpdateChip;"
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void UpdateChip(object sender, EventArgs e)
-		{
-			GenericChipModel GenericChip;
+                culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
-			try {
-				Mouse.OverrideCursor = Cursors.AppStarting;
-				
-				//try to get singleton instance
-				using (RFiDDevice device = RFiDDevice.Instance) {
-					//reader was ready - proceed
-					if (device != null) {
-						device.ReadChipPublic();
+                //Mouse.OverrideCursor = Cursors.AppStarting;
 
-						GenericChip = device.GenericChip;
-					} else {
-						return;
-					}
-				}
-				//proceed to create dummy only when uid is yet unknown
-				if (!string.IsNullOrWhiteSpace(GenericChip.UID) &&
-				    !treeViewParentNodes.Any(x => (x.UidNumber == GenericChip.UID))) {
-					foreach (RFiDChipParentLayerViewModel item in treeViewParentNodes) {
-						item.IsExpanded = false;
-					}
+                if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
+                    ChipTasks.TaskCollection.Clear();
 
-					// fill treeview with dummy models and viewmodels
-					switch (GenericChip.CardType) {
-						case CARD_TYPE.Mifare1K:
-							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(GenericChip.UID, CARD_TYPE.Mifare1K), Dialogs));
-							break;
+                databaseReaderWriter.ReadDatabase(lastUsedDBPath);
 
-						case CARD_TYPE.Mifare2K:
-							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(GenericChip.UID, CARD_TYPE.Mifare2K), Dialogs));
-							break;
+                foreach (RFiDChipParentLayerViewModel vm in databaseReaderWriter.treeViewModel)
+                {
+                    TreeViewParentNodes.Add(vm);
+                }
 
-						case CARD_TYPE.Mifare4K:
-							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(GenericChip.UID, CARD_TYPE.Mifare4K), Dialogs));
-							break;
+                foreach (object setup in databaseReaderWriter.setupModel.TaskCollection)
+                {
+                    ChipTasks.TaskCollection.Add(setup);
+                }
 
-						case CARD_TYPE.DESFire:
-						case CARD_TYPE.DESFireEV1:
-						case CARD_TYPE.DESFireEV2:
-							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(GenericChip.UID, GenericChip.CardType), Dialogs));
-							break;
-					}
-					OnNewResetTaskStatusCommand();
-					OnNewWriteToChipOnceCommand();
-				}
-				
-				Mouse.OverrideCursor = null;
-			} catch (Exception ex) {
-				Mouse.OverrideCursor = null;
-				
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""));
-			}
-		}
+                //Mouse.OverrideCursor = null;
+
+                RaisePropertyChanged("ChipTasks");
+            }
+        }
+        #endregion
+
+        #region Menu Commands
+
+        /// <summary>
+        /// Here we perform all tasks on cards with a periodic check for new cards to work with.
+        /// Added to Timer.Tick Event @ "triggerReadChip.Tick += UpdateChip;"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void UpdateChip(object sender, EventArgs e)
+        {
+            GenericChipModel GenericChip;
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.AppStarting;
+
+                //try to get singleton instance
+                using (RFiDDevice device = RFiDDevice.Instance)
+                {
+                    //reader was ready - proceed
+                    if (device != null)
+                    {
+                        device.ReadChipPublic();
+
+                        GenericChip = device.GenericChip;
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                //proceed to create dummy only when uid is yet unknown
+                if (!string.IsNullOrWhiteSpace(GenericChip.UID) &&
+                    !treeViewParentNodes.Any(x => (x.UidNumber == GenericChip.UID)))
+                {
+                    foreach (RFiDChipParentLayerViewModel item in treeViewParentNodes)
+                    {
+                        item.IsExpanded = false;
+                    }
+
+                    // fill treeview with dummy models and viewmodels
+                    switch (GenericChip.CardType)
+                    {
+                        case CARD_TYPE.Mifare1K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(GenericChip.UID, CARD_TYPE.Mifare1K), Dialogs));
+                            break;
+
+                        case CARD_TYPE.Mifare2K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(GenericChip.UID, CARD_TYPE.Mifare2K), Dialogs));
+                            break;
+
+                        case CARD_TYPE.Mifare4K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(GenericChip.UID, CARD_TYPE.Mifare4K), Dialogs));
+                            break;
+
+                        case CARD_TYPE.DESFire:
+                        case CARD_TYPE.DESFireEV1:
+                        case CARD_TYPE.DESFireEV2:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(GenericChip.UID, GenericChip.CardType), Dialogs));
+                            break;
+                    }
+                    OnNewResetTaskStatusCommand();
+                    OnNewWriteToChipOnceCommand();
+                }
+
+                Mouse.OverrideCursor = null;
+            }
+            catch (Exception ex)
+            {
+                Mouse.OverrideCursor = null;
+
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""));
+            }
+        }
 
         /// <summary>
         /// What to do if timer has ended without success i.e. ErrorLevel != ERROR.NoError ?
@@ -273,7 +333,7 @@ namespace RFiDGear.ViewModel
         /// <param name="sender"></param>
         /// <param name="e"></param>
 		private void TaskTimeout(object sender, EventArgs e)
-		{
+        {
 #if DEBUG
 			taskTimeout.Start();
 			taskTimeout.Stop();
@@ -299,26 +359,26 @@ namespace RFiDGear.ViewModel
 					break;
 			}
 #else
-			taskTimeout.IsEnabled = false;
-			taskTimeout.Stop();
-			if (taskHandler.GetTaskType(taskIndex) == typeof(MifareDesfireSetupViewModel))
-				(taskHandler.TaskCollection[(int)taskTimeout.Tag] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
-			else if (taskHandler.GetTaskType(taskIndex) == typeof(MifareClassicSetupViewModel))
-				(taskHandler.TaskCollection[(int)taskTimeout.Tag] as MifareClassicSetupViewModel).IsTaskCompletedSuccessfully = false;
+            taskTimeout.IsEnabled = false;
+            taskTimeout.Stop();
+            if (taskHandler.GetTaskType(taskIndex) == typeof(MifareDesfireSetupViewModel))
+                (taskHandler.TaskCollection[(int)taskTimeout.Tag] as MifareDesfireSetupViewModel).IsTaskCompletedSuccessfully = false;
+            else if (taskHandler.GetTaskType(taskIndex) == typeof(MifareClassicSetupViewModel))
+                (taskHandler.TaskCollection[(int)taskTimeout.Tag] as MifareClassicSetupViewModel).IsTaskCompletedSuccessfully = false;
             else if (taskHandler.GetTaskType(taskIndex) == typeof(CommonTaskViewModel))
                 (taskHandler.TaskCollection[(int)taskTimeout.Tag] as CommonTaskViewModel).IsTaskCompletedSuccessfully = false;
             taskIndex = int.MaxValue;
 #endif
-		}
-		
-		/// <summary>
-		/// "Remove all listed Chips from listing" was called
-		/// </summary>
-		public ICommand RemoveChipsFromTreeCommand { get { return new RelayCommand(OnNewRemoveChipsFromTreeCommand); } }
-		private void OnNewRemoveChipsFromTreeCommand()
-		{
-			TreeViewParentNodes.Clear();
-		}
+        }
+
+        /// <summary>
+        /// "Remove all listed Chips from listing" was called
+        /// </summary>
+        public ICommand RemoveChipsFromTreeCommand { get { return new RelayCommand(OnNewRemoveChipsFromTreeCommand); } }
+        private void OnNewRemoveChipsFromTreeCommand()
+        {
+            TreeViewParentNodes.Clear();
+        }
 
         /// <summary>
         /// Create a new "Common" Task of Type "Report Creator"
@@ -344,11 +404,12 @@ namespace RFiDGear.ViewModel
                             Caption = ResourceLoader.getResource("windowCaptionAddEditMifareClassicTask"),
                             //IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
 
-                            OnOk = (sender) => {
+                            OnOk = (sender) =>
+                            {
                                 if (sender.SelectedTaskType == TaskType_GenericChipTask.ChangeDefault)
                                 {
-									sender.Settings.SaveSettings();
-								}
+                                    sender.Settings.SaveSettings();
+                                }
 
                                 if (sender.SelectedTaskType == TaskType_GenericChipTask.ChipIsOfType)
                                 {
@@ -365,9 +426,9 @@ namespace RFiDGear.ViewModel
 
                                         (x is CommonTaskViewModel) ?
                                         (x as CommonTaskViewModel).SelectedTaskIndexAsInt :
-										(x is GenericChipTaskViewModel) ?
-										(x as GenericChipTaskViewModel).SelectedTaskIndexAsInt :
-										(x is MifareDesfireSetupViewModel) ?
+                                        (x is GenericChipTaskViewModel) ?
+                                        (x as GenericChipTaskViewModel).SelectedTaskIndexAsInt :
+                                        (x is MifareDesfireSetupViewModel) ?
                                         (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt :
                                         (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt)
                                         );
@@ -377,14 +438,17 @@ namespace RFiDGear.ViewModel
                                 sender.Close();
                             },
 
-                            OnCancel = (sender) => {
+                            OnCancel = (sender) =>
+                            {
                                 sender.Close();
                             },
 
-                            OnAuth = (sender) => {
+                            OnAuth = (sender) =>
+                            {
                             },
 
-                            OnCloseRequest = (sender) => {
+                            OnCloseRequest = (sender) =>
+                            {
                                 sender.Close();
                             }
                         });
@@ -407,23 +471,24 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// Create a new "Common" Task of Type "Report Creator"
         /// </summary>
-        public ICommand CreateReportTaskCommand { get { return new RelayCommand(OnNewNewCreateReportTaskCommand); } }
+        public ICommand CreateGenericTaskCommand { get { return new RelayCommand(OnNewNewCreateReportTaskCommand); } }
         private void OnNewNewCreateReportTaskCommand()
         {
-			bool timerState = triggerReadChip.IsEnabled;
+            bool timerState = triggerReadChip.IsEnabled;
 
-			triggerReadChip.IsEnabled = false;
+            triggerReadChip.IsEnabled = false;
 
-			Mouse.OverrideCursor = Cursors.AppStarting;
+            Mouse.OverrideCursor = Cursors.AppStarting;
 
-			try
-			{
+            try
+            {
                 this.dialogs.Add(new CommonTaskViewModel(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
                 {
-                    Caption = ResourceLoader.getResource("windowCaptionAddEditMifareClassicTask"),
+                    Caption = ResourceLoader.getResource("windowCaptionAddEditGenericTask"),
                     //IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
 
-                    OnOk = (sender) => {
+                    OnOk = (sender) =>
+                    {
 
                         if (sender.SelectedTaskType == TaskType_CommonTask.CreateReport ||
                             sender.SelectedTaskType == TaskType_CommonTask.CheckLogicCondition)
@@ -431,8 +496,8 @@ namespace RFiDGear.ViewModel
                             if ((ChipTasks.TaskCollection.OfType<CommonTaskViewModel>().Where(x => (x as CommonTaskViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
                             {
                                 ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
+                                
                             }
-
 
                             ChipTasks.TaskCollection.Add(sender);
 
@@ -452,27 +517,30 @@ namespace RFiDGear.ViewModel
                         sender.Close();
                     },
 
-                    OnCancel = (sender) => {
+                    OnCancel = (sender) =>
+                    {
                         sender.Close();
                     },
 
-                    OnAuth = (sender) => {
+                    OnAuth = (sender) =>
+                    {
                     },
 
-                    OnCloseRequest = (sender) => {
+                    OnCloseRequest = (sender) =>
+                    {
                         sender.Close();
                     }
                 });
             }
-			catch (Exception e)
-			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-				dialogs.Clear();
-			}
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                dialogs.Clear();
+            }
 
-			Mouse.OverrideCursor = null;
+            Mouse.OverrideCursor = null;
 
-			triggerReadChip.IsEnabled = timerState;
+            triggerReadChip.IsEnabled = timerState;
 
             RaisePropertyChanged("ChipTasks");
         }
@@ -481,33 +549,39 @@ namespace RFiDGear.ViewModel
         /// Creates a new Task of Type Mifare Classic Card
         /// </summary>
         public ICommand CreateClassicTaskCommand { get { return new RelayCommand(OnNewCreateClassicTaskCommand); } }
-		private void OnNewCreateClassicTaskCommand()
-		{
-			bool timerState = triggerReadChip.IsEnabled;
+        private void OnNewCreateClassicTaskCommand()
+        {
+            bool timerState = triggerReadChip.IsEnabled;
 
-			triggerReadChip.IsEnabled = false;
+            triggerReadChip.IsEnabled = false;
 
-			Mouse.OverrideCursor = Cursors.AppStarting;
-			
-			try {
-				using (RFiDDevice device = RFiDDevice.Instance) {
-					// only call dialog if device is ready
-					if (device != null) {
-						this.dialogs.Add(new MifareClassicSetupViewModel(SelectedSetupViewModel, dialogs) {
-							Caption = ResourceLoader.getResource("windowCaptionAddEditMifareClassicTask"),
-							IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
+            Mouse.OverrideCursor = Cursors.AppStarting;
 
-							OnOk = (sender) => {
-								if (sender.SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
-									sender.Settings.SaveSettings();
+            try
+            {
+                using (RFiDDevice device = RFiDDevice.Instance)
+                {
+                    // only call dialog if device is ready
+                    if (device != null)
+                    {
+                        this.dialogs.Add(new MifareClassicSetupViewModel(SelectedSetupViewModel, dialogs)
+                        {
+                            Caption = ResourceLoader.getResource("windowCaptionAddEditMifareClassicTask"),
+                            IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
 
-								if (sender.SelectedTaskType == TaskType_MifareClassicTask.WriteData ||
-								                     sender.SelectedTaskType == TaskType_MifareClassicTask.ReadData) {
+                            OnOk = (sender) =>
+                            {
+                                if (sender.SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
+                                    sender.Settings.SaveSettings();
+
+                                if (sender.SelectedTaskType == TaskType_MifareClassicTask.WriteData ||
+                                                     sender.SelectedTaskType == TaskType_MifareClassicTask.ReadData)
+                                {
 
                                     if ((ChipTasks.TaskCollection.OfType<MifareClassicSetupViewModel>().Where(x => (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
                                     {
-										ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
-									}
+                                        ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
+                                    }
 
                                     ChipTasks.TaskCollection.Add(sender);
 
@@ -523,70 +597,81 @@ namespace RFiDGear.ViewModel
                                         );
 
                                     RaisePropertyChanged("ChipTasks");
-								}
-								sender.Close();
-							},
+                                }
+                                sender.Close();
+                            },
 
-							OnCancel = (sender) => {
-								sender.Close();
-							},
-
-							OnAuth = (sender) => {
-							},
-
-							OnCloseRequest = (sender) => {
-								sender.Close();
-							}
-						});
-					}
-				}
-			} catch (Exception e) {
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-				dialogs.Clear();
-			}
-
-			Mouse.OverrideCursor = null;
-			
-			triggerReadChip.IsEnabled = timerState;
-		}
-
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand CreateDesfireTaskCommand { get { return new RelayCommand(OnNewCreateDesfireTaskCommand); } }
-		private void OnNewCreateDesfireTaskCommand()
-		{		
-			bool timerState = triggerReadChip.IsEnabled;
-
-			triggerReadChip.IsEnabled = false;
-
-			Mouse.OverrideCursor = Cursors.AppStarting;
-			
-			using (RFiDDevice device = RFiDDevice.Instance) {
-				if (device != null) {
-					
-					Dialogs.Add(new MifareDesfireSetupViewModel(SelectedSetupViewModel, dialogs) {
-						Caption = ResourceLoader.getResource("windowCaptionAddEditMifareDesfireTask"),
-					            	
-						OnOk = (sender) => {
-							if (sender.SelectedTaskType == TaskType_MifareDesfireTask.ChangeDefault)
-								sender.Settings.SaveSettings();
-
-							if (sender.SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard ||
-							                sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover ||
-							                sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication ||
-							                sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateApplication ||
-							                sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteFile ||
-							                sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateFile ||
-							                sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadData ||
-							                sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData) 
+                            OnCancel = (sender) =>
                             {
-                                if ((ChipTasks.TaskCollection.OfType<MifareDesfireSetupViewModel>().Where(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
+                                sender.Close();
+                            },
+
+                            OnAuth = (sender) =>
+                            {
+                            },
+
+                            OnCloseRequest = (sender) =>
+                            {
+                                sender.Close();
+                            }
+                        });
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                dialogs.Clear();
+            }
+
+            Mouse.OverrideCursor = null;
+
+            triggerReadChip.IsEnabled = timerState;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand CreateDesfireTaskCommand { get { return new RelayCommand(OnNewCreateDesfireTaskCommand); } }
+        private void OnNewCreateDesfireTaskCommand()
+        {
+            bool timerState = triggerReadChip.IsEnabled;
+
+            triggerReadChip.IsEnabled = false;
+
+            Mouse.OverrideCursor = Cursors.AppStarting;
+
+            using (RFiDDevice device = RFiDDevice.Instance)
+            {
+                if (device != null)
+                {
+
+                    Dialogs.Add(new MifareDesfireSetupViewModel(SelectedSetupViewModel, dialogs)
+                    {
+                        Caption = ResourceLoader.getResource("windowCaptionAddEditMifareDesfireTask"),
+
+                        OnOk = (sender) =>
+                        {
+                            if (sender.SelectedTaskType == TaskType_MifareDesfireTask.ChangeDefault)
+                                sender.Settings.SaveSettings();
+
+                            if (sender.SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard ||
+                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover ||
+                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings ||
+                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.AppExistCheck ||
+                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.AuthenticateApplication ||
+                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover ||
+                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication ||
+                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateApplication ||
+                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteFile ||
+                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateFile ||
+                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadData ||
+                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData)
+                            {
+                                if (ChipTasks.TaskCollection.OfType<MifareDesfireSetupViewModel>().Any(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt))
                                 {
-									ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
-								}
+                                    ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
+                                }
 
                                 ChipTasks.TaskCollection.Add(sender);
 
@@ -603,56 +688,62 @@ namespace RFiDGear.ViewModel
 
                                 RaisePropertyChanged("ChipTasks");
 
-								sender.Close();
-							}
-						},
+                                sender.Close();
+                            }
+                        },
 
-						OnCancel = (sender) => {
-							sender.Close();
-						},
+                        OnCancel = (sender) =>
+                        {
+                            sender.Close();
+                        },
 
-						OnCloseRequest = (sender) => {
-							sender.Close();
-						}
-					});
-				}
-			}
+                        OnCloseRequest = (sender) =>
+                        {
+                            sender.Close();
+                        }
+                    });
+                }
+            }
 
-			Mouse.OverrideCursor = null;
-			
-			triggerReadChip.IsEnabled = timerState;
-		}
+            Mouse.OverrideCursor = null;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand CreateUltralightTaskCommand { get { return new RelayCommand(OnNewCreateUltralightTaskCommand); } }
-		private void OnNewCreateUltralightTaskCommand()
-		{
-			
-			bool timerState = triggerReadChip.IsEnabled;
+            triggerReadChip.IsEnabled = timerState;
+        }
 
-			triggerReadChip.IsEnabled = false;
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand CreateUltralightTaskCommand { get { return new RelayCommand(OnNewCreateUltralightTaskCommand); } }
+        private void OnNewCreateUltralightTaskCommand()
+        {
 
-			Mouse.OverrideCursor = Cursors.AppStarting;
-			
-			using (RFiDDevice device = RFiDDevice.Instance) {
-				if (device != null) {
-					
-					Dialogs.Add(new MifareUltralightSetupViewModel(SelectedSetupViewModel, dialogs) {
-						Caption = ResourceLoader.getResource("windowCaptionAddEditMifareDesfireTask"),
-					            	
-						OnOk = (sender) => {
-							if (sender.SelectedTaskType == TaskType_MifareUltralightTask.ChangeDefault)
-								sender.Settings.SaveSettings();
+            bool timerState = triggerReadChip.IsEnabled;
 
-							if (sender.SelectedTaskType == TaskType_MifareUltralightTask.ReadData ||
-							                sender.SelectedTaskType == TaskType_MifareUltralightTask.WriteData)
+            triggerReadChip.IsEnabled = false;
+
+            Mouse.OverrideCursor = Cursors.AppStarting;
+
+            using (RFiDDevice device = RFiDDevice.Instance)
+            {
+                if (device != null)
+                {
+
+                    Dialogs.Add(new MifareUltralightSetupViewModel(SelectedSetupViewModel, dialogs)
+                    {
+                        Caption = ResourceLoader.getResource("windowCaptionAddEditMifareDesfireTask"),
+
+                        OnOk = (sender) =>
+                        {
+                            if (sender.SelectedTaskType == TaskType_MifareUltralightTask.ChangeDefault)
+                                sender.Settings.SaveSettings();
+
+                            if (sender.SelectedTaskType == TaskType_MifareUltralightTask.ReadData ||
+                                            sender.SelectedTaskType == TaskType_MifareUltralightTask.WriteData)
                             {
                                 if ((ChipTasks.TaskCollection.OfType<MifareUltralightSetupViewModel>().Where(x => (x as MifareUltralightSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
                                 {
-									ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
-								}
+                                    ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
+                                }
 
                                 ChipTasks.TaskCollection.Add(sender);
 
@@ -669,231 +760,256 @@ namespace RFiDGear.ViewModel
 
                                 RaisePropertyChanged("ChipTasks");
 
-								sender.Close();
-							}
-						},
+                                sender.Close();
+                            }
+                        },
 
-						OnCancel = (sender) => {
-							sender.Close();
-						},
+                        OnCancel = (sender) =>
+                        {
+                            sender.Close();
+                        },
 
-						OnCloseRequest = (sender) => {
-							sender.Close();
-						}
-					});
-				}
-			}
+                        OnCloseRequest = (sender) =>
+                        {
+                            sender.Close();
+                        }
+                    });
+                }
+            }
 
-			Mouse.OverrideCursor = null;
-			
-			triggerReadChip.IsEnabled = timerState;
-		}
-			
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand ExecuteQuickCheckCommand { get { return new RelayCommand(OnNewExecuteQuickCheckCommand); } }
-		private void OnNewExecuteQuickCheckCommand()
-		{
-			try {
-				Mouse.OverrideCursor = Cursors.Wait;
-				
-				ReadChipCommand.Execute(null);
-				
-				if (treeViewParentNodes != null && !treeViewParentNodes.Any(x => x.IsSelected) && treeViewParentNodes.Count > 0) {
-					treeViewParentNodes.FirstOrDefault().IsSelected = true;
-				}
-				
-				switch (treeViewParentNodes.Single(x => x.IsSelected == true).CardType) {
-					case CARD_TYPE.Mifare1K:
-					case CARD_TYPE.Mifare2K:
-					case CARD_TYPE.Mifare4K:
-						
-						treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteClassicQuickCheckCommand.Execute(null);
-						
-						break;
-						
-					case CARD_TYPE.DESFire:
-					case CARD_TYPE.DESFireEV1:
-					case CARD_TYPE.DESFireEV2:
-						
-						treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteDesfireQuickCheckCommand.Execute(null);
-						
-						break;
-				}
-				
-				Mouse.OverrideCursor = null;
+            Mouse.OverrideCursor = null;
 
-			} catch {
-				Mouse.OverrideCursor = null;
-			}
-		}
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand ReadChipCommand { get { return new RelayCommand(OnNewReadChipCommand); } }
-		private void OnNewReadChipCommand()
-		{
-			bool timerState = triggerReadChip.IsEnabled;
+            triggerReadChip.IsEnabled = timerState;
+        }
 
-			triggerReadChip.IsEnabled = false;
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand ExecuteQuickCheckCommand { get { return new RelayCommand(OnNewExecuteQuickCheckCommand); } }
+        private void OnNewExecuteQuickCheckCommand()
+        {
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
 
-			Mouse.OverrideCursor = Cursors.Wait;
-			
-			using (RFiDDevice device = RFiDDevice.Instance) {
-				
-				foreach (RFiDChipParentLayerViewModel item in treeViewParentNodes) {
-					item.IsExpanded = false;
-				}
+                ReadChipCommand.Execute(null);
 
-				if (device != null &&
-				    device.ReadChipPublic() == ERROR.NoError &&
-				    !treeViewParentNodes.Any(x => x.UidNumber == device.GenericChip.UID)) {
-					// fill treeview with dummy models and viewmodels
-					switch (device.GenericChip.CardType) {
-						case CARD_TYPE.Mifare1K:
-							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare1K), Dialogs));
-							break;
-
-						case CARD_TYPE.Mifare2K:
-							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare2K), Dialogs));
-							break;
-
-						case CARD_TYPE.Mifare4K:
-							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare4K), Dialogs));
-							break;
-
-						case CARD_TYPE.DESFire:
-						case CARD_TYPE.DESFireEV1:
-						case CARD_TYPE.DESFireEV2:
-							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
-							break;
-							
-						case CARD_TYPE.MifarePlus_SL3_1K:
-							
-							break;
-							
-						case CARD_TYPE.MifarePlus_SL3_2K:
-							
-							break;
-							
-						case CARD_TYPE.MifarePlus_SL3_4K:
-							
-							break;
-							
-						case CARD_TYPE.MifareUltralight:
-							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareUltralightChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
-							break;
-
-						case CARD_TYPE.GENERIC_T_CL_A:
-							treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
-							break;
-
-						case CARD_TYPE.ISO15693:
-							device.ReadISO15693Chip();
-							break;
-					}
-					
-
-				} else if (treeViewParentNodes.Any(x => x.UidNumber == device.GenericChip.UID)) {
-					treeViewParentNodes.First(x => x.UidNumber == device.GenericChip.UID).IsSelected = true;
-				}
-			}
-			
-			Mouse.OverrideCursor = null;
-			
-			triggerReadChip.IsEnabled = timerState;
-		}
-
-		/// <summary>
-		/// Reset all Task status information
-		/// </summary>
-		public ICommand ResetTaskStatusCommand { get { return new RelayCommand(OnNewResetTaskStatusCommand); } }
-		private void OnNewResetTaskStatusCommand()
-		{
-			foreach (object chipTask in taskHandler.TaskCollection) {
-
-				switch (chipTask)
+                if (treeViewParentNodes != null && !treeViewParentNodes.Any(x => x.IsSelected) && treeViewParentNodes.Count > 0)
                 {
-					case CommonTaskViewModel ssVM:
-						ssVM.IsTaskCompletedSuccessfully = null;
-						reportOutputPath = null;
-						reportReaderWriter = null;
-						ssVM.TaskErr = ERROR.Empty;
-						break;
-					case GenericChipTaskViewModel ssVM:
-						ssVM.IsTaskCompletedSuccessfully = null;
-						ssVM.TaskErr = ERROR.Empty;
-						break;
-					case MifareClassicSetupViewModel ssVM:
-						ssVM.IsTaskCompletedSuccessfully = null;
-						ssVM.TaskErr = ERROR.Empty;
-						break;
-					case MifareDesfireSetupViewModel ssVM:
-						ssVM.IsTaskCompletedSuccessfully = null;
-						ssVM.TaskErr = ERROR.Empty;
-						break;
-					case MifareUltralightSetupViewModel ssVM:
-						ssVM.IsTaskCompletedSuccessfully = null;
-						ssVM.TaskErr = ERROR.Empty;
-						break;
-				}
-			}
-		}
+                    treeViewParentNodes.FirstOrDefault().IsSelected = true;
+                }
 
-		/// <summary>
-		/// Remove all Tasks from DataGrid
-		/// </summary>
-		public ICommand RemoveAllTasksCommand { get { return new RelayCommand(OnNewRemoveAllTasksCommand); } }
-		private void OnNewRemoveAllTasksCommand()
-		{
-			taskHandler.TaskCollection.Clear();
-		}
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand WriteSelectedTaskToChipAutoCommand { get { return new RelayCommand(OnNewWriteSelectedTaskToChipAutoCommand); } }
-		private void OnNewWriteSelectedTaskToChipAutoCommand()
-		{
-			if (!isWriteSelectedToChipAutoCheckedTemp)
-				isWriteSelectedToChipAutoCheckedTemp = true;
-			else
-				isWriteSelectedToChipAutoCheckedTemp = false;
-		}
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand WriteToAllChipAutoCommand { get { return new RelayCommand(OnNewWriteToAllChipAutoCommand); } }
-		private void OnNewWriteToAllChipAutoCommand()
-		{
-			if (!triggerReadChip.IsEnabled)
-				triggerReadChip.IsEnabled = true;
-			else
-				triggerReadChip.IsEnabled = false;
-		}
+                switch (treeViewParentNodes.Single(x => x.IsSelected == true).CardType)
+                {
+                    case CARD_TYPE.Mifare1K:
+                    case CARD_TYPE.Mifare2K:
+                    case CARD_TYPE.Mifare4K:
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand WriteSelectedTaskToChipOnceCommand { get { return new RelayCommand(OnNewWriteSelectedTaskToChipOnceCommand); } }
-		private void OnNewWriteSelectedTaskToChipOnceCommand()
-		{
-			OnNewWriteToChipOnceCommand(true);
-		}
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand WriteToChipOnceCommand { get { return new RelayCommand<bool>(OnNewWriteToChipOnceCommand); } }
-		private void OnNewWriteToChipOnceCommand(bool _runSelectedOnly = false)
-		{
-			OnNewReadChipCommand();
-			OnNewExecuteQuickCheckCommand();
+                        treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteClassicQuickCheckCommand.Execute(null);
 
-			taskIndex = 0;
+                        break;
+
+                    case CARD_TYPE.DESFire:
+                    case CARD_TYPE.DESFireEV1:
+                    case CARD_TYPE.DESFireEV2:
+
+                        treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteDesfireQuickCheckCommand.Execute(null);
+
+                        break;
+                }
+
+                Mouse.OverrideCursor = null;
+
+            }
+            catch
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand ReadChipCommand { get { return new RelayCommand(OnNewReadChipCommand); } }
+        private void OnNewReadChipCommand()
+        {
+            bool timerState = triggerReadChip.IsEnabled;
+
+            triggerReadChip.IsEnabled = false;
+
+            Mouse.OverrideCursor = Cursors.Wait;
+
+            using (RFiDDevice device = RFiDDevice.Instance)
+            {
+
+                foreach (RFiDChipParentLayerViewModel item in treeViewParentNodes)
+                {
+                    item.IsExpanded = false;
+                }
+
+                if (device != null &&
+                    device.ReadChipPublic() == ERROR.NoError &&
+                    !treeViewParentNodes.Any(x => x.UidNumber == device.GenericChip.UID))
+                {
+                    // fill treeview with dummy models and viewmodels
+                    switch (device.GenericChip.CardType)
+                    {
+                        case CARD_TYPE.Mifare1K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare1K), Dialogs));
+                            break;
+
+                        case CARD_TYPE.Mifare2K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare2K), Dialogs));
+                            break;
+
+                        case CARD_TYPE.Mifare4K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare4K), Dialogs));
+                            break;
+
+                        case CARD_TYPE.DESFire:
+                        case CARD_TYPE.DESFireEV1:
+                        case CARD_TYPE.DESFireEV2:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
+                            break;
+
+                        case CARD_TYPE.MifarePlus_SL3_1K:
+
+                            break;
+
+                        case CARD_TYPE.MifarePlus_SL3_2K:
+
+                            break;
+
+                        case CARD_TYPE.MifarePlus_SL3_4K:
+
+                            break;
+
+                        case CARD_TYPE.MifareUltralight:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareUltralightChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
+                            break;
+
+                        case CARD_TYPE.GENERIC_T_CL_A:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
+                            break;
+
+                        case CARD_TYPE.ISO15693:
+                            device.ReadISO15693Chip();
+                            break;
+                    }
+
+
+                }
+                else if (treeViewParentNodes.Any(x => x.UidNumber == device.GenericChip.UID))
+                {
+                    treeViewParentNodes.First(x => x.UidNumber == device.GenericChip.UID).IsSelected = true;
+                }
+            }
+
+            Mouse.OverrideCursor = null;
+
+            triggerReadChip.IsEnabled = timerState;
+        }
+
+        /// <summary>
+        /// Reset all Task status information
+        /// </summary>
+        public ICommand ResetTaskStatusCommand { get { return new RelayCommand(OnNewResetTaskStatusCommand); } }
+        private void OnNewResetTaskStatusCommand()
+        {
+            foreach (object chipTask in taskHandler.TaskCollection)
+            {
+
+                switch (chipTask)
+                {
+                    case CommonTaskViewModel ssVM:
+                        ssVM.IsTaskCompletedSuccessfully = null;
+                        reportOutputPath = null;
+                        reportReaderWriter = null;
+                        ssVM.TaskErr = ERROR.Empty;
+                        break;
+                    case GenericChipTaskViewModel ssVM:
+                        ssVM.IsTaskCompletedSuccessfully = null;
+                        ssVM.TaskErr = ERROR.Empty;
+                        break;
+                    case MifareClassicSetupViewModel ssVM:
+                        ssVM.IsTaskCompletedSuccessfully = null;
+                        ssVM.TaskErr = ERROR.Empty;
+                        break;
+                    case MifareDesfireSetupViewModel ssVM:
+                        ssVM.IsTaskCompletedSuccessfully = null;
+                        ssVM.TaskErr = ERROR.Empty;
+                        break;
+                    case MifareUltralightSetupViewModel ssVM:
+                        ssVM.IsTaskCompletedSuccessfully = null;
+                        ssVM.TaskErr = ERROR.Empty;
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Remove all Tasks from DataGrid
+        /// </summary>
+        public ICommand RemoveAllTasksCommand { get { return new RelayCommand(OnNewRemoveAllTasksCommand); } }
+        private void OnNewRemoveAllTasksCommand()
+        {
+            taskHandler.TaskCollection.Clear();
+           
+            Dialogs.Add(new SplashScreenViewModel() {
+                Caption = "test",
+                OnOk = (sender) => { sender.Close(); },
+                
+            });
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand WriteSelectedTaskToChipAutoCommand { get { return new RelayCommand(OnNewWriteSelectedTaskToChipAutoCommand); } }
+        private void OnNewWriteSelectedTaskToChipAutoCommand()
+        {
+            if (!isWriteSelectedToChipAutoCheckedTemp)
+                isWriteSelectedToChipAutoCheckedTemp = true;
+            else
+                isWriteSelectedToChipAutoCheckedTemp = false;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand WriteToAllChipAutoCommand { get { return new RelayCommand(OnNewWriteToAllChipAutoCommand); } }
+        private void OnNewWriteToAllChipAutoCommand()
+        {
+            if (!triggerReadChip.IsEnabled)
+                triggerReadChip.IsEnabled = true;
+            else
+                triggerReadChip.IsEnabled = false;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand WriteSelectedTaskToChipOnceCommand { get { return new RelayCommand(OnNewWriteSelectedTaskToChipOnceCommand); } }
+        private void OnNewWriteSelectedTaskToChipOnceCommand()
+        {
+            OnNewWriteToChipOnceCommand(true);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand WriteToChipOnceCommand { get { return new RelayCommand<bool>(OnNewWriteToChipOnceCommand); } }
+        private void OnNewWriteToChipOnceCommand(bool _runSelectedOnly = false)
+        {
+            OnNewReadChipCommand();
+            RaisePropertyChanged("TreeViewParentNodes");
+            RaisePropertyChanged("ChipTasks");
+            //OnNewExecuteQuickCheckCommand();
+            //RaisePropertyChanged("TreeViewParentNodes");
+            //RaisePropertyChanged("ChipTasks");
+
+
+            taskIndex = 0;
             Dictionary<string, int> taskIndices = new Dictionary<string, int>();
 
             // create a new key,value pair of taskpositions <-> taskindex 
@@ -931,1335 +1047,1789 @@ namespace RFiDGear.ViewModel
             taskTimeout.IsEnabled = true;
             taskTimeout.Start();
 #endif
-
+            //TODO: Optimize Execute Conditions Check aka: "SelectedExecuteCondition"
             triggerReadChip.Tag = triggerReadChip.IsEnabled;
-			triggerReadChip.IsEnabled = false;
+            triggerReadChip.IsEnabled = false;
 
-			Task thread = new Task(() => {
-                //CARD_INFO card;
+            Task thread = new Task(() =>
+            {
                 GenericChipModel GenericChip;
 
-				try {
-					//try to get singleton instance
-					using (RFiDDevice device = RFiDDevice.Instance) {
-						//reader was ready - proceed
-						if (device != null) {
-							device.ReadChipPublic();
+                try
+                {
+                    //try to get singleton instance
+                    using (RFiDDevice device = RFiDDevice.Instance)
+                    {
+                        //reader was ready - proceed
+                        if (device != null)
+                        {
+                            device.ReadChipPublic();
+
+                            GenericChip = new GenericChipModel(device.GenericChip.UID, device.GenericChip.CardType);
+                        }
+                        else
+                            GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+                    }
+
+                    if (treeViewParentNodes.Any(x => x.IsSelected))
+                        treeViewParentNodes.First(x => x.IsSelected).IsSelected = false;
+
+                    //only run if theres a card on the reader and its uid was previously added
+                    if (
+                        !string.IsNullOrWhiteSpace(GenericChip.UID) &&
+                        treeViewParentNodes.Any(x => x.UidNumber == GenericChip.UID))
+                    {
+                        //select current parentnode (card) on reader
+                        treeViewParentNodes.First(x => x.UidNumber == GenericChip.UID).IsSelected = true;
+                        treeViewParentNodes.First(x => x.IsSelected).IsBeingProgrammed = true;
+                    }
+
+                    //are there tasks present to process?
+                    while (taskIndex < taskHandler.TaskCollection.Count)
+                    {
+                        if (_runSelectedOnly)
+                        {
+                            switch (SelectedSetupViewModel)
+                            {
+                                case GenericChipTaskViewModel ssVM:
+                                    if (ssVM.IsValidSelectedTaskIndex != false)
+                                        taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
+                                    break;
+                                case CommonTaskViewModel ssVM:
+                                    if (ssVM.IsValidSelectedTaskIndex != false)
+                                        taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
+                                    break;
+                                case MifareClassicSetupViewModel ssVM:
+                                    if (ssVM.IsValidSelectedTaskIndex != false)
+                                        taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
+                                    break;
+                                case MifareDesfireSetupViewModel ssVM:
+                                    if (ssVM.IsValidSelectedTaskIndex != false)
+                                        taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
+                                    break;
+                                case MifareUltralightSetupViewModel ssVM:
+                                    if (ssVM.IsValidSelectedTaskIndex != false)
+                                        taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
+                                    break;
+                            }
+                        }
+
+
+                        Thread.Sleep(10);
+
+                        taskTimeout.Stop();
+                        taskTimeout.Start();
+                        taskTimeout.Tag = taskIndex;
+
+                        SelectedSetupViewModel = taskHandler.TaskCollection[taskIndex];
+
+                        //decide what type of task to process next. use exact array positions 
+                        switch (taskHandler.TaskCollection[taskIndex])
+                        {
                             
-							GenericChip = new GenericChipModel(device.GenericChip.UID, device.GenericChip.CardType);
-						} else
-							GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
-					}
+                            case CommonTaskViewModel csVM:
+                                switch (csVM.SelectedTaskType)
+                                {
+                                    case TaskType_CommonTask.CreateReport:
+                                        taskTimeout.Stop();
 
-					//only run if theres a card on the reader and its uid was previously added
-					if (
-						!string.IsNullOrWhiteSpace(GenericChip.UID) &&
-						treeViewParentNodes.Any(x => (x.UidNumber == GenericChip.UID))) {
-						//select current parentnode (card) on reader
-						treeViewParentNodes.First(x => (x.UidNumber == GenericChip.UID)).IsSelected = true;
-						treeViewParentNodes.First(x => x.IsSelected).IsBeingProgrammed = true;
+                                        switch ((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-						//are there tasks present to process?
-						while (taskIndex < taskHandler.TaskCollection.Count) {			
-							if (_runSelectedOnly) {
-								switch (SelectedSetupViewModel)
-								{
-									case GenericChipTaskViewModel ssVM:
-										if (ssVM.IsValidSelectedTaskIndex != false)
-                                            taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
-										break;
-									case CommonTaskViewModel ssVM:
-										if (ssVM.IsValidSelectedTaskIndex != false)
-											taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
-										break;
-									case MifareClassicSetupViewModel ssVM:
-										if (ssVM.IsValidSelectedTaskIndex != false)
-											taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
-										break;
-									case MifareDesfireSetupViewModel ssVM:
-										if (ssVM.IsValidSelectedTaskIndex != false)
-											taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
-										break;
-									case MifareUltralightSetupViewModel ssVM:
-										if (ssVM.IsValidSelectedTaskIndex != false)
-											taskIndex = taskHandler.TaskCollection.IndexOf(ssVM);
-										break;
-								}
-							}
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
 
-							Thread.Sleep(10);
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-							taskTimeout.Tag = taskIndex;
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-							//decide what type of task to process next. use exact array positions 
-							switch (taskHandler.TaskCollection[taskIndex])
-							{
-								case GenericChipTaskViewModel csVM:
+                                            case ERROR.IsNotFalse:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-									switch (csVM.SelectedTaskType)
-									{
-										case TaskType_GenericChipTask.ChipIsOfType:
-											taskTimeout.Start();
+                                            case ERROR.IsNotTrue:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-											switch ((taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).TaskErr)
-											{
-												case ERROR.AuthenticationError:
-                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                    taskIndex++;
-                                                    break;
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+                                                taskTimeout.Stop();
 
-                                                case ERROR.ItemAlreadyExistError:
-                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                    taskIndex++;
-													break;
-
-												case ERROR.DeviceNotReadyError:
-													//taskIndex++;
-													taskTimeout.Stop();
-													break;
-
-												case ERROR.IOError:
-                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                    taskIndex++;
-													break;
-
-												case ERROR.NoError:
-                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                    taskIndex++;
-													break;
-
-												case ERROR.IsNotTrue:
-                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                    taskIndex++;
-													break;
-
-												case ERROR.IsNotFalse:
-                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                    taskIndex++;
-													break;
-
-												case ERROR.Empty:
-
-                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = true;
-
-                                                    if ((taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
-                                                    else
+                                                if ((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                {
+                                                    if (string.IsNullOrEmpty(reportOutputPath))
                                                     {
-                                                        int index;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).SelectedExecuteConditionTaskIndex, out index))
+                                                        var dlg = new SaveFileDialogViewModel
                                                         {
-                                                            switch (taskHandler.TaskCollection[index])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareUltralightSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
+                                                            Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
+                                                            Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                        };
+
+                                                        if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                        {
+                                                            reportOutputPath = dlg.FileName;
                                                         }
                                                     }
 
-													break;
+                                                    if (reportReaderWriter == null)
+                                                        reportReaderWriter = new ReportReaderWriter();
 
-												default:
-													break;
-											}
-											break;
-									}
+                                                    reportReaderWriter.ReportOutputPath = reportOutputPath;
 
-									break;
+                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
+                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
+                                                }
 
-								case CommonTaskViewModel csVM:
-
-									switch (csVM.SelectedTaskType)
-									{
-										case TaskType_CommonTask.CreateReport:
-
-											taskTimeout.Stop();
-
-											switch ((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).TaskErr)
-											{
-												case ERROR.AuthenticationError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-												case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-												case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-												case ERROR.NoError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-													break;
-
-												case ERROR.IsNotFalse:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.IsNotTrue:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.Empty:
-													taskTimeout.Start();
-													taskTimeout.Stop();
-
-													//(taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).
-													
-													if (string.IsNullOrEmpty(reportOutputPath))
+                                                else
+                                                {
+                                                    int targetIndex = 0;
+                                                    // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
+                                                    try
                                                     {
-														var dlg = new SaveFileDialogViewModel
-														{
-															Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-															Filter = ResourceLoader.getResource("filterStringSaveReport")
-														};
-
-														if (dlg.Show(this.Dialogs) && dlg.FileName != null)
-														{
-															reportOutputPath = dlg.FileName;
-														}
-													}
-
-													if(reportReaderWriter == null)
-														reportReaderWriter = new ReportReaderWriter();
-
-													reportReaderWriter.ReportOutputPath = reportOutputPath;
-
-													(taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
-													(taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
-													(taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
-
-													taskTimeout.Start();
-													break;
-											}
-											break;
-
-                                        case TaskType_CommonTask.CheckLogicCondition:
-                                            switch ((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).TaskErr)
-                                            {
-                                                case ERROR.AuthenticationError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IsNotTrue:
-												case ERROR.IsNotFalse:
-													taskIndex++;
-													break;
-
-                                                case ERROR.NoError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.Empty:
-													taskTimeout.Start();
-
-													if ((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
-                                                    else
-                                                    {
-                                                        int targetIndex;
-
                                                         if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
                                                         {
                                                             switch (taskHandler.TaskCollection[targetIndex])
                                                             {
                                                                 case GenericChipTaskViewModel tsVM:
                                                                     if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
-                                                        }
-                                                    }
-                                                    break;
-                                            }
-                                            break;
-                                    }
-									break;
-
-								case MifareClassicSetupViewModel csVM:
-
-									switch (csVM.SelectedTaskType) //[taskIndex] as MifareClassicSetupViewModel).SelectedTaskType) {
-									{
-										case TaskType_MifareClassicTask.ReadData:
-											switch ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr)
-											{
-                                                case ERROR.AuthenticationError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-												case ERROR.NoError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.Empty:
-													taskTimeout.Start();
-
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
-                                                    else
-                                                    {
-                                                        int index;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionTaskIndex, out index))
-                                                        {
-                                                            switch (taskHandler.TaskCollection[index])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    break;
-											}
-											break;
-
-										case TaskType_MifareClassicTask.WriteData:
-
-											switch ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr)
-											{
-                                                case ERROR.AuthenticationError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.Empty:
-													taskTimeout.Start();
-
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
-                                                    else
-                                                    {
-                                                        int index;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionTaskIndex, out index))
-                                                        {
-                                                            switch (taskHandler.TaskCollection[index])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    break;
-											}
-											break;
-									}
-
-									break;
-
-								case MifareDesfireSetupViewModel csVM:
-
-									switch (csVM.SelectedTaskType)
-									{
-										case TaskType_MifareDesfireTask.FormatDesfireCard:
-											switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
-											{
-                                                case ERROR.AuthenticationError:
-                                                case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-												case ERROR.NoError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.Empty:
-													taskTimeout.Start();
-
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
-                                                    else
-                                                    {
-                                                        int targetIndex;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
-                                                        {
-                                                            switch (taskHandler.TaskCollection[targetIndex])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
-                                                        }
-                                                    }
-
-													break;
-											}
-											break;
-
-                                        case TaskType_MifareDesfireTask.ReadAppSettings:
-                                            switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
-                                            {
-                                                case ERROR.AuthenticationError:
-                                                case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.NoError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.Empty:
-                                                    taskTimeout.Start();
-
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                    {
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(ref GenericChip); //Command.Execute(null);
-                                                    }
-                                                        
-                                                        
-                                                    else
-                                                    {
-                                                        int targetIndex;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
-                                                        {
-                                                            switch (taskHandler.TaskCollection[targetIndex])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(ref GenericChip);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(ref GenericChip);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(ref GenericChip);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(ref GenericChip);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(ref GenericChip);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    break;
-                                            }
-                                            break;
-
-                                        case TaskType_MifareDesfireTask.CreateApplication:
-											switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
-											{
-                                                case ERROR.AuthenticationError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-												case ERROR.OutOfMemory:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.NoError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.Empty:
-													taskTimeout.Start();
-
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
-                                                    else
-                                                    {
-                                                        int targetIndex;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
-                                                        {
-                                                            switch (taskHandler.TaskCollection[targetIndex])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    break;
-											}
-											break;
-
-										case TaskType_MifareDesfireTask.DeleteApplication:
-											switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
-											{
-                                                case ERROR.AuthenticationError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.NoError:
-													taskIndex++;
-													//taskTimeout.IsEnabled = false;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.Empty:
-													taskTimeout.Start();
-
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
-                                                    else
-                                                    {
-                                                        int targetIndex;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
-                                                        {
-                                                            switch (taskHandler.TaskCollection[targetIndex])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    break;
-											}
-											break;
-
-										case TaskType_MifareDesfireTask.PICCMasterKeyChangeover:
-											switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
-											{
-                                                case ERROR.AuthenticationError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.NoError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.Empty:
-													taskTimeout.Start();
-
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
-                                                    else
-                                                    {
-                                                        int targetIndex;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
-                                                        {
-                                                            switch (taskHandler.TaskCollection[targetIndex])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    break;
-											}
-											break;
-
-										case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
-											switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
-											{
-                                                case ERROR.AuthenticationError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.NoError:
-													taskIndex++;
-													//taskTimeout.IsEnabled = false;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.Empty:
-													taskTimeout.Start();
-
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
-                                                    else
-                                                    {
-                                                        int targetIndex;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
-                                                        {
-                                                            switch (taskHandler.TaskCollection[targetIndex])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    break;
-											}
-											break;
-
-										case TaskType_MifareDesfireTask.CreateFile:
-											switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
-											{
-                                                case ERROR.AuthenticationError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-												case ERROR.OutOfMemory:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.NoError:
-													taskIndex++;
-													//taskTimeout.IsEnabled = false;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.Empty:
-													taskTimeout.Start();
-
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
-                                                    else
-                                                    {
-                                                        int targetIndex;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
-                                                        {
-                                                            switch (taskHandler.TaskCollection[targetIndex])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-																	if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-																		(taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
-																	else
-																		taskIndex++;
+                                                                    {
+                                                                        if (string.IsNullOrEmpty(reportOutputPath))
+                                                                        {
+                                                                            var dlg = new SaveFileDialogViewModel
+                                                                            {
+                                                                                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
+                                                                                Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                                            };
+
+                                                                            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                                            {
+                                                                                reportOutputPath = dlg.FileName;
+                                                                            }
+                                                                        }
+
+                                                                        if (reportReaderWriter == null)
+                                                                            reportReaderWriter = new ReportReaderWriter();
+
+                                                                        reportReaderWriter.ReportOutputPath = reportOutputPath;
+
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
+                                                                    }
+
+                                                                    else
+                                                                        taskIndex++;
                                                                     break;
+
                                                                 case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
+                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    {
+                                                                        if (string.IsNullOrEmpty(reportOutputPath))
+                                                                        {
+                                                                            var dlg = new SaveFileDialogViewModel
+                                                                            {
+                                                                                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
+                                                                                Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                                            };
+
+                                                                            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                                            {
+                                                                                reportOutputPath = dlg.FileName;
+                                                                            }
+                                                                        }
+
+                                                                        if (reportReaderWriter == null)
+                                                                            reportReaderWriter = new ReportReaderWriter();
+
+                                                                        reportReaderWriter.ReportOutputPath = reportOutputPath;
+
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
+                                                                    }
+
+                                                                    else
+                                                                        taskIndex++;
+                                                                    break;
+
                                                                 case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
+                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    {
+                                                                        if (string.IsNullOrEmpty(reportOutputPath))
+                                                                        {
+                                                                            var dlg = new SaveFileDialogViewModel
+                                                                            {
+                                                                                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
+                                                                                Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                                            };
+
+                                                                            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                                            {
+                                                                                reportOutputPath = dlg.FileName;
+                                                                            }
+                                                                        }
+
+                                                                        if (reportReaderWriter == null)
+                                                                            reportReaderWriter = new ReportReaderWriter();
+
+                                                                        reportReaderWriter.ReportOutputPath = reportOutputPath;
+
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
+                                                                    }
+
+                                                                    else
+                                                                        taskIndex++;
+                                                                    break;
+
                                                                 case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
+                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    {
+                                                                        if (string.IsNullOrEmpty(reportOutputPath))
+                                                                        {
+                                                                            var dlg = new SaveFileDialogViewModel
+                                                                            {
+                                                                                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
+                                                                                Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                                            };
+
+                                                                            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                                            {
+                                                                                reportOutputPath = dlg.FileName;
+                                                                            }
+                                                                        }
+
+                                                                        if (reportReaderWriter == null)
+                                                                            reportReaderWriter = new ReportReaderWriter();
+
+                                                                        reportReaderWriter.ReportOutputPath = reportOutputPath;
+
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
+                                                                    }
+
+                                                                    else
+                                                                        taskIndex++;
+                                                                    break;
+
                                                                 case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
+                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    {
+                                                                        if (string.IsNullOrEmpty(reportOutputPath))
+                                                                        {
+                                                                            var dlg = new SaveFileDialogViewModel
+                                                                            {
+                                                                                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
+                                                                                Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                                            };
+
+                                                                            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                                            {
+                                                                                reportOutputPath = dlg.FileName;
+                                                                            }
+                                                                        }
+
+                                                                        if (reportReaderWriter == null)
+                                                                            reportReaderWriter = new ReportReaderWriter();
+
+                                                                        reportReaderWriter.ReportOutputPath = reportOutputPath;
+
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
+                                                                    }
+
+                                                                    else
+                                                                        taskIndex++;
+                                                                    break;
                                                             }
                                                         }
                                                     }
 
-                                                    break;
-											}
-											break;
-
-										case TaskType_MifareDesfireTask.DeleteFile:
-											switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
-											{
-                                                case ERROR.AuthenticationError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
-
-                                                case ERROR.NoError:
-													taskIndex++;
-													//taskTimeout.IsEnabled = false;
-													taskTimeout.Start();
-													break;
-
-												case ERROR.Empty:
-													taskTimeout.Start();
-
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
-                                                    else
+                                                    catch
                                                     {
-                                                        int targetIndex;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
-                                                        {
-                                                            switch (taskHandler.TaskCollection[targetIndex])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
-                                                        }
+                                                        taskIndex++;
                                                     }
+                                                }
 
-                                                    break;
-											}
-											break;
+                                                taskTimeout.Start();
+                                                break;
+                                        }
+                                        break;
 
-										case TaskType_MifareDesfireTask.ReadData:
-											switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
-											{
-                                                case ERROR.AuthenticationError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
+                                    case TaskType_CommonTask.CheckLogicCondition:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-												case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
 
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-												case ERROR.NoError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
+                                            case ERROR.IsNotTrue:
+                                            case ERROR.IsNotFalse:
+                                                taskIndex++;
+                                                break;
 
-												case ERROR.Empty:
-													taskTimeout.Start();
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
-                                                    else
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                {
+                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
+                                                }
+
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
                                                     {
-                                                        int targetIndex;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                        switch (taskHandler.TaskCollection[targetIndex])
                                                         {
-                                                            switch (taskHandler.TaskCollection[targetIndex])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
+                                                                {
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
+                                                                }                                                                    
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
+                                                                {
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
+                                                                }
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
+                                                                {
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
+                                                                }
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
+                                                                {
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
+                                                                }
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
+                                                                {
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
+                                                                }
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
                                                         }
                                                     }
+                                                }
+                                                break;
+                                        }
+                                        break;
+                                }
+                                break;
 
-                                                    break;
-											}
-											break;
+                            case GenericChipTaskViewModel csVM:
+                                switch (csVM.SelectedTaskType)
+                                {
+                                    case TaskType_GenericChipTask.ChipIsOfType:
+                                        taskTimeout.Start();
 
-										case TaskType_MifareDesfireTask.WriteData:
-											switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
-											{
-                                                case ERROR.AuthenticationError:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
+                                        switch ((taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
+                                                taskIndex++;
+                                                break;
 
-												case ERROR.ItemAlreadyExistError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
+                                            case ERROR.ItemAlreadyExistError:
+                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
+                                                taskIndex++;
+                                                break;
 
-                                                case ERROR.DeviceNotReadyError:
-                                                    //taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
+                                            case ERROR.DeviceNotReadyError:
+                                                taskIndex++;
 
-                                                case ERROR.IOError:
-                                                    taskIndex++;
-                                                    taskTimeout.Start();
-                                                    break;
+                                                taskTimeout.Stop();
+                                                break;
 
-												case ERROR.OutOfMemory:
-													taskIndex++;
-													taskTimeout.Start();
-													break;
+                                            case ERROR.IOError:
+                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
+                                                taskIndex++;
+                                                break;
 
-												case ERROR.NoError:
-													taskIndex++;
-													//taskTimeout.IsEnabled = false;
-													taskTimeout.Start();
-													break;
+                                            case ERROR.NoError:
+                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
+                                                taskIndex++;
+                                                break;
 
-												case ERROR.Empty:
-													taskTimeout.Start();
+                                            case ERROR.IsNotTrue:
+                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
+                                                taskIndex++;
+                                                break;
 
-                                                    if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
-                                                    else
+                                            case ERROR.IsNotFalse:
+                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
+                                                taskIndex++;
+                                                break;
+
+                                            case ERROR.Empty:
+
+                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = true;
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
+                                                else
+                                                {
+                                                    int index;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).SelectedExecuteConditionTaskIndex, out index))
                                                     {
-                                                        int targetIndex;
-
-                                                        if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                        switch (taskHandler.TaskCollection[index])
                                                         {
-                                                            switch (taskHandler.TaskCollection[targetIndex])
-                                                            {
-                                                                case GenericChipTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case CommonTaskViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareClassicSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareDesfireSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                                case MifareUltralightSetupViewModel tsVM:
-                                                                    if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
-                                                                        (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
-																	else
-																		taskIndex++;
-																	break;
-                                                            }
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareUltralightSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
                                                         }
                                                     }
+                                                }
 
-                                                    break;
-											}
-											break;
-									}
-									break;
+                                                break;
 
-								case MifareUltralightSetupViewModel ssVM:
-									break;
-							}
+                                            default:
+                                                break;
+                                        }
+                                        break;
+                                }
+                                break;
 
-                            if (_runSelectedOnly)
-								break;
+                            case MifareClassicSetupViewModel csVM:
+                                switch (csVM.SelectedTaskType) //[taskIndex] as MifareClassicSetupViewModel).SelectedTaskType) {
+                                {
+                                    case TaskType_MifareClassicTask.ReadData:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-							RaisePropertyChanged("TreeViewParentNodes");
-						}
-					} 
-                    
-                    else {
-						if (treeViewParentNodes.Any(x => x.IsSelected))
-							treeViewParentNodes.First(x => x.IsSelected).IsSelected = false;
-					}
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-					RaisePropertyChanged("TreeViewParentNodes");
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
 
-					taskTimeout.Stop();
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
 
-				} catch (Exception e) {
-					LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-				}
-			});
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
 
-			thread.ContinueWith((x) => {
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
+                                                else
+                                                {
+                                                    int index;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionTaskIndex, out index))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[index])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+
+                                    case TaskType_MifareClassicTask.WriteData:
+
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
+                                                else
+                                                {
+                                                    int index;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionTaskIndex, out index))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[index])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+                                }
+                                break;
+
+                            case MifareDesfireSetupViewModel csVM:
+                                switch (csVM.SelectedTaskType)
+                                {
+                                    case TaskType_MifareDesfireTask.FormatDesfireCard:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;                      
+
+                                    case TaskType_MifareDesfireTask.AppExistCheck:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IsNotTrue:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NotAllowed:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                {
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DoesAppExistCommand(GenericChip); //Command.Execute(null);
+                                                }
+
+
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DoesAppExistCommand(GenericChip);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DoesAppExistCommand(GenericChip);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DoesAppExistCommand(GenericChip);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DoesAppExistCommand(GenericChip);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DoesAppExistCommand(GenericChip);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+
+                                    case TaskType_MifareDesfireTask.ReadAppSettings:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IsNotTrue:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NotAllowed:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                {
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(GenericChip); //Command.Execute(null);
+                                                }
+
+
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(GenericChip);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(GenericChip);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(GenericChip);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(GenericChip);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(GenericChip);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+
+                                    case TaskType_MifareDesfireTask.CreateApplication:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.OutOfMemory:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+
+                                    case TaskType_MifareDesfireTask.AuthenticateApplication:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IsNotTrue:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NotAllowed:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                {
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).AuthenticateToCardApplicationCommand.Execute(null);
+                                                }
+
+
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).AuthenticateToCardApplicationCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).AuthenticateToCardApplicationCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).AuthenticateToCardApplicationCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).AuthenticateToCardApplicationCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).AuthenticateToCardApplicationCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+
+                                    case TaskType_MifareDesfireTask.DeleteApplication:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                //taskTimeout.IsEnabled = false;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+
+                                    case TaskType_MifareDesfireTask.PICCMasterKeyChangeover:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+
+                                    case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                //taskTimeout.IsEnabled = false;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+
+                                    case TaskType_MifareDesfireTask.CreateFile:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.OutOfMemory:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                //taskTimeout.IsEnabled = false;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+
+                                    case TaskType_MifareDesfireTask.DeleteFile:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                //taskTimeout.IsEnabled = false;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+
+                                    case TaskType_MifareDesfireTask.ReadData:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+
+                                    case TaskType_MifareDesfireTask.WriteData:
+                                        switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
+                                        {
+                                            case ERROR.AuthenticationError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.ItemAlreadyExistError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.DeviceNotReadyError:
+                                                //taskIndex++;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.IOError:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.OutOfMemory:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.NoError:
+                                                taskIndex++;
+                                                //taskTimeout.IsEnabled = false;
+                                                taskTimeout.Start();
+                                                break;
+
+                                            case ERROR.Empty:
+                                                taskTimeout.Start();
+
+                                                if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
+                                                else
+                                                {
+                                                    int targetIndex;
+
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    {
+                                                        switch (taskHandler.TaskCollection[targetIndex])
+                                                        {
+                                                            case GenericChipTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case CommonTaskViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareClassicSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareDesfireSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                            case MifareUltralightSetupViewModel tsVM:
+                                                                if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel)
+                                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
+                                                                else
+                                                                    taskIndex++;
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                break;
+                                        }
+                                        break;
+                                }
+                                break;
+
+                            case MifareUltralightSetupViewModel ssVM:
+                                break;
+                        }
+
+                        if (_runSelectedOnly)
+                            break;
+
+                        RaisePropertyChanged("TreeViewParentNodes");
+                    }
+
+                    RaisePropertyChanged("TreeViewParentNodes");
+
+                    taskTimeout.Stop();
+
+                }
+                catch (Exception e)
+                {
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                }
+            });
+
+
+            thread.ContinueWith((x) =>
+            {
 
                 try
                 {
@@ -2268,392 +2838,477 @@ namespace RFiDGear.ViewModel
                 }
 
                 catch { }
-			});
-			
-			OnNewResetTaskStatusCommand();
-			
-			thread.Start();
-		}
+            });
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand CloseAllCommand { get { return new RelayCommand(OnCloseAll); } }
-		private void OnCloseAll()
-		{
-			this.Dialogs.Clear();
-		}
+            OnNewResetTaskStatusCommand();
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand SwitchLanguageToGerman { get { return new RelayCommand(SetGermanLanguage); } }
-		private void SetGermanLanguage()
-		{
-			using (SettingsReaderWriter settings = new SettingsReaderWriter()) {
-				if (settings.DefaultSpecification.DefaultLanguage != "german") {
-					settings.DefaultSpecification.DefaultLanguage = "german";
-					settings.SaveSettings();
-					this.OnNewLanguageChangedDialog();
-				}
-			}
-		}
+            thread.Start();
+        }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand SwitchLanguageToEnglish { get { return new RelayCommand(SetEnglishLanguage); } }
-		private void SetEnglishLanguage()
-		{
-			using (SettingsReaderWriter settings = new SettingsReaderWriter()) {
-				if (settings.DefaultSpecification.DefaultLanguage != "english") {
-					settings.DefaultSpecification.DefaultLanguage = "english";
-					settings.SaveSettings();
-					this.OnNewLanguageChangedDialog();
-				}
-			}
-		}
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand CloseAllCommand { get { return new RelayCommand(OnCloseAll); } }
+        private void OnCloseAll()
+        {
+            this.Dialogs.Clear();
+        }
 
-		private void OnNewLanguageChangedDialog()
-		{
-			this.Dialogs.Add(new CustomDialogViewModel {
-				Message = ResourceLoader.getResource("messageBoxRestartRequiredMessage"),
-				Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand SwitchLanguageToGerman { get { return new RelayCommand(SetGermanLanguage); } }
+        private void SetGermanLanguage()
+        {
+            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            {
+                if (settings.DefaultSpecification.DefaultLanguage != "german")
+                {
+                    settings.DefaultSpecification.DefaultLanguage = "german";
+                    settings.SaveSettings();
+                    this.OnNewLanguageChangedDialog();
+                }
+            }
+        }
 
-				OnOk = (sender) => {
-					sender.Close();
-					App.Current.Shutdown();
-				},
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand SwitchLanguageToEnglish { get { return new RelayCommand(SetEnglishLanguage); } }
+        private void SetEnglishLanguage()
+        {
+            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            {
+                if (settings.DefaultSpecification.DefaultLanguage != "english")
+                {
+                    settings.DefaultSpecification.DefaultLanguage = "english";
+                    settings.SaveSettings();
+                    this.OnNewLanguageChangedDialog();
+                }
+            }
+        }
 
-				OnCancel = (sender) => {
-					sender.Close();
-				},
+        private void OnNewLanguageChangedDialog()
+        {
+            this.Dialogs.Add(new CustomDialogViewModel
+            {
+                Message = ResourceLoader.getResource("messageBoxRestartRequiredMessage"),
+                Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
 
-				OnCloseRequest = (sender) => {
-					sender.Close();
-				}
-			});
-		}
+                OnOk = (sender) =>
+                {
+                    sender.Close();
+                    App.Current.Shutdown();
+                },
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand NewReaderSetupDialogCommand { get { return new RelayCommand(OnNewReaderSetupDialog); } }
-		private void OnNewReaderSetupDialog()
-		{
-			using (RFiDDevice device = RFiDDevice.Instance) {
-				this.Dialogs.Add(new SetupViewModel(device) {
-					Caption = ResourceLoader.getResource("windowCaptionReaderSetup"),
+                OnCancel = (sender) =>
+                {
+                    sender.Close();
+                },
 
-					OnOk = (sender) => {
-						using (SettingsReaderWriter settings = new SettingsReaderWriter()) {
-							DefaultSpecification currentSettings = settings.DefaultSpecification;
+                OnCloseRequest = (sender) =>
+                {
+                    sender.Close();
+                }
+            });
+        }
 
-							currentSettings.DefaultReaderProvider = sender.SelectedReader;
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand NewReaderSetupDialogCommand { get { return new RelayCommand(OnNewReaderSetupDialog); } }
+        private void OnNewReaderSetupDialog()
+        {
+            using (RFiDDevice device = RFiDDevice.Instance)
+            {
+                this.Dialogs.Add(new SetupViewModel(device)
+                {
+                    Caption = ResourceLoader.getResource("windowCaptionReaderSetup"),
 
-							settings.DefaultSpecification = currentSettings;
+                    OnOk = (sender) =>
+                    {
+                        using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                        {
+                            DefaultSpecification currentSettings = settings.DefaultSpecification;
 
-							sender.Close();
-						}
-					},
+                            currentSettings.DefaultReaderProvider = sender.SelectedReader;
+                            currentSettings.AutoLoadProjectOnStart = sender.LoadOnStart;
+                            currentSettings.LastUsedComPort = sender.ComPort;
+                            currentSettings.LastUsedBaudRate = sender.SelectedBaudRate;
 
-					OnConnect = (sender) => {
-					},
+                            settings.DefaultSpecification = currentSettings;
 
-					OnCancel = (sender) => {
-						sender.Close();
-					},
+                            sender.Close();
 
-					OnCloseRequest = (sender) => {
-						sender.Close();
-					}
-				});
-			}
-		}
+                            settings.SaveSettings();
+                        }
+                    },
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand NewOpenFileDialogCommand { get { return new RelayCommand(OnNewOpenFileDialog); } }
-		private void OnNewOpenFileDialog()
-		{
-			var dlg = new OpenFileDialogViewModel {
-				Title = ResourceLoader.getResource("windowCaptionOpenProject"),
-				Filter = ResourceLoader.getResource("filterStringSaveTasks"),
-				Multiselect = false
-			};
+                    OnConnect = (sender) =>
+                    {
+                    },
 
-			if (dlg.Show(this.Dialogs) && dlg.FileName != null) {
-				Mouse.OverrideCursor = Cursors.AppStarting;
-				
-				if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
-					ChipTasks.TaskCollection.Clear();
+                    OnCancel = (sender) =>
+                    {
+                        sender.Close();
+                    },
 
-				databaseReaderWriter.ReadDatabase(dlg.FileName);
+                    OnCloseRequest = (sender) =>
+                    {
+                        sender.Close();
+                    }
+                });
+            }
+        }
 
-				foreach (RFiDChipParentLayerViewModel vm in databaseReaderWriter.treeViewModel) {
-					TreeViewParentNodes.Add(vm);
-				}
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand NewOpenFileDialogCommand { get { return new RelayCommand<bool>(OnNewOpenFileDialog); } }
+        private void OnNewOpenFileDialog(bool omitFileDlg = false)
+        {
+            bool autoLoadLastUsedDB;
+            string lastUsedDBPath;
 
-				foreach (object setup in databaseReaderWriter.setupModel.TaskCollection) {
-					ChipTasks.TaskCollection.Add(setup);
-				}
-				
-				Mouse.OverrideCursor = null;
-			}
+            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            {
+                CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
+                    ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
+                    : settings.DefaultSpecification.DefaultReaderName;
 
-			RaisePropertyChanged("ChipTasks");
-		}
+                autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
+                lastUsedDBPath = settings.DefaultSpecification.LastUsedProjectPath;
 
-		/// <summary>
-		/// Expose Command to Save As Menu Item
-		/// </summary>
-		public ICommand SaveTaskDialogCommand { get { return new RelayCommand(OnNewSaveTaskDialogCommand); } }
-		private void OnNewSaveTaskDialogCommand()
-		{
-			var dlg = new SaveFileDialogViewModel {
-				Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-				Filter = ResourceLoader.getResource("filterStringSaveTasks")
-			};
+                culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
-			if (dlg.Show(this.Dialogs) && dlg.FileName != null) {
-				databaseReaderWriter.WriteDatabase(ChipTasks, dlg.FileName);
-			}
-		}
 
-		/// <summary>
-		/// Expose Command to Save Menu Item
-		/// </summary>
-		public ICommand SaveChipDialogCommand { get { return new RelayCommand(OnNewSaveChipDialogCommand); } }
-		private void OnNewSaveChipDialogCommand()
-		{
-			var dlg = new SaveFileDialogViewModel {
-				Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-				Filter = ResourceLoader.getResource("filterStringSaveTasks")
-			};
+                var dlg = new OpenFileDialogViewModel
+                {
+                    Title = ResourceLoader.getResource("windowCaptionOpenProject"),
+                    Filter = ResourceLoader.getResource("filterStringSaveTasks"),
+                    Multiselect = false
+                        
+                };
 
-			if (dlg.Show(this.Dialogs) && dlg.FileName != null) {
-				databaseReaderWriter.WriteDatabase(TreeViewParentNodes, dlg.FileName);
-			}
-		}
+                if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                {
+                    Mouse.OverrideCursor = Cursors.AppStarting;
+                        
+                    if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
+                        ChipTasks.TaskCollection.Clear();
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand CloseApplication { get { return new RelayCommand(OnCloseRequest); } }
-		private void OnCloseRequest()
-		{
+                    databaseReaderWriter.ReadDatabase(dlg.FileName);
+
+                    settings.DefaultSpecification.LastUsedProjectPath = dlg.FileName;
+                    settings.SaveSettings();
+
+                    foreach (RFiDChipParentLayerViewModel vm in databaseReaderWriter.treeViewModel)
+                    {
+                        TreeViewParentNodes.Add(vm);
+                    }
+
+                    foreach (object setup in databaseReaderWriter.setupModel.TaskCollection)
+                    {
+                        ChipTasks.TaskCollection.Add(setup);
+                    }
+                }
+
+
+            }
+            Mouse.OverrideCursor = null;
+
+            RaisePropertyChanged("ChipTasks");
+        }
+
+        /// <summary>
+        /// Expose Command to Save As Menu Item
+        /// </summary>
+        public ICommand SaveTaskDialogCommand { get { return new RelayCommand(OnNewSaveTaskDialogCommand); } }
+        private void OnNewSaveTaskDialogCommand()
+        {
+            var dlg = new SaveFileDialogViewModel
+            {
+                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
+                Filter = ResourceLoader.getResource("filterStringSaveTasks")
+            };
+
+            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+            {
+                databaseReaderWriter.WriteDatabase(ChipTasks, dlg.FileName);
+            }
+        }
+
+        /// <summary>
+        /// Expose Command to Save Menu Item
+        /// </summary>
+        public ICommand SaveChipDialogCommand { get { return new RelayCommand(OnNewSaveChipDialogCommand); } }
+        private void OnNewSaveChipDialogCommand()
+        {
+            var dlg = new SaveFileDialogViewModel
+            {
+                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
+                Filter = ResourceLoader.getResource("filterStringSaveTasks")
+            };
+
+            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+            {
+                databaseReaderWriter.WriteDatabase(TreeViewParentNodes, dlg.FileName);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand CloseApplication { get { return new RelayCommand(OnCloseRequest); } }
+        private void OnCloseRequest()
+        {
             Environment.Exit(0);
-		}
+        }
 
-#endregion Menu Commands
+        #endregion Menu Commands
 
-#region Dependency Properties
+        #region Dependency Properties
 
-		/// <summary>
-		/// expose contextmenu on row click
-		/// </summary>
-		public ObservableCollection<MenuItem> RowContextMenu {
-			get {
-				return rowContextMenuItems;
-			}
+        /// <summary>
+        /// expose contextmenu on row click
+        /// </summary>
+        public ObservableCollection<MenuItem> RowContextMenu
+        {
+            get
+            {
+                return rowContextMenuItems;
+            }
 
-		}
-		private readonly ObservableCollection<MenuItem> rowContextMenuItems;
+        }
+        private readonly ObservableCollection<MenuItem> rowContextMenuItems;
 
-		/// <summary>
-		/// expose contextmenu on row click
-		/// </summary>
-		public ObservableCollection<MenuItem> EmptySpaceContextMenuItems {
-			get {
-				return emptySpaceContextMenuItems;
-			}
+        /// <summary>
+        /// expose contextmenu on row click
+        /// </summary>
+        public ObservableCollection<MenuItem> EmptySpaceContextMenuItems
+        {
+            get
+            {
+                return emptySpaceContextMenuItems;
+            }
 
-		}
-		private readonly ObservableCollection<MenuItem> emptySpaceContextMenuItems;
-		
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public object SelectedSetupViewModel {
-			get { return selectedSetupViewModel; }
-			set {
-				selectedSetupViewModel = value;
-				RaisePropertyChanged("SelectedSetupViewModel");
-			}
-			
-		}
-		private object selectedSetupViewModel;
+        }
+        private readonly ObservableCollection<MenuItem> emptySpaceContextMenuItems;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ObservableCollection<RFiDChipParentLayerViewModel> TreeViewParentNodes {
-			get {
-				return treeViewParentNodes;
-			}
 
-			set {
-				treeViewParentNodes = value;
-				RaisePropertyChanged("TreeViewParentNodes");
-			}
-		}
-		private ObservableCollection<RFiDChipParentLayerViewModel> treeViewParentNodes;
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public ChipTaskHandlerModel ChipTasks {
-			get {
-				return taskHandler;
-			}
+        /// <summary>
+        /// 
+        /// </summary>
+        public object SelectedSetupViewModel
+        {
+            get { return selectedSetupViewModel; }
+            set
+            {
+                selectedSetupViewModel = value;
+                RaisePropertyChanged("SelectedSetupViewModel");
+            }
 
-			set {
-				taskHandler = value;
-				RaisePropertyChanged("ChipTasks");
-			}
-		}
+        }
+        private object selectedSetupViewModel;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool IsWriteToAllChipAutoChecked {
-			get { return triggerReadChip.IsEnabled; }
-		}
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool IsWriteSelectedToChipAutoChecked {
-			get { return triggerReadChip.IsEnabled; }
-		}
-		private bool isWriteSelectedToChipAutoCheckedTemp;
-		
-		/// <summary>
-		///
-		/// </summary>
-		public string CurrentReader {
-			get { return currentReader; }
-			set {
-				currentReader = value;
-				RaisePropertyChanged("CurrentReader");
-			}
-		}
-		private string currentReader;
+        /// <summary>
+        /// 
+        /// </summary>
+        public ObservableCollection<RFiDChipParentLayerViewModel> TreeViewParentNodes
+        {
+            get
+            {
+                return treeViewParentNodes;
+            }
 
-		/// <summary>
-		///
-		/// </summary>
-		public string ReaderStatus {
-			get { return readerStatus; }
-			set {
-				readerStatus = value;
-				RaisePropertyChanged("ReaderStatus");
-			}
-		}
-		private string readerStatus;
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool IsSelected { get; set; }
+            set
+            {
+                treeViewParentNodes = value;
+                RaisePropertyChanged("TreeViewParentNodes");
+            }
+        }
+        private ObservableCollection<RFiDChipParentLayerViewModel> treeViewParentNodes;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool IsCheckForUpdatesChecked {
-			get {
-				using (SettingsReaderWriter settings = new SettingsReaderWriter()) {
-					return settings.DefaultSpecification != null ? settings.DefaultSpecification.AutoCheckForUpdates : false;
-				}
-			}
-			set {
-				using (SettingsReaderWriter settings = new SettingsReaderWriter()) {
-					if (value)
-						updater.StartMonitoring();
-					else
-						updater.StopMonitoring();
+        /// <summary>
+        /// 
+        /// </summary>
+        public ChipTaskHandlerModel ChipTasks
+        {
+            get
+            {
+                return taskHandler;
+            }
 
-					settings.DefaultSpecification.AutoCheckForUpdates = value;
-					settings.SaveSettings();
-				}
-				RaisePropertyChanged("IsCheckForUpdatesChecked");
+            set
+            {
+                taskHandler = value;
+                RaisePropertyChanged("ChipTasks");
+            }
+        }
 
-			}
-		}
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool IsWriteToAllChipAutoChecked
+        {
+            get { return triggerReadChip.IsEnabled; }
+        }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool RadioButtonGermanLanguageSelectedState {
-			get {
-				using (SettingsReaderWriter settings = new SettingsReaderWriter()) {
-					if (settings.DefaultSpecification.DefaultLanguage == "german")
-						return true;
-					else
-						return false;
-				}
-			}
-			set {
-				using (SettingsReaderWriter settings = new SettingsReaderWriter()) {
-					if (settings.DefaultSpecification.DefaultLanguage == "english")
-						value = false;
-					RaisePropertyChanged("RadioButtonGermanLanguageSelectedState");
-				}
-			}
-		}
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool IsWriteSelectedToChipAutoChecked
+        {
+            get { return triggerReadChip.IsEnabled; }
+        }
+        private bool isWriteSelectedToChipAutoCheckedTemp;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool RadioButtonEnglishLanguageSelectedState {
-			get {
-				using (SettingsReaderWriter settings = new SettingsReaderWriter()) {
-					if (settings.DefaultSpecification.DefaultLanguage == "german")
-						return false;
-					else
-						return true;
-				}
-			}
-			set {
-				using (SettingsReaderWriter settings = new SettingsReaderWriter()) {
-					if (settings.DefaultSpecification.DefaultLanguage == "german")
-						value = false;
-					RaisePropertyChanged("RadioButtonEnglishLanguageSelectedState");
-				}
-			}
-		}
+        /// <summary>
+        ///
+        /// </summary>
+        public string CurrentReader
+        {
+            get { return currentReader; }
+            set
+            {
+                currentReader = value;
+                RaisePropertyChanged("CurrentReader");
+            }
+        }
+        private string currentReader;
 
-#endregion Dependency Properties
+        /// <summary>
+        ///
+        /// </summary>
+        public string ReaderStatus
+        {
+            get { return readerStatus; }
+            set
+            {
+                readerStatus = value;
+                RaisePropertyChanged("ReaderStatus");
+            }
+        }
+        private string readerStatus;
 
-#region Extensions
-		
-		private void AskForUpdateNow(object sender, EventArgs e)
-		{
-			if (new MessageBoxViewModel {
-				Caption = ResourceLoader.getResource("messageBoxUpdateAvailableCaption"),
-				Message = ResourceLoader.getResource("messageBoxUpdateAvailableMessage"),
-				Buttons = MessageBoxButton.YesNo,
-				Image = MessageBoxImage.Question
-			}.Show(this.Dialogs) == MessageBoxResult.Yes)
-				(sender as Updater).AllowUpdate = true;
-			else {
-				(sender as Updater).AllowUpdate = false;
-			}
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool IsSelected { get; set; }
 
-		}
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool IsCheckForUpdatesChecked
+        {
+            get
+            {
+                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                {
+                    return settings.DefaultSpecification != null ? settings.DefaultSpecification.AutoCheckForUpdates : false;
+                }
+            }
+            set
+            {
+                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                {
+                    if (value)
+                        updater.StartMonitoring();
+                    else
+                        updater.StopMonitoring();
 
-		//Only one instance is allowed due to the singleton pattern of the reader class
-		private void RunMutex(object sender, StartupEventArgs e)
-		{
-			mutex = new Mutex(true, "App", out bool aIsNewInstance);
+                    settings.DefaultSpecification.AutoCheckForUpdates = value;
+                    settings.SaveSettings();
+                }
+                RaisePropertyChanged("IsCheckForUpdatesChecked");
 
-			if (!aIsNewInstance) {
-				Environment.Exit(0);
-			}
+            }
+        }
 
-		}
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool RadioButtonGermanLanguageSelectedState
+        {
+            get
+            {
+                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                {
+                    if (settings.DefaultSpecification.DefaultLanguage == "german")
+                        return true;
+                    else
+                        return false;
+                }
+            }
+            set
+            {
+                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                {
+                    if (settings.DefaultSpecification.DefaultLanguage == "english")
+                        value = false;
+                    RaisePropertyChanged("RadioButtonGermanLanguageSelectedState");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool RadioButtonEnglishLanguageSelectedState
+        {
+            get
+            {
+                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                {
+                    if (settings.DefaultSpecification.DefaultLanguage == "german")
+                        return false;
+                    else
+                        return true;
+                }
+            }
+            set
+            {
+                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                {
+                    if (settings.DefaultSpecification.DefaultLanguage == "german")
+                        value = false;
+                    RaisePropertyChanged("RadioButtonEnglishLanguageSelectedState");
+                }
+            }
+        }
+
+        #endregion Dependency Properties
+
+        #region Extensions
+
+        private void AskForUpdateNow(object sender, EventArgs e)
+        {
+            if (new MessageBoxViewModel
+            {
+                Caption = ResourceLoader.getResource("messageBoxUpdateAvailableCaption"),
+                Message = ResourceLoader.getResource("messageBoxUpdateAvailableMessage"),
+                Buttons = MessageBoxButton.YesNo,
+                Image = MessageBoxImage.Question
+            }.Show(this.Dialogs) == MessageBoxResult.Yes)
+                (sender as Updater).AllowUpdate = true;
+            else
+            {
+                (sender as Updater).AllowUpdate = false;
+            }
+
+        }
+
+        //Only one instance is allowed due to the singleton pattern of the reader class
+        private void RunMutex(object sender, StartupEventArgs e)
+        {
+            mutex = new Mutex(true, "App", out bool aIsNewInstance);
+
+            if (!aIsNewInstance)
+            {
+                Environment.Exit(0);
+            }
+
+        }
 
         private void CloseThreads(object sender, CancelEventArgs e)
         {
@@ -2661,30 +3316,107 @@ namespace RFiDGear.ViewModel
         }
 
         private void LoadCompleted(object sender, EventArgs e)
-		{
-			mw = (MainWindow)Application.Current.MainWindow;
-			mw.Title = string.Format("RFiDGear {0}.{1}.{2} {3}", Version.Major, Version.Minor, Version.Build, Constants.TITLE_SUFFIX);
+        {
+            mw = (MainWindow)Application.Current.MainWindow;
+            mw.Title = string.Format("RFiDGear {0}.{1}.{2} {3}", Version.Major, Version.Minor, Version.Build, Constants.TITLE_SUFFIX);
 
-			if (firstRun) {
-				firstRun = false;
-				
-				try {
-					//var catalog = new AssemblyCatalog(System.Reflection.Assembly.GetExecutingAssembly());
-					//var container = new CompositionContainer(catalog);
-					MefHelper.Instance.Container.ComposeParts(this); //Load Plugins Container.ComposeParts(this);
-					//container.Compose(this);
-				} catch (Exception e2) {
-					LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e2.Message, e2.InnerException != null ? e2.InnerException.Message : ""));
-				}
+            Task thread = new Task(() =>
+            {
+                while (true)
+                {
+                    for(int i = 0; i<=10; i++)
+                    {
+                        Thread.Sleep(500);
+                        ReaderStatus = string.Format("{0}", DateTime.Now);
 
-				using (SettingsReaderWriter settings = new SettingsReaderWriter()) {
-					if (settings.DefaultSpecification.AutoCheckForUpdates)
-						updater.StartMonitoring();
-				}
+                        if (i == 10)
+                        {
+                            //TODO: Update ReaderStatus frequently
+                            //FIXME: Locking RFiDDevice Instance in different Threads not working correctly
+                            /*
+                            using (RFiDDevice device = RFiDDevice.Instance)
+                            {
 
-			}
+                                if (device != null)
+                                {
+                                    //device.ReadChipPublic();
+                                    ReaderStatus = ReaderStatus + string.Format("Reader: {1}, UID: {2}", DateTime.Now, device.ReaderUnitName, device.GenericChip.UID);
+                                    i = 0;
+                                }
+                                else
+                                    i = 0;
+                            }
+                            */
+                        }
+                    }
 
-#endregion
-		}
-	}
+                }
+            });
+
+
+            thread.ContinueWith((x) =>
+            {
+            });
+
+            thread.Start();
+
+            if (firstRun)
+            {
+                firstRun = false;
+
+                try
+                {
+                    var mySplash = new SplashScreenViewModel();
+
+                    //var catalog = new AssemblyCatalog(System.Reflection.Assembly.GetExecutingAssembly());
+                    //var container = new CompositionContainer(catalog);
+                    MefHelper.Instance.Container.ComposeParts(this); //Load Plugins Container.ComposeParts(this);
+                                                                     //container.Compose(this);
+
+                    using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                    {
+                        CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
+                            ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
+                            : settings.DefaultSpecification.DefaultReaderName;
+
+                        culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
+
+                        var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
+
+                        if (autoLoadLastUsedDB)
+                            Dialogs.Add(mySplash);
+
+                        thread = new Task(() =>
+                        {
+                            if (autoLoadLastUsedDB)
+                                OpenLastProjectFile();
+                        });
+
+
+                        thread.ContinueWith((x) =>
+                        {
+                        });
+
+                        thread.RunSynchronously();
+
+                        OnNewResetTaskStatusCommand();
+
+                        Dialogs.Remove(mySplash);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""));
+                }
+
+                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                {
+                    if (settings.DefaultSpecification.AutoCheckForUpdates)
+                        updater.StartMonitoring();
+                }
+
+            }
+            #endregion
+        }
+    }
 }

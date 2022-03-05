@@ -17,6 +17,7 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
+
         <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 			<ContextMenu.ItemContainerStyle>
 				<Style TargetType="MenuItem">
@@ -54,11 +55,17 @@
             Margin="0,0,0,0"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
-            <TabControl>
-                <TabItem MinWidth="50" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderLogicTaskSettingsView'}">
+            <TabControl IsSynchronizedWithCurrentItem="True" SelectedIndex="{Binding SelectedTabIndex}">
+                <TabItem
+                    MinWidth="50"
+                    Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderLogicTaskSettingsView'}"
+                    IsEnabled="{Binding IsTabPageLogicTaskSettingsViewEnabled}">
                     <v:TabPageLogicTaskView />
                 </TabItem>
-                <TabItem MinWidth="50" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderReportSettingsView'}">
+                <TabItem
+                    MinWidth="50"
+                    Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderReportSettingsView'}"
+                    IsEnabled="{Binding IsTabPageReportSettingsViewEnabled}">
                     <v:TabPageReportSettingsView />
                 </TabItem>
             </TabControl>

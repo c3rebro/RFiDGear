@@ -180,10 +180,33 @@
 																																			<File Source="$(var.ProjectDir)..\uberAgent\Config file\Standalone mode\uberAgent.conf" Id="uberAgentConf" KeyPath="yes" />
 																																			<IniFile Id="ConfigFile" Action="addLine" Directory="INSTALLDIR" Name="uberAgent.conf" Section="Receiver" Key="Servers" Value="[SERVERS]" />
 																																		</Component>-->
+            <Component Id="BouncyCastleCryptoDll" Guid="40A4382E-00AA-479A-773F-0B45401700BB" DiskId="1">
+              <File Id="BouncyCastle.Crypto.dll" Name="BouncyCastle.Crypto.dll" Source="..\RFiDGear\bin\Release\BouncyCastle.Crypto.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="ByteArrayDll" Guid="0907B24F-F549-41D5-8222-645C550BB7E7" DiskId="1">
+              <File Id="ByteArray.dll" Name="ByteArray.dll" Source="..\RFiDGear\bin\Release\ByteArray.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="CommonServiceLocatorDll" Guid="5CA5CB50-8EA8-4EBF-AA40-6BC120B61AC7" DiskId="1">
+              <File Id="CommonServiceLocator.dll" Name="CommonServiceLocator.dll" Source="..\RFiDGear\bin\Release\CommonServiceLocator.dll" KeyPath="yes" />
+            </Component>
 						<Component Id="GalaSoftMvvmLightDll" Guid="40A4382E-00AA-479A-923F-0B45401700BB" DiskId="1">
 							<File Id="GalaSoft.MvvmLight.dll" Name="GalaSoft.MvvmLight.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.dll" KeyPath="yes" />
 						</Component>
-
+            <Component Id="GalaSoftMvvmLightExtrasDll" Guid="551D382E-00AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="GalaSoft.MvvmLight.Extras.dll" Name="GalaSoft.MvvmLight.Extras.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.Extras.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="GalaSoftMvvmLightPlatformDll" Guid="FF09382E-00AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="GalaSoft.MvvmLight.Platform.dll" Name="GalaSoft.MvvmLight.Platform.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.Platform.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="ElatecNetDll" Guid="40A4332E-04AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="Elatec.NET.dll" Name="Elatec.NET.dll" Source="..\RFiDGear\bin\Release\Elatec.NET.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="InteropLibLogicalAccessDll" Guid="266E1A03-2C6B-444E-8017-1DBE01B19B24" DiskId="1">
+              <File Id="Interop.LibLogicalAccess.dll" Name="Interop.LibLogicalAccess.dll" Source="..\RFiDGear\bin\Release\Interop.LibLogicalAccess.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="IonicZipDll" Guid="DC246BF8-25A3-42BF-A2A5-CEE429219381" DiskId="1">
+              <File Id="Ionic.Zip.dll" Name="Ionic.Zip.dll" Source="..\RFiDGear\bin\Release\Ionic.Zip.dll" KeyPath="yes" />
+            </Component>
             <Component Id="ITextBarcodesDll" Guid="40A4382E-00AA-478A-923F-0B45401700BB" DiskId="1">
               <File Id="itext.barcodes.dll" Name="itext.barcodes.dll" Source="..\RFiDGear\bin\Release\itext.barcodes.dll" KeyPath="yes" />
             </Component>
@@ -211,13 +234,6 @@
             <Component Id="ITextSvgDll" Guid="40A438DD-06AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="itext.svg.dll" Name="itext.svg.dll" Source="..\RFiDGear\bin\Release\itext.svg.dll" KeyPath="yes" />
             </Component>
-            
-						<Component Id="InteropLibLogicalAccessDll" Guid="266E1A03-2C6B-444E-8017-1DBE01B19B24" DiskId="1">
-							<File Id="Interop.LibLogicalAccess.dll" Name="Interop.LibLogicalAccess.dll" Source="..\RFiDGear\bin\Release\Interop.LibLogicalAccess.dll" KeyPath="yes" />
-						</Component>
-						<Component Id="IonicZipReducedDll" Guid="DC246BF8-25A3-42BF-A2A5-CEE429219381" DiskId="1">
-							<File Id="Ionic.Zip.Reduced.dll" Name="Ionic.Zip.Reduced.dll" Source="..\RFiDGear\bin\Release\Ionic.Zip.Reduced.dll" KeyPath="yes" />
-						</Component>
 						<Component Id="RFiDGearExe" Guid="08A86D18-98BA-486E-BC08-42079879AE51" DiskId="1">
 							<File Id="RFiDGear.exe" Name="RFiDGear.exe" Source="..\RFiDGear\bin\Release\RFiDGear.exe" KeyPath="yes" />
 							<Shortcut Id="ExeShortcut" Directory="ProgramMenuFolder" Name="RFiDGear" Advertise="yes" Icon="StartMenuIcon.exe" IconIndex="0" />
@@ -244,9 +260,6 @@
 						<Component Id="PluginSystemDll" Guid="B6782BE0-4826-4FDD-AAF0-5660ECAAE6AA" DiskId="1">
 							<File Id="PluginSystem.dll" Name="PluginSystem.dll" Source="..\RFiDGear\bin\Release\PluginSystem.dll" KeyPath="yes" />
 						</Component>
-						<Component Id="CommonServiceLocatorDll" Guid="5CA5CB50-8EA8-4EBF-AA40-6BC120B61AC7" DiskId="1">
-							<File Id="CommonServiceLocator.dll" Name="CommonServiceLocator.dll" Source="..\RFiDGear\bin\Release\CommonServiceLocator.dll" KeyPath="yes" />
-						</Component>
 					</Directory>
 				</Directory>
 			</Directory>
@@ -260,8 +273,8 @@
 				<Directory Id="RFiDGearProgramDataFolder" Name="!(loc.ApplicationName)">
 					<Directory Id="RFiDGearExtensionsFolder" Name="Extensions">
 						<Directory Id="RFiDGearExtionsVCNEditor" Name="VCNEditor">
-							<Component Id="ByteArrayDll" Guid="0907B20F-F549-4005-89A2-645C550BB7E7" DiskId="1">
-								<File Id="ByteArray.dll" Name="ByteArray.dll" Source="..\..\VCNEditor\bin\Release\ByteArray.dll" KeyPath="yes" />
+							<Component Id="ByteArrayExtDll" Guid="0907B20F-F549-4005-89A2-645C550BB7E7" DiskId="1">
+								<File Id="ByteArrayExt.dll" Name="ByteArrayExt.dll" Source="..\..\VCNEditor\bin\Release\ByteArray.dll" KeyPath="yes" />
 							</Component>
 							<Component Id="VCNEditorDll" Guid="DF58305F-6D10-49D0-865E-F0DC41224925" DiskId="1">
 								<File Id="VCNEditor.dll" Name="VCNEditor.dll" Source="..\..\VCNEditor\bin\Release\VCNEditor.dll" KeyPath="yes" />
@@ -317,10 +330,15 @@
 		<Feature Id="Complete" Title="!(loc.ApplicationName)" Description="!(loc.FeatureCompleteDescription)" Display="expand" Level="1" ConfigurableDirectory="INSTALLDIR">
 			<!-- A feature block for the main (GUI) program and all its dependencies -->
 			<Feature Id="MainProgram" Title="!(loc.FeatureMainProgramTitle)" Description="!(loc.FeatureMainProgramDescription)" Level="1">
-				<ComponentRef Id="GalaSoftMvvmLightDll" />
+        <ComponentRef Id="BouncyCastleCryptoDll"/>
+        <ComponentRef Id="ByteArrayDll"/>
+        <ComponentRef Id="CommonServiceLocatorDll" />
+        <ComponentRef Id="ElatecNetDll"/>
+				<ComponentRef Id="GalaSoftMvvmLightExtrasDll" />
+        <ComponentRef Id="GalaSoftMvvmLightPlatformDll" />
+        <ComponentRef Id="GalaSoftMvvmLightDll" />
 				<ComponentRef Id="InteropLibLogicalAccessDll" />
-				<ComponentRef Id="IonicZipReducedDll" />
-				<ComponentRef Id="CommonServiceLocatorDll" />
+				<ComponentRef Id="IonicZipDll" />
 				<ComponentRef Id="RFiDGearExe" />
 				<ComponentRef Id="RFiDGearexeConfig" />
 				<ComponentRef Id="SystemWindowsInteractivityDll" />
@@ -328,7 +346,11 @@
 				<ComponentRef Id="EnRFiDGearresourcesDll" />
 				<ComponentRef Id="PluginSystemDll" />
 				<ComponentRef Id="MVVMDialogsDll" />
-
+        <ComponentRef Id="ReleaseGalaSoftMvvmLightDll" />
+        <ComponentRef Id="ReleaseMVVMDialogsDll" />
+        <ComponentRef Id="ReleasePluginSystemDll" />
+        <ComponentRef Id="ReleaseSystemWindowsInteractivityDll" />
+        
         <ComponentRef Id="ITextBarcodesDll" />
         <ComponentRef Id="ITextFormsDll" />
         <ComponentRef Id="ITextIODll" />
@@ -348,12 +370,8 @@
 			
 			<Feature Id="Plugins" Title="!(loc.FeaturePluginsTitle)" Description="!(loc.FeaturePluginsDescription)" Level="1">
 				<!--<ComponentRef Id="RFiDGearProgramDataFolder" />-->
-				<ComponentRef Id="ByteArrayDll" />
 				<ComponentRef Id="VCNEditorDll" />
-				<ComponentRef Id="ReleaseGalaSoftMvvmLightDll" />
-				<ComponentRef Id="ReleaseMVVMDialogsDll" />
-				<ComponentRef Id="ReleasePluginSystemDll" />
-				<ComponentRef Id="ReleaseSystemWindowsInteractivityDll" />
+        <ComponentRef Id="ByteArrayExtDll"/>
 				<ComponentRef Id="En_USVCNEditorresourcesDll" />
 				<ComponentRef Id="VCNEditorresourcesDll" />
 			</Feature>

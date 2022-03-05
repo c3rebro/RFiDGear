@@ -1,4 +1,5 @@
 ﻿using LibLogicalAccess;
+using Elatec.NET;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using System;
@@ -17,6 +18,7 @@ namespace RFiDGear
 		// global (cross-class) Instances go here ->
 		private IReaderProvider readerProvider;
 		private IReaderUnit readerUnit;
+		private TWN4ReaderDevice readerDevice;
 		private chip card;
 		private bool _disposed = false;
 
@@ -96,13 +98,28 @@ namespace RFiDGear
 			{
 				using (SettingsReaderWriter defaultSettings = new SettingsReaderWriter())
 				{
-					ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
+					if(defaultSettings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.PCSC)
+                    {
+						ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
 
-					readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
-					readerUnit = readerProvider.CreateReaderUnit();
+						readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
+						readerUnit = readerProvider.CreateReaderUnit();
 
-                    GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
-                }
+						GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+					}
+
+					else if(defaultSettings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.Elatec)
+                    {
+						int portNumber;
+
+						ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
+
+						if(int.TryParse(defaultSettings.DefaultSpecification.LastUsedComPort,out portNumber))
+							readerDevice = new TWN4ReaderDevice(portNumber);
+
+						readerDevice.ReadChipPublic();
+					}
+				}
 			} 
 			catch (Exception e)
 			{
@@ -251,7 +268,6 @@ namespace RFiDGear
 						if (readerUnit.Connect())
 						{
 							ReaderUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
 							card = readerUnit.GetSingleChip();
 
@@ -270,7 +286,7 @@ namespace RFiDGear
 
 							try
 							{ //try to Auth with Keytype A
-								for (int k = 0; k < (sectorNumber >= 31 ? 16 : 4); k++) // if sector >= 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
+								for (int k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
 								{
 									cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A);
 
@@ -851,7 +867,7 @@ namespace RFiDGear
 
 		#region mifare desfire
 
-		public ERROR GetMiFareDESFireChipAppIDs()
+		public ERROR GetMiFareDESFireChipAppIDs(string _appMasterKey = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", DESFireKeyType _keyTypeAppMasterKey = DESFireKeyType.DF_KEY_DES)
 		{
 			try
 			{
@@ -862,7 +878,9 @@ namespace RFiDGear
 
 				// Keys to use for authentication
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
-				aiToUse.MasterCardKey.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
+				aiToUse.MasterCardKey.Value = _appMasterKey;
+				aiToUse.MasterCardKey.KeyType = _keyTypeAppMasterKey;
+
 
 				if (readerUnit.ConnectToReader())
 				{
@@ -871,48 +889,133 @@ namespace RFiDGear
 						if (readerUnit.Connect())
 						{
 							ReaderUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
 							card = readerUnit.GetSingleChip();
 
-							if (card.Type == "DESFire")
+							//Get AppIDs without Authentication (Free Directory Listing)
+							try
 							{
-								var cmd = card.Commands as IDESFireCommands;
 
-								object appIDsObject = cmd.GetApplicationIDs();
-								AppIDList = (appIDsObject as UInt32[]);
-
-								return ERROR.NoError;
-							}
-							if (card.Type == "DESFireEV1" ||
-							    card.Type == "DESFireEV2")
-							{
-								var cmd = card.Commands as IDESFireEV1Commands;
-                                try
-                                {
-                                    object appIDsObject = cmd.GetApplicationIDs();
-                                    AppIDList = (appIDsObject as UInt32[]);
-                                    //FreeMemory = cmd.GetFreeMemory();
-                                    GenericChip.FreeMemory = cmd.GetFreeMemory();
-
-                                    return ERROR.NoError;
-								}
-								catch (Exception e)
+								if (card.Type == "DESFire")
 								{
-									if (e.Message != "" && e.Message.Contains("same number already exists"))
+									var cmd = card.Commands as IDESFireCommands;
+
+									try
 									{
-										return ERROR.ItemAlreadyExistError;
+										cmd.SelectApplication((uint)0);
+
+										object appIDsObject = cmd.GetApplicationIDs();
+										AppIDList = (appIDsObject as UInt32[]);
+
+										return ERROR.NoError;
 									}
-									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+									catch
 									{
-										return ERROR.AuthenticationError;
+										//Get AppIDs with Authentication (Directory Listing with PICC MK)
+										try
+										{
+											cmd.SelectApplication((uint)0);
+											cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+
+											object appIDsObject = cmd.GetApplicationIDs();
+											AppIDList = (appIDsObject as UInt32[]);
+
+											return ERROR.NoError;
+										}
+										catch (Exception e)
+										{
+											if (e.Message != "" && e.Message.Contains("same number already exists"))
+											{
+												return ERROR.ItemAlreadyExistError;
+											}
+											else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+											{
+												return ERROR.AuthenticationError;
+											}
+											else
+												return ERROR.IOError;
+										}
+									}
+								}
+
+								if (card.Type == "DESFireEV1" ||
+									card.Type == "DESFireEV2")
+								{
+									var cmd = card.Commands as IDESFireEV1Commands;
+									try
+									{
+										GenericChip.FreeMemory = cmd.GetFreeMemory();
+										object appIDsObject = cmd.GetApplicationIDs();
+										AppIDList = (appIDsObject as UInt32[]);
+										
+
+										return ERROR.NoError;
+									}
+									catch
+									{
+										//Get AppIDs with Authentication (Directory Listing with PICC MK)
+										try
+										{
+											cmd.SelectApplication((uint)0);
+											cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+
+											object appIDsObject = cmd.GetApplicationIDs();
+											AppIDList = (appIDsObject as UInt32[]);
+											GenericChip.FreeMemory = cmd.GetFreeMemory();
+
+											return ERROR.NoError;
+										}
+										catch (Exception e)
+										{
+											if (e.Message != "" && e.Message.Contains("same number already exists"))
+											{
+												return ERROR.ItemAlreadyExistError;
+											}
+											else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+											{
+												return ERROR.AuthenticationError;
+											}
+											else
+												return ERROR.IOError;
+										}
+									}
+								}
+								else
+									return ERROR.DeviceNotReadyError;
+							}
+
+							catch
+							{
+								try
+								{
+									if (card.Type == "DESFire")
+									{
+										var cmd = card.Commands as IDESFireCommands;
+
+										cmd.SelectApplication((uint)0);
+										cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+
+										object appIDsObject = cmd.GetApplicationIDs();
+										AppIDList = (appIDsObject as UInt32[]);
+
+										return ERROR.NoError;
+									}
+
+									if (card.Type == "DESFireEV1" ||
+										card.Type == "DESFireEV2")
+									{
+										var cmd = card.Commands as IDESFireEV1Commands;
+
 									}
 									else
-										return ERROR.IOError;
+										return ERROR.DeviceNotReadyError;
+								}
+
+								catch
+								{
+
 								}
 							}
-							else
-								return ERROR.DeviceNotReadyError;
 						}
 					}
 				}
@@ -1544,17 +1647,17 @@ namespace RFiDGear
 									{
 										try
 										{
-											cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
-											MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
-											EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
-											DesfireAppKeySetting = keySettings;
-
 											try
 											{
 												GenericChip.FreeMemory = cmd.GetFreeMemory();
 											}
 
 											catch { }
+
+											cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
+											MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
+											EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
+											DesfireAppKeySetting = keySettings;
 
 											return ERROR.NoError;
 										}
@@ -1566,12 +1669,19 @@ namespace RFiDGear
 											}
 											else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
 											{
-												return ERROR.AuthenticationError;
+												return ERROR.NotAllowed;
 											}
 											else
 												return ERROR.IOError;
 										}
 									}
+
+									try
+									{
+										GenericChip.FreeMemory = cmd.GetFreeMemory();
+									}
+
+									catch { }
 
 									cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
 									MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);

@@ -479,13 +479,13 @@ slot of an available reader</value>
     <value>Open Project...</value>
   </data>
   <data name="filterStringSaveTasks" xml:space="preserve">
-    <value>Project files (*.xml)|*.xml</value>
+    <value>Project files (*.rfPrj;*.xml)|*.rfPrj;*.xml</value>
   </data>
   <data name="windowCaptionSaveTasks" xml:space="preserve">
     <value>Save Tasks to File...</value>
   </data>
   <data name="menuItemContextMenuParentNodeQuickCheck" xml:space="preserve">
-    <value>QuickCheck</value>
+    <value>Q_uickCheck</value>
   </data>
   <data name="toolTipContextMenuParentNodeMifareClassicQuickCheck" xml:space="preserve">
     <value>Try to get read access to all DataBlocks on the Card
@@ -505,7 +505,7 @@ Use a csv file to acuire default keys for authentication</value>
     <value>_Programming</value>
   </data>
   <data name="menuItemCreateTaskHeader" xml:space="preserve">
-    <value>RFiD Tasks</value>
+    <value>R_FiD Tasks</value>
   </data>
   <data name="menuItemMifareHeader" xml:space="preserve">
     <value>Mifare</value>
@@ -846,14 +846,8 @@ Needed by:
   <data name="filterStringSaveReport" xml:space="preserve">
     <value>PDF Files (*.pdf)|*.pdf</value>
   </data>
-  <data name="menuItemCreateReportHeader" xml:space="preserve">
-    <value>Create Report...</value>
-  </data>
-  <data name="menuItemCreateCommonTaskHeader" xml:space="preserve">
-    <value>Common Tasks...</value>
-  </data>
-  <data name="menuItemCreateReportTaskHeader" xml:space="preserve">
-    <value>Create Report Task...</value>
+  <data name="menuItemCreateGenericTaskHeader" xml:space="preserve">
+    <value>Add / Edit Generic (N_on-Chip) Task...</value>
   </data>
   <data name="labelAddTestPoint" xml:space="preserve">
     <value>Add / Edit Testpoint</value>
@@ -901,7 +895,7 @@ Needed by:
     <value>Empty</value>
   </data>
   <data name="menuItemCreateGenericChipTaskHeader" xml:space="preserve">
-    <value>Add / Edit Generic Chip Task...</value>
+    <value>Add / Edit Generic C_hip Task...</value>
   </data>
   <data name="labelSelectIsChipOfType" xml:space="preserve">
     <value>Is Chip Of Type</value>
@@ -989,5 +983,65 @@ Needed by:
   </data>
   <data name="ENUM.ERROR.OutOfMemory" xml:space="preserve">
     <value>Out Of Memory</value>
+  </data>
+  <data name="buttonContentOpenReportTemplateFile" xml:space="preserve">
+    <value>Open File...</value>
+  </data>
+  <data name="groupBoxHeaderCommonTaskCheckpointSetup" xml:space="preserve">
+    <value>Checkpoint Setup</value>
+  </data>
+  <data name="labelContentCommonTaskCheckpointContent" xml:space="preserve">
+    <value>Fieldvalue</value>
+  </data>
+  <data name="labelContentCommonTaskCheckpointErrorLevel" xml:space="preserve">
+    <value>Targ. Err. Type</value>
+  </data>
+  <data name="labelContentCommonTaskCheckpointTemplateField" xml:space="preserve">
+    <value>Template Field</value>
+  </data>
+  <data name="labelSelectedReportTemplate" xml:space="preserve">
+    <value>Template Path</value>
+  </data>
+  <data name="buttonContentCommonTaskAddCheckpoint" xml:space="preserve">
+    <value>Add Checkpoint</value>
+  </data>
+  <data name="buttonContentCommonTaskRemoveCheckpoint" xml:space="preserve">
+    <value>Remove Checkpoint</value>
+  </data>
+  <data name="groupBoxHeaderCommonTaskSelectTemplateFile" xml:space="preserve">
+    <value>Template File</value>
+  </data>
+  <data name="labelLoadLastProjectOnStart" xml:space="preserve">
+    <value>Automatically Load last used Project when starting RFIDGear</value>
+  </data>
+  <data name="ENUM.EQUALITY_OPERATOR.EQUAL" xml:space="preserve">
+    <value>=</value>
+  </data>
+  <data name="ENUM.EQUALITY_OPERATOR.LESS_OR_EQUAL" xml:space="preserve">
+    <value>&lt;=</value>
+  </data>
+  <data name="ENUM.EQUALITY_OPERATOR.LESS_THAN" xml:space="preserve">
+    <value>&lt;</value>
+  </data>
+  <data name="ENUM.EQUALITY_OPERATOR.MORE_OR_EQUAL" xml:space="preserve">
+    <value>&gt;=</value>
+  </data>
+  <data name="ENUM.EQUALITY_OPERATOR.MORE_THAN" xml:space="preserve">
+    <value>&gt;</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.COUNT" xml:space="preserve">
+    <value>Counter (OR)</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.COMPARE" xml:space="preserve">
+    <value>Compare</value>
+  </data>
+  <data name="windowCaptionAddEditGenericTask" xml:space="preserve">
+    <value>Add / Edit Generic Task</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.AppExistCheck" xml:space="preserve">
+    <value>Check: App Existance</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.AuthenticateApplication" xml:space="preserve">
+    <value>Authenticate to App</value>
   </data>
 </root>

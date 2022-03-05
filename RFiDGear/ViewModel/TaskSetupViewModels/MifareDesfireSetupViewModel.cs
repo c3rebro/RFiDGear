@@ -444,14 +444,24 @@ namespace RFiDGear.ViewModel
                     case TaskType_MifareDesfireTask.ReadAppSettings:
                         IsDesfireFileAuthoringTabEnabled = false;
                         IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
+                        IsDesfirePICCAuthoringTabEnabled = true;
                         IsDesfireAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthenticationTabEnabled = true;
+                        IsDesfireAppAuthenticationTabEnabled = false;
                         IsDesfireAppAuthoringTabEnabled = false;
                         IsDesfireAppCreationTabEnabled = false;
                         break;
 
-                    case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
+					case TaskType_MifareDesfireTask.AppExistCheck:
+						IsDesfireFileAuthoringTabEnabled = false;
+						IsDataExplorerEditTabEnabled = false;
+						IsDesfirePICCAuthoringTabEnabled = false;
+						IsDesfireAuthenticationTabEnabled = false;
+						IsDesfireAppAuthenticationTabEnabled = true;
+						IsDesfireAppAuthoringTabEnabled = false;
+						IsDesfireAppCreationTabEnabled = false;
+						break;
+
+					case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
 						IsDesfireFileAuthoringTabEnabled = false;
 						IsDataExplorerEditTabEnabled = false;
 						IsDesfirePICCAuthoringTabEnabled = false;
@@ -480,7 +490,17 @@ namespace RFiDGear.ViewModel
 						IsDesfireAppAuthoringTabEnabled = false;
 						IsDesfireAppCreationTabEnabled = true;
 						break;
-						
+
+					case TaskType_MifareDesfireTask.AuthenticateApplication:
+						IsDesfireFileAuthoringTabEnabled = false;
+						IsDataExplorerEditTabEnabled = false;
+						IsDesfirePICCAuthoringTabEnabled = false;
+						IsDesfireAuthenticationTabEnabled = false;
+						IsDesfireAppAuthenticationTabEnabled = true;
+						IsDesfireAppAuthoringTabEnabled = false;
+						IsDesfireAppCreationTabEnabled = false;
+						break;
+
 					case TaskType_MifareDesfireTask.CreateFile:
 						IsDesfireFileAuthoringTabEnabled = true;
 						IsDataExplorerEditTabEnabled = false;
@@ -862,7 +882,7 @@ namespace RFiDGear.ViewModel
                 {
                     appNumberNew = value.ToUpper();
                 }
-                IsValidAppNumberNew = (int.TryParse(value, out appNumberNewAsInt) && appNumberNewAsInt <= 0xFFFFFF);
+                IsValidAppNumberNew = (int.TryParse(value, out appNumberNewAsInt) && appNumberNewAsInt <= (int)0xFFFFFF);
                 RaisePropertyChanged("AppNumberNew");
             }
         }
@@ -1045,7 +1065,7 @@ namespace RFiDGear.ViewModel
                 {
                     appNumberCurrent = value.ToUpper();
                 }
-                IsValidAppNumberCurrent = (int.TryParse(value, out appNumberCurrentAsInt) && appNumberCurrentAsInt <= 65535);
+                IsValidAppNumberCurrent = (int.TryParse(value, out appNumberCurrentAsInt) && appNumberCurrentAsInt <= (int)0xFFFFFF);
                 RaisePropertyChanged("AppNumberCurrent");
             }
         }
@@ -1175,7 +1195,7 @@ namespace RFiDGear.ViewModel
                 {
                     appNumberTarget = value.ToUpper();
                 }
-                IsValidAppNumberTarget = (int.TryParse(value, out appNumberTargetAsInt) && appNumberTargetAsInt <= 65535);
+                IsValidAppNumberTarget = (int.TryParse(value, out appNumberTargetAsInt) && appNumberTargetAsInt <= (int)0xFFFFFF);
                 RaisePropertyChanged("AppNumberTarget");
             }
         }
@@ -1308,7 +1328,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 fileNumberCurrent = value;
-                IsValidFileNumberCurrent = (int.TryParse(value, out fileNumberCurrentAsInt) && fileNumberCurrentAsInt <= 8000);
+                IsValidFileNumberCurrent = (int.TryParse(value, out fileNumberCurrentAsInt) && fileNumberCurrentAsInt <= (int)0xFFFF);
                 RaisePropertyChanged("FileNumberCurrent");
             }
         }
@@ -2380,7 +2400,9 @@ namespace RFiDGear.ViewModel
 			                            				{
 			                            					StatusText += string.Format("{0}: Successfully Authenticated to PICC Master App 0\n", DateTime.Now);
 
-                                                            result = device.GetMiFareDESFireChipAppIDs();
+                                                            result = device.GetMiFareDESFireChipAppIDs(
+																DesfireMasterKeyCurrent,
+																SelectedDesfireMasterKeyEncryptionTypeCurrent);
 
 															if (result == ERROR.NoError)
 															{
@@ -2480,7 +2502,13 @@ namespace RFiDGear.ViewModel
                 return;
             }
 
-            Task desfireTask = new Task(() =>
+			else if (SelectedTaskType == TaskType_MifareDesfireTask.AppExistCheck)
+			{
+				DoesAppExistCommand(new GenericChipModel());
+				return;
+			}
+
+			Task desfireTask = new Task(() =>
 			{
 				using (RFiDDevice device = RFiDDevice.Instance)
 				{
@@ -2709,12 +2737,9 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        //public ICommand ReadAppSettingsCommand { get { return new RelayCommand<GenericChipModel>(OnNewReadAppSettingsCommand); } }
-        public void ReadAppSettingsCommand(ref GenericChipModel genericChip)
+        public void ReadAppSettingsCommand(GenericChipModel genericChip)
         {
             TaskErr = ERROR.Empty;
-
-            GenericChipModel temp = null;
 
             Task desfireTask = new Task(() =>
             {
@@ -2727,21 +2752,38 @@ namespace RFiDGear.ViewModel
                         if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                         {
                             ERROR result = device.GetMifareDesfireAppSettings(
-                                    DesfireAppKeyCurrent,
+                                    DesfireMasterKeyTarget,
                                     SelectedDesfireAppKeyEncryptionTypeCurrent,
                                     selectedDesfireAppKeyNumberCurrentAsInt,
                                     AppNumberCurrentAsInt);
 
-                            if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
+							DESFireKeySettings keySettings = DESFireKeySettings.KS_ALLOW_CHANGE_MK;
+							keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
+
+							keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
+							keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
+							keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
+							keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
+
+							genericChip.FreeMemory = device.GenericChip.FreeMemory;
+							genericChip.UID = device.GenericChip.UID;
+
+							if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
                             {
                                 StatusText += string.Format("{0}: Successfully Read App Settings of App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
-                                temp = device.GenericChip;
-                                TaskErr = result;
+
+								if (((byte)device.DesfireAppKeySetting & (byte)keySettings) != 0)
+                                {
+									TaskErr = ERROR.NoError;
+									return;
+                                }
+                                TaskErr = ERROR.IsNotTrue;
                             }
                             else
                             {
                                 StatusText += string.Format("{0}: Unable to Authenticate: {1}\n", DateTime.Now, result.ToString());
-                                TaskErr = result;
+
+								TaskErr = result;
                             }
 
                         }
@@ -2766,15 +2808,97 @@ namespace RFiDGear.ViewModel
 
                 desfireTask.RunSynchronously();
             }
-            genericChip = temp;
+
             return;
         }
 
-        #endregion
+		/// <summary>
+		///
+		/// </summary>
+		public void DoesAppExistCommand(GenericChipModel genericChip)
+		{
+			TaskErr = ERROR.Empty;
 
-        #region IUserDialogViewModel Implementation
+			Task desfireTask = new Task(() =>
+			{
+				using (RFiDDevice device = RFiDDevice.Instance)
+				{
+					if (device != null)
+					{
+						StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
 
-        [XmlIgnore]
+						if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
+						{
+							ERROR result = device.GetMiFareDESFireChipAppIDs(
+									DesfireAppKeyCurrent,
+									SelectedDesfireAppKeyEncryptionTypeCurrent);
+
+							genericChip.FreeMemory = device.GenericChip.FreeMemory;
+							genericChip.UID = device.GenericChip.UID;
+
+							// Check if specified App "AppNumberCurrentAsInt" exist
+							if (IsValidAppNumberCurrent != false && AppNumberCurrentAsInt > 0 && result == ERROR.NoError && Array.Exists<uint>(device.AppIDList, x => x == (uint)AppNumberNewAsInt) )
+							{
+								StatusText += string.Format("{0}: Success. App with ID:{1} exists\n", DateTime.Now, AppNumberNewAsInt);
+
+								TaskErr = ERROR.NoError;
+							}
+
+							// Check if ANY App exists
+							else if (IsValidAppNumberCurrent != false && AppNumberCurrentAsInt == 0 && result == ERROR.NoError && Array.Exists<uint>(device.AppIDList, x => x > 0))
+							{
+								StatusText += string.Format("{0}: Success. Existing Apps Detected\n", DateTime.Now);
+
+								TaskErr = ERROR.NoError;
+							}
+
+							// Ooops: Iam not allowed to get the info or Key "DesfireAppKeyCurrent" with "SelectedDesfireAppKeyEncryptionTypeCurrent" is incorrect
+							else if (IsValidAppNumberCurrent != false && result == ERROR.AuthenticationError)
+							{
+								StatusText += string.Format("{0}: Failed. Directory Listing is not allowed and PICC MK is Incorrect.\n", DateTime.Now);
+
+								TaskErr = ERROR.AuthenticationError;
+							}
+
+							// There are no Apps
+							else
+							{
+								StatusText += string.Format("{0}: No Apps Found: {1}\n", DateTime.Now, result.ToString());
+
+								TaskErr = ERROR.IsNotTrue;
+							}
+
+						}
+					}
+				}
+				return;
+			});
+
+			if (TaskErr == ERROR.Empty)
+			{
+				desfireTask.ContinueWith((x) =>
+				{
+					if (TaskErr == ERROR.NoError)
+					{
+						IsTaskCompletedSuccessfully = true;
+					}
+					else
+					{
+						IsTaskCompletedSuccessfully = false;
+					}
+				});
+
+				desfireTask.RunSynchronously();
+			}
+
+			return;
+		}
+
+		#endregion
+
+		#region IUserDialogViewModel Implementation
+
+		[XmlIgnore]
 		public bool IsModal { get; private set; }
 
 		public virtual void RequestClose()

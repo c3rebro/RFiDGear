@@ -21,7 +21,7 @@ namespace RFiDGear.ViewModel
 	[XmlRootAttribute("TreeViewParentNode", IsNullable = false)]
 	public class RFiDChipParentLayerViewModel : ViewModelBase
 	{
-		private SettingsReaderWriter settings;
+		private readonly SettingsReaderWriter settings;
 
 		private static object _selectedItem;
 
@@ -47,6 +47,7 @@ namespace RFiDGear.ViewModel
         public RFiDChipParentLayerViewModel()
 		{
 			ID = new Random().Next();
+			settings = new SettingsReaderWriter();
 
 			mifareClassicUidModel = new MifareClassicChipModel();
 			mifareDesfireUidModel = new MifareDesfireChipModel();
@@ -55,6 +56,7 @@ namespace RFiDGear.ViewModel
 		public RFiDChipParentLayerViewModel(string _text)
 		{
 			ID = new Random().Next();
+			settings = new SettingsReaderWriter();
 
 			mifareClassicUidModel = new MifareClassicChipModel();
 			mifareDesfireUidModel = new MifareDesfireChipModel();
@@ -269,11 +271,19 @@ namespace RFiDGear.ViewModel
 			{
 				using (RFiDDevice device = RFiDDevice.Instance)
 				{
-					if (device != null && device.GetMiFareDESFireChipAppIDs() == ERROR.NoError)
+					//if (device != null && device.GetMiFareDESFireChipAppIDs(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].Key) == ERROR.NoError)
+					if (device != null && device.ReadChipPublic() == ERROR.NoError)
 					{
 						Mouse.OverrideCursor = Cursors.Wait;
 
-						var appIDs = device.AppIDList;
+						device.GetMifareDesfireAppSettings(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].Key, settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].EncryptionType);
+
+						uint[] appIDs = null;
+
+						if (device.GetMiFareDESFireChipAppIDs(
+							settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].Key,
+							settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].EncryptionType) == ERROR.NoError)
+							appIDs = device.AppIDList;
 
 						Children.Clear();
 
@@ -345,15 +355,18 @@ namespace RFiDGear.ViewModel
                             Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("Undefined ERROR"));
                         }
 
-						if (device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_AES, 0) == ERROR.NoError ||
-						    device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_3K3DES, 0) == ERROR.NoError ||
-						    device.AuthToMifareDesfireApplication("00000000000000000000000000000000", DESFireKeyType.DF_KEY_DES, 0) == ERROR.NoError)
-						{
-							Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("PICC MasterKey NOT Set (32x \"0\")"));
-						}
+						if (device.AuthToMifareDesfireApplication(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].Key, DESFireKeyType.DF_KEY_AES, 0) == ERROR.NoError)
+							Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("PICC MasterKey Set (32x \"0\" + AES)"));
+
+						else if(device.AuthToMifareDesfireApplication(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].Key, DESFireKeyType.DF_KEY_3K3DES, 0) == ERROR.NoError)
+							Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("PICC MasterKey Set (32x \"0\" + 3KDES)"));
+
+						else if(device.AuthToMifareDesfireApplication(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].Key, DESFireKeyType.DF_KEY_DES, 0) == ERROR.NoError)
+							Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("PICC MasterKey NOT Set (32x \"0\" + DES)"));
+
 						else
 						{
-							Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("PICC SECURED, MasterKey Unkown"));
+							Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("PICC SECURED, MasterKey Unknown"));
 						}
 
 						if (device.GetMifareDesfireAppSettings("00000000000000000000000000000000", DESFireKeyType.DF_KEY_AES, 0, 0) == ERROR.NoError ||
@@ -454,6 +467,7 @@ namespace RFiDGear.ViewModel
 
 		private void DeleteMeCommand()
 		{
+			
 		}
 
 		#endregion Context Menu Items
@@ -742,6 +756,16 @@ namespace RFiDGear.ViewModel
 							new RFiDChipChildLayerViewModel(
 								new MifareUltralightPageModel(new byte[4], i),this, CardType, dialogs));
 					}
+
+					break;
+
+				case CARD_TYPE.MifarePlus_SL3_1K:
+				case CARD_TYPE.MifarePlus_SL3_2K:
+				case CARD_TYPE.MifarePlus_SL3_4K:
+
+					_children.Add(
+							new RFiDChipChildLayerViewModel(
+								new MifareUltralightPageModel(new byte[4], 0), this, CARD_TYPE.MifarePlus_SL3_1K, dialogs));
 
 					break;
 			}

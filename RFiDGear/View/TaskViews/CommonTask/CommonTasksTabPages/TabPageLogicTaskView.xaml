@@ -65,23 +65,12 @@
                                 VerticalAlignment="Bottom"
                                 ItemsSource="{dal:Enumerate {x:Type dal:LOGIC_STATE}}"
                                 SelectedItem="{Binding SelectedLogicCondition, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:LOGIC_STATE}, Mode=TwoWay}" />
-                            <Label
-                                Grid.Row="1"
-                                Grid.Column="0"
-                                Height="26"
-                                Margin="8,3,10,0"
-                                VerticalAlignment="Top"
-                                HorizontalContentAlignment="Stretch"
-                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectedReader'}"
-                                DataContext="{Binding}"
-                                Foreground="Black" />
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="165" />
                                 <ColumnDefinition />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="42" />
-                                <RowDefinition Height="36" />
                             </Grid.RowDefinitions>
                         </Grid>
                     </GroupBox>
@@ -89,7 +78,7 @@
                     <GroupBox
                         Grid.Row="1"
                         Grid.Column="0"
-                        Margin="8,8,8,8"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         Header="Checkpoint Setup">
@@ -112,7 +101,7 @@
                                 Grid.Row="1"
                                 Grid.Column="0"
                                 Height="26"
-                                Margin="8,9,8,0"
+                                Margin="10,2,10,0"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Top"
                                 Content="ErrorLevel" />
@@ -130,28 +119,78 @@
                                 Grid.Row="0"
                                 Grid.Column="0"
                                 Height="26"
-                                Margin="8,10,8,0"
+                                Margin="10,8,10,0"
                                 VerticalAlignment="Top"
                                 HorizontalContentAlignment="Stretch"
                                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectReportTemplate'}"
                                 DataContext="{Binding}"
                                 Foreground="Black" />
                             <Button
-                                Grid.Row="5"
+                                Grid.Row="6"
                                 Grid.Column="1"
                                 Height="26"
-                                Margin="10,0,10,10"
+                                Margin="8,0,8,10"
                                 VerticalAlignment="Bottom"
                                 Command="{Binding RemoveCheckpointCommand}"
                                 Content="Remove Checkpoint" />
                             <Button
-                                Grid.Row="5"
+                                Grid.Row="6"
                                 Grid.Column="0"
                                 Height="26"
                                 Margin="10,0,10,10"
                                 VerticalAlignment="Bottom"
                                 Command="{Binding AddEditCheckpointCommand}"
                                 Content="Add Testpoint" />
+                            <ComboBox
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                Height="26"
+                                Margin="8,0,8,8"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Bottom"
+                                ItemsSource="{Binding NumberOfCheckpoints, UpdateSourceTrigger=PropertyChanged}"
+                                SelectedItem="{Binding SelectedCheckpointCounter, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                            <Label
+                                Grid.Row="3"
+                                Grid.Column="0"
+                                Height="26"
+                                Margin="10,1,10,0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Top"
+                                Content="Counter Trigger" />
+                            <ComboBox
+                                Grid.Row="3"
+                                Grid.Column="1"
+                                Height="26"
+                                Margin="8,0,8,8"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Bottom"
+                                ItemsSource="{dal:Enumerate {x:Type dal:EQUALITY_OPERATOR}}"
+                                SelectedItem="{Binding SelectedCounterTrigger, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:EQUALITY_OPERATOR}, Mode=TwoWay}" />
+                            <Label
+                                Grid.Row="4"
+                                Grid.Column="0"
+                                Height="26"
+                                Margin="10,2,10,0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Top"
+                                Content="Compare Value" />
+                            <TextBox
+                                Grid.Row="4"
+                                Grid.Column="1"
+                                Height="23"
+                                Margin="8,3,8,0"
+                                VerticalAlignment="Top"
+                                Text="{Binding CompareValue}"
+                                TextWrapping="Wrap" />
+                            <Label
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                Height="26"
+                                Margin="10,2,10,0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Top"
+                                Content="Counter Value" />
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="165" />
                                 <ColumnDefinition />
@@ -159,14 +198,17 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="42" />
                                 <RowDefinition Height="36" />
+                                <RowDefinition Height="36" />
+                                <RowDefinition Height="36" />
+                                <RowDefinition Height="36" />
                                 <RowDefinition Height="*" />
                                 <RowDefinition Height="36" />
                             </Grid.RowDefinitions>
                         </Grid>
                     </GroupBox>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="120" />
-                        <RowDefinition Height="0.5*" />
+                        <RowDefinition Height="87" />
+                        <RowDefinition />
                     </Grid.RowDefinitions>
                 </Grid>
             </GroupBox>
@@ -244,6 +286,40 @@
                                             MaxWidth="180"
                                             FontFamily="Lucida Console"
                                             Text="{Binding ErrorLevel, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="HorizontalAlignment" Value="Left" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="*" Header="Content">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock
+                                            Width="auto"
+                                            FontFamily="Lucida Console"
+                                            Text="{Binding Content, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="HorizontalAlignment" Value="Left" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="*" Header="CompareValue">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock
+                                            Width="auto"
+                                            FontFamily="Lucida Console"
+                                            Text="{Binding CompareValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                                             <TextBlock.Style>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="HorizontalAlignment" Value="Left" />

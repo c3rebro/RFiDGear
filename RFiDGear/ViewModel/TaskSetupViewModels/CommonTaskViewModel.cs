@@ -42,7 +42,6 @@ namespace RFiDGear.ViewModel
 
 		[XmlIgnore]
         public GenericChipModel GenericChip { get; set; }
-		//public CARD_INFO CardInfo { get; set; }
 
 		#endregion
 
@@ -93,6 +92,9 @@ namespace RFiDGear.ViewModel
 						p.SetValue(this, p.GetValue(_selectedSetupViewModel));
 					}
 
+					var copy = Checkpoints;
+					Checkpoints = new ObservableCollection<Checkpoint>(copy);
+
 					using (ReportReaderWriter reader = new ReportReaderWriter())
                     {
 						if (!string.IsNullOrEmpty(reportTemplatePath))
@@ -112,6 +114,8 @@ namespace RFiDGear.ViewModel
 					SelectedTaskDescription = "Enter a Description";
                     SelectedExecuteConditionErrorLevel = ERROR.Empty;
                     SelectedExecuteConditionTaskIndex = "0";
+					SelectedCounterTrigger = EQUALITY_OPERATOR.EQUAL;
+					SelectedCheckpointCounter = "0";
 
 					try
 					{
@@ -129,13 +133,14 @@ namespace RFiDGear.ViewModel
 
 					catch (Exception e)
                     {
-
-                    }
+						LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+					}
 				}
 
                 AvailableTasks = _tasks;
+				NumberOfCheckpoints = CustomConverter.GenerateStringSequence(0, 60).ToArray();
 
-            }
+			}
 			catch (Exception e)
 			{
 				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
@@ -309,28 +314,88 @@ namespace RFiDGear.ViewModel
 				{
 					case TaskType_CommonTask.None:
 						IsLogicCheckerTabEnabled = false;
+						IsTabPageLogicTaskSettingsViewEnabled = false;
 						IsReportSetupTabEnabled = false;
+						IsTabPageReportSettingsViewEnabled = false;
 						break;
 
 					case TaskType_CommonTask.CreateReport:
 						IsLogicCheckerTabEnabled = false;
 						IsReportSetupTabEnabled = true;
+						SelectedTabIndex = 1;
+						IsTabPageLogicTaskSettingsViewEnabled = false;
+						IsTabPageReportSettingsViewEnabled = true;
 						break;
 
 					case TaskType_CommonTask.CheckLogicCondition:
 						IsLogicCheckerTabEnabled = true;
 						IsReportSetupTabEnabled = false;
+						SelectedTabIndex = 0;
+						IsTabPageLogicTaskSettingsViewEnabled = true;
+						IsTabPageReportSettingsViewEnabled = false;
 						break;
 
 					case TaskType_CommonTask.ChangeDefault:
 						IsLogicCheckerTabEnabled = true;
+						IsTabPageReportSettingsViewEnabled = true;
 						IsReportSetupTabEnabled = true;
+						IsTabPageLogicTaskSettingsViewEnabled = true;
 						break;
 				}
 				RaisePropertyChanged("SelectedTaskType");
 			}
 		}
 		private TaskType_CommonTask selectedTaskType;
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public int SelectedTabIndex
+		{
+			set
+			{
+				selectedTabIndex = value;
+				RaisePropertyChanged("SelectedTabIndex");
+			}
+			get
+			{
+				return selectedTabIndex;
+			}
+		} private int selectedTabIndex;
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool IsTabPageLogicTaskSettingsViewEnabled
+		{
+			set
+			{
+				isTabPageLogicTaskSettingsViewEnabled = value;
+				RaisePropertyChanged("IsTabPageLogicTaskSettingsViewEnabled");
+			}
+			get
+			{
+				return isTabPageLogicTaskSettingsViewEnabled;
+			}
+		}
+		private bool isTabPageLogicTaskSettingsViewEnabled;
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool IsTabPageReportSettingsViewEnabled
+		{
+			set
+			{
+				isTabPageReportSettingsViewEnabled = value;
+				RaisePropertyChanged("IsTabPageReportSettingsViewEnabled");
+			}
+			get
+			{
+				return isTabPageReportSettingsViewEnabled;
+			}
+		}
+		private bool isTabPageReportSettingsViewEnabled;
 
 		/// <summary>
 		///
@@ -460,7 +525,7 @@ namespace RFiDGear.ViewModel
 		{
 			get
 			{
-                var availableTaskIndices = new ObservableCollection<string>();
+				var availableTaskIndices = new ObservableCollection<string>();
                 foreach (object ssVMO in AvailableTasks)
                 {
                     switch (ssVMO)
@@ -482,7 +547,10 @@ namespace RFiDGear.ViewModel
                             break;
                     }
                 }
-                return availableTaskIndices;
+
+				availableTaskIndices.Add(string.Empty);
+
+				return availableTaskIndices;
 			}
 		}
 
@@ -518,6 +586,54 @@ namespace RFiDGear.ViewModel
 		}
 		private string selectedTaskIndexFromAvailableTasks;
 
+		/// <summary>
+		/// 
+		/// </summary>
+		[XmlIgnore]
+		public string[] NumberOfCheckpoints { get; set; }
+
+		/// <summary>
+		/// The CheckCount of the Checkpoint As String
+		/// </summary>
+		public string SelectedCheckpointCounter
+		{
+			get
+			{
+				return selectedCheckpointCounter;
+			}
+
+			set
+			{
+				selectedCheckpointCounter = value;
+				int.TryParse(value, out selectedCheckpointCounterAsInt);
+				RaisePropertyChanged("SelectedCheckpointCounter");
+			}
+		}
+		private string selectedCheckpointCounter;
+
+		/// <summary>
+		///
+		/// </summary>
+		[XmlIgnore]
+		public int SelectedCheckpointCounterAsInt
+		{ get { return selectedCheckpointCounterAsInt; } }
+		private int selectedCheckpointCounterAsInt;
+
+		/// <summary>
+		/// 
+		/// </summary>
+		[XmlIgnore]
+		public string[] AvailableCounterTrigger { get; set; }
+
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public EQUALITY_OPERATOR SelectedCounterTrigger { get; set; }
+
+
+		
+
 		#endregion
 
 		#endregion
@@ -541,14 +657,32 @@ namespace RFiDGear.ViewModel
 		}
 		private LOGIC_STATE selectedLogicCondition;
 
-        #endregion
+		/// <summary>
+		/// 
+		/// </summary>
+		public string CompareValue
+		{
+			get
+			{
+				return compareValue;
+			}
+			set
+			{
+				compareValue = value;
+				RaisePropertyChanged("CompareValue");
+			}
+		}
+		private string compareValue;
+		
 
-        #region Report Task Editor
+		#endregion
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public string ReportTemplatePath
+		#region Report Task Editor
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public string ReportTemplatePath
         {
             get { return reportTemplatePath; }
             set
@@ -705,6 +839,9 @@ namespace RFiDGear.ViewModel
 							if (ssVM.IsValidSelectedTaskIndex != false)
 								taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
 							break;
+						default:
+							taskIndices.Add(null, 0);
+							break;
 					}
 				}
 
@@ -723,51 +860,98 @@ namespace RFiDGear.ViewModel
 							int targetIndex;
 
 							bool hasVariable = false;
-							string temporaryContent = "";
+							bool concatenate = false;
 
-							if(checkpoint.Content.Contains("%UID"))
+							string temporaryContent = checkpoint.Content;
+
+							if(temporaryContent.Contains("%UID"))
                             {
-								temporaryContent = checkpoint.Content.Replace("%UID", GenericChip.UID);
+								temporaryContent = temporaryContent.Replace("%UID", GenericChip.UID ?? "");
 								hasVariable = true;
                             }
 
-							if (checkpoint.Content.Contains("%DATETIME"))
+							if (temporaryContent.Contains("%DATETIME"))
 							{
-								temporaryContent = checkpoint.Content.Replace("%DATETIME", DateTime.Now.ToString());
+								temporaryContent = temporaryContent.Replace("%DATETIME", DateTime.Now.ToString() ?? "");
 								hasVariable = true;
 							}
 
-                            if (checkpoint.Content.Contains("%FREEMEM"))
+                            if (temporaryContent.Contains("%FREEMEM"))
                             {
-								temporaryContent = checkpoint.Content.Replace("%FREEMEM", GenericChip.FreeMemory.ToString());
+								temporaryContent = temporaryContent.Replace("%FREEMEM", GenericChip.FreeMemory.ToString() ?? "");
 								hasVariable = true;
 							}
 
-                            if (taskIndices.TryGetValue(checkpoint.TaskIndex, out targetIndex))
+							if (temporaryContent.Contains("%CONCAT"))
 							{
-								switch (AvailableTasks[targetIndex])
+								temporaryContent = temporaryContent.Replace("%CONCAT ", string.Empty);
+								temporaryContent = temporaryContent.Replace("%CONCAT", string.Empty);
+								concatenate = true;
+							}
+
+							if (temporaryContent.Contains("%NEWLINE"))
+							{
+								temporaryContent = temporaryContent.Replace("%NEWLINE ", "\n");
+								temporaryContent = temporaryContent.Replace("%NEWLINE", "\n");
+								concatenate = true;
+							}
+
+							// Does the targeted Task Equals the selected TaskResult ?
+							try
+                            {
+								if (taskIndices.TryGetValue(checkpoint.TaskIndex, out targetIndex))
 								{
-									case GenericChipTaskViewModel tsVM:
-										if (tsVM.TaskErr == checkpoint.ErrorLevel)
-											reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-										break;
-									case CommonTaskViewModel tsVM:
-										if (tsVM.TaskErr == checkpoint.ErrorLevel)
-											reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-										break;
-									case MifareClassicSetupViewModel tsVM:
-										if (tsVM.TaskErr == checkpoint.ErrorLevel)
-											reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-										break;
-									case MifareDesfireSetupViewModel tsVM:
-										if (tsVM.TaskErr == checkpoint.ErrorLevel)
-											reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-										break;
-									case MifareUltralightSetupViewModel tsVM:
-										if (tsVM.TaskErr == checkpoint.ErrorLevel)
-											reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-										break;
+									switch (AvailableTasks[targetIndex])
+									{
+										case GenericChipTaskViewModel tsVM:
+											if (tsVM.TaskErr == checkpoint.ErrorLevel)
+												if(concatenate)
+													reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+												else
+													reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+											break;
+										case CommonTaskViewModel tsVM:
+											if (tsVM.TaskErr == checkpoint.ErrorLevel)
+												if (concatenate)
+													reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+												else
+													reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+											break;
+										case MifareClassicSetupViewModel tsVM:
+											if (tsVM.TaskErr == checkpoint.ErrorLevel)
+												if (concatenate)
+													reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+												else
+													reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+											break;
+										case MifareDesfireSetupViewModel tsVM:
+											if (tsVM.TaskErr == checkpoint.ErrorLevel)
+												if (concatenate)
+													reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+												else
+													reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+											break;
+										case MifareUltralightSetupViewModel tsVM:
+											if (tsVM.TaskErr == checkpoint.ErrorLevel)
+												if (concatenate)
+													reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+												else
+													reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+											break;
+									}
 								}
+								// The targeted Task is not of any vaild type. E.g. a "string"
+								if(targetIndex == 0)
+									throw new Exception();
+							}
+
+							// The targeted Task does not Exist: Continue Execution anyway...
+                            catch
+                            {
+								if (concatenate)
+									reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+								else
+									reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
 							}
                         }
 
@@ -781,13 +965,17 @@ namespace RFiDGear.ViewModel
 					IsTaskCompletedSuccessfully = false;
                     RaisePropertyChanged("TemplateFields");
 
-                    return;
+					LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+
+					return;
                 }
 
 				TaskErr = ERROR.NoError;
 				IsTaskCompletedSuccessfully = true;
 
                 RaisePropertyChanged("TemplateFields");
+
+				//_reportReaderWriter.CloseReport();
             }
 
         }
@@ -818,6 +1006,8 @@ namespace RFiDGear.ViewModel
                 {
                     checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
 					checkpoint.ErrorLevel = SelectedErrorLevel;
+					checkpoint.Content = "";
+					checkpoint.CompareValue = CompareValue;
 
                     Checkpoints.Add(checkpoint);
                 }
@@ -861,7 +1051,7 @@ namespace RFiDGear.ViewModel
 							switch (task)
 							{
 								case CommonTaskViewModel ssVM:
-									results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+									results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex, Content = ssVM.Content, CompareValue = ssVM.CompareValue });
 									break;
 								case GenericChipTaskViewModel ssVM:
 									results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
@@ -888,7 +1078,7 @@ namespace RFiDGear.ViewModel
 										continue;
 									else
 									{
-										result = ERROR.IsNotTrue;
+										TaskErr = ERROR.IsNotTrue;
 										return;
 									}
 
@@ -904,15 +1094,14 @@ namespace RFiDGear.ViewModel
 								{
 									for (int i = 0; i < Checkpoints.Count(); i++)
 									{
-										if ((cp.ErrorLevel == Checkpoints[i].ErrorLevel))
+										if (cp.ErrorLevel == Checkpoints[i].ErrorLevel)
 											continue;
 										else
 										{
-											TaskErr = ERROR.NoError;
-											return;
+											result = ERROR.NoError;
+											break;
 										}
 									}
-
 								}
 
 								result = ERROR.IsNotTrue;
@@ -924,10 +1113,10 @@ namespace RFiDGear.ViewModel
 								{
 									for (int i = 0; i < Checkpoints.Count(); i++)
 									{
-										if ((cp.ErrorLevel == Checkpoints[i].ErrorLevel))
+										if (cp.ErrorLevel == Checkpoints[i].ErrorLevel)
 										{
-											TaskErr = ERROR.IsNotTrue;
-											return;
+											result = ERROR.IsNotTrue;
+											break;
 										}
 									}
 								}
@@ -956,6 +1145,168 @@ namespace RFiDGear.ViewModel
 								}
 
 								result = ERROR.IsNotTrue;
+								break;
+
+							case LOGIC_STATE.COUNT:
+
+								int loops = 0;
+
+								foreach (Checkpoint outerCP in Checkpoints)
+								{
+									foreach (Checkpoint resultCP in results)
+									{
+										if (resultCP.TaskIndex == outerCP.TaskIndex && resultCP.ErrorLevel == outerCP.ErrorLevel)
+										{
+											loops++;
+											continue;
+										}
+										else
+											continue;
+									}
+								}
+
+								switch(SelectedCounterTrigger)
+                                {
+									case EQUALITY_OPERATOR.EQUAL:
+										if (loops == SelectedCheckpointCounterAsInt)
+                                        {
+											TaskErr = ERROR.NoError;
+											return;
+										}
+											
+										break;
+
+									case EQUALITY_OPERATOR.LESS_OR_EQUAL:
+										if (loops <= SelectedCheckpointCounterAsInt)
+										{
+											TaskErr = ERROR.NoError;
+											return;
+										}
+
+										break;
+
+									case EQUALITY_OPERATOR.LESS_THAN:
+										if (loops < SelectedCheckpointCounterAsInt)
+										{
+											TaskErr = ERROR.NoError;
+											return;
+										}
+
+										break;
+
+									case EQUALITY_OPERATOR.MORE_OR_EQUAL:
+										if (loops >= SelectedCheckpointCounterAsInt)
+										{
+											TaskErr = ERROR.NoError;
+											return;
+										}
+
+										break;
+
+									case EQUALITY_OPERATOR.MORE_THAN:
+										if (loops > SelectedCheckpointCounterAsInt)
+										{
+											TaskErr = ERROR.NoError;
+											return;
+										}
+
+										break;
+								}
+
+
+                                result = ERROR.IsNotTrue;
+								break;
+
+
+							case LOGIC_STATE.COMPARE: //Compare 'TaskResult Content'
+
+                                try
+                                {
+									if (CompareValue.Contains(">="))
+									{
+										string[] comparetemp = CompareValue.Replace(" ", string.Empty).Replace(">", string.Empty).Split('=');
+
+										//assume 2 values to compare
+										if (comparetemp.Length == 2)
+										{
+											switch (comparetemp[0])
+											{
+												case "%FREEMEM":
+													uint compareValueAsUInt;
+													uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
+
+													if (GenericChip.FreeMemory >= compareValueAsUInt)
+													{
+														TaskErr = ERROR.NoError;
+														return;
+													}
+
+													break;
+											}
+										}
+                                    }
+
+									else if (CompareValue.Contains("<="))
+									{
+										string[] comparetemp = CompareValue.Replace(" ", string.Empty).Replace("<", string.Empty).Split('=');
+
+										//assume 2 values to compare
+										if (comparetemp.Length == 2)
+										{
+											switch (comparetemp[0])
+											{
+												case "%FREEMEM":
+													uint compareValueAsUInt;
+													uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
+
+													if (GenericChip.FreeMemory <= compareValueAsUInt)
+													{
+														TaskErr = ERROR.NoError;
+														return;
+													}
+
+
+													break;
+											}
+										}
+									}
+
+									else if (CompareValue.Contains("="))
+									{
+										string[] comparetemp = CompareValue.Replace(" ", string.Empty).Split('=');
+
+										//assume 2 values to compare
+										if (comparetemp.Length == 2)
+										{
+											switch (comparetemp[0])
+											{
+												case "%FREEMEM":
+													uint compareValueAsUInt;
+													uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
+
+													if (compareValueAsUInt == GenericChip.FreeMemory)
+													{
+														TaskErr = ERROR.NoError;
+														return;
+													}
+
+													else
+														result = ERROR.IsNotTrue;
+
+
+													break;
+											}
+										}
+									}
+								}
+
+								catch(Exception e)
+                                {
+									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+								}
+
+								result = ERROR.IsNotTrue;
+
 								break;
 						}
 

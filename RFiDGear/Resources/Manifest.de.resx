@@ -431,7 +431,7 @@ ein Kartenlesegerät auswählen</value>
     <value>_Hilfe</value>
   </data>
   <data name="menuItemCheckForUpdates" xml:space="preserve">
-    <value>_Auf Updates prüfen</value>
+    <value>Auf U_pdates prüfen</value>
   </data>
   <data name="menuItemSetTaskStatusToUndone" xml:space="preserve">
     <value>_Aufgabenstatus zurücksetzen</value>
@@ -492,7 +492,7 @@ Ein zum Lesertyp passender RFID Chip muss sich in Leserreichweite befinden.</val
     <value>Aufgabenliste Speichern unter...</value>
   </data>
   <data name="filterStringSaveTasks" xml:space="preserve">
-    <value>Projekt Dateien (*.xml)|*.xml</value>
+    <value>Project files (*.rfPrj;*.xml)|*.rfPrj;*.xml</value>
   </data>
   <data name="windowCaptionOpenProject" xml:space="preserve">
     <value>Projektdatei öffnen...</value>
@@ -520,7 +520,7 @@ Soll die Aktualisierung jetzt herunter geladen und installiert werden?</value>
     <value>_Programmierung</value>
   </data>
   <data name="menuItemCreateTaskHeader" xml:space="preserve">
-    <value>RFiD Aufgaben</value>
+    <value>_RFiD Aufgaben</value>
   </data>
   <data name="menuItemMifareHeader" xml:space="preserve">
     <value>Mifare</value>
@@ -853,14 +853,8 @@ Wird benötigt von:
   <data name="filterStringSaveReport" xml:space="preserve">
     <value>PDF Dateien (*.pdf)|*.pdf</value>
   </data>
-  <data name="menuItemCreateReportHeader" xml:space="preserve">
-    <value>Bericht erstellen...</value>
-  </data>
-  <data name="menuItemCreateCommonTaskHeader" xml:space="preserve">
-    <value>Allgemeine Aufgaben...</value>
-  </data>
-  <data name="menuItemCreateReportTaskHeader" xml:space="preserve">
-    <value>Berichtaufgabe erstellen...</value>
+  <data name="menuItemCreateGenericTaskHeader" xml:space="preserve">
+    <value>_Allgemeine (nicht-RFID) Aufgabe erstellen...</value>
   </data>
   <data name="labelAddTestPoint" xml:space="preserve">
     <value>Testpunkt erstellen / bearbeiten</value>
@@ -996,5 +990,74 @@ Wird benötigt von:
   </data>
   <data name="ENUM.ERROR.OutOfMemory" xml:space="preserve">
     <value>Nicht genügend Speicher</value>
+  </data>
+  <data name="buttonContentOpenReportTemplateFile" xml:space="preserve">
+    <value>Datei öffnen...</value>
+  </data>
+  <data name="groupBoxHeaderCommonTaskCheckpointSetup" xml:space="preserve">
+    <value>Prüfpunkteinstellungen</value>
+  </data>
+  <data name="labelContentCommonTaskCheckpointContent" xml:space="preserve">
+    <value>Feldinhalt</value>
+  </data>
+  <data name="labelContentCommonTaskCheckpointErrorLevel" xml:space="preserve">
+    <value>Erw. Fehlertyp</value>
+  </data>
+  <data name="labelContentCommonTaskCheckpointTemplateField" xml:space="preserve">
+    <value>Berichtfeld</value>
+  </data>
+  <data name="labelSelectedReportTemplate" xml:space="preserve">
+    <value>Berichtdateipfad</value>
+  </data>
+  <data name="buttonContentCommonTaskAddCheckpoint" xml:space="preserve">
+    <value>Prüfpunkt hinzuf.</value>
+  </data>
+  <data name="buttonContentCommonTaskRemoveCheckpoint" xml:space="preserve">
+    <value>Prüfpunkt entf.</value>
+  </data>
+  <data name="groupBoxHeaderCommonTaskSelectTemplateFile" xml:space="preserve">
+    <value>Berichtdatei</value>
+  </data>
+  <data name="labelLoadLastProjectOnStart" xml:space="preserve">
+    <value>Zuletzt verwendetes Projekt mit Pragrammstart laden</value>
+  </data>
+  <data name="ENUM.EQUALITY_OPERATOR.EQUAL" xml:space="preserve">
+    <value>=</value>
+  </data>
+  <data name="ENUM.EQUALITY_OPERATOR.LESS_OR_EQUAL" xml:space="preserve">
+    <value>&lt;=</value>
+  </data>
+  <data name="ENUM.EQUALITY_OPERATOR.LESS_THAN" xml:space="preserve">
+    <value>&lt;</value>
+  </data>
+  <data name="ENUM.EQUALITY_OPERATOR.MORE_OR_EQUAL" xml:space="preserve">
+    <value>&gt;=</value>
+  </data>
+  <data name="ENUM.EQUALITY_OPERATOR.MORE_THAN" xml:space="preserve">
+    <value>&gt;</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.COUNT" xml:space="preserve">
+    <value>Zähler (ODER)</value>
+  </data>
+  <data name="ENUM.LOGIC_STATE.COMPARE" xml:space="preserve">
+    <value>Vergleiche</value>
+  </data>
+  <data name="windowCaptionAddEditGenericTask" xml:space="preserve">
+    <value>Allgemeine Aufgabe erstellen / bearbeiten</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.AppExistCheck" xml:space="preserve">
+    <value>Prüfung: App Existenz</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.AuthenticateApplication" xml:space="preserve">
+    <value>Authentifiziere an App</value>
+  </data>
+  <data name="toolTipTabItemDataExplorer" xml:space="preserve">
+    <value>Purpose:
+- view / modify file contents
+Needs
+- App Master Key, App ID (Tab "Application Key Setup" -&gt; groupbox "Mifare DESFire App Setup - Current")
+- Specified Read / WriteKey and According Number (this Tab)
+Needed by:
+- k.A.</value>
   </data>
 </root>

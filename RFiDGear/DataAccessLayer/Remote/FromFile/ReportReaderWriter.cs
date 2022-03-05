@@ -3,6 +3,7 @@ using iText.Forms.Fields;
 using iText.IO.Source;
 using iText.Kernel.Geom;
 using iText.Kernel.Pdf;
+using iText.Kernel.Colors;
 using RFiDGear.Model;
 using RFiDGear.ViewModel;
 using System;
@@ -24,7 +25,7 @@ namespace RFiDGear.DataAccessLayer
         #region fields
 
         PdfDocument pdfDoc;
-        PdfAcroForm form;
+        PdfAcroForm form = null;
 
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
@@ -46,13 +47,9 @@ namespace RFiDGear.DataAccessLayer
 
                 if (!Directory.Exists(appDataPath))
                     Directory.CreateDirectory(appDataPath);
-                //PdfDocument pdfDoc = new PdfDocument(new PdfReader(reportTemplatePath));
-                //PdfAcroForm form = PdfAcroForm.GetAcroForm(pdfDoc, true);
 
-                // Being set as true, this parameter is responsible to generate an appearance Stream
-                // while flattening for all form fields that don't have one. Generating appearances will
-                // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.
-                //form.SetGenerateAppearance(true);
+                if (File.Exists(System.IO.Path.Combine(appDataPath, reportTemplateTempFileName)))
+                    File.Delete(System.IO.Path.Combine(appDataPath, reportTemplateTempFileName));
             }
             catch (Exception e)
             {
@@ -86,16 +83,6 @@ namespace RFiDGear.DataAccessLayer
                     // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.
                     form.SetGenerateAppearance(true);
                 }
-
-
-                //PdfFont font = PdfFontFactory.CreateFont(FONT, PdfEncodings.IDENTITY_H);
-                //form.GetField("test").SetValue(VALUE, font, 12f);
-                //form.GetField("test2").SetValue(VALUE, font, 12f);
-
-                //form.GetField("Strasse_1").SetValue("1232test");
-
-                //pdfDoc.Close();
-
             }
             catch (XmlException e)
             {
@@ -115,14 +102,11 @@ namespace RFiDGear.DataAccessLayer
                     foreach (KeyValuePair<string, PdfFormField> _form in form.GetFormFields())
                     {
                         PdfFormField _fieldValue = _form.Value;
-                        if (!_fieldValue.IsReadOnly())
-                        {
-                            temp.Add(_form.Key);
-                        }
+                        temp.Add(_form.Key);
+
                     }
 
                 }
-                //pdfDoc.Close();
 
                 return temp;
 
@@ -143,18 +127,66 @@ namespace RFiDGear.DataAccessLayer
                     ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
 
                     OpenReport();
-                    //pdfDoc = pdfDoc ?? new PdfDocument(new PdfReader(ReportTemplatePath), new PdfWriter(ReportOutputPath));
-                    //form = form ?? PdfAcroForm.GetAcroForm(pdfDoc, true);
-                    //form ??
-                    //PdfFont font = PdfFontFactory.CreateFont(FONT, PdfEncodings.IDENTITY_H);
-                    //form.GetField("test").SetValue(VALUE, font, 12f);
-                    //form.GetField("test2").SetValue(VALUE, font, 12f);
 
-                    form.GetField(_field).SetValue(_value);
-                    form.GetField(_field).SetReadOnly(true);
-                    
-                    //pdfDoc.Close();
+                    try
+                    {
+                        //form.GetField(_field).SetReadOnly(false);
+                        form.GetField(_field).SetBorderWidth(1);
 
+                        form.GetField(_field).SetVisibility(PdfFormField.VISIBLE);
+                        
+                        form.GetField(_field).SetValue(_value);
+                        //form.GetField(_field).SetReadOnly(true);
+
+                        if(form.GetField(_field) is PdfButtonFormField)
+                        {
+                            (form.GetField(_field) as PdfButtonFormField).SetBorderColor(ColorConstants.BLACK);
+                            (form.GetField(_field) as PdfButtonFormField).SetBorderWidth(1);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    }
+                }
+                catch (XmlException e)
+                {
+                    LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                }
+            }
+
+        }
+
+        public void ConcatReportField(string _field, string _value)
+        {
+            if (!String.IsNullOrWhiteSpace(ReportOutputPath))
+            {
+                try
+                {
+                    ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
+
+                    OpenReport();
+
+                    try
+                    {
+                        //form.GetField(_field).SetReadOnly(false);
+                        form.GetField(_field).SetBorderWidth(1);
+
+                        form.GetField(_field).SetVisibility(PdfFormField.VISIBLE);
+
+                        form.GetField(_field).SetValue(string.Format("{0}{1}", form.GetField(_field).GetValueAsString(), _value) ) ;
+                        //form.GetField(_field).SetReadOnly(true);
+
+                        if (form.GetField(_field) is PdfButtonFormField)
+                        {
+                            (form.GetField(_field) as PdfButtonFormField).SetBorderColor(ColorConstants.BLACK);
+                            (form.GetField(_field) as PdfButtonFormField).SetBorderWidth(1);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    }
                 }
                 catch (XmlException e)
                 {

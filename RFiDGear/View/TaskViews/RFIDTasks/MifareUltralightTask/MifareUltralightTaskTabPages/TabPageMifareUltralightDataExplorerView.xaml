@@ -1,16 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 <UserControl
-	x:Class="RFiDGear.View.TabPageMifareUltralightDataExplorerView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:RFiDGear" xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-	mc:Ignorable="d" xmlns:vm="clr-namespace:RFiDGear.ViewModel" xmlns:_3rdP="clr-namespace:RFiDGear._3rdParty" xmlns:Controls0="clr-namespace:RFiDGear.View" xmlns:Controls1="clr-namespace:LibLogicalAccess;assembly=Interop.LibLogicalAccess">
-	<UserControl.Resources>
-		<BooleanToVisibilityConverter
-			x:Key="BoolToVisConv" />
-		<dal:BindingProxy
-			x:Key="proxy"
-			Data="{Binding}" />
-		<dal:ResourceLoader
-			x:Key="Localization" />
-		<!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+    x:Class="RFiDGear.View.TabPageMifareUltralightDataExplorerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:Controls0="clr-namespace:RFiDGear.View"
+    xmlns:Controls1="clr-namespace:LibLogicalAccess;assembly=Interop.LibLogicalAccess"
+    xmlns:_3rdP="clr-namespace:RFiDGear._3rdParty"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+    xmlns:local="clr-namespace:RFiDGear"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:RFiDGear.ViewModel"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+        <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
+        <dal:ResourceLoader x:Key="Localization" />
+        <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 			<ContextMenu.ItemContainerStyle>
 				<Style TargetType="MenuItem">
 					<Setter
@@ -22,160 +28,120 @@
 				</Style>
 			</ContextMenu.ItemContainerStyle>
 		</ContextMenu>-->
-	</UserControl.Resources>
-	<Grid>
-		<Grid
-			Margin="0,0,0,0"
-			VerticalAlignment="Stretch"
-			HorizontalAlignment="Stretch"
-			Grid.Row="0"
-			Grid.Column="0">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition
-					Width="0.45*" />
-				<ColumnDefinition
-					Width="5" />
-				<ColumnDefinition
-					Width="0.55*" />
-			</Grid.ColumnDefinitions>
-			<GridSplitter
-				ResizeBehavior="PreviousAndNext"
-				ResizeDirection="Auto"
-				Background="#FFD9D9DB"
-				Margin="0,0,0,0"
-				VerticalAlignment="Stretch"
-				HorizontalAlignment="Stretch"
-				Grid.Row="0"
-				Grid.Column="1"
-				Width="5"
-				Grid.RowSpan="2" />
-			<GroupBox
-				IsEnabled="{Binding IsDataExplorerEditTabEnabled}"
-				Header="Data on Chip"
-				Grid.Column="0"
-				Grid.Row="0"
-				HorizontalAlignment="Stretch"
-				VerticalAlignment="Stretch"
-				Margin="8,0,8,0">
-				<Grid
-					VerticalAlignment="Stretch"
-					Margin="0,0,0,0"
-					HorizontalAlignment="Stretch">
-					<DataGrid
-						ItemsSource="{Binding ChildNodeViewModelFromChip.Children, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"
-						AutoGenerateColumns="False"
-						CanUserReorderColumns="False"
-						CanUserSortColumns="False"
-						CanUserAddRows="False"
-						Background="Transparent"
-						AlternatingRowBackground="LightGray">
-						<!--SelectedItem="{Binding SelectedDataGridItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"-->
-						<DataGrid.RowStyle>
-							<Style
-								TargetType="{x:Type DataGridRow}">
-								<!--<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />-->
-								<!--<Setter Property="ToolTip" Value="{StaticResource DescriptionToolTip}" />-->
-								<!--<Setter Property="IsSelected" Value="{Binding DataContext.IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
-								<Setter
-									Property="Header"
-									Value="{Binding GrandChildNodeHeader}" />
-								<Setter
-									Property="HorizontalContentAlignment"
-									Value="Center" />
-								<Setter
-									Property="VerticalContentAlignment"
-									Value="Center" />
-								<Style.Triggers>
-									<DataTrigger
-										Binding="{Binding IsValidDataContent}"
-										Value="True">
-										<Setter
-											Property="Foreground"
-											Value="Green" />
-										<Setter
-											Property="FontWeight"
-											Value="Bold" />
-									</DataTrigger>
-									<DataTrigger
-										Binding="{Binding IsValidDataContent}"
-										Value="False">
-										<Setter
-											Property="Foreground"
-											Value="Red" />
-										<Setter
-											Property="FontWeight"
-											Value="Normal" />
-									</DataTrigger>
-								</Style.Triggers>
-							</Style>
-						</DataGrid.RowStyle>
-						<!--	{Binding Data.LocalizationResourceSet,
-								Converter={StaticResource Localization},
-								ConverterParameter='dataGridHeaderMainWindowEventName',
-								Source={StaticResource proxy}}-->
-						<DataGrid.Columns>
-							<DataGridTemplateColumn
-								Header="Hex">
-								<DataGridTemplateColumn.CellTemplate>
-									<DataTemplate>
-										<_3rdP:SelectionBindingTextBox
-											Text="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-											VerticalContentAlignment="Top"
-											HorizontalContentAlignment="Left"
-											BindableSelectionStart="{Binding SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-											BindableSelectionLength="{Binding SelectedDataLength, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-											FontFamily="Lucida Console"
-											BorderThickness="0"
-											IsFocused="{Binding IsFocused}">
-											<_3rdP:SelectionBindingTextBox.Style>
-												<Style
-													TargetType="{x:Type TextBox}">
-													<Setter
-														Property="TextWrapping"
-														Value="Wrap" />
-													<Setter
-														Property="MaxWidth"
-														Value="250" />
-													<Setter
-														Property="VerticalAlignment"
-														Value="Top" />
-													<Setter
-														Property="HorizontalAlignment"
-														Value="Left" />
-													<Setter
-														Property="IsReadOnly"
-														Value="True" />
-												</Style>
-											</_3rdP:SelectionBindingTextBox.Style>
-										</_3rdP:SelectionBindingTextBox>
-									</DataTemplate>
-								</DataGridTemplateColumn.CellTemplate>
-							</DataGridTemplateColumn>
-							<DataGridTemplateColumn
-								Header="String">
-								<DataGridTemplateColumn.CellTemplate>
-									<DataTemplate>
-										<_3rdP:SelectionBindingTextBox
-											Text="{Binding DataAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-											MaxWidth="180"
-											MaxHeight="100"
-											VerticalContentAlignment="Top"
-											HorizontalContentAlignment="Left"
-											FontFamily="Lucida Console"
-											BorderThickness="0">
-											<_3rdP:SelectionBindingTextBox.Style>
-												<Style
-													TargetType="{x:Type TextBox}">
-													<Setter
-														Property="TextWrapping"
-														Value="Wrap" />
-													<Setter
-														Property="VerticalScrollBarVisibility"
-														Value="Auto" />
-													<Setter
-														Property="IsReadOnly"
-														Value="True" />
-													<!--<Style.Triggers>
+    </UserControl.Resources>
+    <Grid>
+        <Grid
+            Grid.Row="0"
+            Grid.Column="0"
+            Margin="0,0,0,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="0.45*" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="0.55*" />
+            </Grid.ColumnDefinitions>
+            <GridSplitter
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="1"
+                Width="5"
+                Margin="0,0,0,0"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Background="#FFD9D9DB"
+                ResizeBehavior="PreviousAndNext"
+                ResizeDirection="Auto" />
+            <GroupBox
+                Grid.Row="0"
+                Grid.Column="0"
+                Margin="8,0,8,0"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Header="Data on Chip"
+                IsEnabled="{Binding IsDataExplorerEditTabEnabled}">
+                <Grid
+                    Margin="0,0,0,0"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch">
+                    <DataGrid
+                        AlternatingRowBackground="LightGray"
+                        AutoGenerateColumns="False"
+                        Background="Transparent"
+                        CanUserAddRows="False"
+                        CanUserReorderColumns="False"
+                        CanUserSortColumns="False"
+                        ItemsSource="{Binding ChildNodeViewModelFromChip.Children, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}">
+                        <!--  SelectedItem="{Binding SelectedDataGridItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"  -->
+                        <DataGrid.RowStyle>
+                            <Style TargetType="{x:Type DataGridRow}">
+                                <!--<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />-->
+                                <!--<Setter Property="ToolTip" Value="{StaticResource DescriptionToolTip}" />-->
+                                <!--<Setter Property="IsSelected" Value="{Binding DataContext.IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
+                                <Setter Property="Header" Value="{Binding GrandChildNodeHeader}" />
+                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsValidDataContent}" Value="True">
+                                        <Setter Property="Foreground" Value="Green" />
+                                        <Setter Property="FontWeight" Value="Bold" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsValidDataContent}" Value="False">
+                                        <Setter Property="Foreground" Value="Red" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <!--
+                            {Binding Data.LocalizationResourceSet,
+                            Converter={StaticResource Localization},
+                            ConverterParameter='dataGridHeaderMainWindowEventName',
+                            Source={StaticResource proxy}}
+                        -->
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Hex">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <_3rdP:SelectionBindingTextBox
+                                            HorizontalContentAlignment="Left"
+                                            VerticalContentAlignment="Top"
+                                            BindableSelectionLength="{Binding SelectedDataLength, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                            BindableSelectionStart="{Binding SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                            BorderThickness="0"
+                                            FontFamily="Lucida Console"
+                                            IsFocused="{Binding IsFocused}"
+                                            Text="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                            <_3rdP:SelectionBindingTextBox.Style>
+                                                <Style TargetType="{x:Type TextBox}">
+                                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                                    <Setter Property="MaxWidth" Value="250" />
+                                                    <Setter Property="VerticalAlignment" Value="Top" />
+                                                    <Setter Property="HorizontalAlignment" Value="Left" />
+                                                    <Setter Property="IsReadOnly" Value="True" />
+                                                </Style>
+                                            </_3rdP:SelectionBindingTextBox.Style>
+                                        </_3rdP:SelectionBindingTextBox>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="String">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <_3rdP:SelectionBindingTextBox
+                                            MaxWidth="180"
+                                            MaxHeight="100"
+                                            HorizontalContentAlignment="Left"
+                                            VerticalContentAlignment="Top"
+                                            BorderThickness="0"
+                                            FontFamily="Lucida Console"
+                                            Text="{Binding DataAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                            <_3rdP:SelectionBindingTextBox.Style>
+                                                <Style TargetType="{x:Type TextBox}">
+                                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                                    <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+                                                    <Setter Property="IsReadOnly" Value="True" />
+                                                    <!--<Style.Triggers>
 														<DataTrigger
 															Binding="{Binding IsValidSelectedDataIndexAndLength}"
 															Value="True">
@@ -191,159 +157,110 @@
 																Value="Red" />
 														</DataTrigger>
 													</Style.Triggers>-->
-												</Style>
-											</_3rdP:SelectionBindingTextBox.Style>
-										</_3rdP:SelectionBindingTextBox>
-									</DataTemplate>
-								</DataGridTemplateColumn.CellTemplate>
-							</DataGridTemplateColumn>
-						</DataGrid.Columns>
-					</DataGrid>
-				</Grid>
-			</GroupBox>
-			<GroupBox
-				IsEnabled="{Binding IsDataExplorerEditTabEnabled}"
-				Header="Data in Memory/File"
-				Grid.Column="0"
-				Grid.Row="1"
-				HorizontalAlignment="Stretch"
-				VerticalAlignment="Stretch"
-				Margin="8,0,8,8">
-				<Grid
-					VerticalAlignment="Stretch"
-					Margin="0,0,0,0"
-					HorizontalAlignment="Stretch">
-					<DataGrid
-						ItemsSource="{Binding ChildNodeViewModelTemp.Children}"
-						AutoGenerateColumns="False"
-						CanUserReorderColumns="False"
-						CanUserSortColumns="False"
-						CanUserAddRows="False"
-						Background="Transparent"
-						AlternatingRowBackground="LightGray">
-						<!--SelectedItem="{Binding SelectedDataGridItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"-->
-						<DataGrid.RowStyle>
-							<Style
-								TargetType="{x:Type DataGridRow}">
-								<!--<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />-->
-								<!--<Setter Property="ToolTip" Value="{StaticResource DescriptionToolTip}" />-->
-								<!--<Setter Property="IsSelected" Value="{Binding DataContext.IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
-								<Setter
-									Property="Header"
-									Value="{Binding GrandChildNodeHeader}" />
-								<Setter
-									Property="HorizontalContentAlignment"
-									Value="Center" />
-								<Setter
-									Property="VerticalContentAlignment"
-									Value="Center" />
-								<Style.Triggers>
-									<DataTrigger
-										Binding="{Binding IsValidDataContent}"
-										Value="True">
-										<Setter
-											Property="Foreground"
-											Value="Green" />
-										<Setter
-											Property="FontWeight"
-											Value="Bold" />
-									</DataTrigger>
-									<DataTrigger
-										Binding="{Binding IsValidDataContent}"
-										Value="False">
-										<Setter
-											Property="Foreground"
-											Value="Red" />
-										<Setter
-											Property="FontWeight"
-											Value="Normal" />
-									</DataTrigger>
-									<DataTrigger
-										Binding="{Binding IsValidDataContent}"
-										Value="{x:Null}">
-										<Setter
-											Property="Foreground"
-											Value="Black" />
-										<Setter
-											Property="FontWeight"
-											Value="Normal" />
-									</DataTrigger>
-								</Style.Triggers>
-							</Style>
-						</DataGrid.RowStyle>
-						<DataGrid.Columns>
-							<DataGridTemplateColumn
-								Header="Hex">
-								<DataGridTemplateColumn.CellTemplate>
-									<DataTemplate>
-										<_3rdP:SelectionBindingTextBox
-											Text="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-											VerticalContentAlignment="Top"
-											HorizontalContentAlignment="Left"
-											BindableSelectionStart="{Binding SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-											BindableSelectionLength="{Binding SelectedDataLength, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-											FontFamily="Lucida Console"
-											BorderThickness="0"
-											IsFocused="{Binding IsFocused}">
-											<_3rdP:SelectionBindingTextBox.Style>
-												<Style
-													TargetType="{x:Type TextBox}">
-													<Setter
-														Property="TextWrapping"
-														Value="Wrap" />
-													<Setter
-														Property="MaxWidth"
-														Value="250" />
-													<Setter
-														Property="VerticalAlignment"
-														Value="Top" />
-													<Setter
-														Property="HorizontalAlignment"
-														Value="Left" />
-													<Style.Triggers>
-														<DataTrigger
-															Binding="{Binding IsValidSelectedDataIndexAndLength}"
-															Value="True">
-															<Setter
-																Property="Foreground"
-																Value="Black" />
-														</DataTrigger>
-														<DataTrigger
-															Binding="{Binding IsValidSelectedDataIndexAndLength}"
-															Value="False">
-															<Setter
-																Property="Foreground"
-																Value="Red" />
-														</DataTrigger>
-													</Style.Triggers>
-												</Style>
-											</_3rdP:SelectionBindingTextBox.Style>
-										</_3rdP:SelectionBindingTextBox>
-									</DataTemplate>
-								</DataGridTemplateColumn.CellTemplate>
-							</DataGridTemplateColumn>
-							<DataGridTemplateColumn
-								Header="String">
-								<DataGridTemplateColumn.CellTemplate>
-									<DataTemplate>
-										<_3rdP:SelectionBindingTextBox
-											Text="{Binding DataAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-											MaxWidth="180"
-											MaxHeight="100"
-											VerticalContentAlignment="Top"
-											HorizontalContentAlignment="Left"
-											FontFamily="Lucida Console"
-											BorderThickness="0">
-											<_3rdP:SelectionBindingTextBox.Style>
-												<Style
-													TargetType="{x:Type TextBox}">
-													<Setter
-														Property="TextWrapping"
-														Value="Wrap" />
-													<Setter
-														Property="VerticalScrollBarVisibility"
-														Value="Auto" />
-													<!--<Style.Triggers>
+                                                </Style>
+                                            </_3rdP:SelectionBindingTextBox.Style>
+                                        </_3rdP:SelectionBindingTextBox>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </GroupBox>
+            <GroupBox
+                Grid.Row="1"
+                Grid.Column="0"
+                Margin="8,0,8,8"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Header="Data in Memory/File"
+                IsEnabled="{Binding IsDataExplorerEditTabEnabled}">
+                <Grid
+                    Margin="0,0,0,0"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch">
+                    <DataGrid
+                        AlternatingRowBackground="LightGray"
+                        AutoGenerateColumns="False"
+                        Background="Transparent"
+                        CanUserAddRows="False"
+                        CanUserReorderColumns="False"
+                        CanUserSortColumns="False"
+                        ItemsSource="{Binding ChildNodeViewModelTemp.Children}">
+                        <!--  SelectedItem="{Binding SelectedDataGridItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"  -->
+                        <DataGrid.RowStyle>
+                            <Style TargetType="{x:Type DataGridRow}">
+                                <!--<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />-->
+                                <!--<Setter Property="ToolTip" Value="{StaticResource DescriptionToolTip}" />-->
+                                <!--<Setter Property="IsSelected" Value="{Binding DataContext.IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
+                                <Setter Property="Header" Value="{Binding GrandChildNodeHeader}" />
+                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsValidDataContent}" Value="True">
+                                        <Setter Property="Foreground" Value="Green" />
+                                        <Setter Property="FontWeight" Value="Bold" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsValidDataContent}" Value="False">
+                                        <Setter Property="Foreground" Value="Red" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsValidDataContent}" Value="{x:Null}">
+                                        <Setter Property="Foreground" Value="Black" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Hex">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <_3rdP:SelectionBindingTextBox
+                                            HorizontalContentAlignment="Left"
+                                            VerticalContentAlignment="Top"
+                                            BindableSelectionLength="{Binding SelectedDataLength, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                            BindableSelectionStart="{Binding SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                            BorderThickness="0"
+                                            FontFamily="Lucida Console"
+                                            IsFocused="{Binding IsFocused}"
+                                            Text="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                            <_3rdP:SelectionBindingTextBox.Style>
+                                                <Style TargetType="{x:Type TextBox}">
+                                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                                    <Setter Property="MaxWidth" Value="250" />
+                                                    <Setter Property="VerticalAlignment" Value="Top" />
+                                                    <Setter Property="HorizontalAlignment" Value="Left" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsValidSelectedDataIndexAndLength}" Value="True">
+                                                            <Setter Property="Foreground" Value="Black" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsValidSelectedDataIndexAndLength}" Value="False">
+                                                            <Setter Property="Foreground" Value="Red" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </_3rdP:SelectionBindingTextBox.Style>
+                                        </_3rdP:SelectionBindingTextBox>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="String">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <_3rdP:SelectionBindingTextBox
+                                            MaxWidth="180"
+                                            MaxHeight="100"
+                                            HorizontalContentAlignment="Left"
+                                            VerticalContentAlignment="Top"
+                                            BorderThickness="0"
+                                            FontFamily="Lucida Console"
+                                            Text="{Binding DataAsCharString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                            <_3rdP:SelectionBindingTextBox.Style>
+                                                <Style TargetType="{x:Type TextBox}">
+                                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                                    <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+                                                    <!--<Style.Triggers>
 														<DataTrigger
 															Binding="{Binding IsValidSelectedDataIndexAndLength}"
 															Value="True">
@@ -359,108 +276,98 @@
 																Value="Red" />
 														</DataTrigger>
 													</Style.Triggers>-->
-												</Style>
-											</_3rdP:SelectionBindingTextBox.Style>
-										</_3rdP:SelectionBindingTextBox>
-									</DataTemplate>
-								</DataGridTemplateColumn.CellTemplate>
-							</DataGridTemplateColumn>
-						</DataGrid.Columns>
-					</DataGrid>
-				</Grid>
-			</GroupBox>
-			<GroupBox
-				Header="Read | Write Data"
-				IsEnabled="{Binding IsDataExplorerEditTabEnabled}"
-				Margin="7,8,8,8"
-				VerticalAlignment="Stretch"
-				HorizontalAlignment="Stretch"
-				Grid.Row="0"
-				Grid.Column="2"
-				Grid.RowSpan="2">
-				<Grid
-					VerticalAlignment="Stretch"
-					Margin="0,0,0,0"
-					HorizontalAlignment="Stretch">
-					<Button
-						Command="{Binding WriteDataCommand}"
-						Content="Write"
-						Height="23"
-						Grid.Column="0"
-						Grid.ColumnSpan="2"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Bottom"
-						Margin="7.5,0,7.5,7"
-						Grid.Row="2" />
-					<Button
-						Command="{Binding ReadDataCommand}"
-						Content="Read"
-						Height="23"
-						Grid.Column="0"
-						Grid.ColumnSpan="2"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Bottom"
-						Margin="7.5,0,7.5,7"
-						Grid.Row="3" />
-					<GroupBox
-						Grid.Column="0"
-						Grid.ColumnSpan="2"
-						Grid.Row="0"
-						HorizontalAlignment="Stretch"
-						VerticalAlignment="Stretch"
-						Margin="8,8,7,7"
-						Header="Direct Access">
-						<Grid>
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition
-									Width="185" />
-								<ColumnDefinition
-									Width="0.287459850407673*" />
-							</Grid.ColumnDefinitions>
-							<Label
-								Height="26"
-								Grid.Column="0"
-								Grid.Row="0"
-								HorizontalAlignment="Stretch"
-								VerticalAlignment="Top"
-								Margin="14,8,7,0"
-								Content="Page to Read / Write" />
-							<ComboBox
-								ItemsSource="{Binding MifareUltralightPages}"
-								SelectedItem="{Binding SelectedUltralightPageCurrent,Converter={StaticResource Localization},ConverterParameter={x:Type dal:DataExplorer_DataBlock},UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
-								FocusManager.IsFocusScope="True"
-								Grid.Column="1"
-								Grid.Row="0"
-								HorizontalAlignment="Stretch"
-								Height="23"
-								VerticalAlignment="Top"
-								Margin="9,8,7,0" />
-						</Grid>
-					</GroupBox>
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition
-							Width="186" />
-						<ColumnDefinition
-							Width="181*" />
-					</Grid.ColumnDefinitions>
-					<Grid.RowDefinitions>
-						<RowDefinition
-							Height="80.7203331950994" />
-						<RowDefinition
-							Height="0.352718148131878*" />
-						<RowDefinition
-							Height="36" />
-						<RowDefinition
-							Height="36" />
-					</Grid.RowDefinitions>
-				</Grid>
-			</GroupBox>
-			<Grid.RowDefinitions>
-				<RowDefinition
-					Height="0.5*" />
-				<RowDefinition
-					Height="0.5*" />
-			</Grid.RowDefinitions>
-		</Grid>
-	</Grid>
+                                                </Style>
+                                            </_3rdP:SelectionBindingTextBox.Style>
+                                        </_3rdP:SelectionBindingTextBox>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </GroupBox>
+            <GroupBox
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="2"
+                Margin="7,8,8,8"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Header="Read | Write Data"
+                IsEnabled="{Binding IsDataExplorerEditTabEnabled}">
+                <Grid
+                    Margin="0,0,0,0"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch">
+                    <Button
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Height="23"
+                        Margin="7.5,0,7.5,7"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
+                        Command="{Binding WriteDataCommand}"
+                        Content="Write" />
+                    <Button
+                        Grid.Row="3"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Height="23"
+                        Margin="7.5,0,7.5,7"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
+                        Command="{Binding ReadDataCommand}"
+                        Content="Read" />
+                    <GroupBox
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Margin="8,8,7,7"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Header="Direct Access">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="185" />
+                                <ColumnDefinition Width="0.287459850407673*" />
+                            </Grid.ColumnDefinitions>
+                            <Label
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Height="26"
+                                Margin="14,8,7,0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Top"
+                                Content="Page to Read / Write" />
+                            <ComboBox
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Height="23"
+                                Margin="9,8,7,0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Top"
+                                FocusManager.IsFocusScope="True"
+                                ItemsSource="{Binding MifareUltralightPages}"
+                                SelectedItem="{Binding SelectedUltralightPageCurrent, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DataExplorer_DataBlock}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        </Grid>
+                    </GroupBox>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="186" />
+                        <ColumnDefinition Width="181*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="80.7203331950994" />
+                        <RowDefinition Height="0.352718148131878*" />
+                        <RowDefinition Height="36" />
+                        <RowDefinition Height="36" />
+                    </Grid.RowDefinitions>
+                </Grid>
+            </GroupBox>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="0.5*" />
+                <RowDefinition Height="0.5*" />
+            </Grid.RowDefinitions>
+        </Grid>
+    </Grid>
 </UserControl>

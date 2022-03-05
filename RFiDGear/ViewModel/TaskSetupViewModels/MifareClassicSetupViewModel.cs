@@ -207,7 +207,7 @@ namespace RFiDGear.ViewModel
 			Selected_Sector_AccessCondition = sectorTrailer_AccessBits[4];
 			Selected_DataBlock_AccessCondition = dataBlock_AccessBits[0];
 			
-			MifareClassicKeys = CustomConverter.GenerateStringSequence(0,16).ToArray();
+			MifareClassicKeys = CustomConverter.GenerateStringSequence(0,39).ToArray();
 			
 			SelectedClassicSectorCurrent = "0";
 			
@@ -252,8 +252,28 @@ namespace RFiDGear.ViewModel
 				Selected_DataBlockType = SectorTrailer_DataBlock.BlockAll;
 				Selected_Sector_AccessCondition = sectorTrailer_AccessBits[4];
 				Selected_DataBlock_AccessCondition = dataBlock_AccessBits[0];
-				
-				if(_selectedSetupViewModel is MifareClassicSetupViewModel)
+
+				SelectedClassicSectorCurrent = "0";
+				SelectedMADSector = "1";
+				SelectedMADVersion = "1";
+
+				MifareClassicKeys = CustomConverter.GenerateStringSequence(0,39).ToArray();
+				MADVersions = CustomConverter.GenerateStringSequence(1,3).ToArray();
+				MADSectors = CustomConverter.GenerateStringSequence(1,39).ToArray();
+				AppNumber = "1";
+
+				ClassicMADKeyAKeyCurrent = "FFFFFFFFFFFF";
+				ClassicMADKeyBKeyCurrent = "FFFFFFFFFFFF";
+				ClassicMADKeyAKeyTarget = "FFFFFFFFFFFF";
+				ClassicMADKeyBKeyTarget = "FFFFFFFFFFFF";
+
+				ClassicKeyAKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[0];
+				ClassicKeyBKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[2];
+
+				ClassicKeyAKeyTarget = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[0];
+				ClassicKeyBKeyTarget = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[2];
+
+				if (_selectedSetupViewModel is MifareClassicSetupViewModel)
 				{
 					PropertyInfo[] properties = typeof(MifareClassicSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
@@ -290,30 +310,6 @@ namespace RFiDGear.ViewModel
 					SelectedTaskIndex = "0";
 					SelectedTaskDescription = "Enter a Description";
 				}
-				
-				MifareClassicKeys = CustomConverter.GenerateStringSequence(0,39).ToArray();
-				MADVersions = CustomConverter.GenerateStringSequence(1,3).ToArray();
-				MADSectors = CustomConverter.GenerateStringSequence(1,39).ToArray();
-				AppNumber = "1";
-				
-				SelectedClassicSectorCurrent = "0";
-				SelectedMADSector = "1";
-				SelectedMADVersion = "1";
-				
-				ClassicMADKeyAKeyCurrent = "FFFFFFFFFFFF";
-				ClassicMADKeyBKeyCurrent = "FFFFFFFFFFFF";
-				ClassicMADKeyAKeyTarget = "FFFFFFFFFFFF";
-				ClassicMADKeyBKeyTarget = "FFFFFFFFFFFF";
-				
-				IsValidClassicKeyAKeyCurrent = null;
-				IsValidClassicKeyBKeyCurrent = null;
-				IsValidClassicMADKeyAKeyCurrent = null;
-				IsValidClassicMADKeyBKeyCurrent = null;
-				IsValidClassicKeyAKeyTarget = null;
-				IsValidClassicKeyBKeyTarget = null;
-				IsValidClassicMADKeyAKeyTarget = null;
-				IsValidClassicMADKeyBKeyTarget = null;
-				IsValidAppNumber = null;
 				
 				HasPlugins = items != null ? items.Any() : false;
 				
@@ -1123,11 +1119,6 @@ namespace RFiDGear.ViewModel
                     selectedClassicKeyANumberCurrent = value;
                     RaisePropertyChanged("SelectedClassicKeyANumberCurrent");
                 }
-                //				if(SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
-                //				{
-                //					ClassicKeyAKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
-                //						First(x => x.KeyType == SelectedClassicKeyANumberCurrent).AccessBits.Split(new[] { ',', ';' })[0];
-                //				}
             }
         }
         private string selectedClassicKeyANumberCurrent;
@@ -1172,7 +1163,49 @@ namespace RFiDGear.ViewModel
                 if (int.TryParse(value, out selectedClassicSectorCurrentAsInt))
                 {
                     selectedClassicSectorCurrent = value;
-                    RaisePropertyChanged("SelectedClassicSectorCurrent");
+
+					if (selectedClassicSectorCurrentAsInt > 31)
+					{
+						sectorModel = new MifareClassicSectorModel(4,
+							AccessCondition_MifareClassicSectorTrailer.NotAllowed,
+							AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+							AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+							AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+							AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
+							AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA);
+
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block0, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block1, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block2, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block0, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block1, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block2, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block0, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block1, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block2, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block0, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block1, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block2, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block0, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block1, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.Block2, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+
+						sectorModel.DataBlock.Add(new MifareClassicDataBlockModel(0, SectorTrailer_DataBlock.BlockAll, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB, AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA_Or_KeyB));
+
+						sectorModel.AccessBitsAsString = settings.DefaultSpecification.MifareClassicDefaultSectorTrailer;
+
+						sectorModel.SectorNumber = selectedClassicSectorCurrentAsInt;
+
+						childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
+						childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
+
+					}
+
+					RaisePropertyChanged("SelectedClassicSectorCurrent");
                 }
             }
         }
@@ -1541,7 +1574,7 @@ namespace RFiDGear.ViewModel
             }
             set
             {
-                classicKeyAKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+                classicKeyAKeyTarget = value != null ? (value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper() ): null;
 
                 IsValidClassicKeyAKeyTarget = (CustomConverter.IsInHexFormat(classicKeyAKeyTarget) && classicKeyAKeyTarget.Length == 12);
 
@@ -1640,7 +1673,7 @@ namespace RFiDGear.ViewModel
 				         					
 				         					childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
 				         					childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
-				         					
+				         						 
 				         					StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 				         					
 				         					for (int i = 0; i < device.Sector.DataBlock.Count; i++)
@@ -1731,19 +1764,22 @@ namespace RFiDGear.ViewModel
 				         	}
 				         });
 
-			classicTask.Start();
+			if (TaskErr == ERROR.Empty)
+			{
+				classicTask.ContinueWith((x) =>
+				{
+					if (TaskErr == ERROR.NoError)
+					{
+						IsTaskCompletedSuccessfully = true;
+					}
+					else
+					{
+						IsTaskCompletedSuccessfully = false;
+					}
+				});
 
-			classicTask.ContinueWith((x) =>
-			                         {
-			                         	if (TaskErr == ERROR.NoError)
-			                         	{
-			                         		IsTaskCompletedSuccessfully = true;
-			                         	}
-			                         	else
-			                         	{
-			                         		IsTaskCompletedSuccessfully = false;
-			                         	}
-			                         });
+				classicTask.RunSynchronously();
+			}
 		}
 
 		/// <summary>
@@ -1835,18 +1871,18 @@ namespace RFiDGear.ViewModel
 			if (TaskErr == ERROR.Empty)
 			{
 				classicTask.ContinueWith((x) =>
-				                         {
-				                         	if (TaskErr == ERROR.NoError)
-				                         	{
-				                         		IsTaskCompletedSuccessfully = true;
-				                         	}
-				                         	else
-				                         	{
-				                         		IsTaskCompletedSuccessfully = false;
-				                         	}
-				                         }); //TaskScheduler.FromCurrentSynchronizationContext()
+				{
+					if (TaskErr == ERROR.NoError)
+					{
+						IsTaskCompletedSuccessfully = true;
+					}
+					else
+					{
+						IsTaskCompletedSuccessfully = false;
+					}
+				});
 
-				classicTask.Start();
+				classicTask.RunSynchronously();
 			}
 
 			return;
