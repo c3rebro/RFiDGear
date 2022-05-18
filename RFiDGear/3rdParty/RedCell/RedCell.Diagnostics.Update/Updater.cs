@@ -140,9 +140,6 @@ namespace RedCell.Diagnostics.Update
         {
             try
             {
-                if (IsUserNotified && !AllowUpdate)
-                    return;
-
                 if (AllowUpdate && !_updating)
                 {
                     _timer.Change(5000, DefaultCheckInterval * 1000);
@@ -232,6 +229,12 @@ namespace RedCell.Diagnostics.Update
                     NewVersionAvailable(this, null);
                     return;
                 }
+
+                if (IsUserNotified && !AllowUpdate)
+                {
+                    StopMonitoring();
+                    return;
+                }
             }
             catch (Exception e)
             {
@@ -242,7 +245,7 @@ namespace RedCell.Diagnostics.Update
         /// <summary>
         /// Updates this instance.
         /// </summary>
-        private void Update()
+        public void Update()
         {
 
             Log.Write("Updating '{0}' files.", this._remoteConfig.Payloads.Length);
@@ -297,6 +300,8 @@ namespace RedCell.Diagnostics.Update
                         using (var zip = ZipFile.Read(zipfile))
                             zip.ExtractAll(Path.Combine(appDataPath, WorkPath), ExtractExistingFileAction.Throw);
                         File.Delete(zipfile);
+
+                        AllowUpdate = true;
                     }
                     catch (Exception e)
                     {
@@ -309,9 +314,10 @@ namespace RedCell.Diagnostics.Update
             if (IsUserNotified && AllowUpdate)
             {
                 Process p = new Process();
-                ProcessStartInfo info = new ProcessStartInfo(Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe"))
+                ProcessStartInfo info = new ProcessStartInfo()
                 {
-                    //info.Arguments = string.Format("/i {0}", Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe"));
+                    FileName = "msiexec.exe",
+                    Arguments = string.Format("/i \"{0}\" /lv \"c:\\temp\\rfidgeardeploy.log\"", Path.Combine(appDataPath, WorkPath, "Setup.msi")),
                     UseShellExecute = false
                 };
 

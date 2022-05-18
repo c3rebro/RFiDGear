@@ -3290,7 +3290,7 @@ namespace RFiDGear.ViewModel
                 Buttons = MessageBoxButton.YesNo,
                 Image = MessageBoxImage.Question
             }.Show(this.Dialogs) == MessageBoxResult.Yes)
-                (sender as Updater).AllowUpdate = true;
+                (sender as Updater).Update();
             else
             {
                 (sender as Updater).AllowUpdate = false;
