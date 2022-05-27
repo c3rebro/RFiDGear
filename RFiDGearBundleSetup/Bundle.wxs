@@ -20,7 +20,7 @@
 	<?define ISLOG_RegistrySearch_Value = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.3.0214\liblogicalaccess.com.dll" ?>
 	<?endif ?>
 	
-	<Bundle Name="$(var.RFiDGear.ProjectName)" Version="$(var.VersionNumber)" Manufacturer="Messgeraetetechnik Hansen" UpgradeCode="$(var.UpgradeCode)" Copyright="Messgeraetetechnik Hansen 2018" IconSourceFile="$(var.RFiDGear.ProjectDir)Resources\logo.ico" AboutUrl="http://rfidgear.hyperstack.de">
+	<Bundle Name="$(var.RFiDGear.ProjectName)" Version="$(var.VersionNumber)" Manufacturer="Messgeraetetechnik Hansen" UpgradeCode="$(var.UpgradeCode)" Copyright="Messgeraetetechnik Hansen 2022" IconSourceFile="$(var.RFiDGear.ProjectDir)Resources\logo.ico" AboutUrl="http://rfidgear.hyperstack.de">
 		<BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
 			<bal:WixStandardBootstrapperApplication LicenseFile="$(var.RFiDGear.ProjectDir)Resources\gpl_v3_license.rtf" LogoFile="setuplogo.ico" ThemeFile="rtftheme.xml"/>
 		</BootstrapperApplicationRef>

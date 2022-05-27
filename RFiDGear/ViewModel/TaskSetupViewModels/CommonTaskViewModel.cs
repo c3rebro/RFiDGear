@@ -876,7 +876,13 @@ namespace RFiDGear.ViewModel
 								hasVariable = true;
 							}
 
-                            if (temporaryContent.Contains("%FREEMEM"))
+							if (temporaryContent.Contains("%DATE"))
+							{
+								temporaryContent = temporaryContent.Replace("%DATE", DateTime.Now.ToString("dd/MM/yyyy") ?? "");
+								hasVariable = true;
+							}
+
+							if (temporaryContent.Contains("%FREEMEM"))
                             {
 								temporaryContent = temporaryContent.Replace("%FREEMEM", GenericChip.FreeMemory.ToString() ?? "");
 								hasVariable = true;
