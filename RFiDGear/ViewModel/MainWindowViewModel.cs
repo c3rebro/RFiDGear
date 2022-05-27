@@ -1053,7 +1053,8 @@ namespace RFiDGear.ViewModel
 
             Task thread = new Task(() =>
             {
-                GenericChipModel GenericChip;
+                GenericChipModel GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+                MifareDesfireChipModel DesfireChip = new MifareDesfireChipModel("", CARD_TYPE.Unspecified); ;
 
                 try
                 {
@@ -1066,9 +1067,16 @@ namespace RFiDGear.ViewModel
                             device.ReadChipPublic();
 
                             GenericChip = new GenericChipModel(device.GenericChip.UID, device.GenericChip.CardType);
+
+                            if(GenericChip != null)
+                            {
+                                if(GenericChip.CardType == CARD_TYPE.DESFireEV1 || GenericChip.CardType == CARD_TYPE.DESFireEV2)
+                                {
+                                    DesfireChip = new MifareDesfireChipModel(GenericChip.UID, GenericChip.CardType);
+                                    device.GetMiFareDESFireChipAppIDs();
+                                }
+                            }
                         }
-                        else
-                            GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
                     }
 
                     if (treeViewParentNodes.Any(x => x.IsSelected))
@@ -1202,6 +1210,7 @@ namespace RFiDGear.ViewModel
                                                     reportReaderWriter.ReportOutputPath = reportOutputPath;
 
                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).DesfireChip = DesfireChip;
                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
                                                 }
@@ -1239,6 +1248,7 @@ namespace RFiDGear.ViewModel
                                                                         reportReaderWriter.ReportOutputPath = reportOutputPath;
 
                                                                         (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).DesfireChip = DesfireChip;
                                                                         (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
                                                                         (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
                                                                     }

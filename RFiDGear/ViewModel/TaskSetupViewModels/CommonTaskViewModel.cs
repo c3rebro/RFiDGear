@@ -43,6 +43,9 @@ namespace RFiDGear.ViewModel
 		[XmlIgnore]
         public GenericChipModel GenericChip { get; set; }
 
+		[XmlIgnore]
+		public MifareDesfireChipModel DesfireChip { get; set; }
+
 		#endregion
 
 		#region Constructors
@@ -885,6 +888,12 @@ namespace RFiDGear.ViewModel
 							if (temporaryContent.Contains("%FREEMEM"))
                             {
 								temporaryContent = temporaryContent.Replace("%FREEMEM", GenericChip.FreeMemory.ToString() ?? "");
+								hasVariable = true;
+							}
+
+							if (temporaryContent.Contains("%LISTAPPS"))
+							{
+								temporaryContent = temporaryContent.Replace("%LISTAPPS", string.Join(", ", DesfireChip.AppList) ?? "");
 								hasVariable = true;
 							}
 
