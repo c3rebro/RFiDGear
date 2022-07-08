@@ -767,7 +767,7 @@ namespace RFiDGear
 			return ERROR.NoError;
 		}
 		
-		public ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length)
+		public ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, bool _useMADToAuth = true)
 		{
 			var settings = new SettingsReaderWriter();
 			Sector = new MifareClassicSectorModel();
@@ -805,20 +805,30 @@ namespace RFiDGear
 							MifareLocation mlocation = card.CreateLocation() as MifareLocation;
 							mlocation.MADApplicationID = (ushort)madApplicationID;
 							mlocation.UseMAD = true;
-							
+							mlocation.Sector = 17;
+							//mlocation.Block = 304;
+							//mlocation.Byte = 10;
+						
 							var aiToUse = new MifareAccessInfoClass();
 							aiToUse.UseMAD = true;
 							aiToUse.KeyA = mAKeyToUse;
 							aiToUse.KeyB = mBKeyToUse;
-							aiToUse.MADKeyA = madAKeyToUse;
-							aiToUse.MADKeyB = madBKeyToUse;
-							
+
+
+							if (_useMADToAuth)
+							{
+								aiToUse.MADKeyA = madAKeyToUse;
+								aiToUse.MADKeyB = madBKeyToUse;
+								aiToUse.MADGPB = 1;
+							}
+
 							var cmd = card.Commands as IMifareCommands;
 							var cardService = card.GetService(CardServiceType.CST_STORAGE) as IStorageCardService;
 							
 							try
 							{
-								MifareClassicData = (byte[])cardService.ReadData(mlocation, aiToUse, _length, CardBehavior.CB_AUTOSWITCHAREA);
+								object o = (byte[])cardService.ReadDataHeader(mlocation, aiToUse);
+								MifareClassicData = (byte[])cardService.ReadData(mlocation, aiToUse, _length, CardBehavior.CB_DEFAULT);
 							}
 							catch (Exception e)
 							{

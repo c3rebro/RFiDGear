@@ -1713,37 +1713,26 @@ namespace RFiDGear.ViewModel
 				         			
 				         			else
 				         			{
-				         				if (device.ReadMiFareClassicSingleSector(
-				         					0,
-				         					ClassicMADKeyAKeyCurrent,
-				         					ClassicMADKeyBKeyCurrent) == ERROR.NoError)
-				         				{
-				         					
-				         					StatusText += string.Format("{0}: Successfully Authenticated to MAD\n", DateTime.Now);
-				         					
-				         					ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
-				         					ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
-				         					
-				         					if(device.ReadMiFareClassicWithMAD(appNumberAsInt, ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, ClassicMADKeyAKeyCurrent ,ClassicMADKeyBKeyCurrent, fileSizeAsInt) == ERROR.NoError)
-				         					{
-				         						ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
-				         						ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
-				         						
-				         						ChildNodeViewModelTemp.Children.Single().RequestRefresh();
-				         						ChildNodeViewModelFromChip.Children.Single().RequestRefresh();
-				         						
-				         						StatusText = StatusText + string.Format("{0}: Successfully Read Data from MAD\n", DateTime.Now);
-				         					}
+										 ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
+										 ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 
-				         					
-				         					TaskErr = ERROR.NoError;
-				         					
+										if (device.ReadMiFareClassicWithMAD(appNumberAsInt, ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent, fileSizeAsInt) == ERROR.NoError)
+										{
+											 ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
+											 ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
 
-				         				}
-				         				
-				         				else
+											 ChildNodeViewModelTemp.Children.Single().RequestRefresh();
+											 ChildNodeViewModelFromChip.Children.Single().RequestRefresh();
+
+											 StatusText = StatusText + string.Format("{0}: Successfully Read Data from MAD\n", DateTime.Now);
+
+											 TaskErr = ERROR.NoError;
+										 }
+
+										else
 				         				{
 				         					StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
+
 				         					TaskErr = ERROR.AuthenticationError;
 				         					return;
 				         				}
@@ -1828,37 +1817,23 @@ namespace RFiDGear.ViewModel
 
 				         		else
 				         		{
-				         			if (device.ReadMiFareClassicSingleSector(
-				         				0,
-				         				ClassicMADKeyAKeyCurrent,
-				         				ClassicMADKeyBKeyCurrent) == ERROR.NoError)
-				         			{
-				         				
-				         				StatusText = StatusText + string.Format("{0}: Successfully Authenticated to MAD\n", DateTime.Now);
-				         				
-				         				ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
-				         				ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
-				         				
-				         				
-				         				
-				         				if(device.WriteMiFareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
-				         				                                    ClassicMADKeyAKeyCurrent ,ClassicMADKeyBKeyCurrent,
-				         				                                    ClassicMADKeyAKeyTarget, ClassicMADKeyBKeyTarget,
-				         				                                    ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent,
-				         				                                    ClassicKeyAKeyTarget, ClassicKeyBKeyTarget,
-				         				                                    ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data,
-				         				                                    madGPB, UseMadAuth) == ERROR.NoError)
-				         				{
-				         					StatusText = StatusText + string.Format("{0}: Wrote n bytes to MAD ID x\n", DateTime.Now);
-				         				}
+									 ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
+									 ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 
-				         				
-				         				TaskErr = ERROR.NoError;
-				         				
+									if (device.WriteMiFareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
+																		 ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent,
+																		 ClassicMADKeyAKeyTarget, ClassicMADKeyBKeyTarget,
+																		 ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent,
+																		 ClassicKeyAKeyTarget, ClassicKeyBKeyTarget,
+																		 ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data,
+																		 madGPB, UseMadAuth) == ERROR.NoError)
+									{
+										 StatusText = StatusText + string.Format("{0}: Wrote n bytes to MAD ID x\n", DateTime.Now);
 
-				         			}
-				         			
-				         			else
+										 TaskErr = ERROR.NoError;
+									}
+
+									else
 				         			{
 				         				StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
 				         				TaskErr = ERROR.AuthenticationError;
