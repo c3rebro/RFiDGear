@@ -1,4 +1,8 @@
 ﻿using LibLogicalAccess;
+using LibLogicalAccess.Card;
+using LibLogicalAccess.Reader;
+using LibLogicalAccess.Crypto;
+
 using Elatec.NET;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
@@ -16,10 +20,10 @@ namespace RFiDGear
 	public class RFiDDevice : IDisposable
 	{
 		// global (cross-class) Instances go here ->
-		private IReaderProvider readerProvider;
-		private IReaderUnit readerUnit;
+		private ReaderProvider readerProvider;
+		private ReaderUnit readerUnit;
 		private TWN4ReaderDevice readerDevice;
-		private chip card;
+		private Chip card;
 		private bool _disposed = false;
 
 		#region properties
@@ -60,7 +64,8 @@ namespace RFiDGear
 
 		//public uint FreeMemory { get; private set; }
 
-		public FileSetting DesfireFileSetting { get; private set; }
+		// FIXME: FILESETTINGS
+		public int DesfireFileSetting { get; private set; }
 
 		public DESFireKeySettings DesfireAppKeySetting { get; private set; }
 
@@ -877,14 +882,14 @@ namespace RFiDGear
 			try
 			{
 				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
+				DESFireLocation location = new DESFireLocation();
 				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
 				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
-				aiToUse.MasterCardKey.Value = _appMasterKey;
-				aiToUse.MasterCardKey.KeyType = _keyTypeAppMasterKey;
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				aiToUse.masterCardKey.setCipherKey(_appMasterKey);
+				aiToUse.masterCardKey.setKeyType(_keyTypeAppMasterKey);
 
 
 				if (readerUnit.ConnectToReader())
@@ -1052,7 +1057,7 @@ namespace RFiDGear
 				DESFireAccessRights accessRights = _accessRights;
 
 				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToUse.MasterCardKey.KeyType = _keyTypeAppMasterKey;
@@ -1256,13 +1261,13 @@ namespace RFiDGear
             try
             {
 				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
+				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
 				location.aid = _appID;
 				// File 0 into this application
 				location.File = _fileNo;
 				// File communication requires encryption
-				location.SecurityLevel = _encMode;
+				location.securityLevel = _encMode;
 
 				// Keys to use for authentication
 
@@ -1270,7 +1275,7 @@ namespace RFiDGear
 				IStorageCardService storage = (IStorageCardService)card.GetService(CardServiceType.CST_STORAGE);
 
 				// Change keys with the following ones
-				IDESFireAccessInfo aiToWrite = new DESFireAccessInfo();
+				DESFireAccessInfo aiToWrite = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
 				aiToWrite.MasterApplicationKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToWrite.MasterApplicationKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeAppMasterKey;
@@ -1361,13 +1366,13 @@ namespace RFiDGear
             try
             {
 				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
+				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
 				location.aid = _appID;
 				// File 0 into this application
 				location.File = _fileNo;
 				// File communication requires encryption
-				location.SecurityLevel = _encMode;
+				location.securityLevel = _encMode;
 
 				// Keys to use for authentication
 
@@ -1375,12 +1380,12 @@ namespace RFiDGear
 				IStorageCardService storage = (IStorageCardService)card.GetService(CardServiceType.CST_STORAGE);
 
 				// Change keys with the following ones
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_cardMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToUse.MasterCardKey.KeyType = _keyTypeAppMasterKey;
 
-				IDESFireAccessInfo aiToWrite = new DESFireAccessInfo();
+				DESFireAccessInfo aiToWrite = new DESFireAccessInfo();
 				aiToWrite.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToWrite.MasterCardKey.KeyType = _keyTypeAppMasterKey;
 
@@ -1454,14 +1459,14 @@ namespace RFiDGear
 			try
 			{
 				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
+				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
 				location.aid = _appID;
 				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
 				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
@@ -1554,7 +1559,7 @@ namespace RFiDGear
 			try
 			{
 				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
@@ -1728,16 +1733,16 @@ namespace RFiDGear
 			try
 			{
 				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
+				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
 				location.aid = _appID;
 
 				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
 				// IDESFireEV1Commands cmd;
 				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_piccMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypePiccMasterKey;
@@ -1832,15 +1837,15 @@ namespace RFiDGear
 			try
 			{
 				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
+				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
 				location.aid = _appIDCurrent;
 				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
 				IDESFireEV1Commands cmd;
 				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				if (_appIDCurrent > 0)
 				{
 					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
@@ -2007,15 +2012,15 @@ namespace RFiDGear
 			try
 			{
 				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
+				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
 				location.aid = _appID;
 				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
 				// IDESFireEV1Commands cmd;
 				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToUse.MasterCardKey.KeyType = _keyType;
@@ -2086,14 +2091,14 @@ namespace RFiDGear
 			try
 			{
 				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
+				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
 				location.aid = _appID;
 				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
 				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
@@ -2164,15 +2169,15 @@ namespace RFiDGear
 			try
 			{
 				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
+				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
 				location.aid = _appID;
 				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
 				IDESFireEV1Commands cmd;
 				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
@@ -2234,15 +2239,15 @@ namespace RFiDGear
 			try
 			{
 				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
+				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
 				location.aid = _appID;
 				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
 				//IDESFireEV1Commands cmd;
 				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToUse.MasterCardKey.KeyType = _keyType;
@@ -2333,7 +2338,7 @@ namespace RFiDGear
 			{
 				// IDESFireEV1Commands cmd;
 				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
+				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
 				aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
