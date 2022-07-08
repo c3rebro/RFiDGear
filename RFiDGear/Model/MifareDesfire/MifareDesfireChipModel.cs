@@ -8,12 +8,13 @@ namespace RFiDGear.Model
     /// </summary>
     public class MifareDesfireChipModel : GenericChipModel
     {
-        private readonly List<MifareDesfireAppModel> _appList = new List<MifareDesfireAppModel>();
 
         public List<MifareDesfireAppModel> AppList
         {
             get { return _appList; }
+            set { _appList = value; }
         }
+        private List<MifareDesfireAppModel> _appList;
 
         public MifareDesfireChipModel()
         {

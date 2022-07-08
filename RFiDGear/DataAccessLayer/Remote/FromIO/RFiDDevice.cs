@@ -119,6 +119,8 @@ namespace RFiDGear
 
 						readerDevice.ReadChipPublic();
 					}
+
+					AppIDList = new uint[0];
 				}
 			} 
 			catch (Exception e)
@@ -187,6 +189,9 @@ namespace RFiDGear
 									//CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
 									//readerUnit.Disconnect();
                                     GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+									//ISO15693Commands commands = card.Commands as ISO15693Commands;
+									//SystemInformation si = commands.GetSystemInformation();
+									//var block=commands.ReadBlock(21, 4);
                                     return ERROR.NoError;
 								}
 								catch (Exception e) {

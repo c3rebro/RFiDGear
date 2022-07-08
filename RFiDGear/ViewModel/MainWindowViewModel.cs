@@ -954,12 +954,6 @@ namespace RFiDGear.ViewModel
         private void OnNewRemoveAllTasksCommand()
         {
             taskHandler.TaskCollection.Clear();
-           
-            Dialogs.Add(new SplashScreenViewModel() {
-                Caption = "test",
-                OnOk = (sender) => { sender.Close(); },
-                
-            });
         }
 
         /// <summary>
@@ -1054,7 +1048,8 @@ namespace RFiDGear.ViewModel
             Task thread = new Task(() =>
             {
                 GenericChipModel GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
-                MifareDesfireChipModel DesfireChip = new MifareDesfireChipModel("", CARD_TYPE.Unspecified); ;
+                MifareDesfireChipModel DesfireChip = new MifareDesfireChipModel("", CARD_TYPE.Unspecified);
+                MifareClassicChipModel ClassicChip = new MifareClassicChipModel("", CARD_TYPE.Unspecified);
 
                 try
                 {
@@ -1073,6 +1068,14 @@ namespace RFiDGear.ViewModel
                                 if(GenericChip.CardType == CARD_TYPE.DESFireEV1 || GenericChip.CardType == CARD_TYPE.DESFireEV2)
                                 {
                                     DesfireChip = new MifareDesfireChipModel(GenericChip.UID, GenericChip.CardType);
+                                    DesfireChip.AppList = new List<MifareDesfireAppModel>();
+                                    if (device.AppIDList.Any())
+                                    {
+                                        foreach (uint appID in device.AppIDList)
+                                        {
+                                            DesfireChip.AppList.Add(new MifareDesfireAppModel(appID));
+                                        }
+                                    }
                                     device.GetMiFareDESFireChipAppIDs();
                                 }
                             }

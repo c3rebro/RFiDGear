@@ -103,7 +103,6 @@ namespace RFiDGear.DataAccessLayer
                     {
                         PdfFormField _fieldValue = _form.Value;
                         temp.Add(_form.Key);
-
                     }
 
                 }
