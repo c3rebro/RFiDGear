@@ -186,6 +186,12 @@
             <Component Id="ByteArrayDll" Guid="0907B24F-F549-41D5-8222-645C550BB7E7" DiskId="1">
               <File Id="ByteArray.dll" Name="ByteArray.dll" Source="..\RFiDGear\bin\Release\ByteArray.dll" KeyPath="yes" />
             </Component>
+            <Component Id="CommonLoggingDll" Guid="5CA5CB50-8EA8-4EBF-AA40-6BC990B61AC7" DiskId="1">
+              <File Id="Common.Logging.dll" Name="Common.Logging.dll" Source="..\RFiDGear\bin\Release\Common.Logging.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="CommonLoggingCoreDll" Guid="5CA5CB50-8EA8-4EBF-AA40-6BC120B6FEC7" DiskId="1">
+              <File Id="Common.Logging.Core.dll" Name="Common.Logging.Core.dll" Source="..\RFiDGear\bin\Release\Common.Logging.Core.dll" KeyPath="yes" />
+            </Component>
             <Component Id="CommonServiceLocatorDll" Guid="5CA5CB50-8EA8-4EBF-AA40-6BC120B61AC7" DiskId="1">
               <File Id="CommonServiceLocator.dll" Name="CommonServiceLocator.dll" Source="..\RFiDGear\bin\Release\CommonServiceLocator.dll" KeyPath="yes" />
             </Component>
@@ -332,6 +338,8 @@
 			<Feature Id="MainProgram" Title="!(loc.FeatureMainProgramTitle)" Description="!(loc.FeatureMainProgramDescription)" Level="1">
         <ComponentRef Id="BouncyCastleCryptoDll"/>
         <ComponentRef Id="ByteArrayDll"/>
+        <ComponentRef Id="CommonLoggingDll" />
+        <ComponentRef Id="CommonLoggingCoreDll" />
         <ComponentRef Id="CommonServiceLocatorDll" />
         <ComponentRef Id="ElatecNetDll"/>
 				<ComponentRef Id="GalaSoftMvvmLightExtrasDll" />

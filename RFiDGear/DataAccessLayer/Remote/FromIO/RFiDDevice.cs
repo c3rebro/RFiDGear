@@ -729,7 +729,7 @@ namespace RFiDGear
 
 							
 							var cmd = card.Commands as IMifareCommands;
-							var cardService = card.GetService(CardServiceType.CST_STORAGE) as IStorageCardService;
+							var cardService = card.GetService(LibLogicalAccess.CardServiceType.CST_STORAGE) as IStorageCardService;
 							
 							try
 							{

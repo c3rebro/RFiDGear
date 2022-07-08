@@ -4,4 +4,14 @@
     <StartArguments>"D:\Seafile\Dokumente Privat\Steven\Projekte\Software\Windows\RFIDGear\zipped.rfPrj"</StartArguments>
     <StartWorkingDirectory>D:\Seafile\Dokumente Privat\Steven\Projekte\Software\Windows\RFIDGear\RFiDGear\bin\Debug\</StartWorkingDirectory>
   </PropertyGroup>
+  <PropertyGroup>
+    <PublishUrlHistory />
+    <InstallUrlHistory />
+    <SupportUrlHistory />
+    <UpdateUrlHistory />
+    <BootstrapperUrlHistory />
+    <ErrorReportUrlHistory />
+    <FallbackCulture>de-DE</FallbackCulture>
+    <VerifyUploadedFiles>false</VerifyUploadedFiles>
+  </PropertyGroup>
 </Project>

@@ -1882,9 +1882,9 @@ namespace RFiDGear.ViewModel
 				         			if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
 				         			{
 										 ERROR result = device.AuthToMifareDesfireApplication(
-												 DesfireAppKeyCurrent,
-												 SelectedDesfireMasterKeyEncryptionTypeCurrent,
-												 selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt);
+												 DesfireReadKeyCurrent,
+												 SelectedDesfireReadKeyEncryptionType,
+												 selectedDesfireReadKeyNumberAsInt, AppNumberCurrentAsInt);
 
 
 										if (IsValidAppNumberNew != false && result == ERROR.NoError)
@@ -2010,12 +2010,12 @@ namespace RFiDGear.ViewModel
 								 if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
 								 {
 
-									 ERROR result = device.AuthToMifareDesfireApplication(
-											  DesfireAppKeyCurrent,
-											  SelectedDesfireMasterKeyEncryptionTypeCurrent,
-											  selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt);
+										 ERROR result = device.AuthToMifareDesfireApplication(
+																						  DesfireWriteKeyCurrent,
+																						  SelectedDesfireWriteKeyEncryptionType,
+																						  selectedDesfireWriteKeyNumberAsInt, AppNumberCurrentAsInt);
 
-									 if (IsValidAppNumberNew != false && result == ERROR.NoError)
+										 if (IsValidAppNumberNew != false && result == ERROR.NoError)
 									 {
 										 StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
