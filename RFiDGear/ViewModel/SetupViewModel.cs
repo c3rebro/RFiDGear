@@ -35,6 +35,7 @@ namespace RFiDGear.ViewModel
                 SelectedReader = settings.DefaultSpecification.DefaultReaderProvider;
                 ComPort = settings.DefaultSpecification.LastUsedComPort;
                 LoadOnStart = settings.DefaultSpecification.AutoLoadProjectOnStart;
+                CheckOnStart = settings.DefaultSpecification.AutoCheckForUpdates;
                 SelectedBaudRate = settings.DefaultSpecification.LastUsedBaudRate;
 
                 ConnectToReaderCommand.Execute(null);
@@ -182,6 +183,22 @@ namespace RFiDGear.ViewModel
             }
         }
         private bool loadOnStart;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool CheckOnStart
+        {
+            get
+            {
+                return checkOnStart;
+            }
+            set
+            {
+                checkOnStart = value;
+            }
+        }
+        private bool checkOnStart;
 
         #region IUserDialogViewModel Implementation
 

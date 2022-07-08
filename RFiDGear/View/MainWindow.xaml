@@ -461,10 +461,7 @@
                     VerticalAlignment="Top"
                     VerticalContentAlignment="Center"
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}">
-                    <MenuItem
-                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemCheckForUpdates'}"
-                        IsCheckable="True"
-                        IsChecked="{Binding IsCheckForUpdatesChecked, Mode=TwoWay}" />
+
                     <MenuItem Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}" />
                 </MenuItem>
                 <!--  Help  -->
