@@ -189,10 +189,23 @@ namespace RFiDGear
 									//CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
 									//readerUnit.Disconnect();
                                     GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+
+									if (card.Type == "DESFire" || card.Type == "DESFireEV1" )
+									{
+										var cmd = card.Commands as IDESFireCommands;
+
+										DESFireCardVersion version = cmd.GetVersion();
+
+										if (version.hardwareMjVersion == 1)
+											GenericChip.CardType = CARD_TYPE.DESFireEV1;
+
+										else if (version.hardwareMjVersion == 2)
+											GenericChip.CardType = CARD_TYPE.DESFireEV2;
+									}
 									//ISO15693Commands commands = card.Commands as ISO15693Commands;
 									//SystemInformation si = commands.GetSystemInformation();
 									//var block=commands.ReadBlock(21, 4);
-                                    return ERROR.NoError;
+									return ERROR.NoError;
 								}
 								catch (Exception e) {
 									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
@@ -947,6 +960,7 @@ namespace RFiDGear
 									card.Type == "DESFireEV2")
 								{
 									var cmd = card.Commands as IDESFireEV1Commands;
+
 									try
 									{
 										GenericChip.FreeMemory = cmd.GetFreeMemory();
