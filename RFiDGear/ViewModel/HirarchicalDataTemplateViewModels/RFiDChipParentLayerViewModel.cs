@@ -1,7 +1,7 @@
 ﻿using ByteArrayHelper.Extensions;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
-using LibLogicalAccess;
+using LibLogicalAccess.Card;
 using MvvmDialogs.ViewModels;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
