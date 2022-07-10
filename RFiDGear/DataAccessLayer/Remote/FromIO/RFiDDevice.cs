@@ -66,8 +66,6 @@ namespace RFiDGear
 		//public uint FreeMemory { get; private set; }
 
 		// FIXME: FILESETTINGS
-		public int DesfireFileSetting { get; private set; }
-
 		public DESFireCommands.FileSetting DesfireFileSettings { get; private set; }
 
 		public DESFireKeySettings DesfireAppKeySetting { get; private set; }
@@ -2351,7 +2349,7 @@ namespace RFiDGear
 									{
 										try
 										{
-											DesfireFileSetting = cmd.getFileSettings((byte)_fileNo);
+											DesfireFileSettings = cmd.getFileSettings((byte)_fileNo);
 
 											return ERROR.NoError;
 										}
@@ -2369,8 +2367,8 @@ namespace RFiDGear
 												return ERROR.IOError;
 										}
 									}
-									DesfireFileSetting = cmd.getFileSettings((byte)_fileNo);
-
+									DesfireFileSettings = cmd.getFileSettings((byte)_fileNo);
+									
 									return ERROR.NoError;
 								}
 								catch (Exception e)
