@@ -103,9 +103,7 @@ namespace RFiDGear
                     {
 						ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
 
-						LibraryManager lm = LibraryManager.getInstance();
-
-						readerProvider = lm.getReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
+						readerProvider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
 
 						readerUnit = readerProvider.createReaderUnit();
 

@@ -190,6 +190,7 @@ namespace RFiDGear.DataAccessLayer
 		DESFire,
 		DESFireEV1,
 		DESFireEV2,
+		__UNSUPPORTED__DESFireEV2,
 		MifarePlus_SL3_1K,
 		MifarePlus_SL3_2K,
 		MifarePlus_SL3_4K,
