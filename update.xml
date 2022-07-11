@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<Manifest version="1">
+<?xml version="1.0" encoding="utf-8"?>
+<Manifest version="0.1.8225">
   <CheckInterval>900</CheckInterval>
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
   <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>
-  <BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/<BaseUri>
+  <BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>
   <Payload>update.zip</Payload>
 </Manifest>
