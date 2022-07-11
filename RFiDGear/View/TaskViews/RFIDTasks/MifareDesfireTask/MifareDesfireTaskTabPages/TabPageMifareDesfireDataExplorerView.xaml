@@ -407,7 +407,7 @@
                         VerticalAlignment="Bottom"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
-                        Text="{Binding DesfireReadKeyCurrent}">
+                        Text="{Binding DesfireReadKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
                                 <Style.Triggers>
@@ -463,7 +463,7 @@
                         VerticalAlignment="Bottom"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
-                        Text="{Binding DesfireWriteKeyCurrent}">
+                        Text="{Binding DesfireWriteKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
                                 <Style.Triggers>

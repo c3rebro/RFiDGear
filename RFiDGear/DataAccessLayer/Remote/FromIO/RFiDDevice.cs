@@ -1,4 +1,4 @@
-﻿using LibLogicalAccess;
+using LibLogicalAccess;
 using LibLogicalAccess.Card;
 using LibLogicalAccess.Reader;
 using LibLogicalAccess.Crypto;
@@ -193,11 +193,26 @@ namespace RFiDGear
 								try {
 									//CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()), ByteConverter.HexToString(card.getChipIdentifier().ToArray()));
 									//readerUnit.Disconnect();
-                                    GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
+
+                  GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
+
+									if (card.Type == "DESFire" || card.Type == "DESFireEV1" )
+									{
+										var cmd = card.Commands as IDESFireCommands;
+
+										DESFireCardVersion version = cmd.GetVersion();
+
+										if (version.hardwareMjVersion == 1)
+											GenericChip.CardType = CARD_TYPE.DESFireEV1;
+
+										else if (version.hardwareMjVersion == 2)
+											GenericChip.CardType = CARD_TYPE.DESFireEV2;
+									}
+
 									//ISO15693Commands commands = card.Commands as ISO15693Commands;
 									//SystemInformation si = commands.GetSystemInformation();
 									//var block=commands.ReadBlock(21, 4);
-                                    return ERROR.NoError;
+									return ERROR.NoError;
 								}
 								catch (Exception e) {
 									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
@@ -759,7 +774,7 @@ namespace RFiDGear
 			return ERROR.NoError;
 		}
 		
-		public ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length)
+		public ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, bool _useMADToAuth = true)
 		{
 			var settings = new SettingsReaderWriter();
 			Sector = new MifareClassicSectorModel();
@@ -793,6 +808,7 @@ namespace RFiDGear
 									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 								}
 							}
+
 
 							MifareLocation mlocation = card.createLocation() as MifareLocation;
 							mlocation.aid = (ushort)madApplicationID;
@@ -951,8 +967,9 @@ namespace RFiDGear
 								if (card.getCardType() == "DESFireEV1" ||
 									card.getCardType() == "DESFireEV2")
 								{
-									//var cmd = (card as DESFireEV1Chip).getDESFireEV1Commands();
+
 									var cmd = (card as DESFireChip).getDESFireCommands();
+                  
 									try
 									{
 										object appIDsObject = cmd.getApplicationIDs();

@@ -418,8 +418,8 @@ slot of an available reader</value>
   <data name="menuItemHelpHeader" xml:space="preserve">
     <value>_Help</value>
   </data>
-  <data name="menuItemCheckForUpdates" xml:space="preserve">
-    <value>_Check for Updates</value>
+  <data name="labelCheckForUpdatesOnStart" xml:space="preserve">
+    <value>_Check for Updates on Start</value>
   </data>
   <data name="menuItemSetTaskStatusToUndone" xml:space="preserve">
     <value>_Set Taskstatus to 'Undone'</value>

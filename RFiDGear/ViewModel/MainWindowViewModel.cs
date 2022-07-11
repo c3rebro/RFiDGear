@@ -2947,6 +2947,7 @@ namespace RFiDGear.ViewModel
                             currentSettings.DefaultReaderProvider = sender.SelectedReader;
                             currentSettings.AutoLoadProjectOnStart = sender.LoadOnStart;
                             currentSettings.LastUsedComPort = sender.ComPort;
+                            currentSettings.AutoCheckForUpdates = sender.CheckOnStart;
                             currentSettings.LastUsedBaudRate = sender.SelectedBaudRate;
 
                             settings.DefaultSpecification = currentSettings;

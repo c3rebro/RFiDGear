@@ -430,8 +430,8 @@ ein Kartenlesegerät auswählen</value>
   <data name="menuItemHelpHeader" xml:space="preserve">
     <value>_Hilfe</value>
   </data>
-  <data name="menuItemCheckForUpdates" xml:space="preserve">
-    <value>Auf U_pdates prüfen</value>
+  <data name="labelCheckForUpdatesOnStart" xml:space="preserve">
+    <value>Beim Start auf U_pdates prüfen</value>
   </data>
   <data name="menuItemSetTaskStatusToUndone" xml:space="preserve">
     <value>_Aufgabenstatus zurücksetzen</value>
