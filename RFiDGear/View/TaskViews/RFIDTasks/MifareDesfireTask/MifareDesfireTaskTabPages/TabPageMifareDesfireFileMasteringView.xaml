@@ -5,7 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:islog="clr-namespace:LibLogicalAccess;assembly=Interop.LibLogicalAccess"
+    xmlns:islog="clr-namespace:LibLogicalAccess;assembly=LibLogicalAccessNetCE"
+    xmlns:islogcard="clr-namespace:LibLogicalAccess.Card;assembly=LibLogicalAccessNetCE"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Stretch"
@@ -181,8 +182,8 @@
                         Margin="9,3,7,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        ItemsSource="{dal:Enumerate {x:Type islog:TaskAccessRights}}"
-                        SelectedItem="{Binding SelectedDesfireFileAccessRightReadWrite, Converter={StaticResource Localization}, ConverterParameter={x:Type islog:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type islogcard:TaskAccessRights}}"
+                        SelectedItem="{Binding SelectedDesfireFileAccessRightReadWrite, Converter={StaticResource Localization}, ConverterParameter={x:Type islogcard:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="0"
                         Grid.Column="4"
@@ -200,8 +201,8 @@
                         Margin="9,3,7,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        ItemsSource="{dal:Enumerate {x:Type islog:TaskAccessRights}}"
-                        SelectedItem="{Binding SelectedDesfireFileAccessRightChange, Converter={StaticResource Localization}, ConverterParameter={x:Type islog:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type islogcard:TaskAccessRights}}"
+                        SelectedItem="{Binding SelectedDesfireFileAccessRightChange, Converter={StaticResource Localization}, ConverterParameter={x:Type islogcard:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="writeCB"
                         Grid.Row="3"
@@ -210,8 +211,8 @@
                         Margin="9,3,7,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        ItemsSource="{dal:Enumerate {x:Type islog:TaskAccessRights}}"
-                        SelectedItem="{Binding SelectedDesfireFileAccessRightWrite, Converter={StaticResource Localization}, ConverterParameter={x:Type islog:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type islogcard:TaskAccessRights}}"
+                        SelectedItem="{Binding SelectedDesfireFileAccessRightWrite, Converter={StaticResource Localization}, ConverterParameter={x:Type islogcard:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="readCB"
                         Grid.Row="3"
@@ -220,8 +221,8 @@
                         Margin="9,3,7,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        ItemsSource="{dal:Enumerate {x:Type islog:TaskAccessRights}}"
-                        SelectedItem="{Binding SelectedDesfireFileAccessRightRead, Converter={StaticResource Localization}, ConverterParameter={x:Type islog:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type islogcard:TaskAccessRights}}"
+                        SelectedItem="{Binding SelectedDesfireFileAccessRightRead, Converter={StaticResource Localization}, ConverterParameter={x:Type islogcard:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="encModeCB"
                         Grid.Row="2"
@@ -231,8 +232,8 @@
                         Margin="9,3,7,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        ItemsSource="{dal:Enumerate {x:Type islog:EncryptionMode}}"
-                        SelectedItem="{Binding SelectedDesfireFileCryptoMode, Converter={StaticResource Localization}, ConverterParameter={x:Type islog:EncryptionMode}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type islogcard:EncryptionMode}}"
+                        SelectedItem="{Binding SelectedDesfireFileCryptoMode, Converter={StaticResource Localization}, ConverterParameter={x:Type islogcard:EncryptionMode}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="1"
                         Grid.Column="0"

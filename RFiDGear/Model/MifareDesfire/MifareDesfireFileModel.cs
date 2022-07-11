@@ -1,4 +1,5 @@
 ﻿using LibLogicalAccess;
+using LibLogicalAccess.Card;
 
 namespace RFiDGear
 {
@@ -21,6 +22,6 @@ namespace RFiDGear
         
         public byte FileID { get; set; }
 
-        public FileSetting DesfireFileSetting { get; set; }
+        public DESFireCommands.FileSetting DesfireFileSetting { get; set; }
     }
 }

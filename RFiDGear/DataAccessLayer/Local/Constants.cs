@@ -6,6 +6,7 @@
  */
 
 using LibLogicalAccess;
+using LibLogicalAccess.Card;
 using System;
 
 namespace RFiDGear.DataAccessLayer
