@@ -400,8 +400,7 @@ namespace RFiDGear.Model
 
             mifareAccessInfo.sab.d_data_blocks_access_bits[0].c2 = C1x > 0 ? true : false;
 
-            mifareAccessInfo.C2x <<= 1;
-
+            C2x <<= 1;
             C1x |= C2x;
             C2x >>= 3;
 
@@ -409,7 +408,7 @@ namespace RFiDGear.Model
             tmpAccessBitCx >>= 2;
             tmpAccessBitCx &= 0x01;
 
-            mifareAccessInfo.sab.d_data_block0_access_bits.c3 = (short)C1x;
+            mifareAccessInfo.sab.d_data_blocks_access_bits[0].c3 = C1x > 0 ? true : false;
 
             C2x &= 0xFC;
             C1x &= 0x03;

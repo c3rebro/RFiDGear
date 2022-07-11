@@ -71,6 +71,9 @@
     <StartAction>Project</StartAction>
   </PropertyGroup>
   <ItemGroup>
+	<None Include="..\..\liblogicalaccess_2_4_0\LibLogicalAccessNet.win32.dll" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <Reference Include="BouncyCastle.Crypto, Version=1.9.0.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
       <HintPath>..\packages\Portable.BouncyCastle.1.9.0\lib\net40\BouncyCastle.Crypto.dll</HintPath>
     </Reference>
@@ -123,7 +126,8 @@
       <HintPath>..\packages\itext7.7.1.17\lib\net45\itext.svg.dll</HintPath>
     </Reference>
     <Reference Include="LibLogicalAccessNetCE, Version=2.4.0.0, Culture=neutral, PublicKeyToken=0090401ae095f62c, processorArchitecture=MSIL">
-      <HintPath>..\packages\LibLogicalAccessNetCE.2.4.0\lib\netstandard2.0\LibLogicalAccessNetCE.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files\Common Files\ISLOG\LibLogicalAccess\2.4.0\LibLogicalAccessNetCE.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>

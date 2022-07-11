@@ -39,8 +39,6 @@ namespace RFiDGear
 
 		public string ReaderUnitName { get; private set; }
 
-		//public CARD_INFO CardInfo { get; private set; }
-
 		public byte[] MifareClassicData { get; private set; }
 
 		public bool DataBlockSuccessfullyRead { get; private set; }
@@ -63,9 +61,6 @@ namespace RFiDGear
 
 		public byte EncryptionType { get; private set; }
 
-		//public uint FreeMemory { get; private set; }
-
-		// FIXME: FILESETTINGS
 		public DESFireCommands.FileSetting DesfireFileSettings { get; private set; }
 
 		public DESFireKeySettings DesfireAppKeySetting { get; private set; }
@@ -109,7 +104,7 @@ namespace RFiDGear
 						ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
 
 						LibraryManager lm = LibraryManager.getInstance();
-						
+
 						readerProvider = lm.getReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
 
 						readerUnit = readerProvider.createReaderUnit();
