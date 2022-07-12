@@ -11,7 +11,6 @@ using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
 using MvvmDialogs.ViewModels;
 using LibLogicalAccess;
-using LibLogicalAccess.Card;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using RFiDGear.ViewModel;
