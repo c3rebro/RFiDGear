@@ -1755,7 +1755,6 @@ namespace RFiDGear
 				IDESFireLocation location = new DESFireLocation();
 				// The Application ID to use
 				location.aid = _appID;
-
 				// File communication requires encryption
 				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
 
@@ -1785,8 +1784,8 @@ namespace RFiDGear
 
 									if(authenticateToPICCFirst)
 										cmd.Authenticate(0, aiToUse.MasterCardKey);
-									
-									cmd.CreateApplication((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys);
+
+									cmd.CreateApplication((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys); //_keySettingsTarget
 
 									return ERROR.NoError;
 								}
@@ -1816,7 +1815,9 @@ namespace RFiDGear
 									if (authenticateToPICCFirst)
 										cmd.Authenticate(0, aiToUse.MasterCardKey);
 
-									cmd.CreateApplicationEV1((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys, false, (LibLogicalAccess.DESFireKeyType)_keyTypeTargetApplication, 0, 0);
+									DESFireKeySettings ks = DESFireKeySettings.KS_CHANGE_KEY_WITH_MK | DESFireKeySettings.KS_FREE_LISTING_WITHOUT_MK | DESFireKeySettings.KS_FREE_CREATE_DELETE_WITHOUT_MK | DESFireKeySettings.KS_CONFIGURATION_CHANGEABLE;
+
+									cmd.CreateApplicationEV1((uint)_appID, ks, (byte)_maxNbKeys, false, _keyTypeTargetApplication, 0, 0);
 
 									return ERROR.NoError;
 								}
@@ -1879,7 +1880,7 @@ namespace RFiDGear
 				}
 
 				DESFireKey applicationMasterKeyTarget = new DESFireKeyClass();
-				applicationMasterKeyTarget.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeTarget;
+				applicationMasterKeyTarget.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeCurrent;
 				
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
 				applicationMasterKeyTarget.Value = CustomConverter.DesfireKeyToCheck;
@@ -1962,7 +1963,7 @@ namespace RFiDGear
                                             catch { }
                                         }
 
-                                        catch
+                                        catch (Exception ex)
                                         {
                                             try
                                             {
