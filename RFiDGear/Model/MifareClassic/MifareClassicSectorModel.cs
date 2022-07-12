@@ -1,6 +1,4 @@
-﻿using LibLogicalAccess;
-using LibLogicalAccess.Card;
-using RFiDGear.DataAccessLayer;
+﻿using RFiDGear.DataAccessLayer;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Xml.Serialization;
@@ -248,7 +246,7 @@ namespace RFiDGear.Model
         {
             uint C1x, C2x;
 
-            LibLogicalAccess.Card.MifareAccessInfo mifareAccessInfo = new MifareAccessInfo();
+            LibLogicalAccess.SectorAccessBits sab;
 
             uint tmpAccessBitCx;
 
@@ -267,7 +265,7 @@ namespace RFiDGear.Model
             C1x >>= 7;
             C1x &= 0x01;
 
-            mifareAccessInfo.sab.d_sector_trailer_access_bits.c1 = C1x > 0 ? true : false;
+            sab.d_sector_trailer_access_bits.c1 = (short)C1x;
 
             C2x >>= 2;
 
@@ -275,7 +273,7 @@ namespace RFiDGear.Model
             tmpAccessBitCx >>= 1;
             tmpAccessBitCx &= 0x01;
 
-            mifareAccessInfo.sab.d_sector_trailer_access_bits.c2 = tmpAccessBitCx > 0 ? true : false;
+            sab.d_sector_trailer_access_bits.c2 = (short)tmpAccessBitCx;
 
             C1x |= C2x;
             C2x >>= 3;
@@ -284,7 +282,7 @@ namespace RFiDGear.Model
             tmpAccessBitCx >>= 2;
             tmpAccessBitCx &= 0x01;
 
-            mifareAccessInfo.sab.d_sector_trailer_access_bits.c3 = tmpAccessBitCx > 0 ? true : false;
+            sab.d_sector_trailer_access_bits.c3 = (short)tmpAccessBitCx;
 
             C1x &= 0x03;
             C1x |= C2x;
@@ -308,7 +306,7 @@ namespace RFiDGear.Model
             C1x >>= 6;
             C1x &= 0x01;
 
-            mifareAccessInfo.sab.d_data_blocks_access_bits[2].c1 = C1x > 0 ? true : false;
+            sab.d_data_block2_access_bits.c1 = (short)C1x;
 
             C2x >>= 1;
 
@@ -316,7 +314,7 @@ namespace RFiDGear.Model
             tmpAccessBitCx >>= 1;
             tmpAccessBitCx &= 0x01;
 
-            mifareAccessInfo.sab.d_data_blocks_access_bits[2].c2 = tmpAccessBitCx > 0 ? true : false;
+            sab.d_data_block2_access_bits.c2 = (short)tmpAccessBitCx;
 
             C1x |= C2x;
             //C2 &= 0xF8;
@@ -326,7 +324,7 @@ namespace RFiDGear.Model
             tmpAccessBitCx >>= 2;
             tmpAccessBitCx &= 0x01;
 
-            mifareAccessInfo.sab.d_data_blocks_access_bits[2].c3 = tmpAccessBitCx > 0 ? true : false;
+            sab.d_data_block2_access_bits.c3 = (short)tmpAccessBitCx;
 
             C1x &= 0x03;
             C1x |= C2x;
@@ -351,7 +349,7 @@ namespace RFiDGear.Model
             C1x >>= 5;
             C1x &= 0x01;
 
-            mifareAccessInfo.sab.d_data_blocks_access_bits[1].c1 = C1x > 0 ? true : false;
+            sab.d_data_block1_access_bits.c1 = (short)C1x;
 
             C1x |= C2x;
 
@@ -359,7 +357,7 @@ namespace RFiDGear.Model
             tmpAccessBitCx >>= 1;
             tmpAccessBitCx &= 0x01;
 
-            mifareAccessInfo.sab.d_data_blocks_access_bits[1].c2 = tmpAccessBitCx > 0 ? true : false;
+            sab.d_data_block1_access_bits.c2 = (short)tmpAccessBitCx;
 
             C2x >>= 3;
 
@@ -367,7 +365,7 @@ namespace RFiDGear.Model
             tmpAccessBitCx >>= 2;
             tmpAccessBitCx &= 0x01;
 
-            mifareAccessInfo.sab.d_data_blocks_access_bits[1].c3 = tmpAccessBitCx > 0 ? true : false;
+            sab.d_data_block1_access_bits.c3 = (short)tmpAccessBitCx;
 
             C1x &= 0x03;
             C1x |= C2x;
@@ -393,12 +391,12 @@ namespace RFiDGear.Model
             tmpAccessBitCx = C1x;
             tmpAccessBitCx &= 0x01;
 
-            mifareAccessInfo.sab.d_data_blocks_access_bits[0].c1 = C1x > 0 ? true : false;
+            sab.d_data_block0_access_bits.c1 = (short)C1x;
 
             tmpAccessBitCx = C2x;
             tmpAccessBitCx &= 0x01;
 
-            mifareAccessInfo.sab.d_data_blocks_access_bits[0].c2 = C1x > 0 ? true : false;
+            sab.d_data_block0_access_bits.c2 = (short)C1x;
 
             C2x <<= 1;
             C1x |= C2x;
@@ -408,7 +406,7 @@ namespace RFiDGear.Model
             tmpAccessBitCx >>= 2;
             tmpAccessBitCx &= 0x01;
 
-            mifareAccessInfo.sab.d_data_blocks_access_bits[0].c3 = C1x > 0 ? true : false;
+            sab.d_data_block0_access_bits.c3 = (short)C1x;
 
             C2x &= 0xFC;
             C1x &= 0x03;

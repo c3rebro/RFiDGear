@@ -49,8 +49,8 @@ namespace RFiDGear.ViewModel
         {
         }
 
-        public ICommand ConnectToReaderCommand { get { return new RelayCommand(connectToReader); } }
-        private void connectToReader()
+        public ICommand ConnectToReaderCommand { get { return new RelayCommand(ConnectToReader); } }
+        private void ConnectToReader()
         {
             if (this.OnConnect != null)
             {
