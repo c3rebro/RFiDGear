@@ -194,13 +194,13 @@ namespace RFiDGear
 									//CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()), ByteConverter.HexToString(card.getChipIdentifier().ToArray()));
 									//readerUnit.Disconnect();
 
-                  GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
+									GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
 
-									if (card.Type == "DESFire" || card.Type == "DESFireEV1" )
+									if (card.getCardType() == "DESFire" || card.getCardType() == "DESFireEV1" )
 									{
-										var cmd = card.Commands as IDESFireCommands;
+										var cmd = card.getCommands() as DESFireCommands;
 
-										DESFireCardVersion version = cmd.GetVersion();
+										DESFireCommands.DESFireCardVersion version = cmd.getVersion();
 
 										if (version.hardwareMjVersion == 1)
 											GenericChip.CardType = CARD_TYPE.DESFireEV1;
@@ -2195,7 +2195,7 @@ namespace RFiDGear
 									cmd.authenticate((byte)0, aiToUse.masterCardKey);
 
 									cmd.erase();
-
+									cmd.commitTransaction();
 									return ERROR.NoError;
 								}
 								catch (Exception e)

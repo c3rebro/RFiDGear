@@ -2407,11 +2407,14 @@ namespace RFiDGear.ViewModel
 
 															if (result == ERROR.NoError)
 															{
-																foreach (uint appID in device.AppIDList)
+                                                                if (device.AppIDList != null)
 																{
-																	StatusText += string.Format("{0}: FoundAppID {1}\n", DateTime.Now, appID);
+																	foreach (uint appID in device.AppIDList)
+																	{
+																		StatusText += string.Format("{0}: FoundAppID {1}\n", DateTime.Now, appID);
+																	}
 																}
-
+																	
                                                                 result = device.FormatDesfireCard(DesfireMasterKeyCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent);
 
                                                                 if (result == ERROR.NoError)
