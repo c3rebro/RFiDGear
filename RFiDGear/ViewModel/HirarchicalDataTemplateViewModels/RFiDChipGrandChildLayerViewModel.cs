@@ -253,7 +253,7 @@ namespace RFiDGear.ViewModel
 
 				if (dataBlockAsCharString.Length == 16 || desfireFile != null || mifareClassicMAD != null)
 				{
-					char[] tempString = value.ToCharArray();
+					char[] tempString = value.Replace("\r","").Replace("\n","").ToCharArray();
 
 					try
 					{
@@ -351,23 +351,23 @@ namespace RFiDGear.ViewModel
 			{
 				int discardedChars = 0;
 				
-				dataBlockAsHexString = value;
+				dataBlockAsHexString = value.Replace("\r","").Replace("\n","").Replace(" ","");
 				
 				if(mifareClassicDataBlock != null && value.Length == 32 && CustomConverter.IsInHexFormat(value))
 				{
-					mifareClassicDataBlock.Data = CustomConverter.GetBytes(value, out discardedChars);
+					mifareClassicDataBlock.Data = CustomConverter.GetBytes(dataBlockAsHexString, out discardedChars);
 					IsValidDataContent = null;
 				}
 
 				else if(mifareClassicMAD != null && (dataBlockAsHexString.Length % 2 == 0))
 				{
-					mifareClassicMAD.Data = CustomConverter.GetBytes(value, out discardedChars);
+					mifareClassicMAD.Data = CustomConverter.GetBytes(dataBlockAsHexString, out discardedChars);
 					IsValidDataContent = null;
 				}
 				
 				else if(desfireFile != null && (dataBlockAsHexString.Length % 2 == 0))
 				{
-					desfireFile.Data = CustomConverter.GetBytes(value, out discardedChars);
+					desfireFile.Data = CustomConverter.GetBytes(dataBlockAsHexString, out discardedChars);
 					IsValidDataContent = null;
 				}
 				

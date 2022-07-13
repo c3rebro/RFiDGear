@@ -1478,6 +1478,12 @@ namespace RFiDGear
 
 									cmd.WriteData((byte)_fileNo, 0, (uint)_data.Length, EncryptionMode.CM_ENCRYPT, _data);
 
+                                    try
+                                    {
+										cmd.CommitTransaction();
+									}
+                                    catch { }
+
 									return ERROR.NoError;
 								}
 
@@ -1947,15 +1953,50 @@ namespace RFiDGear
 								{
 									if (_appIDCurrent == 0)
 									{
-										return ERROR.NotAllowed;
+										try
+										{
+											applicationMasterKeyTarget.KeyType = (DESFireKeyType)_keyTypeTarget;
+
+											cmd.SelectApplication((uint)0);
+											cmd.Authenticate((byte)0, masterApplicationKey);
+											cmd.ChangeKeySettings(keySettings);
+											cmd.Authenticate((byte)0, masterApplicationKey);
+											cmd.ChangeKey((byte)0, applicationMasterKeyTarget);
+											return ERROR.NoError;
+										}
+
+										catch
+										{
+											try
+											{
+												cmd.Authenticate((byte)0, masterApplicationKey);
+												cmd.ChangeKey((byte)0, applicationMasterKeyTarget);
+											}
+											catch (Exception e)
+											{
+												if (e.Message != "" && e.Message.Contains("same number already exists"))
+												{
+													return ERROR.ItemAlreadyExistError;
+												}
+												else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+												{
+													return ERROR.AuthenticationError;
+												}
+												else
+													return ERROR.IOError;
+											}
+										}
 									}
 									else
 									{
-										cmd.SelectApplication((uint)_appIDCurrent);
+										cmd.SelectApplication((uint)0);
+										cmd.Authenticate((byte)0, masterApplicationKey);
 
-                                        try
+										try
                                         {
-                                            cmd.Authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+											cmd.SelectApplication((uint)_appIDCurrent);
+											
+											cmd.Authenticate((byte)_keyNumberCurrent, masterApplicationKey);
                                             cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
                                             cmd.Authenticate((byte)_keyNumberCurrent, applicationMasterKeyTarget);
 

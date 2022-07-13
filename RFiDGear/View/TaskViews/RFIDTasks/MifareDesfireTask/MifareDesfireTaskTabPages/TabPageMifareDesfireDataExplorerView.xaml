@@ -276,6 +276,7 @@
                                             <_3rdP:SelectionBindingTextBox.Style>
                                                 <Style TargetType="{x:Type TextBox}">
                                                     <Setter Property="TextWrapping" Value="Wrap" />
+                                                    <Setter Property="AcceptsReturn" Value="True" />
                                                     <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
                                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                     <Setter Property="VerticalAlignment" Value="Stretch" />
