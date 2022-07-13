@@ -143,8 +143,25 @@
                             </Style>
                         </TextBox.Resources>
                     </TextBox>
+                    <Label
+                        Grid.Row="4"
+                        Grid.Column="0"
+                        Margin="8,5,7,5"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareDesfireKeyNumber, Converter={StaticResource Localization}}" />
+                    <ComboBox
+                        Grid.Row="4"
+                        Grid.Column="1"
+                        Width="81"
+                        Margin="9,5,0,5"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Stretch"
+                        ItemsSource="{Binding MifareDesfireKeys}"
+                        SelectedItem="{Binding SelectedDesfireAppKeyVersionTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <Grid.RowDefinitions>
                         <RowDefinition Height="42" />
+                        <RowDefinition Height="36" />
                         <RowDefinition Height="36" />
                         <RowDefinition Height="36" />
                         <RowDefinition Height="36" />

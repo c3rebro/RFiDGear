@@ -142,6 +142,8 @@ namespace RFiDGear.ViewModel
 					SelectedDesfireAppKeyNumberTarget = "1";
 					SelectedDesfireAppMaxNumberOfKeys = "1";
 
+					SelectedDesfireAppKeyVersionTarget = "1";
+
 					IsValidDesfireMasterKeyCurrent = null;
 					IsValidDesfireMasterKeyTarget = null;
 
@@ -1137,10 +1139,31 @@ namespace RFiDGear.ViewModel
         private string selectedDesfireAppKeyNumberTarget;
         private int selectedDesfireAppKeyNumberTargetAsInt;
 
-        /// <summary>
-        ///
-        /// </summary>
-        public string DesfireAppKeyTarget
+		/// <summary>
+		///
+		/// </summary>
+		public string SelectedDesfireAppKeyVersionTarget
+		{
+			get
+			{
+				return selectedDesfireAppKeyVersionTarget;
+			}
+			set
+			{
+				if (int.TryParse(value, out selectedDesfireAppKeyVersionTargetAsInt))
+				{
+					selectedDesfireAppKeyVersionTarget = value;
+				}
+				RaisePropertyChanged("SelectedDesfireAppKeyVersionTarget");
+			}
+		}
+		private string selectedDesfireAppKeyVersionTarget;
+		private int selectedDesfireAppKeyVersionTargetAsInt;
+
+		/// <summary>
+		///
+		/// </summary>
+		public string DesfireAppKeyTarget
         {
             get { return desfireAppKeyTarget; }
             set
@@ -1655,7 +1678,7 @@ namespace RFiDGear.ViewModel
 				         				{
 				         					StatusText += string.Format("{0}: Successfully Authenticated to App 0\n", DateTime.Now);
 
-				         					DESFireKeySettings keySettings = DESFireKeySettings.KS_ALLOW_CHANGE_MK;
+				         					DESFireKeySettings keySettings;
 				         					keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
 
 				         					keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
@@ -2121,6 +2144,7 @@ namespace RFiDGear.ViewModel
 																										 SelectedDesfireAppKeyEncryptionTypeCurrent,
 																										 DesfireAppKeyTarget,
 																										 selectedDesfireAppKeyNumberTargetAsInt,
+																										 selectedDesfireAppKeyVersionTargetAsInt,
 																										 SelectedDesfireAppKeyEncryptionTypeTarget,
 																										 AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings);
 
@@ -2609,7 +2633,8 @@ namespace RFiDGear.ViewModel
                                             SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                             DesfireMasterKeyTarget,
                                             selectedDesfireAppKeyNumberTargetAsInt,
-                                            SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings);
+											0,
+											SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings);
 
                                         if (result == ERROR.NoError)
 										{

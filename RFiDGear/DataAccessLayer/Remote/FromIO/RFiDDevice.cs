@@ -108,6 +108,36 @@ namespace RFiDGear
 						readerUnit = readerProvider.createReaderUnit();
 
 						GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+
+						/*
+						readerUnit.connectToReader();
+						readerUnit.waitInsertion(100);
+						readerUnit.connect();
+
+						card = readerUnit.getSingleChip();
+
+						var cmd = card.getCommands() as DESFireCommands;
+						//var ev1cmd = card.getCommands() as DESFireEV1Commands;
+						var dmk = new DESFireKey();
+
+						var test = dmk.getKeyVersion();
+						dmk.fromString("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01");
+						dmk.setKeyType(DESFireKeyType.DF_KEY_AES);
+						//dmk.KeyVersion = 0;
+
+						var dk = new DESFireKey();
+						//var test2 = dk.KeyVersion;
+						dk.fromString("44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44"); //33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33
+						dk.setKeyType(DESFireKeyType.DF_KEY_AES);
+						dk.setKeyVersion(1);
+						//DESFireAccessInfo ai = new DESFireAccessInfo();
+						//var aiv = ai.MasterCardKey.KeyVersion;
+
+						//ICardService cs = (card as DESFireChip).GetService(CardServiceType.CST_STORAGE);
+						cmd.selectApplication(3);
+						cmd.authenticate((byte)0, dmk);
+						cmd.changeKey((byte)3, dk);
+						*/
 					}
 
 					else if(defaultSettings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.Elatec)
@@ -729,10 +759,10 @@ namespace RFiDGear
 							
 							MifareAccessInfo aiToWrite = new MifareAccessInfo();
 							aiToWrite.useMAD = true;
-							aiToWrite.madKeyA.setCipherKey(_madAKeyToUse == _madAKeyToWrite ? madAKeyToUse.getString(true) : madAKeyToWrite.getString(true)); // only set new madkey if mad key has changed
-							aiToWrite.madKeyB.setCipherKey(_madBKeyToUse == _madBKeyToWrite ? madBKeyToUse.getString(true) : madBKeyToWrite.getString(true)); // only set new madkey if mad key has changed
-							aiToWrite.keyA.setCipherKey(_aKeyToUse == _aKeyToWrite ? mAKeyToUse.getString(true) : mAKeyToWrite.getString(true));
-							aiToWrite.keyB.setCipherKey(_bKeyToUse == _bKeyToWrite ? mBKeyToUse.getString(true) : mBKeyToWrite.getString(true));
+							aiToWrite.madKeyA.fromString(_madAKeyToUse == _madAKeyToWrite ? madAKeyToUse.getString(true) : madAKeyToWrite.getString(true)); // only set new madkey if mad key has changed
+							aiToWrite.madKeyB.fromString(_madBKeyToUse == _madBKeyToWrite ? madBKeyToUse.getString(true) : madBKeyToWrite.getString(true)); // only set new madkey if mad key has changed
+							aiToWrite.keyA.fromString(_aKeyToUse == _aKeyToWrite ? mAKeyToUse.getString(true) : mAKeyToWrite.getString(true));
+							aiToWrite.keyB.fromString(_bKeyToUse == _bKeyToWrite ? mBKeyToUse.getString(true) : mBKeyToWrite.getString(true));
 							aiToWrite.madGPB = _madGPB;
 							
 							var aiToUse = new MifareAccessInfo();
@@ -904,7 +934,7 @@ namespace RFiDGear
 
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-				aiToUse.masterCardKey.setCipherKey(_appMasterKey);
+				aiToUse.masterCardKey.fromString(_appMasterKey);
 				aiToUse.masterCardKey.setKeyType(_keyTypeAppMasterKey);
 
 
@@ -930,8 +960,8 @@ namespace RFiDGear
 									{
 										cmd.selectApplication((uint)0);
 
-										object appIDsObject = cmd.getApplicationIDs();
-										AppIDList = (appIDsObject as UInt32[]);
+										UIntCollection appIDsObject = cmd.getApplicationIDs();
+										AppIDList = appIDsObject.ToArray();
 
 										return ERROR.NoError;
 									}
@@ -943,8 +973,8 @@ namespace RFiDGear
 											cmd.selectApplication((uint)0);
 											cmd.authenticate((byte)0, aiToUse.masterCardKey);
 
-											object appIDsObject = cmd.getApplicationIDs();
-											AppIDList = (appIDsObject as UInt32[]);
+											UIntCollection appIDsObject = cmd.getApplicationIDs();
+											AppIDList = appIDsObject.ToArray();
 
 											return ERROR.NoError;
 										}
@@ -972,8 +1002,8 @@ namespace RFiDGear
                   
 									try
 									{
-										object appIDsObject = cmd.getApplicationIDs();
-										AppIDList = (appIDsObject as UInt32[]);
+										UIntCollection appIDsObject = cmd.getApplicationIDs();
+										AppIDList = appIDsObject.ToArray();
 
 										var ev1Cmd = (card as DESFireEV1Chip).getDESFireEV1Commands();
 										GenericChip.FreeMemory = ev1Cmd.getFreeMem();
@@ -988,8 +1018,8 @@ namespace RFiDGear
 											cmd.selectApplication((uint)0);
 											cmd.authenticate((byte)0, aiToUse.masterCardKey);
 
-											object appIDsObject = cmd.getApplicationIDs();
-											AppIDList = (appIDsObject as UInt32[]);
+											UIntCollection appIDsObject = cmd.getApplicationIDs();
+											AppIDList = appIDsObject.ToArray();
 
 
 											var ev1Cmd = (card as DESFireEV1Chip).getDESFireEV1Commands();
@@ -1027,8 +1057,8 @@ namespace RFiDGear
 										cmd.selectApplication((uint)0);
 										cmd.authenticate((byte)0, aiToUse.masterCardKey);
 
-										object appIDsObject = cmd.getApplicationIDs();
-										AppIDList = (appIDsObject as UInt32[]);
+										UIntCollection appIDsObject = cmd.getApplicationIDs();
+										AppIDList = appIDsObject.ToArray();
 
 										return ERROR.NoError;
 									}
@@ -1081,7 +1111,7 @@ namespace RFiDGear
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
-				aiToUse.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToUse.masterCardKey.setKeyType(_keyTypeAppMasterKey);
 
 				if (readerUnit.connectToReader())
@@ -1299,16 +1329,16 @@ namespace RFiDGear
 				// Change keys with the following ones
 				DESFireAccessInfo aiToWrite = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
-				aiToWrite.masterApplicationKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToWrite.masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToWrite.masterApplicationKey.setKeyType((DESFireKeyType)_keyTypeAppMasterKey);
 
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
-				aiToWrite.readKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToWrite.readKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToWrite.readKey.setKeyType((DESFireKeyType)_keyTypeAppReadKey);
 				aiToWrite.readKeyno = (byte)_readKeyNo;
 
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
-				aiToWrite.writeKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToWrite.writeKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToWrite.writeKey.setKeyType((DESFireKeyType)_keyTypeAppWriteKey);
 				aiToWrite.writeKeyno = (byte)_writeKeyNo;
 
@@ -1332,13 +1362,13 @@ namespace RFiDGear
 
 										cmd.authenticate((byte)_readKeyNo, aiToWrite.readKey);
 
-										MifareDESFireData = (byte[])cmd.readData((byte)_fileNo, 0, (uint)_fileSize, EncryptionMode.CM_ENCRYPT).ToArray();
+										MifareDESFireData = cmd.readData((byte)_fileNo, 0, (uint)_fileSize, EncryptionMode.CM_ENCRYPT).ToArray();
 									}
 									catch
 									{
 										cmd.selectApplication((uint)_appID);
 
-										MifareDESFireData = (byte[])cmd.readData((byte)_fileNo, 0, (uint)_fileSize, EncryptionMode.CM_ENCRYPT).ToArray();
+										MifareDESFireData = cmd.readData((byte)_fileNo, 0, (uint)_fileSize, EncryptionMode.CM_ENCRYPT).ToArray();
 									}
 
 									return ERROR.NoError;
@@ -1385,7 +1415,7 @@ namespace RFiDGear
 				// The excepted memory tree
 				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
-				location.aid = (byte)_appID;
+				location.aid = (uint)_appID;
 				// File 0 into this application
 				location.file = (byte)_fileNo;
 				// File communication requires encryption
@@ -1399,24 +1429,24 @@ namespace RFiDGear
 				// Change keys with the following ones
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_cardMasterKey);
-				aiToUse.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToUse.masterCardKey.setKeyType(_keyTypeAppMasterKey);
 
 				DESFireAccessInfo aiToWrite = new DESFireAccessInfo();
-				aiToWrite.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToWrite.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToWrite.masterCardKey.setKeyType(_keyTypeAppMasterKey);
 
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
-				aiToWrite.masterApplicationKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToWrite.masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToWrite.masterApplicationKey.setKeyType(_keyTypeAppMasterKey);
 
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
-				aiToWrite.readKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToWrite.readKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToWrite.readKey.setKeyType(_keyTypeAppReadKey);
 				aiToWrite.readKeyno = (byte)_readKeyNo;
 
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
-				aiToWrite.writeKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToWrite.writeKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToWrite.writeKey.setKeyType(_keyTypeAppWriteKey);
 				aiToWrite.writeKeyno = (byte)_writeKeyNo;
 
@@ -1478,14 +1508,14 @@ namespace RFiDGear
 				// The excepted memory tree
 				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
-				location.aid = (byte)_appID;
+				location.aid = (uint)_appID;
 				// File communication requires encryption
-				location.securityLevel = EncryptionMode.CM_ENCRYPT;
+				//location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-				aiToUse.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyType);
 
 				if (readerUnit.connectToReader())
@@ -1551,7 +1581,7 @@ namespace RFiDGear
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-				aiToUse.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyType);
 
 				if (readerUnit.connectToReader())
@@ -1725,7 +1755,7 @@ namespace RFiDGear
 				// The excepted memory tree
 				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
-				location.aid = (byte)_appID;
+				location.aid = (uint)_appID;
 
 				// File communication requires encryption
 				location.securityLevel = EncryptionMode.CM_ENCRYPT;
@@ -1734,7 +1764,7 @@ namespace RFiDGear
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_piccMasterKey);
-				aiToUse.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyTypePiccMasterKey);
 
 				if (readerUnit.connectToReader())
@@ -1823,39 +1853,39 @@ namespace RFiDGear
 			}
 		}
 
-		public ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent, string _applicationMasterKeyTarget, int _keyNumberTarget, DESFireKeyType _keyTypeTarget, int _appIDCurrent = 0, int _appIDTarget = 0, DESFireKeySettings keySettings = (DESFireKeySettings.KS_DEFAULT | DESFireKeySettings.KS_FREE_CREATE_DELETE_WITHOUT_MK))
+		public ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent, string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint, DESFireKeyType _keyTypeTarget, int _appIDCurrent = 0, int _appIDTarget = 0, DESFireKeySettings keySettings = (DESFireKeySettings.KS_DEFAULT | DESFireKeySettings.KS_FREE_CREATE_DELETE_WITHOUT_MK))
 		{
 			try
 			{
 				// The excepted memory tree
 				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
-				location.aid = (byte)_appIDCurrent;
+				location.aid = (uint)_appIDCurrent;
 				// File communication requires encryption
-				location.securityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = EncryptionMode.CM_PLAIN;
 
 				DESFireCommands cmd;
-
+	
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				if (_appIDCurrent > 0)
 				{
 					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
-					aiToUse.masterApplicationKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+					aiToUse.masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
 					aiToUse.masterApplicationKey.setKeyType((DESFireKeyType)_keyTypeCurrent);
 				}
 				else
 				{
 					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
-					aiToUse.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+					aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 					aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyTypeCurrent);
 				}
 
 				DESFireKey applicationMasterKeyTarget = new DESFireKey();
 				applicationMasterKeyTarget.setKeyType((DESFireKeyType)_keyTypeTarget);
-				
+				applicationMasterKeyTarget.setKeyVersion((byte)selectedDesfireAppKeyVersionTargetAsIntint);
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
-				applicationMasterKeyTarget.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				applicationMasterKeyTarget.fromString(CustomConverter.DesfireKeyToCheck);
 
 				if (readerUnit.connectToReader())
 				{
@@ -1873,6 +1903,9 @@ namespace RFiDGear
 							    card.getCardType() == "DESFireEV2")
 							{
 								cmd = card.getCommands() as DESFireCommands;
+								var ev1cmd = (card as DESFireEV1Chip).getDESFireEV1Commands();
+								
+								
 								try
 								{
 									cmd.selectApplication((uint)_appIDCurrent);
@@ -1924,8 +1957,8 @@ namespace RFiDGear
 									{
                                         try
                                         {
-                                            cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterApplicationKey);
-                                            cmd.changeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+											cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterApplicationKey);
+											cmd.changeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
                                             cmd.authenticate((byte)_keyNumberCurrent, applicationMasterKeyTarget);
 
 											try
@@ -2006,7 +2039,7 @@ namespace RFiDGear
 				// The excepted memory tree
 				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
-				location.aid = (byte)_appID;
+				location.aid = (uint)_appID;
 				// File communication requires encryption
 				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
@@ -2014,7 +2047,7 @@ namespace RFiDGear
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-				aiToUse.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToUse.masterCardKey.setKeyType(_keyType);
 
 				if (readerUnit.connectToReader())
@@ -2085,14 +2118,14 @@ namespace RFiDGear
 				// The excepted memory tree
 				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
-				location.aid = (byte)_appID;
+				location.aid = (uint)_appID;
 				// File communication requires encryption
 				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-				aiToUse.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyType);
 
 				if (readerUnit.connectToReader())
@@ -2163,14 +2196,14 @@ namespace RFiDGear
 				// The excepted memory tree
 				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
-				location.aid = (byte)_appID;
+				location.aid = (uint)_appID;
 				// File communication requires encryption
 				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-				aiToUse.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyType);
 
 				if (readerUnit.connectToReader())
@@ -2195,7 +2228,7 @@ namespace RFiDGear
 									cmd.authenticate((byte)0, aiToUse.masterCardKey);
 
 									cmd.erase();
-									cmd.commitTransaction();
+									//cmd.commitTransaction();
 									return ERROR.NoError;
 								}
 								catch (Exception e)
@@ -2232,7 +2265,7 @@ namespace RFiDGear
 				// The excepted memory tree
 				DESFireLocation location = new DESFireLocation();
 				// The Application ID to use
-				location.aid = (byte)_appID;
+				location.aid = (uint)_appID;
 				// File communication requires encryption
 				location.securityLevel = EncryptionMode.CM_ENCRYPT;
 
@@ -2240,10 +2273,10 @@ namespace RFiDGear
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-				aiToUse.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToUse.masterCardKey.setKeyType(_keyType);
 
-				object fileIDsObject;
+				ByteVector fileIDsObject;
 
 				if (readerUnit.connectToReader())
 				{
@@ -2273,7 +2306,7 @@ namespace RFiDGear
 										try
 										{
 											fileIDsObject = cmd.getFileIDs();
-											FileIDList = (fileIDsObject as byte[]);
+											FileIDList = fileIDsObject.ToArray();
 											return ERROR.NoError;
 										}
 										catch (Exception e)
@@ -2292,7 +2325,7 @@ namespace RFiDGear
 									}
 
 									fileIDsObject = cmd.getFileIDs();
-									FileIDList = (fileIDsObject as byte[]);
+									FileIDList = fileIDsObject.ToArray();
 
 									return ERROR.NoError;
 								}
@@ -2331,7 +2364,7 @@ namespace RFiDGear
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-				aiToUse.masterCardKey.setCipherKey(CustomConverter.DesfireKeyToCheck);
+				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
 				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyType);
 
 				if (readerUnit.connectToReader())
