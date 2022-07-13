@@ -1857,35 +1857,19 @@ namespace RFiDGear
 		{
 			try
 			{
-				// The excepted memory tree
-				DESFireLocation location = new DESFireLocation();
-				// The Application ID to use
-				location.aid = (uint)_appIDCurrent;
-				// File communication requires encryption
-				location.securityLevel = EncryptionMode.CM_PLAIN;
-
-				DESFireCommands cmd;
-	
-				// Keys to use for authentication
-				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-				if (_appIDCurrent > 0)
-				{
-					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
-					aiToUse.masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
-					aiToUse.masterApplicationKey.setKeyType((DESFireKeyType)_keyTypeCurrent);
-				}
-				else
-				{
-					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
-					aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-					aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyTypeCurrent);
-				}
+				DESFireKey masterApplicationKey = new DESFireKey();
+				masterApplicationKey.setKeyType(_keyTypeCurrent);
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
+				masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
+				masterApplicationKey.setKeyVersion(1);
 
 				DESFireKey applicationMasterKeyTarget = new DESFireKey();
-				applicationMasterKeyTarget.setKeyType((DESFireKeyType)_keyTypeTarget);
-				applicationMasterKeyTarget.setKeyVersion((byte)selectedDesfireAppKeyVersionTargetAsIntint);
+				applicationMasterKeyTarget.setKeyType(_keyTypeCurrent);
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
 				applicationMasterKeyTarget.fromString(CustomConverter.DesfireKeyToCheck);
+				applicationMasterKeyTarget.setKeyVersion((byte)selectedDesfireAppKeyVersionTargetAsIntint);
+
+				readerUnit.disconnectFromReader();
 
 				if (readerUnit.connectToReader())
 				{
@@ -1899,91 +1883,50 @@ namespace RFiDGear
 							card = readerUnit.getSingleChip();
 
 							if (card.getCardType() == "DESFire" ||
-							    card.getCardType() == "DESFireEV1" ||
-							    card.getCardType() == "DESFireEV2")
+								card.getCardType() == "DESFireEV1" ||
+								card.getCardType() == "DESFireEV2")
 							{
-								cmd = card.getCommands() as DESFireCommands;
-								var ev1cmd = (card as DESFireEV1Chip).getDESFireEV1Commands();
-								
-								
+								var cmd = card.getCommands() as DESFireCommands;
+								var ev1Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV1ISO7816Commands;
 								try
 								{
-									cmd.selectApplication((uint)_appIDCurrent);
-
-									if (_appIDCurrent == 0 && _appIDTarget == 0)
+									if (_appIDCurrent == 0)
 									{
-                                        try
-                                        {
-                                            cmd.authenticate((byte)0, aiToUse.masterCardKey);
-                                            cmd.changeKey((byte)0, applicationMasterKeyTarget);
-                                            cmd.authenticate((byte)0, applicationMasterKeyTarget);
-                                            cmd.changeKeySettings(keySettings);
-                                        }
-
-                                        catch
-                                        {
-                                            try
-                                            {
-                                                cmd.authenticate((byte)0, aiToUse.masterCardKey);
-                                                cmd.changeKeySettings(keySettings);
-                                                cmd.authenticate((byte)0, aiToUse.masterCardKey);
-                                                cmd.changeKey((byte)0, applicationMasterKeyTarget);
-                                                return ERROR.NoError;
-                                            }
-
-                                            catch (Exception e)
-                                            {
-												if (e.Message != "" && e.Message.Contains("same number already exists"))
-												{
-													return ERROR.ItemAlreadyExistError;
-												}
-												else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
-                                                {
-                                                    return ERROR.AuthenticationError;
-                                                }
-                                                else
-                                                    return ERROR.IOError;
-                                            }
-                                        }
-									}
-									else if (_appIDCurrent == 0 && _appIDTarget > 0)
-									{
-										cmd.authenticate((byte)0, aiToUse.masterCardKey);
-										cmd.selectApplication((uint)_appIDTarget);
-										cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterCardKey);
-										cmd.changeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+										return ERROR.NotAllowed;
 									}
 									else
 									{
-                                        try
-                                        {
-											cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterApplicationKey);
+										cmd.selectApplication((uint)_appIDCurrent);
+										var kv = ev1Cmd.getKeyVersion((byte)selectedDesfireAppKeyVersionTargetAsIntint);
+										try
+										{
+											cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
 											cmd.changeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
-                                            cmd.authenticate((byte)_keyNumberCurrent, applicationMasterKeyTarget);
+											cmd.authenticate((byte)_keyNumberCurrent, applicationMasterKeyTarget);
 
 											try
-                                            {
+											{
 												cmd.changeKeySettings(keySettings);
 											}
-                                            catch { }
-                                        }
+											catch { }
+										}
 
-                                        catch
-                                        {
-                                            try
-                                            {
-                                                cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterApplicationKey);
-                                                cmd.changeKeySettings(keySettings);
-                                                cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterApplicationKey);
-                                                cmd.changeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
-                                                return ERROR.NoError;
-                                            }
+										catch (Exception ex)
+										{
+											try
+											{
+												cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+												cmd.changeKeySettings(keySettings);
+												cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+												cmd.changeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+												return ERROR.NoError;
+											}
 
 											catch
-                                            {
+											{
 												try
 												{
-													cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterApplicationKey);
+													cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
 													cmd.changeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
 												}
 												catch (Exception e)
@@ -2000,7 +1943,7 @@ namespace RFiDGear
 														return ERROR.IOError;
 												}
 											}
-                                        }
+										}
 									}
 
 									return ERROR.NoError;
