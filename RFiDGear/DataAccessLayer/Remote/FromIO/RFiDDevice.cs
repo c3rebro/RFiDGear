@@ -106,36 +106,6 @@ namespace RFiDGear
 						readerUnit = readerProvider.CreateReaderUnit();
 
 						GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
-
-						
-						readerUnit.ConnectToReader();
-						readerUnit.WaitInsertion(100);
-						readerUnit.Connect();
-
-						card = readerUnit.GetSingleChip();
-
-						var cmd = card.Commands as DESFireCommands;
-						var ev1cmd = card.Commands as DESFireEV1Commands;
-						var dmk = new DESFireKey();
-						DESFireCardVersion v = cmd.GetVersion();
-						var test = dmk.KeyVersion;
-						dmk.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
-						dmk.KeyType = DESFireKeyType.DF_KEY_AES;
-						dmk.KeyVersion = 0;
-
-						var dk = new DESFireKey();
-						var test2 = dk.KeyVersion;
-						dk.Value = "44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44"; //33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33
-						dk.KeyType = DESFireKeyType.DF_KEY_AES;
-						dk.KeyVersion=1;
-						//DESFireAccessInfo ai = new DESFireAccessInfo();
-						//var aiv = ai.MasterCardKey.KeyVersion;
-
-						//ICardService cs = (card as DESFireChip).GetService(CardServiceType.CST_STORAGE);
-						cmd.SelectApplication(3);
-						cmd.Authenticate((byte)0, dmk);
-						cmd.ChangeKey((byte)1, dk);
-						
 					}
 
 					else if(defaultSettings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.Elatec)
@@ -1943,34 +1913,17 @@ namespace RFiDGear
 		{
 			try
 			{
-				// The excepted memory tree
-				IDESFireLocation location = new DESFireLocation();
-				// The Application ID to use
-				location.aid = _appIDCurrent;
-				// File communication requires encryption
-				location.SecurityLevel = EncryptionMode.CM_ENCRYPT;
-
-				//IDESFireEV1Commands cmd;
-				// Keys to use for authentication
-				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
-				if (_appIDCurrent > 0)
-				{
-					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
-					aiToUse.MasterApplicationKey.Value = CustomConverter.DesfireKeyToCheck;
-					aiToUse.MasterApplicationKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeCurrent;
-				}
-				else
-				{
-					CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
-					aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
-					aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeCurrent;
-				}
+				DESFireKey masterApplicationKey = new DESFireKeyClass();
+				masterApplicationKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeCurrent;
+				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
+				masterApplicationKey.Value = CustomConverter.DesfireKeyToCheck;
+				masterApplicationKey.KeyVersion = 0;
 
 				DESFireKey applicationMasterKeyTarget = new DESFireKeyClass();
-				applicationMasterKeyTarget.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeCurrent;
-				
+				applicationMasterKeyTarget.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeCurrent;	
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
 				applicationMasterKeyTarget.Value = CustomConverter.DesfireKeyToCheck;
+				applicationMasterKeyTarget.KeyVersion = 0;
 
 				readerUnit.DisconnectFromReader();
 
@@ -1992,68 +1945,17 @@ namespace RFiDGear
 								var cmd = card.Commands as DESFireCommands;
 								try
 								{
-									var dmk = new DESFireKey();
-									dmk.Value = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00";
-									dmk.KeyType = DESFireKeyType.DF_KEY_AES;
-
-									var dk = new DESFireKey();
-									dk.Value = "33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33";
-									dk.KeyType = DESFireKeyType.DF_KEY_AES;
-									cmd.SelectApplication(2);
-									cmd.Authenticate((byte)0, dmk);
-									cmd.ChangeKey((byte)2, dk);
-
-
-									cmd.SelectApplication((uint)_appIDCurrent);
-
-									if (_appIDCurrent == 0 && _appIDTarget == 0)
+									if (_appIDCurrent == 0)
 									{
-                                        try
-                                        {
-                                            cmd.Authenticate(0, aiToUse.MasterCardKey);
-                                            cmd.ChangeKey((byte)0, applicationMasterKeyTarget);
-                                            cmd.Authenticate(0, applicationMasterKeyTarget);
-                                            cmd.ChangeKeySettings(keySettings);
-                                        }
-
-                                        catch
-                                        {
-                                            try
-                                            {
-                                                cmd.Authenticate(0, aiToUse.MasterCardKey);
-                                                cmd.ChangeKeySettings(keySettings);
-                                                cmd.Authenticate(0, aiToUse.MasterCardKey);
-                                                cmd.ChangeKey((byte)0, applicationMasterKeyTarget);
-                                                return ERROR.NoError;
-                                            }
-
-                                            catch (Exception e)
-                                            {
-												if (e.Message != "" && e.Message.Contains("same number already exists"))
-												{
-													return ERROR.ItemAlreadyExistError;
-												}
-												else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
-                                                {
-                                                    return ERROR.AuthenticationError;
-                                                }
-                                                else
-                                                    return ERROR.IOError;
-                                            }
-                                        }
-									}
-									else if (_appIDCurrent == 0 && _appIDTarget > 0)
-									{
-										cmd.Authenticate(0, aiToUse.MasterCardKey);
-										cmd.SelectApplication((uint)_appIDTarget);
-										cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterCardKey);
-										cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+										return ERROR.NotAllowed;
 									}
 									else
 									{
+										cmd.SelectApplication((uint)_appIDCurrent);
+
                                         try
                                         {
-                                            cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
+                                            cmd.Authenticate((byte)_keyNumberCurrent, masterApplicationKey);
                                             cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
                                             cmd.Authenticate((byte)_keyNumberCurrent, applicationMasterKeyTarget);
 
@@ -2068,9 +1970,9 @@ namespace RFiDGear
                                         {
                                             try
                                             {
-                                                cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
+                                                cmd.Authenticate((byte)_keyNumberCurrent, masterApplicationKey);
                                                 cmd.ChangeKeySettings(keySettings);
-                                                cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
+                                                cmd.Authenticate((byte)_keyNumberCurrent, masterApplicationKey);
                                                 cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
                                                 return ERROR.NoError;
                                             }
@@ -2079,7 +1981,7 @@ namespace RFiDGear
                                             {
 												try
 												{
-													cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterApplicationKey);
+													cmd.Authenticate((byte)_keyNumberCurrent, masterApplicationKey);
 													cmd.ChangeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
 												}
 												catch (Exception e)
