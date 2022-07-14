@@ -12,6 +12,9 @@
     Title="{Binding Caption}"
     dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
     WindowStartupLocation="CenterOwner"
+    Width="800"
+    Height="900"
+    SizeToContent="Height"
     mc:Ignorable="d">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
