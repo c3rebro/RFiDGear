@@ -1547,6 +1547,7 @@ namespace RFiDGear
 								{
 									if (e.Message != "" && e.Message.Contains("same number already exists"))
 									{
+										
 										return ERROR.ItemAlreadyExistError;
 									}
 									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
@@ -1776,7 +1777,9 @@ namespace RFiDGear
 							ReaderUnitName = readerUnit.getConnectedName();
 
 							card = readerUnit.getSingleChip();
-
+							//CardException cardException = new CardException();
+							LibLogicalAccessNetException t = new LibLogicalAccessNetException();
+							
 							if (card.getCardType() == "DESFire")
 							{
 								var cmd = card.getCommands() as DESFireCommands;
@@ -1793,6 +1796,7 @@ namespace RFiDGear
 								}
 								catch (Exception e)
 								{
+									
 									if (e.Message != "" && e.Message.Contains("same number already exists"))
 									{
 										return ERROR.ItemAlreadyExistError;
@@ -1824,6 +1828,8 @@ namespace RFiDGear
 								}
 								catch (Exception e)
 								{
+									
+									e = t.GetBaseException();
 									if (e.Message != "" && e.Message.Contains("same number already exists"))
 									{
 										return ERROR.ItemAlreadyExistError;
