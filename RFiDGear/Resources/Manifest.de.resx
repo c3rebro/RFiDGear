@@ -1060,4 +1060,19 @@ Needs
 Needed by:
 - k.A.</value>
   </data>
+  <data name="labelLogicFuncTaskCompareWithValue" xml:space="preserve">
+    <value>Vergleicher Wert</value>
+  </data>
+  <data name="labelLogicFuncTaskCountCompareFunc" xml:space="preserve">
+    <value>Zähler Operator</value>
+  </data>
+  <data name="labelLogicFuncTaskCountTaskValue" xml:space="preserve">
+    <value>Zähler Wert</value>
+  </data>
+  <data name="labelLogicFuncTaskSelectTargetTaskNumber" xml:space="preserve">
+    <value>Ziel Aufgabennummer</value>
+  </data>
+  <data name="labelSelectLogicFunction" xml:space="preserve">
+    <value>Logikfunktion</value>
+  </data>
 </root>

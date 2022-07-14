@@ -10,6 +10,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:v="clr-namespace:RFiDGear.View"
     Title="{Binding Caption}"
+    Width="800"
     dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
     WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">

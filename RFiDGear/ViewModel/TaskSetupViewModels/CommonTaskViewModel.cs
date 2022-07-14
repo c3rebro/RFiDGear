@@ -60,6 +60,10 @@ namespace RFiDGear.ViewModel
 			checkpoint = new Checkpoint();
 			Checkpoints = new ObservableCollection<Checkpoint>();
 
+			IsLogicFuncTaskLogicFuncEnabled = true;
+			IsLogicFuncTaskCountFuncEnabled = false;
+			IsLogicFuncTaskCompareWithEnabled = false;
+
 		}
 
 		/// <summary>
@@ -75,6 +79,10 @@ namespace RFiDGear.ViewModel
 
 				checkpoint = new Checkpoint();
 				Checkpoints = new ObservableCollection<Checkpoint>();
+
+				IsLogicFuncTaskLogicFuncEnabled = true;
+				IsLogicFuncTaskCountFuncEnabled = false;
+				IsLogicFuncTaskCompareWithEnabled = false;
 
 				if(_selectedSetupViewModel is CommonTaskViewModel)
 				{
@@ -655,11 +663,77 @@ namespace RFiDGear.ViewModel
 			set
 			{
 				selectedLogicCondition = value;
+
+				switch(selectedLogicCondition)
+				{
+					case LOGIC_STATE.AND:
+					case LOGIC_STATE.OR:
+					case LOGIC_STATE.NAND:
+					case LOGIC_STATE.NOR:
+					case LOGIC_STATE.NOT:
+						IsLogicFuncTaskLogicFuncEnabled = true;
+						IsLogicFuncTaskCompareWithEnabled = false;
+						IsLogicFuncTaskCompareWithEnabled = false;
+						break;
+
+					case LOGIC_STATE.COUNT:
+						IsLogicFuncTaskLogicFuncEnabled = false;
+						IsLogicFuncTaskCountFuncEnabled = true;
+						IsLogicFuncTaskCompareWithEnabled = false;
+						break;
+
+					case LOGIC_STATE.COMPARE:
+						IsLogicFuncTaskLogicFuncEnabled = false;
+						IsLogicFuncTaskCountFuncEnabled = false;
+						IsLogicFuncTaskCompareWithEnabled = true;
+						break;
+					}
 				RaisePropertyChanged("SelectedLogicCondition");
 			}
 		}
 		private LOGIC_STATE selectedLogicCondition;
 
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool IsLogicFuncTaskCompareWithEnabled
+		{
+			get { return isLogicFuncTaskCompareWithEnabled; }
+			set
+			{
+				isLogicFuncTaskCompareWithEnabled = value;
+				RaisePropertyChanged("isLogicFuncTaskCompareWithEnabled");
+			}
+		}
+		private bool isLogicFuncTaskCompareWithEnabled;
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool IsLogicFuncTaskCountFuncEnabled
+		{
+			get { return isLogicFuncTaskCountFuncEnabled; }
+			set
+			{
+				isLogicFuncTaskCountFuncEnabled = value;
+				RaisePropertyChanged("IsLogicFuncTaskCountFuncEnabled");
+			}
+		}
+		private bool isLogicFuncTaskCountFuncEnabled;
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool IsLogicFuncTaskLogicFuncEnabled
+		{
+			get { return isLogicFuncTaskLogicFuncEnabled; }
+			set
+			{
+				isLogicFuncTaskLogicFuncEnabled = value;
+				RaisePropertyChanged("IsLogicFuncTaskLogicFuncEnabled");
+			}
+		}
+		private bool isLogicFuncTaskLogicFuncEnabled;
 		/// <summary>
 		/// 
 		/// </summary>

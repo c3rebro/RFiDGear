@@ -1716,7 +1716,9 @@ namespace RFiDGear.ViewModel
 										 ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 										 ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 
-										if (device.ReadMiFareClassicWithMAD(appNumberAsInt, ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent, fileSizeAsInt) == ERROR.NoError)
+										if (device.ReadMiFareClassicWithMAD(appNumberAsInt, 
+											ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent, fileSizeAsInt,
+											UseMAD, useMADAuth) == ERROR.NoError)
 										{
 											 ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
 											 ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
@@ -1826,9 +1828,11 @@ namespace RFiDGear.ViewModel
 																		 ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent,
 																		 ClassicKeyAKeyTarget, ClassicKeyBKeyTarget,
 																		 ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data,
-																		 madGPB, UseMadAuth) == ERROR.NoError)
+																		 madGPB, UseMadAuth, UseMAD) == ERROR.NoError)
 									{
-										 StatusText = StatusText + string.Format("{0}: Wrote n bytes to MAD ID x\n", DateTime.Now);
+										 StatusText = StatusText + string.Format("{0}: Wrote {1} bytes to MAD ID {2}\n", DateTime.Now, 
+											 ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data.Length,
+											 ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.MADApp);
 
 										 TaskErr = ERROR.NoError;
 									}

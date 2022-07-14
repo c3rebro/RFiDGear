@@ -81,14 +81,14 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelLoadLastProjectOnStart, Converter={StaticResource Localization}}"
-                IsChecked="{Binding CheckOnStart, Mode=TwoWay}" />
+                IsChecked="{Binding LoadOnStart, Mode=TwoWay}" />
             <CheckBox
                 Grid.Row="3"
                 Margin="8,10,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelCheckForUpdatesOnStart, Converter={StaticResource Localization}}"
-                IsChecked="{Binding LoadOnStart, Mode=TwoWay}" />
+                IsChecked="{Binding CheckOnStart, Mode=TwoWay}" />
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="213" />
                 <ColumnDefinition Width="0.5*" />

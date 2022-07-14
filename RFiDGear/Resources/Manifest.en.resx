@@ -1044,4 +1044,19 @@ Needed by:
   <data name="ENUM.TaskType_MifareDesfireTask.AuthenticateApplication" xml:space="preserve">
     <value>Authenticate to App</value>
   </data>
+  <data name="labelLogicFuncTaskCompareWithValue" xml:space="preserve">
+    <value>Comparer Value</value>
+  </data>
+  <data name="labelLogicFuncTaskCountCompareFunc" xml:space="preserve">
+    <value>Counter Operator</value>
+  </data>
+  <data name="labelLogicFuncTaskCountTaskValue" xml:space="preserve">
+    <value>Counter Value</value>
+  </data>
+  <data name="labelLogicFuncTaskSelectTargetTaskNumber" xml:space="preserve">
+    <value>Targeted Task Index</value>
+  </data>
+  <data name="labelSelectLogicFunction" xml:space="preserve">
+    <value>Logic Function</value>
+  </data>
 </root>

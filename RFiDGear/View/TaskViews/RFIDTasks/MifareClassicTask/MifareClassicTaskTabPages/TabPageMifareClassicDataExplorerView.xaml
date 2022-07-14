@@ -110,8 +110,8 @@
                                             BindableSelectionStart="{Binding SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                             BorderThickness="0"
                                             FontFamily="Lucida Console"
-                                            IsFocused="{Binding IsFocused}"
                                             Text="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                            <!--  IsFocused="{Binding IsFocused}"  -->
                                             <_3rdP:SelectionBindingTextBox.Style>
                                                 <Style TargetType="{x:Type TextBox}">
                                                     <Setter Property="TextWrapping" Value="Wrap" />

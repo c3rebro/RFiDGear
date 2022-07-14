@@ -53,7 +53,7 @@
                                 Margin="8,6,10,0"
                                 VerticalAlignment="Top"
                                 HorizontalContentAlignment="Stretch"
-                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectReportTemplate'}"
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectLogicFunction'}"
                                 DataContext="{Binding}"
                                 Foreground="Black" />
                             <ComboBox
@@ -95,6 +95,7 @@
                                 Margin="8,0,8,8"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Bottom"
+                                IsEnabled="{Binding IsLogicFuncTaskLogicFuncEnabled}"
                                 ItemsSource="{Binding AvailableTaskIndices, UpdateSourceTrigger=PropertyChanged}"
                                 SelectedItem="{Binding SelectedTaskIndexFromAvailableTasks, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                             <Label
@@ -104,7 +105,8 @@
                                 Margin="10,2,10,0"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Top"
-                                Content="ErrorLevel" />
+                                Content="ErrorLevel"
+                                IsEnabled="{Binding IsLogicFuncTaskLogicFuncEnabled}" />
                             <ComboBox
                                 Grid.Row="1"
                                 Grid.Column="1"
@@ -112,6 +114,7 @@
                                 Margin="8,0,8,8"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Bottom"
+                                IsEnabled="{Binding IsLogicFuncTaskLogicFuncEnabled}"
                                 ItemsSource="{dal:Enumerate {x:Type dal:ERROR}}"
                                 SelectedItem="{Binding SelectedErrorLevel, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:ERROR}, Mode=TwoWay}" />
 
@@ -122,9 +125,10 @@
                                 Margin="10,8,10,0"
                                 VerticalAlignment="Top"
                                 HorizontalContentAlignment="Stretch"
-                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectReportTemplate'}"
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelLogicFuncTaskSelectTargetTaskNumber'}"
                                 DataContext="{Binding}"
-                                Foreground="Black" />
+                                Foreground="Black"
+                                IsEnabled="{Binding IsLogicFuncTaskLogicFuncEnabled}" />
                             <Button
                                 Grid.Row="6"
                                 Grid.Column="1"
@@ -148,6 +152,7 @@
                                 Margin="8,0,8,8"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Bottom"
+                                IsEnabled="{Binding IsLogicFuncTaskCountFuncEnabled}"
                                 ItemsSource="{Binding NumberOfCheckpoints, UpdateSourceTrigger=PropertyChanged}"
                                 SelectedItem="{Binding SelectedCheckpointCounter, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                             <Label
@@ -157,7 +162,9 @@
                                 Margin="10,1,10,0"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Top"
-                                Content="Counter Trigger" />
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelLogicFuncTaskCountCompareFunc'}"
+                                DataContext="{Binding}"
+                                IsEnabled="{Binding IsLogicFuncTaskCountFuncEnabled}" />
                             <ComboBox
                                 Grid.Row="3"
                                 Grid.Column="1"
@@ -165,6 +172,7 @@
                                 Margin="8,0,8,8"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Bottom"
+                                IsEnabled="{Binding IsLogicFuncTaskCountFuncEnabled}"
                                 ItemsSource="{dal:Enumerate {x:Type dal:EQUALITY_OPERATOR}}"
                                 SelectedItem="{Binding SelectedCounterTrigger, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:EQUALITY_OPERATOR}, Mode=TwoWay}" />
                             <Label
@@ -174,13 +182,16 @@
                                 Margin="10,2,10,0"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Top"
-                                Content="Compare Value" />
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelLogicFuncTaskCompareWithValue'}"
+                                DataContext="{Binding}"
+                                IsEnabled="{Binding IsLogicFuncTaskCompareWithEnabled}" />
                             <TextBox
                                 Grid.Row="4"
                                 Grid.Column="1"
                                 Height="23"
                                 Margin="8,3,8,0"
                                 VerticalAlignment="Top"
+                                IsEnabled="{Binding IsLogicFuncTaskCompareWithEnabled}"
                                 Text="{Binding CompareValue}"
                                 TextWrapping="Wrap" />
                             <Label
@@ -190,7 +201,9 @@
                                 Margin="10,2,10,0"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Top"
-                                Content="Counter Value" />
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelLogicFuncTaskCountTaskValue'}"
+                                DataContext="{Binding}"
+                                IsEnabled="{Binding IsLogicFuncTaskCountFuncEnabled}" />
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="165" />
                                 <ColumnDefinition />
