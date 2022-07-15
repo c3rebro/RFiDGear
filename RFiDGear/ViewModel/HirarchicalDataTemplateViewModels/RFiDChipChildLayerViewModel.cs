@@ -41,19 +41,6 @@ namespace RFiDGear.ViewModel
 			children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 		}
 
-//		public RFiDChipChildLayerViewModel(
-//			MifareClassicSectorModel _sectorModel,
-//			MifareClassicSetupViewModel _setupViewModel)
-//		{
-//			sectorModel = _sectorModel;
-//			setupViewModel = _setupViewModel;
-//
-//			isTask = true;
-//			children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
-//
-//			LoadChildren();
-//		}
-
 		public RFiDChipChildLayerViewModel(
 			MifareClassicSectorModel _sectorModel,
 			RFiDChipParentLayerViewModel parent,

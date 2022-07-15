@@ -27,6 +27,7 @@
             <mainview:MifareDesfireSetupView x:Key="{x:Type vm:MifareDesfireSetupViewModel}" x:Shared="False" />
             <mainview:MifareUltralightSetupView x:Key="{x:Type vm:MifareUltralightSetupViewModel}" x:Shared="False" />
             <mainview:SetupView x:Key="{x:Type vm:SetupViewModel}" x:Shared="False" />
+            <mainview:UpdateNotifierView x:Key="{x:Type vm:UpdateNotifierViewModel}" x:Shared="False" />
 
             <pre:MessageBoxPresenter x:Key="{x:Type dialogsvm:MessageBoxViewModel}" />
             <pre:OpenFileDialogPresenter x:Key="{x:Type dialogsvm:OpenFileDialogViewModel}" />

@@ -492,9 +492,11 @@ namespace RFiDGear.ViewModel
 			set
 			{
 				selectedDataIndexStart = value;
+				
 				if (value % 2 == 0)
 				{
 					SelectedDataIndexStartInBytes = value/2;
+					SelectedDataLengthInBytes = DataAsHexString.Length/2 - value/2;
 					IsValidSelectedDataIndexAndLength = true;
 				}
 				else

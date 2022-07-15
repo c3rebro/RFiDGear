@@ -49,6 +49,7 @@ namespace RFiDGear.ViewModel
         // set if task was completed; indicates greenlight to continue execution
         //if programming takes too long; quit the process
         private bool firstRun = true;
+        private bool updateAvailable = false;
         private protected Mutex mutex;
         //one reader, one instance - only
 
@@ -158,7 +159,7 @@ namespace RFiDGear.ViewModel
 
             Application.Current.MainWindow.Closing += new CancelEventHandler(CloseThreads);
             Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
-            updater.NewVersionAvailable += new EventHandler(AskForUpdateNow);
+            updater.NewVersionAvailable += new EventHandler(EnableUpdate);
 
             //reminder: any dialog boxes added in the constructor won't appear until DialogBehavior.DialogViewModels gets bound to the Dialogs collection.
         }
@@ -3295,8 +3296,14 @@ namespace RFiDGear.ViewModel
 
         #region Extensions
 
+        private void EnableUpdate(object sender, EventArgs e)
+        {
+            updateAvailable = true;
+        }
+
         private void AskForUpdateNow(object sender, EventArgs e)
         {
+            /*
             if (new MessageBoxViewModel
             {
                 Caption = ResourceLoader.getResource("messageBoxUpdateAvailableCaption"),
@@ -3309,6 +3316,30 @@ namespace RFiDGear.ViewModel
             {
                 (sender as Updater).AllowUpdate = false;
             }
+            */
+
+            updateAvailable = false;
+
+            this.Dialogs.Add(new UpdateNotifierViewModel(updater.UpdateInfoText)
+            {
+
+                Caption = "Update Available",
+
+                OnOk = (updateAction) => 
+                {
+                    (sender as Updater).Update();
+                    updateAction.Close();
+                },
+
+                OnCancel = (updateAction) =>
+                {
+                    (sender as Updater).AllowUpdate = false;
+                    updateAction.Close();
+                }
+            });
+
+
+
 
         }
 
@@ -3334,11 +3365,14 @@ namespace RFiDGear.ViewModel
             mw = (MainWindow)Application.Current.MainWindow;
             mw.Title = string.Format("RFiDGear {0}.{1}.{2} {3}", Version.Major, Version.Minor, Version.Build, Constants.TITLE_SUFFIX);
 
+            if (updateAvailable)
+                AskForUpdateNow(null, null);
+
             Task thread = new Task(() =>
             {
                 while (true)
                 {
-                    for(int i = 0; i<=10; i++)
+                    for (int i = 0; i<=10; i++)
                     {
                         Thread.Sleep(500);
                         ReaderStatus = string.Format("{0}", DateTime.Now);
@@ -3372,6 +3406,7 @@ namespace RFiDGear.ViewModel
             {
             });
 
+            
             thread.Start();
 
             if (firstRun)

@@ -23,6 +23,7 @@ namespace RFiDGear
         private readonly int _updateInterval = 900;
         private readonly string _securityToken = "D68EF3A7-E787-4CC4-B020-878BA649B4CD";
         private readonly string _payload = "update.zip";
+        private readonly string _infoText = "Version Info\n\ngoes here! \n==>";
         private readonly string _baseUri = @"https://github.com/c3rebro/RFiDGear/releases/latest/download/";
 
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -85,18 +86,21 @@ namespace RFiDGear
                     XmlElement SecurityTokenElem = doc.CreateElement("SecurityToken");
                     XmlElement BaseUriElem = doc.CreateElement("BaseUri");
                     XmlElement PayLoadElem = doc.CreateElement("Payload");
+                    XmlElement InfoTextElem = doc.CreateElement("VersionInfoText");
 
                     doc.DocumentElement.AppendChild(CheckIntervalElem);
                     doc.DocumentElement.AppendChild(RemoteConfigUriElem);
                     doc.DocumentElement.AppendChild(SecurityTokenElem);
                     doc.DocumentElement.AppendChild(BaseUriElem);
                     doc.DocumentElement.AppendChild(PayLoadElem);
+                    doc.DocumentElement.AppendChild(InfoTextElem);
 
                     CheckIntervalElem.InnerText = _updateInterval.ToString();
                     RemoteConfigUriElem.InnerText = _updateURL;
                     SecurityTokenElem.InnerText = _securityToken;
                     BaseUriElem.InnerText = _baseUri;
                     PayLoadElem.InnerText = _payload;
+                    InfoTextElem.InnerText = _infoText;
 
                     doc.Save(Path.Combine(appDataPath, _updateConfigFileFileName));
                 }

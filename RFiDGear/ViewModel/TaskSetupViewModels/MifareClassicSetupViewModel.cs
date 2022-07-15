@@ -1257,7 +1257,6 @@ namespace RFiDGear.ViewModel
 
                 RaisePropertyChanged("SelectedMADVersion");
             }
-
         }
         private string selectedMADVersion;
         private byte selectedMADVersionAsByte;

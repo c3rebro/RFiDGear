@@ -725,15 +725,15 @@ namespace RFiDGear
 							mlocation.MADApplicationID = (ushort)_madApplicationID;
 							mlocation.UseMAD = _useMADToAuth;
 							mlocation.Sector = _madStartSector;
-							
-							MifareAccessInfo aiToWrite = new MifareAccessInfoClass();
+
+                            MifareAccessInfo aiToWrite = new MifareAccessInfoClass();
 							aiToWrite.UseMAD = _keyToWriteUseMAD;
 							aiToWrite.MADKeyA.Value = _madAKeyToUse == _madAKeyToWrite ? madAKeyToUse.Value : madAKeyToWrite.Value; // only set new madkey if mad key has changed
 							aiToWrite.MADKeyB.Value = _madBKeyToUse == _madBKeyToWrite ? madBKeyToUse.Value : madBKeyToWrite.Value; // only set new madkey if mad key has changed
 							aiToWrite.KeyA.Value = _aKeyToUse == _aKeyToWrite ? mAKeyToUse.Value : mAKeyToWrite.Value;
 							aiToWrite.KeyB.Value = _bKeyToUse == _bKeyToWrite ? mBKeyToUse.Value : mBKeyToWrite.Value;
 							aiToWrite.MADGPB = _madGPB;
-							
+
 							var aiToUse = new MifareAccessInfoClass();
 							aiToUse.UseMAD = _useMADToAuth;
 							aiToUse.KeyA = mAKeyToUse;

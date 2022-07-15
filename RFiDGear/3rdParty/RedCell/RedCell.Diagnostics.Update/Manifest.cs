@@ -60,6 +60,12 @@ namespace RedCell.Diagnostics.Update
 		public string BaseUri { get; private set; }
 
 		/// <summary>
+		/// Gets the base URI.
+		/// </summary>
+		/// <value>The base URI.</value>
+		public string VersionInfoText { get; private set; }
+
+		/// <summary>
 		/// Gets the payload.
 		/// </summary>
 		/// <value>The payload.</value>
@@ -102,6 +108,7 @@ namespace RedCell.Diagnostics.Update
 				RemoteConfigUri = xml.Root.Element("RemoteConfigUri").Value;
 				BaseUri = xml.Root.Element("BaseUri").Value;
 				Payloads = xml.Root.Elements("Payload").Select(x => x.Value).ToArray();
+				VersionInfoText = xml.Root.Element("VersionInfoText").Value;
 			}
 			catch (Exception ex)
 			{

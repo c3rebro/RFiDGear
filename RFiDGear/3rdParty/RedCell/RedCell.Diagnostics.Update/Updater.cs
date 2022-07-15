@@ -48,6 +48,7 @@ namespace RedCell.Diagnostics.Update
 
         public bool AllowUpdate { get; set; }
         public bool IsUserNotified { get; set; }
+        public string UpdateInfoText { get; private set; }
 
         #endregion
 
@@ -226,6 +227,7 @@ namespace RedCell.Diagnostics.Update
                 if (!AllowUpdate && !IsUserNotified)
                 {
                     IsUserNotified = true;
+                    UpdateInfoText = this._remoteConfig.VersionInfoText;
                     NewVersionAvailable(this, null);
                     return;
                 }
