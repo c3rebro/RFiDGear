@@ -46,10 +46,14 @@ namespace RFiDGear.DataAccessLayer
                 appDataPath = System.IO.Path.Combine(appDataPath, "RFiDGear");
 
                 if (!Directory.Exists(appDataPath))
+                {
                     Directory.CreateDirectory(appDataPath);
+                }
 
                 if (File.Exists(System.IO.Path.Combine(appDataPath, reportTemplateTempFileName)))
+                {
                     File.Delete(System.IO.Path.Combine(appDataPath, reportTemplateTempFileName));
+                }
             }
             catch (Exception e)
             {
@@ -74,7 +78,9 @@ namespace RFiDGear.DataAccessLayer
                     }
 
                     else
+                    {
                         pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath ?? _path));
+                    }
 
                     form = PdfAcroForm.GetAcroForm(pdfDoc, true);
 

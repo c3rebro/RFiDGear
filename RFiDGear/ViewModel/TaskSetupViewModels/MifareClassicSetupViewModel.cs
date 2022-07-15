@@ -314,7 +314,9 @@ namespace RFiDGear.ViewModel
                 HasPlugins = items != null ? items.Any() : false;
 
                 if (HasPlugins)
+                {
                     SelectedPlugin = Items.FirstOrDefault();
+                }
 
                 useMAD = false;
 
@@ -502,7 +504,9 @@ namespace RFiDGear.ViewModel
             {
                 selectedDataBlockToReadWrite = value;
                 foreach (RFiDChipGrandChildLayerViewModel gCNVM in ChildNodeViewModelTemp.Children)
+                {
                     gCNVM.IsFocused = false;
+                }
 
                 ChildNodeViewModelTemp.Children.First(x => x.DataBlockNumber == (int)SelectedDataBlockToReadWrite).IsFocused = true;
 
@@ -971,7 +975,9 @@ namespace RFiDGear.ViewModel
                     settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyANumberCurrentAsInt] = new MifareClassicDefaultKeys(selectedClassicKeyANumberCurrentAsInt, currentSectorTrailer);
                 }
                 else if (IsValidClassicKeyAKeyCurrent != false)
+                {
                     sectorModel.KeyA = classicKeyAKeyCurrent;
+                }
 
                 RaisePropertyChanged("ClassicKeyAKeyCurrent");
             }
@@ -1017,7 +1023,9 @@ namespace RFiDGear.ViewModel
                     settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyBNumberCurrentAsInt] = new MifareClassicDefaultKeys(selectedClassicKeyBNumberCurrentAsInt, currentSectorTrailer);
                 }
                 else if (IsValidClassicKeyBKeyCurrent != false)
+                {
                     sectorModel.KeyB = classicKeyBKeyCurrent;
+                }
 
                 RaisePropertyChanged("ClassicKeyBKeyCurrent");
             }
@@ -1147,7 +1155,9 @@ namespace RFiDGear.ViewModel
                 dataBlockIsCombinedToggleButtonIsChecked = value;
 
                 if (value)
+                {
                     Selected_DataBlockType = SectorTrailer_DataBlock.BlockAll;
+                }
 
                 RaisePropertyChanged("SelectedDataBlockItem");
                 RaisePropertyChanged("DataBlockIsCombinedToggleButtonIsChecked");
@@ -1198,9 +1208,14 @@ namespace RFiDGear.ViewModel
             {
                 isMultiApplication = value;
                 if (value)
+                {
                     madGPB |= 0x40;
+                }
                 else
+                {
                     madGPB &= 0xBF;
+                }
+
                 RaisePropertyChanged("IsMultiApplication");
             }
         }
@@ -1318,7 +1333,10 @@ namespace RFiDGear.ViewModel
             set
             {
                 if (int.TryParse(value, out selectedMADSectorAsInt))
+                {
                     selectedMADSector = value;
+                }
+
                 RaisePropertyChanged("SelectedMADSector");
             }
         }
@@ -1573,7 +1591,9 @@ namespace RFiDGear.ViewModel
                                                      TaskErr = ERROR.NoError;
                                                  }
                                                  else
+                                                 {
                                                      StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i - 1].DataBlockNumberChipBased);
+                                                 }
                                              }
 
                                              TaskErr = ERROR.NoError;
@@ -1685,8 +1705,9 @@ namespace RFiDGear.ViewModel
                                              TaskErr = ERROR.NoError;
                                          }
                                          else
+                                         {
                                              TaskErr = ERROR.AuthenticationError;
-
+                                         }
                                      }
                                      else
                                      {
@@ -1755,9 +1776,13 @@ namespace RFiDGear.ViewModel
         public virtual void RequestClose()
         {
             if (OnCloseRequest != null)
+            {
                 OnCloseRequest(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         public event EventHandler DialogClosing;
@@ -1767,9 +1792,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Ok()
         {
             if (OnOk != null)
+            {
                 OnOk(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         public ICommand CancelCommand => new RelayCommand(Cancel);
@@ -1777,9 +1806,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Cancel()
         {
             if (OnCancel != null)
+            {
                 OnCancel(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         public ICommand AuthCommand => new RelayCommand(Auth);
@@ -1787,9 +1820,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Auth()
         {
             if (OnAuth != null)
+            {
                 OnAuth(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         [XmlIgnore]
@@ -1807,7 +1844,9 @@ namespace RFiDGear.ViewModel
         public void Close()
         {
             if (DialogClosing != null)
+            {
                 DialogClosing(this, new EventArgs());
+            }
         }
 
         public void Show(IList<IDialogViewModel> collection)

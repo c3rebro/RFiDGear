@@ -49,7 +49,9 @@ namespace RFiDGear.ViewModel
             bool? _isTask = null)
         {
             if (_dialogs != null)
+            {
                 dialogs = _dialogs;
+            }
 
             isTask = _isTask;
             sectorModel = _sectorModel;
@@ -86,7 +88,9 @@ namespace RFiDGear.ViewModel
             bool? _isTask = null)
         {
             if (_dialogs != null)
+            {
                 dialogs = _dialogs;
+            }
 
             isTask = _isTask;
 
@@ -124,7 +128,9 @@ namespace RFiDGear.ViewModel
             bool? _isTask = null)
         {
             if (_dialogs != null)
+            {
                 dialogs = _dialogs;
+            }
 
             isTask = _isTask;
 
@@ -295,7 +301,9 @@ namespace RFiDGear.ViewModel
 
                 // Expand all the way up to the root.
                 if (isExpanded && _parent != null)
+                {
                     _parent.IsExpanded = true;
+                }
             }
         }
         private bool isExpanded;
@@ -351,7 +359,9 @@ namespace RFiDGear.ViewModel
             set
             {
                 if (value >= 0)
+                {
                     sectorModel.SectorNumber = value;
+                }
             }
         }
 
@@ -364,7 +374,9 @@ namespace RFiDGear.ViewModel
             set
             {
                 if (value >= 0)
+                {
                     pageModel.PageNumber = value;
+                }
             }
         }
 
@@ -485,9 +497,13 @@ namespace RFiDGear.ViewModel
         public virtual void RequestClose()
         {
             if (OnCloseRequest != null)
+            {
                 OnCloseRequest(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         public event EventHandler DialogClosing;
@@ -497,9 +513,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Ok()
         {
             if (OnOk != null)
+            {
                 OnOk(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         /// <summary>
@@ -510,9 +530,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Cancel()
         {
             if (OnCancel != null)
+            {
                 OnCancel(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         /// <summary>
@@ -539,7 +563,9 @@ namespace RFiDGear.ViewModel
         public void Close()
         {
             if (DialogClosing != null)
+            {
                 DialogClosing(this, new EventArgs());
+            }
         }
 
         /// <summary>

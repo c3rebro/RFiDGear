@@ -39,7 +39,9 @@ namespace RFiDGear.DataAccessLayer
 
                 // Check if folder exists and if not, create it
                 if (!Directory.Exists(appDataPath))
+                {
                     Directory.CreateDirectory(appDataPath);
+                }
 
                 treeViewModel = new ObservableCollection<RFiDChipParentLayerViewModel>();
                 setupModel = new ChipTaskHandlerModel();
@@ -88,7 +90,9 @@ namespace RFiDGear.DataAccessLayer
                 return false;
             }
             else
+            {
                 file = new FileInfo(_fileName);
+            }
 
             try
             {
@@ -192,7 +196,9 @@ namespace RFiDGear.DataAccessLayer
                     writer = new StreamWriter(@_path);
                 }
                 else
+                {
                     writer = new StreamWriter(@Path.Combine(appDataPath, chipDatabaseFileName), false, new UTF8Encoding(false));
+                }
 
                 serializer.Serialize(writer, objModel);
 

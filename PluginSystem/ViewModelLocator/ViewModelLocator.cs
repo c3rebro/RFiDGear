@@ -26,6 +26,7 @@ namespace MefMvvm.SharedContracts.ViewModel
         {
             string name = binder.Name;
             if (!dictionary.TryGetValue(name, out result))
+            {
                 try
                 {
                     if (ViewModels == null)
@@ -41,6 +42,8 @@ namespace MefMvvm.SharedContracts.ViewModel
                 {
                     Console.WriteLine(ex);
                 }
+            }
+
             return true;
         }
 
@@ -56,7 +59,10 @@ namespace MefMvvm.SharedContracts.ViewModel
         {
             var result = new PropertyDescriptorCollection(null);
             foreach (var m in dictionary)
+            {
                 result.Add(new ModelViewPropertyDescriptor(m.Key, m.Value));
+            }
+
             return result;
         }
 
@@ -225,7 +231,10 @@ namespace MefMvvm.SharedContracts.ViewModel
             {
                 var result = new PropertyDescriptorCollection(null);
                 foreach (var m in dictionary)
+                {
                     result.Add(new ModelViewPropertyDescriptor(m.Key, m.Value));
+                }
+
                 return result;
             }
         }

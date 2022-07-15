@@ -832,23 +832,38 @@ namespace RFiDGear.ViewModel
                     {
                         case GenericChipTaskViewModel ssVM:
                             if (ssVM.IsValidSelectedTaskIndex != false)
+                            {
                                 taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
+                            }
+
                             break;
                         case CommonTaskViewModel ssVM:
                             if (ssVM.IsValidSelectedTaskIndex != false)
+                            {
                                 taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
+                            }
+
                             break;
                         case MifareClassicSetupViewModel ssVM:
                             if (ssVM.IsValidSelectedTaskIndex != false)
+                            {
                                 taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
+                            }
+
                             break;
                         case MifareDesfireSetupViewModel ssVM:
                             if (ssVM.IsValidSelectedTaskIndex != false)
+                            {
                                 taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
+                            }
+
                             break;
                         case MifareUltralightSetupViewModel ssVM:
                             if (ssVM.IsValidSelectedTaskIndex != false)
+                            {
                                 taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
+                            }
+
                             break;
                         default:
                             taskIndices.Add(null, 0);
@@ -860,7 +875,9 @@ namespace RFiDGear.ViewModel
                 {
                     reportReaderWriter = _reportReaderWriter;
                     if (string.IsNullOrEmpty(reportReaderWriter.ReportTemplatePath))
+                    {
                         reportReaderWriter.ReportTemplatePath = ReportTemplatePath;
+                    }
 
                     if (!String.IsNullOrWhiteSpace(reportReaderWriter.ReportTemplatePath))
                     {
@@ -927,53 +944,94 @@ namespace RFiDGear.ViewModel
                                     {
                                         case GenericChipTaskViewModel tsVM:
                                             if (tsVM.TaskErr == checkpoint.ErrorLevel)
+                                            {
                                                 if (concatenate)
+                                                {
                                                     reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+                                                }
                                                 else
+                                                {
                                                     reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+                                                }
+                                            }
+
                                             break;
                                         case CommonTaskViewModel tsVM:
                                             if (tsVM.TaskErr == checkpoint.ErrorLevel)
+                                            {
                                                 if (concatenate)
+                                                {
                                                     reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+                                                }
                                                 else
+                                                {
                                                     reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+                                                }
+                                            }
+
                                             break;
                                         case MifareClassicSetupViewModel tsVM:
                                             if (tsVM.TaskErr == checkpoint.ErrorLevel)
+                                            {
                                                 if (concatenate)
+                                                {
                                                     reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+                                                }
                                                 else
+                                                {
                                                     reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+                                                }
+                                            }
+
                                             break;
                                         case MifareDesfireSetupViewModel tsVM:
                                             if (tsVM.TaskErr == checkpoint.ErrorLevel)
+                                            {
                                                 if (concatenate)
+                                                {
                                                     reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+                                                }
                                                 else
+                                                {
                                                     reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+                                                }
+                                            }
+
                                             break;
                                         case MifareUltralightSetupViewModel tsVM:
                                             if (tsVM.TaskErr == checkpoint.ErrorLevel)
+                                            {
                                                 if (concatenate)
+                                                {
                                                     reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+                                                }
                                                 else
+                                                {
                                                     reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+                                                }
+                                            }
+
                                             break;
                                     }
                                 }
                                 // The targeted Task is not of any vaild type. E.g. a "string"
                                 if (targetIndex == 0)
+                                {
                                     throw new Exception();
+                                }
                             }
 
                             // The targeted Task does not Exist: Continue Execution anyway...
                             catch
                             {
                                 if (concatenate)
+                                {
                                     reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+                                }
                                 else
+                                {
                                     reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+                                }
                             }
                         }
 
@@ -1098,7 +1156,9 @@ namespace RFiDGear.ViewModel
                                 foreach (Checkpoint cp in Checkpoints)
                                 {
                                     if (cp.ErrorLevel == results.Where<Checkpoint>(x => x.TaskIndex == cp.TaskIndex).Single().ErrorLevel)
+                                    {
                                         continue;
+                                    }
                                     else
                                     {
                                         TaskErr = ERROR.IsNotTrue;
@@ -1118,7 +1178,9 @@ namespace RFiDGear.ViewModel
                                     for (int i = 0; i < Checkpoints.Count(); i++)
                                     {
                                         if (cp.ErrorLevel == Checkpoints[i].ErrorLevel)
+                                        {
                                             continue;
+                                        }
                                         else
                                         {
                                             result = ERROR.NoError;
@@ -1163,7 +1225,9 @@ namespace RFiDGear.ViewModel
                                             return;
                                         }
                                         else
+                                        {
                                             continue;
+                                        }
                                     }
                                 }
 
@@ -1184,7 +1248,9 @@ namespace RFiDGear.ViewModel
                                             continue;
                                         }
                                         else
+                                        {
                                             continue;
+                                        }
                                     }
                                 }
 
@@ -1314,8 +1380,9 @@ namespace RFiDGear.ViewModel
                                                     }
 
                                                     else
+                                                    {
                                                         result = ERROR.IsNotTrue;
-
+                                                    }
 
                                                     break;
                                             }
@@ -1384,9 +1451,13 @@ namespace RFiDGear.ViewModel
         public virtual void RequestClose()
         {
             if (OnCloseRequest != null)
+            {
                 OnCloseRequest(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         public event EventHandler DialogClosing;
@@ -1396,9 +1467,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Ok()
         {
             if (OnOk != null)
+            {
                 OnOk(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         public ICommand CancelCommand => new RelayCommand(Cancel);
@@ -1406,9 +1481,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Cancel()
         {
             if (OnCancel != null)
+            {
                 OnCancel(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         public ICommand AuthCommand => new RelayCommand(Auth);
@@ -1416,9 +1495,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Auth()
         {
             if (OnAuth != null)
+            {
                 OnAuth(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         [XmlIgnore]
@@ -1436,7 +1519,9 @@ namespace RFiDGear.ViewModel
         public void Close()
         {
             if (DialogClosing != null)
+            {
                 DialogClosing(this, new EventArgs());
+            }
         }
 
         public void Show(IList<IDialogViewModel> collection)

@@ -35,9 +35,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Ok()
         {
             if (OnOk != null)
+            {
                 OnOk(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         public ICommand CancelCommand => new RelayCommand(Cancel);
@@ -45,9 +49,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Cancel()
         {
             if (OnCancel != null)
+            {
                 OnCancel(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         #endregion Commands
@@ -78,9 +86,13 @@ namespace RFiDGear.ViewModel
         public virtual void RequestClose()
         {
             if (OnCloseRequest != null)
+            {
                 OnCloseRequest(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         public event EventHandler DialogClosing;
@@ -88,7 +100,9 @@ namespace RFiDGear.ViewModel
         public void Close()
         {
             if (DialogClosing != null)
+            {
                 DialogClosing(this, new EventArgs());
+            }
         }
 
         public void Show(IList<IDialogViewModel> collection)

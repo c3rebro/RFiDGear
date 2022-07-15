@@ -80,7 +80,9 @@ namespace RFiDGear
                         return instance;
                     }
                     else
+                    {
                         return null;
+                    }
                 }
             }
         }
@@ -114,7 +116,9 @@ namespace RFiDGear
                         ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
 
                         if (int.TryParse(defaultSettings.DefaultSpecification.LastUsedComPort, out int portNumber))
+                        {
                             readerDevice = new TWN4ReaderDevice(portNumber);
+                        }
 
                         readerDevice.ReadChipPublic();
                     }
@@ -197,10 +201,13 @@ namespace RFiDGear
                                         DESFireCardVersion version = cmd.GetVersion();
 
                                         if (version.hardwareMjVersion == 1)
+                                        {
                                             GenericChip.CardType = CARD_TYPE.DESFireEV1;
-
+                                        }
                                         else if (version.hardwareMjVersion == 2)
+                                        {
                                             GenericChip.CardType = CARD_TYPE.DESFireEV2;
+                                        }
                                     }
                                     //ISO15693Commands commands = card.Commands as ISO15693Commands;
                                     //SystemInformation si = commands.GetSystemInformation();
@@ -228,7 +235,9 @@ namespace RFiDGear
             catch (Exception e)
             {
                 if (readerProvider != null)
+                {
                     readerProvider.ReleaseInstance();
+                }
 
                 LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 
@@ -257,7 +266,9 @@ namespace RFiDGear
                 }
 
                 if (readerProvider != null)
+                {
                     readerProvider.ReleaseInstance();
+                }
                 // Now disposed of any unmanaged objects
                 // ...
 
@@ -1231,7 +1242,9 @@ namespace RFiDGear
                                         return ERROR.OutOfMemory;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
                             else if (card.Type == "DESFire")
@@ -1314,11 +1327,15 @@ namespace RFiDGear
                                         return ERROR.OutOfMemory;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
                             else
+                            {
                                 return ERROR.DeviceNotReadyError;
+                            }
                         }
                     }
                 }
@@ -1418,11 +1435,15 @@ namespace RFiDGear
                                         return ERROR.AuthenticationError;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
                             else
+                            {
                                 return ERROR.DeviceNotReadyError;
+                            }
                         }
                     }
                 }
@@ -1525,11 +1546,15 @@ namespace RFiDGear
                                         return ERROR.AuthenticationError;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
                             else
+                            {
                                 return ERROR.DeviceNotReadyError;
+                            }
                         }
                     }
                 }
@@ -1579,9 +1604,13 @@ namespace RFiDGear
                                 {
                                     cmd.SelectApplication((uint)_appID);
                                     if (_appID > 0)
+                                    {
                                         cmd.Authenticate((byte)_keyNumber, aiToUse.MasterCardKey);
+                                    }
                                     else
+                                    {
                                         cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+                                    }
 
                                     readerUnit.Disconnect();
                                     return ERROR.NoError;
@@ -1616,9 +1645,14 @@ namespace RFiDGear
                                 {
                                     cmd.SelectApplication((uint)_appID);
                                     if (_appID > 0)
+                                    {
                                         cmd.Authenticate((byte)_keyNumber, aiToUse.MasterCardKey);
+                                    }
                                     else
+                                    {
                                         cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
+                                    }
+
                                     readerUnit.Disconnect();
                                     return ERROR.NoError;
                                 }
@@ -1722,7 +1756,9 @@ namespace RFiDGear
                                                 return ERROR.AuthenticationError;
                                             }
                                             else
+                                            {
                                                 return ERROR.IOError;
+                                            }
                                         }
                                     }
                                     cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
@@ -1743,7 +1779,9 @@ namespace RFiDGear
                                         return ERROR.AuthenticationError;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
 
@@ -1793,7 +1831,9 @@ namespace RFiDGear
                                                 return ERROR.NotAllowed;
                                             }
                                             else
+                                            {
                                                 return ERROR.IOError;
+                                            }
                                         }
                                     }
 
@@ -1822,12 +1862,16 @@ namespace RFiDGear
                                         return ERROR.AuthenticationError;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
 
                             else
+                            {
                                 return ERROR.DeviceNotReadyError;
+                            }
                         }
                     }
                 }
@@ -1877,7 +1921,9 @@ namespace RFiDGear
                                     cmd.SelectApplication(0);
 
                                     if (authenticateToPICCFirst)
+                                    {
                                         cmd.Authenticate(0, aiToUse.MasterCardKey);
+                                    }
 
                                     cmd.CreateApplication((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys); //_keySettingsTarget
 
@@ -1894,7 +1940,9 @@ namespace RFiDGear
                                         return ERROR.AuthenticationError;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
 
@@ -1907,7 +1955,9 @@ namespace RFiDGear
                                     cmd.SelectApplication(0);
 
                                     if (authenticateToPICCFirst)
+                                    {
                                         cmd.Authenticate(0, aiToUse.MasterCardKey);
+                                    }
 
                                     DESFireKeySettings ks = DESFireKeySettings.KS_CHANGE_KEY_WITH_MK | DESFireKeySettings.KS_FREE_LISTING_WITHOUT_MK | DESFireKeySettings.KS_FREE_CREATE_DELETE_WITHOUT_MK | DESFireKeySettings.KS_CONFIGURATION_CHANGEABLE;
 
@@ -1930,11 +1980,15 @@ namespace RFiDGear
                                         return ERROR.OutOfMemory;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
                             else
+                            {
                                 return ERROR.DeviceNotReadyError;
+                            }
                         }
                     }
                 }
@@ -2018,7 +2072,9 @@ namespace RFiDGear
                                                     return ERROR.AuthenticationError;
                                                 }
                                                 else
+                                                {
                                                     return ERROR.IOError;
+                                                }
                                             }
                                         }
                                     }
@@ -2071,7 +2127,9 @@ namespace RFiDGear
                                                         return ERROR.AuthenticationError;
                                                     }
                                                     else
+                                                    {
                                                         return ERROR.IOError;
+                                                    }
                                                 }
                                             }
                                         }
@@ -2090,11 +2148,15 @@ namespace RFiDGear
                                         return ERROR.AuthenticationError;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
                             else
+                            {
                                 return ERROR.DeviceNotReadyError;
+                            }
                         }
                     }
                 }
@@ -2171,7 +2233,9 @@ namespace RFiDGear
                                             return ERROR.AuthenticationError;
                                         }
                                         else
+                                        {
                                             return ERROR.IOError;
+                                        }
                                     }
                                 }
                             }
@@ -2251,11 +2315,15 @@ namespace RFiDGear
                                         return ERROR.AuthenticationError;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
                             else
+                            {
                                 return ERROR.DeviceNotReadyError;
+                            }
                         }
                     }
                 }
@@ -2323,11 +2391,15 @@ namespace RFiDGear
                                         return ERROR.AuthenticationError;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
                             else
+                            {
                                 return ERROR.DeviceNotReadyError;
+                            }
                         }
                     }
                 }
@@ -2403,7 +2475,9 @@ namespace RFiDGear
                                                 return ERROR.AuthenticationError;
                                             }
                                             else
+                                            {
                                                 return ERROR.IOError;
+                                            }
                                         }
                                     }
 
@@ -2423,11 +2497,15 @@ namespace RFiDGear
                                         return ERROR.AuthenticationError;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
                             else
+                            {
                                 return ERROR.DeviceNotReadyError;
+                            }
                         }
                     }
                 }
@@ -2490,7 +2568,9 @@ namespace RFiDGear
                                                 return ERROR.AuthenticationError;
                                             }
                                             else
+                                            {
                                                 return ERROR.IOError;
+                                            }
                                         }
                                     }
                                     DesfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
@@ -2508,11 +2588,15 @@ namespace RFiDGear
                                         return ERROR.AuthenticationError;
                                     }
                                     else
+                                    {
                                         return ERROR.IOError;
+                                    }
                                 }
                             }
                             else
+                            {
                                 return ERROR.DeviceNotReadyError;
+                            }
                         }
                     }
                 }

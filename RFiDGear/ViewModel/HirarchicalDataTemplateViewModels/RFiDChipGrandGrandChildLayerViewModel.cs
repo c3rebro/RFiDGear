@@ -75,7 +75,9 @@ namespace RFiDGear.ViewModel
 
                 // Expand all the way up to the root.
                 if (parent != null)
+                {
                     parent.IsExpanded = true;
+                }
             }
         }
 

@@ -46,7 +46,9 @@ namespace RFiDGear
             {
                 defaultSpecification = value;
                 if (defaultSpecification != null)
+                {
                     SaveSettings();
+                }
             }
         }
 
@@ -63,7 +65,9 @@ namespace RFiDGear
                 appDataPath = Path.Combine(appDataPath, "RFiDGear");
 
                 if (!Directory.Exists(appDataPath))
+                {
                     Directory.CreateDirectory(appDataPath);
+                }
 
                 XmlWriterSettings xmlSettings = new XmlWriterSettings();
                 xmlSettings.Encoding = new UTF8Encoding(false);
@@ -235,7 +239,9 @@ namespace RFiDGear
                     try
                     {
                         if (xmlWriter != null)
+                        {
                             xmlWriter.Close();
+                        }
 
                         defaultSpecification = null;
                         // Dispose any managed objects

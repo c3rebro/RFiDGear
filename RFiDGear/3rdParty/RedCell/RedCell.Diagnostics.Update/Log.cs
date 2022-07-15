@@ -52,7 +52,9 @@ namespace RedCell.Diagnostics.Update
         private static void OnEvent(string message)
         {
             if (Event != null)
+            {
                 Event(null, new LogEventArgs(message));
+            }
         }
 
         #endregion Events
@@ -69,10 +71,14 @@ namespace RedCell.Diagnostics.Update
             string message = string.Format(format, args);
             OnEvent(message);
             if (Console)
+            {
                 System.Console.WriteLine(message);
+            }
 
             if (Debug)
+            {
                 System.Diagnostics.Debug.WriteLine(message);
+            }
         }
 
         #endregion Methods

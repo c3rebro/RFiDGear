@@ -20,7 +20,9 @@ namespace RFiDGear
             foreach (char c in keyToCheck.ToCharArray())
             {
                 if (c == ' ')
+                {
                     return true;
+                }
             }
             return false;
         }
@@ -34,7 +36,9 @@ namespace RFiDGear
             {
                 c = hexString[i];
                 if (IsHexDigit(c))
+                {
                     numHexChars++;
+                }
             }
             // if odd number of characters, discard last character
             if (numHexChars % 2 != 0)
@@ -54,9 +58,13 @@ namespace RFiDGear
             {
                 c = hexString[i];
                 if (IsHexDigit(c))
+                {
                     newString += c;
+                }
                 else
+                {
                     discarded++;
+                }
             }
             // if odd number of characters, discard last character
             if (newString.Length % 2 != 0)
@@ -120,9 +128,15 @@ namespace RFiDGear
             c = Char.ToUpper(c);
             numChar = Convert.ToInt32(c);
             if (numChar >= numA && numChar < (numA + 6))
+            {
                 return true;
+            }
+
             if (numChar >= num1 && numChar < (num1 + 10))
+            {
                 return true;
+            }
+
             return false;
         }
 
@@ -131,9 +145,15 @@ namespace RFiDGear
             string temp = Str;
 
             if (string.IsNullOrEmpty(temp))
+            {
                 return "error 0";
+            }
+
             if (!IsInHexFormat(temp))
+            {
                 return "error 1";
+            }
+
             if (temp.Length != 12)
             {
                 return "error 2";
@@ -141,7 +161,9 @@ namespace RFiDGear
             else
             {
                 for (int i = (Str.Length) - 2; i > 0; i -= 2)
+                {
                     temp = temp.Insert(i, " ");
+                }
 
                 return temp.ToLower();
             }
@@ -152,14 +174,24 @@ namespace RFiDGear
             string temp = Str;
 
             if (string.IsNullOrEmpty(temp))
+            {
                 return KEY_ERROR.KEY_IS_EMPTY;
+            }
+
             if (!IsInHexFormat(temp))
+            {
                 return KEY_ERROR.KEY_HAS_WRONG_FORMAT;
+            }
+
             if (temp.Length != 32)
+            {
                 return KEY_ERROR.KEY_HAS_WRONG_LENGTH;
+            }
 
             for (int i = (Str.Length) - 2; i > 0; i -= 2)
+            {
                 temp = temp.Insert(i, " ");
+            }
 
             DesfireKeyToCheck = temp.ToUpper();
 
@@ -171,14 +203,24 @@ namespace RFiDGear
             string temp = Str;
 
             if (string.IsNullOrEmpty(temp))
+            {
                 return KEY_ERROR.KEY_IS_EMPTY;
+            }
+
             if (!IsInHexFormat(temp))
+            {
                 return KEY_ERROR.KEY_HAS_WRONG_FORMAT;
+            }
+
             if (temp.Length != 12)
+            {
                 return KEY_ERROR.KEY_HAS_WRONG_LENGTH;
+            }
 
             for (int i = (Str.Length) - 2; i > 0; i -= 2)
+            {
                 temp = temp.Insert(i, " ");
+            }
 
             ClassicKeyToCheck = temp.ToUpper();
 
@@ -190,8 +232,13 @@ namespace RFiDGear
             char[] c = keyToNormalize.ToCharArray();
 
             for (int i = 0; i < keyToNormalize.Length; i++)
+            {
                 if (c[i] == ' ')
+                {
                     c[i] = '\0';
+                }
+            }
+
             return new string(c);
         }
 
@@ -243,7 +290,9 @@ namespace RFiDGear
             C2x ^= 0xFF;
 
             if (C2x != _C2)
+            {
                 return true;
+            }
             else
             {
                 _C1 = st[0];
@@ -256,7 +305,9 @@ namespace RFiDGear
                 C1x ^= 0xFF;
 
                 if (C1x != _C1)
+                {
                     return true;
+                }
                 else
                 {
                     _C3 = st[1];
@@ -269,9 +320,13 @@ namespace RFiDGear
                     C3x ^= 0xFF;
 
                     if (C3x != _C3)
+                    {
                         return true;
+                    }
                     else
+                    {
                         return false;
+                    }
                 }
             }
         }
@@ -282,9 +337,13 @@ namespace RFiDGear
             byte[] st = GetBytes(stString, out int _);
 
             if (!SectorTrailerHasWrongFormat(st))
+            {
                 return false;
+            }
             else
+            {
                 return true;
+            }
         }
 
         #endregion Converter
@@ -302,7 +361,10 @@ namespace RFiDGear
         private static byte HexToByte(string hex)
         {
             if (hex.Length > 2 || hex.Length <= 0)
+            {
                 throw new ArgumentException("hex must be 1 or 2 characters in length");
+            }
+
             byte newByte = byte.Parse(hex, System.Globalization.NumberStyles.HexNumber);
             return newByte;
         }
@@ -353,7 +415,9 @@ namespace RFiDGear
             public byte Checksum(params byte[] val)
             {
                 if (val == null)
+                {
                     throw new ArgumentNullException("val");
+                }
 
                 byte crc = 0xc7;
 

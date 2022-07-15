@@ -68,7 +68,9 @@ namespace RFiDGear
                                 if (child.Children != null)
                                 {
                                     foreach (RFiDChipGrandChildLayerViewModel grandChild in child.Children)
+                                    {
                                         grandChild.IsSelected = false;
+                                    }
                                 }
                             }
 
@@ -104,7 +106,9 @@ namespace RFiDGear
         {
             var grid = sender as DataGrid;
             if (grid == null || grid.SelectedItem == null)
+            {
                 return;
+            }
 
             // Works with .Net 4.5
             grid.Dispatcher.InvokeAsync(() =>
@@ -112,8 +116,9 @@ namespace RFiDGear
                 grid.UpdateLayout();
 
                 if (grid.SelectedItem != null)
+                {
                     grid.ScrollIntoView(grid.SelectedItem, null);
-
+                }
             });
 
             // Works with .Net 4.0
@@ -121,7 +126,9 @@ namespace RFiDGear
             {
                 grid.UpdateLayout();
                 if (grid.SelectedItem != null)
+                {
                     grid.ScrollIntoView(grid.SelectedItem, null);
+                }
             }));
         }
     }

@@ -43,7 +43,9 @@ public sealed class MefHelper : IDisposable
         try
         {
             if (Directory.Exists(_ExtensionsPath) == false)
+            {
                 Directory.CreateDirectory(_ExtensionsPath);
+            }
         }
         catch (Exception e)
         {
@@ -55,7 +57,9 @@ public sealed class MefHelper : IDisposable
         try
         {
             if (Directory.Exists(_ExtensionsPath) == false)
+            {
                 Directory.CreateDirectory(_ExtensionsPath);
+            }
         }
         catch (Exception e)
         {

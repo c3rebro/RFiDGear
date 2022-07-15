@@ -52,7 +52,10 @@ namespace RedCell.Net
                         using (var ms = new MemoryStream())
                         {
                             for (int b; (b = sr.ReadByte()) != -1;)
+                            {
                                 ms.WriteByte((byte)b);
+                            }
+
                             ResponseData = ms.ToArray();
                         }
                         break;
@@ -90,7 +93,10 @@ namespace RedCell.Net
         {
             var encoder = string.IsNullOrEmpty(Response.ContentEncoding) ? Encoding.UTF8 : Encoding.GetEncoding(Response.ContentEncoding);
             if (ResponseData == null)
+            {
                 return string.Empty;
+            }
+
             return encoder.GetString(ResponseData);
         }
 

@@ -34,7 +34,9 @@ namespace RFiDGear.ViewModel
         public RFiDChipGrandChildLayerViewModel(MifareClassicDataBlockModel _mifareClassicDataBlock, MifareClassicSetupViewModel _setupViewModel)
         {
             if (_mifareClassicDataBlock != null && _mifareClassicDataBlock.Data != null)
+            {
                 mifareClassicDataBlock = _mifareClassicDataBlock;
+            }
             else
             {
                 mifareClassicDataBlock = new MifareClassicDataBlockModel
@@ -70,7 +72,9 @@ namespace RFiDGear.ViewModel
             {
                 mifareClassicDataBlock = _dataBlock;
                 if (mifareClassicDataBlock.Data == null)
+                {
                     mifareClassicDataBlock.Data = new byte[16];
+                }
             }
 
 
@@ -212,9 +216,13 @@ namespace RFiDGear.ViewModel
                     for (int i = 0; i < mifareClassicDataBlock.Data.Length; i++)
                     {
                         if (mifareClassicDataBlock.Data[i] < 27 | mifareClassicDataBlock.Data[i] > 127)
+                        {
                             tempString[i] = (char)248;
+                        }
                         else
+                        {
                             tempString[i] = (char)mifareClassicDataBlock.Data[i];
+                        }
                     }
 
                     dataBlockAsCharString = new string(tempString);
@@ -226,9 +234,13 @@ namespace RFiDGear.ViewModel
                     for (int i = 0; i < desfireFile.Data.Length; i++)
                     {
                         if (desfireFile.Data[i] < 27 | desfireFile.Data[i] > 127)
+                        {
                             tempString[i] = (char)248;
+                        }
                         else
+                        {
                             tempString[i] = (char)desfireFile.Data[i];
+                        }
                     }
 
                     dataBlockAsCharString = new string(tempString);
@@ -240,9 +252,13 @@ namespace RFiDGear.ViewModel
                     for (int i = 0; i < mifareClassicMAD.Data.Length; i++)
                     {
                         if (mifareClassicMAD.Data[i] < 27 | mifareClassicMAD.Data[i] > 127)
+                        {
                             tempString[i] = (char)248;
+                        }
                         else
+                        {
                             tempString[i] = (char)mifareClassicMAD.Data[i];
+                        }
                     }
 
                     dataBlockAsCharString = new string(tempString);
@@ -354,8 +370,6 @@ namespace RFiDGear.ViewModel
             }
             set
             {
-                int discardedChars = 0;
-
                 dataBlockAsHexString = value.Replace("\r", "").Replace("\n", "").Replace(" ", "");
 
                 if (mifareClassicDataBlock != null && value.Length == 32 && CustomConverter.IsInHexFormat(value))
@@ -382,7 +396,6 @@ namespace RFiDGear.ViewModel
                     return;
                 }
 
-
                 RaisePropertyChanged("DataAsHexString");
                 RaisePropertyChanged("DataAsCharString");
             }
@@ -399,7 +412,6 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidDataBlockContent = value;
-
                 RaisePropertyChanged("IsValidDataContent");
             }
         }
@@ -456,11 +468,17 @@ namespace RFiDGear.ViewModel
             get
             {
                 if (mifareClassicDataBlock != null)
+                {
                     grandChildNodeHeader = string.Format("Block: [{0}; ({1})]", mifareClassicDataBlock.DataBlockNumberSectorBased, mifareClassicDataBlock.DataBlockNumberChipBased);
+                }
                 else if (mifareClassicMAD != null)
+                {
                     grandChildNodeHeader = string.Format("MAD ID: [{0}]", mifareClassicMAD.MADApp.ToString("D3"));
+                }
                 else if (desfireFile != null)
+                {
                     grandChildNodeHeader = string.Format("File No.: [{0}]", DesfireFile.FileID.ToString("D3")); //dataBlockContent.dataBlockNumber.ToString("D3"), dataBlockContent.dataBlockNumber+16.ToString("D3")
+                }
 
                 return grandChildNodeHeader;
             }
@@ -484,7 +502,9 @@ namespace RFiDGear.ViewModel
                     IsValidSelectedDataIndexAndLength = (bool)(selectedDataIndexStart % 2 == 0);
                 }
                 else
+                {
                     IsValidSelectedDataIndexAndLength = false;
+                }
 
                 RaisePropertyChanged("SelectedDataLength");
             }
@@ -509,7 +529,9 @@ namespace RFiDGear.ViewModel
                     IsValidSelectedDataIndexAndLength = true;
                 }
                 else
+                {
                     IsValidSelectedDataIndexAndLength = false;
+                }
 
                 RaisePropertyChanged("SelectedDataIndexStart");
             }
@@ -555,7 +577,10 @@ namespace RFiDGear.ViewModel
             set
             {
                 if (mifareClassicDataBlock != null)
+                {
                     mifareClassicDataBlock.DataBlockNumberSectorBased = value;
+                }
+
                 RaisePropertyChanged("DataBlockNumber");
                 RaisePropertyChanged("GrandChildNodeHeader");
             }
@@ -579,7 +604,9 @@ namespace RFiDGear.ViewModel
 
                 // Expand all the way up to the root.
                 if (parent != null)
+                {
                     parent.IsExpanded = true;
+                }
             }
         }
         private bool isExpanded;
@@ -676,9 +703,13 @@ namespace RFiDGear.ViewModel
         public virtual void RequestClose()
         {
             if (OnCloseRequest != null)
+            {
                 OnCloseRequest(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         public event EventHandler DialogClosing;
@@ -688,9 +719,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Ok()
         {
             if (OnOk != null)
+            {
                 OnOk(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         /// <summary>
@@ -701,9 +736,13 @@ namespace RFiDGear.ViewModel
         protected virtual void Cancel()
         {
             if (OnCancel != null)
+            {
                 OnCancel(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         /// <summary>
@@ -730,7 +769,9 @@ namespace RFiDGear.ViewModel
         public void Close()
         {
             if (DialogClosing != null)
+            {
                 DialogClosing(this, new EventArgs());
+            }
         }
 
         /// <summary>

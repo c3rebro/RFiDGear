@@ -435,13 +435,20 @@ namespace RFiDGear.Model
                 !(CustomConverter.IsInHexFormat(sectorTrailer[1]) && sectorTrailer[1].Length == 8) ||
                 !(CustomConverter.IsInHexFormat(sectorTrailer[0]) && sectorTrailer[0].Length == 12) ||
                 !(CustomConverter.IsInHexFormat(sectorTrailer[2]) && sectorTrailer[2].Length == 12))
+            {
                 return true;
+            }
+
             byte[] _bytes = CustomConverter.GetBytes(sectorTrailer[1], out int _);
 
             if (!decodeSectorTrailer(_bytes, ref _sector))
+            {
                 return false;
+            }
             else
+            {
                 return true;
+            }
         }
 
         /// <summary>

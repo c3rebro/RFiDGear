@@ -66,6 +66,7 @@ namespace MvvmDialogs.Behaviors
 
                 // otherwise create a handler for it that responds to changes to the supplied collection
                 if (!ChangeNotificationHandlers.ContainsKey(d as Window))
+                {
                     ChangeNotificationHandlers[d as Window] = (sender, args) =>
                 {
                     var collection = sender as ObservableCollection<IDialogViewModel>;
@@ -76,21 +77,31 @@ namespace MvvmDialogs.Behaviors
                             args.Action == NotifyCollectionChangedAction.Replace)
                         {
                             if (args.NewItems != null)
+                            {
                                 foreach (IDialogViewModel viewModel in args.NewItems)
                                 {
                                     if (!DialogBoxViewModels.ContainsKey(collection))
+                                    {
                                         DialogBoxViewModels[collection] = new List<IDialogViewModel>();
+                                    }
+
                                     DialogBoxViewModels[collection].Add(viewModel);
                                     AddDialog(viewModel, collection, d as Window);
                                 }
+                            }
+
                             if (args.OldItems != null)
+                            {
                                 foreach (IDialogViewModel viewModel in args.OldItems)
                                 {
                                     RemoveDialog(viewModel);
                                     DialogBoxViewModels[collection].Remove(viewModel);
                                     if (DialogBoxViewModels[collection].Count == 0)
+                                    {
                                         DialogBoxViewModels.Remove(collection);
+                                    }
                                 }
+                            }
                         }
                         else if (args.Action == NotifyCollectionChangedAction.Reset)
                         {
@@ -101,12 +112,16 @@ namespace MvvmDialogs.Behaviors
                             {
                                 var viewModels = DialogBoxViewModels[collection];
                                 foreach (var viewModel in DialogBoxViewModels[collection])
+                                {
                                     RemoveDialog(viewModel);
+                                }
+
                                 DialogBoxViewModels.Remove(collection);
                             }
                         }
                     }
                 };
+                }
 
                 // when the collection is first bound to this property we should create any initial
                 // dialogs the user may have added in the main view model's constructor
@@ -115,7 +130,9 @@ namespace MvvmDialogs.Behaviors
                 {
                     newCollection.CollectionChanged += ChangeNotificationHandlers[d as Window];
                     foreach (IDialogViewModel viewModel in newCollection.ToList())
+                    {
                         AddDialog(viewModel, newCollection, d as Window);
+                    }
                 }
 
                 // when we remove the binding we need to shut down any dialogs that have been left open
@@ -124,7 +141,9 @@ namespace MvvmDialogs.Behaviors
                 {
                     oldCollection.CollectionChanged -= ChangeNotificationHandlers[d as Window];
                     foreach (IDialogViewModel viewModel in oldCollection.ToList())
+                    {
                         RemoveDialog(viewModel);
+                    }
                 }
             }
 
@@ -135,6 +154,7 @@ namespace MvvmDialogs.Behaviors
 
                 // otherwise create a handler for it that responds to changes to the supplied collection
                 if (!UserControlChangeNotificationHandlers.ContainsKey(d as UserControl))
+                {
                     UserControlChangeNotificationHandlers[d as UserControl] = (sender, args) =>
                 {
                     var collection = sender as ObservableCollection<IDialogViewModel>;
@@ -145,21 +165,31 @@ namespace MvvmDialogs.Behaviors
                             args.Action == NotifyCollectionChangedAction.Replace)
                         {
                             if (args.NewItems != null)
+                            {
                                 foreach (IDialogViewModel viewModel in args.NewItems)
                                 {
                                     if (!DialogBoxViewModels.ContainsKey(collection))
+                                    {
                                         DialogBoxViewModels[collection] = new List<IDialogViewModel>();
+                                    }
+
                                     DialogBoxViewModels[collection].Add(viewModel);
                                     AddDialog(viewModel, collection, d as UserControl);
                                 }
+                            }
+
                             if (args.OldItems != null)
+                            {
                                 foreach (IDialogViewModel viewModel in args.OldItems)
                                 {
                                     RemoveDialog(viewModel);
                                     DialogBoxViewModels[collection].Remove(viewModel);
                                     if (DialogBoxViewModels[collection].Count == 0)
+                                    {
                                         DialogBoxViewModels.Remove(collection);
+                                    }
                                 }
+                            }
                         }
                         else if (args.Action == NotifyCollectionChangedAction.Reset)
                         {
@@ -170,12 +200,16 @@ namespace MvvmDialogs.Behaviors
                             {
                                 var viewModels = DialogBoxViewModels[collection];
                                 foreach (var viewModel in DialogBoxViewModels[collection])
+                                {
                                     RemoveDialog(viewModel);
+                                }
+
                                 DialogBoxViewModels.Remove(collection);
                             }
                         }
                     }
                 };
+                }
 
                 // when the collection is first bound to this property we should create any initial
                 // dialogs the user may have added in the main view model's constructor
@@ -184,7 +218,9 @@ namespace MvvmDialogs.Behaviors
                 {
                     newCollection.CollectionChanged += UserControlChangeNotificationHandlers[d as UserControl];
                     foreach (IDialogViewModel viewModel in newCollection.ToList())
+                    {
                         AddDialog(viewModel, newCollection, d as Window);
+                    }
                 }
 
                 // when we remove the binding we need to shut down any dialogs that have been left open
@@ -193,12 +229,16 @@ namespace MvvmDialogs.Behaviors
                 {
                     oldCollection.CollectionChanged -= UserControlChangeNotificationHandlers[d as UserControl];
                     foreach (IDialogViewModel viewModel in oldCollection.ToList())
+                    {
                         RemoveDialog(viewModel);
+                    }
                 }
             }
 
             else
+            {
                 return;
+            }
         }
 
         private static void AddDialog(IDialogViewModel viewModel, ObservableCollection<IDialogViewModel> collection, object owner)
@@ -214,7 +254,9 @@ namespace MvvmDialogs.Behaviors
                 //object info = viewModel.GetType().GetProperty("HasResourceDictionary").GetValue(viewModel);
 
                 if (resource == null)
+                {
                     return;
+                }
 
                 // is this resource a presenter?
                 if (IsAssignableToGenericType(resource.GetType(), typeof(IDialogBoxPresenter<>)))
@@ -228,7 +270,9 @@ namespace MvvmDialogs.Behaviors
                 {
                     var userViewModel = viewModel as IUserDialogViewModel;
                     if (userViewModel == null)
+                    {
                         return;
+                    }
 
                     var dialog = resource as Window;
                     dialog.DataContext = userViewModel;
@@ -258,9 +302,13 @@ namespace MvvmDialogs.Behaviors
                     dialog.Owner = (owner as Window);
 
                     if (userViewModel.IsModal)
+                    {
                         dialog.ShowDialog();
+                    }
                     else
+                    {
                         dialog.Show();
+                    }
                 }
             }
 
@@ -293,14 +341,21 @@ namespace MvvmDialogs.Behaviors
             foreach (var it in interfaceTypes)
             {
                 if (it.IsGenericType && it.GetGenericTypeDefinition() == genericType)
+                {
                     return true;
+                }
             }
 
             if (givenType.IsGenericType && givenType.GetGenericTypeDefinition() == genericType)
+            {
                 return true;
+            }
 
             Type baseType = givenType.BaseType;
-            if (baseType == null) return false;
+            if (baseType == null)
+            {
+                return false;
+            }
 
             return IsAssignableToGenericType(baseType, genericType);
         }

@@ -124,7 +124,9 @@ namespace RFiDGear.DataAccessLayer
             try
             {
                 if (parameter is string)
+                {
                     return ResourceLoader.GetResource((parameter as string));
+                }
                 else if (value != null && value.GetType() == typeof(ObservableCollection<string>))
                 {
                     var collection = new ObservableCollection<string>();
@@ -141,9 +143,13 @@ namespace RFiDGear.DataAccessLayer
                     return ResourceLoader.GetResource(string.Format("ENUM.{0}.{1}", value.GetType().Name, Enum.GetName(value.GetType(), value)));
                 }
                 else if (value is string)
+                {
                     return ResourceLoader.GetResource(string.Format("ENUM.{0}.{1}", value.GetType().Name, value));
+                }
                 else
+                {
                     return "Ressource not Found";
+                }
             }
             catch (Exception e)
             {
@@ -175,7 +181,9 @@ namespace RFiDGear.DataAccessLayer
                 {
                     values[i] = ResourceLoader.GetResource(string.Format("ENUM.{0}.{1}", targetType.Name, names[i]));
                     if ((string)value == values[i])
+                    {
                         return names[i];
+                    }
                 }
 
                 throw new ArgumentException(null, "value");

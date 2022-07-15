@@ -89,9 +89,13 @@ namespace RedCell.Diagnostics.Update
                 string txt;
 
                 if (data[0] == 65279) // remove BOM if present
+                {
                     txt = new string(data.ToCharArray(1, data.Length - 1));
+                }
                 else
+                {
                     txt = new string(data.ToCharArray());
+                }
 
                 var xml = XDocument.Parse(txt);
 

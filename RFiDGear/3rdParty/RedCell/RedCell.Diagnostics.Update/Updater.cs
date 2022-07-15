@@ -193,7 +193,9 @@ namespace RedCell.Diagnostics.Update
 
                 //string.Format("{0}{1}",this._localConfig.RemoteConfigUri,settings.DefaultLanguage == "german" ? "/de-de" : "/en-us")
                 if (_remoteConfig == null)
+                {
                     return;
+                }
 
                 if (_localConfig.SecurityToken != _remoteConfig.SecurityToken)
                 {
@@ -296,7 +298,10 @@ namespace RedCell.Diagnostics.Update
                     {
                         var zipfile = Path.Combine(Path.Combine(appDataPath, WorkPath), update);
                         using (var zip = ZipFile.Read(zipfile))
+                        {
                             zip.ExtractAll(Path.Combine(appDataPath, WorkPath), ExtractExistingFileAction.Throw);
+                        }
+
                         File.Delete(zipfile);
 
                         AllowUpdate = true;
