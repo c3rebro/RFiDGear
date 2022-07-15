@@ -67,7 +67,7 @@ namespace RFiDGear
 
                 XmlWriterSettings xmlSettings = new XmlWriterSettings();
                 xmlSettings.Encoding = new UTF8Encoding(false);
-                
+
                 xmlWriter = XmlWriter.Create(Path.Combine(appDataPath, _updateConfigFileFileName), xmlSettings);
                 xmlWriter.WriteStartDocument();
                 xmlWriter.WriteStartElement("Manifest");
@@ -234,7 +234,7 @@ namespace RFiDGear
                 {
                     try
                     {
-                        if(xmlWriter != null)
+                        if (xmlWriter != null)
                             xmlWriter.Close();
 
                         defaultSpecification = null;
@@ -242,7 +242,7 @@ namespace RFiDGear
                         // ...
                     }
 
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
                     }

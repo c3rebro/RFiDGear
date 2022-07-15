@@ -40,7 +40,7 @@ namespace RFiDGear._3rdParty
 
         public SelectionBindingTextBox() : base()
         {
-            this.SelectionChanged += this.OnSelectionChanged;
+            SelectionChanged += OnSelectionChanged;
         }
 
         public static bool GetIsFocused(DependencyObject obj)
@@ -55,28 +55,16 @@ namespace RFiDGear._3rdParty
 
         public int BindableSelectionStart
         {
-            get
-            {
-                return (int)this.GetValue(BindableSelectionStartProperty);
-            }
+            get => (int)GetValue(BindableSelectionStartProperty);
 
-            set
-            {
-                this.SetValue(BindableSelectionStartProperty, value);
-            }
+            set => SetValue(BindableSelectionStartProperty, value);
         }
 
         public int BindableSelectionLength
         {
-            get
-            {
-                return (int)this.GetValue(BindableSelectionLengthProperty);
-            }
+            get => (int)GetValue(BindableSelectionLengthProperty);
 
-            set
-            {
-                this.SetValue(BindableSelectionLengthProperty, value);
-            }
+            set => SetValue(BindableSelectionLengthProperty, value);
         }
 
         private static void OnBindableSelectionStartChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs args)
@@ -111,16 +99,16 @@ namespace RFiDGear._3rdParty
 
         private void OnSelectionChanged(object sender, RoutedEventArgs e)
         {
-            if (this.BindableSelectionStart != this.SelectionStart)
+            if (BindableSelectionStart != SelectionStart)
             {
-                this.changeFromUI = true;
-                this.BindableSelectionStart = this.SelectionStart;
+                changeFromUI = true;
+                BindableSelectionStart = SelectionStart;
             }
 
-            if (this.BindableSelectionLength != this.SelectionLength)
+            if (BindableSelectionLength != SelectionLength)
             {
-                this.changeFromUI = true;
-                this.BindableSelectionLength = this.SelectionLength;
+                changeFromUI = true;
+                BindableSelectionLength = SelectionLength;
             }
         }
 

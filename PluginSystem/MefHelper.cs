@@ -62,9 +62,9 @@ public sealed class MefHelper : IDisposable
             LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
         }
 
-        #if (DEBUG)
+#if (DEBUG)
         _ExtensionsPath = Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).ToString()).ToString()).ToString()).ToString()).ToString(), @"VCNEditor\bin\Debug");
-        #endif
+#endif
     }
 
     #region IDisposable Members
@@ -92,7 +92,7 @@ public sealed class MefHelper : IDisposable
     private string _ExtensionsPath = "";
     public string ExtensionsPath
     {
-        get { return _ExtensionsPath; }
+        get => _ExtensionsPath;
         set
         {
             if (!(_ExtensionsPath == value))

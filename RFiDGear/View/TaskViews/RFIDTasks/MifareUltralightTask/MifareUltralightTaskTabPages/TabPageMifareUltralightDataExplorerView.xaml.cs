@@ -18,14 +18,14 @@ using System.Windows.Media;
 
 namespace RFiDGear.View
 {
-	/// <summary>
-	/// Interaction logic for TabPageMifareUltralightDataExplorerView.xaml
-	/// </summary>
-	public partial class TabPageMifareUltralightDataExplorerView : UserControl
-	{
-		public TabPageMifareUltralightDataExplorerView()
-		{
-			InitializeComponent();
-		}
-	}
+    /// <summary>
+    /// Interaction logic for TabPageMifareUltralightDataExplorerView.xaml
+    /// </summary>
+    public partial class TabPageMifareUltralightDataExplorerView : UserControl
+    {
+        public TabPageMifareUltralightDataExplorerView()
+        {
+            InitializeComponent();
+        }
+    }
 }

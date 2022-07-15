@@ -45,7 +45,7 @@ namespace RFiDGear.Model
         /// </summary>
         public ObservableCollection<object> TaskCollection
         {
-            get { return taskCollection; }
+            get => taskCollection;
             set
             {
                 taskCollection = value;

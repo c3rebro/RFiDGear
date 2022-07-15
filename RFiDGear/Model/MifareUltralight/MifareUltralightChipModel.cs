@@ -21,10 +21,7 @@ namespace RFiDGear.Model
     {
         private readonly List<MifareUltralightPageModel> _pageList = new List<MifareUltralightPageModel>();
 
-        public List<MifareUltralightPageModel> PageList
-        {
-            get { return _pageList; }
-        }
+        public List<MifareUltralightPageModel> PageList => _pageList;
 
         public MifareUltralightChipModel()
         {
@@ -32,8 +29,8 @@ namespace RFiDGear.Model
 
         public MifareUltralightChipModel(string uid, CARD_TYPE cardType)
         {
-            this.CardType = cardType;
-            this.UidNumber = uid;
+            CardType = cardType;
+            UidNumber = uid;
         }
 
         public string UidNumber { get; set; }

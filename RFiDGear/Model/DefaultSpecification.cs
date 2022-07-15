@@ -93,8 +93,8 @@ namespace RFiDGear.Model
         /// </summary>
         public string DefaultReaderName
         {
-            get { return _defaultReaderName; }
-            set { _defaultReaderName = value; }
+            get => _defaultReaderName;
+            set => _defaultReaderName = value;
         }
 
         private string _defaultReaderName;
@@ -104,21 +104,21 @@ namespace RFiDGear.Model
         /// </summary>
         public ReaderTypes DefaultReaderProvider
         {
-            get { return _defaultReaderProvider; }
-            set { _defaultReaderProvider = value; }
+            get => _defaultReaderProvider;
+            set => _defaultReaderProvider = value;
         }
 
         private ReaderTypes _defaultReaderProvider;
 
 
-        
+
         /// <summary>
         ///
         /// </summary>
         public bool AutoCheckForUpdates
         {
-            get { return autoCheckForUpdates; }
-            set { autoCheckForUpdates = value; }
+            get => autoCheckForUpdates;
+            set => autoCheckForUpdates = value;
         }
         private bool autoCheckForUpdates;
 
@@ -127,33 +127,34 @@ namespace RFiDGear.Model
         /// </summary>
         public string DefaultLanguage
         {
-            get { return _defaultLanguage; }
-            set { _defaultLanguage = value; }
-        } private string _defaultLanguage;
+            get => _defaultLanguage;
+            set => _defaultLanguage = value;
+        }
+        private string _defaultLanguage;
 
         /// <summary>
         ///
         /// </summary>
         public bool DefaultAutoPerformTasksEnabled
         {
-            get { return defaultAutoPerformTasksEnabled; }
-            set { defaultAutoPerformTasksEnabled = value; }
+            get => defaultAutoPerformTasksEnabled;
+            set => defaultAutoPerformTasksEnabled = value;
         }
 
         private bool defaultAutoPerformTasksEnabled;
 
         public List<MifareDesfireDefaultKeys> MifareDesfireDefaultSecuritySettings
         {
-            get { return mifareDesfireDefaultSecuritySettings; }
-            set { mifareDesfireDefaultSecuritySettings = value; }
+            get => mifareDesfireDefaultSecuritySettings;
+            set => mifareDesfireDefaultSecuritySettings = value;
         }
 
         private List<MifareDesfireDefaultKeys> mifareDesfireDefaultSecuritySettings;
 
         public List<MifareClassicDefaultKeys> MifareClassicDefaultSecuritySettings
         {
-            get { return mifareClassicDefaultSecuritySettings; }
-            set { mifareClassicDefaultSecuritySettings = value; }
+            get => mifareClassicDefaultSecuritySettings;
+            set => mifareClassicDefaultSecuritySettings = value;
         }
 
         private List<MifareClassicDefaultKeys> mifareClassicDefaultSecuritySettings;
@@ -163,8 +164,8 @@ namespace RFiDGear.Model
         /// </summary>
         public string MifareClassicDefaultSectorTrailer
         {
-            get { return _classicCardDefaultSectorTrailer; }
-            set { _classicCardDefaultSectorTrailer = value; }
+            get => _classicCardDefaultSectorTrailer;
+            set => _classicCardDefaultSectorTrailer = value;
         }
         private string _classicCardDefaultSectorTrailer;
 
@@ -173,8 +174,8 @@ namespace RFiDGear.Model
         /// </summary>
         public List<string> MifareClassicDefaultQuickCheckKeys
         {
-            get { return _classicCardDefaultQuickCheckKeys; }
-            set { _classicCardDefaultQuickCheckKeys = value; }
+            get => _classicCardDefaultQuickCheckKeys;
+            set => _classicCardDefaultQuickCheckKeys = value;
         }
 
         private List<string> _classicCardDefaultQuickCheckKeys;
@@ -184,8 +185,8 @@ namespace RFiDGear.Model
         /// </summary>
         public bool AutoLoadProjectOnStart
         {
-            get { return _autoLoadProjectOnStart; }
-            set { _autoLoadProjectOnStart = value; }
+            get => _autoLoadProjectOnStart;
+            set => _autoLoadProjectOnStart = value;
         }
         private bool _autoLoadProjectOnStart;
 
@@ -194,8 +195,8 @@ namespace RFiDGear.Model
         /// </summary>
         public string LastUsedProjectPath
         {
-            get { return _lastUsedProjectPath; }
-            set { _lastUsedProjectPath = value; }
+            get => _lastUsedProjectPath;
+            set => _lastUsedProjectPath = value;
         }
         private string _lastUsedProjectPath;
 
@@ -204,8 +205,8 @@ namespace RFiDGear.Model
         /// </summary>
         public string LastUsedBaudRate
         {
-            get { return _lastUsedBaudRate; }
-            set { _lastUsedBaudRate = value; }
+            get => _lastUsedBaudRate;
+            set => _lastUsedBaudRate = value;
         }
         private string _lastUsedBaudRate;
 
@@ -214,8 +215,8 @@ namespace RFiDGear.Model
         /// </summary>
         public string LastUsedComPort
         {
-            get { return _lastUsedComPort; }
-            set { _lastUsedComPort = value; }
+            get => _lastUsedComPort;
+            set => _lastUsedComPort = value;
         }
         private string _lastUsedComPort;
 

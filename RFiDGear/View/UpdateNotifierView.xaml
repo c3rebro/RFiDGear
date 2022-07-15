@@ -29,7 +29,7 @@
             Margin="10,10,10,10"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
-            Header="GroupBox">
+            Header="Version Info">
             <TextBox 
                 HorizontalAlignment="Stretch" 
                 VerticalAlignment="Stretch" 
@@ -46,16 +46,16 @@
                 Margin="10,10,0,0" 
                 Grid.Row="1" 
                 Width="95"
-                Command="{Binding ApplyAndExitCommand}"
-                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonSaveAndExitReaderSetupText'}" />
+                Command="{Binding OkCommand}"
+                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentDoUpdateCommand'}" />
         <Button Grid.Column="1" 
                 HorizontalAlignment="Right" 
                 Margin="0,10,10,0" 
                 Grid.Row="1" 
                 VerticalAlignment="Top" 
                 Width="95"
-                Command="{Binding ApplyAndExitCommand}"
-                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonSaveAndExitReaderSetupText'}" 
+                Command="{Binding CancelCommand}"
+                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentCancelUpdateCommand'}" 
                 />
     </Grid>
 </Window>

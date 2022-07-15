@@ -18,14 +18,14 @@ using System.Windows.Media;
 
 namespace RFiDGear.View
 {
-	/// <summary>
-	/// Interaction logic for MifareUltralightSetupView.xaml
-	/// </summary>
-	public partial class MifareUltralightSetupView : Window
-	{
-		public MifareUltralightSetupView()
-		{
-			InitializeComponent();
-		}
-	}
+    /// <summary>
+    /// Interaction logic for MifareUltralightSetupView.xaml
+    /// </summary>
+    public partial class MifareUltralightSetupView : Window
+    {
+        public MifareUltralightSetupView()
+        {
+            InitializeComponent();
+        }
+    }
 }

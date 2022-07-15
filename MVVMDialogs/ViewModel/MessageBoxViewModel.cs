@@ -4,73 +4,73 @@ using System.Windows;
 
 namespace MvvmDialogs.ViewModels
 {
-	public class MessageBoxViewModel : IDialogViewModel
-	{
-		private string _Caption = "";
+    public class MessageBoxViewModel : IDialogViewModel
+    {
+        private string _Caption = "";
 
-		public string Caption
-		{
-			get { return _Caption; }
-			set { _Caption = value; }
-		}
+        public string Caption
+        {
+            get => _Caption;
+            set => _Caption = value;
+        }
 
-		private string _Message = "";
+        private string _Message = "";
 
-		public string Message
-		{
-			get { return _Message; }
-			set { _Message = value; }
-		}
+        public string Message
+        {
+            get => _Message;
+            set => _Message = value;
+        }
 
-		private MessageBoxButton _Buttons = MessageBoxButton.OK;
+        private MessageBoxButton _Buttons = MessageBoxButton.OK;
 
-		public MessageBoxButton Buttons
-		{
-			get { return _Buttons; }
-			set { _Buttons = value; }
-		}
+        public MessageBoxButton Buttons
+        {
+            get => _Buttons;
+            set => _Buttons = value;
+        }
 
-		private MessageBoxImage _Image = MessageBoxImage.None;
+        private MessageBoxImage _Image = MessageBoxImage.None;
 
-		public MessageBoxImage Image
-		{
-			get { return _Image; }
-			set { _Image = value; }
-		}
+        public MessageBoxImage Image
+        {
+            get => _Image;
+            set => _Image = value;
+        }
 
-		private MessageBoxResult _Result;
+        private MessageBoxResult _Result;
 
-		public MessageBoxResult Result
-		{
-			get { return _Result; }
-			set { _Result = value; }
-		}
+        public MessageBoxResult Result
+        {
+            get => _Result;
+            set => _Result = value;
+        }
 
-		public MessageBoxViewModel(string message = "", string caption = "")
-		{
-			this.Message = message;
-			this.Caption = caption;
-		}
+        public MessageBoxViewModel(string message = "", string caption = "")
+        {
+            Message = message;
+            Caption = caption;
+        }
 
-		public MessageBoxResult Show(IList<IDialogViewModel> collection)
-		{
-			collection.Add(this);
-			return this.Result;
-		}
+        public MessageBoxResult Show(IList<IDialogViewModel> collection)
+        {
+            collection.Add(this);
+            return Result;
+        }
 
-		public bool HasResourceDictionary { get; private set; }
-		public ResourceDictionary Resources { get; private set; }
-		
-		#region INotifyPropertyChanged Members
+        public bool HasResourceDictionary { get; private set; }
+        public ResourceDictionary Resources { get; private set; }
 
-		public event PropertyChangedEventHandler PropertyChanged;
+        #region INotifyPropertyChanged Members
 
-		protected virtual void OnPropertyChanged(string propertyName)
-		{
-			if (this.PropertyChanged != null)
-				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-		}
+        public event PropertyChangedEventHandler PropertyChanged;
 
-		#endregion INotifyPropertyChanged Members
-	}
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        #endregion INotifyPropertyChanged Members
+    }
 }

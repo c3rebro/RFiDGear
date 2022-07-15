@@ -16,24 +16,24 @@ namespace RFiDGear.Model
     /// Description of Checkpoint.
     /// </summary>
     public class Checkpoint
-	{
-		public int UUID { get; set; }
+    {
+        public int UUID { get; set; }
 
-		public Checkpoint()
-		{
-			Random rnd = new Random();
-			UUID = rnd.Next();
-			ErrorLevel = ERROR.Empty;
-		}
-		
-		public ERROR ErrorLevel { get; set; }
+        public Checkpoint()
+        {
+            Random rnd = new Random();
+            UUID = rnd.Next();
+            ErrorLevel = ERROR.Empty;
+        }
 
-		public string TaskIndex { get; set; }
+        public ERROR ErrorLevel { get; set; }
 
-		public string Content { get; set; }
+        public string TaskIndex { get; set; }
 
-		public string CompareValue { get; set; }
+        public string Content { get; set; }
 
-		public string TemplateField { get; set; }
-	}
+        public string CompareValue { get; set; }
+
+        public string TemplateField { get; set; }
+    }
 }

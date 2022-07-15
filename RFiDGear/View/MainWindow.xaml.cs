@@ -15,71 +15,71 @@ using System.Windows.Interactivity;
 
 namespace RFiDGear
 {
-	//	public delegate void TreeViewNodeMouseAction(object sender, TreeNodeMouseClickEventArgs e);
+    //	public delegate void TreeViewNodeMouseAction(object sender, TreeNodeMouseClickEventArgs e);
 
-	/// <summary>
-	/// Description of MainForm.
-	/// </summary>
-	///
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
-	public partial class MainWindow
-	{
-		
-		public MainWindow()
-		{
-			InitializeComponent();
-           // if(!DataGridBehavior.GetAutoscroll(myDataGrid))
-             //   DataGridBehavior.SetAutoscroll(myDataGrid, true);
+    /// <summary>
+    /// Description of MainForm.
+    /// </summary>
+    ///
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow
+    {
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            // if(!DataGridBehavior.GetAutoscroll(myDataGrid))
+            //   DataGridBehavior.SetAutoscroll(myDataGrid, true);
         }
 
-		private void WindowMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-		{
-			DragMove();
-		}
-		
-		private void OnAutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e)
-		{
-			e.Column.Header = ((PropertyDescriptor)e.PropertyDescriptor).DisplayName;
-		}
+        private void WindowMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            DragMove();
+        }
 
-		private void MainWindowTreeViewControlMouseButtonDown(object sender, MouseButtonEventArgs e)
-		{
-			if (sender != null)
-			{
-				TreeView item = sender as TreeView;
+        private void OnAutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e)
+        {
+            e.Column.Header = ((PropertyDescriptor)e.PropertyDescriptor).DisplayName;
+        }
 
-				DependencyObject dep = (DependencyObject)e.OriginalSource;
-				while ((dep != null) && !(dep is TreeViewItem))
-				{
-					dep = VisualTreeHelper.GetParent(dep);
-				}
-				if (dep == null)
-				{
-					foreach (object o in item.Items)
-					{
-						if (o is RFiDChipParentLayerViewModel && (o as RFiDChipParentLayerViewModel).Children != null)
-						{
-							foreach (RFiDChipChildLayerViewModel child in (o as RFiDChipParentLayerViewModel).Children)
-							{
-								child.IsSelected = false;
+        private void MainWindowTreeViewControlMouseButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender != null)
+            {
+                TreeView item = sender as TreeView;
 
-								if (child.Children != null)
-								{
-									foreach (RFiDChipGrandChildLayerViewModel grandChild in child.Children)
-										grandChild.IsSelected = false;
-								}
-							}
+                DependencyObject dep = (DependencyObject)e.OriginalSource;
+                while ((dep != null) && !(dep is TreeViewItem))
+                {
+                    dep = VisualTreeHelper.GetParent(dep);
+                }
+                if (dep == null)
+                {
+                    foreach (object o in item.Items)
+                    {
+                        if (o is RFiDChipParentLayerViewModel && (o as RFiDChipParentLayerViewModel).Children != null)
+                        {
+                            foreach (RFiDChipChildLayerViewModel child in (o as RFiDChipParentLayerViewModel).Children)
+                            {
+                                child.IsSelected = false;
 
-							(o as RFiDChipParentLayerViewModel).IsSelected = false;
-						}
+                                if (child.Children != null)
+                                {
+                                    foreach (RFiDChipGrandChildLayerViewModel grandChild in child.Children)
+                                        grandChild.IsSelected = false;
+                                }
+                            }
 
-					}
-					return;
-				}
-			}
-		}
+                            (o as RFiDChipParentLayerViewModel).IsSelected = false;
+                        }
+
+                    }
+                    return;
+                }
+            }
+        }
     }
 
     public class SelectingItemAttachedProperty
@@ -111,16 +111,16 @@ namespace RFiDGear
             {
                 grid.UpdateLayout();
 
-                if(grid.SelectedItem != null)
+                if (grid.SelectedItem != null)
                     grid.ScrollIntoView(grid.SelectedItem, null);
-    
+
             });
 
             // Works with .Net 4.0
             grid.Dispatcher.BeginInvoke((Action)(() =>
             {
                 grid.UpdateLayout();
-                if(grid.SelectedItem != null)
+                if (grid.SelectedItem != null)
                     grid.ScrollIntoView(grid.SelectedItem, null);
             }));
         }

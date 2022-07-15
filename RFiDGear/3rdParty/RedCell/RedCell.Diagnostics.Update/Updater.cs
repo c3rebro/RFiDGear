@@ -24,7 +24,6 @@ namespace RedCell.Diagnostics.Update
         /// The default check interval
         /// </summary>
         public const int DefaultCheckInterval = 900; // 900s == 15 min
-        private const int FirstCheckDelay = 15;
 
         /// <summary>
         /// The default configuration file
@@ -40,7 +39,6 @@ namespace RedCell.Diagnostics.Update
         private volatile bool _updating;
         private readonly Manifest _localConfig;
         private Manifest _remoteConfig;
-        private readonly FileInfo _localConfigFile;
 
 
         private readonly Process thisprocess = Process.GetCurrentProcess();
@@ -77,11 +75,6 @@ namespace RedCell.Diagnostics.Update
             {
                 me = thisprocess.MainModule.FileName;
 
-                //settings = new SettingsReaderWriter();
-
-                Log.Debug = true;
-
-                _localConfigFile = configFile;
                 Log.Write("Loaded.");
                 Log.Write("Initializing using file '{0}'.", configFile.FullName);
                 if (!configFile.Exists)
@@ -91,13 +84,16 @@ namespace RedCell.Diagnostics.Update
                 }
 
                 string data = File.ReadAllText(configFile.FullName, new UTF8Encoding(false));
-                this._localConfig = new Manifest(data);
 
+                _localConfig = new Manifest(data);
+#if DEBUG
+                _localConfig.Version = 0;
+#endif
                 var rootDirectory = new DirectoryInfo(Path.GetDirectoryName(me));
                 var rootFiles = rootDirectory.GetFiles("*.*", SearchOption.TopDirectoryOnly);
             }
 
-            catch(Exception e)
+            catch (Exception e)
             {
                 LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
             }
@@ -111,10 +107,10 @@ namespace RedCell.Diagnostics.Update
         /// </summary>
         public void StartMonitoring()
         {
-            if (this._localConfig != null)
+            if (_localConfig != null)
             {
-                Log.Write("Starting monitoring every {0}s.", this._localConfig.CheckInterval);
-                _timer = new Timer(Check, null, 5000, this._localConfig.CheckInterval * 1000);
+                Log.Write("Starting monitoring every {0}s.", _localConfig.CheckInterval);
+                _timer = new Timer(Check, null, 5000, _localConfig.CheckInterval * 1000);
             }
 
         }
@@ -175,12 +171,12 @@ namespace RedCell.Diagnostics.Update
                         {
                             Log.Write("Fetch error: {0}", http.Response != null ? http.Response.StatusDescription : "");
                         }
-                        
+
                         catch
                         {
                             Log.Write("Fetch error: Unknown http Err");
                         }
-                        this._remoteConfig = null;
+                        _remoteConfig = null;
                         return;
                     }
                 }
@@ -188,33 +184,33 @@ namespace RedCell.Diagnostics.Update
                 catch (Exception e)
                 {
                     LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-                    this._remoteConfig = null;
+                    _remoteConfig = null;
                     return;
                 }
 
                 string data = Encoding.UTF8.GetString(http.ResponseData);
-                this._remoteConfig = new Manifest(data);
+                _remoteConfig = new Manifest(data);
 
                 //string.Format("{0}{1}",this._localConfig.RemoteConfigUri,settings.DefaultLanguage == "german" ? "/de-de" : "/en-us")
-                if (this._remoteConfig == null)
+                if (_remoteConfig == null)
                     return;
 
-                if (this._localConfig.SecurityToken != this._remoteConfig.SecurityToken)
+                if (_localConfig.SecurityToken != _remoteConfig.SecurityToken)
                 {
                     Log.Write("Security token mismatch.");
                     return;
                 }
                 Log.Write("Remote config is valid.");
-                Log.Write("Local version is  {0}.", this._localConfig.Version);
-                Log.Write("Remote version is {0}.", this._remoteConfig.Version);
+                Log.Write("Local version is  {0}.", _localConfig.Version);
+                Log.Write("Remote version is {0}.", _remoteConfig.Version);
 
-                if (this._remoteConfig.Version == this._localConfig.Version)
+                if (_remoteConfig.Version == _localConfig.Version)
                 {
                     Log.Write("Versions are the same.");
                     Log.Write("Check ending.");
                     return;
                 }
-                if (this._remoteConfig.Version < this._localConfig.Version)
+                if (_remoteConfig.Version < _localConfig.Version)
                 {
                     Log.Write("Remote version is older. That's weird.");
                     Log.Write("Check ending.");
@@ -227,7 +223,7 @@ namespace RedCell.Diagnostics.Update
                 if (!AllowUpdate && !IsUserNotified)
                 {
                     IsUserNotified = true;
-                    UpdateInfoText = this._remoteConfig.VersionInfoText;
+                    UpdateInfoText = _remoteConfig.VersionInfoText;
                     NewVersionAvailable(this, null);
                     return;
                 }
@@ -250,7 +246,7 @@ namespace RedCell.Diagnostics.Update
         public void Update()
         {
 
-            Log.Write("Updating '{0}' files.", this._remoteConfig.Payloads.Length);
+            Log.Write("Updating '{0}' files.", _remoteConfig.Payloads.Length);
 
             // Clean up failed attempts.
             if (Directory.Exists(Path.Combine(appDataPath, WorkPath)))
@@ -279,10 +275,10 @@ namespace RedCell.Diagnostics.Update
 
 
             // Download files in manifest.
-            foreach (string update in this._remoteConfig.Payloads)
+            foreach (string update in _remoteConfig.Payloads)
             {
                 Log.Write("Fetching '{0}'.", update);
-                var url = this._remoteConfig.BaseUri  + update; //TODO: make this localizable e.g. + (settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/")
+                var url = _remoteConfig.BaseUri + update; //TODO: make this localizable e.g. + (settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/")
                 var file = Fetch.Get(url);
                 if (file == null)
                 {

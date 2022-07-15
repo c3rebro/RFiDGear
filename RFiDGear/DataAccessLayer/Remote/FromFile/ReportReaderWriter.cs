@@ -66,13 +66,13 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
-                if(pdfDoc == null)
+                if (pdfDoc == null)
                 {
-                    if(!string.IsNullOrEmpty(ReportOutputPath))
+                    if (!string.IsNullOrEmpty(ReportOutputPath))
                     {
                         pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath ?? _path), new PdfWriter(ReportOutputPath));
                     }
-                    
+
                     else
                         pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath ?? _path));
 
@@ -119,7 +119,7 @@ namespace RFiDGear.DataAccessLayer
 
         public void SetReportField(string _field, string _value)
         {
-            if(!String.IsNullOrWhiteSpace(ReportOutputPath))
+            if (!String.IsNullOrWhiteSpace(ReportOutputPath))
             {
                 try
                 {
@@ -133,11 +133,11 @@ namespace RFiDGear.DataAccessLayer
                         form.GetField(_field).SetBorderWidth(1);
 
                         form.GetField(_field).SetVisibility(PdfFormField.VISIBLE);
-                        
+
                         form.GetField(_field).SetValue(_value);
                         //form.GetField(_field).SetReadOnly(true);
 
-                        if(form.GetField(_field) is PdfButtonFormField)
+                        if (form.GetField(_field) is PdfButtonFormField)
                         {
                             (form.GetField(_field) as PdfButtonFormField).SetBorderColor(ColorConstants.BLACK);
                             (form.GetField(_field) as PdfButtonFormField).SetBorderWidth(1);
@@ -173,7 +173,7 @@ namespace RFiDGear.DataAccessLayer
 
                         form.GetField(_field).SetVisibility(PdfFormField.VISIBLE);
 
-                        form.GetField(_field).SetValue(string.Format("{0}{1}", form.GetField(_field).GetValueAsString(), _value) ) ;
+                        form.GetField(_field).SetValue(string.Format("{0}{1}", form.GetField(_field).GetValueAsString(), _value));
                         //form.GetField(_field).SetReadOnly(true);
 
                         if (form.GetField(_field) is PdfButtonFormField)

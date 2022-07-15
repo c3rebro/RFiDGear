@@ -11,8 +11,8 @@ namespace RFiDGear.Model
 
         public List<MifareDesfireAppModel> AppList
         {
-            get { return _appList; }
-            set { _appList = value; }
+            get => _appList;
+            set => _appList = value;
         }
         private List<MifareDesfireAppModel> _appList;
 

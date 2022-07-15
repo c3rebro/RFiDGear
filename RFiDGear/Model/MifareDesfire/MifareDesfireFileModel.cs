@@ -18,7 +18,7 @@ namespace RFiDGear
         }
 
         public byte[] Data { get; set; }
-        
+
         public byte FileID { get; set; }
 
         public FileSetting DesfireFileSetting { get; set; }

@@ -7,17 +7,18 @@ namespace MvvmDialogs.Presenters
     {
         public void Show(OpenFileDialogViewModel vm)
         {
-            var dlg = new OpenFileDialog();
-
-            dlg.Multiselect = vm.Multiselect;
-            dlg.ReadOnlyChecked = vm.ReadOnlyChecked;
-            dlg.ShowReadOnly = vm.ShowReadOnly;
-            dlg.FileName = vm.FileName;
-            dlg.Filter = vm.Filter;
-            dlg.InitialDirectory = vm.InitialDirectory;
-            dlg.RestoreDirectory = vm.RestoreDirectory;
-            dlg.Title = vm.Title;
-            dlg.ValidateNames = vm.ValidateNames;
+            var dlg = new OpenFileDialog
+            {
+                Multiselect = vm.Multiselect,
+                ReadOnlyChecked = vm.ReadOnlyChecked,
+                ShowReadOnly = vm.ShowReadOnly,
+                FileName = vm.FileName,
+                Filter = vm.Filter,
+                InitialDirectory = vm.InitialDirectory,
+                RestoreDirectory = vm.RestoreDirectory,
+                Title = vm.Title,
+                ValidateNames = vm.ValidateNames
+            };
 
             var result = dlg.ShowDialog();
             vm.Result = (result != null) && result.Value;

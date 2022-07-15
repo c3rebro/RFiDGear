@@ -23,7 +23,7 @@ namespace RFiDGear.DataAccessLayer
         private const string chipDatabaseFileName = "chipdatabase.xml";
         private const string chipDatabaseFileNameCompressed = "chipdatabase.rfPrj";
         private const string taskDatabaseFileName = "taskdatabase.xml";
-        private string appDataPath;
+        private readonly string appDataPath;
 
         public ObservableCollection<RFiDChipParentLayerViewModel> treeViewModel;
         public ChipTaskHandlerModel setupModel;
@@ -131,7 +131,7 @@ namespace RFiDGear.DataAccessLayer
                     @Path.Combine(appDataPath, chipDatabaseFileNameCompressed) :
                     _fileName))
                     {
-                        zip1.ExtractAll(appDataPath,ExtractExistingFileAction.OverwriteSilently);
+                        zip1.ExtractAll(appDataPath, ExtractExistingFileAction.OverwriteSilently);
                     }
 
                     doc.Load(@Path.Combine(appDataPath, file.Name));
@@ -198,7 +198,7 @@ namespace RFiDGear.DataAccessLayer
 
                 writer.Close();
 
-                zip.AddFile(@Path.Combine(string.IsNullOrWhiteSpace(_path) ? 
+                zip.AddFile(@Path.Combine(string.IsNullOrWhiteSpace(_path) ?
                     @Path.Combine(appDataPath, chipDatabaseFileName) :
                     @_path, chipDatabaseFileName));
 
@@ -238,11 +238,11 @@ namespace RFiDGear.DataAccessLayer
                     file = new FileInfo(@Path.Combine(appDataPath, taskDatabaseFileName));
                 }
 
-                zip.AddFile(string.IsNullOrWhiteSpace(_path) ? 
-                    @Path.Combine(appDataPath, chipDatabaseFileName) : 
-                    @_path,"");
+                zip.AddFile(string.IsNullOrWhiteSpace(_path) ?
+                    @Path.Combine(appDataPath, chipDatabaseFileName) :
+                    @_path, "");
 
-                zip.Save(string.IsNullOrWhiteSpace(_path) ? 
+                zip.Save(string.IsNullOrWhiteSpace(_path) ?
                     @Path.Combine(appDataPath, chipDatabaseFileNameCompressed) :
                     @_path);
 

@@ -26,218 +26,217 @@ using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
 {
-	/// <summary>
-	/// Description of MifareClassicSetupViewModel.
-	/// </summary>
-	public class MifareUltralightSetupViewModel : ViewModelBase, IUserDialogViewModel
-	{
-		#region Fields
+    /// <summary>
+    /// Description of MifareClassicSetupViewModel.
+    /// </summary>
+    public class MifareUltralightSetupViewModel : ViewModelBase, IUserDialogViewModel
+    {
+        #region Fields
 
-		private MifareUltralightChipModel chipModel;
-		private MifareUltralightPageModel pageModel;
+        private MifareUltralightChipModel chipModel;
+        private MifareUltralightPageModel pageModel;
 
-		private DatabaseReaderWriter databaseReaderWriter;
-		private SettingsReaderWriter settings = new SettingsReaderWriter();
+        private DatabaseReaderWriter databaseReaderWriter;
+        private SettingsReaderWriter settings = new SettingsReaderWriter();
 
-		#endregion fields
+        #endregion fields
 
-		#region Constructors
-		
-		/// <summary>
-		///
-		/// </summary>
-		public MifareUltralightSetupViewModel()
-		{
-			MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
-			
-			chipModel = new MifareUltralightChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.MifareUltralight);
+        #region Constructors
 
-			childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
-			childNodeViewModelTemp = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
+        /// <summary>
+        ///
+        /// </summary>
+        public MifareUltralightSetupViewModel()
+        {
+            MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
 
-			MifareUltralightPages = CustomConverter.GenerateStringSequence(0,15).ToArray();
-			
-			SelectedUltralightPageCurrent = "0";
-		}
+            chipModel = new MifareUltralightChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.MifareUltralight);
 
-		/// <summary>
-		///
-		/// </summary>
-		/// <param name="_selectedSetupViewModel"></param>
-		/// <param name="_dialogs"></param>
-		public MifareUltralightSetupViewModel(object _selectedSetupViewModel, ObservableCollection<IDialogViewModel> _dialogs)
-		{
-			try
-			{
-				MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
-				
-				databaseReaderWriter = new DatabaseReaderWriter();
-				
-				chipModel = new MifareUltralightChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.MifareUltralight);
+            childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
+            childNodeViewModelTemp = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
 
-				pageModel = new MifareUltralightPageModel(new byte[4], 0);
-				pageModel.PageNumber = selectedUltralightPageCurrentAsInt;
+            MifareUltralightPages = CustomConverter.GenerateStringSequence(0, 15).ToArray();
 
-				childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
-				childNodeViewModelTemp = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
+            SelectedUltralightPageCurrent = "0";
+        }
 
-				if(_selectedSetupViewModel is MifareUltralightSetupViewModel)
-				{
-					PropertyInfo[] properties = typeof(MifareUltralightSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="_selectedSetupViewModel"></param>
+        /// <param name="_dialogs"></param>
+        public MifareUltralightSetupViewModel(object _selectedSetupViewModel, ObservableCollection<IDialogViewModel> _dialogs)
+        {
+            try
+            {
+                MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
 
-					foreach (PropertyInfo p in properties)
-					{
-						// If not writable then cannot null it; if not readable then cannot check it's value
-						if (!p.CanWrite || !p.CanRead) { continue; }
+                databaseReaderWriter = new DatabaseReaderWriter();
 
-						MethodInfo mget = p.GetGetMethod(false);
-						MethodInfo mset = p.GetSetMethod(false);
+                chipModel = new MifareUltralightChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.MifareUltralight);
 
-						// Get and set methods have to be public
-						if (mget == null) { continue; }
-						if (mset == null) { continue; }
+                pageModel = new MifareUltralightPageModel(new byte[4], 0);
+                pageModel.PageNumber = selectedUltralightPageCurrentAsInt;
 
-						p.SetValue(this, p.GetValue(_selectedSetupViewModel));
-					}
-				}
-				
-				else
-				{
-					SelectedTaskIndex = "0";
-					SelectedTaskDescription = "Enter a Description";
-				}
-				
-				MifareUltralightPages = CustomConverter.GenerateStringSequence(0,15).ToArray();
+                childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
+                childNodeViewModelTemp = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
 
-				SelectedUltralightPageCurrent = "0";
-				
-				HasPlugins = items != null ? items.Any() : false;
-				
-				if (HasPlugins)
-					SelectedPlugin = Items.FirstOrDefault();
-				
-			}
-			catch (Exception e)
-			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-			}
-			
-		}
+                if (_selectedSetupViewModel is MifareUltralightSetupViewModel)
+                {
+                    PropertyInfo[] properties = typeof(MifareUltralightSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-		#endregion
+                    foreach (PropertyInfo p in properties)
+                    {
+                        // If not writable then cannot null it; if not readable then cannot check it's value
+                        if (!p.CanWrite || !p.CanRead) { continue; }
 
-		#region DataExplorer
+                        MethodInfo mget = p.GetGetMethod(false);
+                        MethodInfo mset = p.GetSetMethod(false);
 
-		[XmlIgnore]
-		public string[] MifareUltralightPages { get; set;}
-		
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedUltralightPageCurrent
-		{
-			get { return selectedUltralightPageCurrent; }
-			set
-			{
-				selectedUltralightPageCurrent = value;
-				int.TryParse(value, out selectedUltralightPageCurrentAsInt);
+                        // Get and set methods have to be public
+                        if (mget == null) { continue; }
+                        if (mset == null) { continue; }
 
-				//ChildNodeViewModelTemp.IsFocused = true;
+                        p.SetValue(this, p.GetValue(_selectedSetupViewModel));
+                    }
+                }
 
-				RaisePropertyChanged("SelectedDataBlockToReadWrite");
-			}
-		}
-		private string selectedUltralightPageCurrent;
-		private int selectedUltralightPageCurrentAsInt;
+                else
+                {
+                    SelectedTaskIndex = "0";
+                    SelectedTaskDescription = "Enter a Description";
+                }
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool IsDataExplorerEditTabEnabled
-		{
-			get { return isDataExplorerEditTabEnabled; }
-			set
-			{
-				isDataExplorerEditTabEnabled = value;
-				RaisePropertyChanged("IsDataExplorerEditTabEnabled");
-			}
-		}
-		private bool isDataExplorerEditTabEnabled;
+                MifareUltralightPages = CustomConverter.GenerateStringSequence(0, 15).ToArray();
 
-		/// <summary>
-		///
-		/// </summary>
-		public RFiDChipChildLayerViewModel ChildNodeViewModelFromChip
-		{
-			get { return childNodeViewModelFromChip; }
-			set { childNodeViewModelFromChip = value; }
-		}
-		private RFiDChipChildLayerViewModel childNodeViewModelFromChip;
+                SelectedUltralightPageCurrent = "0";
 
-		/// <summary>
-		///
-		/// </summary>
-		public RFiDChipChildLayerViewModel ChildNodeViewModelTemp
-		{
-			get { return childNodeViewModelTemp; }
-			set { childNodeViewModelTemp = value; }
-		}
-		private RFiDChipChildLayerViewModel childNodeViewModelTemp;
+                HasPlugins = items != null ? items.Any() : false;
 
-		#endregion DataExplorer
+                if (HasPlugins)
+                    SelectedPlugin = Items.FirstOrDefault();
 
-		#region Plugins
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+            }
 
-		/// <summary>
-		/// True if Count of Imported Views is > 0; See constructor
-		/// </summary>
-		[XmlIgnore]
-		public bool HasPlugins
-		{
-			get {
-				return hasPlugins;
-			}
-			set
-			{
-				hasPlugins = value;
-				RaisePropertyChanged("HasPlugins");
-			}
-		} private bool hasPlugins;
-		
-		/// <summary>
-		/// Selected Plugin in ComboBox
-		/// </summary>
-		[XmlIgnore]
-		public object SelectedPlugin
-		{
-			get {return selectedPlugin;}
-			set {
-				selectedPlugin = value;
-				RaisePropertyChanged("SelectedPlugin");
-			}
-		} private object selectedPlugin;
-		
-		/// <summary>
-		/// Imported Views by URI
-		/// </summary>
-		[XmlIgnore]
-		[ImportMany()]
-		public Lazy<IUIExtension, IUIExtensionDetails>[] Items
-		{
-			get
-			{
-				return items;
-			}
-			
-			set
-			{
-				items = (from g in value
-				         orderby g.Metadata.SortOrder, g.Metadata.Name
-				         select g).ToArray();
-				
-				RaisePropertyChanged("Items");
-			}
-		} private Lazy<IUIExtension, IUIExtensionDetails>[] items;
+        }
+
+        #endregion
+
+        #region DataExplorer
+
+        [XmlIgnore]
+        public string[] MifareUltralightPages { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedUltralightPageCurrent
+        {
+            get => selectedUltralightPageCurrent;
+            set
+            {
+                selectedUltralightPageCurrent = value;
+                int.TryParse(value, out selectedUltralightPageCurrentAsInt);
+
+                //ChildNodeViewModelTemp.IsFocused = true;
+
+                RaisePropertyChanged("SelectedDataBlockToReadWrite");
+            }
+        }
+        private string selectedUltralightPageCurrent;
+        private int selectedUltralightPageCurrentAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool IsDataExplorerEditTabEnabled
+        {
+            get => isDataExplorerEditTabEnabled;
+            set
+            {
+                isDataExplorerEditTabEnabled = value;
+                RaisePropertyChanged("IsDataExplorerEditTabEnabled");
+            }
+        }
+        private bool isDataExplorerEditTabEnabled;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public RFiDChipChildLayerViewModel ChildNodeViewModelFromChip
+        {
+            get => childNodeViewModelFromChip;
+            set => childNodeViewModelFromChip = value;
+        }
+        private RFiDChipChildLayerViewModel childNodeViewModelFromChip;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public RFiDChipChildLayerViewModel ChildNodeViewModelTemp
+        {
+            get => childNodeViewModelTemp;
+            set => childNodeViewModelTemp = value;
+        }
+        private RFiDChipChildLayerViewModel childNodeViewModelTemp;
+
+        #endregion DataExplorer
+
+        #region Plugins
+
+        /// <summary>
+        /// True if Count of Imported Views is > 0; See constructor
+        /// </summary>
+        [XmlIgnore]
+        public bool HasPlugins
+        {
+            get => hasPlugins;
+            set
+            {
+                hasPlugins = value;
+                RaisePropertyChanged("HasPlugins");
+            }
+        }
+        private bool hasPlugins;
+
+        /// <summary>
+        /// Selected Plugin in ComboBox
+        /// </summary>
+        [XmlIgnore]
+        public object SelectedPlugin
+        {
+            get => selectedPlugin;
+            set
+            {
+                selectedPlugin = value;
+                RaisePropertyChanged("SelectedPlugin");
+            }
+        }
+        private object selectedPlugin;
+
+        /// <summary>
+        /// Imported Views by URI
+        /// </summary>
+        [XmlIgnore]
+        [ImportMany()]
+        public Lazy<IUIExtension, IUIExtensionDetails>[] Items
+        {
+            get => items;
+
+            set
+            {
+                items = (from g in value
+                         orderby g.Metadata.SortOrder, g.Metadata.Name
+                         select g).ToArray();
+
+                RaisePropertyChanged("Items");
+            }
+        }
+        private Lazy<IUIExtension, IUIExtensionDetails>[] items;
         #endregion
 
         #region Dependency Properties
@@ -247,10 +246,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public string SelectedExecuteConditionTaskIndex
         {
-            get
-            {
-                return selectedExecuteConditionTaskIndex;
-            }
+            get => selectedExecuteConditionTaskIndex;
 
             set
             {
@@ -266,10 +262,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public bool? IsValidSelectedExecuteConditionTaskIndex
         {
-            get
-            {
-                return isValidSelectedExecuteConditionTaskIndex;
-            }
+            get => isValidSelectedExecuteConditionTaskIndex;
             set
             {
                 isValidSelectedExecuteConditionTaskIndex = value;
@@ -281,8 +274,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        public int SelectedExecuteConditionTaskIndexAsInt
-        { get { return selectedExecuteConditionTaskIndexAsInt; } }
+        public int SelectedExecuteConditionTaskIndexAsInt => selectedExecuteConditionTaskIndexAsInt;
         private int selectedExecuteConditionTaskIndexAsInt;
 
         /// <summary>
@@ -290,10 +282,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public ERROR SelectedExecuteConditionErrorLevel
         {
-            get
-            {
-                return selectedExecuteConditionErrorLevel;
-            }
+            get => selectedExecuteConditionErrorLevel;
 
             set
             {
@@ -307,322 +296,308 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         [XmlIgnore]
-		public ERROR TaskErr { get; set; }
+        public ERROR TaskErr { get; set; }
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsTaskCompletedSuccessfully
-		{
-			get { return isTaskCompletedSuccessfully; }
-			set
-			{
-				isTaskCompletedSuccessfully = value;
-				RaisePropertyChanged("IsTaskCompletedSuccessfully");
-			}
-		}
-		private bool? isTaskCompletedSuccessfully;
+        /// <summary>
+        ///
+        /// </summary>
+        public bool? IsTaskCompletedSuccessfully
+        {
+            get => isTaskCompletedSuccessfully;
+            set
+            {
+                isTaskCompletedSuccessfully = value;
+                RaisePropertyChanged("IsTaskCompletedSuccessfully");
+            }
+        }
+        private bool? isTaskCompletedSuccessfully;
 
-		/// <summary>
-		///
-		/// </summary>
-		[XmlIgnore]
-		public string StatusText
-		{
-			get { return statusText; }
-			set
-			{
-				statusText = value;
-				RaisePropertyChanged("StatusText");
-			}
-		}
-		private string statusText;
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public string StatusText
+        {
+            get => statusText;
+            set
+            {
+                statusText = value;
+                RaisePropertyChanged("StatusText");
+            }
+        }
+        private string statusText;
 
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedTaskIndex
-		{
-			get
-			{
-				//classicKeyAKeyCurrent = SectorTrailer.Split(',')[0];
-				return selectedAccessBitsTaskIndex;
-			}
-			set
-			{
-				selectedAccessBitsTaskIndex = value;
-				IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
-			}
-		}
-		private string selectedAccessBitsTaskIndex;
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedTaskIndex
+        {
+            get =>
+                //classicKeyAKeyCurrent = SectorTrailer.Split(',')[0];
+                selectedAccessBitsTaskIndex;
+            set
+            {
+                selectedAccessBitsTaskIndex = value;
+                IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
+            }
+        }
+        private string selectedAccessBitsTaskIndex;
 
-		/// <summary>
-		///
-		/// </summary>
-		public int SelectedTaskIndexAsInt
-		{ get { return selectedTaskIndexAsInt; } }
-		private int selectedTaskIndexAsInt;
+        /// <summary>
+        ///
+        /// </summary>
+        public int SelectedTaskIndexAsInt => selectedTaskIndexAsInt;
+        private int selectedTaskIndexAsInt;
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool? IsValidSelectedTaskIndex
-		{
-			get
-			{
-				return isValidSelectedTaskIndex;
-			}
-			set
-			{
-				isValidSelectedTaskIndex = value;
-				RaisePropertyChanged("IsValidSelectedTaskIndex");
-			}
-		}
-		private bool? isValidSelectedTaskIndex;
+        /// <summary>
+        ///
+        /// </summary>
+        public bool? IsValidSelectedTaskIndex
+        {
+            get => isValidSelectedTaskIndex;
+            set
+            {
+                isValidSelectedTaskIndex = value;
+                RaisePropertyChanged("IsValidSelectedTaskIndex");
+            }
+        }
+        private bool? isValidSelectedTaskIndex;
 
-		/// <summary>
-		///
-		/// </summary>
-		public TaskType_MifareUltralightTask SelectedTaskType
-		{
-			get
-			{
-				return selectedTaskType;
-			}
-			set
-			{
-				selectedTaskType = value;
-				switch (selectedTaskType)
-				{
-					case TaskType_MifareUltralightTask.ReadData:
-					case TaskType_MifareUltralightTask.WriteData:
-						IsDataExplorerEditTabEnabled = true;
-						break;
-						
-					default:
-						IsDataExplorerEditTabEnabled = false;
-						break;
-				}
-				RaisePropertyChanged("SelectedTaskType");
-			}
-		}
-		private TaskType_MifareUltralightTask selectedTaskType;
+        /// <summary>
+        ///
+        /// </summary>
+        public TaskType_MifareUltralightTask SelectedTaskType
+        {
+            get => selectedTaskType;
+            set
+            {
+                selectedTaskType = value;
+                switch (selectedTaskType)
+                {
+                    case TaskType_MifareUltralightTask.ReadData:
+                    case TaskType_MifareUltralightTask.WriteData:
+                        IsDataExplorerEditTabEnabled = true;
+                        break;
 
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedTaskDescription
-		{
-			get
-			{
-				return selectedAccessBitsTaskDescription;
-			}
-			set
-			{
-				selectedAccessBitsTaskDescription = value;
-				RaisePropertyChanged("SelectedTaskDescription");
-			}
-		}
-		private string selectedAccessBitsTaskDescription;
+                    default:
+                        IsDataExplorerEditTabEnabled = false;
+                        break;
+                }
+                RaisePropertyChanged("SelectedTaskType");
+            }
+        }
+        private TaskType_MifareUltralightTask selectedTaskType;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		[XmlIgnore]
-		public SettingsReaderWriter Settings
-		{
-			get { return settings; }
-		}
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedTaskDescription
+        {
+            get => selectedAccessBitsTaskDescription;
+            set
+            {
+                selectedAccessBitsTaskDescription = value;
+                RaisePropertyChanged("SelectedTaskDescription");
+            }
+        }
+        private string selectedAccessBitsTaskDescription;
 
-		#endregion General Properties
+        /// <summary>
+        /// 
+        /// </summary>
+        [XmlIgnore]
+        public SettingsReaderWriter Settings => settings;
 
-		#region Commands
+        #endregion General Properties
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
-		private void OnNewReadDataCommand()
-		{
-			//Mouse.OverrideCursor = Cursors.Wait;
-			TaskErr = ERROR.Empty;
-			
-			Task classicTask =
-				new Task(() =>
-				         {
-				         	using (RFiDDevice device = RFiDDevice.Instance)
-				         	{
-				         		if(device != null && device.ReadChipPublic() == ERROR.NoError)
-				         		{
-				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource(""));
-				         			
+        #region Commands
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand ReadDataCommand => new RelayCommand(OnNewReadDataCommand);
+        private void OnNewReadDataCommand()
+        {
+            //Mouse.OverrideCursor = Cursors.Wait;
+            TaskErr = ERROR.Empty;
+
+            Task classicTask =
+                new Task(() =>
+                         {
+                             using (RFiDDevice device = RFiDDevice.Instance)
+                             {
+                                 if (device != null && device.ReadChipPublic() == ERROR.NoError)
+                                 {
+                                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource(""));
 
 
-				         		}
-				         		
-				         		else
-				         		{
-				         			TaskErr = ERROR.DeviceNotReadyError;
-				         			return;
-				         		}
 
-				         		RaisePropertyChanged("ChildNodeViewModelTemp");
-				         		
-				         		return;
-				         	}
-				         });
+                                 }
 
-			classicTask.Start();
+                                 else
+                                 {
+                                     TaskErr = ERROR.DeviceNotReadyError;
+                                     return;
+                                 }
 
-			classicTask.ContinueWith((x) =>
-			                         {
-			                         	//Mouse.OverrideCursor = null;
+                                 RaisePropertyChanged("ChildNodeViewModelTemp");
 
-			                         	if (TaskErr == ERROR.NoError)
-			                         	{
-			                         		IsTaskCompletedSuccessfully = true;
-			                         	}
-			                         	else
-			                         	{
-			                         		IsTaskCompletedSuccessfully = false;
-			                         	}
-			                         });
-		}
+                                 return;
+                             }
+                         });
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand WriteDataCommand { get { return new RelayCommand(OnNewWriteDataCommand); } }
-		private void OnNewWriteDataCommand()
-		{
-			//Mouse.OverrideCursor = Cursors.Wait;
+            classicTask.Start();
 
-			TaskErr = ERROR.Empty;
+            classicTask.ContinueWith((x) =>
+                                     {
+                                         //Mouse.OverrideCursor = null;
 
-			Task classicTask =
-				new Task(() =>
-				         {
-				         	using (RFiDDevice device = RFiDDevice.Instance)
-				         	{
-				         		StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource("textBoxStatusTextBoxDllLoaded"));
-				         		
-				         	}
-				         });
+                                         if (TaskErr == ERROR.NoError)
+                                         {
+                                             IsTaskCompletedSuccessfully = true;
+                                         }
+                                         else
+                                         {
+                                             IsTaskCompletedSuccessfully = false;
+                                         }
+                                     });
+        }
 
-			if (TaskErr == ERROR.Empty)
-			{
-				TaskErr = ERROR.DeviceNotReadyError;
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand WriteDataCommand => new RelayCommand(OnNewWriteDataCommand);
+        private void OnNewWriteDataCommand()
+        {
+            //Mouse.OverrideCursor = Cursors.Wait;
 
-				classicTask.ContinueWith((x) =>
-				                         {
-				                         	//Mouse.OverrideCursor = null;
+            TaskErr = ERROR.Empty;
 
-				                         	if (TaskErr == ERROR.NoError)
-				                         	{
-				                         		IsTaskCompletedSuccessfully = true;
-				                         	}
-				                         	else
-				                         	{
-				                         		IsTaskCompletedSuccessfully = false;
-				                         	}
-				                         }); //TaskScheduler.FromCurrentSynchronizationContext()
+            Task classicTask =
+                new Task(() =>
+                         {
+                             using (RFiDDevice device = RFiDDevice.Instance)
+                             {
+                                 StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-				classicTask.Start();
-			}
+                             }
+                         });
 
-			return;
-		}
+            if (TaskErr == ERROR.Empty)
+            {
+                TaskErr = ERROR.DeviceNotReadyError;
 
-		#endregion Commands
+                classicTask.ContinueWith((x) =>
+                                         {
+                                             //Mouse.OverrideCursor = null;
 
-		#region IUserDialogViewModel Implementation
+                                             if (TaskErr == ERROR.NoError)
+                                             {
+                                                 IsTaskCompletedSuccessfully = true;
+                                             }
+                                             else
+                                             {
+                                                 IsTaskCompletedSuccessfully = false;
+                                             }
+                                         }); //TaskScheduler.FromCurrentSynchronizationContext()
 
-		[XmlIgnore]
-		public bool IsModal { get; private set; }
-		
-		public virtual void RequestClose()
-		{
-			if (this.OnCloseRequest != null)
-				OnCloseRequest(this);
-			else
-				Close();
-		}
+                classicTask.Start();
+            }
 
-		public event EventHandler DialogClosing;
+            return;
+        }
 
-		public ICommand OKCommand { get { return new RelayCommand(Ok); } }
+        #endregion Commands
 
-		protected virtual void Ok()
-		{
-			if (this.OnOk != null)
-				this.OnOk(this);
-			else
-				Close();
-		}
+        #region IUserDialogViewModel Implementation
 
-		public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
+        [XmlIgnore]
+        public bool IsModal { get; private set; }
 
-		protected virtual void Cancel()
-		{
-			if (this.OnCancel != null)
-				this.OnCancel(this);
-			else
-				Close();
-		}
+        public virtual void RequestClose()
+        {
+            if (OnCloseRequest != null)
+                OnCloseRequest(this);
+            else
+                Close();
+        }
 
-		public ICommand AuthCommand { get { return new RelayCommand(Auth); } }
+        public event EventHandler DialogClosing;
 
-		protected virtual void Auth()
-		{
-			if (this.OnAuth != null)
-				this.OnAuth(this);
-			else
-				Close();
-		}
+        public ICommand OKCommand => new RelayCommand(Ok);
 
-		[XmlIgnore]
-		public Action<MifareUltralightSetupViewModel> OnOk { get; set; }
+        protected virtual void Ok()
+        {
+            if (OnOk != null)
+                OnOk(this);
+            else
+                Close();
+        }
 
-		[XmlIgnore]
-		public Action<MifareUltralightSetupViewModel> OnCancel { get; set; }
+        public ICommand CancelCommand => new RelayCommand(Cancel);
 
-		[XmlIgnore]
-		public Action<MifareUltralightSetupViewModel> OnAuth { get; set; }
+        protected virtual void Cancel()
+        {
+            if (OnCancel != null)
+                OnCancel(this);
+            else
+                Close();
+        }
 
-		[XmlIgnore]
-		public Action<MifareUltralightSetupViewModel> OnCloseRequest { get; set; }
+        public ICommand AuthCommand => new RelayCommand(Auth);
 
-		public void Close()
-		{
-			if (this.DialogClosing != null)
-				this.DialogClosing(this, new EventArgs());
-		}
+        protected virtual void Auth()
+        {
+            if (OnAuth != null)
+                OnAuth(this);
+            else
+                Close();
+        }
 
-		public void Show(IList<IDialogViewModel> collection)
-		{
-			collection.Add(this);
-		}
+        [XmlIgnore]
+        public Action<MifareUltralightSetupViewModel> OnOk { get; set; }
 
-		#endregion IUserDialogViewModel Implementation
+        [XmlIgnore]
+        public Action<MifareUltralightSetupViewModel> OnCancel { get; set; }
 
-		#region Localization
+        [XmlIgnore]
+        public Action<MifareUltralightSetupViewModel> OnAuth { get; set; }
 
-		/// <summary>
-		/// localization strings
-		/// </summary>
-		public string LocalizationResourceSet { get; set; }
-		
-		[XmlIgnore]
-		public string Caption
-		{
-			get { return _Caption; }
-			set
-			{
-				_Caption = value;
-				RaisePropertyChanged("Caption");
-			}
-		} private string _Caption;
+        [XmlIgnore]
+        public Action<MifareUltralightSetupViewModel> OnCloseRequest { get; set; }
 
-		#endregion Localization
-	}
+        public void Close()
+        {
+            if (DialogClosing != null)
+                DialogClosing(this, new EventArgs());
+        }
+
+        public void Show(IList<IDialogViewModel> collection)
+        {
+            collection.Add(this);
+        }
+
+        #endregion IUserDialogViewModel Implementation
+
+        #region Localization
+
+        /// <summary>
+        /// localization strings
+        /// </summary>
+        public string LocalizationResourceSet { get; set; }
+
+        [XmlIgnore]
+        public string Caption
+        {
+            get => _Caption;
+            set
+            {
+                _Caption = value;
+                RaisePropertyChanged("Caption");
+            }
+        }
+        private string _Caption;
+
+        #endregion Localization
+    }
 }

@@ -12,10 +12,7 @@ namespace RFiDGear.Model
     {
         private readonly List<MifareClassicSectorModel> _sectorList = new List<MifareClassicSectorModel>();
 
-        public List<MifareClassicSectorModel> SectorList
-        {
-            get { return _sectorList; }
-        }
+        public List<MifareClassicSectorModel> SectorList => _sectorList;
 
         public MifareClassicChipModel()
         {
@@ -23,8 +20,8 @@ namespace RFiDGear.Model
 
         public MifareClassicChipModel(string uid, CARD_TYPE cardType)
         {
-            this.CardType = cardType;
-            this.UidNumber = uid;
+            CardType = cardType;
+            UidNumber = uid;
         }
 
         public string UidNumber { get; set; }

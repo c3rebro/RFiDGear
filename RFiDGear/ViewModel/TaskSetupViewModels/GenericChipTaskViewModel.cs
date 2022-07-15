@@ -28,112 +28,106 @@ using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
 {
-	/// <summary>
-	/// Description of CommonTaskViewModel.
-	/// </summary>
-	public class GenericChipTaskViewModel : ViewModelBase, IUserDialogViewModel
-	{
-		#region fields
+    /// <summary>
+    /// Description of CommonTaskViewModel.
+    /// </summary>
+    public class GenericChipTaskViewModel : ViewModelBase, IUserDialogViewModel
+    {
+        #region fields
 
-		private protected SettingsReaderWriter settings = new SettingsReaderWriter();
+        private protected SettingsReaderWriter settings = new SettingsReaderWriter();
         private protected ReportReaderWriter reportReaderWriter;
         private protected Checkpoint checkpoint;
         private protected readonly ObservableCollection<object> _availableTasks;
 
-		#endregion fields
+        #endregion fields
 
-		#region constructors
-		
-		/// <summary>
-		///
-		/// </summary>
-		public GenericChipTaskViewModel()
-		{
+        #region constructors
 
-		}
+        /// <summary>
+        ///
+        /// </summary>
+        public GenericChipTaskViewModel()
+        {
 
-		/// <summary>
-		///
-		/// </summary>
-		/// <param name="_selectedSetupViewModel"></param>
-		/// <param name="_dialogs"></param>
-		public GenericChipTaskViewModel(object _selectedSetupViewModel, ObservableCollection<object> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
-		{
-			try
-			{	
-				if(_selectedSetupViewModel is GenericChipTaskViewModel)
-				{
-					PropertyInfo[] properties = typeof(GenericChipTaskViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        }
 
-					foreach (PropertyInfo p in properties)
-					{
-						// If not writable then cannot null it; if not readable then cannot check it's value
-						if (!p.CanWrite || !p.CanRead) { continue; }
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="_selectedSetupViewModel"></param>
+        /// <param name="_dialogs"></param>
+        public GenericChipTaskViewModel(object _selectedSetupViewModel, ObservableCollection<object> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
+        {
+            try
+            {
+                if (_selectedSetupViewModel is GenericChipTaskViewModel)
+                {
+                    PropertyInfo[] properties = typeof(GenericChipTaskViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-						MethodInfo mget = p.GetGetMethod(false);
-						MethodInfo mset = p.GetSetMethod(false);
+                    foreach (PropertyInfo p in properties)
+                    {
+                        // If not writable then cannot null it; if not readable then cannot check it's value
+                        if (!p.CanWrite || !p.CanRead) { continue; }
 
-						// Get and set methods have to be public
-						if (mget == null) { continue; }
-						if (mset == null) { continue; }
+                        MethodInfo mget = p.GetGetMethod(false);
+                        MethodInfo mset = p.GetSetMethod(false);
 
-						p.SetValue(this, p.GetValue(_selectedSetupViewModel));
-					}
-				}
-				
-				else
-				{
-					SelectedTaskIndex = "0";
-					SelectedTaskDescription = "Enter a Description";
+                        // Get and set methods have to be public
+                        if (mget == null) { continue; }
+                        if (mset == null) { continue; }
+
+                        p.SetValue(this, p.GetValue(_selectedSetupViewModel));
+                    }
+                }
+
+                else
+                {
+                    SelectedTaskIndex = "0";
+                    SelectedTaskDescription = "Enter a Description";
                     SelectedExecuteConditionErrorLevel = ERROR.Empty;
                     SelectedExecuteConditionTaskIndex = "0";
                 }
-				
-			}
-			catch (Exception e)
-			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-			}
-			
-		}
 
-		#endregion
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+            }
 
-		#region Dialogs
-		[XmlIgnore]
-		public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
-		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+        }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		//		[XmlIgnore]
-		//		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
-		//		public ObservableCollection<IDialogViewModel> Dialogs
-		//		{
-		//			get { return dialogs; }
-		//			set { dialogs = value; }
-		//		}
+        #endregion
 
-		#endregion Dialogs
+        #region Dialogs
+        [XmlIgnore]
+        public ObservableCollection<IDialogViewModel> Dialogs => dialogs;
+        private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
 
-		#region Visual Properties
+        /// <summary>
+        /// 
+        /// </summary>
+        //		[XmlIgnore]
+        //		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+        //		public ObservableCollection<IDialogViewModel> Dialogs
+        //		{
+        //			get { return dialogs; }
+        //			set { dialogs = value; }
+        //		}
 
-		/// <summary>
-		///
-		/// </summary>
-		public bool IsFocused
-		{
-			get
-			{
-				return isFocused;
-			}
-			set
-			{
-				isFocused = value;
-			}
-		}
-		private bool isFocused;
+        #endregion Dialogs
+
+        #region Visual Properties
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool IsFocused
+        {
+            get => isFocused;
+            set => isFocused = value;
+        }
+        private bool isFocused;
 
         #endregion
 
@@ -144,10 +138,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public string SelectedExecuteConditionTaskIndex
         {
-            get
-            {
-                return selectedExecuteConditionTaskIndex;
-            }
+            get => selectedExecuteConditionTaskIndex;
 
             set
             {
@@ -164,10 +155,7 @@ namespace RFiDGear.ViewModel
         [XmlIgnore]
         public bool? IsValidSelectedExecuteConditionTaskIndex
         {
-            get
-            {
-                return isValidSelectedExecuteConditionTaskIndex;
-            }
+            get => isValidSelectedExecuteConditionTaskIndex;
             set
             {
                 isValidSelectedExecuteConditionTaskIndex = value;
@@ -180,8 +168,7 @@ namespace RFiDGear.ViewModel
         ///
         /// </summary>
         [XmlIgnore]
-        public int SelectedExecuteConditionTaskIndexAsInt
-        { get { return selectedExecuteConditionTaskIndexAsInt; } }
+        public int SelectedExecuteConditionTaskIndexAsInt => selectedExecuteConditionTaskIndexAsInt;
         private int selectedExecuteConditionTaskIndexAsInt;
 
         /// <summary>
@@ -189,10 +176,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public ERROR SelectedExecuteConditionErrorLevel
         {
-            get
-            {
-                return selectedExecuteConditionErrorLevel;
-            }
+            get => selectedExecuteConditionErrorLevel;
 
             set
             {
@@ -206,11 +190,11 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         public CARD_TYPE SelectedChipType
-		{
-            get { return selectedChipType; }
+        {
+            get => selectedChipType;
             set
             {
-				selectedChipType = value;
+                selectedChipType = value;
                 RaisePropertyChanged("SelectedChipType");
             }
         }
@@ -221,10 +205,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public string SelectedTaskIndex
         {
-            get
-            {
-                return selectedTaskIndex;
-            }
+            get => selectedTaskIndex;
 
             set
             {
@@ -239,313 +220,301 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         [XmlIgnore]
-		public ERROR TaskErr { get; set; }
+        public ERROR TaskErr { get; set; }
 
         /// <summary>
         ///
         /// </summary>
         [XmlIgnore]
         public bool? IsTaskCompletedSuccessfully
-		{
-			get { return isTaskCompletedSuccessfully; }
-			set
-			{
-				isTaskCompletedSuccessfully = value;
-				RaisePropertyChanged("IsTaskCompletedSuccessfully");
-			}
-		}
-		private bool? isTaskCompletedSuccessfully;
+        {
+            get => isTaskCompletedSuccessfully;
+            set
+            {
+                isTaskCompletedSuccessfully = value;
+                RaisePropertyChanged("IsTaskCompletedSuccessfully");
+            }
+        }
+        private bool? isTaskCompletedSuccessfully;
 
         /// <summary>
         ///
         /// </summary>
         [XmlIgnore]
-        public int SelectedTaskIndexAsInt
-		{ get { return selectedTaskIndexAsInt; } }
-		private int selectedTaskIndexAsInt;
+        public int SelectedTaskIndexAsInt => selectedTaskIndexAsInt;
+        private int selectedTaskIndexAsInt;
 
         /// <summary>
         ///
         /// </summary>
         [XmlIgnore]
         public bool? IsValidSelectedTaskIndex
-		{
-			get
-			{
-				return isValidSelectedTaskIndex;
-			}
-			set
-			{
-				isValidSelectedTaskIndex = value;
-				RaisePropertyChanged("IsValidSelectedTaskIndex");
-			}
-		}
-		private bool? isValidSelectedTaskIndex;
+        {
+            get => isValidSelectedTaskIndex;
+            set
+            {
+                isValidSelectedTaskIndex = value;
+                RaisePropertyChanged("IsValidSelectedTaskIndex");
+            }
+        }
+        private bool? isValidSelectedTaskIndex;
 
-		/// <summary>
-		///
-		/// </summary>
-		public TaskType_GenericChipTask SelectedTaskType
-		{
-			get
-			{
-				return selectedTaskType;
-			}
-			set
-			{
-				selectedTaskType = value;
-				switch (value)
-				{
-					case TaskType_GenericChipTask.None:
+        /// <summary>
+        ///
+        /// </summary>
+        public TaskType_GenericChipTask SelectedTaskType
+        {
+            get => selectedTaskType;
+            set
+            {
+                selectedTaskType = value;
+                switch (value)
+                {
+                    case TaskType_GenericChipTask.None:
 
-						break;
+                        break;
 
-					case TaskType_GenericChipTask.ChipIsOfType:
+                    case TaskType_GenericChipTask.ChipIsOfType:
 
-						break;
+                        break;
 
-					case TaskType_GenericChipTask.ChangeDefault:
+                    case TaskType_GenericChipTask.ChangeDefault:
 
-						break;
-				}
-				RaisePropertyChanged("SelectedTaskType");
-			}
-		}
-		private TaskType_GenericChipTask selectedTaskType;
+                        break;
+                }
+                RaisePropertyChanged("SelectedTaskType");
+            }
+        }
+        private TaskType_GenericChipTask selectedTaskType;
 
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedTaskDescription
-		{
-			get
-			{
-				return selectedTaskDescription;
-			}
-			set
-			{
-				selectedTaskDescription = value;
-				RaisePropertyChanged("SelectedTaskDescription");
-			}
-		}
-		private string selectedTaskDescription;
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedTaskDescription
+        {
+            get => selectedTaskDescription;
+            set
+            {
+                selectedTaskDescription = value;
+                RaisePropertyChanged("SelectedTaskDescription");
+            }
+        }
+        private string selectedTaskDescription;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		[XmlIgnore]
-		public SettingsReaderWriter Settings
-		{
-			get { return settings; }
-		}
+        /// <summary>
+        /// 
+        /// </summary>
+        [XmlIgnore]
+        public SettingsReaderWriter Settings => settings;
 
         #endregion General Properties
 
         #region Commands
 
-		public ICommand CheckChipType { get { return new RelayCommand(OnNewCheckChipTypeCommand); } }
-		private void OnNewCheckChipTypeCommand()
+        public ICommand CheckChipType => new RelayCommand(OnNewCheckChipTypeCommand);
+        private void OnNewCheckChipTypeCommand()
         {
-			TaskErr = ERROR.Empty;
+            TaskErr = ERROR.Empty;
 
-			Task genericChipTask =
-				new Task(() =>
-				{
-					using (RFiDDevice device = RFiDDevice.Instance)
-					{
-						if (device != null)
-						{
+            Task genericChipTask =
+                new Task(() =>
+                {
+                    using (RFiDDevice device = RFiDDevice.Instance)
+                    {
+                        if (device != null)
+                        {
 
-							ERROR result = device.ReadChipPublic();
+                            ERROR result = device.ReadChipPublic();
 
-							if (result == ERROR.NoError)
-							{
-								
-								if (device.GenericChip.CardType == SelectedChipType)
-									result = ERROR.NoError;
-								else
-									result = ERROR.IsNotTrue;
+                            if (result == ERROR.NoError)
+                            {
 
-								TaskErr = result;
-								return;
+                                if (device.GenericChip.CardType == SelectedChipType)
+                                    result = ERROR.NoError;
+                                else
+                                    result = ERROR.IsNotTrue;
 
-							}
-						}
-						else
-						{
-							TaskErr = ERROR.DeviceNotReadyError;
-							return;
-						}
-					}
-				});
+                                TaskErr = result;
+                                return;
 
-			if (TaskErr == ERROR.Empty)
-			{
-				TaskErr = ERROR.DeviceNotReadyError;
+                            }
+                        }
+                        else
+                        {
+                            TaskErr = ERROR.DeviceNotReadyError;
+                            return;
+                        }
+                    }
+                });
 
-				genericChipTask.ContinueWith((x) =>
-				{
-					if (TaskErr == ERROR.NoError)
-					{
-						IsTaskCompletedSuccessfully = true;
-					}
-					else
-					{
-						IsTaskCompletedSuccessfully = false;
-					}
-				});
-				genericChipTask.RunSynchronously();
-			}
+            if (TaskErr == ERROR.Empty)
+            {
+                TaskErr = ERROR.DeviceNotReadyError;
 
-			return;
-		}
+                genericChipTask.ContinueWith((x) =>
+                {
+                    if (TaskErr == ERROR.NoError)
+                    {
+                        IsTaskCompletedSuccessfully = true;
+                    }
+                    else
+                    {
+                        IsTaskCompletedSuccessfully = false;
+                    }
+                });
+                genericChipTask.RunSynchronously();
+            }
 
-		public ICommand CheckChipUID { get { return new RelayCommand(OnNewCheckChipUIDCommand); } }
-		private void OnNewCheckChipUIDCommand()
-		{
-			TaskErr = ERROR.Empty;
+            return;
+        }
 
-			Task genericChipTask =
-				new Task(() =>
-				{
-					using (RFiDDevice device = RFiDDevice.Instance)
-					{
-						if (device != null)
-						{
+        public ICommand CheckChipUID => new RelayCommand(OnNewCheckChipUIDCommand);
+        private void OnNewCheckChipUIDCommand()
+        {
+            TaskErr = ERROR.Empty;
 
-							ERROR result = device.ReadChipPublic();
+            Task genericChipTask =
+                new Task(() =>
+                {
+                    using (RFiDDevice device = RFiDDevice.Instance)
+                    {
+                        if (device != null)
+                        {
 
-							if (result == ERROR.NoError)
-							{
+                            ERROR result = device.ReadChipPublic();
 
-								if (device.GenericChip.CardType == SelectedChipType)
-									result = ERROR.NoError;
-								else
-									result = ERROR.IsNotTrue;
+                            if (result == ERROR.NoError)
+                            {
 
-								TaskErr = result;
-								return;
+                                if (device.GenericChip.CardType == SelectedChipType)
+                                    result = ERROR.NoError;
+                                else
+                                    result = ERROR.IsNotTrue;
 
-							}
-						}
-						else
-						{
-							TaskErr = ERROR.DeviceNotReadyError;
-							return;
-						}
-					}
-				});
+                                TaskErr = result;
+                                return;
 
-			if (TaskErr == ERROR.Empty)
-			{
-				TaskErr = ERROR.DeviceNotReadyError;
+                            }
+                        }
+                        else
+                        {
+                            TaskErr = ERROR.DeviceNotReadyError;
+                            return;
+                        }
+                    }
+                });
 
-				genericChipTask.ContinueWith((x) =>
-				{
-					if (TaskErr == ERROR.NoError)
-					{
-						IsTaskCompletedSuccessfully = true;
-					}
-					else
-					{
-						IsTaskCompletedSuccessfully = false;
-					}
-				});
-				genericChipTask.RunSynchronously();
-			}
+            if (TaskErr == ERROR.Empty)
+            {
+                TaskErr = ERROR.DeviceNotReadyError;
 
-			return;
-		}
-		#endregion
+                genericChipTask.ContinueWith((x) =>
+                {
+                    if (TaskErr == ERROR.NoError)
+                    {
+                        IsTaskCompletedSuccessfully = true;
+                    }
+                    else
+                    {
+                        IsTaskCompletedSuccessfully = false;
+                    }
+                });
+                genericChipTask.RunSynchronously();
+            }
 
-		#region IUserDialogViewModel Implementation
+            return;
+        }
+        #endregion
 
-		[XmlIgnore]
-		public bool IsModal { get; private set; }
-		
-		public virtual void RequestClose()
-		{
-			if (this.OnCloseRequest != null)
-				OnCloseRequest(this);
-			else
-				Close();
-		}
+        #region IUserDialogViewModel Implementation
 
-		public event EventHandler DialogClosing;
+        [XmlIgnore]
+        public bool IsModal { get; private set; }
 
-		public ICommand OKCommand { get { return new RelayCommand(Ok); } }
+        public virtual void RequestClose()
+        {
+            if (OnCloseRequest != null)
+                OnCloseRequest(this);
+            else
+                Close();
+        }
 
-		protected virtual void Ok()
-		{
-			if (this.OnOk != null)
-				this.OnOk(this);
-			else
-				Close();
-		}
+        public event EventHandler DialogClosing;
 
-		public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
+        public ICommand OKCommand => new RelayCommand(Ok);
 
-		protected virtual void Cancel()
-		{
-			if (this.OnCancel != null)
-				this.OnCancel(this);
-			else
-				Close();
-		}
+        protected virtual void Ok()
+        {
+            if (OnOk != null)
+                OnOk(this);
+            else
+                Close();
+        }
 
-		public ICommand AuthCommand { get { return new RelayCommand(Auth); } }
+        public ICommand CancelCommand => new RelayCommand(Cancel);
 
-		protected virtual void Auth()
-		{
-			if (this.OnAuth != null)
-				this.OnAuth(this);
-			else
-				Close();
-		}
+        protected virtual void Cancel()
+        {
+            if (OnCancel != null)
+                OnCancel(this);
+            else
+                Close();
+        }
 
-		[XmlIgnore]
-		public Action<GenericChipTaskViewModel> OnOk { get; set; }
+        public ICommand AuthCommand => new RelayCommand(Auth);
 
-		[XmlIgnore]
-		public Action<GenericChipTaskViewModel> OnCancel { get; set; }
+        protected virtual void Auth()
+        {
+            if (OnAuth != null)
+                OnAuth(this);
+            else
+                Close();
+        }
 
-		[XmlIgnore]
-		public Action<GenericChipTaskViewModel> OnAuth { get; set; }
+        [XmlIgnore]
+        public Action<GenericChipTaskViewModel> OnOk { get; set; }
 
-		[XmlIgnore]
-		public Action<GenericChipTaskViewModel> OnCloseRequest { get; set; }
+        [XmlIgnore]
+        public Action<GenericChipTaskViewModel> OnCancel { get; set; }
 
-		public void Close()
-		{
-			if (this.DialogClosing != null)
-				this.DialogClosing(this, new EventArgs());
-		}
+        [XmlIgnore]
+        public Action<GenericChipTaskViewModel> OnAuth { get; set; }
 
-		public void Show(IList<IDialogViewModel> collection)
-		{
-			collection.Add(this);
-		}
+        [XmlIgnore]
+        public Action<GenericChipTaskViewModel> OnCloseRequest { get; set; }
 
-		#endregion IUserDialogViewModel Implementation
+        public void Close()
+        {
+            if (DialogClosing != null)
+                DialogClosing(this, new EventArgs());
+        }
 
-		#region Localization
+        public void Show(IList<IDialogViewModel> collection)
+        {
+            collection.Add(this);
+        }
 
-		/// <summary>
-		/// localization strings
-		/// </summary>
-		public string LocalizationResourceSet { get; set; }
-		
-		[XmlIgnore]
-		public string Caption
-		{
-			get { return _Caption; }
-			set
-			{
-				_Caption = value;
-				RaisePropertyChanged("Caption");
-			}
-		} private string _Caption;
+        #endregion IUserDialogViewModel Implementation
 
-		#endregion Localization
-	}
+        #region Localization
+
+        /// <summary>
+        /// localization strings
+        /// </summary>
+        public string LocalizationResourceSet { get; set; }
+
+        [XmlIgnore]
+        public string Caption
+        {
+            get => _Caption;
+            set
+            {
+                _Caption = value;
+                RaisePropertyChanged("Caption");
+            }
+        }
+        private string _Caption;
+
+        #endregion Localization
+    }
 }

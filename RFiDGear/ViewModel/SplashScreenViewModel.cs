@@ -35,8 +35,8 @@ namespace RFiDGear.ViewModel
 
         public virtual void RequestClose()
         {
-            if (this.OnCloseRequest != null)
-                this.OnCloseRequest(this);
+            if (OnCloseRequest != null)
+                OnCloseRequest(this);
             else
                 Close();
         }
@@ -45,8 +45,8 @@ namespace RFiDGear.ViewModel
 
         public void Close()
         {
-            if (this.DialogClosing != null)
-                this.DialogClosing(this, new EventArgs());
+            if (DialogClosing != null)
+                DialogClosing(this, new EventArgs());
         }
 
         public void Show(IList<IDialogViewModel> collection)
@@ -67,11 +67,11 @@ namespace RFiDGear.ViewModel
 
         public string Caption
         {
-            get { return _Caption; }
+            get => _Caption;
             set
             {
                 _Caption = value;
-                RaisePropertyChanged(() => this.Caption);
+                RaisePropertyChanged(() => Caption);
             }
         }
 

@@ -10,23 +10,23 @@ using System;
 
 namespace RFiDGear.Model
 {
-	/// <summary>
-	/// Description of MifareUltralightPageModel.
-	/// </summary>
-	public class MifareUltralightPageModel
-	{
-		public MifareUltralightPageModel()
-		{
-		}
-		
-		public MifareUltralightPageModel(byte[] _data, int _page)
-		{
-			Data = _data;
-			PageNumber = _page;
-		}
-		
-		public byte[] Data { get; set; }
-		
-		public int PageNumber { get; set; }
-	}
+    /// <summary>
+    /// Description of MifareUltralightPageModel.
+    /// </summary>
+    public class MifareUltralightPageModel
+    {
+        public MifareUltralightPageModel()
+        {
+        }
+
+        public MifareUltralightPageModel(byte[] _data, int _page)
+        {
+            Data = _data;
+            PageNumber = _page;
+        }
+
+        public byte[] Data { get; set; }
+
+        public int PageNumber { get; set; }
+    }
 }

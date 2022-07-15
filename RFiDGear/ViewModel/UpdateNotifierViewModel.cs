@@ -10,6 +10,7 @@ using GalaSoft.MvvmLight.Command;
 using MvvmDialogs.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Windows.Input;
 
 namespace RFiDGear.ViewModel
 {
@@ -27,15 +28,36 @@ namespace RFiDGear.ViewModel
             UpdateHistoryText = _text;
         }
 
+        #region Commands
+
+        public ICommand OkCommand => new RelayCommand(Ok);
+
+        protected virtual void Ok()
+        {
+            if (OnOk != null)
+                OnOk(this);
+            else
+                Close();
+        }
+
+        public ICommand CancelCommand => new RelayCommand(Cancel);
+
+        protected virtual void Cancel()
+        {
+            if (OnCancel != null)
+                OnCancel(this);
+            else
+                Close();
+        }
+
+        #endregion Commands
+
         /// <summary>
         /// 
         /// </summary>
         public string UpdateHistoryText
         {
-            get
-            {
-                return updateHistoryText;
-            }
+            get => updateHistoryText;
             set
             {
                 updateHistoryText = value;
@@ -55,8 +77,8 @@ namespace RFiDGear.ViewModel
 
         public virtual void RequestClose()
         {
-            if (this.OnCloseRequest != null)
-                this.OnCloseRequest(this);
+            if (OnCloseRequest != null)
+                OnCloseRequest(this);
             else
                 Close();
         }
@@ -65,8 +87,8 @@ namespace RFiDGear.ViewModel
 
         public void Close()
         {
-            if (this.DialogClosing != null)
-                this.DialogClosing(this, new EventArgs());
+            if (DialogClosing != null)
+                DialogClosing(this, new EventArgs());
         }
 
         public void Show(IList<IDialogViewModel> collection)
@@ -87,11 +109,11 @@ namespace RFiDGear.ViewModel
 
         public string Caption
         {
-            get { return _Caption; }
+            get => _Caption;
             set
             {
                 _Caption = value;
-                RaisePropertyChanged(() => this.Caption);
+                RaisePropertyChanged(() => Caption);
             }
         }
 

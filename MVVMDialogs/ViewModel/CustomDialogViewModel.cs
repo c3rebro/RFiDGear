@@ -14,8 +14,8 @@ namespace MvvmDialogs.ViewModels
 
         public virtual void RequestClose()
         {
-            if (this.OnCloseRequest != null)
-                this.OnCloseRequest(this);
+            if (OnCloseRequest != null)
+                OnCloseRequest(this);
             else
                 Close();
         }
@@ -30,8 +30,8 @@ namespace MvvmDialogs.ViewModels
 
         protected virtual void Ok()
         {
-            if (this.OnOk != null)
-                this.OnOk(this);
+            if (OnOk != null)
+                OnOk(this);
             else
                 Close();
         }
@@ -40,8 +40,8 @@ namespace MvvmDialogs.ViewModels
 
         protected virtual void Cancel()
         {
-            if (this.OnCancel != null)
-                this.OnCancel(this);
+            if (OnCancel != null)
+                OnCancel(this);
             else
                 Close();
         }
@@ -52,16 +52,16 @@ namespace MvvmDialogs.ViewModels
 
         public string Message
         {
-            get { return _Message; }
-            set { _Message = value; RaisePropertyChanged(() => this.Message); }
+            get => _Message;
+            set { _Message = value; RaisePropertyChanged(() => Message); }
         }
 
         private string _Caption;
 
         public string Caption
         {
-            get { return _Caption; }
-            set { _Caption = value; RaisePropertyChanged(() => this.Caption); }
+            get => _Caption;
+            set { _Caption = value; RaisePropertyChanged(() => Caption); }
         }
 
         public Action<CustomDialogViewModel> OnOk { get; set; }
@@ -70,13 +70,13 @@ namespace MvvmDialogs.ViewModels
 
         public CustomDialogViewModel(bool isModal = true)
         {
-            this.IsModal = isModal;
+            IsModal = isModal;
         }
 
         public void Close()
         {
-            if (this.DialogClosing != null)
-                this.DialogClosing(this, new EventArgs());
+            if (DialogClosing != null)
+                DialogClosing(this, new EventArgs());
         }
 
         public void Show(IList<IDialogViewModel> collection)

@@ -34,7 +34,7 @@ namespace RFiDGear.ViewModel
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
         private protected MainWindow mw;
-        private protected Updater updater;
+        private readonly Updater updater;
         private protected DatabaseReaderWriter databaseReaderWriter;
         private protected ReportReaderWriter reportReaderWriter;
         private protected DispatcherTimer triggerReadChip;
@@ -92,8 +92,6 @@ namespace RFiDGear.ViewModel
                         settings.DefaultSpecification.LastUsedProjectPath = args[1];
                         settings.SaveSettings();
                     }
-
-
             }
 
             updater = new Updater();
@@ -144,13 +142,13 @@ namespace RFiDGear.ViewModel
 
             rowContextMenuItems.Add(new MenuItem()
             {
-                Header = ResourceLoader.getResource("contextMenuItemAddOrEditTask"),
+                Header = ResourceLoader.GetResource("contextMenuItemAddOrEditTask"),
                 Command = GetAddEditCommand
             });
 
             rowContextMenuItems.Add(new MenuItem()
             {
-                Header = ResourceLoader.getResource("contextMenuItemDeleteSelectedItem"),
+                Header = ResourceLoader.GetResource("contextMenuItemDeleteSelectedItem"),
                 Command = new RelayCommand(() =>
                 {
                     taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
@@ -172,7 +170,7 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         private protected ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
-        public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
+        public ObservableCollection<IDialogViewModel> Dialogs => dialogs;
 
         #endregion Dialogs
 
@@ -191,30 +189,24 @@ namespace RFiDGear.ViewModel
 
         #region Local Commands
 
-        private ICommand GetAddEditCommand
-        {
-            get
-            {
-                return new RelayCommand(OnNewGetAddEditCommand);
-            }
-        }
+        private ICommand GetAddEditCommand => new RelayCommand(OnNewGetAddEditCommand);
         private void OnNewGetAddEditCommand()
         {
             switch (selectedSetupViewModel)
             {
-                case CommonTaskViewModel ssVM:
+                case CommonTaskViewModel _:
                     OnNewNewCreateReportTaskCommand();
                     break;
-                case GenericChipTaskViewModel ssVM:
+                case GenericChipTaskViewModel _:
                     OnNewCreateGenericChipTaskCommand();
                     break;
-                case MifareClassicSetupViewModel ssVM:
+                case MifareClassicSetupViewModel _:
                     OnNewCreateClassicTaskCommand();
                     break;
-                case MifareDesfireSetupViewModel ssVM:
+                case MifareDesfireSetupViewModel _:
                     OnNewCreateDesfireTaskCommand();
                     break;
-                case MifareUltralightSetupViewModel ssVM:
+                case MifareUltralightSetupViewModel _:
                     OnNewCreateUltralightTaskCommand();
                     break;
             }
@@ -375,7 +367,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// "Remove all listed Chips from listing" was called
         /// </summary>
-        public ICommand RemoveChipsFromTreeCommand { get { return new RelayCommand(OnNewRemoveChipsFromTreeCommand); } }
+        public ICommand RemoveChipsFromTreeCommand => new RelayCommand(OnNewRemoveChipsFromTreeCommand);
         private void OnNewRemoveChipsFromTreeCommand()
         {
             TreeViewParentNodes.Clear();
@@ -384,7 +376,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// Create a new "Common" Task of Type "Report Creator"
         /// </summary>
-        public ICommand CreateGenericChipTaskCommand { get { return new RelayCommand(OnNewCreateGenericChipTaskCommand); } }
+        public ICommand CreateGenericChipTaskCommand => new RelayCommand(OnNewCreateGenericChipTaskCommand);
         private void OnNewCreateGenericChipTaskCommand()
         {
             bool timerState = triggerReadChip.IsEnabled;
@@ -400,9 +392,9 @@ namespace RFiDGear.ViewModel
                     // only call dialog if device is ready
                     if (device != null)
                     {
-                        this.dialogs.Add(new GenericChipTaskViewModel(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
+                        dialogs.Add(new GenericChipTaskViewModel(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
                         {
-                            Caption = ResourceLoader.getResource("windowCaptionAddEditMifareClassicTask"),
+                            Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareClassicTask"),
                             //IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
 
                             OnOk = (sender) =>
@@ -472,7 +464,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// Create a new "Common" Task of Type "Report Creator"
         /// </summary>
-        public ICommand CreateGenericTaskCommand { get { return new RelayCommand(OnNewNewCreateReportTaskCommand); } }
+        public ICommand CreateGenericTaskCommand => new RelayCommand(OnNewNewCreateReportTaskCommand);
         private void OnNewNewCreateReportTaskCommand()
         {
             bool timerState = triggerReadChip.IsEnabled;
@@ -483,9 +475,9 @@ namespace RFiDGear.ViewModel
 
             try
             {
-                this.dialogs.Add(new CommonTaskViewModel(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
+                dialogs.Add(new CommonTaskViewModel(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
                 {
-                    Caption = ResourceLoader.getResource("windowCaptionAddEditGenericTask"),
+                    Caption = ResourceLoader.GetResource("windowCaptionAddEditGenericTask"),
                     //IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
 
                     OnOk = (sender) =>
@@ -497,7 +489,7 @@ namespace RFiDGear.ViewModel
                             if ((ChipTasks.TaskCollection.OfType<CommonTaskViewModel>().Where(x => (x as CommonTaskViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
                             {
                                 ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
-                                
+
                             }
 
                             ChipTasks.TaskCollection.Add(sender);
@@ -549,7 +541,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// Creates a new Task of Type Mifare Classic Card
         /// </summary>
-        public ICommand CreateClassicTaskCommand { get { return new RelayCommand(OnNewCreateClassicTaskCommand); } }
+        public ICommand CreateClassicTaskCommand => new RelayCommand(OnNewCreateClassicTaskCommand);
         private void OnNewCreateClassicTaskCommand()
         {
             bool timerState = triggerReadChip.IsEnabled;
@@ -565,9 +557,9 @@ namespace RFiDGear.ViewModel
                     // only call dialog if device is ready
                     if (device != null)
                     {
-                        this.dialogs.Add(new MifareClassicSetupViewModel(SelectedSetupViewModel, dialogs)
+                        dialogs.Add(new MifareClassicSetupViewModel(SelectedSetupViewModel, dialogs)
                         {
-                            Caption = ResourceLoader.getResource("windowCaptionAddEditMifareClassicTask"),
+                            Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareClassicTask"),
                             IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
 
                             OnOk = (sender) =>
@@ -633,7 +625,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand CreateDesfireTaskCommand { get { return new RelayCommand(OnNewCreateDesfireTaskCommand); } }
+        public ICommand CreateDesfireTaskCommand => new RelayCommand(OnNewCreateDesfireTaskCommand);
         private void OnNewCreateDesfireTaskCommand()
         {
             bool timerState = triggerReadChip.IsEnabled;
@@ -649,7 +641,7 @@ namespace RFiDGear.ViewModel
 
                     Dialogs.Add(new MifareDesfireSetupViewModel(SelectedSetupViewModel, dialogs)
                     {
-                        Caption = ResourceLoader.getResource("windowCaptionAddEditMifareDesfireTask"),
+                        Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareDesfireTask"),
 
                         OnOk = (sender) =>
                         {
@@ -714,7 +706,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand CreateUltralightTaskCommand { get { return new RelayCommand(OnNewCreateUltralightTaskCommand); } }
+        public ICommand CreateUltralightTaskCommand => new RelayCommand(OnNewCreateUltralightTaskCommand);
         private void OnNewCreateUltralightTaskCommand()
         {
 
@@ -731,7 +723,7 @@ namespace RFiDGear.ViewModel
 
                     Dialogs.Add(new MifareUltralightSetupViewModel(SelectedSetupViewModel, dialogs)
                     {
-                        Caption = ResourceLoader.getResource("windowCaptionAddEditMifareDesfireTask"),
+                        Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareDesfireTask"),
 
                         OnOk = (sender) =>
                         {
@@ -786,7 +778,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand ExecuteQuickCheckCommand { get { return new RelayCommand(OnNewExecuteQuickCheckCommand); } }
+        public ICommand ExecuteQuickCheckCommand => new RelayCommand(OnNewExecuteQuickCheckCommand);
         private void OnNewExecuteQuickCheckCommand()
         {
             try
@@ -831,7 +823,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand ReadChipCommand { get { return new RelayCommand(OnNewReadChipCommand); } }
+        public ICommand ReadChipCommand => new RelayCommand(OnNewReadChipCommand);
         private void OnNewReadChipCommand()
         {
             bool timerState = triggerReadChip.IsEnabled;
@@ -914,7 +906,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// Reset all Task status information
         /// </summary>
-        public ICommand ResetTaskStatusCommand { get { return new RelayCommand(OnNewResetTaskStatusCommand); } }
+        public ICommand ResetTaskStatusCommand => new RelayCommand(OnNewResetTaskStatusCommand);
         private void OnNewResetTaskStatusCommand()
         {
             foreach (object chipTask in taskHandler.TaskCollection)
@@ -951,7 +943,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// Remove all Tasks from DataGrid
         /// </summary>
-        public ICommand RemoveAllTasksCommand { get { return new RelayCommand(OnNewRemoveAllTasksCommand); } }
+        public ICommand RemoveAllTasksCommand => new RelayCommand(OnNewRemoveAllTasksCommand);
         private void OnNewRemoveAllTasksCommand()
         {
             taskHandler.TaskCollection.Clear();
@@ -960,7 +952,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand WriteSelectedTaskToChipAutoCommand { get { return new RelayCommand(OnNewWriteSelectedTaskToChipAutoCommand); } }
+        public ICommand WriteSelectedTaskToChipAutoCommand => new RelayCommand(OnNewWriteSelectedTaskToChipAutoCommand);
         private void OnNewWriteSelectedTaskToChipAutoCommand()
         {
             if (!isWriteSelectedToChipAutoCheckedTemp)
@@ -972,7 +964,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand WriteToAllChipAutoCommand { get { return new RelayCommand(OnNewWriteToAllChipAutoCommand); } }
+        public ICommand WriteToAllChipAutoCommand => new RelayCommand(OnNewWriteToAllChipAutoCommand);
         private void OnNewWriteToAllChipAutoCommand()
         {
             if (!triggerReadChip.IsEnabled)
@@ -984,7 +976,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand WriteSelectedTaskToChipOnceCommand { get { return new RelayCommand(OnNewWriteSelectedTaskToChipOnceCommand); } }
+        public ICommand WriteSelectedTaskToChipOnceCommand => new RelayCommand(OnNewWriteSelectedTaskToChipOnceCommand);
         private void OnNewWriteSelectedTaskToChipOnceCommand()
         {
             OnNewWriteToChipOnceCommand(true);
@@ -993,7 +985,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand WriteToChipOnceCommand { get { return new RelayCommand<bool>(OnNewWriteToChipOnceCommand); } }
+        public ICommand WriteToChipOnceCommand => new RelayCommand<bool>(OnNewWriteToChipOnceCommand);
         private void OnNewWriteToChipOnceCommand(bool _runSelectedOnly = false)
         {
             OnNewReadChipCommand();
@@ -1064,12 +1056,14 @@ namespace RFiDGear.ViewModel
 
                             GenericChip = new GenericChipModel(device.GenericChip.UID, device.GenericChip.CardType);
 
-                            if(GenericChip != null)
+                            if (GenericChip != null)
                             {
-                                if(GenericChip.CardType == CARD_TYPE.DESFireEV1 || GenericChip.CardType == CARD_TYPE.DESFireEV2)
+                                if (GenericChip.CardType == CARD_TYPE.DESFireEV1 || GenericChip.CardType == CARD_TYPE.DESFireEV2)
                                 {
-                                    DesfireChip = new MifareDesfireChipModel(GenericChip.UID, GenericChip.CardType);
-                                    DesfireChip.AppList = new List<MifareDesfireAppModel>();
+                                    DesfireChip = new MifareDesfireChipModel(GenericChip.UID, GenericChip.CardType)
+                                    {
+                                        AppList = new List<MifareDesfireAppModel>()
+                                    };
                                     if (device.AppIDList.Any())
                                     {
                                         foreach (uint appID in device.AppIDList)
@@ -1138,7 +1132,7 @@ namespace RFiDGear.ViewModel
                         //decide what type of task to process next. use exact array positions 
                         switch (taskHandler.TaskCollection[taskIndex])
                         {
-                            
+
                             case CommonTaskViewModel csVM:
                                 switch (csVM.SelectedTaskType)
                                 {
@@ -1198,11 +1192,11 @@ namespace RFiDGear.ViewModel
                                                     {
                                                         var dlg = new SaveFileDialogViewModel
                                                         {
-                                                            Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-                                                            Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                            Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
+                                                            Filter = ResourceLoader.GetResource("filterStringSaveReport")
                                                         };
 
-                                                        if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                        if (dlg.Show(Dialogs) && dlg.FileName != null)
                                                         {
                                                             reportOutputPath = dlg.FileName;
                                                         }
@@ -1236,11 +1230,11 @@ namespace RFiDGear.ViewModel
                                                                         {
                                                                             var dlg = new SaveFileDialogViewModel
                                                                             {
-                                                                                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-                                                                                Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                                                Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
+                                                                                Filter = ResourceLoader.GetResource("filterStringSaveReport")
                                                                             };
 
-                                                                            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                                            if (dlg.Show(Dialogs) && dlg.FileName != null)
                                                                             {
                                                                                 reportOutputPath = dlg.FileName;
                                                                             }
@@ -1268,11 +1262,11 @@ namespace RFiDGear.ViewModel
                                                                         {
                                                                             var dlg = new SaveFileDialogViewModel
                                                                             {
-                                                                                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-                                                                                Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                                                Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
+                                                                                Filter = ResourceLoader.GetResource("filterStringSaveReport")
                                                                             };
 
-                                                                            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                                            if (dlg.Show(Dialogs) && dlg.FileName != null)
                                                                             {
                                                                                 reportOutputPath = dlg.FileName;
                                                                             }
@@ -1299,11 +1293,11 @@ namespace RFiDGear.ViewModel
                                                                         {
                                                                             var dlg = new SaveFileDialogViewModel
                                                                             {
-                                                                                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-                                                                                Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                                                Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
+                                                                                Filter = ResourceLoader.GetResource("filterStringSaveReport")
                                                                             };
 
-                                                                            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                                            if (dlg.Show(Dialogs) && dlg.FileName != null)
                                                                             {
                                                                                 reportOutputPath = dlg.FileName;
                                                                             }
@@ -1330,11 +1324,11 @@ namespace RFiDGear.ViewModel
                                                                         {
                                                                             var dlg = new SaveFileDialogViewModel
                                                                             {
-                                                                                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-                                                                                Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                                                Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
+                                                                                Filter = ResourceLoader.GetResource("filterStringSaveReport")
                                                                             };
 
-                                                                            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                                            if (dlg.Show(Dialogs) && dlg.FileName != null)
                                                                             {
                                                                                 reportOutputPath = dlg.FileName;
                                                                             }
@@ -1361,11 +1355,11 @@ namespace RFiDGear.ViewModel
                                                                         {
                                                                             var dlg = new SaveFileDialogViewModel
                                                                             {
-                                                                                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-                                                                                Filter = ResourceLoader.getResource("filterStringSaveReport")
+                                                                                Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
+                                                                                Filter = ResourceLoader.GetResource("filterStringSaveReport")
                                                                             };
 
-                                                                            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                                                                            if (dlg.Show(Dialogs) && dlg.FileName != null)
                                                                             {
                                                                                 reportOutputPath = dlg.FileName;
                                                                             }
@@ -1447,9 +1441,8 @@ namespace RFiDGear.ViewModel
 
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -1458,7 +1451,7 @@ namespace RFiDGear.ViewModel
                                                                 {
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
-                                                                }                                                                    
+                                                                }
                                                                 else
                                                                     taskIndex++;
                                                                 break;
@@ -1559,9 +1552,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).CheckChipType.Execute(null);
                                                 else
                                                 {
-                                                    int index;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).SelectedExecuteConditionTaskIndex, out index))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).SelectedExecuteConditionTaskIndex, out int index))
                                                     {
                                                         switch (taskHandler.TaskCollection[index])
                                                         {
@@ -1649,9 +1641,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).ReadDataCommand.Execute(null);
                                                 else
                                                 {
-                                                    int index;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionTaskIndex, out index))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionTaskIndex, out int index))
                                                     {
                                                         switch (taskHandler.TaskCollection[index])
                                                         {
@@ -1727,9 +1718,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).WriteDataCommand.Execute(null);
                                                 else
                                                 {
-                                                    int index;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionTaskIndex, out index))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).SelectedExecuteConditionTaskIndex, out int index))
                                                     {
                                                         switch (taskHandler.TaskCollection[index])
                                                         {
@@ -1810,9 +1800,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).FormatDesfireCardCommand.Execute(null);
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -1852,7 +1841,7 @@ namespace RFiDGear.ViewModel
 
                                                 break;
                                         }
-                                        break;                      
+                                        break;
 
                                     case TaskType_MifareDesfireTask.AppExistCheck:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
@@ -1904,9 +1893,8 @@ namespace RFiDGear.ViewModel
 
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -1998,9 +1986,8 @@ namespace RFiDGear.ViewModel
 
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -2087,9 +2074,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateAppCommand.Execute(null);
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -2181,9 +2167,8 @@ namespace RFiDGear.ViewModel
 
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -2264,9 +2249,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteSignleCardApplicationCommand.Execute(null);
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -2347,9 +2331,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeMasterCardKeyCommand.Execute(null);
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -2430,9 +2413,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ChangeAppKeyCommand.Execute(null);
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -2519,9 +2501,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).CreateFileCommand.Execute(null);
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -2602,9 +2583,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DeleteFileCommand.Execute(null);
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -2685,9 +2665,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadDataCommand.Execute(null);
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -2774,9 +2753,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).WriteDataCommand.Execute(null);
                                                 else
                                                 {
-                                                    int targetIndex;
 
-                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out targetIndex))
+                                                    if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
                                                         {
@@ -2862,16 +2840,16 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand CloseAllCommand { get { return new RelayCommand(OnCloseAll); } }
+        public ICommand CloseAllCommand => new RelayCommand(OnCloseAll);
         private void OnCloseAll()
         {
-            this.Dialogs.Clear();
+            Dialogs.Clear();
         }
 
         /// <summary>
         /// 
         /// </summary>
-        public ICommand SwitchLanguageToGerman { get { return new RelayCommand(SetGermanLanguage); } }
+        public ICommand SwitchLanguageToGerman => new RelayCommand(SetGermanLanguage);
         private void SetGermanLanguage()
         {
             using (SettingsReaderWriter settings = new SettingsReaderWriter())
@@ -2880,7 +2858,7 @@ namespace RFiDGear.ViewModel
                 {
                     settings.DefaultSpecification.DefaultLanguage = "german";
                     settings.SaveSettings();
-                    this.OnNewLanguageChangedDialog();
+                    OnNewLanguageChangedDialog();
                 }
             }
         }
@@ -2888,7 +2866,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand SwitchLanguageToEnglish { get { return new RelayCommand(SetEnglishLanguage); } }
+        public ICommand SwitchLanguageToEnglish => new RelayCommand(SetEnglishLanguage);
         private void SetEnglishLanguage()
         {
             using (SettingsReaderWriter settings = new SettingsReaderWriter())
@@ -2897,17 +2875,17 @@ namespace RFiDGear.ViewModel
                 {
                     settings.DefaultSpecification.DefaultLanguage = "english";
                     settings.SaveSettings();
-                    this.OnNewLanguageChangedDialog();
+                    OnNewLanguageChangedDialog();
                 }
             }
         }
 
         private void OnNewLanguageChangedDialog()
         {
-            this.Dialogs.Add(new CustomDialogViewModel
+            Dialogs.Add(new CustomDialogViewModel
             {
-                Message = ResourceLoader.getResource("messageBoxRestartRequiredMessage"),
-                Caption = ResourceLoader.getResource("messageBoxRestartRequiredCaption"),
+                Message = ResourceLoader.GetResource("messageBoxRestartRequiredMessage"),
+                Caption = ResourceLoader.GetResource("messageBoxRestartRequiredCaption"),
 
                 OnOk = (sender) =>
                 {
@@ -2930,14 +2908,14 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand NewReaderSetupDialogCommand { get { return new RelayCommand(OnNewReaderSetupDialog); } }
+        public ICommand NewReaderSetupDialogCommand => new RelayCommand(OnNewReaderSetupDialog);
         private void OnNewReaderSetupDialog()
         {
             using (RFiDDevice device = RFiDDevice.Instance)
             {
-                this.Dialogs.Add(new SetupViewModel(device)
+                Dialogs.Add(new SetupViewModel(device)
                 {
-                    Caption = ResourceLoader.getResource("windowCaptionReaderSetup"),
+                    Caption = ResourceLoader.GetResource("windowCaptionReaderSetup"),
 
                     OnOk = (sender) =>
                     {
@@ -2979,7 +2957,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand NewOpenFileDialogCommand { get { return new RelayCommand<bool>(OnNewOpenFileDialog); } }
+        public ICommand NewOpenFileDialogCommand => new RelayCommand<bool>(OnNewOpenFileDialog);
         private void OnNewOpenFileDialog(bool omitFileDlg = false)
         {
             bool autoLoadLastUsedDB;
@@ -2999,16 +2977,16 @@ namespace RFiDGear.ViewModel
 
                 var dlg = new OpenFileDialogViewModel
                 {
-                    Title = ResourceLoader.getResource("windowCaptionOpenProject"),
-                    Filter = ResourceLoader.getResource("filterStringSaveTasks"),
+                    Title = ResourceLoader.GetResource("windowCaptionOpenProject"),
+                    Filter = ResourceLoader.GetResource("filterStringSaveTasks"),
                     Multiselect = false
-                        
+
                 };
 
-                if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+                if (dlg.Show(Dialogs) && dlg.FileName != null)
                 {
                     Mouse.OverrideCursor = Cursors.AppStarting;
-                        
+
                     if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
                         ChipTasks.TaskCollection.Clear();
 
@@ -3038,16 +3016,16 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// Expose Command to Save As Menu Item
         /// </summary>
-        public ICommand SaveTaskDialogCommand { get { return new RelayCommand(OnNewSaveTaskDialogCommand); } }
+        public ICommand SaveTaskDialogCommand => new RelayCommand(OnNewSaveTaskDialogCommand);
         private void OnNewSaveTaskDialogCommand()
         {
             var dlg = new SaveFileDialogViewModel
             {
-                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-                Filter = ResourceLoader.getResource("filterStringSaveTasks")
+                Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
+                Filter = ResourceLoader.GetResource("filterStringSaveTasks")
             };
 
-            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+            if (dlg.Show(Dialogs) && dlg.FileName != null)
             {
                 databaseReaderWriter.WriteDatabase(ChipTasks, dlg.FileName);
             }
@@ -3056,16 +3034,16 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// Expose Command to Save Menu Item
         /// </summary>
-        public ICommand SaveChipDialogCommand { get { return new RelayCommand(OnNewSaveChipDialogCommand); } }
+        public ICommand SaveChipDialogCommand => new RelayCommand(OnNewSaveChipDialogCommand);
         private void OnNewSaveChipDialogCommand()
         {
             var dlg = new SaveFileDialogViewModel
             {
-                Title = ResourceLoader.getResource("windowCaptionSaveTasks"),
-                Filter = ResourceLoader.getResource("filterStringSaveTasks")
+                Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
+                Filter = ResourceLoader.GetResource("filterStringSaveTasks")
             };
 
-            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+            if (dlg.Show(Dialogs) && dlg.FileName != null)
             {
                 databaseReaderWriter.WriteDatabase(TreeViewParentNodes, dlg.FileName);
             }
@@ -3074,7 +3052,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand CloseApplication { get { return new RelayCommand(OnCloseRequest); } }
+        public ICommand CloseApplication => new RelayCommand(OnCloseRequest);
         private void OnCloseRequest()
         {
             Environment.Exit(0);
@@ -3087,27 +3065,13 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// expose contextmenu on row click
         /// </summary>
-        public ObservableCollection<MenuItem> RowContextMenu
-        {
-            get
-            {
-                return rowContextMenuItems;
-            }
-
-        }
+        public ObservableCollection<MenuItem> RowContextMenu => rowContextMenuItems;
         private readonly ObservableCollection<MenuItem> rowContextMenuItems;
 
         /// <summary>
         /// expose contextmenu on row click
         /// </summary>
-        public ObservableCollection<MenuItem> EmptySpaceContextMenuItems
-        {
-            get
-            {
-                return emptySpaceContextMenuItems;
-            }
-
-        }
+        public ObservableCollection<MenuItem> EmptySpaceContextMenuItems => emptySpaceContextMenuItems;
         private readonly ObservableCollection<MenuItem> emptySpaceContextMenuItems;
 
 
@@ -3116,7 +3080,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public object SelectedSetupViewModel
         {
-            get { return selectedSetupViewModel; }
+            get => selectedSetupViewModel;
             set
             {
                 selectedSetupViewModel = value;
@@ -3131,10 +3095,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public ObservableCollection<RFiDChipParentLayerViewModel> TreeViewParentNodes
         {
-            get
-            {
-                return treeViewParentNodes;
-            }
+            get => treeViewParentNodes;
 
             set
             {
@@ -3149,10 +3110,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public ChipTaskHandlerModel ChipTasks
         {
-            get
-            {
-                return taskHandler;
-            }
+            get => taskHandler;
 
             set
             {
@@ -3164,18 +3122,12 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public bool IsWriteToAllChipAutoChecked
-        {
-            get { return triggerReadChip.IsEnabled; }
-        }
+        public bool IsWriteToAllChipAutoChecked => triggerReadChip.IsEnabled;
 
         /// <summary>
         /// 
         /// </summary>
-        public bool IsWriteSelectedToChipAutoChecked
-        {
-            get { return triggerReadChip.IsEnabled; }
-        }
+        public bool IsWriteSelectedToChipAutoChecked => triggerReadChip.IsEnabled;
         private bool isWriteSelectedToChipAutoCheckedTemp;
 
         /// <summary>
@@ -3183,7 +3135,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public string CurrentReader
         {
-            get { return currentReader; }
+            get => currentReader;
             set
             {
                 currentReader = value;
@@ -3197,7 +3149,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public string ReaderStatus
         {
-            get { return readerStatus; }
+            get => readerStatus;
             set
             {
                 readerStatus = value;
@@ -3220,7 +3172,7 @@ namespace RFiDGear.ViewModel
             {
                 using (SettingsReaderWriter settings = new SettingsReaderWriter())
                 {
-                    return settings.DefaultSpecification != null ? settings.DefaultSpecification.AutoCheckForUpdates : false;
+                    return settings.DefaultSpecification != null && settings.DefaultSpecification.AutoCheckForUpdates;
                 }
             }
             set
@@ -3301,46 +3253,26 @@ namespace RFiDGear.ViewModel
             updateAvailable = true;
         }
 
-        private void AskForUpdateNow(object sender, EventArgs e)
+        private void AskForUpdateNow()
         {
-            /*
-            if (new MessageBoxViewModel
-            {
-                Caption = ResourceLoader.getResource("messageBoxUpdateAvailableCaption"),
-                Message = ResourceLoader.getResource("messageBoxUpdateAvailableMessage"),
-                Buttons = MessageBoxButton.YesNo,
-                Image = MessageBoxImage.Question
-            }.Show(this.Dialogs) == MessageBoxResult.Yes)
-                (sender as Updater).Update();
-            else
-            {
-                (sender as Updater).AllowUpdate = false;
-            }
-            */
-
             updateAvailable = false;
 
-            this.Dialogs.Add(new UpdateNotifierViewModel(updater.UpdateInfoText)
+            Dialogs.Add(new UpdateNotifierViewModel(updater.UpdateInfoText)
             {
-
                 Caption = "Update Available",
 
-                OnOk = (updateAction) => 
+                OnOk = (updateAction) =>
                 {
-                    (sender as Updater).Update();
+                    updater.Update();
                     updateAction.Close();
                 },
 
                 OnCancel = (updateAction) =>
                 {
-                    (sender as Updater).AllowUpdate = false;
+                    updater.AllowUpdate = false;
                     updateAction.Close();
                 }
             });
-
-
-
-
         }
 
         //Only one instance is allowed due to the singleton pattern of the reader class
@@ -3352,7 +3284,6 @@ namespace RFiDGear.ViewModel
             {
                 Environment.Exit(0);
             }
-
         }
 
         private void CloseThreads(object sender, CancelEventArgs e)
@@ -3366,13 +3297,13 @@ namespace RFiDGear.ViewModel
             mw.Title = string.Format("RFiDGear {0}.{1}.{2} {3}", Version.Major, Version.Minor, Version.Build, Constants.TITLE_SUFFIX);
 
             if (updateAvailable)
-                AskForUpdateNow(null, null);
+                AskForUpdateNow();
 
             Task thread = new Task(() =>
             {
                 while (true)
                 {
-                    for (int i = 0; i<=10; i++)
+                    for (int i = 0; i <= 10; i++)
                     {
                         Thread.Sleep(500);
                         ReaderStatus = string.Format("{0}", DateTime.Now);
@@ -3406,7 +3337,6 @@ namespace RFiDGear.ViewModel
             {
             });
 
-            
             thread.Start();
 
             if (firstRun)

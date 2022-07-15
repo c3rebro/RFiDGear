@@ -18,7 +18,7 @@ namespace RFiDGear.ViewModel
         public RFiDChipGrandGrandChildLayerViewModel(string _displayItem, RFiDChipGrandChildLayerViewModel _parent)
         {
             grandGrandChildNodeHeader = _displayItem;
-			Parent = _parent;
+            Parent = _parent;
         }
 
         #endregion Constructors
@@ -28,11 +28,8 @@ namespace RFiDGear.ViewModel
         [XmlIgnore]
         public object SelectedItem
         {
-            get { return selectedItem; }
-            set
-            {
-                selectedItem = value;
-            }
+            get => selectedItem;
+            set => selectedItem = value;
         }
 
         private object selectedItem;
@@ -43,26 +40,21 @@ namespace RFiDGear.ViewModel
 
         public RFiDChipGrandChildLayerViewModel Parent
         {
-            get { return parent; }
+            get => parent;
             set
             {
-				parent = value;
-				RaisePropertyChanged("Parent");
+                parent = value;
+                RaisePropertyChanged("Parent");
             }
-        } private RFiDChipGrandChildLayerViewModel parent;
+        }
+        private RFiDChipGrandChildLayerViewModel parent;
 
         #endregion Parent
 
         #region (Dependency) Properties
 
         [XmlIgnore]
-        public string GrandGrandChildNodeHeader
-        {
-            get
-            {
-                return grandGrandChildNodeHeader;
-            }
-        }
+        public string GrandGrandChildNodeHeader => grandGrandChildNodeHeader;
 
         private string grandGrandChildNodeHeader;
 
@@ -72,13 +64,13 @@ namespace RFiDGear.ViewModel
 
         public bool IsExpanded
         {
-            get { return isExpanded; }
+            get => isExpanded;
             set
             {
                 if (value != isExpanded)
                 {
                     isExpanded = value;
-                    this.RaisePropertyChanged("IsExpanded");
+                    RaisePropertyChanged("IsExpanded");
                 }
 
                 // Expand all the way up to the root.
@@ -91,7 +83,7 @@ namespace RFiDGear.ViewModel
 
         public bool IsSelected
         {
-            get { return isSelected; }
+            get => isSelected;
             set
             {
                 if (value != isSelected)
@@ -106,7 +98,7 @@ namespace RFiDGear.ViewModel
 
         public bool? IsAuthenticated
         {
-            get { return isAuth; }
+            get => isAuth;
             set
             {
                 isAuth = value;
@@ -118,7 +110,7 @@ namespace RFiDGear.ViewModel
 
         public bool? IsTask
         {
-            get { return isTask; }
+            get => isTask;
             set
             {
                 isTask = value;
@@ -130,7 +122,7 @@ namespace RFiDGear.ViewModel
 
         public bool? IsVisible
         {
-            get { return isVisible; }
+            get => isVisible;
             set
             {
                 isVisible = value;

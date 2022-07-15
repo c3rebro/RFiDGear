@@ -201,14 +201,8 @@ namespace RFiDGear.Model
 
         public string AccessBitsAsString
         {
-            get
-            {
-                return encodeSectorTrailer(this);
-            }
-            set
-            {
-                IsValidSectorTrailer = decodeSectorTrailer(value, this);
-            }
+            get => encodeSectorTrailer(this);
+            set => IsValidSectorTrailer = decodeSectorTrailer(value, this);
         }
 
         public bool IsValidSectorTrailer { get; private set; }
@@ -224,15 +218,15 @@ namespace RFiDGear.Model
 
         public MifareClassicSectorAccessConditionModel SectorAccessCondition { get; set; }
 
-        public AccessCondition_MifareClassicSectorTrailer Read_KeyA { get { return SectorAccessCondition.Read_KeyA; } set { SectorAccessCondition.Read_KeyA = value; } }
-        public AccessCondition_MifareClassicSectorTrailer Write_KeyA { get { return SectorAccessCondition.Write_KeyA; } set { SectorAccessCondition.Write_KeyA = value; } }
-        public AccessCondition_MifareClassicSectorTrailer Read_AccessCondition_MifareClassicSectorTrailer { get { return SectorAccessCondition.Read_AccessCondition_MifareClassicSectorTrailer; } set { SectorAccessCondition.Read_AccessCondition_MifareClassicSectorTrailer = value; } }
-        public AccessCondition_MifareClassicSectorTrailer Write_AccessCondition_MifareClassicSectorTrailer { get { return SectorAccessCondition.Write_AccessCondition_MifareClassicSectorTrailer; } set { SectorAccessCondition.Write_AccessCondition_MifareClassicSectorTrailer = value; } }
-        public AccessCondition_MifareClassicSectorTrailer Read_KeyB { get { return SectorAccessCondition.Read_KeyB; } set { SectorAccessCondition.Read_KeyB = value; } }
-        public AccessCondition_MifareClassicSectorTrailer Write_KeyB { get { return SectorAccessCondition.Read_KeyB; } set { SectorAccessCondition.Read_KeyB = value; } }
+        public AccessCondition_MifareClassicSectorTrailer Read_KeyA { get => SectorAccessCondition.Read_KeyA; set => SectorAccessCondition.Read_KeyA = value; }
+        public AccessCondition_MifareClassicSectorTrailer Write_KeyA { get => SectorAccessCondition.Write_KeyA; set => SectorAccessCondition.Write_KeyA = value; }
+        public AccessCondition_MifareClassicSectorTrailer Read_AccessCondition_MifareClassicSectorTrailer { get => SectorAccessCondition.Read_AccessCondition_MifareClassicSectorTrailer; set => SectorAccessCondition.Read_AccessCondition_MifareClassicSectorTrailer = value; }
+        public AccessCondition_MifareClassicSectorTrailer Write_AccessCondition_MifareClassicSectorTrailer { get => SectorAccessCondition.Write_AccessCondition_MifareClassicSectorTrailer; set => SectorAccessCondition.Write_AccessCondition_MifareClassicSectorTrailer = value; }
+        public AccessCondition_MifareClassicSectorTrailer Read_KeyB { get => SectorAccessCondition.Read_KeyB; set => SectorAccessCondition.Read_KeyB = value; }
+        public AccessCondition_MifareClassicSectorTrailer Write_KeyB { get => SectorAccessCondition.Read_KeyB; set => SectorAccessCondition.Read_KeyB = value; }
 
         public bool IsAuthenticated { get; set; }
-        public short Cx { get { return SectorAccessCondition.Cx; } set { SectorAccessCondition.Cx = value; } }
+        public short Cx { get => SectorAccessCondition.Cx; set => SectorAccessCondition.Cx = value; }
 
         #region Extensions
 
@@ -434,8 +428,7 @@ namespace RFiDGear.Model
         /// <returns></returns>
         private bool decodeSectorTrailer(string st, MifareClassicSectorModel _sector)
         {
-            byte[] _bytes = new byte[255];
-            int discarded = 0;
+            _ = new byte[255];
 
             string[] sectorTrailer = st.Split(new[] { ',', ';' });
             if (sectorTrailer.Count() != 3 ||
@@ -443,8 +436,7 @@ namespace RFiDGear.Model
                 !(CustomConverter.IsInHexFormat(sectorTrailer[0]) && sectorTrailer[0].Length == 12) ||
                 !(CustomConverter.IsInHexFormat(sectorTrailer[2]) && sectorTrailer[2].Length == 12))
                 return true;
-
-            _bytes = CustomConverter.GetBytes(sectorTrailer[1], out discarded);
+            byte[] _bytes = CustomConverter.GetBytes(sectorTrailer[1], out int _);
 
             if (!decodeSectorTrailer(_bytes, ref _sector))
                 return false;

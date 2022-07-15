@@ -20,7 +20,7 @@ namespace RFiDGear.ViewModel
     /// </summary>
     public class SetupViewModel : ViewModelBase, IUserDialogViewModel
     {
-        private RFiDDevice device;
+        private readonly RFiDDevice device;
 
         public SetupViewModel()
         {
@@ -44,17 +44,17 @@ namespace RFiDGear.ViewModel
 
         #region Commands
 
-        public ICommand ReaderSeletedCommand { get { return new RelayCommand(ReaderSelected); } }
+        public ICommand ReaderSeletedCommand => new RelayCommand(ReaderSelected);
         private void ReaderSelected()
         {
         }
 
-        public ICommand ConnectToReaderCommand { get { return new RelayCommand(ConnectToReader); } }
+        public ICommand ConnectToReaderCommand => new RelayCommand(ConnectToReader);
         private void ConnectToReader()
         {
-            if (this.OnConnect != null)
+            if (OnConnect != null)
             {
-                this.OnConnect(this);
+                OnConnect(this);
             }
 
             device.ChangeProvider(SelectedReader);
@@ -71,20 +71,20 @@ namespace RFiDGear.ViewModel
                 ReaderStatus = "no Reader detected";
         }
 
-        public ICommand ApplyAndExitCommand { get { return new RelayCommand(Ok); } }
+        public ICommand ApplyAndExitCommand => new RelayCommand(Ok);
         private void Ok()
         {
-            if (this.OnOk != null)
-                this.OnOk(this);
+            if (OnOk != null)
+                OnOk(this);
             else
                 Close();
         }
 
-        public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
+        public ICommand CancelCommand => new RelayCommand(Cancel);
         private void Cancel()
         {
-            if (this.OnCancel != null)
-                this.OnCancel(this);
+            if (OnCancel != null)
+                OnCancel(this);
             else
                 Close();
         }
@@ -93,8 +93,8 @@ namespace RFiDGear.ViewModel
 
         public ReaderTypes SelectedReader
         {
-            get { return selectedReader; }
-            set { selectedReader = value; }
+            get => selectedReader;
+            set => selectedReader = value;
         }
         private ReaderTypes selectedReader;
 
@@ -103,10 +103,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public string SelectedBaudRate
         {
-            get
-            {
-                return selectedBaudRate;
-            }
+            get => selectedBaudRate;
             set
             {
                 selectedBaudRate = value;
@@ -118,8 +115,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// Selected Baud Rate as Integer Value
         /// </summary>
-        public int SelectedBaudRateAsInt
-        { get { return selectedBaudRateAsInt; } }
+        public int SelectedBaudRateAsInt => selectedBaudRateAsInt;
         private int selectedBaudRateAsInt;
 
         /// <summary>
@@ -127,30 +123,24 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public string ComPort
         {
-            get { return comPort; }
-            set 
-            { 
+            get => comPort;
+            set
+            {
                 comPort = value;
-                uint.TryParse(comPort, out uint comPortAsUInt);
+                uint.TryParse(comPort, out _);
             }
         }
         private string comPort;
-        private uint comPortAsUInt;
+        private readonly uint comPortAsUInt;
 
         /// <summary>
         /// BaudRate for Readers that use VCP or Serial
         /// </summary>
-        public string[] BaudRates
-        {
-            get { return new string[] {"1200", "2400", "4800", "9600", "115000"}; }
-        }
+        public string[] BaudRates => new string[] { "1200", "2400", "4800", "9600", "115000" };
 
         public string ReaderStatus
         {
-            get
-            {
-                return readerStatus;
-            }
+            get => readerStatus;
             set
             {
                 readerStatus = value;
@@ -173,14 +163,8 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public bool LoadOnStart
         {
-            get
-            {
-                return loadOnStart;
-            }
-            set
-            {
-                loadOnStart = value;
-            }
+            get => loadOnStart;
+            set => loadOnStart = value;
         }
         private bool loadOnStart;
 
@@ -189,14 +173,8 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public bool CheckOnStart
         {
-            get
-            {
-                return checkOnStart;
-            }
-            set
-            {
-                checkOnStart = value;
-            }
+            get => checkOnStart;
+            set => checkOnStart = value;
         }
         private bool checkOnStart;
 
@@ -211,8 +189,8 @@ namespace RFiDGear.ViewModel
 
         public virtual void RequestClose()
         {
-            if (this.OnCloseRequest != null)
-                this.OnCloseRequest(this);
+            if (OnCloseRequest != null)
+                OnCloseRequest(this);
             else
                 Close();
         }
@@ -221,8 +199,8 @@ namespace RFiDGear.ViewModel
 
         public void Close()
         {
-            if (this.DialogClosing != null)
-                this.DialogClosing(this, new EventArgs());
+            if (DialogClosing != null)
+                DialogClosing(this, new EventArgs());
         }
 
         public void Show(IList<IDialogViewModel> collection)
@@ -243,11 +221,11 @@ namespace RFiDGear.ViewModel
 
         public string Caption
         {
-            get { return _Caption; }
+            get => _Caption;
             set
             {
                 _Caption = value;
-                RaisePropertyChanged(() => this.Caption);
+                RaisePropertyChanged(() => Caption);
             }
         }
 

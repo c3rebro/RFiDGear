@@ -1059,4 +1059,10 @@ Needed by:
   <data name="labelSelectLogicFunction" xml:space="preserve">
     <value>Logic Function</value>
   </data>
+  <data name="buttonContentCancelUpdateCommand" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="buttonContentDoUpdateCommand" xml:space="preserve">
+    <value>Update</value>
+  </data>
 </root>
