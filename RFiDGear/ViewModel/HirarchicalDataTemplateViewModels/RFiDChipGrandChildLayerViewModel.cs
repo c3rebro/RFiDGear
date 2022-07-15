@@ -768,10 +768,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public void Close()
         {
-            if (DialogClosing != null)
-            {
-                DialogClosing(this, new EventArgs());
-            }
+            DialogClosing?.Invoke(this, new EventArgs());
         }
 
         /// <summary>

@@ -51,10 +51,7 @@ namespace RedCell.Diagnostics.Update
         /// <param name="message">The message.</param>
         private static void OnEvent(string message)
         {
-            if (Event != null)
-            {
-                Event(null, new LogEventArgs(message));
-            }
+            Event?.Invoke(null, new LogEventArgs(message));
         }
 
         #endregion Events

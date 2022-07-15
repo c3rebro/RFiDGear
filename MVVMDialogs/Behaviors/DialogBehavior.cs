@@ -14,10 +14,10 @@ namespace MvvmDialogs.Behaviors
 {
     public static class DialogBehavior
     {
-        private static Dictionary<IDialogViewModel, Window> DialogBoxes = new Dictionary<IDialogViewModel, Window>();
-        private static Dictionary<UserControl, NotifyCollectionChangedEventHandler> UserControlChangeNotificationHandlers = new Dictionary<UserControl, NotifyCollectionChangedEventHandler>();
-        private static Dictionary<Window, NotifyCollectionChangedEventHandler> ChangeNotificationHandlers = new Dictionary<Window, NotifyCollectionChangedEventHandler>();
-        private static Dictionary<ObservableCollection<IDialogViewModel>, List<IDialogViewModel>> DialogBoxViewModels = new Dictionary<ObservableCollection<IDialogViewModel>, List<IDialogViewModel>>();
+        private static readonly Dictionary<IDialogViewModel, Window> DialogBoxes = new Dictionary<IDialogViewModel, Window>();
+        private static readonly Dictionary<UserControl, NotifyCollectionChangedEventHandler> UserControlChangeNotificationHandlers = new Dictionary<UserControl, NotifyCollectionChangedEventHandler>();
+        private static readonly Dictionary<Window, NotifyCollectionChangedEventHandler> ChangeNotificationHandlers = new Dictionary<Window, NotifyCollectionChangedEventHandler>();
+        private static readonly Dictionary<ObservableCollection<IDialogViewModel>, List<IDialogViewModel>> DialogBoxViewModels = new Dictionary<ObservableCollection<IDialogViewModel>, List<IDialogViewModel>>();
         private static ResourceDictionary resourceDictionary;
 
         public static readonly DependencyProperty ClosingProperty = DependencyProperty.RegisterAttached(
@@ -50,11 +50,12 @@ namespace MvvmDialogs.Behaviors
 
         public static void SetResourceDictionary(string source)
         {
-            resourceDictionary = new ResourceDictionary();
-
-            resourceDictionary.Source =
+            resourceDictionary = new ResourceDictionary
+            {
+                Source =
                 new Uri(source,
-                        UriKind.RelativeOrAbsolute);
+                        UriKind.RelativeOrAbsolute)
+            };
         }
 
         private static void OnDialogViewModelsChange(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -69,8 +70,7 @@ namespace MvvmDialogs.Behaviors
                 {
                     ChangeNotificationHandlers[d as Window] = (sender, args) =>
                 {
-                    var collection = sender as ObservableCollection<IDialogViewModel>;
-                    if (collection != null)
+                    if (sender is ObservableCollection<IDialogViewModel> collection)
                     {
                         if (args.Action == NotifyCollectionChangedAction.Add ||
                             args.Action == NotifyCollectionChangedAction.Remove ||
@@ -125,8 +125,7 @@ namespace MvvmDialogs.Behaviors
 
                 // when the collection is first bound to this property we should create any initial
                 // dialogs the user may have added in the main view model's constructor
-                var newCollection = e.NewValue as ObservableCollection<IDialogViewModel>;
-                if (newCollection != null)
+                if (e.NewValue is ObservableCollection<IDialogViewModel> newCollection)
                 {
                     newCollection.CollectionChanged += ChangeNotificationHandlers[d as Window];
                     foreach (IDialogViewModel viewModel in newCollection.ToList())
@@ -136,8 +135,7 @@ namespace MvvmDialogs.Behaviors
                 }
 
                 // when we remove the binding we need to shut down any dialogs that have been left open
-                var oldCollection = e.OldValue as ObservableCollection<IDialogViewModel>;
-                if (oldCollection != null)
+                if (e.OldValue is ObservableCollection<IDialogViewModel> oldCollection)
                 {
                     oldCollection.CollectionChanged -= ChangeNotificationHandlers[d as Window];
                     foreach (IDialogViewModel viewModel in oldCollection.ToList())
@@ -157,8 +155,7 @@ namespace MvvmDialogs.Behaviors
                 {
                     UserControlChangeNotificationHandlers[d as UserControl] = (sender, args) =>
                 {
-                    var collection = sender as ObservableCollection<IDialogViewModel>;
-                    if (collection != null)
+                    if (sender is ObservableCollection<IDialogViewModel> collection)
                     {
                         if (args.Action == NotifyCollectionChangedAction.Add ||
                             args.Action == NotifyCollectionChangedAction.Remove ||
@@ -213,8 +210,7 @@ namespace MvvmDialogs.Behaviors
 
                 // when the collection is first bound to this property we should create any initial
                 // dialogs the user may have added in the main view model's constructor
-                var newCollection = e.NewValue as ObservableCollection<IDialogViewModel>;
-                if (newCollection != null)
+                if (e.NewValue is ObservableCollection<IDialogViewModel> newCollection)
                 {
                     newCollection.CollectionChanged += UserControlChangeNotificationHandlers[d as UserControl];
                     foreach (IDialogViewModel viewModel in newCollection.ToList())
@@ -224,8 +220,7 @@ namespace MvvmDialogs.Behaviors
                 }
 
                 // when we remove the binding we need to shut down any dialogs that have been left open
-                var oldCollection = e.OldValue as ObservableCollection<IDialogViewModel>;
-                if (oldCollection != null)
+                if (e.OldValue is ObservableCollection<IDialogViewModel> oldCollection)
                 {
                     oldCollection.CollectionChanged -= UserControlChangeNotificationHandlers[d as UserControl];
                     foreach (IDialogViewModel viewModel in oldCollection.ToList())
@@ -247,7 +242,7 @@ namespace MvvmDialogs.Behaviors
             {
                 // find the global resource that has been keyed to this view model type
                 object resourceFromApplication = Application.Current.TryFindResource(viewModel.GetType());
-                object resoruceFromExternalDictionary = resourceDictionary != null ? resourceDictionary[viewModel.GetType()] : null;
+                object resoruceFromExternalDictionary = resourceDictionary?[viewModel.GetType()];
 
                 var resource = resourceFromApplication ?? resoruceFromExternalDictionary;
 
@@ -268,8 +263,7 @@ namespace MvvmDialogs.Behaviors
                 // is this resource a dialog box window on a window owner?
                 else if (resource is Window)
                 {
-                    var userViewModel = viewModel as IUserDialogViewModel;
-                    if (userViewModel == null)
+                    if (!(viewModel is IUserDialogViewModel userViewModel))
                     {
                         return;
                     }

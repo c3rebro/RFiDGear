@@ -52,12 +52,9 @@ namespace RFiDGear.ViewModel
         public ICommand ConnectToReaderCommand => new RelayCommand(ConnectToReader);
         private void ConnectToReader()
         {
-            if (OnConnect != null)
-            {
-                OnConnect(this);
-            }
+            OnConnect?.Invoke(this);
 
-            device.ChangeProvider(SelectedReader);
+            _ = device.ChangeProvider(SelectedReader);
 
             if (device != null && device.ReadChipPublic() == ERROR.NoError)
             {
@@ -213,10 +210,7 @@ namespace RFiDGear.ViewModel
 
         public void Close()
         {
-            if (DialogClosing != null)
-            {
-                DialogClosing(this, new EventArgs());
-            }
+            DialogClosing?.Invoke(this, new EventArgs());
         }
 
         public void Show(IList<IDialogViewModel> collection)

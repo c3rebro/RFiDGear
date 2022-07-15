@@ -56,7 +56,7 @@ namespace RFiDGear.ViewModel
         [XmlIgnore]
         public string GrandGrandChildNodeHeader => grandGrandChildNodeHeader;
 
-        private string grandGrandChildNodeHeader;
+        private readonly string grandGrandChildNodeHeader;
 
         #endregion (Dependency) Properties
 

@@ -27,9 +27,9 @@ namespace RFiDGear.ViewModel
         private readonly string _parentUid;
 
         //private MifareClassicSetupViewModel setupViewModel;
-        private MifareClassicSectorModel sectorModel;
-        private MifareDesfireAppModel appModel;
-        private MifareUltralightPageModel pageModel;
+        private readonly MifareClassicSectorModel sectorModel;
+        private readonly MifareDesfireAppModel appModel;
+        private readonly MifareUltralightPageModel pageModel;
 
         #region Constructors
 
@@ -62,18 +62,20 @@ namespace RFiDGear.ViewModel
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
             _cmdReadSectorWithCustoms = new RelayCommand(ReadSectorWithCustoms);
 
-            ContextMenuItems = new List<MenuItem>();
-            ContextMenuItems.Add(new MenuItem()
+            ContextMenuItems = new List<MenuItem>
             {
-                Header = "Read Sector with default Keys",
-                Command = _cmdReadSectorWithDefaults
-            });
+                new MenuItem()
+                {
+                    Header = "Read Sector with default Keys",
+                    Command = _cmdReadSectorWithDefaults
+                },
 
-            ContextMenuItems.Add(new MenuItem()
-            {
-                Header = "Read Sector with custom Keys",
-                Command = _cmdReadSectorWithCustoms
-            });
+                new MenuItem()
+                {
+                    Header = "Read Sector with custom Keys",
+                    Command = _cmdReadSectorWithCustoms
+                }
+            };
 
             children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
@@ -97,23 +99,25 @@ namespace RFiDGear.ViewModel
             //device = _device;
             appModel = appID;
             _cardType = cardType;
-            _parentUid = parentUID != null ? parentUID.UidNumber : null;
+            _parentUid = parentUID?.UidNumber;
 
             _cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
 
-            ContextMenuItems = new List<MenuItem>();
-            ContextMenuItems.Add(new MenuItem()
+            ContextMenuItems = new List<MenuItem>
             {
-                Header = "Read Sector using default Configuration",
-                Command = _cmdReadSectorWithDefaults
-            });
+                new MenuItem()
+                {
+                    Header = "Read Sector using default Configuration",
+                    Command = _cmdReadSectorWithDefaults
+                },
 
-            ContextMenuItems.Add(new MenuItem()
-            {
-                Header = "Edit Authentication Settings and Modify Sector",
-                Command = _cmdEditAuthAndModifySector
-            });
+                new MenuItem()
+                {
+                    Header = "Edit Authentication Settings and Modify Sector",
+                    Command = _cmdEditAuthAndModifySector
+                }
+            };
 
             children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
@@ -137,23 +141,25 @@ namespace RFiDGear.ViewModel
             //device = _device;
             pageModel = _pageModel;
             _cardType = cardType;
-            _parentUid = parentUID != null ? parentUID.UidNumber : null;
+            _parentUid = parentUID?.UidNumber;
 
             _cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
 
-            ContextMenuItems = new List<MenuItem>();
-            ContextMenuItems.Add(new MenuItem()
+            ContextMenuItems = new List<MenuItem>
             {
-                Header = "Read Sector using default Configuration",
-                Command = _cmdReadSectorWithDefaults
-            });
+                new MenuItem()
+                {
+                    Header = "Read Sector using default Configuration",
+                    Command = _cmdReadSectorWithDefaults
+                },
 
-            ContextMenuItems.Add(new MenuItem()
-            {
-                Header = "Edit Authentication Settings and Modify Sector",
-                Command = _cmdEditAuthAndModifySector
-            });
+                new MenuItem()
+                {
+                    Header = "Edit Authentication Settings and Modify Sector",
+                    Command = _cmdEditAuthAndModifySector
+                }
+            };
 
             children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
@@ -169,7 +175,7 @@ namespace RFiDGear.ViewModel
 
         #region Dialogs
 
-        private ObservableCollection<IDialogViewModel> dialogs;
+        private readonly ObservableCollection<IDialogViewModel> dialogs;
 
         #endregion Dialogs
 
@@ -562,10 +568,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public void Close()
         {
-            if (DialogClosing != null)
-            {
-                DialogClosing(this, new EventArgs());
-            }
+            DialogClosing?.Invoke(this, new EventArgs());
         }
 
         /// <summary>

@@ -2882,10 +2882,7 @@ namespace RFiDGear.ViewModel
 
         public void Close()
         {
-            if (DialogClosing != null)
-            {
-                DialogClosing(this, new EventArgs());
-            }
+            DialogClosing?.Invoke(this, new EventArgs());
         }
 
         public void Show(IList<IDialogViewModel> collection)
