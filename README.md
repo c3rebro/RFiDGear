@@ -13,3 +13,5 @@ Requirements:
    + Omnikey 5321 
    + Sciel SCL3711
    + ACR 122U
+
+Codacy Code Quality: [![Codacy Badge](https://api.codacy.com/project/badge/Grade/ac98d255ca38466bb5803f9e2e4a11ae)](https://www.codacy.com/app/c3rebro/rfidgear)
