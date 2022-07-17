@@ -396,6 +396,8 @@ namespace RFiDGear.ViewModel
                     return;
                 }
 
+                SelectedDataLengthInBytes = DataAsHexString.Length / 2;
+
                 RaisePropertyChanged("DataAsHexString");
                 RaisePropertyChanged("DataAsCharString");
             }
@@ -492,20 +494,21 @@ namespace RFiDGear.ViewModel
         public int SelectedDataLength
         {
             get => selectedDataLength;
+
             set
             {
                 selectedDataLength = value;
 
                 if (value % 2 == 0)
                 {
-                    SelectedDataLengthInBytes = value / 2;
+                    //SelectedDataLengthInBytes = value / 2;
                     IsValidSelectedDataIndexAndLength = (bool)(selectedDataIndexStart % 2 == 0);
                 }
                 else
                 {
                     IsValidSelectedDataIndexAndLength = false;
                 }
-
+                
                 RaisePropertyChanged("SelectedDataLength");
             }
         }
@@ -520,12 +523,14 @@ namespace RFiDGear.ViewModel
             get => selectedDataIndexStart;
             set
             {
+                //SelectedDataLength = DataAsHexString.Length / 2; // - value / 2;
+
                 selectedDataIndexStart = value;
 
                 if (value % 2 == 0)
                 {
-                    SelectedDataIndexStartInBytes = value / 2;
-                    SelectedDataLengthInBytes = DataAsHexString.Length / 2 - value / 2;
+                    //SelectedDataIndexStartInBytes = value / 2;
+                    //SelectedDataLengthInBytes = DataAsHexString.Length / 2; // - value / 2;
                     IsValidSelectedDataIndexAndLength = true;
                 }
                 else
@@ -533,7 +538,8 @@ namespace RFiDGear.ViewModel
                     IsValidSelectedDataIndexAndLength = false;
                 }
 
-                RaisePropertyChanged("SelectedDataIndexStart");
+                RaisePropertyChanged("SelectedDataIndexStart"); 
+                RaisePropertyChanged("SelectedDataLength");
             }
         }
         private int selectedDataIndexStart;
