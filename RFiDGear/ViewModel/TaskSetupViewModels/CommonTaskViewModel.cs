@@ -917,7 +917,7 @@ namespace RFiDGear.ViewModel
 
                             if (temporaryContent.Contains("%LISTAPPS"))
                             {
-                                temporaryContent = temporaryContent.Replace("%LISTAPPS", string.Join(", ", DesfireChip.AppList) ?? "");
+                                temporaryContent = temporaryContent.Replace("%LISTAPPS", string.Join(", ", DesfireChip?.AppList.Select(x => x.appID)) ?? "");
                                 hasVariable = true;
                             }
 
@@ -1321,10 +1321,20 @@ namespace RFiDGear.ViewModel
                                             switch (comparetemp[0])
                                             {
                                                 case "%FREEMEM":
-                                                    uint compareValueAsUInt;
-                                                    uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
+                                                    uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out uint compareValueAsUInt);
 
                                                     if (GenericChip.FreeMemory >= compareValueAsUInt)
+                                                    {
+                                                        TaskErr = ERROR.NoError;
+                                                        return;
+                                                    }
+
+                                                    break;
+
+                                                case "%APPSCOUNT":
+                                                    uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
+
+                                                    if (DesfireChip?.AppList.Count >= compareValueAsUInt)
                                                     {
                                                         TaskErr = ERROR.NoError;
                                                         return;

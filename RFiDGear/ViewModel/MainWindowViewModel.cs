@@ -857,8 +857,7 @@ namespace RFiDGear.ViewModel
                     item.IsExpanded = false;
                 }
 
-                if (device != null &&
-                    device.ReadChipPublic() == ERROR.NoError &&
+                if (device?.ReadChipPublic() == ERROR.NoError &&
                     !treeViewParentNodes.Any(x => x.UidNumber == device.GenericChip.UID))
                 {
                     // fill treeview with dummy models and viewmodels
@@ -1100,6 +1099,8 @@ namespace RFiDGear.ViewModel
                             {
                                 if (GenericChip.CardType == CARD_TYPE.DESFireEV1 || GenericChip.CardType == CARD_TYPE.DESFireEV2)
                                 {
+                                    device.GetMiFareDESFireChipAppIDs();
+
                                     DesfireChip = new MifareDesfireChipModel(GenericChip.UID, GenericChip.CardType)
                                     {
                                         AppList = new List<MifareDesfireAppModel>()
@@ -1111,7 +1112,6 @@ namespace RFiDGear.ViewModel
                                             DesfireChip.AppList.Add(new MifareDesfireAppModel(appID));
                                         }
                                     }
-                                    device.GetMiFareDESFireChipAppIDs();
                                 }
                             }
                         }
@@ -1344,6 +1344,7 @@ namespace RFiDGear.ViewModel
                                                                         reportReaderWriter.ReportOutputPath = reportOutputPath;
 
                                                                         (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).DesfireChip = DesfireChip;
                                                                         (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
                                                                         (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
                                                                     }
@@ -1416,6 +1417,7 @@ namespace RFiDGear.ViewModel
                                                                         reportReaderWriter.ReportOutputPath = reportOutputPath;
 
                                                                         (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                        (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).DesfireChip = DesfireChip;
                                                                         (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
                                                                         (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
                                                                     }
@@ -1534,6 +1536,7 @@ namespace RFiDGear.ViewModel
                                                                 if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
                                                                 {
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).DesfireChip = DesfireChip;
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
                                                                 }
                                                                 else
@@ -1546,6 +1549,7 @@ namespace RFiDGear.ViewModel
                                                                 if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
                                                                 {
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).DesfireChip = DesfireChip;
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
                                                                 }
                                                                 else
@@ -1558,6 +1562,7 @@ namespace RFiDGear.ViewModel
                                                                 if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
                                                                 {
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).DesfireChip = DesfireChip;
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
                                                                 }
                                                                 else
@@ -1570,6 +1575,7 @@ namespace RFiDGear.ViewModel
                                                                 if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
                                                                 {
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).DesfireChip = DesfireChip;
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
                                                                 }
                                                                 else
@@ -1582,6 +1588,7 @@ namespace RFiDGear.ViewModel
                                                                 if (tsVM.TaskErr == (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel)
                                                                 {
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                                    (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).DesfireChip = DesfireChip;
                                                                     (taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
                                                                 }
                                                                 else

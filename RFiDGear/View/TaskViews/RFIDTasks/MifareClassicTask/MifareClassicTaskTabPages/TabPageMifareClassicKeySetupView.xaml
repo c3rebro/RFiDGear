@@ -12,6 +12,7 @@
     <UserControl.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
         <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 			<ContextMenu.ItemContainerStyle>
 				<Style TargetType="MenuItem">
@@ -29,30 +30,26 @@
         <Grid
             Grid.Row="0"
             Grid.Column="0"
-            Margin="0,0,0,0"
+            Margin="8,0,8,0"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
             <GroupBox
                 Grid.Row="0"
                 Grid.Column="0"
-                Grid.ColumnSpan="2"
-                Margin="8,8,7,7"
+                Margin="8,8,8,0"
                 HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
                 Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareClassicSetupKeySetup'}"
                 IsEnabled="{Binding IsClassicAuthInfoEnabled}">
                 <Grid IsEnabled="True">
                     <Label
-                        Grid.Row="1"
-                        Grid.Column="3"
-                        Margin="9,3,7,7"
+                        Margin="10,3,10,7"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareClassicSetupKeyBValue'}" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareClassicSetupKeyBValue'}" Grid.Column="2" Grid.Row="1" />
                     <TextBox
                         Grid.Row="1"
-                        Grid.Column="4"
-                        Margin="9,3,7,7"
+                        Grid.Column="3"
+                        Margin="10,3,5,7"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
@@ -86,8 +83,7 @@
                     <TextBox
                         Grid.Row="1"
                         Grid.Column="1"
-                        Grid.ColumnSpan="2"
-                        Margin="9,3,7,7"
+                        Margin="9,3,10,7"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
@@ -122,229 +118,343 @@
                     <ComboBox
                         Grid.Row="0"
                         Grid.Column="1"
-                        Margin="9,9,7,7"
+                        Margin="10,10,10,6"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         IsEnabled="{Binding IsFixedKeyNumber}"
                         ItemsSource="{Binding MifareClassicKeys}"
                         SelectedItem="{Binding SelectedClassicSectorCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Button
-                        Grid.Row="6"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="5"
-                        Height="23"
-                        Margin="8,0,7,7"
-                        HorizontalAlignment="Stretch"
-                        Command="{Binding ReadDataCommand}"
-                        Content="Read" />
-                    <CheckBox
                         Grid.Row="2"
                         Grid.Column="0"
-                        Grid.ColumnSpan="2"
-                        Height="15"
-                        Margin="8,9,7,0"
+                        Grid.ColumnSpan="4"
+                        Height="23"
+                        Margin="10,3,5,0"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
-                        Content="Use MAD"
-                        IsChecked="{Binding UseMAD, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        Command="{Binding ReadDataCommand}"
+                        Content="Read" VerticalAlignment="Top" />
                     <Grid.RowDefinitions>
                         <RowDefinition Height="42" />
                         <RowDefinition Height="36" />
                         <RowDefinition Height="36" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="36" />
+
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="116" />
-                        <ColumnDefinition Width="86" />
-                        <ColumnDefinition Width="0.350448685341037*" />
-                        <ColumnDefinition Width="116.609208542625" />
-                        <ColumnDefinition Width="0.517473925086157*" />
+                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                 </Grid>
             </GroupBox>
-            <GroupBox
-                Grid.Row="1"
-                Grid.Column="0"
-                Margin="8,9,8,7"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
-                Header="MAD Key Setup - Current"
-                IsEnabled="{Binding UseMAD}">
+            <GroupBox Header="MAD Setup" 
+                      Height="60" Margin="8,0,8,0" 
+                      Grid.Row="1" 
+                      VerticalAlignment="Top">
+
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="42" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="36" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="116" />
-                        <ColumnDefinition Width="86" />
-                        <ColumnDefinition Width="0.350448685341037*" />
-                        <ColumnDefinition Width="116.609208542625" />
-                        <ColumnDefinition Width="0.517473925086157*" />
-                    </Grid.ColumnDefinitions>
-                    <Label
-                        Grid.Row="2"
-                        Grid.Column="0"
-                        Margin="8,3.5,7,6.5"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        Content="MAD Key A" />
-                    <Label
-                        Grid.Row="3"
-                        Grid.Column="0"
-                        Margin="8,3,7,7"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        Content="MAD Key B" />
-                    <TextBox
-                        Grid.Row="2"
-                        Grid.Column="1"
-                        Grid.ColumnSpan="2"
-                        Margin="9,4,7,6"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        VerticalContentAlignment="Center"
-                        FontFamily="Lucida Console"
-                        Text="{Binding ClassicMADKeyAKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <TextBox.Resources>
-                            <Style TargetType="TextBox">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyCurrent}" Value="True">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="Background" Value="White" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyCurrent}" Value="False">
-                                        <Setter Property="Foreground" Value="Black" />
-                                        <Setter Property="Background" Value="Red" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
-                    <TextBox
-                        Grid.Row="3"
-                        Grid.Column="1"
-                        Grid.ColumnSpan="2"
-                        Margin="9,3,7,7"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        VerticalContentAlignment="Center"
-                        FontFamily="Lucida Console"
-                        Text="{Binding ClassicMADKeyBKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <TextBox.Resources>
-                            <Style TargetType="TextBox">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyCurrent}" Value="True">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="Background" Value="White" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyCurrent}" Value="False">
-                                        <Setter Property="Foreground" Value="Black" />
-                                        <Setter Property="Background" Value="Red" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
+                    <CheckBox
+                        Height="15"
+                        Margin="10,10,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Content="Use MAD"
+                        IsChecked="{Binding UseMAD, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="81" />
                     <Label
                         Grid.Row="0"
+                        Height="26"
                         Grid.Column="0"
-                        Margin="8,9,0,7"
+                        Margin="128,4,0,0"
                         HorizontalAlignment="Left"
-                        VerticalAlignment="Stretch"
+                        VerticalAlignment="Top"
                         Content="MAD Version" />
                     <ComboBox
                         Grid.Row="0"
-                        Grid.Column="1"
-                        Margin="9,9,7,7"
-                        HorizontalAlignment="Stretch"
+                        Height="24"
+                        Margin="217,4,251,9"
                         VerticalAlignment="Stretch"
                         ItemsSource="{Binding MADVersions}"
-                        SelectedItem="{Binding SelectedMADVersion, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        SelectedItem="{Binding SelectedMADVersion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <CheckBox
                         Grid.Row="0"
-                        Grid.Column="2"
-                        Grid.ColumnSpan="2"
-                        Width="187"
+                        Width="176"
                         Height="15"
-                        Margin="8.5,14,0,0"
-                        HorizontalAlignment="Left"
+
+                        HorizontalAlignment="Right"
                         VerticalAlignment="Top"
                         Content="Multi Application"
-                        IsChecked="{Binding IsMultiApplication, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        IsChecked="{Binding IsMultiApplication, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,10,53,0" />
+
+
                 </Grid>
             </GroupBox>
             <GroupBox
-                Grid.Row="1"
-                Grid.Column="1"
-                Margin="9,9,7,7"
+                Grid.Column="0"
+                Margin="8,70,8,0"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Header="MAD Key Setup - Target"
-                IsEnabled="{Binding UseMAD}">
+                Header="MAD Access"
+                IsEnabled="{Binding UseMAD}" Grid.Row="1">
+                <!-- Visibility="{Binding UseMAD, Converter={StaticResource BoolToVisConv}, FallbackValue=Visible}" Grid.Row="1"> -->
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="42" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="36" />
-                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="116" />
-                        <ColumnDefinition Width="86" />
-                        <ColumnDefinition Width="0.350448685341037*" />
-                        <ColumnDefinition Width="116.609208542625" />
-                        <ColumnDefinition Width="0.517473925086157*" />
+                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="36" />
+                        <RowDefinition Height="36" />
+
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
                     <Label
-                        Grid.Row="2"
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Height="26"
+                        Margin="8,9,7,7"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Content="Application ID" />
+                    <Label
+                        Grid.Row="1"
                         Grid.Column="0"
                         Margin="8,3,7,7"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
-                        Content="MAD Key A" />
-                    <Label
-                        Grid.Row="3"
-                        Grid.Column="0"
-                        Margin="8,5.50000000000006,7,4.49999999999994"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        Content="MAD Key B" />
-                    <TextBox
-                        Grid.Row="2"
+                        Content="@Sector" />
+                    <ComboBox
+                        Grid.Row="1"
                         Grid.Column="1"
+                        Height="21"
+                        Margin="10,8,10,7"
+                        HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding MADSectors}"
+                        SelectedItem="{Binding SelectedMADSector, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <Grid
+                        Grid.Row="4"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="5"
+                        Margin="0,1,-1,-1"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <GroupBox
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Margin="8,8,7,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            Header="Key - Current">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="42" />
+                                    <RowDefinition Height="36" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="110.554888163972" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Label
+                                    Grid.Row="0"
+                                    Grid.Column="0"
+                                    Margin="8,8,7,8"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareClassicSetupKeyAValue, Converter={StaticResource Localization}}" />
+                                <Label
+                                    Grid.Row="1"
+                                    Grid.Column="0"
+                                    Margin="8,3,7,7"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareClassicSetupKeyBValue, Converter={StaticResource Localization}}" />
+                                <TextBox
+                                    Grid.Row="0"
+                                    Grid.Column="1"
+                                    Margin="9,8,7,8"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    FontFamily="Lucida Console"
+                                    Text="{Binding ClassicKeyAKeyCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="{x:Type TextBox}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyAKeyCurrent}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyAKeyCurrent}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                                <TextBox
+                                    Grid.Row="1"
+                                    Grid.Column="1"
+                                    Margin="9,3,7,7"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    FontFamily="Lucida Console"
+                                    Text="{Binding ClassicKeyBKeyCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="{x:Type TextBox}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyBKeyCurrent}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyBKeyCurrent}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                            </Grid>
+                        </GroupBox>
+                        <GroupBox
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Margin="8,8,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            Header="Key - Target">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="42" />
+                                    <RowDefinition Height="36" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="110.554888163972" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Label
+                                    Grid.Row="0"
+                                    Grid.Column="0"
+                                    Margin="8,8,7,8"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareClassicSetupKeyAValue, Converter={StaticResource Localization}}" />
+                                <Label
+                                    Grid.Row="1"
+                                    Grid.Column="0"
+                                    Margin="8,3,7,7"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareClassicSetupKeyBValue, Converter={StaticResource Localization}}" />
+                                <TextBox
+                                    Grid.Row="0"
+                                    Grid.Column="1"
+                                    Margin="9,8,7,8"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    FontFamily="Lucida Console"
+                                    Text="{Binding ClassicKeyAKeyTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="{x:Type TextBox}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyAKeyTarget}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyAKeyTarget}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                                <TextBox
+                                    Grid.Row="1"
+                                    Grid.Column="1"
+                                    Margin="9,3,7,7"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    FontFamily="Lucida Console"
+                                    Text="{Binding ClassicKeyBKeyTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Resources>
+                                        <Style TargetType="{x:Type TextBox}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyBKeyTarget}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green" />
+                                                    <Setter Property="Background" Value="White" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsValidClassicKeyBKeyTarget}" Value="False">
+                                                    <Setter Property="Foreground" Value="Black" />
+                                                    <Setter Property="Background" Value="Red" />
+                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
+                            </Grid>
+                        </GroupBox>
+                    </Grid>
+                    <CheckBox
+                        Grid.Row="1"
+                        Grid.Column="2"
                         Grid.ColumnSpan="2"
-                        Margin="9,3,7,7"
+                        Height="15"
+                        Margin="10,11,34,0"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Top"
+                        Content="Use MAD Authentification"
+                        IsChecked="{Binding UseMadAuth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <Label
+                        Grid.Column="2"
+                        Margin="10,8,6,2"
+                        Height="26"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
+                        Content="Size" />
+                    <TextBox
+                        Grid.Column="3"
+                        Height="21"
+                        Margin="10,8,10,0"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Top"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
-                        FontFamily="Lucida Console"
-                        Text="{Binding ClassicMADKeyAKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                        Text="{Binding FileSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+
                         <TextBox.Resources>
-                            <Style TargetType="TextBox">
+                            <Style TargetType="{x:Type TextBox}">
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyTarget}" Value="True">
+                                    <DataTrigger Binding="{Binding IsValidFileSize}" Value="True">
                                         <Setter Property="Foreground" Value="Green" />
                                         <Setter Property="Background" Value="White" />
                                         <Setter Property="FontWeight" Value="Normal" />
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidClassicMADKeyAKeyTarget}" Value="False">
+                                    <DataTrigger Binding="{Binding IsValidFileSize}" Value="False">
                                         <Setter Property="Foreground" Value="Black" />
                                         <Setter Property="Background" Value="Red" />
                                         <Setter Property="FontWeight" Value="Normal" />
@@ -354,25 +464,24 @@
                         </TextBox.Resources>
                     </TextBox>
                     <TextBox
-                        Grid.Row="3"
+                        Grid.Row="0"
                         Grid.Column="1"
-                        Grid.ColumnSpan="2"
-                        Margin="9,6,7,4"
+                        Margin="10,8,10,0"
+                        Height="21"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
+                        VerticalAlignment="Top"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
-                        FontFamily="Lucida Console"
-                        Text="{Binding ClassicMADKeyBKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                        Text="{Binding AppNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                         <TextBox.Resources>
-                            <Style TargetType="TextBox">
+                            <Style TargetType="{x:Type TextBox}">
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyTarget}" Value="True">
+                                    <DataTrigger Binding="{Binding IsValidAppNumber}" Value="True">
                                         <Setter Property="Foreground" Value="Green" />
                                         <Setter Property="Background" Value="White" />
                                         <Setter Property="FontWeight" Value="Normal" />
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidClassicMADKeyBKeyTarget}" Value="False">
+                                    <DataTrigger Binding="{Binding IsValidAppNumber}" Value="False">
                                         <Setter Property="Foreground" Value="Black" />
                                         <Setter Property="Background" Value="Red" />
                                         <Setter Property="FontWeight" Value="Normal" />
@@ -384,12 +493,11 @@
                 </Grid>
             </GroupBox>
             <Grid.RowDefinitions>
-                <RowDefinition Height="0.42572741194487*" />
-                <RowDefinition Height="0.508422664624808*" />
+                <RowDefinition Height="140" />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="0.5*" />
-                <ColumnDefinition Width="0.5*" />
+                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
         </Grid>
     </Grid>

@@ -868,9 +868,13 @@ namespace RFiDGear.ViewModel
                     ChildNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(0, 1), this));
 
                     FileSize = "100";
+
+                    IsClassicAuthInfoEnabled = false;
                 }
                 else
                 {
+                    IsClassicAuthInfoEnabled = true;
+
                     ChildNodeViewModelTemp.Children.Clear();
                     ChildNodeViewModelFromChip.Children.Clear();
 
@@ -1615,8 +1619,8 @@ namespace RFiDGear.ViewModel
                                          ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 
                                          if (device.ReadMiFareClassicWithMAD(appNumberAsInt,
-                                             ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent, fileSizeAsInt,
-                                             UseMAD, useMADAuth) == ERROR.NoError)
+                                             ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, fileSizeAsInt,
+                                             madGPB, UseMAD, useMADAuth) == ERROR.NoError)
                                          {
                                              ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
                                              ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
@@ -1722,8 +1726,6 @@ namespace RFiDGear.ViewModel
                                      ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 
                                      if (device.WriteMiFareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
-                                                                          ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent,
-                                                                          ClassicMADKeyAKeyTarget, ClassicMADKeyBKeyTarget,
                                                                           ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent,
                                                                           ClassicKeyAKeyTarget, ClassicKeyBKeyTarget,
                                                                           ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data,
