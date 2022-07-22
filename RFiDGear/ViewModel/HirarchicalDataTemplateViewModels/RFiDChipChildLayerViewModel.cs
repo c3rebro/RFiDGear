@@ -445,6 +445,33 @@ namespace RFiDGear.ViewModel
 
         #endregion
 
+        #region ChipProperties
+
+        /// <summary>
+        ///
+        /// </summary>
+        public MifareClassicSectorModel SectorModel
+        {
+            get => sectorModel;
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public MifareDesfireAppModel AppModel
+        {
+            get => appModel;
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public MifareUltralightPageModel PageModel
+        {
+            get => pageModel;
+        }
+
+        #endregion
         private void LoadChildren()
         {
             switch (_cardType)

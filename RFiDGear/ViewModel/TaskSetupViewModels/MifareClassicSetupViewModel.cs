@@ -341,6 +341,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selected_DataBlockType = value;
+
                 RaisePropertyChanged("Selected_DataBlock_AccessCondition");
                 RaisePropertyChanged("Selected_DataBlockType");
             }
@@ -867,14 +868,10 @@ namespace RFiDGear.ViewModel
 
                     ChildNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicMADModel(0, 1), this));
 
-                    FileSize = "100";
-
-                    IsClassicAuthInfoEnabled = false;
+                    FileSize = "48";
                 }
                 else
                 {
-                    IsClassicAuthInfoEnabled = true;
-
                     ChildNodeViewModelTemp.Children.Clear();
                     ChildNodeViewModelFromChip.Children.Clear();
 
@@ -1143,7 +1140,10 @@ namespace RFiDGear.ViewModel
                         childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
 
                     }
-
+                    else
+                    {
+                        sectorModel.SectorNumber = selectedClassicSectorCurrentAsInt;
+                    }
                     RaisePropertyChanged("SelectedClassicSectorCurrent");
                 }
             }
@@ -1619,7 +1619,7 @@ namespace RFiDGear.ViewModel
                                          ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 
                                          if (device.ReadMiFareClassicWithMAD(appNumberAsInt,
-                                             ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, fileSizeAsInt,
+                                             ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent, fileSizeAsInt,
                                              madGPB, UseMAD, useMADAuth) == ERROR.NoError)
                                          {
                                              ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
@@ -1724,12 +1724,14 @@ namespace RFiDGear.ViewModel
                                  {
                                      ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
                                      ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
-
+                                     
                                      if (device.WriteMiFareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
                                                                           ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent,
                                                                           ClassicKeyAKeyTarget, ClassicKeyBKeyTarget,
+                                                                          ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent,
+                                                                          ClassicMADKeyAKeyTarget, ClassicMADKeyBKeyTarget,
                                                                           ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data,
-                                                                          madGPB, UseMadAuth, UseMAD) == ERROR.NoError)
+                                                                          madGPB, ChildNodeViewModelTemp.SectorModel.SAB, UseMadAuth, UseMAD) == ERROR.NoError)
                                      {
                                          StatusText = StatusText + string.Format("{0}: Wrote {1} bytes to MAD ID {2}\n", DateTime.Now,
                                              ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data.Length,

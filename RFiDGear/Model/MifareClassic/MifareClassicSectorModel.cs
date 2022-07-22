@@ -225,6 +225,9 @@ namespace RFiDGear.Model
         public AccessCondition_MifareClassicSectorTrailer Read_KeyB { get => SectorAccessCondition.Read_KeyB; set => SectorAccessCondition.Read_KeyB = value; }
         public AccessCondition_MifareClassicSectorTrailer Write_KeyB { get => SectorAccessCondition.Read_KeyB; set => SectorAccessCondition.Read_KeyB = value; }
 
+        public LibLogicalAccess.SectorAccessBits SAB { get => sab; set => sab = value; }
+        private LibLogicalAccess.SectorAccessBits sab;
+
         public bool IsAuthenticated { get; set; }
         public short Cx { get => SectorAccessCondition.Cx; set => SectorAccessCondition.Cx = value; }
 
@@ -239,8 +242,6 @@ namespace RFiDGear.Model
         private bool decodeSectorTrailer(byte[] st, ref MifareClassicSectorModel _sector)
         {
             uint C1x, C2x;
-
-            LibLogicalAccess.SectorAccessBits sab;
 
             uint tmpAccessBitCx;
 
@@ -468,9 +469,13 @@ namespace RFiDGear.Model
 
             // DataBlock 0 = C1/0; C2/0; C3/0
 
-            st[1] |= (byte)((dataBlock0AccessBitsIndex & 0x01) << 4);   // C1/0
-            st[2] |= (byte)((dataBlock0AccessBitsIndex & 0x02) >> 1);   // C2/0
-            st[2] |= (byte)((dataBlock0AccessBitsIndex & 0x04) << 2);   // C3/0
+            st[1] |= (byte)((dataBlock0AccessBitsIndex & 0x0001) << 4);   // C1/0
+            st[2] |= (byte)((dataBlock0AccessBitsIndex & 0x0002) >> 1);   // C2/0
+            st[2] |= (byte)((dataBlock0AccessBitsIndex & 0x0004) << 2);   // C3/0
+
+            sab.d_data_block0_access_bits.c1 |= (short)(dataBlock0AccessBitsIndex & 0x0001);
+            sab.d_data_block0_access_bits.c2 |= (short)((dataBlock0AccessBitsIndex & 0x0002) >> 1);
+            sab.d_data_block0_access_bits.c3 |= (short)((dataBlock0AccessBitsIndex & 0x0004) >> 2);
 
             // DataBlock 1 = C1/1; C2/1; C3/1
 
@@ -478,17 +483,29 @@ namespace RFiDGear.Model
             st[2] |= (byte)(dataBlock1AccessBitsIndex & 0x02);          // C2/1
             st[2] |= (byte)((dataBlock1AccessBitsIndex & 0x04) << 3);   // C3/1
 
+            sab.d_data_block1_access_bits.c1 |= (short)(dataBlock1AccessBitsIndex & 0x01);
+            sab.d_data_block1_access_bits.c2 |= (short)((dataBlock1AccessBitsIndex & 0x02) >> 1);
+            sab.d_data_block1_access_bits.c3 |= (short)((dataBlock1AccessBitsIndex & 0x04) >> 2);
+
             // DataBlock 2 = C1/2; C2/2; C3/2
 
             st[1] |= (byte)((dataBlock2AccessBitsIndex & 0x01) << 6);   // C1/2
             st[2] |= (byte)((dataBlock2AccessBitsIndex & 0x02) << 1);   // C2/2
             st[2] |= (byte)((dataBlock2AccessBitsIndex & 0x04) << 4);   // C3/2
 
+            sab.d_data_block2_access_bits.c1 |= (short)(dataBlock2AccessBitsIndex & 0x01);
+            sab.d_data_block2_access_bits.c2 |= (short)((dataBlock2AccessBitsIndex & 0x02) >> 1);
+            sab.d_data_block2_access_bits.c3 |= (short)((dataBlock2AccessBitsIndex & 0x04) >> 2);
+
             // SectorAccessBits = C1/3; C2/3; C3/3
 
             st[1] |= (byte)((sectorAccessBitsIndex & 0x01) << 7);   // C1/3
             st[2] |= (byte)((sectorAccessBitsIndex & 0x02) << 2);   // C2/3
             st[2] |= (byte)((sectorAccessBitsIndex & 0x04) << 5);   // C3/3
+
+            sab.d_sector_trailer_access_bits.c1 |= (short)(sectorAccessBitsIndex & 0x01);
+            sab.d_sector_trailer_access_bits.c2 |= (short)((sectorAccessBitsIndex & 0x02) >> 1);
+            sab.d_sector_trailer_access_bits.c3 |= (short)((sectorAccessBitsIndex & 0x04) >> 2);
 
             st = CustomConverter.buildSectorTrailerInvNibble(st);
             string[] stAsString;

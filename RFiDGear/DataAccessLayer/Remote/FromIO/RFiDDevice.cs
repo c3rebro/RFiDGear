@@ -414,7 +414,7 @@ namespace RFiDGear
                             }
                             catch
                             {
-                                return ERROR.NoError;
+                                return ERROR.AuthenticationError;
                             }
                             return ERROR.NoError;
                         }
@@ -705,7 +705,8 @@ namespace RFiDGear
 
         public ERROR WriteMiFareClassicWithMAD(int _madApplicationID, int _madStartSector,
                                                string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
-                                               byte[] buffer, byte _madGPB, bool _useMADToAuth = false, bool _keyToWriteUseMAD = false)
+                                               string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
+                                               byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth = false, bool _keyToWriteUseMAD = false)
         {
             var settings = new SettingsReaderWriter();
             Sector = new MifareClassicSectorModel();
@@ -718,11 +719,11 @@ namespace RFiDGear
             var mAKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_aKeyToWrite) ? _aKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToWrite) };
             var mBKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_bKeyToWrite) ? _bKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToWrite) };
 
-            var madAKeyToUse = mAKeyToUse;
-            var madBKeyToUse = mBKeyToUse;
+            var madAKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madAKeyToUse) ? _madAKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToUse) };
+            var madBKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madBKeyToUse) ? _madBKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToUse) };
 
-            var madAKeyToWrite = mAKeyToWrite;
-            var madBKeyToWrite = mBKeyToWrite;
+            var madAKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madAKeyToWrite) ? _madAKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToWrite) };
+            var madBKeyToWrite = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madBKeyToWrite) ? _madBKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToWrite) };
 
             try
             {
@@ -757,13 +758,15 @@ namespace RFiDGear
 
                             MifareAccessInfo aiToWrite = new MifareAccessInfoClass
                             {
-                                UseMAD = _keyToWriteUseMAD
+                                UseMAD = _keyToWriteUseMAD,
+                                
                             };
-                            aiToWrite.MADKeyA.Value = _aKeyToUse == _aKeyToWrite ? madAKeyToUse.Value : madAKeyToWrite.Value;
-                            aiToWrite.MADKeyB.Value = _bKeyToUse == _bKeyToWrite ? madBKeyToUse.Value : madBKeyToWrite.Value;
+                            aiToWrite.MADKeyA.Value = _aKeyToUse == _madAKeyToWrite ? madAKeyToUse.Value : madAKeyToWrite.Value;
+                            aiToWrite.MADKeyB.Value = _bKeyToUse == _madBKeyToWrite ? madBKeyToUse.Value : madBKeyToWrite.Value;
                             aiToWrite.KeyA.Value = _aKeyToUse == _aKeyToWrite ? mAKeyToUse.Value : mAKeyToWrite.Value;
                             aiToWrite.KeyB.Value = _bKeyToUse == _bKeyToWrite ? mBKeyToUse.Value : mBKeyToWrite.Value;
                             aiToWrite.MADGPB = _madGPB;
+                            aiToWrite.SAB = _sab;
 
                             var aiToUse = new MifareAccessInfoClass
                             {
@@ -804,7 +807,7 @@ namespace RFiDGear
             return ERROR.NoError;
         }
 
-        public ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, int _length, byte _madGPB, bool _useMADToAuth = true, bool _aiToUseIsMAD = false)
+        public ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, bool _useMADToAuth = true, bool _aiToUseIsMAD = false)
         {
             var settings = new SettingsReaderWriter();
             Sector = new MifareClassicSectorModel();
@@ -814,8 +817,8 @@ namespace RFiDGear
             var mAKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_aKeyToUse) ? _aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToUse) };
             var mBKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_bKeyToUse) ? _bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToUse) };
 
-            var madAKeyToUse = mAKeyToUse;
-            var madBKeyToUse = mBKeyToUse;
+            var madAKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madAKeyToUse) ? _madAKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToUse) };
+            var madBKeyToUse = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(_madBKeyToUse) ? _madBKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToUse) };
 
             try
             {
