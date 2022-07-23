@@ -1065,4 +1065,7 @@ Needed by:
   <data name="buttonContentDoUpdateCommand" xml:space="preserve">
     <value>Update</value>
   </data>
+  <data name="contextMenuItemExecuteSelectedItem" xml:space="preserve">
+    <value>Run Selected Task</value>
+  </data>
 </root>

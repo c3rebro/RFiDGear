@@ -157,6 +157,13 @@ namespace RFiDGear.ViewModel
                 })
             });
 
+            rowContextMenuItems.Add(new MenuItem()
+            {
+                Header = ResourceLoader.GetResource("contextMenuItemExecuteSelectedItem"),
+                Command = WriteSelectedTaskToChipOnceCommand
+            });
+
+
             Application.Current.MainWindow.Closing += new CancelEventHandler(CloseThreads);
             Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
             updater.NewVersionAvailable += new EventHandler(EnableUpdate);
@@ -651,7 +658,6 @@ namespace RFiDGear.ViewModel
             {
                 if (device != null)
                 {
-
                     Dialogs.Add(new MifareDesfireSetupViewModel(SelectedSetupViewModel, dialogs)
                     {
                         Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareDesfireTask"),
@@ -3795,6 +3801,12 @@ namespace RFiDGear.ViewModel
                 },
 
                 OnCancel = (updateAction) =>
+                {
+                    updater.AllowUpdate = false;
+                    updateAction.Close();
+                },
+
+                OnCloseRequest = (updateAction) =>
                 {
                     updater.AllowUpdate = false;
                     updateAction.Close();

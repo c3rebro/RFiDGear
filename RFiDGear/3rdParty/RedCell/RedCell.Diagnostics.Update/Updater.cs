@@ -95,9 +95,8 @@ namespace RedCell.Diagnostics.Update
 
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
             }
-            //LogWriter.CreateLogEntry(string.Format("{0}\n{1}",e.Message, e.InnerException != null ? e.InnerException.Message : ""));
         }
         #endregion
 
@@ -183,7 +182,7 @@ namespace RedCell.Diagnostics.Update
 
                 catch (Exception e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
                     _remoteConfig = null;
                     return;
                 }
@@ -191,7 +190,6 @@ namespace RedCell.Diagnostics.Update
                 string data = Encoding.UTF8.GetString(http.ResponseData);
                 _remoteConfig = new Manifest(data);
 
-                //string.Format("{0}{1}",this._localConfig.RemoteConfigUri,settings.DefaultLanguage == "german" ? "/de-de" : "/en-us")
                 if (_remoteConfig == null)
                 {
                     return;
@@ -199,27 +197,25 @@ namespace RedCell.Diagnostics.Update
 
                 if (_localConfig.SecurityToken != _remoteConfig.SecurityToken)
                 {
-                    Log.Write("Security token mismatch.");
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Security token mismatch."));
                     return;
                 }
-                Log.Write("Remote config is valid.");
-                Log.Write("Local version is  {0}.", _localConfig.Version);
-                Log.Write("Remote version is {0}.", _remoteConfig.Version);
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Remote config is valid.")); Log.Write("Remote config is valid.");
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}, {2}", DateTime.Now, "Local version is ", _localConfig.Version));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}, {2}", DateTime.Now, "Remote version is ", _remoteConfig.Version));
 
                 if (_remoteConfig.Version == _localConfig.Version)
                 {
-                    Log.Write("Versions are the same.");
-                    Log.Write("Check ending.");
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Versions are the same. Check ending."));
                     return;
                 }
                 if (_remoteConfig.Version < _localConfig.Version)
                 {
-                    Log.Write("Remote version is older. That's weird.");
-                    Log.Write("Check ending.");
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Remote version is older. That's weird. Check ending."));
                     return;
                 }
 
-                Log.Write("Remote version is newer. Updating.");
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Remote version is newer. Updating."));
                 _timer.Change(0, 1000);
 
                 if (!AllowUpdate && !IsUserNotified)
@@ -257,7 +253,7 @@ namespace RedCell.Diagnostics.Update
                 try { Directory.Delete(Path.Combine(appDataPath, WorkPath), true); }
                 catch (IOException e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
                     return;
                 }
             }
@@ -270,7 +266,7 @@ namespace RedCell.Diagnostics.Update
                 }
                 catch (Exception e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
                     return;
                 }
             }
@@ -308,7 +304,7 @@ namespace RedCell.Diagnostics.Update
                     }
                     catch (Exception e)
                     {
-                        LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                        LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
                         return;
                     }
                 }
@@ -336,7 +332,7 @@ namespace RedCell.Diagnostics.Update
 
                 catch (Exception e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
                     return;
                 }
             }

@@ -370,7 +370,7 @@ namespace RFiDGear.ViewModel
             }
             set
             {
-                dataBlockAsHexString = value.Replace("\r", "").Replace("\n", "").Replace(" ", "");
+                dataBlockAsHexString = value.Replace("\r", "").Replace("\n", "").Replace(" ", "").Replace("-", "");
 
                 if (mifareClassicDataBlock != null && value.Length == 32 && CustomConverter.IsInHexFormat(value))
                 {

@@ -162,14 +162,8 @@ namespace RFiDGear.ViewModel
                                               AccessCondition_MifareClassicSectorTrailer.NotAllowed)
              });
 
-        private MifareClassicChipModel chipModel;
         private MifareClassicSectorModel sectorModel;
-        private MifareClassicDataBlockModel dataBlock0 = new MifareClassicDataBlockModel();
-        private MifareClassicDataBlockModel dataBlock1 = new MifareClassicDataBlockModel();
-        private MifareClassicDataBlockModel dataBlock2 = new MifareClassicDataBlockModel();
-        private MifareClassicDataBlockModel dataBlockCombined = new MifareClassicDataBlockModel();
-
-        private DatabaseReaderWriter databaseReaderWriter;
+  
         private SettingsReaderWriter settings = new SettingsReaderWriter();
 
         private byte madGPB = 0xC1;
@@ -184,8 +178,6 @@ namespace RFiDGear.ViewModel
         public MifareClassicSetupViewModel()
         {
             MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
-
-            chipModel = new MifareClassicChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.Mifare4K);
 
             sectorModel = new MifareClassicSectorModel(4,
                                                        AccessCondition_MifareClassicSectorTrailer.NotAllowed,
@@ -225,10 +217,6 @@ namespace RFiDGear.ViewModel
             {
                 MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
 
-                databaseReaderWriter = new DatabaseReaderWriter();
-
-                chipModel = new MifareClassicChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.Mifare4K);
-
                 sectorModel = new MifareClassicSectorModel(4,
                                                            AccessCondition_MifareClassicSectorTrailer.NotAllowed,
                                                            AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
@@ -253,19 +241,18 @@ namespace RFiDGear.ViewModel
                 Selected_Sector_AccessCondition = sectorTrailer_AccessBits[4];
                 Selected_DataBlock_AccessCondition = dataBlock_AccessBits[0];
 
-                SelectedClassicSectorCurrent = "0";
-                SelectedMADSector = "1";
-                SelectedMADVersion = "1";
-
-                MifareClassicKeys = CustomConverter.GenerateStringSequence(0, 39).ToArray();
-                MADVersions = CustomConverter.GenerateStringSequence(1, 3).ToArray();
-                MADSectors = CustomConverter.GenerateStringSequence(1, 39).ToArray();
-                AppNumber = "1";
-
                 ClassicMADKeyAKeyCurrent = "FFFFFFFFFFFF";
                 ClassicMADKeyBKeyCurrent = "FFFFFFFFFFFF";
                 ClassicMADKeyAKeyTarget = "FFFFFFFFFFFF";
                 ClassicMADKeyBKeyTarget = "FFFFFFFFFFFF";
+                ApplicationCode = "00";
+                FunctionClusterCode = "00";
+
+                SelectedClassicSectorCurrent = "0";
+                SelectedMADSector = "1";
+                SelectedMADVersion = "1";
+
+                appNumberAsInt = 0;
 
                 ClassicKeyAKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[0];
                 ClassicKeyBKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[0].AccessBits.Split(new[] { ',', ';' })[2];
@@ -291,6 +278,11 @@ namespace RFiDGear.ViewModel
 
                         p.SetValue(this, p.GetValue(_selectedSetupViewModel));
                     }
+
+                    MifareClassicKeys = CustomConverter.GenerateStringSequence(0, 39).ToArray();
+                    MADVersions = CustomConverter.GenerateStringSequence(1, 3).ToArray();
+                    MADSectors = CustomConverter.GenerateStringSequence(1, 39).ToArray();
+
                 }
 
                 else
@@ -307,6 +299,10 @@ namespace RFiDGear.ViewModel
 
                     IsWriteFromMemoryToChipChecked = true;
 
+                    MifareClassicKeys = CustomConverter.GenerateStringSequence(0, 39).ToArray();
+                    MADVersions = CustomConverter.GenerateStringSequence(1, 3).ToArray();
+                    MADSectors = CustomConverter.GenerateStringSequence(1, 39).ToArray();
+
                     SelectedTaskIndex = "0";
                     SelectedTaskDescription = "Enter a Description";
                 }
@@ -317,15 +313,11 @@ namespace RFiDGear.ViewModel
                 {
                     SelectedPlugin = Items.FirstOrDefault();
                 }
-
-                useMAD = false;
-
             }
             catch (Exception e)
             {
                 LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
             }
-
         }
 
         #endregion
@@ -904,6 +896,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
+        [XmlIgnore]
         public bool UseMADInvert => !UseMAD;
 
         /// <summary>
@@ -1176,7 +1169,8 @@ namespace RFiDGear.ViewModel
         #region MADEditor
 
         [XmlIgnore]
-        public string[] MADVersions { get; set; }
+        public string[] MADVersions { get; 
+            set; }
 
         /// <summary>
         /// 
@@ -1299,6 +1293,79 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        public string ApplicationCode
+        {
+            get => applicationCode;
+            set
+            {
+                applicationCode = value.Length > 2 ? value.ToUpper().Remove(2, value.Length - 2) : value.ToUpper();
+                IsValidApplicationCode = (CustomConverter.IsInHexFormat(applicationCode) && applicationCode.Length<=2);
+                RaisePropertyChanged("ApplicationCode");
+            }
+        }
+        private string applicationCode;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidApplicationCode
+        {
+            get => isValidApplicationCode;
+            set
+            {
+                isValidApplicationCode = value;
+
+                if(isValidApplicationCode == true)
+                {
+                    appNumberAsInt &= 0xff00;
+                    appNumberAsInt |= CustomConverter.GetBytes(applicationCode, out int _)[0];
+                }
+                RaisePropertyChanged("IsValidApplicationCode");
+            }
+        }
+        private bool? isValidApplicationCode;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string FunctionClusterCode
+        {
+            get => functionClusterCode;
+            set
+            {
+                functionClusterCode = value.Length > 2 ? value.ToUpper().Remove(2, value.Length - 2) : value.ToUpper();
+                IsValidFunctionClusterCode = (CustomConverter.IsInHexFormat(functionClusterCode) && functionClusterCode.Length <= 2);
+                RaisePropertyChanged("FunctionClusterCode");
+            }
+        }
+        private string functionClusterCode;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidFunctionClusterCode
+        {
+            get => isValidFunctionClusterCode;
+            set
+            {
+                isValidFunctionClusterCode = value;
+
+                if (isValidFunctionClusterCode == true)
+                {
+                    appNumberAsInt &= 0x00ff;
+                    appNumberAsInt |= (CustomConverter.GetBytes(functionClusterCode, out int _)[0] << 8);
+                }
+                RaisePropertyChanged("IsValidFunctionClusterCode");
+            }
+        }
+        private bool? isValidFunctionClusterCode;
+
+        /*
+        /// <summary>
+        ///
+        /// </summary>
         public string AppNumber
         {
             get => appNumber;
@@ -1310,6 +1377,7 @@ namespace RFiDGear.ViewModel
             }
         }
         private string appNumber;
+        */
         private int appNumberAsInt;
 
         /// <summary>

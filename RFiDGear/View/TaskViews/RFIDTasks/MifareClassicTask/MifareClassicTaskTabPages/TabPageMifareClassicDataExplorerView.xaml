@@ -237,6 +237,7 @@
                                                 <Style TargetType="{x:Type TextBox}">
                                                     <Setter Property="TextWrapping" Value="Wrap" />
                                                     <Setter Property="MaxWidth" Value="250" />
+                                                    <Setter Property="AcceptsReturn" Value="True" />
                                                     <!--													<Setter
 														Property="VerticalAlignment"
 														Value="Top" />
