@@ -258,13 +258,14 @@ namespace RFiDGear
                     break;
 
                 case CARD_TYPE.Mifare2K:
-
                     break;
 
                 case CARD_TYPE.Mifare4K:
                     blockCount = (_sectorNumber <= 31 ? 4 : 16);
                     break;
 
+                default:
+                    throw new InvalidOperationException("Unexpected Card Type");
 
             }
 

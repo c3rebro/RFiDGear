@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -32,7 +33,7 @@ namespace RFiDGear.ViewModel
     /// </summary>
     public class MifareClassicSetupViewModel : ViewModelBase, IUserDialogViewModel
     {
-        #region fields
+        #region Fields
 
         private ObservableCollection<MifareClassicDataBlockAccessConditionModel> dataBlock_AccessBits = new ObservableCollection<MifareClassicDataBlockAccessConditionModel>
             (new[]
@@ -234,8 +235,8 @@ namespace RFiDGear.ViewModel
 
                 sectorModel.SectorNumber = selectedClassicSectorCurrentAsInt;
 
-                childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
-                childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
+                childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, _dialogs, true);
+                childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, _dialogs, true);
 
                 Selected_DataBlockType = SectorTrailer_DataBlock.BlockAll;
                 Selected_Sector_AccessCondition = sectorTrailer_AccessBits[4];
@@ -306,6 +307,8 @@ namespace RFiDGear.ViewModel
                     SelectedTaskIndex = "0";
                     SelectedTaskDescription = "Enter a Description";
                 }
+
+                dialogs = _dialogs;
 
                 HasPlugins = items != null ? items.Any() : false;
 
@@ -571,6 +574,13 @@ namespace RFiDGear.ViewModel
         private RFiDChipChildLayerViewModel childNodeViewModelTemp;
 
         #endregion DataExplorer
+
+        #region Dialogs
+        [XmlIgnore]
+        public ObservableCollection<IDialogViewModel> Dialogs => dialogs;
+        private readonly ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+
+        #endregion Dialogs
 
         #region Plugins
 
@@ -1836,6 +1846,37 @@ namespace RFiDGear.ViewModel
             }
 
             return;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand GetDataFromFileCommand => new RelayCommand(OnNewGetDataFromFileCommand);
+        private void OnNewGetDataFromFileCommand()
+        {
+            var dlg = new OpenFileDialogViewModel
+            {
+                Title = ResourceLoader.GetResource("windowCaptionOpenProject"),
+                //Filter = ResourceLoader.getResource("filterStringSaveTasks"),
+                Multiselect = false
+            };
+
+            if (dlg.Show(Dialogs) && dlg.FileName != null)
+            {
+                try
+                {
+                    var data = File.ReadAllText(dlg.FileName).Replace(" ", "").Replace("\n", "").Replace("-", "").Replace("\r", "");
+
+                    childNodeViewModelTemp.Children.Single().DataAsHexString = data;
+
+                    RaisePropertyChanged("ChildNodeViewModelTemp");
+                    RaisePropertyChanged("ChildNodeViewModelFromChip");
+                }
+                catch (Exception e)
+                {
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                }
+            }
         }
 
         #endregion Commands

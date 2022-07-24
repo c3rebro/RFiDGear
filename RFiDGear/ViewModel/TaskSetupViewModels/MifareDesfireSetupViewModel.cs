@@ -1902,13 +1902,9 @@ namespace RFiDGear.ViewModel
             {
                 try
                 {
-
-                    var data = File.ReadAllText(dlg.FileName);
-
+                    var data = File.ReadAllText(dlg.FileName).Replace(" ","").Replace("\n","").Replace("-","").Replace("\r","");
 
                     childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel((CustomConverter.GetBytes(data, out int err)), 0);
-                    //.Data = new byte[(data.Length)/2];
-                    //childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile.Data = (CustomConverter.GetBytes(data, out err));
 
                     RaisePropertyChanged("ChildNodeViewModelTemp");
                     RaisePropertyChanged("ChildNodeViewModelFromChip");

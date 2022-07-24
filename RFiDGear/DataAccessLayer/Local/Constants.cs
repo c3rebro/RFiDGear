@@ -21,8 +21,8 @@ namespace RFiDGear.DataAccessLayer
 
     public static class Constants
     {
-        public const int MAX_WAIT_INSERTION = 200; //timeout for chip response in ms
-        public const string TITLE_SUFFIX = ""; //turns out special app versions
+        public static readonly int MAX_WAIT_INSERTION = 200; //timeout for chip response in ms
+        public static readonly string TITLE_SUFFIX = ""; //turns out special app versions
                                                //public const string TITLE_SUFFIX = "DEVELOPER PREVIEW"; //turns out special app versions
     }
 
@@ -310,57 +310,5 @@ namespace RFiDGear.DataAccessLayer
         public int KeyNumber;
         public string AccessBits { get => accessBits; set => accessBits = value; }
     }
-
-    #region LibLogicalAccess enums
-
-    /*
-    /// <summary>
-    /// 
-    /// </summary>
-    [Flags]
-    public enum DESFireKeyType
-    {
-        DF_KEY_3K3DES,
-        DF_KEY_AES,
-        DF_KEY_DES
-    }
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    [Flags]
-    public enum TaskAccessRights
-    {
-        AR_KEY0 = 0,
-        AR_KEY1 = 1,
-        AR_KEY2 = 2,
-        AR_KEY3 = 3,
-        AR_KEY4 = 4,
-        AR_KEY5 = 5,
-        AR_KEY6 = 6,
-        AR_KEY7 = 7,
-        AR_KEY8 = 8,
-        AR_KEY9 = 9,
-        AR_KEY10 = 10,
-        AR_KEY11 = 11,
-        AR_KEY12 = 12,
-        AR_KEY13 = 13,
-        AR_FREE = 14,
-        AR_NEVER = 15
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    [Flags]
-    public enum EncryptionMode
-    {
-        CM_ENCRYPT = 3,
-        CM_MAC = 1,
-        CM_PLAIN = 0,
-        CM_UNKNOWN = 255
-    }
-    */
-    #endregion
 }
 

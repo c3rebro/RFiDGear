@@ -12,7 +12,7 @@ using RedCell.Net;
 
 namespace RedCell.Diagnostics.Update
 {
-    public class Updater
+    public class Updater : IDisposable
     {
         #region Constants
 
@@ -338,5 +338,11 @@ namespace RedCell.Diagnostics.Update
             }
         }
         #endregion
+
+        public void Dispose()
+        {
+            this.Dispose();
+        }
+
     }
 }

@@ -182,7 +182,6 @@ namespace RFiDGear
                         if (readerUnit.Connect())
                         {
                             ReaderUnitName = readerUnit.ConnectedName;
-                            //string readerSerialNumber = readerUnit.GetReaderSerialNumber(); //-> ERROR with OmniKey (and some others?) Reader when card isnt removed before recalling!
 
                             card = readerUnit.GetSingleChip();
                             
@@ -190,8 +189,6 @@ namespace RFiDGear
                             {
                                 try
                                 {
-                                    //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
-                                    //readerUnit.Disconnect();
                                     GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
 
                                     if (card.Type == "DESFire" || card.Type == "DESFireEV1")
@@ -213,9 +210,7 @@ namespace RFiDGear
                                             GenericChip.CardType = CARD_TYPE.DESFire;
                                         }
                                     }
-                                    //ISO15693Commands commands = card.Commands as ISO15693Commands;
-                                    //SystemInformation si = commands.GetSystemInformation();
-                                    //var block=commands.ReadBlock(21, 4);
+
                                     readerUnit.Disconnect();
                                     return ERROR.NoError;
                                 }
@@ -1197,6 +1192,8 @@ namespace RFiDGear
                                             case FileType_MifareDesfireFileType.LinearRecordFile:
                                                 cmd.CreateLinearRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
                                                 break;
+                                            default:
+                                                throw new InvalidOperationException("Unexpected FileTypeSelection");
                                         }
 
                                         return ERROR.NoError;
@@ -1723,7 +1720,6 @@ namespace RFiDGear
                             {
                                 var cmd = card.Commands as IDESFireCommands;
                                 ReaderUnitName = readerUnit.ConnectedName;
-                                //readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
                                 try
                                 {
@@ -1791,7 +1787,6 @@ namespace RFiDGear
                             {
                                 var cmd = card.Commands as IDESFireEV1Commands;
                                 ReaderUnitName = readerUnit.ConnectedName;
-                                //readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
                                 try
                                 {
@@ -1897,7 +1892,6 @@ namespace RFiDGear
                     SecurityLevel = EncryptionMode.CM_ENCRYPT
                 };
 
-                // IDESFireEV1Commands cmd;
                 // Keys to use for authentication
                 IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_piccMasterKey);
@@ -2030,7 +2024,6 @@ namespace RFiDGear
                         if (readerUnit.Connect())
                         {
                             ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
                             card = readerUnit.GetSingleChip();
 
@@ -2182,7 +2175,6 @@ namespace RFiDGear
                     SecurityLevel = EncryptionMode.CM_ENCRYPT
                 };
 
-                // IDESFireEV1Commands cmd;
                 // Keys to use for authentication
                 IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
@@ -2196,7 +2188,6 @@ namespace RFiDGear
                         if (readerUnit.Connect())
                         {
                             ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
                             card = readerUnit.GetSingleChip();
 
@@ -2278,7 +2269,6 @@ namespace RFiDGear
                         if (readerUnit.Connect())
                         {
                             ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
                             card = readerUnit.GetSingleChip();
 
@@ -2363,7 +2353,6 @@ namespace RFiDGear
                         if (readerUnit.Connect())
                         {
                             ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
                             card = readerUnit.GetSingleChip();
 
@@ -2425,7 +2414,6 @@ namespace RFiDGear
                     SecurityLevel = EncryptionMode.CM_ENCRYPT
                 };
 
-                //IDESFireEV1Commands cmd;
                 // Keys to use for authentication
                 IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
@@ -2441,7 +2429,6 @@ namespace RFiDGear
                         if (readerUnit.Connect())
                         {
                             ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
                             card = readerUnit.GetSingleChip();
 
@@ -2522,7 +2509,6 @@ namespace RFiDGear
         {
             try
             {
-                // IDESFireEV1Commands cmd;
                 // Keys to use for authentication
                 IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
@@ -2628,7 +2614,6 @@ namespace RFiDGear
                         if (readerUnit.Connect())
                         {
                             ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
                             card = readerUnit.GetSingleChip();
 
@@ -2638,9 +2623,7 @@ namespace RFiDGear
                                 var cmd = card.Commands as ISO15693Commands;// IMifareUltralightCommands;
 
                                 object t = cmd.GetSystemInformation();
-                                //object res = cmd.ReadPage(4);
 
-                                //appIDs = (appIDsObject as UInt32[]);
                             }
 
                             return ERROR.NoError;
@@ -2671,17 +2654,14 @@ namespace RFiDGear
                         if (readerUnit.Connect())
                         {
                             ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
                             card = readerUnit.GetSingleChip();
 
 
-                            if (true) //card.Type == "ISO15693"
+                            if (true)
                             {
                                 var cmd = (card as EM4135Chip).ChipIdentifier;// IMifareUltralightCommands;
-                                //object res = cmd.ReadPage(4);
 
-                                //appIDs = (appIDsObject as UInt32[]);
                             }
 
                             return ERROR.NoError;

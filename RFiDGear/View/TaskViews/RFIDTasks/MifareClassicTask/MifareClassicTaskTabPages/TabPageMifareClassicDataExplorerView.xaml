@@ -316,21 +316,21 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch">
                     <Button
-                        Grid.Row="2"
+                        Grid.Row="3"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
                         Height="23"
-                        Margin="7.5,0,7.5,7"
+                        Margin="10,0,10,10"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Command="{Binding WriteDataCommand}"
                         Content="Write" />
                     <Button
-                        Grid.Row="3"
+                        Grid.Row="4"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
                         Height="23"
-                        Margin="7.5,0,7.5,7"
+                        Margin="10,0,10,10"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Command="{Binding ReadDataCommand}"
@@ -369,6 +369,16 @@
                                 SelectedItem="{Binding SelectedDataBlockToReadWrite, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DataExplorer_DataBlock}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                         </Grid>
                     </GroupBox>
+                    <Button
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Height="23"
+                        Margin="10,0,10,10"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
+                        Command="{Binding GetDataFromFileCommand}"
+                        Content="{Binding LocalizationResourceSet, ConverterParameter=buttonContentMifareDesfireFileSetupOpenDataFile, Converter={StaticResource Localization}}" />
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="186" />
                         <ColumnDefinition Width="181*" />
@@ -376,6 +386,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="80.7203331950994" />
                         <RowDefinition Height="0.352718148131878*" />
+                        <RowDefinition Height="36" />
                         <RowDefinition Height="36" />
                         <RowDefinition Height="36" />
                     </Grid.RowDefinitions>

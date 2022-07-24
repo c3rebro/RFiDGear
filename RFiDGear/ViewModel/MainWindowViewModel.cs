@@ -1,4 +1,25 @@
-﻿using GalaSoft.MvvmLight;
+﻿/* This is RFiDGear's Main Window Class
+ * 
+ * RFiDGear has a Set of objects in an ObservableCollection.
+ * 
+ * These objects can have a Type T of:
+ * - DesfireSetupViewModel
+ * - ClassicSetupViewModel
+ * - UltralightSetupViewModel
+ * - PlusSetupViewModel
+ * - CommonTaskSetupViewModel
+ * - GenericChipSetupViewModel
+ * 
+ * Each *SetupViewModel has one of the Following Properties:
+ * 
+ * - Dialogs: Showing Dialogs to the User. Inherited from MainWindow MVVMDialogs
+ * - TaskError: Is "Empty" by default. A Task can only be Executed when its ErrorLevel is Empty
+ * - RelayCommands: The "Tasks" that are needed to be done. The RelayCommands can be Executed by its ViewModel and a "Button" or by its 
+ *   corresponding "Execute" Method when called as a Task.
+ * - 
+ */
+
+using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
@@ -46,7 +67,7 @@ namespace RFiDGear.ViewModel
         private protected List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
 
         private int taskIndex = 0;
-        // set if task was completed; indicates greenlight to continue execution
+        //set if task was completed; indicates greenlight to continue execution
         //if programming takes too long; quit the process
         private bool firstRun = true;
         private bool updateAvailable = false;
@@ -3796,8 +3817,10 @@ namespace RFiDGear.ViewModel
 
                 OnOk = (updateAction) =>
                 {
+                    Mouse.OverrideCursor = Cursors.AppStarting;
                     updater.Update();
                     updateAction.Close();
+                    Mouse.OverrideCursor = null;
                 },
 
                 OnCancel = (updateAction) =>
