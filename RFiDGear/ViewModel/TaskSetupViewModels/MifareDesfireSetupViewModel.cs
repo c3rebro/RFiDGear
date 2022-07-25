@@ -1555,7 +1555,7 @@ namespace RFiDGear.ViewModel
         #region Commands
 
         /// <summary>
-        /// return new RelayCommand<RFiDDevice>((_device) => OnNewCreateAppCommand(_device));
+        ///
         /// </summary>
         public ICommand CreateAppCommand => new RelayCommand(OnNewCreateAppCommand);
         private void OnNewCreateAppCommand()

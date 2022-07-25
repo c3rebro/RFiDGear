@@ -1954,9 +1954,7 @@ namespace RFiDGear
                                         cmd.Authenticate(0, aiToUse.MasterCardKey);
                                     }
 
-                                    DESFireKeySettings ks = DESFireKeySettings.KS_CHANGE_KEY_WITH_MK | DESFireKeySettings.KS_FREE_LISTING_WITHOUT_MK | DESFireKeySettings.KS_FREE_CREATE_DELETE_WITHOUT_MK | DESFireKeySettings.KS_CONFIGURATION_CHANGEABLE;
-
-                                    cmd.CreateApplicationEV1((uint)_appID, ks, (byte)_maxNbKeys, false, _keyTypeTargetApplication, 0, 0);
+                                    cmd.CreateApplicationEV1((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys, false, _keyTypeTargetApplication, 0, 0);
 
                                     return ERROR.NoError;
                                 }
