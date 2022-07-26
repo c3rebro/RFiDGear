@@ -29,7 +29,7 @@
             Margin="10,10,10,10"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
-            Header="Version Info">
+            Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderUpdateWindowVersionInfo'}">
             <TextBox 
                 HorizontalAlignment="Stretch" 
                 VerticalAlignment="Stretch" 

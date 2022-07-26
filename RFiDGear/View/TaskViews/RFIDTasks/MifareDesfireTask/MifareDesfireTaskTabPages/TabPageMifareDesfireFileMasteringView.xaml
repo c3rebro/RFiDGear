@@ -148,7 +148,7 @@
                         Margin="8,3,7,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        Content="Write" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentWrite'}" />
                     <Label
                         Grid.Row="3"
                         Grid.Column="0"
@@ -156,7 +156,7 @@
                         Margin="8,3,7,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        Content="Read" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentRead'}" />
                     <Label
                         Grid.Row="4"
                         Grid.Column="0"
@@ -164,7 +164,7 @@
                         Margin="8,3,7,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        Content="R&amp;W" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentReadAndWrite'}" />
                     <Label
                         Grid.Row="4"
                         Grid.Column="2"
@@ -172,7 +172,7 @@
                         Margin="9,3,7,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        Content="Change" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentChange'}" />
                     <ComboBox
                         x:Name="rnwriteCB"
                         Grid.Row="4"

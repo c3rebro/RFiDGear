@@ -1084,4 +1084,85 @@ Needed by:
   <data name="contextMenuItemExecuteSelectedItem" xml:space="preserve">
     <value>gewählte Aufgabe ausführen</value>
   </data>
+  <data name="buttonContentMifareClassicSetupReadData" xml:space="preserve">
+    <value>Daten lesen</value>
+  </data>
+  <data name="buttonContentMifareClassicSetupWriteData" xml:space="preserve">
+    <value>Daten schreiben</value>
+  </data>
+  <data name="checkBoxContentMifareClassicTaskUseMAD" xml:space="preserve">
+    <value>MAD Ben.</value>
+  </data>
+  <data name="checkBoxContentMifareClassicTaskUseMADToAuth" xml:space="preserve">
+    <value>Mit MAD Authentifizieren</value>
+  </data>
+  <data name="groupBoxHeaderAllTasksExecuteCondition" xml:space="preserve">
+    <value>Ausführungsbedingung für diese Aufgabe</value>
+  </data>
+  <data name="groupBoxHeaderMifareClassicTaskDataExplorerDataInChip" xml:space="preserve">
+    <value>Daten auf dem Chip</value>
+  </data>
+  <data name="groupBoxHeaderMifareClassicTaskDataExplorerDataInMemory" xml:space="preserve">
+    <value>Daten im Zwischenspeicher</value>
+  </data>
+  <data name="groupBoxHeaderMifareClassicTaskMADAccess" xml:space="preserve">
+    <value>MAD Zugriff</value>
+  </data>
+  <data name="groupBoxHeaderMifareClassicTaskMADKeyCurrent" xml:space="preserve">
+    <value>MAD Schlüssel - Aktuell</value>
+  </data>
+  <data name="groupBoxHeaderMifareClassicTaskMADKeyTarget" xml:space="preserve">
+    <value>MAD Schlüssel - Neu</value>
+  </data>
+  <data name="groupBoxHeaderMifareClassicTaskSectorCurrent" xml:space="preserve">
+    <value>Sektorschlüssel - Aktuell</value>
+  </data>
+  <data name="groupBoxHeaderMifareClassicTaskSectorTarget" xml:space="preserve">
+    <value>Sektorschlüssel - Neu</value>
+  </data>
+  <data name="groupBoxHeaderUpdateWindowVersionInfo" xml:space="preserve">
+    <value>Versionsinformationen</value>
+  </data>
+  <data name="labelContentChange" xml:space="preserve">
+    <value>Ändern</value>
+  </data>
+  <data name="labelContentDesfireDataExplorerByteCount" xml:space="preserve">
+    <value>Schreibe n Byte(s)</value>
+  </data>
+  <data name="labelContentDesfireDataExplorerIndexStart" xml:space="preserve">
+    <value>Datenindex Startposition</value>
+  </data>
+  <data name="labelContentDesfireDataExplorerReadKey" xml:space="preserve">
+    <value>Leseschlüssel</value>
+  </data>
+  <data name="labelContentDesfireDataExplorerReadKeyNo" xml:space="preserve">
+    <value>Leseschl. No.</value>
+  </data>
+  <data name="labelContentDesfireDataExplorerReadKeyType" xml:space="preserve">
+    <value>Leseschlüsseltyp</value>
+  </data>
+  <data name="labelContentDesfireDataExplorerWriteKey" xml:space="preserve">
+    <value>Schreibschlüssel</value>
+  </data>
+  <data name="labelContentDesfireDataExplorerWriteKeyNo" xml:space="preserve">
+    <value>Schreibschl. No.</value>
+  </data>
+  <data name="labelContentDesfireDataExplorerWriteKeyType" xml:space="preserve">
+    <value>Schreibschlüsseltyp</value>
+  </data>
+  <data name="labelContentMifareClassicTaskMADFileSize" xml:space="preserve">
+    <value>Größe in Bytes</value>
+  </data>
+  <data name="labelContentRead" xml:space="preserve">
+    <value>(L)esen</value>
+  </data>
+  <data name="labelContentReadAndWrite" xml:space="preserve">
+    <value>L&amp;S</value>
+  </data>
+  <data name="labelContentSplashScreenLoadingData" xml:space="preserve">
+    <value>Bitte warten...</value>
+  </data>
+  <data name="labelContentWrite" xml:space="preserve">
+    <value>(S)chreiben</value>
+  </data>
 </root>

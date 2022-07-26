@@ -78,6 +78,7 @@ namespace RFiDGear
                     {
                         instance = new RFiDDevice();
                         return instance;
+                        
                     }
                     else
                     {
@@ -2596,6 +2597,42 @@ namespace RFiDGear
         #endregion mifare desfire
 
         #region mifare plus
+
+        public ERROR ReadMFPlusChip()
+        {
+            try
+            {
+                if (readerUnit.ConnectToReader())
+                {
+                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    {
+                        if (readerUnit.Connect())
+                        {
+                            ReaderUnitName = readerUnit.ConnectedName;
+
+                            card = readerUnit.GetSingleChip();
+
+
+                            if (card.Type == "ISO15693")
+                            {
+                                var cmd = card.Commands as ISO15693Commands;// IMifareUltralightCommands;
+
+                                object t = cmd.GetSystemInformation();
+
+                            }
+
+                            return ERROR.NoError;
+                        }
+                    }
+                }
+                return ERROR.NoError;
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                return ERROR.IOError;
+            }
+        }
 
         #endregion
 

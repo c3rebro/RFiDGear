@@ -58,7 +58,7 @@
                 Margin="8,0,8,0"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Header="Data on Chip"
+                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareClassicTaskDataExplorerDataInChip'}"
                 IsEnabled="{Binding IsDataExplorerEditTabEnabled}">
                 <Grid
                     Margin="0,0,0,0"
@@ -181,7 +181,7 @@
                 Margin="8,0,8,8"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Header="Data in Memory/File"
+                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareClassicTaskDataExplorerDataInMemory'}"
                 IsEnabled="{Binding IsDataExplorerEditTabEnabled}">
                 <Grid
                     Margin="0,0,0,0"
@@ -324,7 +324,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Command="{Binding WriteDataCommand}"
-                        Content="Write" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareClassicSetupWriteData'}" />
                     <Button
                         Grid.Row="4"
                         Grid.Column="0"
@@ -334,7 +334,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Command="{Binding ReadDataCommand}"
-                        Content="Read" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareClassicSetupReadData'}"/>
                     <GroupBox
                         Grid.Row="0"
                         Grid.Column="0"

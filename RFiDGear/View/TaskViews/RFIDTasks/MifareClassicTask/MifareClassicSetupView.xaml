@@ -195,7 +195,7 @@
                         Grid.Row="2"
                         Grid.ColumnSpan="4"
                         Margin="8,0,8,0"
-                        Header="ExecuteCondition">
+                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderAllTasksExecuteCondition'}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="175" />

@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
     xmlns:gif="http://wpfanimatedgif.codeplex.com"
     xmlns:local="clr-namespace:RFiDGear.View"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -14,6 +15,9 @@
     WindowStartupLocation="CenterScreen"
     WindowStyle="None"
     mc:Ignorable="d">
+    <Window.Resources>
+        <dal:ResourceLoader x:Key="Localization"/>
+    </Window.Resources>
     <Window.Background>
         <SolidColorBrush Opacity="0" Color="White" />
     </Window.Background>
@@ -31,7 +35,7 @@
             Margin="238,286,0,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"
-            Content="Loading Project..."
+            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentSplashScreenLoadingData'}"
             FontSize="14"
             FontWeight="ExtraBold" />
     </Grid>

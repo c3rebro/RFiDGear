@@ -135,6 +135,13 @@ namespace RFiDGear.DataAccessLayer
                     @Path.Combine(appDataPath, chipDatabaseFileNameCompressed) :
                     _fileName))
                     {
+                        if(Directory.GetFiles(appDataPath, "*.tmp").Length > 0)
+                        {
+                            foreach(string tempFile in Directory.GetFiles(appDataPath, "*.tmp"))
+                            {
+                                File.Delete(tempFile);
+                            } 
+                        }
                         zip1.ExtractAll(appDataPath, ExtractExistingFileAction.OverwriteSilently);
                     }
 

@@ -909,15 +909,15 @@ namespace RFiDGear.ViewModel
                             break;
 
                         case CARD_TYPE.MifarePlus_SL3_1K:
-
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL3_1K), Dialogs));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL3_2K:
-
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL3_2K), Dialogs));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL3_4K:
-
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL3_4K), Dialogs));
                             break;
 
                         case CARD_TYPE.MifareUltralight:
