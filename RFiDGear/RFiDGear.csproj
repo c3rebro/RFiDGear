@@ -377,17 +377,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <COMReference Include="LibLogicalAccess">
-      <Guid>{9B9E09AD-A354-4D6F-93A8-DA32D71525A4}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>87</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </COMReference>
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Resources\splash.png" />
   </ItemGroup>
   <ItemGroup>

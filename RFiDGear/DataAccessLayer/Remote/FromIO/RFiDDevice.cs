@@ -1,5 +1,5 @@
-﻿using LibLogicalAccess;
-using Elatec.NET;
+﻿using Elatec.NET;
+using Elatec.NET.Model;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using System;
@@ -16,10 +16,8 @@ namespace RFiDGear
     public class RFiDDevice : IDisposable
     {
         // global (cross-class) Instances go here ->
-        private IReaderProvider readerProvider;
-        private IReaderUnit readerUnit;
         private readonly TWN4ReaderDevice readerDevice;
-        private chip card;
+        private ChipModel card;
         private bool _disposed = false;
 
         #region properties
@@ -32,7 +30,7 @@ namespace RFiDGear
 
         public ReaderTypes ReaderProvider { get; private set; }
 
-        public string ReaderUnitName { get; private set; }
+        public string readerDeviceName { get; private set; }
 
         //public CARD_INFO CardInfo { get; private set; }
 
@@ -106,7 +104,7 @@ namespace RFiDGear
                         ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
 
                         readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
-                        readerUnit = readerProvider.CreateReaderUnit();
+                        readerDevice = readerProvider.CreatereaderDevice();
 
                         GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
                     }
@@ -119,6 +117,8 @@ namespace RFiDGear
                         if (int.TryParse(defaultSettings.DefaultSpecification.LastUsedComPort, out int portNumber))
                         {
                             readerDevice = new TWN4ReaderDevice(portNumber);
+                            readerDevice.Connect();
+                            Elatec.NET.Model.GenericChipModel elaChip = readerDevice.GetSingleChip();
                         }
 
                         readerDevice.ReadChipPublic();
@@ -137,6 +137,37 @@ namespace RFiDGear
 
         #region common
 
+        private ERROR Connect()
+        {
+            try
+            {
+                if (readerDevice.ConnectToReader())
+                {
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    {
+                        if (readerDevice.Connect())
+                        {
+                            return ERROR.NoError;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                if (readerProvider != null)
+                {
+                    readerProvider.ReleaseInstance();
+                }
+
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+
+                readerDevice?.Disconnect();
+                return ERROR.IOError;
+            }
+            readerDevice?.Disconnect();
+            return ERROR.IOError;
+        }
+
         public ERROR ChangeProvider(ReaderTypes _provider)
         {
             if (Enum.IsDefined(typeof(ReaderTypes), _provider))
@@ -145,7 +176,7 @@ namespace RFiDGear
                 {
                     try
                     {
-                        readerUnit.DisconnectFromReader();
+                        readerDevice.DisconnectFromReader();
                         readerProvider.ReleaseInstance();
                     }
                     catch
@@ -159,7 +190,7 @@ namespace RFiDGear
                 try
                 {
                     readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
-                    readerUnit = readerProvider.CreateReaderUnit();
+                    readerDevice = readerProvider.CreatereaderDevice();
 
                     return ERROR.NoError;
                 }
@@ -176,75 +207,64 @@ namespace RFiDGear
         {
             try
             {
-                if (readerUnit.ConnectToReader())
+                if (Connect() == ERROR.NoError)
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    readerDevice.Beep();
+                    //readerDeviceName = readerDevice.ConnectedName;
+
+                    card = readerDevice.GetSingleChip();
+
+                    if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
                     {
-                        if (readerUnit.Connect())
+                        try
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            GenericChip = new GenericChipModel(card.ChipIdentifier, (RFiDGear.DataAccessLayer.CARD_TYPE)card.CardType);
 
-                            card = readerUnit.GetSingleChip();
-                            
-                            if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
+                            if ((CARD_TYPE)card.CardType == CARD_TYPE.DESFire || (CARD_TYPE)card.CardType == CARD_TYPE.DESFireEV1)
                             {
-                                try
+                                int version = readerDevice.GetDesFireVersion();
+
+                                if (version == 1)
                                 {
-                                    GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
-
-                                    if (card.Type == "DESFire" || card.Type == "DESFireEV1")
-                                    {
-                                        var cmd = card.Commands as IDESFireCommands;
-                                        
-                                        DESFireCardVersion version = cmd.GetVersion();
-
-                                        if (version.softwareMjVersion == 1)
-                                        {
-                                            GenericChip.CardType = CARD_TYPE.DESFireEV1;
-                                        }
-                                        else if (version.softwareMjVersion == 2)
-                                        {
-                                            GenericChip.CardType = CARD_TYPE.DESFireEV2;
-                                        }
-                                        else if (version.softwareMjVersion == 3)
-                                        {
-                                            GenericChip.CardType = CARD_TYPE.DESFire;
-                                        }
-                                    }
-
-                                    readerUnit.Disconnect();
-                                    return ERROR.NoError;
+                                    GenericChip.CardType = CARD_TYPE.DESFireEV1;
                                 }
-                                catch (Exception e)
+                                else if (version == 2)
                                 {
-                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-                                    readerUnit.Disconnect();
-                                    return ERROR.IOError;
+                                    GenericChip.CardType = CARD_TYPE.DESFireEV2;
+                                }
+                                else if (version == 3)
+                                {
+                                    GenericChip.CardType = CARD_TYPE.DESFire;
                                 }
                             }
-                            else
-                            {
-                                readerUnit.Disconnect();
-                                return ERROR.DeviceNotReadyError;
-                            }
 
+                            return ERROR.NoError;
                         }
+                        catch (Exception e)
+                        {
+                            LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                            return ERROR.IOError;
+                        }
+                    }
+                    else
+                    {
+                        return ERROR.DeviceNotReadyError;
                     }
                 }
             }
             catch (Exception e)
             {
-                if (readerProvider != null)
+                if (readerDevice != null)
                 {
-                    readerProvider.ReleaseInstance();
+                    readerDevice.Dispose();
                 }
 
                 LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 
-                readerUnit?.Disconnect();
+                readerDevice?.Disconnect();
                 return ERROR.IOError;
             }
-            readerUnit?.Disconnect();
+            readerDevice?.Disconnect();
             return ERROR.IOError;
         }
 
@@ -259,10 +279,10 @@ namespace RFiDGear
                     // ...
                 }
 
-                if (readerUnit != null)
+                if (readerDevice != null)
                 {
-                    readerUnit.Disconnect();
-                    readerUnit.DisconnectFromReader();
+                    readerDevice.Disconnect();
+                    readerDevice.DisconnectFromReader();
                 }
 
                 if (readerProvider != null)
@@ -299,126 +319,114 @@ namespace RFiDGear
 
             try
             {
-                if (readerUnit.ConnectToReader())
+                //readerDeviceName = readerDevice.ConnectedName;
+
+                card = readerDevice.GetSingleChip();
+
+                if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    try
                     {
-                        if (readerUnit.Connect())
+                        //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
+                        GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
+                    }
+                    catch (Exception e)
+                    {
+                        LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    }
+                }
+
+                var cmd = card.Commands as IMifareCommands;
+
+                try
+                { //try to Auth with Keytype A
+                    for (int k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
+                    {
+                        cmd.LoadKeyNo((byte)0, keyA, Elatec.NET.DataAccessLayer.MifareKeyType.KT_KEY_A);
+
+                        DataBlock = new MifareClassicDataBlockModel(
+                            (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                            k);
+
+                        try
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            cmd.AuthenticateKeyNo((byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                                  (byte)0,
+                                                  MifareKeyType.KT_KEY_A);
 
-                            card = readerUnit.GetSingleChip();
-
-                            if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
-                            {
-                                try
-                                {
-                                    //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type), card.ChipIdentifier);
-                                    GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
-                                }
-                                catch (Exception e)
-                                {
-                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-                                }
-                            }
-
-                            var cmd = card.Commands as IMifareCommands;
+                            Sector.IsAuthenticated = true;
 
                             try
-                            { //try to Auth with Keytype A
-                                for (int k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
+                            {
+                                object data = cmd.ReadBinary(
+                                    (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                    48);
+
+                                DataBlock.Data = (byte[])data;
+
+                                DataBlock.IsAuthenticated = true;
+
+                                Sector.DataBlock.Add(DataBlock);
+                            }
+                            catch
+                            {
+                                DataBlock.IsAuthenticated = false;
+                                Sector.DataBlock.Add(DataBlock);
+                            }
+                        }
+                        catch
+                        { // Try Auth with keytype b
+
+                            try
+                            {
+                                cmd.LoadKeyNo((byte)1, keyB, MifareKeyType.KT_KEY_B);
+
+                                cmd.AuthenticateKeyNo(
+                                    (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                    (byte)1,
+                                    MifareKeyType.KT_KEY_B);
+
+                                Sector.IsAuthenticated = true;
+
+                                try
                                 {
-                                    cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A);
-
-                                    DataBlock = new MifareClassicDataBlockModel(
+                                    object data = cmd.ReadBinary(
                                         (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
-                                        k);
+                                        48);
 
-                                    try
-                                    {
-                                        cmd.AuthenticateKeyNo((byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
-                                                              (byte)0,
-                                                              MifareKeyType.KT_KEY_A);
+                                    DataBlock.Data = (byte[])data;
 
-                                        Sector.IsAuthenticated = true;
+                                    DataBlock.IsAuthenticated = true;
 
-                                        try
-                                        {
-                                            object data = cmd.ReadBinary(
-                                                (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
-                                                48);
+                                    Sector.DataBlock.Add(DataBlock);
+                                }
+                                catch
+                                {
 
-                                            DataBlock.Data = (byte[])data;
+                                    DataBlock.IsAuthenticated = false;
 
-                                            DataBlock.IsAuthenticated = true;
+                                    Sector.DataBlock.Add(DataBlock);
 
-                                            Sector.DataBlock.Add(DataBlock);
-                                        }
-                                        catch
-                                        {
-                                            DataBlock.IsAuthenticated = false;
-                                            Sector.DataBlock.Add(DataBlock);
-                                        }
-                                    }
-                                    catch
-                                    { // Try Auth with keytype b
-
-                                        try
-                                        {
-                                            cmd.LoadKeyNo((byte)1, keyB, MifareKeyType.KT_KEY_B);
-
-                                            cmd.AuthenticateKeyNo(
-                                                (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
-                                                (byte)1,
-                                                MifareKeyType.KT_KEY_B);
-
-                                            Sector.IsAuthenticated = true;
-
-                                            try
-                                            {
-                                                object data = cmd.ReadBinary(
-                                                    (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
-                                                    48);
-
-                                                DataBlock.Data = (byte[])data;
-
-                                                DataBlock.IsAuthenticated = true;
-
-                                                Sector.DataBlock.Add(DataBlock);
-                                            }
-                                            catch
-                                            {
-
-                                                DataBlock.IsAuthenticated = false;
-
-                                                Sector.DataBlock.Add(DataBlock);
-
-                                                return ERROR.AuthenticationError;
-                                            }
-                                        }
-                                        catch
-                                        {
-                                            Sector.IsAuthenticated = false;
-                                            DataBlock.IsAuthenticated = false;
-
-                                            Sector.DataBlock.Add(DataBlock);
-
-                                            return ERROR.AuthenticationError;
-                                        }
-                                    }
+                                    return ERROR.AuthenticationError;
                                 }
                             }
                             catch
                             {
+                                Sector.IsAuthenticated = false;
+                                DataBlock.IsAuthenticated = false;
+
+                                Sector.DataBlock.Add(DataBlock);
+
                                 return ERROR.AuthenticationError;
                             }
-                            return ERROR.NoError;
                         }
-                        return ERROR.DeviceNotReadyError;
                     }
-                    return ERROR.DeviceNotReadyError;
                 }
-                return ERROR.DeviceNotReadyError;
+                catch
+                {
+                    return ERROR.AuthenticationError;
+                }
+                return ERROR.NoError;
             }
             catch (Exception e)
             {
@@ -436,16 +444,16 @@ namespace RFiDGear
 
             try
             {
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
+                            readerDeviceName = readerDevice.ConnectedName;
+                            //readerSerialNumber = readerDevice.GetReaderSerialNumber();
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
                             {
@@ -544,16 +552,16 @@ namespace RFiDGear
                 var keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey) };
                 var keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey) };
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
+                            readerDeviceName = readerDevice.ConnectedName;
+                            //readerSerialNumber = readerDevice.GetReaderSerialNumber();
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
                             {
@@ -625,16 +633,16 @@ namespace RFiDGear
                 var keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey) };
                 var keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey) };
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
+                            readerDeviceName = readerDevice.ConnectedName;
+                            //readerSerialNumber = readerDevice.GetReaderSerialNumber();
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
                             {
@@ -723,15 +731,15 @@ namespace RFiDGear
 
             try
             {
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
                             {
@@ -818,15 +826,15 @@ namespace RFiDGear
 
             try
             {
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
                             {
@@ -891,17 +899,17 @@ namespace RFiDGear
         {
             try
             {
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
+                            readerDeviceName = readerDevice.ConnectedName;
+                            //readerSerialNumber = readerDevice.GetReaderSerialNumber();
                             RawFormatClass format = new RawFormatClass();
 
-                            var chip = readerUnit.GetSingleChip() as IMifareUltralightChip;
+                            var chip = readerDevice.GetSingleChip() as IMifareUltralightChip;
 
                             var service = chip.GetService(CardServiceType.CST_STORAGE) as StorageCardService;
 
@@ -947,15 +955,15 @@ namespace RFiDGear
                 aiToUse.MasterCardKey.KeyType = _keyTypeAppMasterKey;
 
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             //Get AppIDs without Authentication (Free Directory Listing)
                             try
@@ -972,7 +980,7 @@ namespace RFiDGear
                                         object appIDsObject = cmd.GetApplicationIDs();
                                         AppIDList = (appIDsObject as UInt32[]);
 
-                                        readerUnit.Disconnect();
+                                        readerDevice.Disconnect();
                                         return ERROR.NoError;
                                     }
                                     catch
@@ -986,24 +994,24 @@ namespace RFiDGear
                                             object appIDsObject = cmd.GetApplicationIDs();
                                             AppIDList = (appIDsObject as UInt32[]);
 
-                                            readerUnit.Disconnect();
+                                            readerDevice.Disconnect();
                                             return ERROR.NoError;
                                         }
                                         catch (Exception e)
                                         {
                                             if (e.Message != "" && e.Message.Contains("same number already exists"))
                                             {
-                                                readerUnit.Disconnect();
+                                                readerDevice.Disconnect();
                                                 return ERROR.ItemAlreadyExistError;
                                             }
                                             else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                             {
-                                                readerUnit.Disconnect();
+                                                readerDevice.Disconnect();
                                                 return ERROR.AuthenticationError;
                                             }
                                             else
                                             {
-                                                readerUnit.Disconnect();
+                                                readerDevice.Disconnect();
                                                 return ERROR.IOError;
                                             }
 
@@ -1022,7 +1030,7 @@ namespace RFiDGear
                                         object appIDsObject = cmd.GetApplicationIDs();
                                         AppIDList = (appIDsObject as UInt32[]);
 
-                                        readerUnit.Disconnect();
+                                        readerDevice.Disconnect();
                                         return ERROR.NoError;
                                     }
                                     catch
@@ -1037,24 +1045,24 @@ namespace RFiDGear
                                             AppIDList = (appIDsObject as UInt32[]);
                                             GenericChip.FreeMemory = cmd.GetFreeMemory();
 
-                                            readerUnit.Disconnect();
+                                            readerDevice.Disconnect();
                                             return ERROR.NoError;
                                         }
                                         catch (Exception e)
                                         {
                                             if (e.Message != "" && e.Message.Contains("same number already exists"))
                                             {
-                                                readerUnit.Disconnect();
+                                                readerDevice.Disconnect();
                                                 return ERROR.ItemAlreadyExistError;
                                             }
                                             else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                             {
-                                                readerUnit.Disconnect();
+                                                readerDevice.Disconnect();
                                                 return ERROR.AuthenticationError;
                                             }
                                             else
                                             {
-                                                readerUnit.Disconnect();
+                                                readerDevice.Disconnect();
                                                 return ERROR.IOError;
                                             }
 
@@ -1063,7 +1071,7 @@ namespace RFiDGear
                                 }
                                 else
                                 {
-                                    readerUnit.Disconnect();
+                                    readerDevice.Disconnect();
                                     return ERROR.DeviceNotReadyError;
                                 }
 
@@ -1083,7 +1091,7 @@ namespace RFiDGear
                                         object appIDsObject = cmd.GetApplicationIDs();
                                         AppIDList = (appIDsObject as UInt32[]);
 
-                                        readerUnit.Disconnect();
+                                        readerDevice.Disconnect();
                                         return ERROR.NoError;
                                     }
 
@@ -1095,7 +1103,7 @@ namespace RFiDGear
                                     }
                                     else
                                     {
-                                        readerUnit.Disconnect();
+                                        readerDevice.Disconnect();
                                         return ERROR.DeviceNotReadyError;
                                     }
 
@@ -1116,17 +1124,17 @@ namespace RFiDGear
             {
                 if (e.Message != "" && e.Message.Contains("same number already exists"))
                 {
-                    readerUnit.Disconnect();
+                    readerDevice.Disconnect();
                     return ERROR.ItemAlreadyExistError;
                 }
                 else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                 {
-                    readerUnit.Disconnect();
+                    readerDevice.Disconnect();
                     return ERROR.AuthenticationError;
                 }
                 else
                 {
-                    readerUnit.Disconnect();
+                    readerDevice.Disconnect();
                     return ERROR.IOError;
                 }
 
@@ -1148,15 +1156,15 @@ namespace RFiDGear
                 aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
                 aiToUse.MasterCardKey.KeyType = _keyTypeAppMasterKey;
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (card.Type == "DESFireEV1" ||
                                 card.Type == "DESFireEV2")
@@ -1386,11 +1394,11 @@ namespace RFiDGear
                 aiToWrite.WriteKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeAppWriteKey;
                 aiToWrite.WriteKeyNo = (byte)_writeKeyNo;
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
                             if (card.Type == "DESFire" ||
                                 card.Type == "DESFireEV1" ||
@@ -1505,11 +1513,11 @@ namespace RFiDGear
                 aiToWrite.WriteKey.KeyType = _keyTypeAppWriteKey;
                 aiToWrite.WriteKeyNo = (byte)_writeKeyNo;
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
                             if (card.Type == "DESFire" ||
                                 card.Type == "DESFireEV1" ||
@@ -1585,16 +1593,16 @@ namespace RFiDGear
                 aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
                 aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
+                            readerDeviceName = readerDevice.ConnectedName;
+                            //readerSerialNumber = readerDevice.GetReaderSerialNumber();
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (card.Type == "DESFire")
                             {
@@ -1611,7 +1619,7 @@ namespace RFiDGear
                                         cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
                                     }
 
-                                    readerUnit.Disconnect();
+                                    readerDevice.Disconnect();
                                     return ERROR.NoError;
                                 }
 
@@ -1619,17 +1627,17 @@ namespace RFiDGear
                                 {
                                     if (e.Message != "" && e.Message.Contains("same number already exists"))
                                     {
-                                        readerUnit.Disconnect();
+                                        readerDevice.Disconnect();
                                         return ERROR.ItemAlreadyExistError;
                                     }
                                     else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                     {
-                                        readerUnit.Disconnect();
+                                        readerDevice.Disconnect();
                                         return ERROR.AuthenticationError;
                                     }
                                     else
                                     {
-                                        readerUnit.Disconnect();
+                                        readerDevice.Disconnect();
                                         return ERROR.IOError;
                                     }
 
@@ -1652,7 +1660,7 @@ namespace RFiDGear
                                         cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
                                     }
 
-                                    readerUnit.Disconnect();
+                                    readerDevice.Disconnect();
                                     return ERROR.NoError;
                                 }
 
@@ -1660,17 +1668,17 @@ namespace RFiDGear
                                 {
                                     if (e.Message != "" && e.Message.Contains("same number already exists"))
                                     {
-                                        readerUnit.Disconnect();
+                                        readerDevice.Disconnect();
                                         return ERROR.ItemAlreadyExistError;
                                     }
                                     else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                     {
-                                        readerUnit.Disconnect();
+                                        readerDevice.Disconnect();
                                         return ERROR.AuthenticationError;
                                     }
                                     else
                                     {
-                                        readerUnit.Disconnect();
+                                        readerDevice.Disconnect();
                                         return ERROR.IOError;
                                     }
 
@@ -1678,19 +1686,19 @@ namespace RFiDGear
                             }
                             else
                             {
-                                readerUnit.Disconnect();
+                                readerDevice.Disconnect();
                                 return ERROR.DeviceNotReadyError;
                             }
 
                         }
                     }
                 }
-                readerUnit.Disconnect();
+                readerDevice.Disconnect();
                 return ERROR.DeviceNotReadyError;
             }
             catch
             {
-                readerUnit.Disconnect();
+                readerDevice.Disconnect();
                 return ERROR.IOError;
             }
         }
@@ -1708,19 +1716,19 @@ namespace RFiDGear
                 aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
                 aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
-                            card = readerUnit.GetSingleChip();
+                            readerDeviceName = readerDevice.ConnectedName;
+                            card = readerDevice.GetSingleChip();
 
                             if (card.Type == "DESFire")
                             {
                                 var cmd = card.Commands as IDESFireCommands;
-                                ReaderUnitName = readerUnit.ConnectedName;
+                                readerDeviceName = readerDevice.ConnectedName;
 
                                 try
                                 {
@@ -1787,7 +1795,7 @@ namespace RFiDGear
                                     card.Type == "DESFireEV2" || card.Type == "GENERIC_T_CL_A")
                             {
                                 var cmd = card.Commands as IDESFireEV1Commands;
-                                ReaderUnitName = readerUnit.ConnectedName;
+                                readerDeviceName = readerDevice.ConnectedName;
 
                                 try
                                 {
@@ -1899,15 +1907,15 @@ namespace RFiDGear
                 aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
                 aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypePiccMasterKey;
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (card.Type == "DESFire")
                             {
@@ -2014,17 +2022,17 @@ namespace RFiDGear
                 applicationMasterKeyTarget.Value = CustomConverter.DesfireKeyToCheck;
                 applicationMasterKeyTarget.KeyVersion = 0;
 
-                readerUnit.DisconnectFromReader();
+                readerDevice.DisconnectFromReader();
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (card.Type == "DESFire" ||
                                 card.Type == "DESFireEV1" ||
@@ -2180,15 +2188,15 @@ namespace RFiDGear
                 aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
                 aiToUse.MasterCardKey.KeyType = _keyType;
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (card.Type == "DESFire" ||
                                 card.Type == "DESFireEV1" ||
@@ -2261,15 +2269,15 @@ namespace RFiDGear
                 aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
                 aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (card.Type == "DESFireEV1" ||
                                 card.Type == "DESFireEV2" ||
@@ -2345,15 +2353,15 @@ namespace RFiDGear
                 aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
                 aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (card.Type == "DESFire" ||
                                card.Type == "DESFireEV1" ||
@@ -2421,15 +2429,15 @@ namespace RFiDGear
 
                 object fileIDsObject;
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
                             if (card.Type == "DESFire" ||
                                card.Type == "DESFireEV1" ||
@@ -2514,14 +2522,14 @@ namespace RFiDGear
                 aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
                 aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
 
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
-                            card = readerUnit.GetSingleChip();
+                            readerDeviceName = readerDevice.ConnectedName;
+                            card = readerDevice.GetSingleChip();
 
                             if (card.Type == "DESFire" ||
                                 card.Type == "DESFireEV1" ||
@@ -2602,15 +2610,15 @@ namespace RFiDGear
         {
             try
             {
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
 
                             if (card.Type == "ISO15693")
@@ -2642,15 +2650,15 @@ namespace RFiDGear
         {
             try
             {
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
 
                             if (card.Type == "ISO15693")
@@ -2682,15 +2690,15 @@ namespace RFiDGear
         {
             try
             {
-                if (readerUnit.ConnectToReader())
+                if (readerDevice.ConnectToReader())
                 {
-                    if (readerUnit.WaitInsertion(Constants.MAX_WAIT_INSERTION))
+                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
                     {
-                        if (readerUnit.Connect())
+                        if (readerDevice.Connect())
                         {
-                            ReaderUnitName = readerUnit.ConnectedName;
+                            readerDeviceName = readerDevice.ConnectedName;
 
-                            card = readerUnit.GetSingleChip();
+                            card = readerDevice.GetSingleChip();
 
 
                             if (true)
