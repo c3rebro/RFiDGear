@@ -1,4 +1,4 @@
-﻿using Elatec.NET.DataAccessLayer;
+﻿using Elatec.NET;
 using RFiDGear.DataAccessLayer;
 using System.Collections.Generic;
 

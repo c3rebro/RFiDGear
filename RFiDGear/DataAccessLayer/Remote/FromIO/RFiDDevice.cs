@@ -1,8 +1,11 @@
 ﻿using Elatec.NET;
 using Elatec.NET.Model;
-using Elatec.NET.DataAccessLayer;
+
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+
+using Log4CSharp;
+
 using System;
 using System.Threading;
 
@@ -17,6 +20,7 @@ namespace RFiDGear
     public class RFiDDevice : IDisposable
     {
         // global (cross-class) Instances go here ->
+        private readonly string FacilityName = "RFiDGear";
         private readonly TWN4ReaderDevice readerDevice;
         private ChipModel card;
         private bool _disposed = false;
@@ -124,7 +128,7 @@ namespace RFiDGear
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
             }
         }
 
@@ -136,7 +140,7 @@ namespace RFiDGear
         {
             try
             {
-                if (Connect() == ERROR.NoError)
+                if (readerDevice.Connect())
                 {
                     readerDevice.Beep();
                     //readerDeviceName = readerDevice.ConnectedName;
@@ -171,7 +175,7 @@ namespace RFiDGear
                         }
                         catch (Exception e)
                         {
-                            LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                            LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), );
                             return ERROR.IOError;
                         }
                     }
@@ -188,7 +192,7 @@ namespace RFiDGear
                     readerDevice.Dispose();
                 }
 
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
 
                 readerDevice?.Disconnect();
                 return ERROR.IOError;
@@ -211,13 +215,8 @@ namespace RFiDGear
                 if (readerDevice != null)
                 {
                     readerDevice.Disconnect();
-                    readerDevice.DisconnectFromReader();
                 }
 
-                if (readerProvider != null)
-                {
-                    readerProvider.ReleaseInstance();
-                }
                 // Now disposed of any unmanaged objects
                 // ...
 
@@ -248,6 +247,7 @@ namespace RFiDGear
 
             try
             {
+                /*
                 //readerDeviceName = readerDevice.ConnectedName;
 
                 card = readerDevice.GetSingleChip();
@@ -261,7 +261,7 @@ namespace RFiDGear
                     }
                     catch (Exception e)
                     {
-                        LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                        LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                     }
                 }
 
@@ -355,11 +355,12 @@ namespace RFiDGear
                 {
                     return ERROR.AuthenticationError;
                 }
+                */
                 return ERROR.NoError;
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 return ERROR.AuthenticationError;
             }
         }
@@ -373,6 +374,7 @@ namespace RFiDGear
 
             try
             {
+                /*
                 if (readerDevice.ConnectToReader())
                 {
                     if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
@@ -393,7 +395,7 @@ namespace RFiDGear
                                 }
                                 catch (Exception e)
                                 {
-                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                                 }
                             }
 
@@ -464,13 +466,15 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
 
                 return ERROR.IOError;
             }
+                
             return ERROR.DeviceNotReadyError;
         }
 
@@ -478,6 +482,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 var keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey) };
                 var keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey) };
 
@@ -501,7 +506,7 @@ namespace RFiDGear
                                 }
                                 catch (Exception e)
                                 {
-                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                                 }
                             }
 
@@ -545,10 +550,11 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
 
                 return ERROR.IOError;
             }
@@ -562,6 +568,7 @@ namespace RFiDGear
                 var keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey) };
                 var keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey) };
 
+                /*
                 if (readerDevice.ConnectToReader())
                 {
                     if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
@@ -582,7 +589,7 @@ namespace RFiDGear
                                 }
                                 catch (Exception e)
                                 {
-                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                                 }
                             }
 
@@ -626,10 +633,11 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
 
                 return ERROR.IOError;
             }
@@ -660,6 +668,7 @@ namespace RFiDGear
 
             try
             {
+                /*
                 if (readerDevice.ConnectToReader())
                 {
                     if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
@@ -678,7 +687,7 @@ namespace RFiDGear
                                 }
                                 catch (Exception e)
                                 {
-                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                                 }
                             }
 
@@ -724,17 +733,18 @@ namespace RFiDGear
                             }
                             catch (Exception e)
                             {
-                                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                                 return ERROR.AuthenticationError;
                             }
                             return ERROR.NoError;
                         }
                     }
                 }
+                */
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 return ERROR.AuthenticationError;
             }
             return ERROR.NoError;
@@ -742,6 +752,7 @@ namespace RFiDGear
 
         public ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, bool _useMADToAuth = true, bool _aiToUseIsMAD = false)
         {
+            
             var settings = new SettingsReaderWriter();
             Sector = new MifareClassicSectorModel();
 
@@ -755,6 +766,7 @@ namespace RFiDGear
 
             try
             {
+                /*
                 if (readerDevice.ConnectToReader())
                 {
                     if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
@@ -773,7 +785,7 @@ namespace RFiDGear
                                 }
                                 catch (Exception e)
                                 {
-                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                                 }
                             }
 
@@ -804,17 +816,18 @@ namespace RFiDGear
                             }
                             catch (Exception e)
                             {
-                                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                                 return ERROR.AuthenticationError;
                             }
                             return ERROR.NoError;
                         }
                     }
                 }
+            */
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 return ERROR.AuthenticationError;
             }
             return ERROR.NoError;
@@ -828,6 +841,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 if (readerDevice.ConnectToReader())
                 {
                     if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
@@ -854,11 +868,12 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.NoError;
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 return ERROR.IOError;
             }
         }
@@ -871,6 +886,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 // The excepted memory tree
                 IDESFireLocation location = new DESFireLocation
                 {
@@ -1046,6 +1062,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
             }
 
@@ -1077,6 +1094,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 DESFireAccessRights accessRights = _accessRights;
 
                 // Keys to use for authentication
@@ -1275,6 +1293,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
             }
             catch
@@ -1291,6 +1310,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 // The excepted memory tree
                 IDESFireLocation location = new DESFireLocation
                 {
@@ -1383,6 +1403,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
             }
 
@@ -1402,6 +1423,7 @@ namespace RFiDGear
 
             try
             {
+                /*
                 // The excepted memory tree
                 IDESFireLocation location = new DESFireLocation
                 {
@@ -1494,6 +1516,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
             }
 
@@ -1507,6 +1530,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 // The excepted memory tree
                 IDESFireLocation location = new DESFireLocation
                 {
@@ -1622,6 +1646,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 readerDevice.Disconnect();
                 return ERROR.DeviceNotReadyError;
             }
@@ -1634,11 +1659,12 @@ namespace RFiDGear
 
         public ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
         {
-            byte maxNbrOfKeys;
-            DESFireKeySettings keySettings;
+            //byte maxNbrOfKeys;
+            //DESFireKeySettings keySettings;
 
             try
             {
+                /*
                 // Keys to use for authentication
                 IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
@@ -1809,6 +1835,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
             }
             catch
@@ -1821,6 +1848,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 // The excepted memory tree
                 IDESFireLocation location = new DESFireLocation
                 {
@@ -1923,6 +1951,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
             }
             catch
@@ -1935,6 +1964,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 DESFireKey masterApplicationKey = new DESFireKeyClass
                 {
                     KeyType = (LibLogicalAccess.DESFireKeyType)_keyTypeCurrent
@@ -2090,6 +2120,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
             }
             catch
@@ -2102,6 +2133,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 // The excepted memory tree
                 IDESFireLocation location = new DESFireLocation
                 {
@@ -2171,6 +2203,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
             }
             catch
@@ -2183,6 +2216,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 // The excepted memory tree
                 IDESFireLocation location = new DESFireLocation
                 {
@@ -2254,6 +2288,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
             }
             catch
@@ -2266,6 +2301,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 // The excepted memory tree
                 IDESFireLocation location = new DESFireLocation
                 {
@@ -2329,6 +2365,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
             }
             catch
@@ -2341,6 +2378,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 // The excepted memory tree
                 IDESFireLocation location = new DESFireLocation
                 {
@@ -2433,6 +2471,7 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
             }
             catch
@@ -2445,6 +2484,7 @@ namespace RFiDGear
         {
             try
             {
+                /*
                 // Keys to use for authentication
                 IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
@@ -2523,12 +2563,15 @@ namespace RFiDGear
                         }
                     }
                 }
+                */
                 return ERROR.DeviceNotReadyError;
+                 
             }
             catch
             {
                 return ERROR.IOError;
             }
+
         }
 
         #endregion mifare desfire
@@ -2543,7 +2586,7 @@ namespace RFiDGear
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 return ERROR.IOError;
             }
         }
@@ -2560,7 +2603,7 @@ namespace RFiDGear
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 return ERROR.IOError;
             }
         }
@@ -2577,7 +2620,7 @@ namespace RFiDGear
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 return ERROR.IOError;
             }
         }

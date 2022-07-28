@@ -5,7 +5,7 @@
  *
  */
 
-using LibLogicalAccess;
+using Elatec.NET;
 using System;
 
 namespace RFiDGear.DataAccessLayer
@@ -37,18 +37,6 @@ namespace RFiDGear.DataAccessLayer
         CRC8_SAE_J1850 = 0x1D,
         CRC_8_WCDMA = 0x9b,
     };
-
-    /// <summary>
-    /// The available FileTypes for DesFire Chips 
-    /// </summary>
-    public enum FileType_MifareDesfireFileType
-    {
-        StdDataFile,
-        BackupFile,
-        ValueFile,
-        CyclicRecordFile,
-        LinearRecordFile
-    }
 
     /// <summary>
     /// The availbale "Common Tasks"

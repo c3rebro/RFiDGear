@@ -21,12 +21,19 @@
 
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+
 using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
+
 using MvvmDialogs.ViewModels;
+
 using RedCell.Diagnostics.Update;
+
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+
+using Log4CSharp;
+
 using System;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
@@ -52,6 +59,8 @@ namespace RFiDGear.ViewModel
     [ExportViewModel("MainWin")]
     public class MainWindowViewModel : ViewModelBase
     {
+        private readonly string FacilityName = "RFiDGear";
+
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
         private protected MainWindow mw;
@@ -285,7 +294,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void UpdateChip(object sender, EventArgs e)
+        private void UpdateChip(object sender, EventArgs args)
         {
             GenericChipModel GenericChip;
 
@@ -344,11 +353,11 @@ namespace RFiDGear.ViewModel
 
                 Mouse.OverrideCursor = null;
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
                 Mouse.OverrideCursor = null;
 
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
             }
         }
 
@@ -489,7 +498,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 dialogs.Clear();
             }
 
@@ -566,7 +575,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 dialogs.Clear();
             }
 
@@ -654,7 +663,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 dialogs.Clear();
             }
 
@@ -3349,7 +3358,7 @@ namespace RFiDGear.ViewModel
                 }
                 catch (Exception e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 }
             });
 
@@ -3953,7 +3962,7 @@ namespace RFiDGear.ViewModel
                 }
                 catch (Exception ex)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 }
 
                 using (SettingsReaderWriter settings = new SettingsReaderWriter())

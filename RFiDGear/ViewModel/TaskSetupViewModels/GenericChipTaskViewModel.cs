@@ -14,6 +14,8 @@ using MvvmDialogs.ViewModels;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
+using Log4CSharp;
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -92,7 +94,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
             }
 
         }
