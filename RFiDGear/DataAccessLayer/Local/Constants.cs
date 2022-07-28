@@ -177,40 +177,6 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
-    /// Currently Available Cardtechnologies
-    /// </summary>
-    public enum CARD_TYPE
-    {
-        Unspecified,
-        ISO15693,
-        SAM_AV2,
-        Mifare1K,
-        Mifare2K,
-        Mifare4K,
-        DESFire,
-        DESFireEV1,
-        DESFireEV2,
-        DESFireEV3,
-        FeliCa,
-        iCode1,
-        MifarePlus_SL0_2K,
-        MifarePlus_SL0_4K,
-        MifarePlus_SL1_2K,
-        MifarePlus_SL1_4K,
-        MifarePlus_SL3_1K,
-        MifarePlus_SL3_2K,
-        MifarePlus_SL3_4K,
-        MifarePlusX,
-        MifarePlusS,
-        MifareMini,
-        MifareUltralight,
-        MifareUltralightC,
-        TagIt,
-        HIDiClass16KS,
-        GENERIC_T_CL_A
-    };
-
-    /// <summary>
     /// Currently Available Error Conditions
     /// </summary>
     public enum ERROR

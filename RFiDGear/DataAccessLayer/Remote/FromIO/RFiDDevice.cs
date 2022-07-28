@@ -1,5 +1,6 @@
 ﻿using Elatec.NET;
 using Elatec.NET.Model;
+using Elatec.NET.DataAccessLayer;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using System;
@@ -56,11 +57,9 @@ namespace RFiDGear
 
         public byte EncryptionType { get; private set; }
 
-        //public uint FreeMemory { get; private set; }
+        //public FileSetting DesfireFileSetting { get; private set; }
 
-        public FileSetting DesfireFileSetting { get; private set; }
-
-        public DESFireKeySettings DesfireAppKeySetting { get; private set; }
+        //public DESFireKeySettings DesfireAppKeySetting { get; private set; }
 
         #endregion properties
 
@@ -103,9 +102,6 @@ namespace RFiDGear
                     {
                         ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
 
-                        readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
-                        readerDevice = readerProvider.CreatereaderDevice();
-
                         GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
                     }
 
@@ -118,7 +114,6 @@ namespace RFiDGear
                         {
                             readerDevice = new TWN4ReaderDevice(portNumber);
                             readerDevice.Connect();
-                            Elatec.NET.Model.GenericChipModel elaChip = readerDevice.GetSingleChip();
                         }
 
                         readerDevice.ReadChipPublic();
@@ -137,72 +132,6 @@ namespace RFiDGear
 
         #region common
 
-        private ERROR Connect()
-        {
-            try
-            {
-                if (readerDevice.ConnectToReader())
-                {
-                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
-                    {
-                        if (readerDevice.Connect())
-                        {
-                            return ERROR.NoError;
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                if (readerProvider != null)
-                {
-                    readerProvider.ReleaseInstance();
-                }
-
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-
-                readerDevice?.Disconnect();
-                return ERROR.IOError;
-            }
-            readerDevice?.Disconnect();
-            return ERROR.IOError;
-        }
-
-        public ERROR ChangeProvider(ReaderTypes _provider)
-        {
-            if (Enum.IsDefined(typeof(ReaderTypes), _provider))
-            {
-                if (readerProvider != null)
-                {
-                    try
-                    {
-                        readerDevice.DisconnectFromReader();
-                        readerProvider.ReleaseInstance();
-                    }
-                    catch
-                    {
-                        return ERROR.IOError;
-                    }
-                }
-
-                ReaderProvider = _provider;
-
-                try
-                {
-                    readerProvider = new LibraryManagerClass().GetReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
-                    readerDevice = readerProvider.CreatereaderDevice();
-
-                    return ERROR.NoError;
-                }
-                catch
-                {
-                    return ERROR.IOError;
-                }
-            }
-
-            return ERROR.IOError;
-        }
-
         public ERROR ReadChipPublic()
         {
             try
@@ -218,9 +147,9 @@ namespace RFiDGear
                     {
                         try
                         {
-                            GenericChip = new GenericChipModel(card.ChipIdentifier, (RFiDGear.DataAccessLayer.CARD_TYPE)card.CardType);
+                            GenericChip = new GenericChipModel(card.ChipIdentifier, card.CardType);
 
-                            if ((CARD_TYPE)card.CardType == CARD_TYPE.DESFire || (CARD_TYPE)card.CardType == CARD_TYPE.DESFireEV1)
+                            if (card.CardType == CARD_TYPE.DESFire || card.CardType == CARD_TYPE.DESFireEV1)
                             {
                                 int version = readerDevice.GetDesFireVersion();
 
@@ -2610,29 +2539,6 @@ namespace RFiDGear
         {
             try
             {
-                if (readerDevice.ConnectToReader())
-                {
-                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
-                    {
-                        if (readerDevice.Connect())
-                        {
-                            readerDeviceName = readerDevice.ConnectedName;
-
-                            card = readerDevice.GetSingleChip();
-
-
-                            if (card.Type == "ISO15693")
-                            {
-                                var cmd = card.Commands as ISO15693Commands;// IMifareUltralightCommands;
-
-                                object t = cmd.GetSystemInformation();
-
-                            }
-
-                            return ERROR.NoError;
-                        }
-                    }
-                }
                 return ERROR.NoError;
             }
             catch (Exception e)
@@ -2650,29 +2556,6 @@ namespace RFiDGear
         {
             try
             {
-                if (readerDevice.ConnectToReader())
-                {
-                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
-                    {
-                        if (readerDevice.Connect())
-                        {
-                            readerDeviceName = readerDevice.ConnectedName;
-
-                            card = readerDevice.GetSingleChip();
-
-
-                            if (card.Type == "ISO15693")
-                            {
-                                var cmd = card.Commands as ISO15693Commands;// IMifareUltralightCommands;
-
-                                object t = cmd.GetSystemInformation();
-
-                            }
-
-                            return ERROR.NoError;
-                        }
-                    }
-                }
                 return ERROR.NoError;
             }
             catch (Exception e)
@@ -2690,28 +2573,7 @@ namespace RFiDGear
         {
             try
             {
-                if (readerDevice.ConnectToReader())
-                {
-                    if (readerDevice.WaitInsertion(Constants.MAX_WAIT_INSERTION))
-                    {
-                        if (readerDevice.Connect())
-                        {
-                            readerDeviceName = readerDevice.ConnectedName;
-
-                            card = readerDevice.GetSingleChip();
-
-
-                            if (true)
-                            {
-                                var cmd = (card as EM4135Chip).ChipIdentifier;// IMifareUltralightCommands;
-
-                            }
-
-                            return ERROR.NoError;
-                        }
-                    }
-                }
-                return ERROR.NoError;
+               return ERROR.NoError;
             }
             catch (Exception e)
             {
