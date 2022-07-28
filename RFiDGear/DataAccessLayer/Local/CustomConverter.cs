@@ -1,5 +1,7 @@
 ﻿using RFiDGear.DataAccessLayer;
 
+using Elatec.NET;
+
 using System;
 using System.Collections.Generic;
 

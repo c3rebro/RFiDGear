@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:_3rdP="clr-namespace:RFiDGear._3rdParty"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:islog="clr-namespace:LibLogicalAccess;assembly=Interop.LibLogicalAccess"
+    xmlns:elatec="clr-namespace:Elatec.NET;assembly=Elatec.NET"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:v="clr-namespace:RFiDGear.View"
     xmlns:vm="clr-namespace:RFiDGear.ViewModel">
@@ -488,8 +488,8 @@
                         Margin="9,3,7,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        ItemsSource="{dal:Enumerate {x:Type islog:DESFireKeyType}}"
-                        SelectedItem="{Binding SelectedDesfireReadKeyEncryptionType, Converter={StaticResource Localization}, ConverterParameter={x:Type islog:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type elatec:DESFireKeyType}}"
+                        SelectedItem="{Binding SelectedDesfireReadKeyEncryptionType, Converter={StaticResource Localization}, ConverterParameter={x:Type elatec:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="writeKeyTypeSelector"
                         Grid.Row="3"
@@ -498,8 +498,8 @@
                         Margin="9,3,7,0"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        ItemsSource="{dal:Enumerate {x:Type islog:DESFireKeyType}}"
-                        SelectedItem="{Binding SelectedDesfireWriteKeyEncryptionType, Converter={StaticResource Localization}, ConverterParameter={x:Type islog:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type elatec:DESFireKeyType}}"
+                        SelectedItem="{Binding SelectedDesfireWriteKeyEncryptionType, Converter={StaticResource Localization}, ConverterParameter={x:Type elatec:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="1"
                         Grid.Column="2"

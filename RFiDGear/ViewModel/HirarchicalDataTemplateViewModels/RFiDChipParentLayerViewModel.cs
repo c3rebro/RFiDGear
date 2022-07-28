@@ -1,10 +1,15 @@
 ﻿using ByteArrayHelper.Extensions;
+
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
-using LibLogicalAccess;
+
 using MvvmDialogs.ViewModels;
+
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+
+using Elatec.NET;
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
