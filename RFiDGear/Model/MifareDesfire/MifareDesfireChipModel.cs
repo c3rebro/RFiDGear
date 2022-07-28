@@ -1,4 +1,5 @@
-﻿using RFiDGear.DataAccessLayer;
+﻿using Elatec.NET;
+
 using System.Collections.Generic;
 
 namespace RFiDGear.Model

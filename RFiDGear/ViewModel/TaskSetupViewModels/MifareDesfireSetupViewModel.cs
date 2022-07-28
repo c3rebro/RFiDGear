@@ -1691,10 +1691,10 @@ namespace RFiDGear.ViewModel
         {
             TaskErr = ERROR.Empty;
 
-            accessRights.changeAccess = SelectedDesfireFileAccessRightChange;
-            accessRights.readAccess = SelectedDesfireFileAccessRightRead;
-            accessRights.writeAccess = SelectedDesfireFileAccessRightWrite;
-            accessRights.readAndWriteAccess = SelectedDesfireFileAccessRightReadWrite;
+            //accessRights.changeAccess = SelectedDesfireFileAccessRightChange;
+            //accessRights.readAccess = SelectedDesfireFileAccessRightRead;
+            //accessRights.writeAccess = SelectedDesfireFileAccessRightWrite;
+            //accessRights.readAndWriteAccess = SelectedDesfireFileAccessRightReadWrite;
 
             Task desfireTask =
                 new Task(() =>
@@ -2706,11 +2706,13 @@ namespace RFiDGear.ViewModel
                             {
                                 StatusText += string.Format("{0}: Successfully Read App Settings of App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
+                                /*
                                 if (((byte)device.DesfireAppKeySetting & (byte)keySettings) != 0)
                                 {
                                     TaskErr = ERROR.NoError;
                                     return;
                                 }
+                                */
                                 TaskErr = ERROR.IsNotTrue;
                             }
                             else
