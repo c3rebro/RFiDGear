@@ -89,6 +89,7 @@ namespace RFiDGear
             }
         }
 
+        //singleton - only one object is allowed
         private static readonly object syncRoot = new object();
         private static RFiDDevice instance;
 
@@ -102,26 +103,16 @@ namespace RFiDGear
             {
                 using (SettingsReaderWriter defaultSettings = new SettingsReaderWriter())
                 {
-                    if (defaultSettings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.PCSC)
-                    {
-                        ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
 
-                        GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+                    ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
+
+                    if (int.TryParse(defaultSettings.DefaultSpecification.LastUsedComPort, out int portNumber))
+                    {
+                        readerDevice = new TWN4ReaderDevice(portNumber);
+                        readerDevice.Connect();
                     }
 
-                    else if (defaultSettings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.Elatec)
-                    {
-
-                        ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
-
-                        if (int.TryParse(defaultSettings.DefaultSpecification.LastUsedComPort, out int portNumber))
-                        {
-                            readerDevice = new TWN4ReaderDevice(portNumber);
-                            readerDevice.Connect();
-                        }
-
-                        readerDevice.ReadChipPublic();
-                    }
+                    ReadChipPublic();
 
                     AppIDList = new uint[0];
                 }
@@ -143,11 +134,11 @@ namespace RFiDGear
                 if (readerDevice.Connect())
                 {
                     readerDevice.Beep();
-                    //readerDeviceName = readerDevice.ConnectedName;
+                    readerDevice.GreenLED(true);
 
                     card = readerDevice.GetSingleChip();
 
-                    if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
+                    if (card?.ChipIdentifier != null)
                     {
                         try
                         {

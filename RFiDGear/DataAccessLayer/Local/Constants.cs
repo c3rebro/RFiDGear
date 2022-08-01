@@ -39,6 +39,18 @@ namespace RFiDGear.DataAccessLayer
     };
 
     /// <summary>
+    /// The available FileTypes for DesFire Chips 
+    /// </summary>
+    public enum FileType_MifareDesfireFileType
+    {
+        StdDataFile,
+        BackupFile,
+        ValueFile,
+        CyclicRecordFile,
+        LinearRecordFile
+    }
+
+    /// <summary>
     /// The availbale "Common Tasks"
     /// </summary>
     public enum TaskType_GenericChipTask
@@ -260,20 +272,7 @@ namespace RFiDGear.DataAccessLayer
     public enum ReaderTypes
     {
         None,
-        Admitto,
-        AxessTMC13,
-        Deister,
-        Elatec,
-        GigaTMS,
-        Gunnebo,
-        IdOnDemand,
-        PCSC,
-        Promag,
-        RFIDeas,
-        Rpleth,
-        SCIEL,
-        SmartID,
-        STidPRG
+        Elatec
     };
 
     public enum KeyType_MifareDesFireKeyType
