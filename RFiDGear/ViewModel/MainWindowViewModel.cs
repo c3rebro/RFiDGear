@@ -3961,9 +3961,9 @@ namespace RFiDGear.ViewModel
                         Dialogs.Remove(mySplash);
                     }
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""), FacilityName);
                 }
 
                 using (SettingsReaderWriter settings = new SettingsReaderWriter())
