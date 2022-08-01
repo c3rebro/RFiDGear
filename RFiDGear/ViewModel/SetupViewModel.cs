@@ -54,7 +54,7 @@ namespace RFiDGear.ViewModel
         {
             OnConnect?.Invoke(this);
 
-            _ = device.ChangeProvider(SelectedReader);
+            //_ = device.ChangeProvider(SelectedReader);
 
             if (device != null && device.ReadChipPublic() == ERROR.NoError)
             {

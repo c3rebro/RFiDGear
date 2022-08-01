@@ -61,9 +61,9 @@ namespace RFiDGear
 
         public byte EncryptionType { get; private set; }
 
-        //public FileSetting DesfireFileSetting { get; private set; }
+        public DESFireFileSetting DesfireFileSetting { get; private set; }
 
-        //public DESFireKeySettings DesfireAppKeySetting { get; private set; }
+        public DESFireKeySettings DesfireAppKeySetting { get; private set; }
 
         #endregion properties
 
@@ -153,7 +153,7 @@ namespace RFiDGear
                         {
                             GenericChip = new GenericChipModel(card.ChipIdentifier, card.CardType);
 
-                            if (card.CardType == CARD_TYPE.DESFire || card.CardType == CARD_TYPE.DESFireEV1)
+                            if (card.CardType == (ChipType)CARD_TYPE.DESFire || card.CardType == (ChipType)CARD_TYPE.DESFireEV1)
                             {
                                 int version = readerDevice.GetDesFireVersion();
 

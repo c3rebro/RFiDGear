@@ -36,6 +36,7 @@ namespace RFiDGear.ViewModel
     {
         #region Fields
 
+        private readonly string FacilityName = "RFiDGear";
         private protected ReportReaderWriter reportReaderWriter;
         private protected Checkpoint checkpoint;
 

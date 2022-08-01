@@ -61,6 +61,40 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
+    /// UID and Type of Cardtechnology
+    /// </summary>
+    public struct CARD_INFO
+    {
+        public CARD_INFO(CARD_TYPE _type, string _uid)
+        {
+            CardType = _type;
+            uid = _uid;
+        }
+
+        public string uid;
+        public CARD_TYPE CardType;
+    }
+
+    /// <summary>
+    /// Available Cardtechnologies
+    /// </summary>
+    public enum CARD_TYPE
+    {
+        Unspecified,
+        ISO15693,
+        Mifare1K,
+        Mifare2K,
+        Mifare4K,
+        DESFire,
+        DESFireEV1,
+        DESFireEV2,
+        MifarePlus_SL3_1K,
+        MifarePlus_SL3_2K,
+        MifarePlus_SL3_4K,
+        MifareUltralight
+    };
+
+    /// <summary>
     /// The availbale "Mifare Classic Tasks"
     /// </summary>
     public enum TaskType_MifareClassicTask

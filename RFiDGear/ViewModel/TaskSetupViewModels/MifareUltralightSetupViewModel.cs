@@ -35,6 +35,8 @@ namespace RFiDGear.ViewModel
     {
         #region Fields
 
+        private readonly string FacilityName = "RFiDGear";
+
         private MifareUltralightChipModel chipModel;
         private MifareUltralightPageModel pageModel;
 

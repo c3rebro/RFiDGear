@@ -4,8 +4,12 @@ using iText.IO.Source;
 using iText.Kernel.Geom;
 using iText.Kernel.Pdf;
 using iText.Kernel.Colors;
+
 using RFiDGear.Model;
 using RFiDGear.ViewModel;
+
+using Log4CSharp;
+
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
@@ -28,6 +32,8 @@ namespace RFiDGear.DataAccessLayer
         PdfAcroForm form = null;
 
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
+
+        private readonly string FacilityName = "RFiDGear";
 
         private const string reportTemplateTempFileName = "temptemplate.pdf";
         private const string taskDatabaseFileName = "taskdatabase.xml";
@@ -57,7 +63,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 return;
             }
         }
@@ -92,7 +98,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (XmlException e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 Environment.Exit(0);
             }
         }
@@ -118,7 +124,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (XmlException e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 return null;
             }
         }
@@ -151,12 +157,12 @@ namespace RFiDGear.DataAccessLayer
                     }
                     catch (Exception e)
                     {
-                        LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                        LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                     }
                 }
                 catch (XmlException e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 }
             }
 
@@ -190,12 +196,12 @@ namespace RFiDGear.DataAccessLayer
                     }
                     catch (Exception e)
                     {
-                        LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                        LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                     }
                 }
                 catch (XmlException e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 }
             }
 
@@ -215,7 +221,7 @@ namespace RFiDGear.DataAccessLayer
 
             catch (XmlException e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
             }
         }
 
@@ -246,7 +252,7 @@ namespace RFiDGear.DataAccessLayer
 
                     catch (XmlException e)
                     {
-                        LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                        LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                     }
                 }
 

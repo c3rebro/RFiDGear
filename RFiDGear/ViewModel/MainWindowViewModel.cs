@@ -933,10 +933,11 @@ namespace RFiDGear.ViewModel
                             treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareUltralightChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
                             break;
 
+                            /*
                         case CARD_TYPE.GENERIC_T_CL_A:
                             treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
                             break;
-
+                            */
                         case CARD_TYPE.ISO15693:
                             device.ReadISO15693Chip();
                             break;
@@ -3960,7 +3961,7 @@ namespace RFiDGear.ViewModel
                         Dialogs.Remove(mySplash);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
                     LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 }
