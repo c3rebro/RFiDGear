@@ -3,8 +3,6 @@
     x:Class="RFiDGear.View.TabPageMifareUltralightDataExplorerView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:Controls0="clr-namespace:RFiDGear.View"
-    xmlns:Controls1="clr-namespace:LibLogicalAccess;assembly=Interop.LibLogicalAccess"
     xmlns:_3rdP="clr-namespace:RFiDGear._3rdParty"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
@@ -110,7 +108,6 @@
                                             BindableSelectionStart="{Binding SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                             BorderThickness="0"
                                             FontFamily="Lucida Console"
-                                            IsFocused="{Binding IsFocused}"
                                             Text="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                                             <_3rdP:SelectionBindingTextBox.Style>
                                                 <Style TargetType="{x:Type TextBox}">
@@ -223,7 +220,6 @@
                                             BindableSelectionStart="{Binding SelectedDataIndexStart, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                             BorderThickness="0"
                                             FontFamily="Lucida Console"
-                                            IsFocused="{Binding IsFocused}"
                                             Text="{Binding DataAsHexString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                                             <_3rdP:SelectionBindingTextBox.Style>
                                                 <Style TargetType="{x:Type TextBox}">
