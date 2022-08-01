@@ -1,5 +1,5 @@
 ﻿using LibLogicalAccess;
-using Elatec.NET;
+//using Elatec.NET;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using System;
@@ -18,7 +18,7 @@ namespace RFiDGear
         // global (cross-class) Instances go here ->
         private IReaderProvider readerProvider;
         private IReaderUnit readerUnit;
-        private readonly TWN4ReaderDevice readerDevice;
+        //private readonly TWN4ReaderDevice readerDevice;
         private chip card;
         private bool _disposed = false;
 
@@ -111,6 +111,7 @@ namespace RFiDGear
                         GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
                     }
 
+                    /*
                     else if (defaultSettings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.Elatec)
                     {
 
@@ -123,7 +124,7 @@ namespace RFiDGear
 
                         readerDevice.ReadChipPublic();
                     }
-
+                    */
                     AppIDList = new uint[0];
                 }
             }
