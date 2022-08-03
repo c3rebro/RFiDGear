@@ -330,7 +330,7 @@ namespace RFiDGear
                                 for (int k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
                                 {
                                     cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A);
-
+                                    
                                     DataBlock = new MifareClassicDataBlockModel(
                                         (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
                                         k);

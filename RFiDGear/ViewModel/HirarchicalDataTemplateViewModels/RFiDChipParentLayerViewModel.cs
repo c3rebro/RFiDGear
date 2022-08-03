@@ -722,6 +722,7 @@ namespace RFiDGear.ViewModel
             switch (CardType)
             {
                 case CARD_TYPE.Mifare1K:
+                case CARD_TYPE.MifarePlus_SL1_1K:
                     {
                         for (int i = 0; i < 16; i++)
                         {
@@ -742,6 +743,7 @@ namespace RFiDGear.ViewModel
                     break;
 
                 case CARD_TYPE.Mifare2K:
+                case CARD_TYPE.MifarePlus_SL1_2K:
                     {
                         for (int i = 0; i < 32; i++)
                         {
@@ -761,6 +763,7 @@ namespace RFiDGear.ViewModel
                     break;
 
                 case CARD_TYPE.Mifare4K:
+                case CARD_TYPE.MifarePlus_SL1_4K:
                     {
                         for (int i = 0; i < 40; i++)
                         {

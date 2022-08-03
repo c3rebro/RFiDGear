@@ -421,17 +421,24 @@ namespace RFiDGear.ViewModel
         {
             get
             {
-                if (_cardType == CARD_TYPE.Mifare1K || _cardType == CARD_TYPE.Mifare2K || _cardType == CARD_TYPE.Mifare4K)
+                switch (_cardType)
                 {
-                    childNodeHeader = string.Format("Sector: [{0}]", sectorModel.SectorNumber);
-                }
-                else if (_cardType == CARD_TYPE.DESFire || _cardType == CARD_TYPE.DESFireEV1 || _cardType == CARD_TYPE.DESFireEV2)
-                {
-                    childNodeHeader = string.Format("AppID: {0}", appModel.appID);
-                }
-                else if (_cardType == CARD_TYPE.MifareUltralight)
-                {
-                    childNodeHeader = string.Format("Page: {0}", pageModel.PageNumber);
+                    case CARD_TYPE.Mifare1K:
+                    case CARD_TYPE.MifarePlus_SL1_1K:
+                    case CARD_TYPE.Mifare2K:
+                    case CARD_TYPE.MifarePlus_SL1_2K:
+                    case CARD_TYPE.Mifare4K:
+                    case CARD_TYPE.MifarePlus_SL1_4K:
+                        childNodeHeader = string.Format("Sector: [{0}]", sectorModel.SectorNumber);
+                        break;
+                    case CARD_TYPE.DESFire:
+                    case CARD_TYPE.DESFireEV1:
+                    case CARD_TYPE.DESFireEV2:
+                        childNodeHeader = string.Format("AppID: {0}", appModel.appID);
+                        break;
+                    case CARD_TYPE.MifareUltralight:
+                        childNodeHeader = string.Format("Page: {0}", pageModel.PageNumber);
+                        break;
                 }
                 return childNodeHeader;
             }
@@ -478,6 +485,8 @@ namespace RFiDGear.ViewModel
             {
                 case CARD_TYPE.Mifare1K:
                 case CARD_TYPE.Mifare2K:
+                case CARD_TYPE.MifarePlus_SL1_1K:
+                case CARD_TYPE.MifarePlus_SL1_2K:
                     {
                         for (int i = 0; i <= 3; i++)
                         {
@@ -487,6 +496,7 @@ namespace RFiDGear.ViewModel
                     break;
 
                 case CARD_TYPE.Mifare4K:
+                case CARD_TYPE.MifarePlus_SL1_4K:
                     {
                         if (SectorNumber < 32)
                         {
