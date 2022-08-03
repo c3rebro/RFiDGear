@@ -684,37 +684,30 @@ namespace RFiDGear.ViewModel
 
         #endregion
         private void LoadChildren()
-		{
-			switch (CardType)
-			{
-				case CARD_TYPE.Mifare1K:
-					{
-						for (int i = 0; i < 16; i++)
-						{
-							_children.Add(
-								new RFiDChipChildLayerViewModel(
-									new MifareClassicSectorModel(i), this, CardType, dialogs));
-						}
-						
-						for(int i = 0; i < _children.Count; i++)
-						{
-							for(int j = 0; j < _children[i].Children.Count(); j++)
-							{
-								_children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
-							}
-						}
-
+        {
+            switch (CardType)
+            {
+                case CARD_TYPE.Mifare1K:
+                case CARD_TYPE.MifarePlus_SL1_1K:
+                    {
+                        for (int i = 0; i < 16; i++)
+                        {
+                            _children.Add(
+                                new RFiDChipChildLayerViewModel(
+                                    new MifareClassicSectorModel(i), this, CardType, dialogs));
+                        }
 					}
 					break;
 
-				case CARD_TYPE.Mifare2K:
-					{
-						for (int i = 0; i < 32; i++)
-						{
-							_children.Add(
-								new RFiDChipChildLayerViewModel(
-									new MifareClassicSectorModel(i), this, CardType, dialogs));
-						}
+                case CARD_TYPE.Mifare2K:
+                case CARD_TYPE.MifarePlus_SL1_2K:
+                    {
+                        for (int i = 0; i < 32; i++)
+                        {
+                            _children.Add(
+                                new RFiDChipChildLayerViewModel(
+                                    new MifareClassicSectorModel(i), this, CardType, dialogs));
+                        }
 						
 						for(int i = 0; i < _children.Count; i++)
 						{
@@ -726,14 +719,15 @@ namespace RFiDGear.ViewModel
 					}
 					break;
 
-				case CARD_TYPE.Mifare4K:
-					{
-						for (int i = 0; i < 40; i++)
-						{
-							_children.Add(
-								new RFiDChipChildLayerViewModel(
-									new MifareClassicSectorModel(i), this, CardType, dialogs));
-						}
+                case CARD_TYPE.Mifare4K:
+                case CARD_TYPE.MifarePlus_SL1_4K:
+                    {
+                        for (int i = 0; i < 40; i++)
+                        {
+                            _children.Add(
+                                new RFiDChipChildLayerViewModel(
+                                    new MifareClassicSectorModel(i), this, CardType, dialogs));
+                        }
 						
 						for(int i = 0; i < _children.Count; i++)
 						{

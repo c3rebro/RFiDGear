@@ -885,6 +885,30 @@ namespace RFiDGear.ViewModel
                             treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
                             break;
 
+                        case CARD_TYPE.MifarePlus_SL1_1K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL1_1K), Dialogs));
+                            break;
+
+                        case CARD_TYPE.MifarePlus_SL1_2K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL1_2K), Dialogs));
+                            break;
+
+                        case CARD_TYPE.MifarePlus_SL1_4K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL1_4K), Dialogs));
+                            break;
+
+                        case CARD_TYPE.MifarePlus_SL2_1K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL2_1K), Dialogs));
+                            break;
+
+                        case CARD_TYPE.MifarePlus_SL2_2K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL2_2K), Dialogs));
+                            break;
+
+                        case CARD_TYPE.MifarePlus_SL2_4K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL2_4K), Dialogs));
+                            break;
+
                         case CARD_TYPE.MifarePlus_SL3_1K:
 
                             break;

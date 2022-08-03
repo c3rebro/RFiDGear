@@ -416,85 +416,96 @@ namespace RFiDGear.ViewModel
 			get { return _parentUid; }
 		}
 
-		/// <summary>
-		///
-		/// </summary>
-		public string ChildNodeHeader
-		{
-			get
-			{
-				if (_cardType == CARD_TYPE.Mifare1K || _cardType == CARD_TYPE.Mifare2K || _cardType == CARD_TYPE.Mifare4K)
-				{
-					childNodeHeader = string.Format("Sector: [{0}]", sectorModel.SectorNumber);
-				}
-				else if (_cardType == CARD_TYPE.DESFire || _cardType == CARD_TYPE.DESFireEV1 || _cardType == CARD_TYPE.DESFireEV2)
-				{
-					childNodeHeader = string.Format("AppID: {0}", appModel.appID);
-				}
-				else if (_cardType == CARD_TYPE.MifareUltralight)
-				{
-					childNodeHeader = string.Format("Page: {0}", pageModel.PageNumber);
-				}
-				return childNodeHeader;
-			}
-			set
-			{
-				childNodeHeader = value;
-				RaisePropertyChanged("ChildNodeHeader");
-			}
-		} private string childNodeHeader;
+        /// <summary>
+        ///
+        /// </summary>
+        public string ChildNodeHeader
+        {
+            get
+            {
+                switch (_cardType)
+                {
+                    case CARD_TYPE.Mifare1K:
+                    case CARD_TYPE.MifarePlus_SL1_1K:
+                    case CARD_TYPE.Mifare2K:
+                    case CARD_TYPE.MifarePlus_SL1_2K:
+                    case CARD_TYPE.Mifare4K:
+                    case CARD_TYPE.MifarePlus_SL1_4K:
+                        childNodeHeader = string.Format("Sector: [{0}]", sectorModel.SectorNumber);
+                        break;
+                    case CARD_TYPE.DESFire:
+                    case CARD_TYPE.DESFireEV1:
+                    case CARD_TYPE.DESFireEV2:
+                        childNodeHeader = string.Format("AppID: {0}", appModel.appID);
+                        break;
+                    case CARD_TYPE.MifareUltralight:
+                        childNodeHeader = string.Format("Page: {0}", pageModel.PageNumber);
+                        break;
+                }
+                return childNodeHeader;
+            }
+            set
+            {
+                childNodeHeader = value;
+                RaisePropertyChanged("ChildNodeHeader");
+            }
+        }
+        private string childNodeHeader;
 		
 		#endregion
 
-		private void LoadChildren()
-		{
-			switch (_cardType)
-			{
-				case CARD_TYPE.Mifare1K:
-				case CARD_TYPE.Mifare2K:
-					{
-						for (int i = 0; i <= 3; i++)
-						{
-							children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0,i), this));
-						}
-					}
-					break;
+        private void LoadChildren()
+        {
+            switch (_cardType)
+            {
+                case CARD_TYPE.Mifare1K:
+                case CARD_TYPE.Mifare2K:
+                case CARD_TYPE.MifarePlus_SL1_1K:
+                case CARD_TYPE.MifarePlus_SL1_2K:
+                    {
+                        for (int i = 0; i <= 3; i++)
+                        {
+                            children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), this));
+                        }
+                    }
+                    break;
 
-				case CARD_TYPE.Mifare4K:
-					{
-						if (SectorNumber < 32)
-						{
-							for (int i = 0; i <= 3; i++)
-							{
-								children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0,i), this));
-							}
-						}
-						else
-						{
-							for (int i = 0; i <= 15; i++)
-							{
-								children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0,i), this));
-							}
-						}
-					}
-					break;
+                case CARD_TYPE.Mifare4K:
+                case CARD_TYPE.MifarePlus_SL1_4K:
+                    {
+                        if (SectorNumber < 32)
+                        {
+                            for (int i = 0; i <= 3; i++)
+                            {
+                                children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), this));
+                            }
+                        }
+                        else
+                        {
+                            for (int i = 0; i <= 15; i++)
+                            {
+                                children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), this));
+                            }
+                        }
+                    }
+                    break;
 
-				case CARD_TYPE.DESFire:
-				case CARD_TYPE.DESFireEV1:
-				case CARD_TYPE.DESFireEV2:
-					{
-						//children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(), this));
-					}
-					break;
-					
-				case CARD_TYPE.Unspecified: //TODO: Add Card Type "TASK_MF_Classic" for every type
-					for (int i = 0; i <= 3; i++)
-					{
-						children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0,i), new MifareClassicSetupViewModel()));
-					}
-					break;
-			}
-		}
+                case CARD_TYPE.DESFire:
+                case CARD_TYPE.DESFireEV1:
+                case CARD_TYPE.DESFireEV2:
+                    {
+                        //children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(), this));
+                    }
+                    break;
+
+                case CARD_TYPE.Unspecified: //TODO: Add Card Type "TASK_MF_Classic" for every type
+                    for (int i = 0; i <= 3; i++)
+                    {
+                        children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), new MifareClassicSetupViewModel()));
+                    }
+                    break;
+            }
+        }
 
 		#region IUserDialogViewModel Implementation
 
