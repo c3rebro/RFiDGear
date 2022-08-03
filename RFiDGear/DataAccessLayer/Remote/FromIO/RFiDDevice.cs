@@ -103,7 +103,6 @@ namespace RFiDGear
             {
                 using (SettingsReaderWriter defaultSettings = new SettingsReaderWriter())
                 {
-
                     ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
 
                     if (int.TryParse(defaultSettings.DefaultSpecification.LastUsedComPort, out int portNumber))
