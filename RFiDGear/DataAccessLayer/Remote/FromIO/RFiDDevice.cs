@@ -4,7 +4,7 @@ using LibLogicalAccess.Reader;
 using LibLogicalAccess.Crypto;
 
 using ByteArrayHelper.Extensions;
-using Elatec.NET;
+
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using System;
@@ -23,7 +23,6 @@ namespace RFiDGear
 		// global (cross-class) Instances go here ->
 		private ReaderProvider readerProvider;
 		private ReaderUnit readerUnit;
-		private TWN4ReaderDevice readerDevice;
 		private Chip card;
 		private bool _disposed = false;
 
@@ -138,18 +137,6 @@ namespace RFiDGear
 						cmd.authenticate((byte)0, dmk);
 						cmd.changeKey((byte)3, dk);
 						*/
-					}
-
-					else if(defaultSettings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.Elatec)
-                    {
-						int portNumber;
-
-						ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
-
-						if(int.TryParse(defaultSettings.DefaultSpecification.LastUsedComPort,out portNumber))
-							readerDevice = new TWN4ReaderDevice(portNumber);
-
-						readerDevice.ReadChipPublic();
 					}
 
 					AppIDList = new uint[0];
