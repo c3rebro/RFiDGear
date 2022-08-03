@@ -107,36 +107,6 @@ namespace RFiDGear
 						readerUnit = readerProvider.createReaderUnit();
 
 						GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
-
-						/*
-						readerUnit.connectToReader();
-						readerUnit.waitInsertion(100);
-						readerUnit.connect();
-
-						card = readerUnit.getSingleChip();
-
-						var cmd = card.getCommands() as DESFireCommands;
-						//var ev1cmd = card.getCommands() as DESFireEV1Commands;
-						var dmk = new DESFireKey();
-
-						var test = dmk.getKeyVersion();
-						dmk.fromString("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01");
-						dmk.setKeyType(DESFireKeyType.DF_KEY_AES);
-						//dmk.KeyVersion = 0;
-
-						var dk = new DESFireKey();
-						//var test2 = dk.KeyVersion;
-						dk.fromString("44 44 44 44 44 44 44 44 44 44 44 44 44 44 44 44"); //33 33 33 33 33 33 33 33 33 33 33 33 33 33 33 33
-						dk.setKeyType(DESFireKeyType.DF_KEY_AES);
-						dk.setKeyVersion(1);
-						//DESFireAccessInfo ai = new DESFireAccessInfo();
-						//var aiv = ai.MasterCardKey.KeyVersion;
-
-						//ICardService cs = (card as DESFireChip).GetService(CardServiceType.CST_STORAGE);
-						cmd.selectApplication(3);
-						cmd.authenticate((byte)0, dmk);
-						cmd.changeKey((byte)3, dk);
-						*/
 					}
 
 					AppIDList = new uint[0];
