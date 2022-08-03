@@ -182,20 +182,34 @@ namespace RFiDGear.DataAccessLayer
 	/// </summary>
 	public enum CARD_TYPE
 	{
-		Unspecified,
-		ISO15693,
-		Mifare1K,
-		Mifare2K,
-		Mifare4K,
-		DESFire,
-		DESFireEV1,
-		DESFireEV2,
-		__UNSUPPORTED__DESFireEV2,
-		MifarePlus_SL3_1K,
-		MifarePlus_SL3_2K,
-		MifarePlus_SL3_4K,
-		MifareUltralight,
-        GENERIC_T_CL_A
+		// Custom
+		Unspecified = 0xE0,
+		ISO15693 = 0xE1,
+		MifareMini = 0xE2,
+		Mifare1K = 0xE3,
+		Mifare2K = 0xE4,
+		Mifare4K = 0xE5,
+		DESFire = 0xE6,
+		DESFireEV1 = 0xE7,
+		DESFireEV2 = 0xE8,
+		MifarePlus_SL0_1K = 0xE9,
+		MifarePlus_SL0_2K = 0xEA,
+		MifarePlus_SL0_4K = 0xEB,
+		MifarePlus_SL1_1K = 0xF5,
+		MifarePlus_SL1_2K = 0xF6,
+		MifarePlus_SL1_4K = 0xF7,
+		MifarePlus_SL2_1K = 0xEC,
+		MifarePlus_SL2_2K = 0xED,
+		MifarePlus_SL2_4K = 0xEE,
+		MifarePlus_SL3_1K = 0xEF,
+		MifarePlus_SL3_2K = 0xF0,
+		MifarePlus_SL3_4K = 0xF1,
+		SmartMX_Mifare_2K = 0xF2,
+		SmartMX_Mifare_4K = 0xF3,
+		MifareUltralight = 0xF4,
+		__UNSUPPORTED__DESFireEV2 = 0xFE,
+		GENERIC_T_CL_A = 0xFF
+
 	};
 
 	/// <summary>
