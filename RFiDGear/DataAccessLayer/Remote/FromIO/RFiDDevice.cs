@@ -346,11 +346,11 @@ namespace RFiDGear
 
 										try
 										{
-											object data = cmd.readBinary(
+											ByteVector data = cmd.readBinary(
 												(byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
 												48);
 
-											DataBlock.Data = (byte[])data;
+											DataBlock.Data = data.ToArray();
 											
 											DataBlock.IsAuthenticated = true;
 
