@@ -1,8 +1,12 @@
 ﻿using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+
 using MvvmDialogs.ViewModels;
+
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -199,7 +203,7 @@ namespace RFiDGear.ViewModel
 
 		public void ReadSectorWithCustoms()
 		{
-			using (RFiDDevice device = new RFiDDevice())
+			using (LibLogicalAccessProvider device = new LibLogicalAccessProvider())
 			{
 				IsSelected = true;
 

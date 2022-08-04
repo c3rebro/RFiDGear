@@ -11,6 +11,7 @@ using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
 using MvvmDialogs.ViewModels;
 
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
@@ -351,7 +352,7 @@ namespace RFiDGear.ViewModel
 			Task genericChipTask =
 				new Task(() =>
 				{
-					using (RFiDDevice device = RFiDDevice.Instance)
+					using (ReaderDevice device = ReaderDevice.Instance)
 					{
 						if (device != null)
 						{
@@ -408,7 +409,7 @@ namespace RFiDGear.ViewModel
 			Task genericChipTask =
 				new Task(() =>
 				{
-					using (RFiDDevice device = RFiDDevice.Instance)
+					using (ReaderDevice device = ReaderDevice.Instance)
 					{
 						if (device != null)
 						{

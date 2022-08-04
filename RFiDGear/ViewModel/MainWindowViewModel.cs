@@ -1,11 +1,17 @@
 ﻿using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+
 using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
+
 using MvvmDialogs.ViewModels;
+
 using RedCell.Diagnostics.Update;
+
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+
 using System;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
@@ -269,7 +275,7 @@ namespace RFiDGear.ViewModel
                 Mouse.OverrideCursor = Cursors.AppStarting;
 
                 //try to get singleton instance
-                using (RFiDDevice device = RFiDDevice.Instance)
+                using (ReaderDevice device = ReaderDevice.Instance)
                 {
                     //reader was ready - proceed
                     if (device != null)
@@ -394,7 +400,7 @@ namespace RFiDGear.ViewModel
 
             try
             {
-                using (RFiDDevice device = RFiDDevice.Instance)
+                using (ReaderDevice device = ReaderDevice.Instance)
                 {
                     // only call dialog if device is ready
                     if (device != null)
@@ -559,7 +565,7 @@ namespace RFiDGear.ViewModel
 
             try
             {
-                using (RFiDDevice device = RFiDDevice.Instance)
+                using (ReaderDevice device = ReaderDevice.Instance)
                 {
                     // only call dialog if device is ready
                     if (device != null)
@@ -641,7 +647,7 @@ namespace RFiDGear.ViewModel
 
             Mouse.OverrideCursor = Cursors.AppStarting;
 
-            using (RFiDDevice device = RFiDDevice.Instance)
+            using (ReaderDevice device = ReaderDevice.Instance)
             {
                 if (device != null)
                 {
@@ -723,7 +729,7 @@ namespace RFiDGear.ViewModel
 
             Mouse.OverrideCursor = Cursors.AppStarting;
 
-            using (RFiDDevice device = RFiDDevice.Instance)
+            using (ReaderDevice device = ReaderDevice.Instance)
             {
                 if (device != null)
                 {
@@ -839,7 +845,7 @@ namespace RFiDGear.ViewModel
 
             Mouse.OverrideCursor = Cursors.Wait;
 
-            using (RFiDDevice device = RFiDDevice.Instance)
+            using (ReaderDevice device = ReaderDevice.Instance)
             {
 
                 foreach (RFiDChipParentLayerViewModel item in treeViewParentNodes)
@@ -1054,7 +1060,7 @@ namespace RFiDGear.ViewModel
                 try
                 {
                     //try to get singleton instance
-                    using (RFiDDevice device = RFiDDevice.Instance)
+                    using (ReaderDevice device = ReaderDevice.Instance)
                     {
                         //reader was ready - proceed
                         if (device != null)
@@ -2932,7 +2938,7 @@ namespace RFiDGear.ViewModel
         public ICommand NewReaderSetupDialogCommand { get { return new RelayCommand(OnNewReaderSetupDialog); } }
         private void OnNewReaderSetupDialog()
         {
-            using (RFiDDevice device = RFiDDevice.Instance)
+            using (ReaderDevice device = ReaderDevice.Instance)
             {
                 this.Dialogs.Add(new SetupViewModel(device)
                 {
@@ -3346,9 +3352,9 @@ namespace RFiDGear.ViewModel
                         if (i == 10)
                         {
                             //TODO: Update ReaderStatus frequently
-                            //FIXME: Locking RFiDDevice Instance in different Threads not working correctly
+                            //FIXME: Locking LibLogicalAccessProvider Instance in different Threads not working correctly
                             /*
-                            using (RFiDDevice device = RFiDDevice.Instance)
+                            using (ReaderDevice device = ReaderDevice.Instance)
                             {
 
                                 if (device != null)

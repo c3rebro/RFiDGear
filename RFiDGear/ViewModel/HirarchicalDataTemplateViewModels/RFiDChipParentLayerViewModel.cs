@@ -1,11 +1,17 @@
 ﻿using ByteArrayHelper.Extensions;
+
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+
 using LibLogicalAccess;
 using LibLogicalAccess.Card;
+
 using MvvmDialogs.ViewModels;
+
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -215,7 +221,7 @@ namespace RFiDGear.ViewModel
 		{
 			if (!isTask)
 			{
-				using (RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
+				using (LibLogicalAccessProvider device = new LibLogicalAccessProvider(settings.DefaultSpecification.DefaultReaderProvider))
 				{
 					Mouse.OverrideCursor = Cursors.Wait;
 
@@ -270,7 +276,7 @@ namespace RFiDGear.ViewModel
 		{
 			if (!isTask)
 			{
-				using (RFiDDevice device = RFiDDevice.Instance)
+				using (ReaderDevice device = ReaderDevice.Instance)
 				{
 					//if (device != null && device.GetMiFareDESFireChipAppIDs(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].Key) == ERROR.NoError)
 					if (device != null && device.ReadChipPublic() == ERROR.NoError)
@@ -393,7 +399,7 @@ namespace RFiDGear.ViewModel
 		{
 			if (!isTask)
 			{
-				using (RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
+				using (LibLogicalAccessProvider device = new LibLogicalAccessProvider(settings.DefaultSpecification.DefaultReaderProvider))
 				{
 					Mouse.OverrideCursor = Cursors.Wait;
 
@@ -451,7 +457,7 @@ namespace RFiDGear.ViewModel
 		{
 			if (!isTask)
 			{
-				using (RFiDDevice device = new RFiDDevice(settings.DefaultSpecification.DefaultReaderProvider))
+				using (LibLogicalAccessProvider device = new LibLogicalAccessProvider(settings.DefaultSpecification.DefaultReaderProvider))
 				{
 					Mouse.OverrideCursor = Cursors.Wait;
 

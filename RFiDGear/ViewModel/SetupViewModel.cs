@@ -7,8 +7,12 @@
 
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+
 using MvvmDialogs.ViewModels;
+
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
+
 using System;
 using System.Collections.Generic;
 using System.Windows.Input;
@@ -20,13 +24,13 @@ namespace RFiDGear.ViewModel
     /// </summary>
     public class SetupViewModel : ViewModelBase, IUserDialogViewModel
     {
-        private RFiDDevice device;
+        private LibLogicalAccessProvider device;
 
         public SetupViewModel()
         {
         }
 
-        public SetupViewModel(RFiDDevice _device)
+        public SetupViewModel(LibLogicalAccessProvider _device)
         {
             using (SettingsReaderWriter settings = new SettingsReaderWriter())
             {

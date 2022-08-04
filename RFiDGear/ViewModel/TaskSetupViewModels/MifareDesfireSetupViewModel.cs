@@ -7,14 +7,20 @@
 
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+
 using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
+
 using MvvmDialogs.ViewModels;
+
 using LibLogicalAccess;
 using LibLogicalAccess.Card;
+
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using RFiDGear.ViewModel;
+
 using System;
 using System.ComponentModel.Composition;
 using System.Collections.Generic;
@@ -1651,7 +1657,7 @@ namespace RFiDGear.ViewModel
         #region Commands
 
         /// <summary>
-        /// return new RelayCommand<RFiDDevice>((_device) => OnNewCreateAppCommand(_device));
+        /// return new RelayCommand<LibLogicalAccessProvider>((_device) => OnNewCreateAppCommand(_device));
         /// </summary>
         public ICommand CreateAppCommand { get { return new RelayCommand(OnNewCreateAppCommand); } }
 		private void OnNewCreateAppCommand()
@@ -1661,7 +1667,7 @@ namespace RFiDGear.ViewModel
 			Task desfireTask =
 				new Task(() =>
 				         {
-				         	using (RFiDDevice device = RFiDDevice.Instance)
+				         	using (ReaderDevice device = ReaderDevice.Instance)
 				         	{
 				         		if (device != null)
 				         		{
@@ -1772,7 +1778,7 @@ namespace RFiDGear.ViewModel
 		}
 
 		/// <summary>
-		/// return new RelayCommand<RFiDDevice>((_device) => OnNewCreateAppCommand(_device));
+		/// return new RelayCommand<LibLogicalAccessProvider>((_device) => OnNewCreateAppCommand(_device));
 		/// </summary>
 		public ICommand CreateFileCommand { get { return new RelayCommand(OnNewCreateFileCommand); } }
 		private void OnNewCreateFileCommand()
@@ -1787,7 +1793,7 @@ namespace RFiDGear.ViewModel
 			Task desfireTask =
 				new Task(() =>
 				         {
-				         	using (RFiDDevice device = RFiDDevice.Instance)
+				         	using (ReaderDevice device = ReaderDevice.Instance)
 				         	{
 				         		if (device != null)
 				         		{
@@ -1897,7 +1903,7 @@ namespace RFiDGear.ViewModel
 			Task desfireTask =
 				new Task(() =>
 				         {
-				         	using (RFiDDevice device = RFiDDevice.Instance)
+				         	using (ReaderDevice device = ReaderDevice.Instance)
 				         	{
 				         		if (device != null)
 				         		{
@@ -2025,7 +2031,7 @@ namespace RFiDGear.ViewModel
 			Task desfireTask =
 				new Task(() =>
 						 {
-						 using (RFiDDevice device = RFiDDevice.Instance)
+						 using (ReaderDevice device = ReaderDevice.Instance)
 						 {
 							 if (device != null)
 							 {
@@ -2110,7 +2116,7 @@ namespace RFiDGear.ViewModel
 
 			Task desfireTask = new Task(() =>
 			                            {
-			                            	using (RFiDDevice device = RFiDDevice.Instance)
+			                            	using (ReaderDevice device = ReaderDevice.Instance)
 			                            	{
 			                            		if (device != null)
 			                            		{
@@ -2208,7 +2214,7 @@ namespace RFiDGear.ViewModel
 
 			Task desfireTask = new Task(() =>
 			                            {
-			                            	using (RFiDDevice device = RFiDDevice.Instance)
+			                            	using (ReaderDevice device = ReaderDevice.Instance)
 			                            	{
 			                            		if (device != null)
 			                            		{
@@ -2307,7 +2313,7 @@ namespace RFiDGear.ViewModel
 
 			Task desfireTask = new Task(() =>
 			                            {
-			                            	using (RFiDDevice device = RFiDDevice.Instance)
+			                            	using (ReaderDevice device = ReaderDevice.Instance)
 			                            	{
 			                            		if (device != null)
 			                            		{
@@ -2397,7 +2403,7 @@ namespace RFiDGear.ViewModel
 		}
 
 		/// <summary>
-		/// public ICommand FormatDesfireCardCommand { get { return new RelayCommand<RFiDDevice>((_device) => OnNewFormatDesfireCardCommand(_device)); }}
+		/// public ICommand FormatDesfireCardCommand { get { return new RelayCommand<LibLogicalAccessProvider>((_device) => OnNewFormatDesfireCardCommand(_device)); }}
 		/// </summary>
 		public ICommand FormatDesfireCardCommand { get { return new RelayCommand(OnNewFormatDesfireCardCommand); } }
 		private void OnNewFormatDesfireCardCommand()
@@ -2408,7 +2414,7 @@ namespace RFiDGear.ViewModel
 			                            {
 											//TaskErr = ERROR.DeviceNotReadyError;
 
-											using (RFiDDevice device = RFiDDevice.Instance)
+											using (ReaderDevice device = ReaderDevice.Instance)
 			                            	{
                                                 if (device != null)
 			                            		{
@@ -2538,7 +2544,7 @@ namespace RFiDGear.ViewModel
 
 			Task desfireTask = new Task(() =>
 			{
-				using (RFiDDevice device = RFiDDevice.Instance)
+				using (ReaderDevice device = ReaderDevice.Instance)
 				{
 					if (device != null)
 					{
@@ -2599,7 +2605,7 @@ namespace RFiDGear.ViewModel
 			Task desfireTask = new Task(
 				() =>
 				{
-					using (RFiDDevice device = RFiDDevice.Instance)
+					using (ReaderDevice device = ReaderDevice.Instance)
 					{
 						if (device != null)
 						{
@@ -2705,7 +2711,7 @@ namespace RFiDGear.ViewModel
 			Task desfireTask = new Task(
 				() =>
 				{
-					using (RFiDDevice device = RFiDDevice.Instance)
+					using (ReaderDevice device = ReaderDevice.Instance)
 					{
 						if (device != null)
 						{
@@ -2772,7 +2778,7 @@ namespace RFiDGear.ViewModel
 
             Task desfireTask = new Task(() =>
             {
-                using (RFiDDevice device = RFiDDevice.Instance)
+                using (ReaderDevice device = ReaderDevice.Instance)
                 {
                     if (device != null)
                     {
@@ -2850,7 +2856,7 @@ namespace RFiDGear.ViewModel
 
 			Task desfireTask = new Task(() =>
 			{
-				using (RFiDDevice device = RFiDDevice.Instance)
+				using (ReaderDevice device = ReaderDevice.Instance)
 				{
 					if (device != null)
 					{

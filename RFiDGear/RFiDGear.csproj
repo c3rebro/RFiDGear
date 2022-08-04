@@ -207,7 +207,9 @@
     <Compile Include="DataAccessLayer\Remote\FromFile\LogWriter.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\ReportReaderWriter.cs" />
     <Compile Include="DataAccessLayer\Local\ResourceLoader.cs" />
-    <Compile Include="DataAccessLayer\Remote\FromIO\RFiDDevice.cs" />
+    <Compile Include="DataAccessLayer\Remote\FromIO\ElateNetProvider.cs" />
+    <Compile Include="DataAccessLayer\Remote\FromIO\ReaderDevice.cs" />
+    <Compile Include="DataAccessLayer\Remote\FromIO\LibLogicalAccessProvider.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\SettingsReaderWriter.cs" />
     <Compile Include="Model\Checkpoint.cs" />
     <Compile Include="Model\ChipTaskHandlerModel.cs" />
@@ -382,6 +384,10 @@
     <ProjectReference Include="..\..\ByteArray\ByteArray.csproj">
       <Project>{bdd5df8c-6fc1-4882-8151-924820fdbc05}</Project>
       <Name>ByteArray</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Elatec.NET\Elatec.NET.csproj">
+      <Project>{53fbd2f3-638e-4892-9f09-9a372c8f76d2}</Project>
+      <Name>Elatec.NET</Name>
     </ProjectReference>
     <ProjectReference Include="..\MVVMDialogs\MVVMDialogs.csproj">
       <Project>{ef56252e-257f-41d1-974b-c9015071ce7e}</Project>

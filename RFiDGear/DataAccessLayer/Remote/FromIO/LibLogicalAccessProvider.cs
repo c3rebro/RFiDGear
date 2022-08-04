@@ -5,12 +5,11 @@ using LibLogicalAccess.Crypto;
 
 using ByteArrayHelper.Extensions;
 
-using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using System;
 using System.Threading;
 
-namespace RFiDGear
+namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
 	/// <summary>
 	/// Description of RFiDAccess.
@@ -18,81 +17,24 @@ namespace RFiDGear
 	/// Initialize Reader
 	/// </summary>
 	///
-	public class RFiDDevice : IDisposable
+	public class LibLogicalAccessProvider : ReaderDevice
 	{
 		// global (cross-class) Instances go here ->
 		private ReaderProvider readerProvider;
 		private ReaderUnit readerUnit;
 		private Chip card;
-		private bool _disposed = false;
 
 		#region properties
-
-		public MifareClassicSectorModel Sector { get; private set; }
-
-		public MifareClassicDataBlockModel DataBlock { get; private set; }
-		
-        public GenericChipModel GenericChip { get; private set; }
-
-		public ReaderTypes ReaderProvider { get; private set; }
-
-		public string ReaderUnitName { get; private set; }
-
-		public byte[] MifareClassicData { get; private set; }
-
-		public bool DataBlockSuccessfullyRead { get; private set; }
-
-		public bool DataBlockSuccesfullyAuth { get; private set; }
-
-		public bool SectorSuccessfullyRead { get; private set; }
-
-		public bool SectorSuccesfullyAuth { get; private set; }
-
-		public byte[] MifareDESFireData { get; private set; }
-
-		public uint[] AppIDList { get; private set; }
-
-		public byte[] FileIDList { get; private set; }
-		
-		public byte[] MifareUltralightPageData { get; private set; }
-
-		public byte MaxNumberOfAppKeys { get; private set; }
-
-		public byte EncryptionType { get; private set; }
-
-		public DESFireCommands.FileSetting DesfireFileSettings { get; private set; }
-
-		public DESFireKeySettings DesfireAppKeySetting { get; private set; }
 
 		#endregion properties
 
 		#region contructor
 
-		public static RFiDDevice Instance
-		{
-			get
-			{
-				lock (RFiDDevice.syncRoot)
-				{
-					if (instance == null)
-					{
-						instance = new RFiDDevice();
-						return instance;
-					}
-					else
-						return null;
-				}
-			}
-		}
-		
-		private static object syncRoot = new object();
-		private static RFiDDevice instance;
-
-		public RFiDDevice() : this(ReaderTypes.None)
+		public LibLogicalAccessProvider() : this(ReaderTypes.None)
 		{
 		}
 
-		public RFiDDevice(ReaderTypes _readerType = ReaderTypes.None)
+		public LibLogicalAccessProvider(ReaderTypes _readerType = ReaderTypes.None)
 		{
 			try
 			{
@@ -160,7 +102,7 @@ namespace RFiDGear
 			return ERROR.IOError;
 		}
 
-		public ERROR ReadChipPublic()
+		public override ERROR ReadChipPublic()
 		{
 			try
 			{
@@ -226,44 +168,11 @@ namespace RFiDGear
 			return ERROR.IOError;
 		}
 
-		protected virtual void Dispose(bool disposing)
-		{
-			if (!_disposed)
-			{
-				if (disposing)
-				{
-					instance = null;
-					// Dispose any managed objects
-					// ...
-				}
-
-				if (readerUnit != null)
-				{
-					readerUnit.disconnect();
-					readerUnit.disconnectFromReader();
-				}
-
-				if (readerProvider != null)
-					readerProvider.release();
-				// Now disposed of any unmanaged objects
-				// ...
-
-				Thread.Sleep(200);
-				_disposed = true;
-			}
-		}
-
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
 		#endregion common
 
 		#region mifare classic
 
-		public ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+		public override ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey)
 		{
 			var settings = new SettingsReaderWriter();
 			Sector = new MifareClassicSectorModel();
@@ -399,7 +308,7 @@ namespace RFiDGear
 			}
 		}
 
-		public ERROR WriteMiFareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer)
+		public override ERROR WriteMiFareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer)
 		{
 			var keyA = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey));
 			var keyB = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey));
@@ -507,7 +416,7 @@ namespace RFiDGear
 			return ERROR.DeviceNotReadyError;
 		}
 
-		public ERROR WriteMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
+		public override ERROR WriteMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
 		{
 			try
 			{
@@ -586,7 +495,7 @@ namespace RFiDGear
 			return ERROR.IOError;
 		}
 
-		public ERROR ReadMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey)
+		public override ERROR ReadMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey)
 		{
 			try
 			{
@@ -665,7 +574,7 @@ namespace RFiDGear
 			return ERROR.IOError;
 		}
 		
-		public ERROR WriteMiFareClassicWithMAD(int _madApplicationID, int _madStartSector,
+		public override ERROR WriteMiFareClassicWithMAD(int _madApplicationID, int _madStartSector,
 		                                       string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
 		                                       string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
 		                                       byte[] buffer, byte _madGPB, bool _useMADToAuth = false)
@@ -761,7 +670,7 @@ namespace RFiDGear
 			return ERROR.NoError;
 		}
 		
-		public ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, bool _useMADToAuth = true)
+		public override ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, bool _useMADToAuth = true)
 		{
 			var settings = new SettingsReaderWriter();
 			Sector = new MifareClassicSectorModel();
@@ -837,7 +746,7 @@ namespace RFiDGear
 
 		#region mifare ultralight
 
-		public ERROR ReadMifareUltralightSinglePage(int _pageNo)
+		public override ERROR ReadMifareUltralightSinglePage(int _pageNo)
 		{
 			try
 			{
@@ -880,19 +789,19 @@ namespace RFiDGear
 
 		#region mifare desfire
 
-		public ERROR GetMiFareDESFireChipAppIDs(string _appMasterKey = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", DESFireKeyType _keyTypeAppMasterKey = DESFireKeyType.DF_KEY_DES)
+		public override ERROR GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
 		{
 			try
 			{
 				// The excepted memory tree
 				DESFireLocation location = new DESFireLocation();
 				// File communication requires encryption
-				location.securityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = (LibLogicalAccess.Card.EncryptionMode)EncryptionMode.CM_ENCRYPT;
 
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				aiToUse.masterCardKey.fromString(_appMasterKey);
-				aiToUse.masterCardKey.setKeyType(_keyTypeAppMasterKey);
+				aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
 
 
 				if (readerUnit.connectToReader())
@@ -1056,7 +965,7 @@ namespace RFiDGear
 			}
 		}
 
-		public ERROR CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
+		public override ERROR CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
 		                                     int _appID, int _fileNo, int _fileSize,
 		                                     int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
 		                                     int _maxNbOfRecords = 100)
@@ -1069,8 +978,8 @@ namespace RFiDGear
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
 				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToUse.masterCardKey.setKeyType(_keyTypeAppMasterKey);
-
+				aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
+				
 				if (readerUnit.connectToReader())
 				{
 					if (readerUnit.waitInsertion(Constants.MAX_WAIT_INSERTION))
@@ -1098,23 +1007,58 @@ namespace RFiDGear
                                         switch (_fileType)
                                         {
                                             case FileType_MifareDesfireFileType.StdDataFile:
-                                                cmd.createStdDataFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+												cmd.createStdDataFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize) ;
                                                 break;
 
                                             case FileType_MifareDesfireFileType.BackupFile:
-                                                cmd.createBackupFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
-                                                break;
+                                                cmd.createBackupFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize);
+												break;
 
                                             case FileType_MifareDesfireFileType.ValueFile:
-                                                cmd.createValueFile((byte)_fileNo, _encMode, accessRights, _minValue, _maxValue, _initValue, _isValueLimited);
+                                                cmd.createValueFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, _minValue, _maxValue, _initValue, _isValueLimited);
                                                 break;
 
                                             case FileType_MifareDesfireFileType.CyclicRecordFile:
-                                                cmd.createCyclicRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+                                                cmd.createCyclicRecordFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize, (uint)_maxNbOfRecords);
                                                 break;
 
                                             case FileType_MifareDesfireFileType.LinearRecordFile:
-                                                cmd.createLinearRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+                                                cmd.createLinearRecordFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize, (uint)_maxNbOfRecords);
                                                 break;
                                         }
 
@@ -1124,26 +1068,60 @@ namespace RFiDGear
 									switch (_fileType)
 									{
 										case FileType_MifareDesfireFileType.StdDataFile:
-											cmd.createStdDataFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+											cmd.createStdDataFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize);
 											break;
 
 										case FileType_MifareDesfireFileType.BackupFile:
-											cmd.createBackupFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+											cmd.createBackupFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize);
 											break;
 
 										case FileType_MifareDesfireFileType.ValueFile:
-											cmd.createValueFile((byte)_fileNo, _encMode, accessRights, _minValue, _maxValue, _initValue, _isValueLimited);
+											cmd.createValueFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, _minValue, _maxValue, _initValue, _isValueLimited);
 											break;
 
 										case FileType_MifareDesfireFileType.CyclicRecordFile:
-											cmd.createCyclicRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+											cmd.createCyclicRecordFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize, (uint)_maxNbOfRecords);
 											break;
 
 										case FileType_MifareDesfireFileType.LinearRecordFile:
-											cmd.createLinearRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+											cmd.createLinearRecordFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize, (uint)_maxNbOfRecords);
 											break;
 									}
-
 
 									return ERROR.NoError;
 								}
@@ -1181,23 +1159,58 @@ namespace RFiDGear
 										switch (_fileType)
 										{
 											case FileType_MifareDesfireFileType.StdDataFile:
-												cmd.createStdDataFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+												cmd.createStdDataFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize);
 												break;
 
 											case FileType_MifareDesfireFileType.BackupFile:
-												cmd.createBackupFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+												cmd.createBackupFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize);
 												break;
 
 											case FileType_MifareDesfireFileType.ValueFile:
-												cmd.createValueFile((byte)_fileNo, _encMode, accessRights, _minValue, _maxValue, _initValue, _isValueLimited);
+												cmd.createValueFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, _minValue, _maxValue, _initValue, _isValueLimited);
 												break;
 
 											case FileType_MifareDesfireFileType.CyclicRecordFile:
-												cmd.createCyclicRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+												cmd.createCyclicRecordFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													},(uint)_fileSize, (uint)_maxNbOfRecords);
 												break;
 
 											case FileType_MifareDesfireFileType.LinearRecordFile:
-												cmd.createLinearRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+												cmd.createLinearRecordFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize, (uint)_maxNbOfRecords);
 												break;
 										}
 
@@ -1207,23 +1220,58 @@ namespace RFiDGear
 									switch (_fileType)
 									{
 										case FileType_MifareDesfireFileType.StdDataFile:
-											cmd.createStdDataFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+											cmd.createStdDataFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize);
 											break;
 
 										case FileType_MifareDesfireFileType.BackupFile:
-											cmd.createBackupFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize);
+											cmd.createBackupFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize);
 											break;
 
 										case FileType_MifareDesfireFileType.ValueFile:
-											cmd.createValueFile((byte)_fileNo, _encMode, accessRights, _minValue, _maxValue, _initValue, _isValueLimited);
+											cmd.createValueFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, _minValue, _maxValue, _initValue, _isValueLimited);
 											break;
 
 										case FileType_MifareDesfireFileType.CyclicRecordFile:
-											cmd.createCyclicRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+											cmd.createCyclicRecordFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize, (uint)_maxNbOfRecords);
 											break;
 
 										case FileType_MifareDesfireFileType.LinearRecordFile:
-											cmd.createLinearRecordFile((byte)_fileNo, _encMode, accessRights, (uint)_fileSize, (uint)_maxNbOfRecords);
+											cmd.createLinearRecordFile((byte)_fileNo, (LibLogicalAccess.Card.EncryptionMode)_encMode,
+													new LibLogicalAccess.Card.DESFireAccessRights()
+													{
+														changeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.changeAccess,
+														readAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAccess,
+														writeAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.writeAccess,
+														readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)accessRights.readAndWriteAccess
+													}, (uint)_fileSize, (uint)_maxNbOfRecords);
 											break;
 									}
 
@@ -1261,7 +1309,7 @@ namespace RFiDGear
 			}
 		}
 
-		public ERROR ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
+		public override ERROR ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
 		                                       string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
 		                                       string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
 		                                       EncryptionMode _encMode,
@@ -1276,7 +1324,7 @@ namespace RFiDGear
 				// File 0 into this application
 				location.file = (byte)_fileNo;
 				// File communication requires encryption
-				location.securityLevel = _encMode;
+				location.securityLevel = (LibLogicalAccess.Card.EncryptionMode)_encMode;
 
 				// Keys to use for authentication
 
@@ -1287,16 +1335,16 @@ namespace RFiDGear
 				DESFireAccessInfo aiToWrite = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
 				aiToWrite.masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToWrite.masterApplicationKey.setKeyType((DESFireKeyType)_keyTypeAppMasterKey);
+				aiToWrite.masterApplicationKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
 
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
 				aiToWrite.readKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToWrite.readKey.setKeyType((DESFireKeyType)_keyTypeAppReadKey);
+				aiToWrite.readKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppReadKey);
 				aiToWrite.readKeyno = (byte)_readKeyNo;
 
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
 				aiToWrite.writeKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToWrite.writeKey.setKeyType((DESFireKeyType)_keyTypeAppWriteKey);
+				aiToWrite.writeKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppWriteKey);
 				aiToWrite.writeKeyno = (byte)_writeKeyNo;
 
 				if (readerUnit.connectToReader())
@@ -1319,13 +1367,13 @@ namespace RFiDGear
 
 										cmd.authenticate((byte)_readKeyNo, aiToWrite.readKey);
 
-										MifareDESFireData = cmd.readData((byte)_fileNo, 0, (uint)_fileSize, EncryptionMode.CM_ENCRYPT).ToArray();
+										MifareDESFireData = cmd.readData((byte)_fileNo, 0, (uint)_fileSize, LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT).ToArray();
 									}
 									catch
 									{
 										cmd.selectApplication((uint)_appID);
 
-										MifareDESFireData = cmd.readData((byte)_fileNo, 0, (uint)_fileSize, EncryptionMode.CM_ENCRYPT).ToArray();
+										MifareDESFireData = cmd.readData((byte)_fileNo, 0, (uint)_fileSize, LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT).ToArray();
 									}
 
 									return ERROR.NoError;
@@ -1359,7 +1407,7 @@ namespace RFiDGear
 			}
 		}
 		
-		public ERROR WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
+		public override ERROR WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
 		                                        string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
 		                                        string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
 		                                        string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
@@ -1376,7 +1424,7 @@ namespace RFiDGear
 				// File 0 into this application
 				location.file = (byte)_fileNo;
 				// File communication requires encryption
-				location.securityLevel = _encMode;
+				location.securityLevel = (LibLogicalAccess.Card.EncryptionMode)_encMode;
 
 				// Keys to use for authentication
 
@@ -1387,24 +1435,24 @@ namespace RFiDGear
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_cardMasterKey);
 				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToUse.masterCardKey.setKeyType(_keyTypeAppMasterKey);
+				aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
 
 				DESFireAccessInfo aiToWrite = new DESFireAccessInfo();
 				aiToWrite.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToWrite.masterCardKey.setKeyType(_keyTypeAppMasterKey);
+				aiToWrite.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
 
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
 				aiToWrite.masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToWrite.masterApplicationKey.setKeyType(_keyTypeAppMasterKey);
+				aiToWrite.masterApplicationKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
 
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
 				aiToWrite.readKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToWrite.readKey.setKeyType(_keyTypeAppReadKey);
+				aiToWrite.readKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppReadKey);
 				aiToWrite.readKeyno = (byte)_readKeyNo;
 
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
 				aiToWrite.writeKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToWrite.writeKey.setKeyType(_keyTypeAppWriteKey);
+				aiToWrite.writeKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppWriteKey);
 				aiToWrite.writeKeyno = (byte)_writeKeyNo;
 
 				if (readerUnit.connectToReader())
@@ -1425,7 +1473,7 @@ namespace RFiDGear
 
 									cmd.authenticate((byte)_writeKeyNo, aiToWrite.writeKey);
 
-									cmd.writeData((byte)_fileNo, 0, new ByteVector(_data), EncryptionMode.CM_ENCRYPT);
+									cmd.writeData((byte)_fileNo, 0, new ByteVector(_data), LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT);
 
 									return ERROR.NoError;
 								}
@@ -1458,7 +1506,7 @@ namespace RFiDGear
 			}
 		}
 		
-		public ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0)
+		public override ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0)
 		{
 			try
 			{
@@ -1473,7 +1521,7 @@ namespace RFiDGear
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyType);
+				aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
 
 				if (readerUnit.connectToReader())
 				{
@@ -1529,10 +1577,10 @@ namespace RFiDGear
 			}
 		}
 
-		public ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
+		public override ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
 		{
 			byte maxNbrOfKeys;
-			DESFireKeySettings keySettings;
+			LibLogicalAccess.Card.DESFireKeySettings keySettings;
 
 			try
 			{
@@ -1540,7 +1588,7 @@ namespace RFiDGear
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyType);
+				aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
 
 				if (readerUnit.connectToReader())
 				{
@@ -1573,8 +1621,8 @@ namespace RFiDGear
 											cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
 											MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
 											EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
-											DesfireAppKeySetting = keySettings;
-
+											DesfireAppKeySetting = (DESFireKeySettings)keySettings;
+											
 											return ERROR.NoError;
 										}
 										catch (Exception e)
@@ -1594,7 +1642,7 @@ namespace RFiDGear
 									cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
 									MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
 									EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
-									DesfireAppKeySetting = keySettings;
+									DesfireAppKeySetting = (DESFireKeySettings)keySettings;
 
 									return ERROR.NoError;
 								}
@@ -1645,7 +1693,7 @@ namespace RFiDGear
 											cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
 											MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
 											EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
-											DesfireAppKeySetting = keySettings;
+											DesfireAppKeySetting = (DESFireKeySettings)keySettings;
 
 											return ERROR.NoError;
 										}
@@ -1674,7 +1722,7 @@ namespace RFiDGear
 									cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
 									MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
 									EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
-									DesfireAppKeySetting = keySettings;
+									DesfireAppKeySetting = (DESFireKeySettings)keySettings;
 
 									return ERROR.NoError;
 								}
@@ -1706,7 +1754,9 @@ namespace RFiDGear
 			}
 		}
 
-		public ERROR CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
+		public override ERROR CreateMifareDesfireApplication(
+			string _piccMasterKey, DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, 
+			DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
 		{
 			try
 			{
@@ -1716,14 +1766,14 @@ namespace RFiDGear
 				location.aid = (uint)_appID;
 
 				// File communication requires encryption
-				location.securityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT;
 
 				// IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_piccMasterKey);
 				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyTypePiccMasterKey);
+				aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypePiccMasterKey);
 
 				if (readerUnit.connectToReader())
 				{
@@ -1734,8 +1784,6 @@ namespace RFiDGear
 							ReaderUnitName = readerUnit.getConnectedName();
 
 							card = readerUnit.getSingleChip();
-							//CardException cardException = new CardException();
-							LibLogicalAccessNetException t = new LibLogicalAccessNetException();
 							
 							if (card.getCardType() == "DESFire")
 							{
@@ -1747,7 +1795,7 @@ namespace RFiDGear
 									if(authenticateToPICCFirst)
 										cmd.authenticate((byte)0, aiToUse.masterCardKey);
 									
-									cmd.createApplication((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys);
+									cmd.createApplication((uint)_appID, (LibLogicalAccess.Card.DESFireKeySettings)_keySettingsTarget, (byte)_maxNbKeys);
 
 									return ERROR.NoError;
 								}
@@ -1779,7 +1827,7 @@ namespace RFiDGear
 									if (authenticateToPICCFirst)
 										cmd.authenticate((byte)0, aiToUse.masterCardKey);
 
-									ev1Cmd.createApplication((uint)_appID, _keySettingsTarget, (byte)_maxNbKeys, (DESFireKeyType)_keyTypeTargetApplication);
+									ev1Cmd.createApplication((uint)_appID, (LibLogicalAccess.Card.DESFireKeySettings)_keySettingsTarget, (byte)_maxNbKeys, (LibLogicalAccess.Card.DESFireKeyType)_keyTypeTargetApplication);
 
 									return ERROR.NoError;
 								}
@@ -1816,18 +1864,21 @@ namespace RFiDGear
 			}
 		}
 
-		public ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent, string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint, DESFireKeyType _keyTypeTarget, int _appIDCurrent = 0, int _appIDTarget = 0, DESFireKeySettings keySettings = (DESFireKeySettings.KS_DEFAULT | DESFireKeySettings.KS_FREE_CREATE_DELETE_WITHOUT_MK))
+		public override ERROR ChangeMifareDesfireApplicationKey(
+			string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent, 
+			string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint, 
+			DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, DESFireKeySettings keySettings)
 		{
 			try
 			{
 				DESFireKey masterApplicationKey = new DESFireKey();
-				masterApplicationKey.setKeyType(_keyTypeCurrent);
+				masterApplicationKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent);
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
 				masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
 				masterApplicationKey.setKeyVersion(1);
 
 				DESFireKey applicationMasterKeyTarget = new DESFireKey();
-				applicationMasterKeyTarget.setKeyType(_keyTypeCurrent);
+				applicationMasterKeyTarget.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent);
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
 				applicationMasterKeyTarget.fromString(CustomConverter.DesfireKeyToCheck);
 				applicationMasterKeyTarget.setKeyVersion((byte)selectedDesfireAppKeyVersionTargetAsIntint);
@@ -1869,7 +1920,7 @@ namespace RFiDGear
 
 											try
 											{
-												cmd.changeKeySettings(keySettings);
+												cmd.changeKeySettings((LibLogicalAccess.Card.DESFireKeySettings)keySettings);
 											}
 											catch { }
 										}
@@ -1879,7 +1930,7 @@ namespace RFiDGear
 											try
 											{
 												cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
-												cmd.changeKeySettings(keySettings);
+												cmd.changeKeySettings((LibLogicalAccess.Card.DESFireKeySettings)keySettings);
 												cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
 												cmd.changeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
 												return ERROR.NoError;
@@ -1947,14 +1998,14 @@ namespace RFiDGear
 				// The Application ID to use
 				location.aid = (uint)_appID;
 				// File communication requires encryption
-				location.securityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT;
 
 				// IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToUse.masterCardKey.setKeyType(_keyType);
+				aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
 
 				if (readerUnit.connectToReader())
 				{

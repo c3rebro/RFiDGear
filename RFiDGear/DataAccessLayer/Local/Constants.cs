@@ -5,8 +5,6 @@
  *
  */
 
-using LibLogicalAccess;
-using LibLogicalAccess.Card;
 using System;
 
 namespace RFiDGear.DataAccessLayer
@@ -298,6 +296,122 @@ namespace RFiDGear.DataAccessLayer
 		DefaultDesfireCardWriteKey
 	}
 
+	[Flags]
+	public enum DESFireKeyType
+	{
+		DF_KEY_3K3DES = 0,
+		DF_KEY_AES = 64,
+		DF_KEY_DES = 128
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	[Flags]
+	public enum DESFireKeySettings
+	{
+		KS_CHANGE_KEY_WITH_MK = 0,
+		KS_ALLOW_CHANGE_MK = 1,
+		KS_FREE_LISTING_WITHOUT_MK = 2,
+		KS_FREE_CREATE_DELETE_WITHOUT_MK = 4,
+		KS_CONFIGURATION_CHANGEABLE = 8,
+		KS_DEFAULT = 11,
+		KS_CHANGE_KEY_WITH_TARGETED_KEYNO = 224,
+		KS_CHANGE_KEY_FROZEN = 240
+	}
+
+	public struct DESFireFileSettings
+	{
+		public byte[] accessRights;
+		public byte FileType;
+		public byte comSett;
+		public DataFileSetting dataFile;
+		public RecordFileSetting recordFile;
+		public ValueFileSetting valueFile;
+	}
+
+	public struct DataFileSetting
+	{
+		public uint fileSize;
+	}
+
+	public struct RecordFileSetting
+	{
+
+	}
+
+	public struct ValueFileSetting
+	{
+
+	}
+
+	public struct AccessBits
+	{
+		public short c1;
+		public short c2;
+		public short c3;
+	}
+
+	public struct SectorAccessBits
+	{
+		public int Cx;
+
+		public AccessBits d_data_block0_access_bits;
+		public AccessBits d_data_block1_access_bits;
+		public AccessBits d_data_block2_access_bits;
+		public AccessBits d_sector_trailer_access_bits;
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	[Flags]
+	public enum TaskAccessRights
+	{
+		AR_KEY0 = 0,
+		AR_KEY1 = 1,
+		AR_KEY2 = 2,
+		AR_KEY3 = 3,
+		AR_KEY4 = 4,
+		AR_KEY5 = 5,
+		AR_KEY6 = 6,
+		AR_KEY7 = 7,
+		AR_KEY8 = 8,
+		AR_KEY9 = 9,
+		AR_KEY10 = 10,
+		AR_KEY11 = 11,
+		AR_KEY12 = 12,
+		AR_KEY13 = 13,
+		AR_FREE = 14,
+		AR_NEVER = 15
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	public struct DESFireAccessRights
+    {
+		public TaskAccessRights readAccess;
+		public TaskAccessRights writeAccess;
+		public TaskAccessRights changeAccess;
+		public TaskAccessRights readAndWriteAccess;
+    }
+
+	/// <summary>
+	/// 
+	/// </summary>
+	[Flags]
+	public enum EncryptionMode
+	{
+		CM_PLAIN = 0,
+		CM_MAC = 1,
+		CM_ENCRYPT = 3,
+		CM_UNKNOWN = 255
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
 	public struct MifareDesfireDefaultKeys
 	{
 		public MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType _keyType, DESFireKeyType _encryptionType, string _key)
@@ -313,6 +427,9 @@ namespace RFiDGear.DataAccessLayer
 		public string Key;
 	}
     
+	/// <summary>
+	/// 
+	/// </summary>
 	public struct MifareClassicDefaultKeys
 	{
 		public MifareClassicDefaultKeys(int _keyNumber, string _accessBits)
@@ -340,42 +457,7 @@ namespace RFiDGear.DataAccessLayer
         DF_KEY_AES,
         DF_KEY_DES
     }
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    [Flags]
-    public enum TaskAccessRights
-    {
-        AR_KEY0 = 0,
-        AR_KEY1 = 1,
-        AR_KEY2 = 2,
-        AR_KEY3 = 3,
-        AR_KEY4 = 4,
-        AR_KEY5 = 5,
-        AR_KEY6 = 6,
-        AR_KEY7 = 7,
-        AR_KEY8 = 8,
-        AR_KEY9 = 9,
-        AR_KEY10 = 10,
-        AR_KEY11 = 11,
-        AR_KEY12 = 12,
-        AR_KEY13 = 13,
-        AR_FREE = 14,
-        AR_NEVER = 15
-    }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    [Flags]
-    public enum EncryptionMode
-    {
-        CM_ENCRYPT = 3,
-        CM_MAC = 1,
-        CM_PLAIN = 0,
-        CM_UNKNOWN = 255
-    }
     */
     #endregion
 }
