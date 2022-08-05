@@ -265,6 +265,7 @@ namespace RFiDGear.DataAccessLayer
 		NO_ERROR
 	};
 
+	/*
     /// <summary>
     /// Available Readers
     /// </summary>
@@ -287,8 +288,20 @@ namespace RFiDGear.DataAccessLayer
 		SmartID,
 		STidPRG
 	};
+	*/
 
-    public enum KeyType_MifareDesFireKeyType
+	/// <summary>
+	/// Available Readers
+	/// </summary>
+	[Flags]
+	public enum ReaderTypes
+	{
+		None,
+		Elatec,
+		PCSC
+	};
+
+	public enum KeyType_MifareDesFireKeyType
 	{
 		DefaultDesfireCardCardMasterKey,
 		DefaultDesfireCardApplicationMasterKey,

@@ -5,8 +5,8 @@
  *
  */
 
-using LibLogicalAccess;
-using LibLogicalAccess.Card;
+//using LibLogicalAccess;
+//using LibLogicalAccess.Card;
 
 using RFiDGear.DataAccessLayer;
 

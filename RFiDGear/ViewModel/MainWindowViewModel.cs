@@ -899,7 +899,7 @@ namespace RFiDGear.ViewModel
                             break;
 
                         case CARD_TYPE.ISO15693:
-                            device.ReadISO15693Chip();
+                            //device.ReadISO15693Chip();
                             break;
                     }
 

@@ -24,13 +24,13 @@ namespace RFiDGear.ViewModel
     /// </summary>
     public class SetupViewModel : ViewModelBase, IUserDialogViewModel
     {
-        private LibLogicalAccessProvider device;
+        private ReaderDevice device;
 
         public SetupViewModel()
         {
         }
 
-        public SetupViewModel(LibLogicalAccessProvider _device)
+        public SetupViewModel(ReaderDevice _device)
         {
             using (SettingsReaderWriter settings = new SettingsReaderWriter())
             {

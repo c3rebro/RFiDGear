@@ -13,8 +13,8 @@ using MefMvvm.SharedContracts.ViewModel;
 
 using MvvmDialogs.ViewModels;
 
-using LibLogicalAccess;
-using LibLogicalAccess.Card;
+//using LibLogicalAccess;
+//using LibLogicalAccess.Card;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;

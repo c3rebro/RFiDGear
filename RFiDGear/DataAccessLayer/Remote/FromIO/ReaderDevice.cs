@@ -57,9 +57,15 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 		public abstract ERROR ReadChipPublic();
 
-        #region MifareClassic
-        // Mifare Classic Method Definitions
-        public abstract ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey);
+
+		#region Common
+
+		public abstract ERROR ChangeProvider(ReaderTypes _provider);
+
+		#endregion
+		#region MifareClassic
+		// Mifare Classic Method Definitions
+		public abstract ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey);
 		public abstract ERROR WriteMiFareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer);
 		public abstract ERROR WriteMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer);
 		public abstract ERROR ReadMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey);
@@ -100,6 +106,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 										DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget,
 										DESFireKeySettings keySettings);
 		public abstract ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0);
+		public abstract ERROR DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0);
+		public abstract ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0);
+		public abstract ERROR GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0);
+		public abstract ERROR GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0);
+
 		#endregion
 
 		protected virtual void Dispose(bool disposing)

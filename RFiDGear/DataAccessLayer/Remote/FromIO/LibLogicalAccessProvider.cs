@@ -64,7 +64,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 		#region common
 
-		public ERROR ChangeProvider(ReaderTypes _provider)
+		public override ERROR ChangeProvider(ReaderTypes _provider)
 		{
 			if (Enum.IsDefined(typeof(ReaderTypes), _provider))
 			{
@@ -1833,8 +1833,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 								}
 								catch (Exception e)
 								{
-									
-									e = t.GetBaseException();
 									if (e.Message != "" && e.Message.Contains("same number already exists"))
 									{
 										return ERROR.ItemAlreadyExistError;
@@ -1989,7 +1987,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 		}
 
-		public ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
+		public override ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
 		{
 			try
 			{
@@ -2068,7 +2066,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 		}
 
-		public ERROR DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0)
+		public override ERROR DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0)
 		{
 			try
 			{
@@ -2077,13 +2075,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 				// The Application ID to use
 				location.aid = (uint)_appID;
 				// File communication requires encryption
-				location.securityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT;
 
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyType);
+				aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
 
 				if (readerUnit.connectToReader())
 				{
@@ -2146,7 +2144,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 		}
 
-		public ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
+		public override ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
 		{
 			try
 			{
@@ -2155,13 +2153,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 				// The Application ID to use
 				location.aid = (uint)_appID;
 				// File communication requires encryption
-				location.securityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT;
 
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyType);
+				aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
 
 				if (readerUnit.connectToReader())
 				{
@@ -2215,7 +2213,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 		}
 
-		public ERROR GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
+		public override ERROR GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
 		{
 			try
 			{
@@ -2224,14 +2222,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 				// The Application ID to use
 				location.aid = (uint)_appID;
 				// File communication requires encryption
-				location.securityLevel = EncryptionMode.CM_ENCRYPT;
+				location.securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT;
 
 				//IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToUse.masterCardKey.setKeyType(_keyType);
+				aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
 
 				ByteVector fileIDsObject;
 
@@ -2313,7 +2311,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 		}
 
-		public ERROR GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0)
+		public override ERROR GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0)
 		{
 			try
 			{
@@ -2322,7 +2320,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 				DESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
 				aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-				aiToUse.masterCardKey.setKeyType((DESFireKeyType)_keyType);
+				aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
 
 				if (readerUnit.connectToReader())
 				{
@@ -2349,8 +2347,15 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 									{
 										try
 										{
-											DesfireFileSettings = cmd.getFileSettings((byte)_fileNo);
-
+											/*
+											var fs = cmd.getFileSettings((byte)_fileNo);
+											DesfireFileSettings = new DESFireFileSettings({
+												accessRights = fs.accessRights,
+												comSett = fs.comSett,
+												//dataFile = fs.getDataFile(),
+												FileType = fs.fileType
+											}); 
+											*/
 											return ERROR.NoError;
 										}
 										catch (Exception e)
@@ -2367,8 +2372,15 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 												return ERROR.IOError;
 										}
 									}
-									DesfireFileSettings = cmd.getFileSettings((byte)_fileNo);
-									
+									/*
+									var fs = cmd.getFileSettings((byte)_fileNo);
+									DesfireFileSettings = new DESFireFileSettings({
+										accessRights = fs.accessRights,
+										comSett = fs.comSett,
+										//dataFile = fs.getDataFile(),
+										FileType = fs.fileType
+									});
+									*/
 									return ERROR.NoError;
 								}
 								catch (Exception e)

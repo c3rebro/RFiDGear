@@ -8,6 +8,17 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
     class ElateNetProvider : ReaderDevice
     {
+
+        #region Common
+
+        public override ERROR ChangeProvider(ReaderTypes _provider)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+
         public override ERROR ReadChipPublic()
         {
             throw new NotImplementedException();
@@ -100,6 +111,22 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             throw new NotImplementedException();
         }
         public override ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
+        {
+            throw new NotImplementedException();
+        }
+        public override ERROR DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0)
+        {
+            throw new NotImplementedException();
+        }
+        public override ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
+        {
+            throw new NotImplementedException();
+        }
+        public override ERROR GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
+        {
+            throw new NotImplementedException();
+        }
+        public override ERROR GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0)
         {
             throw new NotImplementedException();
         }

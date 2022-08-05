@@ -3,8 +3,8 @@
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 
-using LibLogicalAccess;
-using LibLogicalAccess.Card;
+//using LibLogicalAccess;
+//using LibLogicalAccess.Card;
 
 using MvvmDialogs.ViewModels;
 
@@ -341,8 +341,8 @@ namespace RFiDGear.ViewModel
 											{
 												RFiDChipGrandChildLayerViewModel grandChild = Children.First(x => x.AppID == appID).Children.First(y => (y.DesfireFile != null ? y.DesfireFile.FileID : -1) == fileID);
 
-												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileType: {0}", Enum.GetName(typeof(FileType_MifareDesfireFileType), device.DesfireFileSettings.fileType)), grandChild));
-												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileSize: {0}Bytes", device.DesfireFileSettings.getDataFile().fileSize.ToString()), grandChild));
+												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileType: {0}", Enum.GetName(typeof(FileType_MifareDesfireFileType), 1)), grandChild)); //TODO: device.DesfireFileSettings.fileType
+												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileSize: {0}Bytes", 2), grandChild)); //TODO: device.DesfireFileSettings.getDataFile().fileSize.ToString()
 												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("EncryptionMode: {0}", Enum.GetName(typeof(EncryptionMode), device.DesfireFileSettings.comSett)), grandChild));
 												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("Read: {0}", Enum.GetName(typeof(TaskAccessRights), ((device.DesfireFileSettings.accessRights[1] & 0xF0) >> 4))), grandChild));
 												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("Write: {0}", Enum.GetName(typeof(TaskAccessRights), device.DesfireFileSettings.accessRights[1] & 0x0F)), grandChild));
