@@ -11,18 +11,40 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         #region Common
 
-        public override ERROR ChangeProvider(ReaderTypes _provider)
+        public ElateNetProvider()
+        {
+            try
+            {
+
+                //GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+                AppIDList = new uint[0];
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+            }
+        }
+
+        public ElateNetProvider(ReaderTypes readerType)
+        {
+            try
+            {
+
+                //GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+                AppIDList = new uint[0];
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+            }
+
+        }
+        public override ERROR ReadChipPublic()
         {
             throw new NotImplementedException();
         }
 
         #endregion
-
-
-        public override ERROR ReadChipPublic()
-        {
-            throw new NotImplementedException();
-        }
 
         #region MifareClassic
         public override ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey)

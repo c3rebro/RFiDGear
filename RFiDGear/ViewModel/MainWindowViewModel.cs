@@ -87,6 +87,10 @@ namespace RFiDGear.ViewModel
                     ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                     : settings.DefaultSpecification.DefaultReaderName;
 
+                if (!string.IsNullOrEmpty(CurrentReader))
+                {
+                    ReaderDevice.ReaderType = (ReaderTypes)Enum.Parse(typeof(ReaderTypes), CurrentReader);
+                }
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
                 autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;

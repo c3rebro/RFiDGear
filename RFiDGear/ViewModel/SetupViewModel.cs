@@ -42,7 +42,7 @@ namespace RFiDGear.ViewModel
                 CheckOnStart = settings.DefaultSpecification.AutoCheckForUpdates;
                 SelectedBaudRate = settings.DefaultSpecification.LastUsedBaudRate;
 
-                ConnectToReaderCommand.Execute(null);
+                //ConnectToReaderCommand.Execute(null);
             }
         }
 
@@ -51,6 +51,7 @@ namespace RFiDGear.ViewModel
         public ICommand ReaderSeletedCommand { get { return new RelayCommand(ReaderSelected); } }
         private void ReaderSelected()
         {
+            ConnectToReaderCommand.Execute(null);
         }
 
         public ICommand ConnectToReaderCommand { get { return new RelayCommand(connectToReader); } }
@@ -61,7 +62,20 @@ namespace RFiDGear.ViewModel
                 this.OnConnect(this);
             }
 
-            device.ChangeProvider(SelectedReader);
+            switch(SelectedReader)
+            {
+                case ReaderTypes.PCSC:
+                    device = new LibLogicalAccessProvider(SelectedReader);
+                    break;
+
+                case ReaderTypes.Elatec:
+                    device = new ElateNetProvider(SelectedReader);
+                    break;
+
+                case ReaderTypes.None:
+
+                    break;
+            }
 
             if (device != null && device.ReadChipPublic() == ERROR.NoError)
             {

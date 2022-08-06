@@ -30,30 +30,20 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 		#region contructor
 
-		public LibLogicalAccessProvider() : this(ReaderTypes.None)
+		public LibLogicalAccessProvider()
 		{
 		}
 
-		public LibLogicalAccessProvider(ReaderTypes _readerType = ReaderTypes.None)
+		public LibLogicalAccessProvider(ReaderTypes readerType)
 		{
 			try
 			{
-				using (SettingsReaderWriter defaultSettings = new SettingsReaderWriter())
-				{
-					if(defaultSettings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.PCSC)
-                    {
-						ReaderProvider = _readerType != ReaderTypes.None ? _readerType : defaultSettings.DefaultSpecification.DefaultReaderProvider;
+				readerProvider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), readerType));
+				readerUnit = readerProvider.createReaderUnit();
 
-						readerProvider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
-
-						readerUnit = readerProvider.createReaderUnit();
-
-						GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
-					}
-
-					AppIDList = new uint[0];
-				}
-			} 
+				GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+				AppIDList = new uint[0];
+			}
 			catch (Exception e)
 			{
 				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
@@ -63,7 +53,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		#endregion contructor
 
 		#region common
-
+		/*
 		public override ERROR ChangeProvider(ReaderTypes _provider)
 		{
 			if (Enum.IsDefined(typeof(ReaderTypes), _provider))
@@ -101,7 +91,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 			return ERROR.IOError;
 		}
-
+		*/
 		public override ERROR ReadChipPublic()
 		{
 			try

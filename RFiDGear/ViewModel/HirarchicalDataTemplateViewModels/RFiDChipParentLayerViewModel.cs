@@ -221,7 +221,7 @@ namespace RFiDGear.ViewModel
 		{
 			if (!isTask)
 			{
-				using (LibLogicalAccessProvider device = new LibLogicalAccessProvider(settings.DefaultSpecification.DefaultReaderProvider))
+				using (ReaderDevice device = ReaderDevice.Instance)
 				{
 					Mouse.OverrideCursor = Cursors.Wait;
 
@@ -399,7 +399,7 @@ namespace RFiDGear.ViewModel
 		{
 			if (!isTask)
 			{
-				using (LibLogicalAccessProvider device = new LibLogicalAccessProvider(settings.DefaultSpecification.DefaultReaderProvider))
+				using (ReaderDevice device = ReaderDevice.Instance)
 				{
 					Mouse.OverrideCursor = Cursors.Wait;
 
@@ -457,7 +457,7 @@ namespace RFiDGear.ViewModel
 		{
 			if (!isTask)
 			{
-				using (LibLogicalAccessProvider device = new LibLogicalAccessProvider(settings.DefaultSpecification.DefaultReaderProvider))
+				using (ReaderDevice device = ReaderDevice.Instance)
 				{
 					Mouse.OverrideCursor = Cursors.Wait;
 
