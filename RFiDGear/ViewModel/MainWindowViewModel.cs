@@ -3038,7 +3038,6 @@ namespace RFiDGear.ViewModel
                     Title = ResourceLoader.getResource("windowCaptionOpenProject"),
                     Filter = ResourceLoader.getResource("filterStringSaveTasks"),
                     Multiselect = false
-                        
                 };
 
                 if (dlg.Show(this.Dialogs) && dlg.FileName != null)

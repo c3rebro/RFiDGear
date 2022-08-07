@@ -5,8 +5,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:islog="clr-namespace:LibLogicalAccess;assembly=LibLogicalAccessNetCE"
-    xmlns:islogcard="clr-namespace:LibLogicalAccess.Card;assembly=LibLogicalAccessNetCE"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Stretch"
@@ -64,8 +62,8 @@
                         Margin="10,2.6,0,7.4"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Stretch"
-                        ItemsSource="{dal:Enumerate {x:Type islogcard:DESFireKeyType}}"
-                        SelectedItem="{Binding SelectedDesfireAppKeyEncryptionTypeCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type islogcard:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
+                        SelectedItem="{Binding SelectedDesfireAppKeyEncryptionTypeCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="2"
                         Width="154"
