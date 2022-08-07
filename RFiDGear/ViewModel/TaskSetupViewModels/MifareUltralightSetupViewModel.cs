@@ -10,6 +10,7 @@ using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
 using MvvmDialogs.ViewModels;
 
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
@@ -28,12 +29,13 @@ using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
 {
-    /// <summary>
-    /// Description of MifareClassicSetupViewModel.
-    /// </summary>
-    public class MifareUltralightSetupViewModel : ViewModelBase, IUserDialogViewModel
-    {
-        #region Fields
+	/// <summary>
+	/// Description of MifareClassicSetupViewModel.
+	/// </summary>
+	public class MifareUltralightSetupViewModel : ViewModelBase, IUserDialogViewModel
+	{
+		#region Fields
+		private static readonly string FacilityName = "RFiDGear";
 
         private readonly string FacilityName = "RFiDGear";
 
@@ -85,6 +87,7 @@ namespace RFiDGear.ViewModel
                 childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
                 childNodeViewModelTemp = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
 
+
                 if (_selectedSetupViewModel is MifareUltralightSetupViewModel)
                 {
                     PropertyInfo[] properties = typeof(MifareUltralightSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -113,21 +116,20 @@ namespace RFiDGear.ViewModel
 
                 MifareUltralightPages = CustomConverter.GenerateStringSequence(0, 15).ToArray();
 
-                SelectedUltralightPageCurrent = "0";
-
-                HasPlugins = items != null ? items.Any() : false;
-
-                if (HasPlugins)
-                {
-                    SelectedPlugin = Items.FirstOrDefault();
-                }
-            }
-            catch (Exception e)
-            {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-            }
-
-        }
+				SelectedUltralightPageCurrent = "0";
+				
+				HasPlugins = items != null ? items.Any() : false;
+				
+				if (HasPlugins)
+					SelectedPlugin = Items.FirstOrDefault();
+				
+			}
+			catch (Exception e)
+			{
+				LogWriter.CreateLogEntry(e, FacilityName);
+			}
+			
+		}
 
         #endregion
 
@@ -415,41 +417,35 @@ namespace RFiDGear.ViewModel
 
         #endregion General Properties
 
-        #region Commands
+		/// <summary>
+		/// 
+		/// </summary>
+		public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
+		private void OnNewReadDataCommand()
+		{
+			//Mouse.OverrideCursor = Cursors.Wait;
+			TaskErr = ERROR.Empty;
+			
+			Task classicTask =
+				new Task(() =>
+				        {
+				         	using (ReaderDevice device = ReaderDevice.Instance)
+				         	{
+				         		if(device != null && device.ReadChipPublic() == ERROR.NoError)
+				         		{
+				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource(""));
+                                }
+                                else
+                                {
+                                    TaskErr = ERROR.DeviceNotReadyError;
+                                    return;
+                                }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public ICommand ReadDataCommand => new RelayCommand(OnNewReadDataCommand);
-        private void OnNewReadDataCommand()
-        {
-            //Mouse.OverrideCursor = Cursors.Wait;
-            TaskErr = ERROR.Empty;
+                                RaisePropertyChanged("ChildNodeViewModelTemp");
 
-            Task classicTask =
-                new Task(() =>
-                         {
-                             using (RFiDDevice device = RFiDDevice.Instance)
-                             {
-                                 if (device != null && device.ReadChipPublic() == ERROR.NoError)
-                                 {
-                                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource(""));
-
-
-
-                                 }
-
-                                 else
-                                 {
-                                     TaskErr = ERROR.DeviceNotReadyError;
-                                     return;
-                                 }
-
-                                 RaisePropertyChanged("ChildNodeViewModelTemp");
-
-                                 return;
-                             }
-                         });
+                                return;
+                            }
+                        });
 
             classicTask.Start();
 

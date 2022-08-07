@@ -29,15 +29,15 @@ using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
 {
-    /// <summary>
-    /// Description of ReportTaskViewModel.
-    /// </summary>
-    public class CommonTaskViewModel : ViewModelBase, IUserDialogViewModel
-    {
-        #region Fields
+	/// <summary>
+	/// Description of ReportTaskViewModel.
+	/// </summary>
+	public class CommonTaskViewModel : ViewModelBase, IUserDialogViewModel
+	{
+		#region Fields
+		private static readonly string FacilityName = "RFiDGear";
 
-        private readonly string FacilityName = "RFiDGear";
-        private protected ReportReaderWriter reportReaderWriter;
+		private protected ReportReaderWriter reportReaderWriter;
         private protected Checkpoint checkpoint;
 
         [XmlIgnore]
@@ -147,19 +147,17 @@ namespace RFiDGear.ViewModel
 
                     catch (Exception e)
                     {
-                        LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-                    }
-                }
+						LogWriter.CreateLogEntry(e, FacilityName);
+					}
+				}
 
                 AvailableTasks = _tasks;
                 NumberOfCheckpoints = CustomConverter.GenerateStringSequence(0, 60).ToArray();
-
-            }
-            catch (Exception e)
-            {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-            }
-
+			}
+			catch (Exception e)
+			{
+				LogWriter.CreateLogEntry(e, FacilityName);
+			}
         }
 
         #endregion
@@ -591,9 +589,6 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         public EQUALITY_OPERATOR SelectedCounterTrigger { get; set; }
-
-
-
 
         #endregion
 
@@ -1048,7 +1043,7 @@ namespace RFiDGear.ViewModel
                     IsTaskCompletedSuccessfully = false;
                     RaisePropertyChanged("TemplateFields");
 
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+					LogWriter.CreateLogEntry(e, FacilityName);
 
                     return;
                 }
@@ -1104,7 +1099,7 @@ namespace RFiDGear.ViewModel
 
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
             }
 
             return;
@@ -1405,8 +1400,8 @@ namespace RFiDGear.ViewModel
 
                                 catch (Exception e)
                                 {
-                                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-                                }
+									LogWriter.CreateLogEntry(e, FacilityName);
+								}
 
                                 result = ERROR.IsNotTrue;
 
@@ -1415,12 +1410,11 @@ namespace RFiDGear.ViewModel
 
                         TaskErr = result;
                     }
+					catch (Exception e)
+					{
+						LogWriter.CreateLogEntry(e, FacilityName);
+					}
 
-
-                    catch (Exception e)
-                    {
-                        LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-                    }
 
                 });
 

@@ -27,6 +27,7 @@ namespace RFiDGear.DataAccessLayer
     public class ReportReaderWriter : IDisposable
     {
         #region fields
+        private static readonly string FacilityName = "RFiDGear";
 
         PdfDocument pdfDoc;
         PdfAcroForm form = null;

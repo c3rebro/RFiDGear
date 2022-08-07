@@ -3,10 +3,9 @@ using GalaSoft.MvvmLight.Command;
 
 using MvvmDialogs.ViewModels;
 
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
-
-using Elatec.NET;
 
 using System;
 using System.Collections.Generic;
@@ -484,6 +483,7 @@ namespace RFiDGear.ViewModel
         }
 
         #endregion
+
         private void LoadChildren()
         {
             switch (_cardType)
@@ -537,91 +537,80 @@ namespace RFiDGear.ViewModel
             }
         }
 
-        #region IUserDialogViewModel Implementation
+		#region IUserDialogViewModel Implementation
 
-        [XmlIgnore]
-        public bool IsModal { get; private set; }
+		[XmlIgnore]
+		public bool IsModal { get; private set; }
 
-        public virtual void RequestClose()
-        {
-            if (OnCloseRequest != null)
-            {
-                OnCloseRequest(this);
-            }
-            else
-            {
-                Close();
-            }
-        }
+		public virtual void RequestClose()
+		{
+			if (this.OnCloseRequest != null)
+				OnCloseRequest(this);
+			else
+				Close();
+		}
 
-        public event EventHandler DialogClosing;
+		public event EventHandler DialogClosing;
 
-        public ICommand OKCommand => new RelayCommand(Ok);
+		public ICommand OKCommand { get { return new RelayCommand(Ok); } }
 
-        protected virtual void Ok()
-        {
-            if (OnOk != null)
-            {
-                OnOk(this);
-            }
-            else
-            {
-                Close();
-            }
-        }
+		protected virtual void Ok()
+		{
+			if (this.OnOk != null)
+				this.OnOk(this);
+			else
+				Close();
+		}
 
-        /// <summary>
-        ///
-        /// </summary>
-        public ICommand CancelCommand => new RelayCommand(Cancel);
+		/// <summary>
+		///
+		/// </summary>
+		public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
 
-        protected virtual void Cancel()
-        {
-            if (OnCancel != null)
-            {
-                OnCancel(this);
-            }
-            else
-            {
-                Close();
-            }
-        }
+		protected virtual void Cancel()
+		{
+			if (this.OnCancel != null)
+				this.OnCancel(this);
+			else
+				Close();
+		}
 
-        /// <summary>
-        ///
-        /// </summary>
-        [XmlIgnore]
-        public Action<RFiDChipChildLayerViewModel> OnOk { get; set; }
+		/// <summary>
+		///
+		/// </summary>
+		[XmlIgnore]
+		public Action<RFiDChipChildLayerViewModel> OnOk { get; set; }
 
-        /// <summary>
-        ///
-        /// </summary>
-        [XmlIgnore]
-        public Action<RFiDChipChildLayerViewModel> OnCancel { get; set; }
+		/// <summary>
+		///
+		/// </summary>
+		[XmlIgnore]
+		public Action<RFiDChipChildLayerViewModel> OnCancel { get; set; }
 
-        /// <summary>
-        ///
-        /// </summary>
-        [XmlIgnore]
-        public Action<RFiDChipChildLayerViewModel> OnCloseRequest { get; set; }
+		/// <summary>
+		///
+		/// </summary>
+		[XmlIgnore]
+		public Action<RFiDChipChildLayerViewModel> OnCloseRequest { get; set; }
 
-        /// <summary>
-        ///
-        /// </summary>
-        public void Close()
-        {
-            DialogClosing?.Invoke(this, new EventArgs());
-        }
+		/// <summary>
+		///
+		/// </summary>
+		public void Close()
+		{
+			if (this.DialogClosing != null)
+				this.DialogClosing(this, new EventArgs());
+		}
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="collection"></param>
-        public void Show(IList<IDialogViewModel> collection)
-        {
-            collection.Add(this);
-        }
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="collection"></param>
+		public void Show(IList<IDialogViewModel> collection)
+		{
+			collection.Add(this);
+		}
 
-        #endregion IUserDialogViewModel Implementation
-    }
+		#endregion IUserDialogViewModel Implementation
+	}
 }

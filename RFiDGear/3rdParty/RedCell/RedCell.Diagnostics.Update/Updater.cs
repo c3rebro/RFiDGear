@@ -19,6 +19,7 @@ namespace RedCell.Diagnostics.Update
         #region Constants
         private readonly string FacilityName = "RFiDGear";
 
+        private static readonly string FacilityName = "RFiDGear";
         private static readonly string appDataPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "RFiDGear");
@@ -99,6 +100,7 @@ namespace RedCell.Diagnostics.Update
             catch (Exception e)
             {
                 LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+
             }
         }
         #endregion
@@ -187,6 +189,7 @@ namespace RedCell.Diagnostics.Update
                 {
                     LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                     _remoteConfig = null;
+					
                     return;
                 }
 
@@ -237,7 +240,7 @@ namespace RedCell.Diagnostics.Update
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
             }
         }
 
@@ -257,6 +260,7 @@ namespace RedCell.Diagnostics.Update
                 catch (IOException e)
                 {
                     LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+
                     return;
                 }
             }
@@ -270,6 +274,7 @@ namespace RedCell.Diagnostics.Update
                 catch (Exception e)
                 {
                     LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+
                     return;
                 }
             }
@@ -308,6 +313,7 @@ namespace RedCell.Diagnostics.Update
                     catch (Exception e)
                     {
                         LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+
                         return;
                     }
                 }
@@ -336,6 +342,7 @@ namespace RedCell.Diagnostics.Update
                 catch (Exception e)
                 {
                     LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+
                     return;
                 }
             }

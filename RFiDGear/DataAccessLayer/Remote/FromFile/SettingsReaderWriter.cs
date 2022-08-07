@@ -18,6 +18,7 @@ namespace RFiDGear
     public class SettingsReaderWriter : IDisposable
     {
         #region fields
+        private static readonly string FacilityName = "RFiDGear";
 
         private readonly string FacilityName = "RFiDGear";
         private readonly string _settingsFileFileName = "settings.xml";
@@ -199,6 +200,7 @@ namespace RFiDGear
                 catch (Exception e)
                 {
                     LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+
                     return true;
                 }
 

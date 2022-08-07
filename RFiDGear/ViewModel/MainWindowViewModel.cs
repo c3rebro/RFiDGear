@@ -29,6 +29,7 @@ using MvvmDialogs.ViewModels;
 
 using RedCell.Diagnostics.Update;
 
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
@@ -62,6 +63,7 @@ namespace RFiDGear.ViewModel
         private readonly string FacilityName = "RFiDGear";
 
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
+        private static readonly string FacilityName = "RFiDGear";
 
         private protected MainWindow mw;
         private readonly Updater updater;
@@ -112,6 +114,10 @@ namespace RFiDGear.ViewModel
                     ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                     : settings.DefaultSpecification.DefaultReaderName;
 
+                if (!string.IsNullOrEmpty(CurrentReader))
+                {
+                    ReaderDevice.ReaderType = (ReaderTypes)Enum.Parse(typeof(ReaderTypes), CurrentReader);
+                }
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
                 autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
@@ -303,7 +309,7 @@ namespace RFiDGear.ViewModel
                 Mouse.OverrideCursor = Cursors.AppStarting;
 
                 //try to get singleton instance
-                using (RFiDDevice device = RFiDDevice.Instance)
+                using (ReaderDevice device = ReaderDevice.Instance)
                 {
                     //reader was ready - proceed
                     if (device != null)
@@ -435,7 +441,7 @@ namespace RFiDGear.ViewModel
 
             try
             {
-                using (RFiDDevice device = RFiDDevice.Instance)
+                using (ReaderDevice device = ReaderDevice.Instance)
                 {
                     // only call dialog if device is ready
                     if (device != null)
@@ -498,7 +504,8 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
+
                 dialogs.Clear();
             }
 
@@ -575,7 +582,8 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
+
                 dialogs.Clear();
             }
 
@@ -600,7 +608,7 @@ namespace RFiDGear.ViewModel
 
             try
             {
-                using (RFiDDevice device = RFiDDevice.Instance)
+                using (ReaderDevice device = ReaderDevice.Instance)
                 {
                     // only call dialog if device is ready
                     if (device != null)
@@ -663,7 +671,8 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
+
                 dialogs.Clear();
             }
 
@@ -684,7 +693,7 @@ namespace RFiDGear.ViewModel
 
             Mouse.OverrideCursor = Cursors.AppStarting;
 
-            using (RFiDDevice device = RFiDDevice.Instance)
+            using (ReaderDevice device = ReaderDevice.Instance)
             {
                 if (device != null)
                 {
@@ -767,7 +776,7 @@ namespace RFiDGear.ViewModel
 
             Mouse.OverrideCursor = Cursors.AppStarting;
 
-            using (RFiDDevice device = RFiDDevice.Instance)
+            using (ReaderDevice device = ReaderDevice.Instance)
             {
                 if (device != null)
                 {
@@ -885,7 +894,7 @@ namespace RFiDGear.ViewModel
 
             Mouse.OverrideCursor = Cursors.Wait;
 
-            using (RFiDDevice device = RFiDDevice.Instance)
+            using (ReaderDevice device = ReaderDevice.Instance)
             {
 
                 foreach (RFiDChipParentLayerViewModel item in treeViewParentNodes)
@@ -963,7 +972,7 @@ namespace RFiDGear.ViewModel
                             break;
                             */
                         case CARD_TYPE.ISO15693:
-                            device.ReadISO15693Chip();
+                            //device.ReadISO15693Chip();
                             break;
                     }
 
@@ -1147,7 +1156,7 @@ namespace RFiDGear.ViewModel
                 try
                 {
                     //try to get singleton instance
-                    using (RFiDDevice device = RFiDDevice.Instance)
+                    using (ReaderDevice device = ReaderDevice.Instance)
                     {
                         //reader was ready - proceed
                         if (device != null)
@@ -3383,7 +3392,7 @@ namespace RFiDGear.ViewModel
                 }
                 catch (Exception e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                    LogWriter.CreateLogEntry(e, FacilityName);
                 }
             });
 
@@ -3479,7 +3488,7 @@ namespace RFiDGear.ViewModel
         public ICommand NewReaderSetupDialogCommand => new RelayCommand(OnNewReaderSetupDialog);
         private void OnNewReaderSetupDialog()
         {
-            using (RFiDDevice device = RFiDDevice.Instance)
+            using (ReaderDevice device = ReaderDevice.Instance)
             {
                 Dialogs.Add(new SetupViewModel(device)
                 {
@@ -3548,7 +3557,6 @@ namespace RFiDGear.ViewModel
                     Title = ResourceLoader.GetResource("windowCaptionOpenProject"),
                     Filter = ResourceLoader.GetResource("filterStringSaveTasks"),
                     Multiselect = false
-
                 };
 
                 if (dlg.Show(Dialogs) && dlg.FileName != null)
@@ -3909,9 +3917,9 @@ namespace RFiDGear.ViewModel
                         if (i == 10)
                         {
                             //TODO: Update ReaderStatus frequently
-                            //FIXME: Locking RFiDDevice Instance in different Threads not working correctly
+                            //FIXME: Locking LibLogicalAccessProvider Instance in different Threads not working correctly
                             /*
-                            using (RFiDDevice device = RFiDDevice.Instance)
+                            using (ReaderDevice device = ReaderDevice.Instance)
                             {
 
                                 if (device != null)

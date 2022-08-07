@@ -5,7 +5,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:elatec="clr-namespace:Elatec.NET;assembly=Elatec.NET"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Height="303.027"
@@ -100,8 +99,8 @@
                         Margin="9,3,7,0"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Top"
-                        ItemsSource="{dal:Enumerate {x:Type elatec:DESFireKeyType}}"
-                        SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeTarget, Converter={StaticResource Localization}, ConverterParameter={x:Type elatec:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
+                        SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeTarget, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <CheckBox
                         Grid.Row="3"
                         Grid.Column="0"
@@ -297,8 +296,8 @@
                         Margin="9,3.4,0,0"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Top"
-                        ItemsSource="{dal:Enumerate {x:Type elatec:DESFireKeyType}}"
-                        SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent, Converter={StaticResource Localization}, ConverterParameter={x:Type elatec:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
+                        SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Button
                         Grid.Row="3"
                         Grid.Column="0"

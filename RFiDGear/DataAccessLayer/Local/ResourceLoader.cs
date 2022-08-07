@@ -93,16 +93,15 @@ namespace RFiDGear.DataAccessLayer
         }
     }
 
-    /// <summary>
-    ///
-    /// </summary>
-    public sealed class ResourceLoader : IValueConverter, IDisposable
-    {
-        private readonly string FacilityName = "RFiDGear";
-
-        private readonly SettingsReaderWriter settings;
-        private readonly CultureInfo cultureInfo;
-        private readonly ResourceManager resManager;
+	/// <summary>
+	///
+	/// </summary>
+	public sealed class ResourceLoader : IValueConverter, IDisposable
+	{
+		private static readonly string FacilityName = "RFiDGear";
+		private readonly SettingsReaderWriter settings;
+		private readonly CultureInfo cultureInfo;
+		private readonly ResourceManager resManager;
 
         /// <summary>
         ///
@@ -193,7 +192,6 @@ namespace RFiDGear.DataAccessLayer
 
                 throw new ArgumentException(null, "value");
             }
-
             return null;
         }
 
@@ -204,29 +202,29 @@ namespace RFiDGear.DataAccessLayer
         {
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="resName"></param>
-        /// <returns></returns>
-        public static string GetResource(string resName)
-        {
-            try
-            {
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
-                {
-                    settings.ReadSettings();
-
-                    return new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
-                        .GetString(resName, (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en"));
-                }
-
-            }
-            catch (Exception e)
-            {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), "RFiDGear");
-                return string.Empty;
-            }
-        }
-    }
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="resName"></param>
+		/// <returns></returns>
+		public static string getResource(string resName)
+		{
+			try
+			{			
+				using (SettingsReaderWriter settings = new SettingsReaderWriter())
+				{
+					settings.ReadSettings();
+					
+					return new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
+						.GetString(resName, (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en"));
+				}
+				
+			}
+			catch (Exception e)
+			{
+				LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+				return string.Empty;
+			}
+		}
+	}
 }

@@ -7,8 +7,12 @@
 
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+
 using MvvmDialogs.ViewModels;
+
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
+
 using System;
 using System.Collections.Generic;
 using System.Windows.Input;
@@ -20,13 +24,13 @@ namespace RFiDGear.ViewModel
     /// </summary>
     public class SetupViewModel : ViewModelBase, IUserDialogViewModel
     {
-        private readonly RFiDDevice device;
+        private ReaderDevice device;
 
         public SetupViewModel()
         {
         }
 
-        public SetupViewModel(RFiDDevice _device)
+        public SetupViewModel(ReaderDevice _device)
         {
             using (SettingsReaderWriter settings = new SettingsReaderWriter())
             {
@@ -38,7 +42,7 @@ namespace RFiDGear.ViewModel
                 CheckOnStart = settings.DefaultSpecification.AutoCheckForUpdates;
                 SelectedBaudRate = settings.DefaultSpecification.LastUsedBaudRate;
 
-                ConnectToReaderCommand.Execute(null);
+                //ConnectToReaderCommand.Execute(null);
             }
         }
 
@@ -47,6 +51,7 @@ namespace RFiDGear.ViewModel
         public ICommand ReaderSeletedCommand => new RelayCommand(ReaderSelected);
         private void ReaderSelected()
         {
+            ConnectToReaderCommand.Execute(null);
         }
 
         public ICommand ConnectToReaderCommand => new RelayCommand(ConnectToReader);
@@ -54,7 +59,20 @@ namespace RFiDGear.ViewModel
         {
             OnConnect?.Invoke(this);
 
-            //_ = device.ChangeProvider(SelectedReader);
+            switch(SelectedReader)
+            {
+                case ReaderTypes.PCSC:
+                    device = new LibLogicalAccessProvider(SelectedReader);
+                    break;
+
+                case ReaderTypes.Elatec:
+                    device = new ElatecNetProvider(SelectedReader);
+                    break;
+
+                case ReaderTypes.None:
+
+                    break;
+            }
 
             if (device != null && device.ReadChipPublic() == ERROR.NoError)
             {

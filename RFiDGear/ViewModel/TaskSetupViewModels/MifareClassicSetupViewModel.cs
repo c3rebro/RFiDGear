@@ -11,6 +11,7 @@ using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
 using MvvmDialogs.ViewModels;
 
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
@@ -1639,7 +1640,7 @@ namespace RFiDGear.ViewModel
             Task classicTask =
                 new Task(() =>
                          {
-                             using (RFiDDevice device = RFiDDevice.Instance)
+                             using (ReaderDevice device = ReaderDevice.Instance)
                              {
                                  if (device != null && device.ReadChipPublic() == ERROR.NoError)
                                  {
@@ -1683,7 +1684,6 @@ namespace RFiDGear.ViewModel
                                              }
 
                                              TaskErr = ERROR.NoError;
-
 
                                          }
 
@@ -1752,10 +1752,11 @@ namespace RFiDGear.ViewModel
                         IsTaskCompletedSuccessfully = false;
                     }
                 });
-
+				
                 classicTask.RunSynchronously();
             }
         }
+
 
         /// <summary>
         /// 
@@ -1768,7 +1769,7 @@ namespace RFiDGear.ViewModel
             Task classicTask =
                 new Task(() =>
                          {
-                             using (RFiDDevice device = RFiDDevice.Instance)
+                             using (ReaderDevice device = ReaderDevice.Instance)
                              {
                                  StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 

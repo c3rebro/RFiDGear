@@ -20,6 +20,7 @@ namespace RFiDGear.DataAccessLayer
     public class DatabaseReaderWriter
     {
         #region fields
+        private static readonly string FacilityName = "RFiDGear";
 
         private readonly string FacilityName = "RFiDGear";
 
