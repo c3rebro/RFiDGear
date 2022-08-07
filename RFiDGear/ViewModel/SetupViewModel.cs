@@ -69,7 +69,7 @@ namespace RFiDGear.ViewModel
                     break;
 
                 case ReaderTypes.Elatec:
-                    device = new ElateNetProvider(SelectedReader);
+                    device = new ElatecNetProvider(SelectedReader);
                     break;
 
                 case ReaderTypes.None:

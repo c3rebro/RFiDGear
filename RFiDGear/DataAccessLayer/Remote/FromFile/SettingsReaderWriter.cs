@@ -1,6 +1,8 @@
 ﻿using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
+using Log4CSharp;
+
 using System;
 using System.IO;
 using System.Reflection;
@@ -16,6 +18,7 @@ namespace RFiDGear
     public class SettingsReaderWriter : IDisposable
     {
         #region fields
+        private static readonly string FacilityName = "RFiDGear";
 
         private readonly string _settingsFileFileName = "settings.xml";
         private readonly string _updateConfigFileFileName = "update.xml";
@@ -103,7 +106,7 @@ namespace RFiDGear
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
             }
 
             if (!File.Exists(Path.Combine(appDataPath, _settingsFileFileName)))
@@ -122,7 +125,7 @@ namespace RFiDGear
                 }
                 catch (Exception e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 }
             }
             //else
@@ -187,7 +190,7 @@ namespace RFiDGear
                 }
                 catch (Exception e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                     return true;
                 }
 
@@ -217,7 +220,7 @@ namespace RFiDGear
             }
             catch (XmlException e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 return false;
             }
         }
@@ -240,7 +243,7 @@ namespace RFiDGear
 
                     catch(Exception e)
                     {
-                        LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                        LogWriter.CreateLogEntry(string.Format("{0}\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                     }
                 }
 

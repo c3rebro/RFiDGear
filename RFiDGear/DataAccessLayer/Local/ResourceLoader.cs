@@ -1,5 +1,8 @@
 ﻿using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+
+using Log4CSharp;
+
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -95,6 +98,7 @@ namespace RFiDGear.DataAccessLayer
 	/// </summary>
 	public sealed class ResourceLoader : IValueConverter, IDisposable
 	{
+		private static readonly string FacilityName = "RFiDGear";
 		private readonly SettingsReaderWriter settings;
 		private readonly CultureInfo cultureInfo;
 		private readonly ResourceManager resManager;
@@ -147,7 +151,7 @@ namespace RFiDGear.DataAccessLayer
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
 
 				throw new Exception(
 					string.Format("parameter:{0}\nvalue:{1}",
@@ -211,7 +215,7 @@ namespace RFiDGear.DataAccessLayer
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
 				return string.Empty;
 			}
 		}

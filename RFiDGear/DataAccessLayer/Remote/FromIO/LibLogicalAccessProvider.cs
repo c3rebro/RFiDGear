@@ -6,6 +6,9 @@ using LibLogicalAccess.Crypto;
 using ByteArrayHelper.Extensions;
 
 using RFiDGear.Model;
+
+using Log4CSharp;
+
 using System;
 using System.Threading;
 
@@ -20,6 +23,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 	public class LibLogicalAccessProvider : ReaderDevice
 	{
 		// global (cross-class) Instances go here ->
+		private static readonly string FacilityName = "RFiDGear";
 		private ReaderProvider readerProvider;
 		private ReaderUnit readerUnit;
 		private Chip card;
@@ -46,7 +50,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(e, FacilityName);
 			}
 		}
 
@@ -134,7 +138,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 									return ERROR.NoError;
 								}
 								catch (Exception e) {
-									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+									LogWriter.CreateLogEntry(e, FacilityName);
 									
 									return ERROR.IOError;
 								}
@@ -150,7 +154,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 				if (readerProvider != null)
 					readerProvider.release();
 
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(e, FacilityName);
 
 				return ERROR.IOError;
 			}
@@ -189,7 +193,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
                                 }
 								catch (Exception e) {
-									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+									LogWriter.CreateLogEntry(e, FacilityName);
 								}
 							}
 
@@ -293,7 +297,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(e, FacilityName);
 				return ERROR.AuthenticationError;
 			}
 		}
@@ -325,7 +329,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
                                 }
 								catch (Exception e) {
-									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+									LogWriter.CreateLogEntry(e, FacilityName);
 								}
 							}
 
@@ -399,7 +403,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(e, FacilityName);
 
 				return ERROR.IOError;
 			}
@@ -431,7 +435,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
                                 }
 								catch (Exception e) {
-									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+									LogWriter.CreateLogEntry(e, FacilityName);
 								}
 							}
 
@@ -478,7 +482,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(e, FacilityName);
 
 				return ERROR.IOError;
 			}
@@ -510,7 +514,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
                                 }
 								catch (Exception e) {
-									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+									LogWriter.CreateLogEntry(e, FacilityName);
 								}
 							}
 
@@ -557,7 +561,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(e, FacilityName);
 
 				return ERROR.IOError;
 			}
@@ -604,7 +608,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
                                 }
 								catch (Exception e) {
-									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+									LogWriter.CreateLogEntry(e, FacilityName);
 								}
 							}
 
@@ -644,7 +648,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 							}
 							catch (Exception e)
 							{
-                                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                                LogWriter.CreateLogEntry(e, FacilityName);
                                 return ERROR.AuthenticationError;
 							}
 							return ERROR.NoError;
@@ -654,7 +658,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(e, FacilityName);
 				return ERROR.AuthenticationError;
 			}
 			return ERROR.NoError;
@@ -691,7 +695,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
                                 }
 								catch (Exception e) {
-									LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+									LogWriter.CreateLogEntry(e, FacilityName);
 								}
 							}
 
@@ -716,7 +720,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 							}
 							catch (Exception e)
 							{
-                                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                                LogWriter.CreateLogEntry(e, FacilityName);
                                 return ERROR.AuthenticationError;
 							}
 							return ERROR.NoError;
@@ -726,7 +730,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(e, FacilityName);
 				return ERROR.AuthenticationError;
 			}
 			return ERROR.NoError;
@@ -770,7 +774,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(e, FacilityName);
 				return ERROR.IOError;
 			}
 		}
@@ -2442,7 +2446,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 			catch (Exception e)
 			{
-				LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+				LogWriter.CreateLogEntry(e, FacilityName);
 				return ERROR.IOError;
 			}
 		}
@@ -2483,7 +2487,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(e, FacilityName);
                 return ERROR.IOError;
             }
         }

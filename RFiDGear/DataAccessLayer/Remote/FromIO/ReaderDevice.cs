@@ -30,11 +30,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 						}
 						break;
 					case ReaderTypes.Elatec:
-						lock (ElateNetProvider.syncRoot)
+						lock (ElatecNetProvider.syncRoot)
 						{
 							if (instance == null)
 							{
-								instance = new ElateNetProvider(ReaderType);
+								instance = new ElatecNetProvider(ReaderType);
 								return instance;
 							}
 							else

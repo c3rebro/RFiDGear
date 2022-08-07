@@ -1,4 +1,11 @@
-﻿using System;
+﻿using Elatec.NET.Model;
+using Elatec.NET;
+
+using RFiDGear.Model;
+
+using Log4CSharp;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,42 +13,105 @@ using System.Threading.Tasks;
 
 namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
-    class ElateNetProvider : ReaderDevice
+    class ElatecNetProvider : ReaderDevice
     {
+        private string FacilityName = "RFiDGear";
+        private TWN4ReaderDevice readerDevice;
+        private ChipModel card;
 
         #region Common
 
-        public ElateNetProvider()
+        public ElatecNetProvider()
         {
             try
             {
-
+                readerDevice = new TWN4ReaderDevice();
                 //GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
                 AppIDList = new uint[0];
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(e, FacilityName);
             }
         }
 
-        public ElateNetProvider(ReaderTypes readerType)
+        public ElatecNetProvider(ReaderTypes readerType)
         {
             try
             {
-
+                readerDevice = new TWN4ReaderDevice();
                 //GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
                 AppIDList = new uint[0];
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(e, FacilityName);
             }
 
         }
         public override ERROR ReadChipPublic()
-        {
-            throw new NotImplementedException();
+        {           
+            try
+            {
+                if (readerDevice.Connect())
+                {
+                    readerDevice.Beep();
+                    readerDevice.GreenLED(true);
+
+                    card = readerDevice.GetSingleChip();
+
+                    if (card?.ChipIdentifier != null)
+                    {
+                        try
+                        {
+                            GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)card.CardType);
+
+                            if ((CARD_TYPE)card.CardType == CARD_TYPE.DESFire || (CARD_TYPE)card.CardType == CARD_TYPE.DESFireEV1)
+                            {
+                                int version = readerDevice.GetDesFireVersion();
+
+                                if (version == 1)
+                                {
+                                    GenericChip.CardType = CARD_TYPE.DESFireEV1;
+                                }
+                                else if (version == 2)
+                                {
+                                    GenericChip.CardType = CARD_TYPE.DESFireEV2;
+                                }
+                                else if (version == 3)
+                                {
+                                    GenericChip.CardType = CARD_TYPE.DESFire;
+                                }
+                            }
+                            return ERROR.NoError;
+                        }
+                        catch (Exception e)
+                        {
+                            LogWriter.CreateLogEntry(e, FacilityName);
+                            return ERROR.IOError;
+                        }
+                    }
+                    else
+                    {
+                        return ERROR.DeviceNotReadyError;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                if (readerDevice != null)
+                {
+                    readerDevice.Dispose();
+                }
+
+                LogWriter.CreateLogEntry(e, FacilityName);
+
+                readerDevice?.Disconnect();
+                return ERROR.IOError;
+            }
+            readerDevice?.Disconnect();
+            return ERROR.IOError;
+                
         }
 
         #endregion

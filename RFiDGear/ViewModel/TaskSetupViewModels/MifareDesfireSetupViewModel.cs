@@ -13,13 +13,12 @@ using MefMvvm.SharedContracts.ViewModel;
 
 using MvvmDialogs.ViewModels;
 
-//using LibLogicalAccess;
-//using LibLogicalAccess.Card;
-
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using RFiDGear.ViewModel;
+
+using Log4CSharp;
 
 using System;
 using System.ComponentModel.Composition;
@@ -41,8 +40,10 @@ namespace RFiDGear.ViewModel
     public class MifareDesfireSetupViewModel : ViewModelBase, IUserDialogViewModel
 	{
 
-        #region Fields
-        private protected SettingsReaderWriter settings = new SettingsReaderWriter();
+		#region Fields
+		private static readonly string FacilityName = "RFiDGear";
+
+		private protected SettingsReaderWriter settings = new SettingsReaderWriter();
         private protected MifareDesfireChipModel chip;
         private protected MifareDesfireAppModel app;
 		private DESFireAccessRights accessRights;
@@ -189,7 +190,7 @@ namespace RFiDGear.ViewModel
 			}
 			catch
 			{
-                //LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                //LogWriter.CreateLogEntry(e, FacilityName);
             }
 
 			
@@ -2015,7 +2016,7 @@ namespace RFiDGear.ViewModel
 					RaisePropertyChanged("ChildNodeViewModelFromChip");
 				}
 				catch (Exception e) {
-					LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+					LogWriter.CreateLogEntry(e, FacilityName);
 				}
 			}
 		}

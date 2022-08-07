@@ -12,6 +12,8 @@ using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
+using Log4CSharp;
+
 using System;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
@@ -38,6 +40,7 @@ namespace RFiDGear.ViewModel
     public class MainWindowViewModel : ViewModelBase
     {
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
+        private static readonly string FacilityName = "RFiDGear";
 
         private protected MainWindow mw;
         private protected Updater updater;
@@ -333,7 +336,7 @@ namespace RFiDGear.ViewModel
             {
                 Mouse.OverrideCursor = null;
 
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""), FacilityName);
             }
         }
 
@@ -467,7 +470,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(e, FacilityName);
                 dialogs.Clear();
             }
 
@@ -544,7 +547,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(e, FacilityName);
                 dialogs.Clear();
             }
 
@@ -630,7 +633,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                LogWriter.CreateLogEntry(e, FacilityName);
                 dialogs.Clear();
             }
 
@@ -2846,7 +2849,7 @@ namespace RFiDGear.ViewModel
                 }
                 catch (Exception e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(e, FacilityName);
                 }
             });
 
@@ -3430,7 +3433,7 @@ namespace RFiDGear.ViewModel
                 }
                 catch (Exception ex)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""), FacilityName);
                 }
 
                 using (SettingsReaderWriter settings = new SettingsReaderWriter())
