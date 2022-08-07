@@ -1,4 +1,7 @@
 ﻿using RFiDGear.DataAccessLayer;
+
+using Elatec.NET;
+
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Xml.Serialization;
@@ -225,8 +228,8 @@ namespace RFiDGear.Model
         public AccessCondition_MifareClassicSectorTrailer Read_KeyB { get => SectorAccessCondition.Read_KeyB; set => SectorAccessCondition.Read_KeyB = value; }
         public AccessCondition_MifareClassicSectorTrailer Write_KeyB { get => SectorAccessCondition.Read_KeyB; set => SectorAccessCondition.Read_KeyB = value; }
 
-        public LibLogicalAccess.SectorAccessBits SAB { get => sab; set => sab = value; }
-        private LibLogicalAccess.SectorAccessBits sab;
+        public SectorAccessBits SAB { get => sab; set => sab = value; }
+        private SectorAccessBits sab;
 
         public bool IsAuthenticated { get; set; }
         public short Cx { get => SectorAccessCondition.Cx; set => SectorAccessCondition.Cx = value; }

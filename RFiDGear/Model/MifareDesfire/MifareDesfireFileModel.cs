@@ -1,4 +1,4 @@
-﻿using LibLogicalAccess;
+﻿using Elatec.NET;
 
 namespace RFiDGear
 {
@@ -21,6 +21,6 @@ namespace RFiDGear
 
         public byte FileID { get; set; }
 
-        public FileSetting DesfireFileSetting { get; set; }
+        //public FileSetting DesfireFileSetting { get; set; }
     }
 }

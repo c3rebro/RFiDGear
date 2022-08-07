@@ -1,4 +1,5 @@
 ﻿using RFiDGear.DataAccessLayer;
+
 using System.Collections.Generic;
 
 namespace RFiDGear.Model

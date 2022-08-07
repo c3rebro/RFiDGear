@@ -5,7 +5,7 @@
  *
  */
 
-using LibLogicalAccess;
+using Elatec.NET;
 using System;
 
 namespace RFiDGear.DataAccessLayer
@@ -71,6 +71,49 @@ namespace RFiDGear.DataAccessLayer
         CheckLogicCondition,
         ChangeDefault
     }
+
+    /// <summary>
+    /// UID and Type of Cardtechnology
+    /// </summary>
+    public struct CARD_INFO
+    {
+        public CARD_INFO(CARD_TYPE _type, string _uid)
+        {
+            CardType = _type;
+            uid = _uid;
+        }
+
+        public string uid;
+        public CARD_TYPE CardType;
+    }
+
+    /// <summary>
+    /// Available Cardtechnologies
+    /// </summary>
+    public enum CARD_TYPE
+    {
+        Unspecified,
+        ISO15693,
+        MifareMini,
+        Mifare1K,
+        Mifare2K,
+        Mifare4K,
+        DESFire,
+        DESFireEV1,
+        DESFireEV2,
+        MifarePlus_SL0_1K,
+        MifarePlus_SL0_2K,
+        MifarePlus_SL0_4K,
+        MifarePlus_SL2_1K,
+        MifarePlus_SL2_2K,
+        MifarePlus_SL2_4K,
+        MifarePlus_SL3_1K,
+        MifarePlus_SL3_2K,
+        MifarePlus_SL3_4K,
+        SmartMX_Mifare_2K,
+        SmartMX_Mifare_4K,
+        MifareUltralight
+    };
 
     /// <summary>
     /// The availbale "Mifare Classic Tasks"
@@ -276,20 +319,7 @@ namespace RFiDGear.DataAccessLayer
     public enum ReaderTypes
     {
         None,
-        Admitto,
-        AxessTMC13,
-        Deister,
-        Elatec,
-        GigaTMS,
-        Gunnebo,
-        IdOnDemand,
-        PCSC,
-        Promag,
-        RFIDeas,
-        Rpleth,
-        SCIEL,
-        SmartID,
-        STidPRG
+        Elatec
     };
 
     public enum KeyType_MifareDesFireKeyType

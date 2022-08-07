@@ -176,7 +176,6 @@
     <Compile Include="DataAccessLayer\Local\Constants.cs" />
     <Compile Include="DataAccessLayer\Local\CustomConverter.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\DatabaseReaderWriter.cs" />
-    <Compile Include="DataAccessLayer\Remote\FromFile\LogWriter.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\ReportReaderWriter.cs" />
     <Compile Include="DataAccessLayer\Local\ResourceLoader.cs" />
     <Compile Include="DataAccessLayer\Remote\FromIO\RFiDDevice.cs" />
@@ -363,6 +362,14 @@
       <Project>{bdd5df8c-6fc1-4882-8151-924820fdbc05}</Project>
       <Name>ByteArray</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\Elatec.NET\Elatec.NET.csproj">
+      <Project>{53fbd2f3-638e-4892-9f09-9a372c8f76d2}</Project>
+      <Name>Elatec.NET</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Log4CSharp\Log4CSharp.csproj">
+      <Project>{786d71e7-4d92-43e4-a9eb-4e07ffe36f70}</Project>
+      <Name>Log4CSharp</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MVVMDialogs\MVVMDialogs.csproj">
       <Project>{ef56252e-257f-41d1-974b-c9015071ce7e}</Project>
       <Name>MVVMDialogs</Name>
@@ -371,17 +378,6 @@
       <Project>{e99b606a-25b8-4113-9e75-5016ccfdb410}</Project>
       <Name>PluginSystem</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <COMReference Include="LibLogicalAccess">
-      <Guid>{9B9E09AD-A354-4D6F-93A8-DA32D71525A4}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>87</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </COMReference>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\splash.png" />

@@ -7,13 +7,19 @@
 
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+
 using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
+
 using MvvmDialogs.ViewModels;
-using LibLogicalAccess;
+
+using Log4CSharp;
+
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
-using RFiDGear.ViewModel;
+
+using Elatec.NET;
+
 using System;
 using System.ComponentModel.Composition;
 using System.Collections.Generic;
@@ -35,6 +41,8 @@ namespace RFiDGear.ViewModel
     {
 
         #region Fields
+        private readonly string FacilityName = "RFiDGear";
+
         private protected SettingsReaderWriter settings = new SettingsReaderWriter();
         private protected MifareDesfireChipModel chip;
         private protected MifareDesfireAppModel app;
@@ -181,7 +189,7 @@ namespace RFiDGear.ViewModel
             }
             catch
             {
-                //LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                //LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
             }
 
 
@@ -1683,10 +1691,10 @@ namespace RFiDGear.ViewModel
         {
             TaskErr = ERROR.Empty;
 
-            accessRights.changeAccess = SelectedDesfireFileAccessRightChange;
-            accessRights.readAccess = SelectedDesfireFileAccessRightRead;
-            accessRights.writeAccess = SelectedDesfireFileAccessRightWrite;
-            accessRights.readAndWriteAccess = SelectedDesfireFileAccessRightReadWrite;
+            //accessRights.changeAccess = SelectedDesfireFileAccessRightChange;
+            //accessRights.readAccess = SelectedDesfireFileAccessRightRead;
+            //accessRights.writeAccess = SelectedDesfireFileAccessRightWrite;
+            //accessRights.readAndWriteAccess = SelectedDesfireFileAccessRightReadWrite;
 
             Task desfireTask =
                 new Task(() =>
@@ -1911,7 +1919,7 @@ namespace RFiDGear.ViewModel
                 }
                 catch (Exception e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 }
             }
         }
@@ -2698,11 +2706,13 @@ namespace RFiDGear.ViewModel
                             {
                                 StatusText += string.Format("{0}: Successfully Read App Settings of App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
+                                /*
                                 if (((byte)device.DesfireAppKeySetting & (byte)keySettings) != 0)
                                 {
                                     TaskErr = ERROR.NoError;
                                     return;
                                 }
+                                */
                                 TaskErr = ERROR.IsNotTrue;
                             }
                             else
