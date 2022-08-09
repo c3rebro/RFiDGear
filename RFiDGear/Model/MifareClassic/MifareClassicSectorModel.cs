@@ -1,7 +1,5 @@
 ﻿using RFiDGear.DataAccessLayer;
 
-using Elatec.NET;
-
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Xml.Serialization;

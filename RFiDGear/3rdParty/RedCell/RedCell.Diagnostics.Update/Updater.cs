@@ -17,9 +17,8 @@ namespace RedCell.Diagnostics.Update
     public class Updater : IDisposable
     {
         #region Constants
-        private readonly string FacilityName = "RFiDGear";
-
         private static readonly string FacilityName = "RFiDGear";
+
         private static readonly string appDataPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "RFiDGear");
@@ -284,7 +283,7 @@ namespace RedCell.Diagnostics.Update
             foreach (string update in _remoteConfig.Payloads)
             {
                 Log.Write("Fetching '{0}'.", update);
-                var url = _remoteConfig.BaseUri + update; //TODO: make this localizable e.g. + (settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/")
+                var url = _remoteConfig.BaseUri + update; //TODO: make this localizable ? e.g. + (settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/")
                 var file = Fetch.Get(url);
                 if (file == null)
                 {

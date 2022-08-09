@@ -60,8 +60,6 @@ namespace RFiDGear.ViewModel
     [ExportViewModel("MainWin")]
     public class MainWindowViewModel : ViewModelBase
     {
-        private readonly string FacilityName = "RFiDGear";
-
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
         private static readonly string FacilityName = "RFiDGear";
 

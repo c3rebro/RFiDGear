@@ -256,13 +256,14 @@ namespace RFiDGear
             switch (_cardType)
             {
                 case CARD_TYPE.Mifare1K:
+                case CARD_TYPE.MifarePlus_SL1_1K:
+                case CARD_TYPE.Mifare2K:
+                case CARD_TYPE.MifarePlus_SL1_2K:
                     blockCount = 4;
                     break;
 
-                case CARD_TYPE.Mifare2K:
-                    break;
-
                 case CARD_TYPE.Mifare4K:
+                case CARD_TYPE.MifarePlus_SL1_4K:
                     blockCount = (_sectorNumber <= 31 ? 4 : 16);
                     break;
 

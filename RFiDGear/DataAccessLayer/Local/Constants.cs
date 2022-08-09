@@ -20,7 +20,7 @@ namespace RFiDGear.DataAccessLayer
 
     public static class Constants
     {
-        public static readonly int MAX_WAIT_INSERTION = 200; //timeout for chip response in ms
+        public static readonly uint MAX_WAIT_INSERTION = 200; //timeout for chip response in ms
         public static readonly string TITLE_SUFFIX = ""; //turns out special app versions
                                                //public const string TITLE_SUFFIX = "DEVELOPER PREVIEW"; //turns out special app versions
     }
@@ -70,173 +70,6 @@ namespace RFiDGear.DataAccessLayer
         CheckLogicCondition,
 		ChangeDefault
 	}
-
-	/// <summary>
-	/// The availbale "Mifare Classic Tasks"
-	/// </summary>
-	public enum TaskType_MifareClassicTask
-	{
-		None,
-		ReadData,
-		WriteData,
-		ChangeDefault
-	}
-
-	/// <summary>
-	/// The availbale "Mifare Ultralight" Tasks
-	/// </summary>
-	public enum TaskType_MifareUltralightTask
-	{
-		None,
-		ReadData,
-		WriteData,
-		ChangeDefault
-	}
-
-	/// <summary>
-	/// The availbale "Mifare Desfire Tasks"
-	/// </summary>
-	public enum TaskType_MifareDesfireTask
-	{
-		None,
-		ChangeDefault,
-		AppExistCheck,
-		ReadAppSettings,
-		PICCMasterKeyChangeover,
-		CreateApplication,
-		AuthenticateApplication,
-		ApplicationKeyChangeover,
-		CreateFile,
-		ReadData,
-		WriteData,
-		DeleteFile, 
-		DeleteApplication,
-		FormatDesfireCard
-
-	}
-
-	/// <summary>
-	/// Select DataBlock in Data Explorer
-	/// </summary>
-	[Flags]
-	public enum DataExplorer_DataBlock
-	{
-		Block0 = 0,
-		Block1 = 1,
-		Block2 = 2,
-		Block3 = 3
-	}
-
-	/// <summary>
-	/// Build a SectorTrailer / Select DataBlock in Sector Trailer Access Bits
-	/// </summary>
-	public enum SectorTrailer_DataBlock
-	{
-		Block0 = 0,
-		Block1 = 1,
-		Block2 = 2,
-		BlockAll = 3
-	}
-
-	/// <summary>
-	/// Build a "SectorTrailer" / Determine Access To DataBlocks
-	/// </summary>
-	[Flags]
-	public enum SectorTrailer_AccessType
-	{
-		WriteKeyB = 1,
-		ReadKeyB = 2,
-		WriteAccessBits = 4,
-		ReadAccessBits = 8,
-		WriteKeyA = 16,
-		ReadKeyA = 32
-	}
-
-	/// <summary>
-	///
-	/// </summary>
-	[Flags]
-	public enum AccessCondition_MifareDesfireAppCreation
-	{
-		ChangeKeyUsingMK = 0,
-		ChangeKeyUsingKeyNo = 224,
-		ChangeKeyFrozen = 240
-	}
-
-	/// <summary>
-	///
-	/// </summary>
-	public enum AccessCondition_MifareClassicSectorTrailer
-	{
-		NotApplicable,
-		NotAllowed,
-		Allowed_With_KeyA,
-		Allowed_With_KeyB,
-		Allowed_With_KeyA_Or_KeyB
-	}
-
-	/// <summary>
-	/// Currently Available Cardtechnologies
-	/// </summary>
-	public enum CARD_TYPE
-	{
-		// Custom
-		Unspecified = 0xE0,
-		ISO15693 = 0xE1,
-		MifareMini = 0xE2,
-		Mifare1K = 0xE3,
-		Mifare2K = 0xE4,
-		Mifare4K = 0xE5,
-		DESFire = 0xE6,
-		DESFireEV1 = 0xE7,
-		DESFireEV2 = 0xE8,
-		MifarePlus_SL0_1K = 0xE9,
-		MifarePlus_SL0_2K = 0xEA,
-		MifarePlus_SL0_4K = 0xEB,
-		MifarePlus_SL1_1K = 0xF5,
-		MifarePlus_SL1_2K = 0xF6,
-		MifarePlus_SL1_4K = 0xF7,
-		MifarePlus_SL2_1K = 0xEC,
-		MifarePlus_SL2_2K = 0xED,
-		MifarePlus_SL2_4K = 0xEE,
-		MifarePlus_SL3_1K = 0xEF,
-		MifarePlus_SL3_2K = 0xF0,
-		MifarePlus_SL3_4K = 0xF1,
-		SmartMX_Mifare_2K = 0xF2,
-		SmartMX_Mifare_4K = 0xF3,
-		MifareUltralight = 0xF4,
-		__UNSUPPORTED__DESFireEV2 = 0xFE,
-		GENERIC_T_CL_A = 0xFF
-
-	};
-
-	/// <summary>
-	/// Currently Available Error Conditions
-	/// </summary>
-	public enum ERROR
-	{
-		Empty,
-		NoError,
-		AuthenticationError,
-		DeviceNotReadyError,
-		IOError,
-        ItemAlreadyExistError,
-		IsNotTrue,
-		IsNotFalse,
-		OutOfMemory,
-		NotAllowed
-	}
-
-	/// <summary>
-	/// The Possible Logical States
-	/// </summary>
-	public enum LOGIC_STATE
-    {
-        None,
-        CreateReport,
-        CheckLogicCondition,
-        ChangeDefault
-    }
 
     /// <summary>
     /// UID and Type of Cardtechnology
@@ -369,9 +202,13 @@ namespace RFiDGear.DataAccessLayer
         Mifare2K,
         Mifare4K,
         DESFire,
+        __UNSUPPORTED__DESFire,
         DESFireEV1,
-        DESFireEV2,
+        __UNSUPPORTED__DESFireEV1,
+        DESFireEV2, 
+        __UNSUPPORTED__DESFireEV2,
         DESFireEV3,
+        __UNSUPPORTED__DESFireEV3,
         FeliCa,
         iCode1,
         MifarePlus_SL0_2K,
@@ -413,6 +250,19 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
+    /// The Possible Logical States For Checkpoint Counter
+    /// </summary>
+    public enum EQUALITY_OPERATOR
+    {
+        EQUAL,
+        LESS_THAN,
+        MORE_THAN,
+        LESS_OR_EQUAL,
+        MORE_OR_EQUAL
+    };
+
+
+    /// <summary>
     /// The Possible Logical States
     /// </summary>
     public enum LOGIC_STATE
@@ -425,19 +275,6 @@ namespace RFiDGear.DataAccessLayer
         COUNT,
         COMPARE
     };
-
-    /// <summary>
-    /// The Possible Logical States For Checkpoint Counter
-    /// </summary>
-    public enum EQUALITY_OPERATOR
-    {
-        EQUAL,
-        LESS_THAN,
-        MORE_THAN,
-        LESS_OR_EQUAL,
-        MORE_OR_EQUAL
-    };
-
 
     /// <summary>
     /// Key Formatting Errors

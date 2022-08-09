@@ -134,13 +134,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             throw new NotImplementedException();
         }
         public override ERROR WriteMiFareClassicWithMAD(int _madApplicationID, int _madStartSector,
-                                               string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
                                                string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
-                                               byte[] buffer, byte _madGPB, bool _useMADToAuth = false)
+                                               string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
+                                               byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth = false, bool _keyToWriteUseMAD = false)
         {
             throw new NotImplementedException();
         }
-        public override ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, bool _useMADToAuth = true)
+        public override ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, bool _useMADToAuth = true, bool _aiToUseIsMAD = false)
         {
             throw new NotImplementedException();
         }

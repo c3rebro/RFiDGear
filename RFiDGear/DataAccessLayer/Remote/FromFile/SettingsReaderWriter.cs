@@ -20,7 +20,6 @@ namespace RFiDGear
         #region fields
         private static readonly string FacilityName = "RFiDGear";
 
-        private readonly string FacilityName = "RFiDGear";
         private readonly string _settingsFileFileName = "settings.xml";
         private readonly string _updateConfigFileFileName = "update.xml";
         private readonly string _updateURL = @"https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml";

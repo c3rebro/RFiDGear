@@ -207,7 +207,7 @@ namespace RFiDGear.DataAccessLayer
 		/// </summary>
 		/// <param name="resName"></param>
 		/// <returns></returns>
-		public static string getResource(string resName)
+		public static string GetResource(string resName)
 		{
 			try
 			{			

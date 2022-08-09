@@ -1772,7 +1772,7 @@ namespace RFiDGear.ViewModel
                              using (ReaderDevice device = ReaderDevice.Instance)
                              {
                                  StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
-
+                                 
                                  if (!UseMAD)
                                  {
                                      if (device != null)
@@ -1780,7 +1780,10 @@ namespace RFiDGear.ViewModel
                                          childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
                                          childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
 
-                                         if (device.WriteMiFareClassicSingleBlock(childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.DataBlockNumberChipBased,
+                                         // childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.DataBlockNumberChipBased
+                                         device.ReadChipPublic();
+
+                                         if (device.WriteMiFareClassicSingleBlock(CustomConverter.GetChipBasedDataBlockNumber(device.GenericChip.CardType, selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite),
                                                                                   ClassicKeyAKeyCurrent,
                                                                                   ClassicKeyBKeyCurrent,
                                                                                   childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data) == ERROR.NoError)
@@ -1793,6 +1796,7 @@ namespace RFiDGear.ViewModel
                                          }
                                          else
                                          {
+                                             StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
                                              TaskErr = ERROR.AuthenticationError;
                                          }
                                      }

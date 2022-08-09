@@ -1,5 +1,4 @@
 ﻿using ByteArrayHelper.Extensions;
-
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 
@@ -218,7 +217,6 @@ namespace RFiDGear.ViewModel
             }
         }
 
-
         #endregion Constructors
 
         #region Context Menu Items
@@ -241,7 +239,7 @@ namespace RFiDGear.ViewModel
                     {
                         foreach (string key in settings.DefaultSpecification.MifareClassicDefaultQuickCheckKeys)
                         {
-                            //TODO Try all Keys and add the result somewhere in the treeview
+                            //TODO: Try all Keys and add the result somewhere in the treeview
 
                             if (device.ReadMiFareClassicSingleSector(cnVM.SectorNumber, key, key) == ERROR.NoError)
                             {
@@ -288,7 +286,7 @@ namespace RFiDGear.ViewModel
         {
             if (!isTask)
             {
-                using (RFiDDevice device = RFiDDevice.Instance)
+                using (ReaderDevice device = ReaderDevice.Instance)
                 {
                     //if (device != null && device.GetMiFareDESFireChipAppIDs(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].Key) == ERROR.NoError)
                     if (device != null && device.ReadChipPublic() == ERROR.NoError)
@@ -342,7 +340,7 @@ namespace RFiDGear.ViewModel
                                         Children.First(x => x.AppID == appID).Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Allow Change Config: {0}", (device.DesfireAppKeySetting & (DESFireKeySettings)0x08) == (DESFireKeySettings)0x08 ? "yes" : "no")));
                                     }
 
-                                    //TODO add grandchild fileid
+                                    //TODO: add grandchild fileid
                                     if (device.GetMifareDesfireFileList(
                                         settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key,
                                         settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType,
@@ -358,20 +356,25 @@ namespace RFiDGear.ViewModel
                                             {
                                                 RFiDChipGrandChildLayerViewModel grandChild = Children.First(x => x.AppID == appID).Children.First(y => (y.DesfireFile != null ? y.DesfireFile.FileID : -1) == fileID);
 
-												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileType: {0}", Enum.GetName(typeof(FileType_MifareDesfireFileType), 1)), grandChild)); //TODO: device.DesfireFileSettings.fileType
-												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileSize: {0}Bytes", 2), grandChild)); //TODO: device.DesfireFileSettings.getDataFile().fileSize.ToString()
-												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("EncryptionMode: {0}", Enum.GetName(typeof(EncryptionMode), device.DesfireFileSettings.comSett)), grandChild));
-												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("Read: {0}", Enum.GetName(typeof(TaskAccessRights), ((device.DesfireFileSettings.accessRights[1] & 0xF0) >> 4))), grandChild));
-												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("Write: {0}", Enum.GetName(typeof(TaskAccessRights), device.DesfireFileSettings.accessRights[1] & 0x0F)), grandChild));
-												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("RW: {0}", Enum.GetName(typeof(TaskAccessRights), ((device.DesfireFileSettings.accessRights[0] & 0xF0) >> 4))), grandChild)); //lsb, upper nibble
-												grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("Change: {0}", Enum.GetName(typeof(TaskAccessRights), device.DesfireFileSettings.accessRights[0] & 0x0F)), grandChild)); //lsb , lower nibble
-											}
-										}
-									}
-								}
-							else
-								Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("Directory Listing NOT Allowed"));
-						}
+                                                grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileType: {0}", Enum.GetName(typeof(FileType_MifareDesfireFileType), device.DesfireFileSettings.FileType)), grandChild));
+                                                grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileSize: {0}Bytes", device.DesfireFileSettings.dataFile.fileSize.ToString()), grandChild));
+                                                grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("EncryptionMode: {0}", Enum.GetName(typeof(EncryptionMode), device.DesfireFileSettings.comSett)), grandChild));
+                                                grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("Read: {0}", Enum.GetName(typeof(TaskAccessRights), ((device.DesfireFileSettings.accessRights[1] & 0xF0) >> 4))), grandChild));
+                                                grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("Write: {0}", Enum.GetName(typeof(TaskAccessRights), device.DesfireFileSettings.accessRights[1] & 0x0F)), grandChild));
+                                                grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("RW: {0}", Enum.GetName(typeof(TaskAccessRights), ((device.DesfireFileSettings.accessRights[0] & 0xF0) >> 4))), grandChild)); //lsb, upper nibble
+                                                grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("Change: {0}", Enum.GetName(typeof(TaskAccessRights), device.DesfireFileSettings.accessRights[0] & 0x0F)), grandChild)); //lsb , lower nibble
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("Directory Listing NOT Allowed"));
+                            }
+                        }
+
+
                         catch
                         {
                             Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("Undefined ERROR"));
@@ -413,13 +416,13 @@ namespace RFiDGear.ViewModel
             }
         }
 
-		private void MifareUltralightQuickCheck()
-		{
-			if (!isTask)
-			{
-				using (ReaderDevice device = ReaderDevice.Instance)
-				{
-					Mouse.OverrideCursor = Cursors.Wait;
+        private void MifareUltralightQuickCheck()
+        {
+            if (!isTask)
+            {
+                using (ReaderDevice device = ReaderDevice.Instance)
+                {
+                    Mouse.OverrideCursor = Cursors.Wait;
 
                     foreach (RFiDChipChildLayerViewModel cnVM in Children)
                     {
@@ -469,16 +472,16 @@ namespace RFiDGear.ViewModel
                     IsExpanded = true;
 
                     Mouse.OverrideCursor = null;
-				}
-			}
-		}
-		
-		private void EraseDesfireCard()
-		{
-			if (!isTask)
-			{
-				using (ReaderDevice device = ReaderDevice.Instance)
-				{
+                }
+            }
+        }
+
+        private void EraseDesfireCard()
+        {
+            if (!isTask)
+            {
+                using (ReaderDevice device = ReaderDevice.Instance)
+                {
                     Mouse.OverrideCursor = Cursors.Wait;
 
                     IsExpanded = true;
@@ -751,16 +754,16 @@ namespace RFiDGear.ViewModel
                                 new RFiDChipChildLayerViewModel(
                                     new MifareClassicSectorModel(i), this, CardType, dialogs));
                         }
-						
-						for(int i = 0; i < _children.Count; i++)
-						{
-							for(int j = 0; j < _children[i].Children.Count(); j++)
-							{
-								_children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
-							}
-						}
-					}
-					break;
+
+                        for (int i = 0; i < _children.Count; i++)
+                        {
+                            for (int j = 0; j < _children[i].Children.Count(); j++)
+                            {
+                                _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(CARD_TYPE.Mifare1K, i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
+                            }
+                        }
+                    }
+                    break;
 
                 case CARD_TYPE.Mifare4K:
                 case CARD_TYPE.MifarePlus_SL1_4K:

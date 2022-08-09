@@ -22,8 +22,6 @@ namespace RFiDGear.DataAccessLayer
         #region fields
         private static readonly string FacilityName = "RFiDGear";
 
-        private readonly string FacilityName = "RFiDGear";
-
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
         private const string chipDatabaseFileName = "chipdatabase.xml";

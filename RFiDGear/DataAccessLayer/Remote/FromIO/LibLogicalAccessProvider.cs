@@ -27,13 +27,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		private ReaderProvider readerProvider;
 		private ReaderUnit readerUnit;
 		private Chip card;
-
 		#region properties
 
 		#endregion properties
 
 		#region contructor
-
 		public LibLogicalAccessProvider()
 		{
 		}
@@ -57,39 +55,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		#endregion contructor
 
 		#region common
-		/*
-		public override ERROR ChangeProvider(ReaderTypes _provider)
-		{
-			if (Enum.IsDefined(typeof(ReaderTypes), _provider))
-			{
-				if (readerProvider != null)
-				{
-					try
-					{
-                        readerUnit.disconnectFromReader();
-                        readerProvider.release();
-					}
-					catch
-					{
-						return ERROR.IOError;
-					}
-				}
-				ReaderProvider = _provider;
-				try
-				{
-					LibraryManager lm = LibraryManager.getInstance();
-					readerProvider = lm.getReaderProvider(Enum.GetName(typeof(ReaderTypes), ReaderProvider));
-					readerUnit = readerProvider.createReaderUnit();
-					return ERROR.NoError;
-				}
-				catch
-				{
-					return ERROR.IOError;
-				}
-			}
-			return ERROR.IOError;
-		}
-		*/
+
 		public override ERROR ReadChipPublic()
 		{
 			try
@@ -101,7 +67,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 						if (readerUnit.connect())
 						{
 							ReaderUnitName = readerUnit.getConnectedName();
-							//string readerSerialNumber = readerUnit.GetReaderSerialNumber(); //-> ERROR with OmniKey (and some others?) Reader when card isnt removed before recalling!
 
 							card = readerUnit.getSingleChip();
 
@@ -113,9 +78,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 									GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
 
-									if (card.getCardType() == "DESFire" || card.getCardType() == "DESFireEV1" )
+									if (card.getCardType().Contains("DESFire"))
 									{
-										var cmd = card.getCommands() as DESFireCommands;
+										DESFireCommands cmd = card.getCommands() as DESFireCommands;
 
 										DESFireCommands.DESFireCardVersion version = cmd.getVersion();
 
@@ -443,12 +408,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 								{ //try to Auth with Keytype A
 									cmd.authenticate((byte)(_blockNumber), (byte)0, MifareKeyType.KT_KEY_A); // FIXME same as '303
 
-									cmd.updateBinary((byte)(_blockNumber), new ByteVector(buffer));
+									cmd.updateBinary((byte)_blockNumber, new ByteVector(buffer));
 
 									return ERROR.NoError;
 								}
 								catch
-								{ // Try Auth with keytype b
+								{ // Try Auth with Keytype b
 
 									cmd.loadKey((byte)0, MifareKeyType.KT_KEY_B, keyB);
 
@@ -561,11 +526,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 			return ERROR.IOError;
 		}
-		
+
 		public override ERROR WriteMiFareClassicWithMAD(int _madApplicationID, int _madStartSector,
-		                                       string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
-		                                       string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
-		                                       byte[] buffer, byte _madGPB, bool _useMADToAuth = false)
+											   string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
+											   string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
+											   byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth = false, bool _keyToWriteUseMAD = false)
 		{
 			var settings = new SettingsReaderWriter();
 			Sector = new MifareClassicSectorModel();
@@ -577,73 +542,82 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 			var mAKeyToWrite = new MifareKey(CustomConverter.KeyFormatQuickCheck(_aKeyToWrite) ? _aKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToWrite));
 			var mBKeyToWrite = new MifareKey(CustomConverter.KeyFormatQuickCheck(_bKeyToWrite) ? _bKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToWrite));
-			
+
 			var madAKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_madAKeyToUse) ? _madAKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToUse));
 			var madBKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_madBKeyToUse) ? _madBKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToUse));
 
 			var madAKeyToWrite = new MifareKey(CustomConverter.KeyFormatQuickCheck(_madAKeyToWrite) ? _madAKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madAKeyToWrite));
 			var madBKeyToWrite = new MifareKey(CustomConverter.KeyFormatQuickCheck(_madBKeyToWrite) ? _madBKeyToWrite : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_madBKeyToWrite));
-			
+
 			try
 			{
-				if (readerUnit.connectToReader()) {
-					if (readerUnit.waitInsertion(Constants.MAX_WAIT_INSERTION))	{
+				if (readerUnit.connectToReader())
+				{
+					if (readerUnit.waitInsertion(Constants.MAX_WAIT_INSERTION))
+					{
 						if (readerUnit.connect())
 						{
 							ReaderUnitName = readerUnit.getConnectedName();
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
 							card = readerUnit.getSingleChip();
 
 							if (!string.IsNullOrWhiteSpace(ByteConverter.HexToString(card.getChipIdentifier().ToArray())))
 							{
-								try {
-                                    //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()), ByteConverter.HexToString(card.getChipIdentifier().ToArray()));
-                                    GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
-                                }
-								catch (Exception e) {
+								try
+								{
+									GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
+								}
+								catch (Exception e)
+								{
 									LogWriter.CreateLogEntry(e, FacilityName);
 								}
 							}
 
-							MifareLocation mlocation = new MifareLocation(); //card.CreateLocation() as MifareLocation;
-							mlocation.aid = (ushort)_madApplicationID;
-							mlocation.useMAD = true;
-							mlocation.sector = _madStartSector;
-							
-							MifareAccessInfo aiToWrite = new MifareAccessInfo();
-							aiToWrite.useMAD = true;
+							MifareLocation mlocation = new MifareLocation
+							{
+								aid = (ushort)_madApplicationID,
+								useMAD = _keyToWriteUseMAD,
+								sector = _madStartSector
+							};
+
+							MifareAccessInfo aiToWrite = new MifareAccessInfo
+							{
+								useMAD = _keyToWriteUseMAD,
+
+							};
+
 							aiToWrite.madKeyA.fromString(_madAKeyToUse == _madAKeyToWrite ? madAKeyToUse.getString(true) : madAKeyToWrite.getString(true)); // only set new madkey if mad key has changed
 							aiToWrite.madKeyB.fromString(_madBKeyToUse == _madBKeyToWrite ? madBKeyToUse.getString(true) : madBKeyToWrite.getString(true)); // only set new madkey if mad key has changed
 							aiToWrite.keyA.fromString(_aKeyToUse == _aKeyToWrite ? mAKeyToUse.getString(true) : mAKeyToWrite.getString(true));
 							aiToWrite.keyB.fromString(_bKeyToUse == _bKeyToWrite ? mBKeyToUse.getString(true) : mBKeyToWrite.getString(true));
 							aiToWrite.madGPB = _madGPB;
-							
-							var aiToUse = new MifareAccessInfo();
-							aiToUse.useMAD = _useMADToAuth;
-							aiToUse.keyA = mAKeyToUse;
-							aiToUse.keyB = mBKeyToUse;
-							
-							if(_useMADToAuth)
+
+							var aiToUse = new MifareAccessInfo
+							{
+								useMAD = _useMADToAuth,
+								keyA = mAKeyToUse,
+								keyB = mBKeyToUse
+							};
+
+							if (_useMADToAuth)
 							{
 								aiToUse.madKeyA = madAKeyToUse;
 								aiToUse.madKeyB = madBKeyToUse;
 								aiToUse.madGPB = _madGPB;
 							}
 
-							
+							//TODO: report BUG when using SL1
 							var cmd = card.getCommands() as MifareCommands;
 							var cardService = card.getService(LibLogicalAccess.CardServiceType.CST_STORAGE) as StorageCardService;
-							
+
 							try
 							{
 								cardService.writeData(mlocation, aiToUse, aiToWrite, new ByteVector(buffer), CardBehavior.CB_AUTOSWITCHAREA);
-								
 							}
 							catch (Exception e)
 							{
-                                LogWriter.CreateLogEntry(e, FacilityName);
-                                return ERROR.AuthenticationError;
+								LogWriter.CreateLogEntry(e, FacilityName);
+								return ERROR.AuthenticationError;
 							}
 							return ERROR.NoError;
 						}
@@ -657,8 +631,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			}
 			return ERROR.NoError;
 		}
-		
-		public override ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, bool _useMADToAuth = true)
+
+		public override ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, bool _useMADToAuth = true, bool _aiToUseIsMAD = false)
 		{
 			var settings = new SettingsReaderWriter();
 			Sector = new MifareClassicSectorModel();
@@ -685,9 +659,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 							if (!string.IsNullOrWhiteSpace(ByteConverter.HexToString(card.getChipIdentifier().ToArray())))
 							{
 								try {
-                                    //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()), ByteConverter.HexToString(card.getChipIdentifier().ToArray()));
-                                    GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
-                                }
+									GenericChip = new GenericChipModel(ByteConverter.HexToString(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
+								}
 								catch (Exception e) {
 									LogWriter.CreateLogEntry(e, FacilityName);
 								}
@@ -696,15 +669,18 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 							MifareLocation mlocation = card.createLocation() as MifareLocation;
 							mlocation.aid = (ushort)madApplicationID;
-							mlocation.useMAD = true;
-							
-							var aiToUse = new MifareAccessInfo();
-							aiToUse.useMAD = true;
-							aiToUse.keyA = mAKeyToUse;
-							aiToUse.keyB = mBKeyToUse;
-							aiToUse.madKeyA = madAKeyToUse;
-							aiToUse.madKeyB = madBKeyToUse;
-							
+							mlocation.useMAD = _useMADToAuth;
+
+							var aiToUse = new MifareAccessInfo
+							{
+								useMAD = true,
+								keyA = mAKeyToUse,
+								keyB = mBKeyToUse,
+								madKeyA = madAKeyToUse,
+								madKeyB = madBKeyToUse,
+								madGPB = _madGPB
+							};
+
 							var cmd = card.getCommands() as MifareCommands;
 							var cardService = card.getService(CardServiceType.CST_STORAGE) as StorageCardService;
 							
@@ -1540,7 +1516,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 								{
 									if (e.Message != "" && e.Message.Contains("same number already exists"))
 									{
-										
 										return ERROR.ItemAlreadyExistError;
 									}
 									else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
@@ -1861,13 +1836,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 				masterApplicationKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent);
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
 				masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
-				masterApplicationKey.setKeyVersion(1);
 
 				DESFireKey applicationMasterKeyTarget = new DESFireKey();
-				applicationMasterKeyTarget.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent);
+				applicationMasterKeyTarget.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeTarget);
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
 				applicationMasterKeyTarget.fromString(CustomConverter.DesfireKeyToCheck);
-				applicationMasterKeyTarget.setKeyVersion((byte)selectedDesfireAppKeyVersionTargetAsIntint);
+				//applicationMasterKeyTarget.setKeyVersion((byte)selectedDesfireAppKeyVersionTargetAsIntint);
 
 				readerUnit.disconnectFromReader();
 
@@ -1888,16 +1862,59 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 							{
 								var cmd = card.getCommands() as DESFireCommands;
 								var ev1Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV1ISO7816Commands;
+
+								//var kv = ev1Cmd?.getKeyVersion((byte)_keyNumberCurrent);
+
+								//if (ev1Cmd != null)
+                                //{
+								//	masterApplicationKey.setKeyVersion((byte)kv);
+								//}
+
 								try
 								{
 									if (_appIDCurrent == 0)
 									{
-										return ERROR.NotAllowed;
+										try
+										{
+											cmd.selectApplication((uint)_appIDCurrent);
+											cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+											cmd.changeKeySettings((LibLogicalAccess.Card.DESFireKeySettings)keySettings);
+											cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+											cmd.changeKey((byte)_keyNumberCurrent, applicationMasterKeyTarget);
+											return ERROR.NoError;
+										}
+
+										catch
+										{
+											try
+											{
+												cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+												cmd.changeKey((byte)_keyNumberCurrent, applicationMasterKeyTarget);
+											}
+											catch (Exception e)
+											{
+												if (e.Message != "" && e.Message.Contains("same number already exists"))
+												{
+													return ERROR.ItemAlreadyExistError;
+												}
+												else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+												{
+													return ERROR.AuthenticationError;
+												}
+												else
+												{
+													return ERROR.IOError;
+												}
+											}
+										}
 									}
 									else
 									{
+
+										applicationMasterKeyTarget.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent);
+
 										cmd.selectApplication((uint)_appIDCurrent);
-										var kv = ev1Cmd.getKeyVersion((byte)selectedDesfireAppKeyVersionTargetAsIntint);
+										
 										try
 										{
 											cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);

@@ -100,11 +100,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		public abstract ERROR WriteMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer);
 		public abstract ERROR ReadMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey);
 		public abstract ERROR WriteMiFareClassicWithMAD(int _madApplicationID, int _madStartSector,
-										string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
-										string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
-										byte[] buffer, byte _madGPB, bool _useMADToAuth = false);
-		public abstract ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, 
-										string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, bool _useMADToAuth = true);
+											   string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
+											   string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
+											   byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth = false, bool _keyToWriteUseMAD = false);
+		public abstract ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, bool _useMADToAuth = true, bool _aiToUseIsMAD = false);
 		#endregion
 
 		#region MifareUltralight

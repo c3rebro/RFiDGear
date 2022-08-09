@@ -34,8 +34,6 @@ namespace RFiDGear.DataAccessLayer
 
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
-        private readonly string FacilityName = "RFiDGear";
-
         private const string reportTemplateTempFileName = "temptemplate.pdf";
         private const string taskDatabaseFileName = "taskdatabase.xml";
         private readonly string appDataPath;

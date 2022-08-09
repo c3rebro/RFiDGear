@@ -199,7 +199,7 @@ namespace RFiDGear.ViewModel
 
         public void ReadSectorWithCustoms()
         {
-            using (RFiDDevice device = new RFiDDevice())
+            using (ReaderDevice device = ReaderDevice.Instance)
             {
                 IsSelected = true;
 

@@ -37,8 +37,6 @@ namespace RFiDGear.ViewModel
 		#region Fields
 		private static readonly string FacilityName = "RFiDGear";
 
-        private readonly string FacilityName = "RFiDGear";
-
         private MifareUltralightChipModel chipModel;
         private MifareUltralightPageModel pageModel;
 
@@ -417,10 +415,12 @@ namespace RFiDGear.ViewModel
 
         #endregion General Properties
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
+        #region Commands
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
 		private void OnNewReadDataCommand()
 		{
 			//Mouse.OverrideCursor = Cursors.Wait;
@@ -433,7 +433,7 @@ namespace RFiDGear.ViewModel
 				         	{
 				         		if(device != null && device.ReadChipPublic() == ERROR.NoError)
 				         		{
-				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.getResource(""));
+				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource(""));
                                 }
                                 else
                                 {
@@ -477,7 +477,7 @@ namespace RFiDGear.ViewModel
             Task classicTask =
                 new Task(() =>
                          {
-                             using (RFiDDevice device = RFiDDevice.Instance)
+                             using (ReaderDevice device = ReaderDevice.Instance)
                              {
                                  StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
