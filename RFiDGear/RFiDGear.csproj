@@ -143,10 +143,6 @@
     <Reference Include="itext.svg, Version=7.1.17.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
       <HintPath>..\packages\itext7.7.1.17\lib\net45\itext.svg.dll</HintPath>
     </Reference>
-    <Reference Include="LibLogicalAccessNetCE">
-      <HintPath>C:\Program Files\Common Files\ISLOG\LibLogicalAccess\2.4.0\LibLogicalAccessNetCE.dll</HintPath>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </Reference>
     <Reference Include="Microsoft.CSharp">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
@@ -420,6 +416,17 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="LibLogicalAccess">
+      <Guid>{9B9E09AD-A354-4D6F-93A8-DA32D71525A4}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>87</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
