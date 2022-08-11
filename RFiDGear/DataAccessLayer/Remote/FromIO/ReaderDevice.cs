@@ -34,7 +34,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 						{
 							if (instance == null)
 							{
-								instance = new ElatecNetProvider(ReaderType);
+								instance = new ElatecNetProvider(PortNumber);
 								return instance;
 							}
 							else
@@ -60,6 +60,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		public object chip;
 
 		public static ReaderTypes ReaderType { get; set; }
+		public static int PortNumber { get; set; }
 		public MifareClassicSectorModel Sector { get; set; }
 		public MifareClassicDataBlockModel DataBlock { get; set; }
 		public GenericChipModel GenericChip { get; set; }

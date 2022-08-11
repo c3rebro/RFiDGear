@@ -62,11 +62,31 @@ namespace RFiDGear.ViewModel
             switch(SelectedReader)
             {
                 case ReaderTypes.PCSC:
-                    device = new LibLogicalAccessProvider(SelectedReader);
+                    if (device != null)
+                    {
+                        if(device is ElatecNetProvider)
+                        {
+                            device.Dispose();
+                            device = null;
+                            device = new LibLogicalAccessProvider(SelectedReader);
+                        }
+                        device.ReadChipPublic();
+                    }
+                    else
+                    {
+                        device = new LibLogicalAccessProvider(SelectedReader);
+                    }
                     break;
 
                 case ReaderTypes.Elatec:
-                    device = new ElatecNetProvider(SelectedReader);
+                    if (device != null)
+                    {
+                        device.ReadChipPublic();
+                    }
+                    else
+                    {
+                        device = new ElatecNetProvider();
+                    }
                     break;
 
                 case ReaderTypes.None:
@@ -74,7 +94,7 @@ namespace RFiDGear.ViewModel
                     break;
             }
 
-            if (device != null && device.ReadChipPublic() == ERROR.NoError)
+            if (!string.IsNullOrEmpty(device?.GenericChip?.UID))
             {
                 ReaderStatus = string.Format("Connected to Card:"
                                              + '\n'
@@ -152,11 +172,11 @@ namespace RFiDGear.ViewModel
             set
             {
                 comPort = value;
-                uint.TryParse(comPort, out _);
+                int.TryParse(comPort, out comPortAsInt);
             }
         }
         private string comPort;
-        private readonly uint comPortAsUInt;
+        private int comPortAsInt;
 
         /// <summary>
         /// BaudRate for Readers that use VCP or Serial

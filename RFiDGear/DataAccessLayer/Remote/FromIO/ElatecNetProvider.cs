@@ -25,7 +25,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             try
             {
-                readerDevice = new TWN4ReaderDevice();
+                //readerDevice = new TWN4ReaderDevice(PortNumber);
                 //GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
                 AppIDList = new uint[0];
             }
@@ -35,11 +35,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             }
         }
 
-        public ElatecNetProvider(ReaderTypes readerType)
+        public ElatecNetProvider(int _comPort)
         {
             try
             {
-                readerDevice = new TWN4ReaderDevice();
+                readerDevice = new TWN4ReaderDevice(_comPort);
                 //GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
                 AppIDList = new uint[0];
             }
@@ -49,11 +49,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             }
 
         }
+
         public override ERROR ReadChipPublic()
         {           
             try
             {
-                if (readerDevice.Connect())
+                if (readerDevice.ConnectTWN4())
                 {
                     readerDevice.Beep();
                     readerDevice.GreenLED(true);
@@ -106,10 +107,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                 LogWriter.CreateLogEntry(e, FacilityName);
 
-                readerDevice?.Disconnect();
+                readerDevice?.DisconnectTWN4();
                 return ERROR.IOError;
             }
-            readerDevice?.Disconnect();
+            readerDevice?.DisconnectTWN4();
             return ERROR.IOError;
                 
         }

@@ -3486,46 +3486,48 @@ namespace RFiDGear.ViewModel
         public ICommand NewReaderSetupDialogCommand => new RelayCommand(OnNewReaderSetupDialog);
         private void OnNewReaderSetupDialog()
         {
-            using (ReaderDevice device = ReaderDevice.Instance)
+            using (SettingsReaderWriter settings = new SettingsReaderWriter())
             {
-                Dialogs.Add(new SetupViewModel(device)
+                DefaultSpecification currentSettings = settings.DefaultSpecification;
+
+                ReaderDevice.PortNumber = int.Parse(currentSettings.LastUsedComPort);
+
+                using (ReaderDevice device = ReaderDevice.Instance)
                 {
-                    Caption = ResourceLoader.GetResource("windowCaptionReaderSetup"),
-
-                    OnOk = (sender) =>
+                    Dialogs.Add(new SetupViewModel(device)
                     {
-                        using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                        Caption = ResourceLoader.GetResource("windowCaptionReaderSetup"),
+
+                        OnOk = (sender) =>
                         {
-                            DefaultSpecification currentSettings = settings.DefaultSpecification;
+                                currentSettings.DefaultReaderProvider = sender.SelectedReader;
+                                currentSettings.AutoLoadProjectOnStart = sender.LoadOnStart;
+                                currentSettings.LastUsedComPort = sender.ComPort;
+                                currentSettings.AutoCheckForUpdates = sender.CheckOnStart;
+                                currentSettings.LastUsedBaudRate = sender.SelectedBaudRate;
 
-                            currentSettings.DefaultReaderProvider = sender.SelectedReader;
-                            currentSettings.AutoLoadProjectOnStart = sender.LoadOnStart;
-                            currentSettings.LastUsedComPort = sender.ComPort;
-                            currentSettings.AutoCheckForUpdates = sender.CheckOnStart;
-                            currentSettings.LastUsedBaudRate = sender.SelectedBaudRate;
+                                settings.DefaultSpecification = currentSettings;
 
-                            settings.DefaultSpecification = currentSettings;
+                                sender.Close();
 
+                                settings.SaveSettings();
+                        },
+                    
+                        OnConnect = (sender) =>
+                        {
+                        },
+
+                        OnCancel = (sender) =>
+                        {
                             sender.Close();
+                        },
 
-                            settings.SaveSettings();
+                        OnCloseRequest = (sender) =>
+                        {
+                            sender.Close();
                         }
-                    },
-
-                    OnConnect = (sender) =>
-                    {
-                    },
-
-                    OnCancel = (sender) =>
-                    {
-                        sender.Close();
-                    },
-
-                    OnCloseRequest = (sender) =>
-                    {
-                        sender.Close();
-                    }
-                });
+                    });
+                }
             }
         }
 
@@ -3961,6 +3963,8 @@ namespace RFiDGear.ViewModel
                         CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
                             ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                             : settings.DefaultSpecification.DefaultReaderName;
+
+                        ReaderDevice.PortNumber = int.Parse(settings.DefaultSpecification.LastUsedComPort);
 
                         culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 

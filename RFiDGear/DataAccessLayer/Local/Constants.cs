@@ -195,41 +195,77 @@ namespace RFiDGear.DataAccessLayer
     /// </summary>
     public enum CARD_TYPE
     {
-        Unspecified,
-        ISO15693,
-        SAM_AV2,
-        Mifare1K,
-        Mifare2K,
-        Mifare4K,
-        DESFire,
-        __UNSUPPORTED__DESFire,
-        DESFireEV1,
-        __UNSUPPORTED__DESFireEV1,
-        DESFireEV2, 
-        __UNSUPPORTED__DESFireEV2,
-        DESFireEV3,
-        __UNSUPPORTED__DESFireEV3,
-        FeliCa,
-        iCode1,
-        MifarePlus_SL0_2K,
-        MifarePlus_SL0_4K,
-        MifarePlus_SL1_1K,
-        MifarePlus_SL1_2K,
-        MifarePlus_SL1_4K,
-        MifarePlus_SL2_1K,
-        MifarePlus_SL2_2K,
-        MifarePlus_SL2_4K,
-        MifarePlus_SL3_1K,
-        MifarePlus_SL3_2K,
-        MifarePlus_SL3_4K,
-        MifarePlusX,
-        MifarePlusS,
-        MifareMini,
-        MifareUltralight,
-        MifareUltralightC,
-        TagIt,
-        HIDiClass16KS,
-        GENERIC_T_CL_A
+        NOTAG = 0,
+        // LF Tags
+        EM4102 = 0x40,    // "EM4x02/CASI-RUSCO" (aka IDRO_A)
+        HITAG1S = 0x41,   // "HITAG 1/HITAG S"   (aka IDRW_B)
+        HITAG2 = 0x42,    // "HITAG 2"           (aka IDRW_C)
+        EM4150 = 0x43,    // "EM4x50"            (aka IDRW_D)
+        AT5555 = 0x44,    // "T55x7"             (aka IDRW_E)
+        ISOFDX = 0x45,    // "ISO FDX-B"         (aka IDRO_G)
+        EM4026 = 0x46,    // N/A                 (aka IDRO_H)
+        HITAGU = 0x47,    // N/A                 (aka IDRW_I)
+        EM4305 = 0x48,    // "EM4305"            (aka IDRW_K)
+        HIDPROX = 0x49,	// "HID Prox"
+        TIRIS = 0x4A,	    // "ISO HDX/TIRIS"
+        COTAG = 0x4B,	    // "Cotag"
+        IOPROX = 0x4C,	// "ioProx"
+        INDITAG = 0x4D,	// "Indala"
+        HONEYTAG = 0x4E,	// "NexWatch"
+        AWID = 0x4F,	    // "AWID"
+        GPROX = 0x50,	    // "G-Prox"
+        PYRAMID = 0x51,	// "Pyramid"
+        KERI = 0x52,	    // "Keri"
+        DEISTER = 0x53,	// "Deister"
+        CARDAX = 0x54,	// "Cardax"
+        NEDAP = 0x55,	    // "Nedap"
+        PAC = 0x56,	    // "PAC"
+        IDTECK = 0x57,	// "IDTECK"
+        ULTRAPROX = 0x58,	// "UltraProx"
+        ICT = 0x59,	    // "ICT"
+        ISONAS = 0x5A,	// "Isonas"
+        // HF Tags
+        MIFARE = 0x80,	// "ISO14443A/MIFARE"
+        ISO14443B = 0x81,	// "ISO14443B"
+        ISO15693 = 0x82,	// "ISO15693"
+        LEGIC = 0x83,	    // "LEGIC"
+        HIDICLASS = 0x84,	// "HID iCLASS"
+        FELICA = 0x85,	// "FeliCa"
+        SRX = 0x86,	    // "SRX"
+        NFCP2P = 0x87,	// "NFC Peer-to-Peer"
+        BLE = 0x88,	    // "Bluetooth Low Energy"
+        TOPAZ = 0x89,     // "Topaz"
+        CTS = 0x8A,       // "CTS256 / CTS512"
+        BLELC = 0x8B,     // "Bluetooth Low Energy LEGIC Connect"
+        // Custom
+        Unspecified = 0xE0,
+        MifareMini = 0xE2,
+        Mifare1K = 0xE3,
+        Mifare2K = 0xE4,
+        Mifare4K = 0xE5,
+        SAM_AV1 = 0xE6,
+        SAM_AV2 = 0xE7,
+        MifarePlus_SL0_1K = 0xE9,
+        MifarePlus_SL0_2K = 0xEA,
+        MifarePlus_SL0_4K = 0xEB,
+        MifarePlus_SL1_1K = 0xEC,
+        MifarePlus_SL1_2K = 0xED,
+        MifarePlus_SL1_4K = 0xEE,
+        MifarePlus_SL2_1K = 0xEF,
+        MifarePlus_SL2_2K = 0xF0,
+        MifarePlus_SL2_4K = 0xF1,
+        MifarePlus_SL3_1K = 0xF2,
+        MifarePlus_SL3_2K = 0xF3,
+        MifarePlus_SL3_4K = 0xF4,
+        DESFire = 0xF5,
+        DESFireEV1 = 0xF6,
+        DESFireEV2 = 0xF7,
+        DESFireEV3 = 0xF8,
+        SmartMX_Mifare_2K = 0xF9,
+        SmartMX_Mifare_4K = 0xFA,
+        MifareUltralight = 0xFB,
+        MifareUltralightC = 0xFC,
+        GENERIC_T_CL_A = 0xFF
     };
 
     /// <summary>
