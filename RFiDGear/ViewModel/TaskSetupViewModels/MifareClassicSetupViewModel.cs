@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -466,11 +467,7 @@ namespace RFiDGear.ViewModel
             get => sectorModel.AccessBitsAsString;
             set
             {
-                sectorModel.AccessBitsAsString = value.ToUpper();
-                //IsValidSectorTrailer = !decodeSectorTrailer(sectorModel.AccessBitsAsString, ref sectorModel);
-                //if (!IsValidSectorTrailer)
-                //	return;
-
+                sectorModel.AccessBitsAsString = value.ToUpper(CultureInfo.CurrentCulture);
                 IsValidSectorTrailer = sectorModel.IsValidSectorTrailer;
                 RaisePropertyChanged("Selected_Sector_AccessCondition");
                 RaisePropertyChanged("Selected_DataBlock_AccessCondition");
@@ -751,7 +748,6 @@ namespace RFiDGear.ViewModel
         public string SelectedTaskIndex
         {
             get =>
-                //classicKeyAKeyCurrent = SectorTrailer.Split(',')[0];
                 selectedAccessBitsTaskIndex;
             set
             {
@@ -789,7 +785,6 @@ namespace RFiDGear.ViewModel
         public TaskType_MifareClassicTask SelectedTaskType
         {
             get =>
-                //classicKeyAKeyCurrent = SectorTrailer.Split(',')[0];
                 selectedAccessBitsTaskType;
             set
             {
@@ -820,6 +815,9 @@ namespace RFiDGear.ViewModel
                         IsClassicKeyEditingEnabled = false;
                         IsClassicAuthInfoEnabled = true;
                         IsAccessBitsEditTabEnabled = false;
+                        break;
+
+                    default:
                         break;
                 }
                 RaisePropertyChanged("SelectedTaskType");
@@ -926,7 +924,7 @@ namespace RFiDGear.ViewModel
                 RaisePropertyChanged("IsClassicAuthInfoEnabled");
             }
         }
-        private bool isClassicAuthInfoEnabled = false;
+        private bool isClassicAuthInfoEnabled;
 
         /// <summary>
         ///
@@ -966,7 +964,7 @@ namespace RFiDGear.ViewModel
             get => classicKeyAKeyCurrent;
             set
             {
-                classicKeyAKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+                classicKeyAKeyCurrent = value.Length > 12 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(12, value.Length - 12) : value.ToUpper(CultureInfo.CurrentCulture);
 
                 IsValidClassicKeyAKeyCurrent = (CustomConverter.IsInHexFormat(classicKeyAKeyCurrent) && classicKeyAKeyCurrent.Length == 12);
 
@@ -1015,7 +1013,7 @@ namespace RFiDGear.ViewModel
             get => classicKeyBKeyCurrent;
             set
             {
-                classicKeyBKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+                classicKeyBKeyCurrent = value.Length > 12 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(12, value.Length - 12) : value.ToUpper(CultureInfo.CurrentCulture);
 
                 IsValidClassicKeyBKeyCurrent = (CustomConverter.IsInHexFormat(classicKeyBKeyCurrent) && classicKeyBKeyCurrent.Length == 12);
                 if (IsValidClassicKeyBKeyCurrent != false && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
@@ -1311,7 +1309,7 @@ namespace RFiDGear.ViewModel
             get => applicationCode;
             set
             {
-                applicationCode = value.Length > 2 ? value.ToUpper().Remove(2, value.Length - 2) : value.ToUpper();
+                applicationCode = value.Length > 2 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(2, value.Length - 2) : value.ToUpper(CultureInfo.CurrentCulture);
                 IsValidApplicationCode = (CustomConverter.IsInHexFormat(applicationCode) && applicationCode.Length <= 2);
                 RaisePropertyChanged("ApplicationCode");
             }
@@ -1347,7 +1345,7 @@ namespace RFiDGear.ViewModel
             get => functionClusterCode;
             set
             {
-                functionClusterCode = value.Length > 2 ? value.ToUpper().Remove(2, value.Length - 2) : value.ToUpper();
+                functionClusterCode = value.Length > 2 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(2, value.Length - 2) : value.ToUpper(CultureInfo.CurrentCulture);
                 IsValidFunctionClusterCode = (CustomConverter.IsInHexFormat(functionClusterCode) && functionClusterCode.Length <= 2);
                 RaisePropertyChanged("FunctionClusterCode");
             }
@@ -1436,7 +1434,7 @@ namespace RFiDGear.ViewModel
             get => classicMADKeyAKeyCurrent;
             set
             {
-                classicMADKeyAKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+                classicMADKeyAKeyCurrent = value.Length > 12 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(12, value.Length - 12) : value.ToUpper(CultureInfo.CurrentCulture);
 
                 IsValidClassicMADKeyAKeyCurrent = (CustomConverter.IsInHexFormat(classicMADKeyAKeyCurrent) && classicMADKeyAKeyCurrent.Length == 12);
 
@@ -1468,7 +1466,7 @@ namespace RFiDGear.ViewModel
             get => classicMADKeyBKeyCurrent;
             set
             {
-                classicMADKeyBKeyCurrent = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+                classicMADKeyBKeyCurrent = value.Length > 12 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(12, value.Length - 12) : value.ToUpper(CultureInfo.CurrentCulture);
 
                 IsValidClassicMADKeyBKeyCurrent = (CustomConverter.IsInHexFormat(classicMADKeyBKeyCurrent) && classicMADKeyBKeyCurrent.Length == 12);
 
@@ -1500,7 +1498,7 @@ namespace RFiDGear.ViewModel
             get => classicMADKeyAKeyTarget;
             set
             {
-                classicMADKeyAKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+                classicMADKeyAKeyTarget = value.Length > 12 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(12, value.Length - 12) : value.ToUpper(CultureInfo.CurrentCulture);
 
                 IsValidClassicMADKeyAKeyTarget = (CustomConverter.IsInHexFormat(classicMADKeyAKeyTarget) && classicMADKeyAKeyTarget.Length == 12);
 
@@ -1532,7 +1530,7 @@ namespace RFiDGear.ViewModel
             get => classicMADKeyBKeyTarget;
             set
             {
-                classicMADKeyBKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+                classicMADKeyBKeyTarget = value.Length > 12 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(12, value.Length - 12) : value.ToUpper(CultureInfo.CurrentCulture);
 
                 IsValidClassicMADKeyBKeyTarget = (CustomConverter.IsInHexFormat(classicMADKeyBKeyTarget) && classicMADKeyBKeyTarget.Length == 12);
 
@@ -1564,7 +1562,7 @@ namespace RFiDGear.ViewModel
             get => classicKeyAKeyTarget;
             set
             {
-                classicKeyAKeyTarget = value != null ? (value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper()) : null;
+                classicKeyAKeyTarget = value != null ? (value.Length > 12 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(12, value.Length - 12) : value.ToUpper(CultureInfo.CurrentCulture)) : null;
 
                 IsValidClassicKeyAKeyTarget = (CustomConverter.IsInHexFormat(classicKeyAKeyTarget) && classicKeyAKeyTarget.Length == 12);
 
@@ -1596,7 +1594,7 @@ namespace RFiDGear.ViewModel
             get => classicKeyBKeyTarget;
             set
             {
-                classicKeyBKeyTarget = value.Length > 12 ? value.ToUpper().Remove(12, value.Length - 12) : value.ToUpper();
+                classicKeyBKeyTarget = value.Length > 12 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(12, value.Length - 12) : value.ToUpper(CultureInfo.CurrentCulture);
 
                 IsValidClassicKeyBKeyTarget = (CustomConverter.IsInHexFormat(classicKeyBKeyTarget) && classicKeyBKeyTarget.Length == 12);
 

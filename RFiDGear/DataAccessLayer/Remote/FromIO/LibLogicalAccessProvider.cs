@@ -23,7 +23,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         private IReaderProvider readerProvider;
         private IReaderUnit readerUnit;
         private chip card;
-        private bool _disposed = false;
+        private bool _disposed;
 
         public FileSetting DesfireFileSetting { get; private set; }
 
@@ -1023,6 +1023,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                                         readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
                                                     }, (uint)_fileSize, (uint)_maxNbOfRecords);
                                                 break;
+
+                                            default:
+                                                break;
                                         }
 
                                         return ERROR.NoError;
@@ -1083,6 +1086,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                                         writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
                                                         readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
                                                     }, (uint)_fileSize, (uint)_maxNbOfRecords);
+                                            break;
+
+                                        default:
                                             break;
                                     }
 
@@ -1175,6 +1181,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                                         readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
                                                     }, (uint)_fileSize, (uint)_maxNbOfRecords);
                                                 break;
+
+                                            default:
+                                                break;
                                         }
 
                                         return ERROR.NoError;
@@ -1235,6 +1244,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                                         writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
                                                         readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
                                                     }, (uint)_fileSize, (uint)_maxNbOfRecords);
+                                            break;
+
+                                        default:
                                             break;
                                     }
 

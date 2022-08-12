@@ -33,7 +33,7 @@ namespace RFiDGear
 
         private readonly string appDataPath;
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         private XmlWriter xmlWriter;
 

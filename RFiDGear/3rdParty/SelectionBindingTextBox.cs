@@ -38,7 +38,7 @@ namespace RFiDGear._3rdParty
 
         private bool changeFromUI;
 
-        public SelectionBindingTextBox() : base()
+        public SelectionBindingTextBox()
         {
             SelectionChanged += OnSelectionChanged;
         }

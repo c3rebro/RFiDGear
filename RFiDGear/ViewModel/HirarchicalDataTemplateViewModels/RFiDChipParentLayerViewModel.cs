@@ -42,7 +42,7 @@ namespace RFiDGear.ViewModel
 
         private protected MifareClassicChipModel mifareClassicUidModel;
         private protected MifareDesfireChipModel mifareDesfireUidModel;
-        private protected MifareUltralightChipModel mifareUltralightUidModel; // { get; private set; }
+        private protected MifareUltralightChipModel mifareUltralightUidModel;
 
         #region Constructors
 
@@ -114,9 +114,6 @@ namespace RFiDGear.ViewModel
             {
                 ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareClassicUidModel.UidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
             }
-            //			else if(mifareDesfireUidModel != null)
-            //				ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareDesfireUidModel.uidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
-
         }
 
         public RFiDChipParentLayerViewModel(MifareDesfireChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
@@ -287,7 +284,6 @@ namespace RFiDGear.ViewModel
             {
                 using (ReaderDevice device = ReaderDevice.Instance)
                 {
-                    //if (device != null && device.GetMiFareDESFireChipAppIDs(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].Key) == ERROR.NoError)
                     if (device != null && device.ReadChipPublic() == ERROR.NoError)
                     {
                         Mouse.OverrideCursor = Cursors.Wait;
@@ -812,7 +808,9 @@ namespace RFiDGear.ViewModel
                     _children.Add(
                             new RFiDChipChildLayerViewModel(
                                 new MifareUltralightPageModel(new byte[4], 0), this, CARD_TYPE.MifarePlus_SL3_1K, dialogs));
+                    break;
 
+                default:
                     break;
             }
         }

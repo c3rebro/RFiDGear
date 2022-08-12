@@ -1639,7 +1639,7 @@ namespace RFiDGear.ViewModel
                                          {
                                              StatusText += string.Format("{0}: Authentication to PICC failed. Try without Authentication...\n", DateTime.Now);
 
-                                             DESFireKeySettings keySettings = DESFireKeySettings.KS_ALLOW_CHANGE_MK;
+                                             DESFireKeySettings keySettings;
                                              keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
 
                                              keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
@@ -2531,7 +2531,7 @@ namespace RFiDGear.ViewModel
 
                             if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireMasterKeyCurrent) == KEY_ERROR.NO_ERROR)
                             {
-                                DESFireKeySettings keySettings = DESFireKeySettings.KS_ALLOW_CHANGE_MK;
+                                DESFireKeySettings keySettings;
                                 keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
 
                                 keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
@@ -2710,7 +2710,7 @@ namespace RFiDGear.ViewModel
                                     selectedDesfireAppKeyNumberCurrentAsInt,
                                     AppNumberCurrentAsInt);
 
-                            DESFireKeySettings keySettings = DESFireKeySettings.KS_ALLOW_CHANGE_MK;
+                            DESFireKeySettings keySettings;
                             keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
 
                             keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;

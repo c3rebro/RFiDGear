@@ -23,7 +23,7 @@ namespace RedCell.Diagnostics.Update
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "RFiDGear");
 
-        private bool _disposed = false;
+        private bool _disposed;
         /// <summary>
         /// The default check interval
         /// </summary>

@@ -222,7 +222,7 @@ namespace RFiDGear.Model
 
         #region Extensions
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         void IDisposable.Dispose()
         {

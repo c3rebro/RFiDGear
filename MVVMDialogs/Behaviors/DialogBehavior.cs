@@ -244,8 +244,6 @@ namespace MvvmDialogs.Behaviors
 
                 var resource = resourceFromApplication ?? resoruceFromExternalDictionary;
 
-                //object info = viewModel.GetType().GetProperty("HasResourceDictionary").GetValue(viewModel);
-
                 if (resource == null)
                 {
                     return;
@@ -271,6 +269,7 @@ namespace MvvmDialogs.Behaviors
                     DialogBoxes[userViewModel] = dialog;
                     userViewModel.DialogClosing += (sender, args) =>
                         collection.Remove(sender as IUserDialogViewModel);
+
                     dialog.Closing += (sender, args) =>
                     {
                         if (!(bool)dialog.GetValue(ClosingProperty))

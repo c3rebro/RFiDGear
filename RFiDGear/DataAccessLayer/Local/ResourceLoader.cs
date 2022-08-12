@@ -152,7 +152,7 @@ namespace RFiDGear.DataAccessLayer
             {
                 LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
 
-                throw new Exception(
+                throw new ArgumentOutOfRangeException(
                     string.Format("parameter:{0}\nvalue:{1}",
                                   parameter ?? "no param",
                                   value ?? "no value"));

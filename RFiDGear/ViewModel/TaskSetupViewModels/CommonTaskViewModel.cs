@@ -1133,6 +1133,8 @@ namespace RFiDGear.ViewModel
                                 case MifareUltralightSetupViewModel ssVM:
                                     results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
                                     break;
+                                default:
+                                    break;
                             }
                         }
 
@@ -1287,6 +1289,9 @@ namespace RFiDGear.ViewModel
                                         }
 
                                         break;
+
+                                    default:
+                                        break;
                                 }
 
 
@@ -1328,6 +1333,9 @@ namespace RFiDGear.ViewModel
                                                     }
 
                                                     break;
+
+                                                default:
+                                                    break;
                                             }
                                         }
                                     }
@@ -1351,7 +1359,9 @@ namespace RFiDGear.ViewModel
                                                         return;
                                                     }
 
+                                                    break;
 
+                                                default:
                                                     break;
                                             }
                                         }
@@ -1381,6 +1391,9 @@ namespace RFiDGear.ViewModel
                                                         result = ERROR.IsNotTrue;
                                                     }
 
+                                                    break;
+
+                                                default:
                                                     break;
                                             }
                                         }

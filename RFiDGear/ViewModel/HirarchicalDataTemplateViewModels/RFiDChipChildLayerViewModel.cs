@@ -532,6 +532,9 @@ namespace RFiDGear.ViewModel
                         children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), new MifareClassicSetupViewModel()));
                     }
                     break;
+
+                default:
+                    break;
             }
         }
 

@@ -18,7 +18,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         private string FacilityName = "RFiDGear";
         private TWN4ReaderDevice readerDevice;
         private ChipModel card;
-        private bool _disposed = false;
+        private bool _disposed;
 
         #region Common
 
