@@ -326,13 +326,7 @@ namespace RFiDGear.Model
             C1x |= C2x;
             C1x &= 0x07;
 
-            //if(isTransportConfiguration)
-            //	decodedBlock2AccessBits = dataBlockABs[C1x];
-            //else
-            //	decodedBlock2AccessBits = dataBlockAB[C1x];
-
             DataBlock2.DataBlockAccessCondition = dataBlock_AccessBits[(int)C1x];
-            //dataBlock2_AccessCondition = new DataBlock_AccessCondition(2, sab.d_data_block2_access_bits.c1, sab.d_data_block2_access_bits.c2, sab.d_data_block2_access_bits.c3);
 
             #endregion getAccessBitsForDataBlock2
 
@@ -367,10 +361,6 @@ namespace RFiDGear.Model
             C1x |= C2x;
             C1x &= 0x07;
 
-            //if(isTransportConfiguration)
-            //	decodedBlock1AccessBits = dataBlockABs[C1x];
-            //else
-            //	decodedBlock1AccessBits = dataBlockAB[C1x];
             DataBlock1.DataBlockAccessCondition = dataBlock_AccessBits[(int)C1x];
 
             #endregion getAccessBitsForDataBlock1
@@ -511,9 +501,6 @@ namespace RFiDGear.Model
             st = CustomConverter.buildSectorTrailerInvNibble(st);
             string[] stAsString;
 
-            //			if (!string.IsNullOrWhiteSpace(_sector.AccessBitsAsString))
-            //				stAsString = _sector.AccessBitsAsString.Split(new[] { ',', ';' });
-            //			else
             stAsString = new string[] { "FFFFFFFFFFFF", "FF0780C3", "FFFFFFFFFFFF" };
 
             stAsString[1] = CustomConverter.HexToString(st);

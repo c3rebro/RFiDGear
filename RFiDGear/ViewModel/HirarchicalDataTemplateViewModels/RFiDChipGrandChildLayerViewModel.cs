@@ -508,7 +508,7 @@ namespace RFiDGear.ViewModel
                 {
                     IsValidSelectedDataIndexAndLength = false;
                 }
-                
+
                 RaisePropertyChanged("SelectedDataLength");
             }
         }
@@ -523,14 +523,10 @@ namespace RFiDGear.ViewModel
             get => selectedDataIndexStart;
             set
             {
-                //SelectedDataLength = DataAsHexString.Length / 2; // - value / 2;
-
                 selectedDataIndexStart = value;
 
                 if (value % 2 == 0)
                 {
-                    //SelectedDataIndexStartInBytes = value / 2;
-                    //SelectedDataLengthInBytes = DataAsHexString.Length / 2; // - value / 2;
                     IsValidSelectedDataIndexAndLength = true;
                 }
                 else
@@ -538,7 +534,7 @@ namespace RFiDGear.ViewModel
                     IsValidSelectedDataIndexAndLength = false;
                 }
 
-                RaisePropertyChanged("SelectedDataIndexStart"); 
+                RaisePropertyChanged("SelectedDataIndexStart");
                 RaisePropertyChanged("SelectedDataLength");
             }
         }

@@ -60,12 +60,12 @@ namespace RFiDGear.ViewModel
         {
             OnConnect?.Invoke(this);
 
-            switch(SelectedReader)
+            switch (SelectedReader)
             {
                 case ReaderTypes.PCSC:
                     if (device != null)
                     {
-                        if(device is ElatecNetProvider)
+                        if (device is ElatecNetProvider)
                         {
                             device.Dispose();
 

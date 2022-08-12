@@ -31,13 +31,13 @@ using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
 {
-	/// <summary>
-	/// Description of CommonTaskViewModel.
-	/// </summary>
-	public class GenericChipTaskViewModel : ViewModelBase, IUserDialogViewModel
-	{
-		#region fields
-		private static readonly string FacilityName = "RFiDGear";
+    /// <summary>
+    /// Description of CommonTaskViewModel.
+    /// </summary>
+    public class GenericChipTaskViewModel : ViewModelBase, IUserDialogViewModel
+    {
+        #region fields
+        private static readonly string FacilityName = "RFiDGear";
 
         private protected SettingsReaderWriter settings = new SettingsReaderWriter();
         private protected ReportReaderWriter reportReaderWriter;
@@ -92,12 +92,12 @@ namespace RFiDGear.ViewModel
                     SelectedExecuteConditionErrorLevel = ERROR.Empty;
                     SelectedExecuteConditionTaskIndex = "0";
                 }
-				
-			}
-			catch (Exception e)
-			{
-				LogWriter.CreateLogEntry(e, FacilityName);
-			}
+
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(e, FacilityName);
+            }
         }
 
         #endregion
@@ -319,13 +319,13 @@ namespace RFiDGear.ViewModel
         {
             TaskErr = ERROR.Empty;
 
-			Task genericChipTask =
-				new Task(() =>
-				{
-					using (ReaderDevice device = ReaderDevice.Instance)
-					{
-						if (device != null)
-						{
+            Task genericChipTask =
+                new Task(() =>
+                {
+                    using (ReaderDevice device = ReaderDevice.Instance)
+                    {
+                        if (device != null)
+                        {
                             ERROR result = device.ReadChipPublic();
 
                             if (result == ERROR.NoError)
@@ -379,13 +379,13 @@ namespace RFiDGear.ViewModel
         {
             TaskErr = ERROR.Empty;
 
-			Task genericChipTask =
-				new Task(() =>
-				{
-					using (ReaderDevice device = ReaderDevice.Instance)
-					{
-						if (device != null)
-						{
+            Task genericChipTask =
+                new Task(() =>
+                {
+                    using (ReaderDevice device = ReaderDevice.Instance)
+                    {
+                        if (device != null)
+                        {
                             ERROR result = device.ReadChipPublic();
 
                             if (result == ERROR.NoError)

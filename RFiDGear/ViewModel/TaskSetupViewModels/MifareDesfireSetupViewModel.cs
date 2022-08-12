@@ -39,10 +39,10 @@ namespace RFiDGear.ViewModel
     /// </summary>
     public class MifareDesfireSetupViewModel : ViewModelBase, IUserDialogViewModel
     {
-		#region Fields
-		private static readonly string FacilityName = "RFiDGear";
+        #region Fields
+        private static readonly string FacilityName = "RFiDGear";
 
-		private protected SettingsReaderWriter settings = new SettingsReaderWriter();
+        private protected SettingsReaderWriter settings = new SettingsReaderWriter();
         private protected MifareDesfireChipModel chip;
         private protected MifareDesfireAppModel app;
         private DESFireAccessRights accessRights;
@@ -79,8 +79,6 @@ namespace RFiDGear.ViewModel
         /// <param name="_dialogs"></param>
         public MifareDesfireSetupViewModel(object _selectedSetupViewModel, ObservableCollection<IDialogViewModel> _dialogs)
         {
-            //dialogs = _dialogs;
-
             try
             {
                 MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
@@ -187,12 +185,10 @@ namespace RFiDGear.ViewModel
                     SelectedPlugin = Items.FirstOrDefault();
                 }
             }
-            catch
+            catch (Exception e)
             {
-                //LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
             }
-
-
         }
         #endregion
 
@@ -843,7 +839,6 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireAppKeySettingsTarget = value;
-                //selectedDesfireAppKeySettingsTarget |= DESFireKeySettings.KS_ALLOW_CHANGE_MK;
                 RaisePropertyChanged("SelectedDesfireAppKeySettingsCreateNewApp");
             }
         }
@@ -1102,31 +1097,31 @@ namespace RFiDGear.ViewModel
         private string selectedDesfireAppKeyNumberTarget;
         private int selectedDesfireAppKeyNumberTargetAsInt;
 
-		/// <summary>
-		///
-		/// </summary>
-		public string SelectedDesfireAppKeyVersionTarget
-		{
-			get
-			{
-				return selectedDesfireAppKeyVersionTarget;
-			}
-			set
-			{
-				if (int.TryParse(value, out selectedDesfireAppKeyVersionTargetAsInt))
-				{
-					selectedDesfireAppKeyVersionTarget = value;
-				}
-				RaisePropertyChanged("SelectedDesfireAppKeyVersionTarget");
-			}
-		}
-		private string selectedDesfireAppKeyVersionTarget;
-		private int selectedDesfireAppKeyVersionTargetAsInt;
+        /// <summary>
+        ///
+        /// </summary>
+        public string SelectedDesfireAppKeyVersionTarget
+        {
+            get
+            {
+                return selectedDesfireAppKeyVersionTarget;
+            }
+            set
+            {
+                if (int.TryParse(value, out selectedDesfireAppKeyVersionTargetAsInt))
+                {
+                    selectedDesfireAppKeyVersionTarget = value;
+                }
+                RaisePropertyChanged("SelectedDesfireAppKeyVersionTarget");
+            }
+        }
+        private string selectedDesfireAppKeyVersionTarget;
+        private int selectedDesfireAppKeyVersionTargetAsInt;
 
-		/// <summary>
-		///
-		/// </summary>
-		public string DesfireAppKeyTarget
+        /// <summary>
+        ///
+        /// </summary>
+        public string DesfireAppKeyTarget
         {
             get => desfireAppKeyTarget;
             set
@@ -1587,549 +1582,549 @@ namespace RFiDGear.ViewModel
         /// return new RelayCommand<LibLogicalAccessProvider>((_device) => OnNewCreateAppCommand(_device));
         /// </summary>
         public ICommand CreateAppCommand { get { return new RelayCommand(OnNewCreateAppCommand); } }
-		private void OnNewCreateAppCommand()
-		{
-			TaskErr = ERROR.Empty;	
+        private void OnNewCreateAppCommand()
+        {
+            TaskErr = ERROR.Empty;
 
-			Task desfireTask =
-				new Task(() =>
-				         {
-				         	using (ReaderDevice device = ReaderDevice.Instance)
-				         	{
-				         		if (device != null)
-				         		{
-				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+            Task desfireTask =
+                new Task(() =>
+                         {
+                             using (ReaderDevice device = ReaderDevice.Instance)
+                             {
+                                 if (device != null)
+                                 {
+                                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-				         			if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
-				         			{
-										ERROR result = device.AuthToMifareDesfireApplication(
-												  DesfireMasterKeyCurrent,
-												  SelectedDesfireMasterKeyEncryptionTypeCurrent,
-												  0);
+                                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
+                                     {
+                                         ERROR result = device.AuthToMifareDesfireApplication(
+                                                   DesfireMasterKeyCurrent,
+                                                   SelectedDesfireMasterKeyEncryptionTypeCurrent,
+                                                   0);
 
-										if (IsValidAppNumberNew != false && result == ERROR.NoError)
-				         				{
-				         					StatusText += string.Format("{0}: Successfully Authenticated to App 0\n", DateTime.Now);
+                                         if (IsValidAppNumberNew != false && result == ERROR.NoError)
+                                         {
+                                             StatusText += string.Format("{0}: Successfully Authenticated to App 0\n", DateTime.Now);
 
-				         					DESFireKeySettings keySettings;
-				         					keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
+                                             DESFireKeySettings keySettings;
+                                             keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
 
-				         					keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
-				         					keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
-				         					keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
-				         					keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
+                                             keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
+                                             keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
+                                             keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
+                                             keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
 
-                                            result = device.CreateMifareDesfireApplication(
-                                                DesfireMasterKeyCurrent,
-                                                keySettings,
-                                                SelectedDesfireMasterKeyEncryptionTypeCurrent,
-                                                SelectedDesfireAppKeyEncryptionTypeCreateNewApp,
-                                                selectedDesfireAppMaxNumberOfKeysAsInt,
-                                                AppNumberNewAsInt);
+                                             result = device.CreateMifareDesfireApplication(
+                                                 DesfireMasterKeyCurrent,
+                                                 keySettings,
+                                                 SelectedDesfireMasterKeyEncryptionTypeCurrent,
+                                                 SelectedDesfireAppKeyEncryptionTypeCreateNewApp,
+                                                 selectedDesfireAppMaxNumberOfKeysAsInt,
+                                                 AppNumberNewAsInt);
 
-                                            if (result == ERROR.NoError)
-				         					{
-				         						StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
-												TaskErr = result;
-				         						return;
-				         					}
-				         					else
-				         					{
-				         						StatusText += string.Format("{0}: Unable to Create App: {1}\n", DateTime.Now, result.ToString());
-												TaskErr = result;
-												return;
-				         					}
-				         				}
-				         				else
-				         				{
-				         					StatusText += string.Format("{0}: Authentication to PICC failed. Try without Authentication...\n", DateTime.Now);
+                                             if (result == ERROR.NoError)
+                                             {
+                                                 StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
+                                                 TaskErr = result;
+                                                 return;
+                                             }
+                                             else
+                                             {
+                                                 StatusText += string.Format("{0}: Unable to Create App: {1}\n", DateTime.Now, result.ToString());
+                                                 TaskErr = result;
+                                                 return;
+                                             }
+                                         }
+                                         else
+                                         {
+                                             StatusText += string.Format("{0}: Authentication to PICC failed. Try without Authentication...\n", DateTime.Now);
 
-				         					DESFireKeySettings keySettings = DESFireKeySettings.KS_ALLOW_CHANGE_MK;
-				         					keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
+                                             DESFireKeySettings keySettings = DESFireKeySettings.KS_ALLOW_CHANGE_MK;
+                                             keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
 
-				         					keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
-				         					keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
-				         					keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
-				         					keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
+                                             keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
+                                             keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
+                                             keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
+                                             keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
 
-											result = device.CreateMifareDesfireApplication(
-												  DesfireMasterKeyCurrent,
-												  keySettings,
-												  SelectedDesfireMasterKeyEncryptionTypeCurrent,
-												  SelectedDesfireAppKeyEncryptionTypeCreateNewApp,
-												  selectedDesfireAppMaxNumberOfKeysAsInt,
-												  AppNumberNewAsInt, false);
+                                             result = device.CreateMifareDesfireApplication(
+                                                   DesfireMasterKeyCurrent,
+                                                   keySettings,
+                                                   SelectedDesfireMasterKeyEncryptionTypeCurrent,
+                                                   SelectedDesfireAppKeyEncryptionTypeCreateNewApp,
+                                                   selectedDesfireAppMaxNumberOfKeysAsInt,
+                                                   AppNumberNewAsInt, false);
 
-											if (result == ERROR.NoError)
-				         					{
-				         						StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
-												TaskErr = result;
-												return;
-				         					}
-				         					else
-				         					{
-				         						StatusText += string.Format("{0}: Unable to create App: {1}\n", DateTime.Now, result.ToString());
-												TaskErr = result;
-												return;
-				         					}
-				         				}
-				         			}
-				         		}
-				         		else
-				         		{
-				         			TaskErr = ERROR.DeviceNotReadyError;
-				         			return;
-				         		}
-				         	}
-				         });
+                                             if (result == ERROR.NoError)
+                                             {
+                                                 StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
+                                                 TaskErr = result;
+                                                 return;
+                                             }
+                                             else
+                                             {
+                                                 StatusText += string.Format("{0}: Unable to create App: {1}\n", DateTime.Now, result.ToString());
+                                                 TaskErr = result;
+                                                 return;
+                                             }
+                                         }
+                                     }
+                                 }
+                                 else
+                                 {
+                                     TaskErr = ERROR.DeviceNotReadyError;
+                                     return;
+                                 }
+                             }
+                         });
 
-			if (TaskErr == ERROR.Empty)
-			{
-				desfireTask.ContinueWith((x) =>
-				                         {
-				                         	if (TaskErr == ERROR.NoError)
-				                         	{
-				                         		IsTaskCompletedSuccessfully = true;
-				                         	}
-				                         	else
-				                         	{
-				                         		IsTaskCompletedSuccessfully = false;
-				                         	}
-										 });
+            if (TaskErr == ERROR.Empty)
+            {
+                desfireTask.ContinueWith((x) =>
+                                         {
+                                             if (TaskErr == ERROR.NoError)
+                                             {
+                                                 IsTaskCompletedSuccessfully = true;
+                                             }
+                                             else
+                                             {
+                                                 IsTaskCompletedSuccessfully = false;
+                                             }
+                                         });
 
-				desfireTask.RunSynchronously();
-			}
-
-			
-			return;
-		}
-
-		/// <summary>
-		/// return new RelayCommand<LibLogicalAccessProvider>((_device) => OnNewCreateAppCommand(_device));
-		/// </summary>
-		public ICommand CreateFileCommand { get { return new RelayCommand(OnNewCreateFileCommand); } }
-		private void OnNewCreateFileCommand()
-		{
-			TaskErr = ERROR.Empty;
-
-			accessRights.changeAccess = SelectedDesfireFileAccessRightChange;
-			accessRights.readAccess = SelectedDesfireFileAccessRightRead;
-			accessRights.writeAccess = SelectedDesfireFileAccessRightWrite;
-			accessRights.readAndWriteAccess = SelectedDesfireFileAccessRightReadWrite;
-
-			Task desfireTask =
-				new Task(() =>
-				         {
-				         	using (ReaderDevice device = ReaderDevice.Instance)
-				         	{
-				         		if (device != null)
-				         		{
-				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
-
-				         			if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR && IsValidAppNumberNew != false)
-				         			{
-										 ERROR result = device.AuthToMifareDesfireApplication(
-												 DesfireAppKeyCurrent,
-												 SelectedDesfireAppKeyEncryptionTypeCurrent,
-												 selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt);
-
-										if (result == ERROR.NoError)
-				         				{
-											 StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
-
-											 result = device.CreateMifareDesfireFile(
-												DesfireAppKeyCurrent,
-												SelectedDesfireAppKeyEncryptionTypeCurrent,
-												SelectedDesfireFileType,
-												accessRights,
-												SelectedDesfireFileCryptoMode,
-												AppNumberCurrentAsInt,
-												FileNumberCurrentAsInt,
-												FileSizeCurrentAsInt);
-
-											 if (result == ERROR.NoError)
-											 {
-												 StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
-												 TaskErr = result;
-												 return;
-											 }
-											 else
-											 {
-												 StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
-												 TaskErr = result;
-												 return;
-											 }											
-				         				}
-
-				         				else
-				         				{
-											 StatusText += string.Format("{0}: Unable to Authenticate to App {1}; Try to Continue Anyway...\n", DateTime.Now, AppNumberCurrentAsInt);
-
-											 result = device.CreateMifareDesfireFile(
-												   DesfireAppKeyCurrent,
-												   SelectedDesfireAppKeyEncryptionTypeCurrent,
-												   SelectedDesfireFileType,
-												   accessRights,
-												   SelectedDesfireFileCryptoMode,
-												   AppNumberCurrentAsInt,
-												   FileNumberCurrentAsInt,
-												   FileSizeCurrentAsInt);
-
-											 if (result == ERROR.NoError)
-											 {
-												 StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
-												 TaskErr = result;
-												 return;
-											 }
-											 else
-											 {
-												 StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
-												 TaskErr = result; 
-												 return;
-											 }
-										 }
-				         			}
-				         		}
-				         		else
-				         		{
-				         			TaskErr = ERROR.DeviceNotReadyError;
-				         			return;
-				         		}
-				         	}
-				         });
-
-			if (TaskErr == ERROR.Empty)
-			{
-				desfireTask.ContinueWith((x) =>
-				                         {
-				                         	if (TaskErr == ERROR.NoError)
-				                         	{
-				                         		IsTaskCompletedSuccessfully = true;
-				                         	}
-				                         	else
-				                         	{
-				                         		IsTaskCompletedSuccessfully = false;
-				                         	}
-				                         });
-
-				desfireTask.RunSynchronously();
-			}
-
-			
-			return;
-		}
-
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
-		private void OnNewReadDataCommand()
-		{
-			TaskErr = ERROR.Empty;
-
-			Task desfireTask =
-				new Task(() =>
-				         {
-				         	using (ReaderDevice device = ReaderDevice.Instance)
-				         	{
-				         		if (device != null)
-				         		{
-				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
-
-				         			if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
-				         			{
-										 ERROR result = device.AuthToMifareDesfireApplication(
-												 DesfireReadKeyCurrent,
-												 SelectedDesfireReadKeyEncryptionType,
-												 selectedDesfireReadKeyNumberAsInt, AppNumberCurrentAsInt);
+                desfireTask.RunSynchronously();
+            }
 
 
-										if (IsValidAppNumberNew != false && result == ERROR.NoError)
-				         				{
-				         					StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
+            return;
+        }
 
-											result = device.ReadMiFareDESFireChipFile(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent,
-																				   DesfireReadKeyCurrent, SelectedDesfireReadKeyEncryptionType, selectedDesfireReadKeyNumberAsInt,
-																				   DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType, selectedDesfireWriteKeyNumberAsInt,
-																				   EncryptionMode.CM_ENCRYPT, FileNumberCurrentAsInt, AppNumberCurrentAsInt, FileSizeCurrentAsInt);
+        /// <summary>
+        /// return new RelayCommand<LibLogicalAccessProvider>((_device) => OnNewCreateAppCommand(_device));
+        /// </summary>
+        public ICommand CreateFileCommand { get { return new RelayCommand(OnNewCreateFileCommand); } }
+        private void OnNewCreateFileCommand()
+        {
+            TaskErr = ERROR.Empty;
 
-											if (result == ERROR.NoError)
-				         					{
-				         						FileSizeCurrent = device.MifareDESFireData.Length.ToString();
-				         						
-				         						StatusText += string.Format("{0}: Successfully Read {2} Bytes Data from FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
-				         						
-				         						childNodeViewModelFromChip.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
-				         						
-				         						childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
+            accessRights.changeAccess = SelectedDesfireFileAccessRightChange;
+            accessRights.readAccess = SelectedDesfireFileAccessRightRead;
+            accessRights.writeAccess = SelectedDesfireFileAccessRightWrite;
+            accessRights.readAndWriteAccess = SelectedDesfireFileAccessRightReadWrite;
 
-												TaskErr = result;
-												
-												RaisePropertyChanged("ChildNodeViewModelTemp");
-				         						RaisePropertyChanged("ChildNodeViewModelFromChip");
-				         						
-				         						return;
-				         					}
-				         					else
-				         					{
-				         						StatusText += string.Format("{0}: Unable to Read File with FileID: {1}: {2}",DateTime.Now, FileNumberCurrentAsInt, result.ToString());
-												TaskErr = result;
-												return;
-				         					}
-				         				}
-				         				else
-				         				{
-											StatusText += string.Format("{0}: Unable to Read File: {1}", DateTime.Now, result.ToString());
-											TaskErr = result; 
-											return;
-				         				}
-				         			}
-				         		}
-				         		else
-				         		{
-				         			TaskErr = ERROR.DeviceNotReadyError;
-				         			return;
-				         		}
-				         	}
-				         });
+            Task desfireTask =
+                new Task(() =>
+                         {
+                             using (ReaderDevice device = ReaderDevice.Instance)
+                             {
+                                 if (device != null)
+                                 {
+                                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-			if (TaskErr == ERROR.Empty)
-			{
-				desfireTask.ContinueWith((x) =>
-				                         {
-				                         	if (TaskErr == ERROR.NoError)
-				                         	{
-				                         		IsTaskCompletedSuccessfully = true;
-				                         	}
-				                         	else
-				                         	{
-				                         		IsTaskCompletedSuccessfully = false;
-				                         	}
-				                         });
+                                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR && IsValidAppNumberNew != false)
+                                     {
+                                         ERROR result = device.AuthToMifareDesfireApplication(
+                                                 DesfireAppKeyCurrent,
+                                                 SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                                 selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt);
 
-				desfireTask.RunSynchronously();
-			}
+                                         if (result == ERROR.NoError)
+                                         {
+                                             StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
-			
-			return;
-		}
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand GetDataFromFileCommand { get { return new RelayCommand(OnNewGetDataFromFileCommand); } }
-		private void OnNewGetDataFromFileCommand() {
-			var dlg = new OpenFileDialogViewModel
-			{
-				Title = ResourceLoader.GetResource("windowCaptionOpenProject"),
-				//Filter = ResourceLoader.GetResource("filterStringSaveTasks"),
-				Multiselect = false
-			};
+                                             result = device.CreateMifareDesfireFile(
+                                                DesfireAppKeyCurrent,
+                                                SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                                SelectedDesfireFileType,
+                                                accessRights,
+                                                SelectedDesfireFileCryptoMode,
+                                                AppNumberCurrentAsInt,
+                                                FileNumberCurrentAsInt,
+                                                FileSizeCurrentAsInt);
 
-			if (dlg.Show(this.Dialogs) && dlg.FileName != null)
-			{
-				try {
+                                             if (result == ERROR.NoError)
+                                             {
+                                                 StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
+                                                 TaskErr = result;
+                                                 return;
+                                             }
+                                             else
+                                             {
+                                                 StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
+                                                 TaskErr = result;
+                                                 return;
+                                             }
+                                         }
 
-					var data = File.ReadAllText(dlg.FileName);
-					int err;
+                                         else
+                                         {
+                                             StatusText += string.Format("{0}: Unable to Authenticate to App {1}; Try to Continue Anyway...\n", DateTime.Now, AppNumberCurrentAsInt);
+
+                                             result = device.CreateMifareDesfireFile(
+                                                   DesfireAppKeyCurrent,
+                                                   SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                                   SelectedDesfireFileType,
+                                                   accessRights,
+                                                   SelectedDesfireFileCryptoMode,
+                                                   AppNumberCurrentAsInt,
+                                                   FileNumberCurrentAsInt,
+                                                   FileSizeCurrentAsInt);
+
+                                             if (result == ERROR.NoError)
+                                             {
+                                                 StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
+                                                 TaskErr = result;
+                                                 return;
+                                             }
+                                             else
+                                             {
+                                                 StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
+                                                 TaskErr = result;
+                                                 return;
+                                             }
+                                         }
+                                     }
+                                 }
+                                 else
+                                 {
+                                     TaskErr = ERROR.DeviceNotReadyError;
+                                     return;
+                                 }
+                             }
+                         });
+
+            if (TaskErr == ERROR.Empty)
+            {
+                desfireTask.ContinueWith((x) =>
+                                         {
+                                             if (TaskErr == ERROR.NoError)
+                                             {
+                                                 IsTaskCompletedSuccessfully = true;
+                                             }
+                                             else
+                                             {
+                                                 IsTaskCompletedSuccessfully = false;
+                                             }
+                                         });
+
+                desfireTask.RunSynchronously();
+            }
 
 
-					childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel((CustomConverter.GetBytes(data, out err)), 0);
-					//.Data = new byte[(data.Length)/2];
-					//childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile.Data = (CustomConverter.GetBytes(data, out err));
+            return;
+        }
 
-					RaisePropertyChanged("ChildNodeViewModelTemp");
-					RaisePropertyChanged("ChildNodeViewModelFromChip");
-				}
-				catch (Exception e) {
-					LogWriter.CreateLogEntry(e, FacilityName);
-				}
-			}
-		}
-		
-		/// <summary>
-		/// 
-		/// </summary>
-		public ICommand WriteDataCommand { get { return new RelayCommand(OnNewWriteDataCommand); } }
-		private void OnNewWriteDataCommand()
-		{
-			TaskErr = ERROR.Empty;
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
+        private void OnNewReadDataCommand()
+        {
+            TaskErr = ERROR.Empty;
 
-			Task desfireTask =
-				new Task(() =>
-						 {
-						 using (ReaderDevice device = ReaderDevice.Instance)
-						 {
-							 if (device != null)
-							 {
-								 StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+            Task desfireTask =
+                new Task(() =>
+                         {
+                             using (ReaderDevice device = ReaderDevice.Instance)
+                             {
+                                 if (device != null)
+                                 {
+                                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-								 if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
-								 {
+                                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
+                                     {
+                                         ERROR result = device.AuthToMifareDesfireApplication(
+                                                 DesfireReadKeyCurrent,
+                                                 SelectedDesfireReadKeyEncryptionType,
+                                                 selectedDesfireReadKeyNumberAsInt, AppNumberCurrentAsInt);
 
-										 ERROR result = device.AuthToMifareDesfireApplication(
-																						  DesfireWriteKeyCurrent,
-																						  SelectedDesfireWriteKeyEncryptionType,
-																						  selectedDesfireWriteKeyNumberAsInt, AppNumberCurrentAsInt);
 
-										 if (IsValidAppNumberNew != false && result == ERROR.NoError)
-									 {
-										 StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
+                                         if (IsValidAppNumberNew != false && result == ERROR.NoError)
+                                         {
+                                             StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
-										 result = device.WriteMiFareDESFireChipFile(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent,
-																				DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent,
-																				DesfireReadKeyCurrent, SelectedDesfireReadKeyEncryptionType, selectedDesfireReadKeyNumberAsInt,
-																				DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType, selectedDesfireWriteKeyNumberAsInt,
-																				EncryptionMode.CM_ENCRYPT, FileNumberCurrentAsInt, AppNumberCurrentAsInt, childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile.Data);
+                                             result = device.ReadMiFareDESFireChipFile(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                                                                    DesfireReadKeyCurrent, SelectedDesfireReadKeyEncryptionType, selectedDesfireReadKeyNumberAsInt,
+                                                                                    DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType, selectedDesfireWriteKeyNumberAsInt,
+                                                                                    EncryptionMode.CM_ENCRYPT, FileNumberCurrentAsInt, AppNumberCurrentAsInt, FileSizeCurrentAsInt);
 
-											if (result == ERROR.NoError)
-				         					{
-				         						StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
-												TaskErr = result;
-												return;
-				         					}
-				         					else
-				         					{
-												StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
-												TaskErr = result;
-												return;
-				         					}
-				         				}
-				         				else
-				         				{
-											StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
-											TaskErr = result;
-											return;
-				         				}
-				         			}
-				         		}
-				         		else
-				         		{
-				         			TaskErr = ERROR.DeviceNotReadyError;
-				         			return;
-				         		}
-				         	}
-				         });
+                                             if (result == ERROR.NoError)
+                                             {
+                                                 FileSizeCurrent = device.MifareDESFireData.Length.ToString();
 
-			if (TaskErr == ERROR.Empty)
-			{
-				desfireTask.ContinueWith((x) =>
-				                         {
-				                         	if (TaskErr == ERROR.NoError)
-				                         	{
-				                         		IsTaskCompletedSuccessfully = true;
-				                         	}
-				                         	else
-				                         	{
-				                         		IsTaskCompletedSuccessfully = false;
-				                         	}
-				                         });
+                                                 StatusText += string.Format("{0}: Successfully Read {2} Bytes Data from FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
 
-				desfireTask.RunSynchronously();
-			}
+                                                 childNodeViewModelFromChip.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
 
-			
-			return;
-		}
-		
-		/// <summary>
-		///
-		/// </summary>
-		public ICommand ChangeAppKeyCommand { get { return new RelayCommand(OnNewChangeAppKeyCommand); } }
-		private void OnNewChangeAppKeyCommand()
-		{
-			TaskErr = ERROR.Empty;
-			
+                                                 childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
 
-			Task desfireTask = new Task(() =>
-			                            {
-			                            	using (ReaderDevice device = ReaderDevice.Instance)
-			                            	{
-			                            		if (device != null)
-			                            		{
-			                            			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+                                                 TaskErr = result;
 
-			                            			if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
-			                            			{
-														ERROR result = device.AuthToMifareDesfireApplication(
-																DesfireAppKeyCurrent,
-																SelectedDesfireAppKeyEncryptionTypeCurrent,
-																selectedDesfireAppKeyNumberCurrentAsInt,
-																AppNumberCurrentAsInt);
+                                                 RaisePropertyChanged("ChildNodeViewModelTemp");
+                                                 RaisePropertyChanged("ChildNodeViewModelFromChip");
 
-														if (IsValidAppNumberCurrent != false &&
-			                            				    IsValidAppNumberTarget != false &&
-			                            				    IsValidDesfireAppKeyTarget != false &&
-			                            				    result == ERROR.NoError)
-			                            				{
-			                            					StatusText += string.Format("{0}: Successfully Authenticated to AppID {1}\n", DateTime.Now, AppNumberCurrentAsInt);
+                                                 return;
+                                             }
+                                             else
+                                             {
+                                                 StatusText += string.Format("{0}: Unable to Read File with FileID: {1}: {2}", DateTime.Now, FileNumberCurrentAsInt, result.ToString());
+                                                 TaskErr = result;
+                                                 return;
+                                             }
+                                         }
+                                         else
+                                         {
+                                             StatusText += string.Format("{0}: Unable to Read File: {1}", DateTime.Now, result.ToString());
+                                             TaskErr = result;
+                                             return;
+                                         }
+                                     }
+                                 }
+                                 else
+                                 {
+                                     TaskErr = ERROR.DeviceNotReadyError;
+                                     return;
+                                 }
+                             }
+                         });
 
-			                            					DESFireKeySettings keySettings = DESFireKeySettings.KS_DEFAULT;
-			                            					keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
+            if (TaskErr == ERROR.Empty)
+            {
+                desfireTask.ContinueWith((x) =>
+                                         {
+                                             if (TaskErr == ERROR.NoError)
+                                             {
+                                                 IsTaskCompletedSuccessfully = true;
+                                             }
+                                             else
+                                             {
+                                                 IsTaskCompletedSuccessfully = false;
+                                             }
+                                         });
 
-			                            					keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
-			                            					keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
-			                            					keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
-			                            					keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
+                desfireTask.RunSynchronously();
+            }
 
-															result = device.ChangeMifareDesfireApplicationKey(DesfireAppKeyCurrent,
-																										 selectedDesfireAppKeyNumberCurrentAsInt,
-																										 SelectedDesfireAppKeyEncryptionTypeCurrent,
-																										 DesfireAppKeyTarget,
-																										 selectedDesfireAppKeyNumberTargetAsInt,
-																										 selectedDesfireAppKeyVersionTargetAsInt,
-																										 SelectedDesfireAppKeyEncryptionTypeTarget,
-																										 AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings);
 
-															if (result == ERROR.NoError)
-			                            					{
-			                            						StatusText += string.Format("{0}: Successfully Changed Key {1} of AppID {2}\n", DateTime.Now, selectedDesfireAppKeyNumberTargetAsInt, AppNumberTargetAsInt);
-																TaskErr = result;
-																return;
-			                            					}
-			                            					else
-			                            					{
-			                            						StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString());
-																TaskErr = result;
-																return;
-			                            					}
-			                            				}
-			                            				else
-			                            				{
-															StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString());
-															TaskErr = result;
-															return;
-			                            				}
-			                            			}
-			                            		}
-			                            		else
-			                            		{
-			                            			TaskErr = ERROR.DeviceNotReadyError;
-			                            			return;
-			                            		}
-			                            	}
-			                            });
+            return;
+        }
 
-			if (TaskErr == ERROR.Empty)
-			{
-				desfireTask.ContinueWith((x) =>
-				                         {
-				                         	if (TaskErr == ERROR.NoError)
-				                         	{
-				                         		IsTaskCompletedSuccessfully = true;
-				                         	}
-				                         	else
-				                         	{
-				                         		IsTaskCompletedSuccessfully = false;
-				                         	}
-				                         });
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand GetDataFromFileCommand { get { return new RelayCommand(OnNewGetDataFromFileCommand); } }
+        private void OnNewGetDataFromFileCommand()
+        {
+            var dlg = new OpenFileDialogViewModel
+            {
+                Title = ResourceLoader.GetResource("windowCaptionOpenProject"),
+                Multiselect = false
+            };
 
-				desfireTask.RunSynchronously();
-			}
+            if (dlg.Show(this.Dialogs) && dlg.FileName != null)
+            {
+                try
+                {
 
-			
-			return;
-		}
+                    var data = File.ReadAllText(dlg.FileName);
+                    int err;
+
+
+                    childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel((CustomConverter.GetBytes(data, out err)), 0);
+
+                    RaisePropertyChanged("ChildNodeViewModelTemp");
+                    RaisePropertyChanged("ChildNodeViewModelFromChip");
+                }
+                catch (Exception e)
+                {
+                    LogWriter.CreateLogEntry(e, FacilityName);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand WriteDataCommand { get { return new RelayCommand(OnNewWriteDataCommand); } }
+        private void OnNewWriteDataCommand()
+        {
+            TaskErr = ERROR.Empty;
+
+            Task desfireTask =
+                new Task(() =>
+                         {
+                             using (ReaderDevice device = ReaderDevice.Instance)
+                             {
+                                 if (device != null)
+                                 {
+                                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
+                                     {
+
+                                         ERROR result = device.AuthToMifareDesfireApplication(
+                                                                                          DesfireWriteKeyCurrent,
+                                                                                          SelectedDesfireWriteKeyEncryptionType,
+                                                                                          selectedDesfireWriteKeyNumberAsInt, AppNumberCurrentAsInt);
+
+                                         if (IsValidAppNumberNew != false && result == ERROR.NoError)
+                                         {
+                                             StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
+
+                                             result = device.WriteMiFareDESFireChipFile(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                                                                    DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                                                                    DesfireReadKeyCurrent, SelectedDesfireReadKeyEncryptionType, selectedDesfireReadKeyNumberAsInt,
+                                                                                    DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType, selectedDesfireWriteKeyNumberAsInt,
+                                                                                    EncryptionMode.CM_ENCRYPT, FileNumberCurrentAsInt, AppNumberCurrentAsInt, childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile.Data);
+
+                                             if (result == ERROR.NoError)
+                                             {
+                                                 StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
+                                                 TaskErr = result;
+                                                 return;
+                                             }
+                                             else
+                                             {
+                                                 StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
+                                                 TaskErr = result;
+                                                 return;
+                                             }
+                                         }
+                                         else
+                                         {
+                                             StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
+                                             TaskErr = result;
+                                             return;
+                                         }
+                                     }
+                                 }
+                                 else
+                                 {
+                                     TaskErr = ERROR.DeviceNotReadyError;
+                                     return;
+                                 }
+                             }
+                         });
+
+            if (TaskErr == ERROR.Empty)
+            {
+                desfireTask.ContinueWith((x) =>
+                                         {
+                                             if (TaskErr == ERROR.NoError)
+                                             {
+                                                 IsTaskCompletedSuccessfully = true;
+                                             }
+                                             else
+                                             {
+                                                 IsTaskCompletedSuccessfully = false;
+                                             }
+                                         });
+
+                desfireTask.RunSynchronously();
+            }
+
+
+            return;
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public ICommand ChangeAppKeyCommand { get { return new RelayCommand(OnNewChangeAppKeyCommand); } }
+        private void OnNewChangeAppKeyCommand()
+        {
+            TaskErr = ERROR.Empty;
+
+
+            Task desfireTask = new Task(() =>
+                                        {
+                                            using (ReaderDevice device = ReaderDevice.Instance)
+                                            {
+                                                if (device != null)
+                                                {
+                                                    StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                                                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
+                                                    {
+                                                        ERROR result = device.AuthToMifareDesfireApplication(
+                                                                DesfireAppKeyCurrent,
+                                                                SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                                                selectedDesfireAppKeyNumberCurrentAsInt,
+                                                                AppNumberCurrentAsInt);
+
+                                                        if (IsValidAppNumberCurrent != false &&
+                                                            IsValidAppNumberTarget != false &&
+                                                            IsValidDesfireAppKeyTarget != false &&
+                                                            result == ERROR.NoError)
+                                                        {
+                                                            StatusText += string.Format("{0}: Successfully Authenticated to AppID {1}\n", DateTime.Now, AppNumberCurrentAsInt);
+
+                                                            DESFireKeySettings keySettings = DESFireKeySettings.KS_DEFAULT;
+                                                            keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
+
+                                                            keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
+                                                            keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
+                                                            keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
+                                                            keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
+
+                                                            result = device.ChangeMifareDesfireApplicationKey(DesfireAppKeyCurrent,
+                                                                                                         selectedDesfireAppKeyNumberCurrentAsInt,
+                                                                                                         SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                                                                                         DesfireAppKeyTarget,
+                                                                                                         selectedDesfireAppKeyNumberTargetAsInt,
+                                                                                                         selectedDesfireAppKeyVersionTargetAsInt,
+                                                                                                         SelectedDesfireAppKeyEncryptionTypeTarget,
+                                                                                                         AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings);
+
+                                                            if (result == ERROR.NoError)
+                                                            {
+                                                                StatusText += string.Format("{0}: Successfully Changed Key {1} of AppID {2}\n", DateTime.Now, selectedDesfireAppKeyNumberTargetAsInt, AppNumberTargetAsInt);
+                                                                TaskErr = result;
+                                                                return;
+                                                            }
+                                                            else
+                                                            {
+                                                                StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString());
+                                                                TaskErr = result;
+                                                                return;
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString());
+                                                            TaskErr = result;
+                                                            return;
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    TaskErr = ERROR.DeviceNotReadyError;
+                                                    return;
+                                                }
+                                            }
+                                        });
+
+            if (TaskErr == ERROR.Empty)
+            {
+                desfireTask.ContinueWith((x) =>
+                                         {
+                                             if (TaskErr == ERROR.NoError)
+                                             {
+                                                 IsTaskCompletedSuccessfully = true;
+                                             }
+                                             else
+                                             {
+                                                 IsTaskCompletedSuccessfully = false;
+                                             }
+                                         });
+
+                desfireTask.RunSynchronously();
+            }
+
+
+            return;
+        }
 
         /// <summary>
         ///
@@ -2339,8 +2334,6 @@ namespace RFiDGear.ViewModel
 
             Task desfireTask = new Task(() =>
                                         {
-                                            //TaskErr = ERROR.DeviceNotReadyError;
-
                                             using (ReaderDevice device = ReaderDevice.Instance)
                                             {
                                                 if (device != null)
@@ -2362,15 +2355,15 @@ namespace RFiDGear.ViewModel
                                                                 DesfireMasterKeyCurrent,
                                                                 SelectedDesfireMasterKeyEncryptionTypeCurrent);
 
-															if (result == ERROR.NoError)
-															{
+                                                            if (result == ERROR.NoError)
+                                                            {
                                                                 if (device.AppIDList != null)
-																{
-																	foreach (uint appID in device.AppIDList)
-																	{
-																		StatusText += string.Format("{0}: FoundAppID {1}\n", DateTime.Now, appID);
-																	}
-																}
+                                                                {
+                                                                    foreach (uint appID in device.AppIDList)
+                                                                    {
+                                                                        StatusText += string.Format("{0}: FoundAppID {1}\n", DateTime.Now, appID);
+                                                                    }
+                                                                }
 
                                                                 result = device.FormatDesfireCard(DesfireMasterKeyCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent);
 
@@ -2458,8 +2451,6 @@ namespace RFiDGear.ViewModel
 
             if (SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings)
             {
-                //ref GenericChipModel temp = ref GenericChip();
-                //ReadAppSettingsCommand(ref new GenericChipModel());
                 return;
             }
 
@@ -2469,13 +2460,13 @@ namespace RFiDGear.ViewModel
                 return;
             }
 
-			Task desfireTask = new Task(() =>
-			{
-				using (ReaderDevice device = ReaderDevice.Instance)
-				{
-					if (device != null)
-					{
-						StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+            Task desfireTask = new Task(() =>
+            {
+                using (ReaderDevice device = ReaderDevice.Instance)
+                {
+                    if (device != null)
+                    {
+                        StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
                         if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                         {
@@ -2529,14 +2520,14 @@ namespace RFiDGear.ViewModel
         {
             TaskErr = ERROR.Empty;
 
-			Task desfireTask = new Task(
-				() =>
-				{
-					using (ReaderDevice device = ReaderDevice.Instance)
-					{
-						if (device != null)
-						{
-							StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+            Task desfireTask = new Task(
+                () =>
+                {
+                    using (ReaderDevice device = ReaderDevice.Instance)
+                    {
+                        if (device != null)
+                        {
+                            StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
                             if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireMasterKeyCurrent) == KEY_ERROR.NO_ERROR)
                             {
@@ -2566,8 +2557,8 @@ namespace RFiDGear.ViewModel
                                             SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                             DesfireMasterKeyTarget,
                                             selectedDesfireAppKeyNumberTargetAsInt,
-											0,
-											SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings);
+                                            0,
+                                            SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings);
 
                                         if (result == ERROR.NoError)
                                         {
@@ -2783,13 +2774,13 @@ namespace RFiDGear.ViewModel
         {
             TaskErr = ERROR.Empty;
 
-			Task desfireTask = new Task(() =>
-			{
-				using (ReaderDevice device = ReaderDevice.Instance)
-				{
-					if (device != null)
-					{
-						StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+            Task desfireTask = new Task(() =>
+            {
+                using (ReaderDevice device = ReaderDevice.Instance)
+                {
+                    if (device != null)
+                    {
+                        StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
                         if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                         {

@@ -189,7 +189,7 @@ namespace RedCell.Diagnostics.Update
                 {
                     LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                     _remoteConfig = null;
-					
+
                     return;
                 }
 
@@ -206,7 +206,7 @@ namespace RedCell.Diagnostics.Update
                     LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Security token mismatch."), FacilityName);
                     return;
                 }
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Remote config is valid."), FacilityName); 
+                LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Remote config is valid."), FacilityName);
                 LogWriter.CreateLogEntry(string.Format("{0}: {1}, {2}", DateTime.Now, "Local version is ", _localConfig.Version), FacilityName);
                 LogWriter.CreateLogEntry(string.Format("{0}: {1}, {2}", DateTime.Now, "Remote version is ", _remoteConfig.Version), FacilityName);
 
@@ -366,7 +366,6 @@ namespace RedCell.Diagnostics.Update
         {
             _disposed = false;
             Dispose(true);
-            GC.Collect();
         }
 
     }

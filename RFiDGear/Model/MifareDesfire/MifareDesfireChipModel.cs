@@ -26,9 +26,5 @@ namespace RFiDGear.Model
             UID = uid;
             CardType = cardType;
         }
-
-        //public string UidNumber { get; set; }
-
-        //public CARD_TYPE CardType { get; set; }
     }
 }

@@ -30,15 +30,15 @@ using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
 {
-	/// <summary>
-	/// Description of ReportTaskViewModel.
-	/// </summary>
-	public class CommonTaskViewModel : ViewModelBase, IUserDialogViewModel
-	{
-		#region Fields
-		private static readonly string FacilityName = "RFiDGear";
+    /// <summary>
+    /// Description of ReportTaskViewModel.
+    /// </summary>
+    public class CommonTaskViewModel : ViewModelBase, IUserDialogViewModel
+    {
+        #region Fields
+        private static readonly string FacilityName = "RFiDGear";
 
-		private protected ReportReaderWriter reportReaderWriter;
+        private protected ReportReaderWriter reportReaderWriter;
         private protected Checkpoint checkpoint;
 
         [XmlIgnore]
@@ -134,31 +134,22 @@ namespace RFiDGear.ViewModel
 
                     try
                     {
-                        //string templatePath = _tasks.OfType<CommonTaskViewModel>()
-                        //    .Where(x => x.ReportTemplatePath != null)
-                        //    .Where(y => y.IsFocused)
-                        //    .Select(x => x.ReportTemplatePath).Single();
-
                         reportReaderWriter = new ReportReaderWriter();
-                        //reportReaderWriter.ReportTemplatePath = templatePath;
-                        //reportReaderWriter.OpenReport();
-
-                        //TemplateFields = reportReaderWriter.GetReportFields();
                     }
 
                     catch (Exception e)
                     {
-						LogWriter.CreateLogEntry(e, FacilityName);
-					}
-				}
+                        LogWriter.CreateLogEntry(e, FacilityName);
+                    }
+                }
 
                 AvailableTasks = _tasks;
                 NumberOfCheckpoints = CustomConverter.GenerateStringSequence(0, 60).ToArray();
-			}
-			catch (Exception e)
-			{
-				LogWriter.CreateLogEntry(e, FacilityName);
-			}
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(e, FacilityName);
+            }
         }
 
         #endregion
@@ -1044,7 +1035,7 @@ namespace RFiDGear.ViewModel
                     IsTaskCompletedSuccessfully = false;
                     RaisePropertyChanged("TemplateFields");
 
-					LogWriter.CreateLogEntry(e, FacilityName);
+                    LogWriter.CreateLogEntry(e, FacilityName);
 
                     return;
                 }
@@ -1093,9 +1084,6 @@ namespace RFiDGear.ViewModel
                 }
 
                 RaisePropertyChanged("Checkpoints");
-
-                //SelectedCheckpoint = checkpoint;
-
             }
 
             catch (Exception e)
@@ -1401,8 +1389,8 @@ namespace RFiDGear.ViewModel
 
                                 catch (Exception e)
                                 {
-									LogWriter.CreateLogEntry(e, FacilityName);
-								}
+                                    LogWriter.CreateLogEntry(e, FacilityName);
+                                }
 
                                 result = ERROR.IsNotTrue;
 
@@ -1411,10 +1399,10 @@ namespace RFiDGear.ViewModel
 
                         TaskErr = result;
                     }
-					catch (Exception e)
-					{
-						LogWriter.CreateLogEntry(e, FacilityName);
-					}
+                    catch (Exception e)
+                    {
+                        LogWriter.CreateLogEntry(e, FacilityName);
+                    }
 
 
                 });

@@ -144,10 +144,10 @@ namespace RFiDGear.ViewModel
             triggerReadChip.Tag = triggerReadChip.IsEnabled;
 
 #if DEBUG
-			taskTimeout = new DispatcherTimer
-			{
-				Interval = new TimeSpan(0, 1, 0, 0, 0)
-			};
+            taskTimeout = new DispatcherTimer
+            {
+                Interval = new TimeSpan(0, 1, 0, 0, 0)
+            };
 #else
             taskTimeout = new DispatcherTimer
             {
@@ -373,29 +373,29 @@ namespace RFiDGear.ViewModel
 		private void TaskTimeout(object sender, EventArgs e)
         {
 #if DEBUG
-			taskTimeout.Start();
-			taskTimeout.Stop();
-			taskTimeout.IsEnabled = false;
+            taskTimeout.Start();
+            taskTimeout.Stop();
+            taskTimeout.IsEnabled = false;
 
 
-			switch (taskHandler.TaskCollection[taskIndex])
-			{
-				case GenericChipTaskViewModel tsVM:
-					tsVM.IsTaskCompletedSuccessfully = false;
-					break;
-				case CommonTaskViewModel tsVM:
-					tsVM.IsTaskCompletedSuccessfully = false;
-					break;
-				case MifareClassicSetupViewModel tsVM:
-					tsVM.IsTaskCompletedSuccessfully = false;
-					break;
-				case MifareDesfireSetupViewModel tsVM:
-					tsVM.IsTaskCompletedSuccessfully = false;
-					break;
-				case MifareUltralightSetupViewModel tsVM:
-					tsVM.IsTaskCompletedSuccessfully = false;
-					break;
-			}
+            switch (taskHandler.TaskCollection[taskIndex])
+            {
+                case GenericChipTaskViewModel tsVM:
+                    tsVM.IsTaskCompletedSuccessfully = false;
+                    break;
+                case CommonTaskViewModel tsVM:
+                    tsVM.IsTaskCompletedSuccessfully = false;
+                    break;
+                case MifareClassicSetupViewModel tsVM:
+                    tsVM.IsTaskCompletedSuccessfully = false;
+                    break;
+                case MifareDesfireSetupViewModel tsVM:
+                    tsVM.IsTaskCompletedSuccessfully = false;
+                    break;
+                case MifareUltralightSetupViewModel tsVM:
+                    tsVM.IsTaskCompletedSuccessfully = false;
+                    break;
+            }
 #else
             taskTimeout.IsEnabled = false;
             taskTimeout.Stop();
@@ -960,11 +960,11 @@ namespace RFiDGear.ViewModel
                             treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareUltralightChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
                             break;
 
-                            
+
                         case CARD_TYPE.GENERIC_T_CL_A:
                             treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
                             break;
-                            
+
                         case CARD_TYPE.ISO15693:
 
                             break;
@@ -3473,19 +3473,19 @@ namespace RFiDGear.ViewModel
 
                         OnOk = (sender) =>
                         {
-                                currentSettings.DefaultReaderProvider = sender.SelectedReader;
-                                currentSettings.AutoLoadProjectOnStart = sender.LoadOnStart;
-                                currentSettings.LastUsedComPort = sender.ComPort;
-                                currentSettings.AutoCheckForUpdates = sender.CheckOnStart;
-                                currentSettings.LastUsedBaudRate = sender.SelectedBaudRate;
+                            currentSettings.DefaultReaderProvider = sender.SelectedReader;
+                            currentSettings.AutoLoadProjectOnStart = sender.LoadOnStart;
+                            currentSettings.LastUsedComPort = sender.ComPort;
+                            currentSettings.AutoCheckForUpdates = sender.CheckOnStart;
+                            currentSettings.LastUsedBaudRate = sender.SelectedBaudRate;
 
-                                settings.DefaultSpecification = currentSettings;
+                            settings.DefaultSpecification = currentSettings;
 
-                                sender.Close();
+                            sender.Close();
 
-                                settings.SaveSettings();
+                            settings.SaveSettings();
                         },
-                    
+
                         OnConnect = (sender) =>
                         {
                         },
@@ -3912,7 +3912,7 @@ namespace RFiDGear.ViewModel
                 {
                     var mySplash = new SplashScreenViewModel();
 
-                    MefHelper.Instance.Container.ComposeParts(this); 
+                    MefHelper.Instance.Container.ComposeParts(this);
 
                     using (SettingsReaderWriter settings = new SettingsReaderWriter())
                     {

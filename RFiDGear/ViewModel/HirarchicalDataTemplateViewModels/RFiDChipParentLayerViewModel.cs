@@ -39,10 +39,9 @@ namespace RFiDGear.ViewModel
 
         private readonly RelayCommand _cmdCreateApp;
         private readonly RelayCommand _cmdEraseDesfireCard;
-        //private readonly string[] _constCardType = { "Mifare1K", "Mifare2K", "Mifare4K", "DESFireEV1" };
 
-        private protected MifareClassicChipModel mifareClassicUidModel; // { get; private set; }
-        private protected MifareDesfireChipModel mifareDesfireUidModel; // { get; private set; }
+        private protected MifareClassicChipModel mifareClassicUidModel;
+        private protected MifareDesfireChipModel mifareDesfireUidModel;
         private protected MifareUltralightChipModel mifareUltralightUidModel; // { get; private set; }
 
         #region Constructors

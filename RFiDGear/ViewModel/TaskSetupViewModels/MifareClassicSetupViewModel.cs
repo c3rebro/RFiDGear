@@ -169,7 +169,7 @@ namespace RFiDGear.ViewModel
              });
 
         private MifareClassicSectorModel sectorModel;
-  
+
         private SettingsReaderWriter settings = new SettingsReaderWriter();
 
         private byte madGPB = 0xC1;
@@ -949,7 +949,6 @@ namespace RFiDGear.ViewModel
         public bool IsValidSelectedKeySetupTaskIndex
         {
             get =>
-                //classicKeyAKeyCurrent = SectorTrailer.Split(',')[0];
                 isValidSelectedKeySetupTaskIndex;
             set
             {
@@ -1087,10 +1086,6 @@ namespace RFiDGear.ViewModel
                     selectedClassicKeyBNumberCurrent = value;
                     RaisePropertyChanged("SelectedClassicKeyBNumberCurrent");
                 }
-
-                //				ClassicKeyBKeyCurrent = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings.
-                //					First(x => x.KeyType == SelectedClassicKeyBNumberCurrent).AccessBits.Split(new[] { ',', ';' })[2];
-
             }
         }
         private string selectedClassicKeyBNumberCurrent;
@@ -1184,8 +1179,11 @@ namespace RFiDGear.ViewModel
         #region MADEditor
 
         [XmlIgnore]
-        public string[] MADVersions { get; 
-            set; }
+        public string[] MADVersions
+        {
+            get;
+            set;
+        }
 
         /// <summary>
         /// 
@@ -1314,7 +1312,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 applicationCode = value.Length > 2 ? value.ToUpper().Remove(2, value.Length - 2) : value.ToUpper();
-                IsValidApplicationCode = (CustomConverter.IsInHexFormat(applicationCode) && applicationCode.Length<=2);
+                IsValidApplicationCode = (CustomConverter.IsInHexFormat(applicationCode) && applicationCode.Length <= 2);
                 RaisePropertyChanged("ApplicationCode");
             }
         }
@@ -1331,7 +1329,7 @@ namespace RFiDGear.ViewModel
             {
                 isValidApplicationCode = value;
 
-                if(isValidApplicationCode == true)
+                if (isValidApplicationCode == true)
                 {
                     appNumberAsInt &= 0xff00;
                     appNumberAsInt |= CustomConverter.GetBytes(applicationCode, out int _)[0];
@@ -1634,7 +1632,6 @@ namespace RFiDGear.ViewModel
         public ICommand ReadDataCommand => new RelayCommand(OnNewReadDataCommand);
         private protected void OnNewReadDataCommand()
         {
-            //Mouse.OverrideCursor = Cursors.Wait;
             TaskErr = ERROR.Empty;
 
             Task classicTask =
@@ -1752,7 +1749,7 @@ namespace RFiDGear.ViewModel
                         IsTaskCompletedSuccessfully = false;
                     }
                 });
-				
+
                 classicTask.RunSynchronously();
             }
         }
@@ -1772,7 +1769,7 @@ namespace RFiDGear.ViewModel
                              using (ReaderDevice device = ReaderDevice.Instance)
                              {
                                  StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
-                                 
+
                                  if (!UseMAD)
                                  {
                                      if (device != null)
@@ -1780,7 +1777,6 @@ namespace RFiDGear.ViewModel
                                          childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
                                          childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
 
-                                         // childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.DataBlockNumberChipBased
                                          device.ReadChipPublic();
 
                                          if (device.WriteMiFareClassicSingleBlock(CustomConverter.GetChipBasedDataBlockNumber(device.GenericChip.CardType, selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite),
@@ -1811,7 +1807,7 @@ namespace RFiDGear.ViewModel
                                  {
                                      ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
                                      ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
-                                     
+
                                      if (device.WriteMiFareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
                                                                           ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent,
                                                                           ClassicKeyAKeyTarget, ClassicKeyBKeyTarget,

@@ -29,13 +29,13 @@ using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
 {
-	/// <summary>
-	/// Description of MifareClassicSetupViewModel.
-	/// </summary>
-	public class MifareUltralightSetupViewModel : ViewModelBase, IUserDialogViewModel
-	{
-		#region Fields
-		private static readonly string FacilityName = "RFiDGear";
+    /// <summary>
+    /// Description of MifareClassicSetupViewModel.
+    /// </summary>
+    public class MifareUltralightSetupViewModel : ViewModelBase, IUserDialogViewModel
+    {
+        #region Fields
+        private static readonly string FacilityName = "RFiDGear";
 
         private MifareUltralightChipModel chipModel;
         private MifareUltralightPageModel pageModel;
@@ -114,20 +114,20 @@ namespace RFiDGear.ViewModel
 
                 MifareUltralightPages = CustomConverter.GenerateStringSequence(0, 15).ToArray();
 
-				SelectedUltralightPageCurrent = "0";
-				
-				HasPlugins = items != null ? items.Any() : false;
-				
-				if (HasPlugins)
-					SelectedPlugin = Items.FirstOrDefault();
-				
-			}
-			catch (Exception e)
-			{
-				LogWriter.CreateLogEntry(e, FacilityName);
-			}
-			
-		}
+                SelectedUltralightPageCurrent = "0";
+
+                HasPlugins = items != null ? items.Any() : false;
+
+                if (HasPlugins)
+                    SelectedPlugin = Items.FirstOrDefault();
+
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(e, FacilityName);
+            }
+
+        }
 
         #endregion
 
@@ -338,7 +338,6 @@ namespace RFiDGear.ViewModel
         public string SelectedTaskIndex
         {
             get =>
-                //classicKeyAKeyCurrent = SectorTrailer.Split(',')[0];
                 selectedAccessBitsTaskIndex;
             set
             {
@@ -421,19 +420,19 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
-		private void OnNewReadDataCommand()
-		{
-			//Mouse.OverrideCursor = Cursors.Wait;
-			TaskErr = ERROR.Empty;
-			
-			Task classicTask =
-				new Task(() =>
-				        {
-				         	using (ReaderDevice device = ReaderDevice.Instance)
-				         	{
-				         		if(device != null && device.ReadChipPublic() == ERROR.NoError)
-				         		{
-				         			StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource(""));
+        private void OnNewReadDataCommand()
+        {
+            //Mouse.OverrideCursor = Cursors.Wait;
+            TaskErr = ERROR.Empty;
+
+            Task classicTask =
+                new Task(() =>
+                        {
+                            using (ReaderDevice device = ReaderDevice.Instance)
+                            {
+                                if (device != null && device.ReadChipPublic() == ERROR.NoError)
+                                {
+                                    StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource(""));
                                 }
                                 else
                                 {

@@ -50,7 +50,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         }
 
         public override ERROR ReadChipPublic()
-        {           
+        {
             try
             {
                 if (readerDevice.ConnectTWN4())
@@ -109,7 +109,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 return ERROR.IOError;
             }
             return ERROR.IOError;
-                
+
         }
 
         #endregion
@@ -188,8 +188,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             throw new NotImplementedException();
         }
-        public override ERROR CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget, 
-                                        DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, 
+        public override ERROR CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget,
+                                        DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication,
                                         int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
         {
             throw new NotImplementedException();
@@ -239,7 +239,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             _disposed = false;
             Dispose(true);
-            GC.Collect();
         }
     }
 }

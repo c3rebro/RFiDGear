@@ -100,7 +100,6 @@ namespace RFiDGear.ViewModel
 
             isTask = _isTask;
 
-            //device = _device;
             appModel = appID;
             _cardType = cardType;
             _parentUid = parentUID?.UidNumber;
@@ -214,8 +213,7 @@ namespace RFiDGear.ViewModel
 
                     OnOk = (sender) =>
                     {
-                                         //databaseReaderWriter.WriteDatabase((sender.ViewModelContext as RFiDChipChildLayerViewModel)._sectorModel);
-                                     },
+                    },
 
                     OnCancel = (sender) =>
                     {
@@ -224,8 +222,8 @@ namespace RFiDGear.ViewModel
 
                     OnAuth = (sender) =>
                     {
-                                         //readerModel.ReadMiFareClassicSingleSector(sectorVM.SectorNumber, sender.selectedClassicKeyAKey, sender.selectedClassicKeyBKey);
-                                         IsAuthenticated = device.SectorSuccesfullyAuth;
+                        IsAuthenticated = device.SectorSuccesfullyAuth;
+
                         foreach (RFiDChipGrandChildLayerViewModel gcVM in Children)
                         {
                         }
@@ -524,7 +522,7 @@ namespace RFiDGear.ViewModel
                 case CARD_TYPE.DESFireEV1:
                 case CARD_TYPE.DESFireEV2:
                     {
-                        //children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(), this));
+                        children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(), this));
                     }
                     break;
 
@@ -537,80 +535,99 @@ namespace RFiDGear.ViewModel
             }
         }
 
-		#region IUserDialogViewModel Implementation
+        #region IUserDialogViewModel Implementation
 
-		[XmlIgnore]
-		public bool IsModal { get; private set; }
+        [XmlIgnore]
+        public bool IsModal { get; private set; }
 
-		public virtual void RequestClose()
-		{
-			if (this.OnCloseRequest != null)
-				OnCloseRequest(this);
-			else
-				Close();
-		}
+        public virtual void RequestClose()
+        {
+            if (this.OnCloseRequest != null)
+            {
+                OnCloseRequest(this);
+            }
+            else
+            {
+                Close();
+            }
 
-		public event EventHandler DialogClosing;
+        }
 
-		public ICommand OKCommand { get { return new RelayCommand(Ok); } }
+        public event EventHandler DialogClosing;
 
-		protected virtual void Ok()
-		{
-			if (this.OnOk != null)
-				this.OnOk(this);
-			else
-				Close();
-		}
+        public ICommand OKCommand { get { return new RelayCommand(Ok); } }
 
-		/// <summary>
-		///
-		/// </summary>
-		public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
+        protected virtual void Ok()
+        {
+            if (this.OnOk != null)
+            {
+                this.OnOk(this);
+            }
 
-		protected virtual void Cancel()
-		{
-			if (this.OnCancel != null)
-				this.OnCancel(this);
-			else
-				Close();
-		}
+            else
+            {
+                Close();
+            }
+        }
 
-		/// <summary>
-		///
-		/// </summary>
-		[XmlIgnore]
-		public Action<RFiDChipChildLayerViewModel> OnOk { get; set; }
+        /// <summary>
+        ///
+        /// </summary>
+        public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
 
-		/// <summary>
-		///
-		/// </summary>
-		[XmlIgnore]
-		public Action<RFiDChipChildLayerViewModel> OnCancel { get; set; }
+        protected virtual void Cancel()
+        {
+            if (this.OnCancel != null)
+            {
+                this.OnCancel(this);
+            }
 
-		/// <summary>
-		///
-		/// </summary>
-		[XmlIgnore]
-		public Action<RFiDChipChildLayerViewModel> OnCloseRequest { get; set; }
+            else
+            {
+                Close();
+            }
 
-		/// <summary>
-		///
-		/// </summary>
-		public void Close()
-		{
-			if (this.DialogClosing != null)
-				this.DialogClosing(this, new EventArgs());
-		}
+        }
 
-		/// <summary>
-		///
-		/// </summary>
-		/// <param name="collection"></param>
-		public void Show(IList<IDialogViewModel> collection)
-		{
-			collection.Add(this);
-		}
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public Action<RFiDChipChildLayerViewModel> OnOk { get; set; }
 
-		#endregion IUserDialogViewModel Implementation
-	}
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public Action<RFiDChipChildLayerViewModel> OnCancel { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public Action<RFiDChipChildLayerViewModel> OnCloseRequest { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
+        public void Close()
+        {
+            if (this.DialogClosing != null)
+            {
+                this.DialogClosing(this, new EventArgs());
+            }
+
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="collection"></param>
+        public void Show(IList<IDialogViewModel> collection)
+        {
+            collection.Add(this);
+        }
+
+        #endregion IUserDialogViewModel Implementation
+    }
 }
