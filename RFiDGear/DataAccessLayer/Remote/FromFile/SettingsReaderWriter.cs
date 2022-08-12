@@ -136,8 +136,6 @@ namespace RFiDGear
                     LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                 }
             }
-            //else
-            //ReadSettings();
         }
 
         /// <summary>
@@ -156,7 +154,6 @@ namespace RFiDGear
 
             if (File.Exists(_fileName) || (string.IsNullOrWhiteSpace(_fileName) && File.Exists(Path.Combine(appDataPath, _settingsFileFileName))))
             {
-                //Path.Combine(appDataPath,databaseFileName)
                 var doc = new XmlDocument();
 
                 try
@@ -191,7 +188,6 @@ namespace RFiDGear
                         );
                     }
 
-                    //defaultSpecification = new DefaultSpecification();
                     defaultSpecification = (serializer.Deserialize(reader) as DefaultSpecification);
 
                     reader.Close();

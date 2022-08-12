@@ -112,10 +112,8 @@ namespace RFiDGear.DataAccessLayer
                 {
                     foreach (KeyValuePair<string, PdfFormField> _form in form.GetFormFields())
                     {
-                        PdfFormField _fieldValue = _form.Value;
                         temp.Add(_form.Key);
                     }
-
                 }
 
                 return temp;
@@ -140,13 +138,9 @@ namespace RFiDGear.DataAccessLayer
 
                     try
                     {
-                        //form.GetField(_field).SetReadOnly(false);
                         form.GetField(_field).SetBorderWidth(1);
-
                         form.GetField(_field).SetVisibility(PdfFormField.VISIBLE);
-
                         form.GetField(_field).SetValue(_value);
-                        //form.GetField(_field).SetReadOnly(true);
 
                         if (form.GetField(_field) is PdfButtonFormField)
                         {
@@ -179,13 +173,9 @@ namespace RFiDGear.DataAccessLayer
 
                     try
                     {
-                        //form.GetField(_field).SetReadOnly(false);
                         form.GetField(_field).SetBorderWidth(1);
-
                         form.GetField(_field).SetVisibility(PdfFormField.VISIBLE);
-
                         form.GetField(_field).SetValue(string.Format("{0}{1}", form.GetField(_field).GetValueAsString(), _value));
-                        //form.GetField(_field).SetReadOnly(true);
 
                         if (form.GetField(_field) is PdfButtonFormField)
                         {

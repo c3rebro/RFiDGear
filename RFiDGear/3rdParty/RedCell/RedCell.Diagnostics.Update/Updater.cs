@@ -23,6 +23,7 @@ namespace RedCell.Diagnostics.Update
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "RFiDGear");
 
+        private bool _disposed = false;
         /// <summary>
         /// The default check interval
         /// </summary>
@@ -348,9 +349,24 @@ namespace RedCell.Diagnostics.Update
         }
         #endregion
 
+        protected void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+
+                }
+
+                _disposed = true;
+            }
+        }
+
         public void Dispose()
         {
-            this.Dispose();
+            _disposed = false;
+            Dispose(true);
+            GC.Collect();
         }
 
     }

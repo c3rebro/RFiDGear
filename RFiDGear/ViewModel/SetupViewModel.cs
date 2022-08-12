@@ -37,6 +37,7 @@ namespace RFiDGear.ViewModel
                 device = _device;
 
                 SelectedReader = settings.DefaultSpecification.DefaultReaderProvider;
+                DefaultReader = Enum.GetName(typeof(ReaderTypes), SelectedReader);
                 ComPort = settings.DefaultSpecification.LastUsedComPort;
                 LoadOnStart = settings.DefaultSpecification.AutoLoadProjectOnStart;
                 CheckOnStart = settings.DefaultSpecification.AutoCheckForUpdates;
@@ -67,7 +68,7 @@ namespace RFiDGear.ViewModel
                         if(device is ElatecNetProvider)
                         {
                             device.Dispose();
-                            device = null;
+
                             device = new LibLogicalAccessProvider(SelectedReader);
                         }
                         device.ReadChipPublic();
@@ -81,6 +82,8 @@ namespace RFiDGear.ViewModel
                 case ReaderTypes.Elatec:
                     if (device != null)
                     {
+                        device.Dispose();
+
                         device.ReadChipPublic();
                     }
                     else
@@ -96,6 +99,8 @@ namespace RFiDGear.ViewModel
 
             if (!string.IsNullOrEmpty(device?.GenericChip?.UID))
             {
+                DefaultReader = Enum.GetName(typeof(ReaderTypes), SelectedReader);
+
                 ReaderStatus = string.Format("Connected to Card:"
                                              + '\n'
                                              + "UID: {0} "
@@ -196,12 +201,14 @@ namespace RFiDGear.ViewModel
 
         public string DefaultReader
         {
-            get
+            get => defaultReader;
+            set
             {
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
-                { return Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider); }
+                defaultReader = value;
+                RaisePropertyChanged("DefaultReader");
             }
         }
+        private string defaultReader;
 
         /// <summary>
         ///

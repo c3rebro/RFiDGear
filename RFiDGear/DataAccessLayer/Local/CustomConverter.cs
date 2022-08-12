@@ -3,6 +3,7 @@
 using Elatec.NET;
 
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 
 namespace RFiDGear
@@ -167,7 +168,7 @@ namespace RFiDGear
                     temp = temp.Insert(i, " ");
                 }
 
-                return temp.ToLower();
+                return temp.ToLower(CultureInfo.CurrentCulture);
             }
         }
 

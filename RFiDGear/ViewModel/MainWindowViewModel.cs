@@ -273,12 +273,12 @@ namespace RFiDGear.ViewModel
 
                 databaseReaderWriter.ReadDatabase(lastUsedDBPath);
 
-                foreach (RFiDChipParentLayerViewModel vm in databaseReaderWriter.treeViewModel)
+                foreach (RFiDChipParentLayerViewModel vm in databaseReaderWriter.TreeViewModel)
                 {
                     TreeViewParentNodes.Add(vm);
                 }
 
-                foreach (object setup in databaseReaderWriter.setupModel.TaskCollection)
+                foreach (object setup in databaseReaderWriter.SetupModel.TaskCollection)
                 {
                     ChipTasks.TaskCollection.Add(setup);
                 }
@@ -447,7 +447,6 @@ namespace RFiDGear.ViewModel
                         dialogs.Add(new GenericChipTaskViewModel(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
                         {
                             Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareClassicTask"),
-                            //IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
 
                             OnOk = (sender) =>
                             {
@@ -464,8 +463,6 @@ namespace RFiDGear.ViewModel
                                     }
 
                                     ChipTasks.TaskCollection.Add(sender);
-
-                                    //ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OfType<ReportTaskViewModel>().OrderBy(x =>(x as ReportTaskViewModel).SelectedTaskIndexAsInt));
 
                                     ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x =>
 
@@ -531,7 +528,6 @@ namespace RFiDGear.ViewModel
                 dialogs.Add(new CommonTaskViewModel(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
                 {
                     Caption = ResourceLoader.GetResource("windowCaptionAddEditGenericTask"),
-                    //IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
 
                     OnOk = (sender) =>
                     {
@@ -614,7 +610,7 @@ namespace RFiDGear.ViewModel
                         dialogs.Add(new MifareClassicSetupViewModel(SelectedSetupViewModel, dialogs)
                         {
                             Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareClassicTask"),
-                            IsClassicAuthInfoEnabled = true, //content.Contains("EditAccessBits"),
+                            IsClassicAuthInfoEnabled = true,
 
                             OnOk = (sender) =>
                             {
@@ -964,13 +960,13 @@ namespace RFiDGear.ViewModel
                             treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareUltralightChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
                             break;
 
-                            /*
+                            
                         case CARD_TYPE.GENERIC_T_CL_A:
                             treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
                             break;
-                            */
+                            
                         case CARD_TYPE.ISO15693:
-                            //device.ReadISO15693Chip();
+
                             break;
                     }
 
@@ -1083,10 +1079,6 @@ namespace RFiDGear.ViewModel
             OnNewReadChipCommand();
             RaisePropertyChanged("TreeViewParentNodes");
             RaisePropertyChanged("ChipTasks");
-            //OnNewExecuteQuickCheckCommand();
-            //RaisePropertyChanged("TreeViewParentNodes");
-            //RaisePropertyChanged("ChipTasks");
-
 
             taskIndex = 0;
             Dictionary<string, int> taskIndices = new Dictionary<string, int>();
@@ -1279,7 +1271,7 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
+
                                                 taskTimeout.Start();
                                                 break;
 
@@ -1563,7 +1555,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -1802,7 +1793,7 @@ namespace RFiDGear.ViewModel
                                 break;
 
                             case MifareClassicSetupViewModel csVM:
-                                switch (csVM.SelectedTaskType) //[taskIndex] as MifareClassicSetupViewModel).SelectedTaskType) {
+                                switch (csVM.SelectedTaskType)
                                 {
                                     case TaskType_MifareClassicTask.ReadData:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr)
@@ -1820,7 +1811,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -1929,7 +1919,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2032,7 +2021,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2136,7 +2124,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2169,7 +2156,7 @@ namespace RFiDGear.ViewModel
 
                                                 if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                 {
-                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DoesAppExistCommand(GenericChip); //Command.Execute(null);
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DoesAppExistCommand(GenericChip);
                                                 }
 
 
@@ -2254,7 +2241,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2287,7 +2273,7 @@ namespace RFiDGear.ViewModel
 
                                                 if ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                 {
-                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(GenericChip); //Command.Execute(null);
+                                                    (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(GenericChip);
                                                 }
 
 
@@ -2377,7 +2363,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2487,7 +2472,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2610,7 +2594,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2622,7 +2605,6 @@ namespace RFiDGear.ViewModel
 
                                             case ERROR.NoError:
                                                 taskIndex++;
-                                                //taskTimeout.IsEnabled = false;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2719,7 +2701,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2828,7 +2809,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2840,7 +2820,6 @@ namespace RFiDGear.ViewModel
 
                                             case ERROR.NoError:
                                                 taskIndex++;
-                                                //taskTimeout.IsEnabled = false;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2937,7 +2916,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2955,7 +2933,6 @@ namespace RFiDGear.ViewModel
 
                                             case ERROR.NoError:
                                                 taskIndex++;
-                                                //taskTimeout.IsEnabled = false;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -3052,7 +3029,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -3064,7 +3040,6 @@ namespace RFiDGear.ViewModel
 
                                             case ERROR.NoError:
                                                 taskIndex++;
-                                                //taskTimeout.IsEnabled = false;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -3161,7 +3136,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -3270,7 +3244,6 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             case ERROR.DeviceNotReadyError:
-                                                //taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -3288,7 +3261,6 @@ namespace RFiDGear.ViewModel
 
                                             case ERROR.NoError:
                                                 taskIndex++;
-                                                //taskTimeout.IsEnabled = false;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -3491,6 +3463,7 @@ namespace RFiDGear.ViewModel
                 DefaultSpecification currentSettings = settings.DefaultSpecification;
 
                 ReaderDevice.PortNumber = int.Parse(currentSettings.LastUsedComPort);
+                ReaderDevice.ReaderType = currentSettings.DefaultReaderProvider;
 
                 using (ReaderDevice device = ReaderDevice.Instance)
                 {
@@ -3573,12 +3546,12 @@ namespace RFiDGear.ViewModel
                     settings.DefaultSpecification.LastUsedProjectPath = dlg.FileName;
                     settings.SaveSettings();
 
-                    foreach (RFiDChipParentLayerViewModel vm in databaseReaderWriter.treeViewModel)
+                    foreach (RFiDChipParentLayerViewModel vm in databaseReaderWriter.TreeViewModel)
                     {
                         TreeViewParentNodes.Add(vm);
                     }
 
-                    foreach (object setup in databaseReaderWriter.setupModel.TaskCollection)
+                    foreach (object setup in databaseReaderWriter.SetupModel.TaskCollection)
                     {
                         ChipTasks.TaskCollection.Add(setup);
                     }
@@ -3918,20 +3891,6 @@ namespace RFiDGear.ViewModel
                         {
                             //TODO: Update ReaderStatus frequently
                             //FIXME: Locking LibLogicalAccessProvider Instance in different Threads not working correctly
-                            /*
-                            using (ReaderDevice device = ReaderDevice.Instance)
-                            {
-
-                                if (device != null)
-                                {
-                                    //device.ReadChipPublic();
-                                    ReaderStatus = ReaderStatus + string.Format("Reader: {1}, UID: {2}", DateTime.Now, device.ReaderUnitName, device.GenericChip.UID);
-                                    i = 0;
-                                }
-                                else
-                                    i = 0;
-                            }
-                            */
                         }
                     }
 
@@ -3953,10 +3912,7 @@ namespace RFiDGear.ViewModel
                 {
                     var mySplash = new SplashScreenViewModel();
 
-                    //var catalog = new AssemblyCatalog(System.Reflection.Assembly.GetExecutingAssembly());
-                    //var container = new CompositionContainer(catalog);
-                    MefHelper.Instance.Container.ComposeParts(this); //Load Plugins Container.ComposeParts(this);
-                                                                     //container.Compose(this);
+                    MefHelper.Instance.Container.ComposeParts(this); 
 
                     using (SettingsReaderWriter settings = new SettingsReaderWriter())
                     {

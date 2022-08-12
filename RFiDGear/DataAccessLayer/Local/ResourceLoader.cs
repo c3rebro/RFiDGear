@@ -52,7 +52,6 @@ namespace RFiDGear.DataAccessLayer
     /// </summary>
     public sealed class EnumerateExtension : MarkupExtension
     {
-        private readonly SettingsReaderWriter settings;
         private readonly CultureInfo cultureInfo;
         private readonly ResourceManager resManager;
 
@@ -69,7 +68,7 @@ namespace RFiDGear.DataAccessLayer
         {
             Type = type;
 
-            settings = new SettingsReaderWriter();
+            var settings = new SettingsReaderWriter();
             resManager = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
             settings.ReadSettings();
 
@@ -99,8 +98,6 @@ namespace RFiDGear.DataAccessLayer
 	public sealed class ResourceLoader : IValueConverter, IDisposable
 	{
 		private static readonly string FacilityName = "RFiDGear";
-		private readonly SettingsReaderWriter settings;
-		private readonly CultureInfo cultureInfo;
 		private readonly ResourceManager resManager;
 
         /// <summary>
@@ -108,11 +105,7 @@ namespace RFiDGear.DataAccessLayer
         /// </summary>
         public ResourceLoader()
         {
-            settings = new SettingsReaderWriter();
             resManager = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
-            settings.ReadSettings();
-
-            cultureInfo = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
         }
 
         /// <summary>

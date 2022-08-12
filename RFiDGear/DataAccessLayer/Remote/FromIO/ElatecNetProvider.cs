@@ -13,11 +13,12 @@ using System.Threading.Tasks;
 
 namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
-    class ElatecNetProvider : ReaderDevice
+    public class ElatecNetProvider : ReaderDevice, IDisposable
     {
         private string FacilityName = "RFiDGear";
         private TWN4ReaderDevice readerDevice;
         private ChipModel card;
+        private bool _disposed = false;
 
         #region Common
 
@@ -25,8 +26,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             try
             {
-                //readerDevice = new TWN4ReaderDevice(PortNumber);
-                //GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+                readerDevice = new TWN4ReaderDevice(PortNumber);
                 AppIDList = new uint[0];
             }
             catch (Exception e)
@@ -40,7 +40,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             try
             {
                 readerDevice = new TWN4ReaderDevice(_comPort);
-                //GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
                 AppIDList = new uint[0];
             }
             catch (Exception e)
@@ -107,10 +106,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                 LogWriter.CreateLogEntry(e, FacilityName);
 
-                readerDevice?.DisconnectTWN4();
                 return ERROR.IOError;
             }
-            readerDevice?.DisconnectTWN4();
             return ERROR.IOError;
                 
         }
@@ -224,5 +221,25 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             throw new NotImplementedException();
         }
         #endregion
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    TWN4ReaderDevice.Instance?.DisconnectTWN4();
+                }
+
+                _disposed = true;
+            }
+        }
+
+        public override void Dispose()
+        {
+            _disposed = false;
+            Dispose(true);
+            GC.Collect();
+        }
     }
 }

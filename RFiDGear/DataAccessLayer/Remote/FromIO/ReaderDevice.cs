@@ -26,7 +26,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 								return instance;
 							}
 							else
-								return null;
+								return instance;
 						}
 						break;
 					case ReaderTypes.Elatec:
@@ -38,7 +38,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 								return instance;
 							}
 							else
-								return null;
+								return instance;
 						}
 						break;
 
@@ -144,29 +144,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 		#endregion
 
-		protected virtual void Dispose(bool disposing)
-		{
-			if (!_disposed)
-			{
-				if (disposing)
-				{
-					instance = null;
-					// Dispose any managed objects
-					// ...
-				}
-				//readerProvider.release();
-				// Now disposed of any unmanaged objects
-				// ...
-
-				//Thread.Sleep(200);
-				_disposed = true;
-			}
-		}
-
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
+		protected abstract void Dispose(bool disposing);
+		public abstract void Dispose();
 	}
 }

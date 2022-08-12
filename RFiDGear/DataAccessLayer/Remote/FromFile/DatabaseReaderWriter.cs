@@ -4,6 +4,7 @@ using RFiDGear.ViewModel;
 using Log4CSharp;
 
 using System;
+using System.Globalization;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
@@ -29,8 +30,8 @@ namespace RFiDGear.DataAccessLayer
         private const string taskDatabaseFileName = "taskdatabase.xml";
         private readonly string appDataPath;
 
-        public ObservableCollection<RFiDChipParentLayerViewModel> treeViewModel;
-        public ChipTaskHandlerModel setupModel;
+        public ObservableCollection<RFiDChipParentLayerViewModel> TreeViewModel;
+        public ChipTaskHandlerModel SetupModel;
 
         #endregion fields
 
@@ -47,8 +48,8 @@ namespace RFiDGear.DataAccessLayer
                     Directory.CreateDirectory(appDataPath);
                 }
 
-                treeViewModel = new ObservableCollection<RFiDChipParentLayerViewModel>();
-                setupModel = new ChipTaskHandlerModel();
+                TreeViewModel = new ObservableCollection<RFiDChipParentLayerViewModel>();
+                SetupModel = new ChipTaskHandlerModel();
 
                 if (!File.Exists(Path.Combine(appDataPath, chipDatabaseFileName)))
                 {
@@ -56,7 +57,7 @@ namespace RFiDGear.DataAccessLayer
 
                     TextWriter writer = new StreamWriter(Path.Combine(appDataPath, chipDatabaseFileName));
 
-                    serializer.Serialize(writer, treeViewModel);
+                    serializer.Serialize(writer, TreeViewModel);
 
                     writer.Close();
                 }
@@ -67,7 +68,7 @@ namespace RFiDGear.DataAccessLayer
 
                     TextWriter writer = new StreamWriter(Path.Combine(appDataPath, taskDatabaseFileName));
 
-                    serializer.Serialize(writer, setupModel);
+                    serializer.Serialize(writer, SetupModel);
 
                     writer.Close();
                 }
@@ -102,7 +103,7 @@ namespace RFiDGear.DataAccessLayer
             {
                 XmlDocument doc = new XmlDocument();
 
-                if (file.Extension.ToLower() == ".xml")
+                if (file.Extension.ToLower(CultureInfo.CurrentCulture) == ".xml")
                 {
                     doc.Load(_fileName);
 
@@ -114,14 +115,14 @@ namespace RFiDGear.DataAccessLayer
                     try
                     {
                         XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-                        setupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
+                        SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
                     }
                     catch (Exception e)
                     {
                         try
                         {
                             XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
-                            treeViewModel = (serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>);
+                            TreeViewModel = (serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>);
                         }
                         catch (Exception innerE)
                         {
@@ -133,7 +134,7 @@ namespace RFiDGear.DataAccessLayer
 
                 }
 
-                if (file.Extension.ToLower() == ".rfprj")
+                if (file.Extension.ToLower(CultureInfo.CurrentCulture) == ".rfprj")
                 {
                     using (ZipFile zip1 = ZipFile.Read(string.IsNullOrWhiteSpace(_fileName) ?
                     @Path.Combine(appDataPath, chipDatabaseFileNameCompressed) :
@@ -159,14 +160,14 @@ namespace RFiDGear.DataAccessLayer
                     try
                     {
                         XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-                        setupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
+                        SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
                     }
                     catch (Exception e)
                     {
                         try
                         {
                             XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
-                            treeViewModel = (serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>);
+                            TreeViewModel = (serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>);
                         }
                         catch (Exception innerE)
                         {

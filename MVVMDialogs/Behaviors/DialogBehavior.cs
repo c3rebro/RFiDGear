@@ -69,58 +69,58 @@ namespace MvvmDialogs.Behaviors
                 if (!ChangeNotificationHandlers.ContainsKey(d as Window))
                 {
                     ChangeNotificationHandlers[d as Window] = (sender, args) =>
-                {
-                    if (sender is ObservableCollection<IDialogViewModel> collection)
                     {
-                        if (args.Action == NotifyCollectionChangedAction.Add ||
-                            args.Action == NotifyCollectionChangedAction.Remove ||
-                            args.Action == NotifyCollectionChangedAction.Replace)
+                        if (sender is ObservableCollection<IDialogViewModel> collection)
                         {
-                            if (args.NewItems != null)
+                            if (args.Action == NotifyCollectionChangedAction.Add ||
+                                args.Action == NotifyCollectionChangedAction.Remove ||
+                                args.Action == NotifyCollectionChangedAction.Replace)
                             {
-                                foreach (IDialogViewModel viewModel in args.NewItems)
+                                if (args.NewItems != null)
                                 {
-                                    if (!DialogBoxViewModels.ContainsKey(collection))
+                                    foreach (IDialogViewModel viewModel in args.NewItems)
                                     {
-                                        DialogBoxViewModels[collection] = new List<IDialogViewModel>();
-                                    }
+                                        if (!DialogBoxViewModels.ContainsKey(collection))
+                                        {
+                                            DialogBoxViewModels[collection] = new List<IDialogViewModel>();
+                                        }
 
-                                    DialogBoxViewModels[collection].Add(viewModel);
-                                    AddDialog(viewModel, collection, d as Window);
+                                        DialogBoxViewModels[collection].Add(viewModel);
+                                        AddDialog(viewModel, collection, d as Window);
+                                    }
+                                }
+
+                                if (args.OldItems != null)
+                                {
+                                    foreach (IDialogViewModel viewModel in args.OldItems)
+                                    {
+                                        RemoveDialog(viewModel);
+                                        DialogBoxViewModels[collection].Remove(viewModel);
+                                        if (DialogBoxViewModels[collection].Count == 0)
+                                        {
+                                            DialogBoxViewModels.Remove(collection);
+                                        }
+                                    }
                                 }
                             }
-
-                            if (args.OldItems != null)
+                            else if (args.Action == NotifyCollectionChangedAction.Reset)
                             {
-                                foreach (IDialogViewModel viewModel in args.OldItems)
+                                // a Reset event is typically generated in response to clearing the collection.
+                                // unfortunately the framework doesn't provide us with the list of items being
+                                // removed which is why we have to keep a mirror in DialogBoxViewModels
+                                if (DialogBoxViewModels.ContainsKey(collection))
                                 {
-                                    RemoveDialog(viewModel);
-                                    DialogBoxViewModels[collection].Remove(viewModel);
-                                    if (DialogBoxViewModels[collection].Count == 0)
+                                    var viewModels = DialogBoxViewModels[collection];
+                                    foreach (var viewModel in DialogBoxViewModels[collection])
                                     {
-                                        DialogBoxViewModels.Remove(collection);
+                                        RemoveDialog(viewModel);
                                     }
+
+                                    DialogBoxViewModels.Remove(collection);
                                 }
                             }
                         }
-                        else if (args.Action == NotifyCollectionChangedAction.Reset)
-                        {
-                            // a Reset event is typically generated in response to clearing the collection.
-                            // unfortunately the framework doesn't provide us with the list of items being
-                            // removed which is why we have to keep a mirror in DialogBoxViewModels
-                            if (DialogBoxViewModels.ContainsKey(collection))
-                            {
-                                var viewModels = DialogBoxViewModels[collection];
-                                foreach (var viewModel in DialogBoxViewModels[collection])
-                                {
-                                    RemoveDialog(viewModel);
-                                }
-
-                                DialogBoxViewModels.Remove(collection);
-                            }
-                        }
-                    }
-                };
+                    };
                 }
 
                 // when the collection is first bound to this property we should create any initial
@@ -148,64 +148,62 @@ namespace MvvmDialogs.Behaviors
             else if (d is UserControl)
             {
                 // when the parent closes we don't need to track it anymore
-                //(parent as UserControl).Closed += (s, a) => UserControlChangeNotificationHandlers.Remove(parent as Window);
-
                 // otherwise create a handler for it that responds to changes to the supplied collection
                 if (!UserControlChangeNotificationHandlers.ContainsKey(d as UserControl))
                 {
                     UserControlChangeNotificationHandlers[d as UserControl] = (sender, args) =>
-                {
-                    if (sender is ObservableCollection<IDialogViewModel> collection)
                     {
-                        if (args.Action == NotifyCollectionChangedAction.Add ||
-                            args.Action == NotifyCollectionChangedAction.Remove ||
-                            args.Action == NotifyCollectionChangedAction.Replace)
+                        if (sender is ObservableCollection<IDialogViewModel> collection)
                         {
-                            if (args.NewItems != null)
-                            {
-                                foreach (IDialogViewModel viewModel in args.NewItems)
+                            if (args.Action == NotifyCollectionChangedAction.Add ||
+                                args.Action == NotifyCollectionChangedAction.Remove ||
+                                args.Action == NotifyCollectionChangedAction.Replace)
                                 {
-                                    if (!DialogBoxViewModels.ContainsKey(collection))
+                                    if (args.NewItems != null)
                                     {
-                                        DialogBoxViewModels[collection] = new List<IDialogViewModel>();
+                                        foreach (IDialogViewModel viewModel in args.NewItems)
+                                        {
+                                            if (!DialogBoxViewModels.ContainsKey(collection))
+                                            {
+                                                DialogBoxViewModels[collection] = new List<IDialogViewModel>();
+                                            }
+
+                                            DialogBoxViewModels[collection].Add(viewModel);
+                                            AddDialog(viewModel, collection, d as UserControl);
+                                        }
                                     }
 
-                                    DialogBoxViewModels[collection].Add(viewModel);
-                                    AddDialog(viewModel, collection, d as UserControl);
+                                    if (args.OldItems != null)
+                                    {
+                                        foreach (IDialogViewModel viewModel in args.OldItems)
+                                        {
+                                            RemoveDialog(viewModel);
+                                            DialogBoxViewModels[collection].Remove(viewModel);
+                                            if (DialogBoxViewModels[collection].Count == 0)
+                                            {
+                                                DialogBoxViewModels.Remove(collection);
+                                            }
+                                        }
+                                    }
                                 }
-                            }
-
-                            if (args.OldItems != null)
+                            else if (args.Action == NotifyCollectionChangedAction.Reset)
                             {
-                                foreach (IDialogViewModel viewModel in args.OldItems)
+                                // a Reset event is typically generated in response to clearing the collection.
+                                // unfortunately the framework doesn't provide us with the list of items being
+                                // removed which is why we have to keep a mirror in DialogBoxViewModels
+                                if (DialogBoxViewModels.ContainsKey(collection))
                                 {
-                                    RemoveDialog(viewModel);
-                                    DialogBoxViewModels[collection].Remove(viewModel);
-                                    if (DialogBoxViewModels[collection].Count == 0)
+                                    var viewModels = DialogBoxViewModels[collection];
+                                    foreach (var viewModel in DialogBoxViewModels[collection])
                                     {
-                                        DialogBoxViewModels.Remove(collection);
+                                        RemoveDialog(viewModel);
                                     }
+
+                                    DialogBoxViewModels.Remove(collection);
                                 }
                             }
                         }
-                        else if (args.Action == NotifyCollectionChangedAction.Reset)
-                        {
-                            // a Reset event is typically generated in response to clearing the collection.
-                            // unfortunately the framework doesn't provide us with the list of items being
-                            // removed which is why we have to keep a mirror in DialogBoxViewModels
-                            if (DialogBoxViewModels.ContainsKey(collection))
-                            {
-                                var viewModels = DialogBoxViewModels[collection];
-                                foreach (var viewModel in DialogBoxViewModels[collection])
-                                {
-                                    RemoveDialog(viewModel);
-                                }
-
-                                DialogBoxViewModels.Remove(collection);
-                            }
-                        }
-                    }
-                };
+                    };
                 }
 
                 // when the collection is first bound to this property we should create any initial

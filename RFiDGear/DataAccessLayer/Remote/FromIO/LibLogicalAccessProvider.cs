@@ -1,7 +1,4 @@
 ﻿using LibLogicalAccess;
-//using LibLogicalAccess.Card;
-//using LibLogicalAccess.Reader;
-//using LibLogicalAccess.Crypto;
 
 using ByteArrayHelper.Extensions;
 using RFiDGear.Model;
@@ -14,24 +11,21 @@ using System.Threading;
 namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
 	/// <summary>
-	/// Description of RFiDAccess.
+	/// Description of LibLogicalAccessProvider.
 	///
 	/// Initialize Reader
 	/// </summary>
 	///
-	public class LibLogicalAccessProvider : ReaderDevice
+	public class LibLogicalAccessProvider : ReaderDevice, IDisposable
 	{
 		// global (cross-class) Instances go here ->
 		private static readonly string FacilityName = "RFiDGear";
 		private IReaderProvider readerProvider;
 		private IReaderUnit readerUnit;
 		private chip card;
+		private bool _disposed = false;
+
 		public FileSetting DesfireFileSetting { get; private set; }
-		public DESFireKeySettings DesfireAppKeySetting { get; private set; }
-
-		#region properties
-
-		#endregion properties
 
 		#region contructor
 		public LibLogicalAccessProvider()
@@ -75,9 +69,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 							if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
 							{
 								try {
-									//CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()), ByteConverter.HexToString(card.getChipIdentifier().ToArray()));
-									//readerUnit.Disconnect();
-
 									GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
 
 									if (Enum.GetName(typeof(CARD_TYPE), GenericChip.CardType).Contains("DESFire"))
@@ -96,9 +87,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 											GenericChip.CardType = CARD_TYPE.DESFireEV3;
 									}
 
-									//ISO15693Commands commands = card.Commands as ISO15693Commands;
-									//SystemInformation si = commands.GetSystemInformation();
-									//var block=commands.ReadBlock(21, 4);
 									return ERROR.NoError;
 								}
 								catch (Exception e) {
@@ -153,7 +141,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 							if (!string.IsNullOrWhiteSpace(card.ChipIdentifier))
 							{
 								try {
-                                    //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()), ByteConverter.HexToString(card.getChipIdentifier().ToArray()));
                                     GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
                                 }
 								catch (Exception e) {
@@ -403,11 +390,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 							try
 							{
-								cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME "sectorNumber" to 0
+								cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME: "sectorNumber" to 0
 
 								try
 								{ //try to Auth with Keytype A
-									cmd.AuthenticateKeyNo((byte)(_blockNumber), (byte)0, MifareKeyType.KT_KEY_A); // FIXME same as '303
+									cmd.AuthenticateKeyNo((byte)(_blockNumber), (byte)0, MifareKeyType.KT_KEY_A); // FIXME: same as '393
 
 									cmd.WriteBinary((byte)(_blockNumber), buffer);
 
@@ -420,7 +407,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 									try
 									{
-										cmd.AuthenticateKeyNo((byte)(_blockNumber), (byte)0, MifareKeyType.KT_KEY_B); // FIXME same as '303
+										cmd.AuthenticateKeyNo((byte)(_blockNumber), (byte)0, MifareKeyType.KT_KEY_B); // FIXME: same as '393
 
 										cmd.WriteBinary((byte)(_blockNumber), buffer);
 
@@ -589,7 +576,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 							aiToWrite.KeyA.Value = _aKeyToUse == _aKeyToWrite ? mAKeyToUse.Value : mAKeyToWrite.Value;
 							aiToWrite.KeyB.Value = _bKeyToUse == _bKeyToWrite ? mBKeyToUse.Value : mBKeyToWrite.Value;
 							aiToWrite.MADGPB = _madGPB;
-							//aiToWrite.SAB.d_data_block0_access_bits = _sab.d_data_block0_access_bits;
 
 							var aiToUse = new MifareAccessInfoClass
 							{
@@ -650,7 +636,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 						if (readerUnit.Connect())
 						{
 							ReaderUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
 							card = readerUnit.GetSingleChip();
 
@@ -723,7 +708,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 						if (readerUnit.Connect())
 						{
 							ReaderUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 							RawFormatClass format = new RawFormatClass();
 
 							var chip = readerUnit.GetSingleChip() as IMifareUltralightChip;
@@ -734,7 +718,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 							if (chip.Type == "MifareUltralight")
 							{
-								var cmd = chip.Commands as MifareUltralightCommands;// IMifareUltralightCommands;
+								var cmd = chip.Commands as MifareUltralightCommands;
 								MifareUltralightPageData = cmd.ReadPages(_pageNo, _pageNo) as byte[];
 							}
 
@@ -1784,7 +1768,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 										cmd.Authenticate(0, aiToUse.MasterCardKey);
 									}
 
-									cmd.CreateApplication((uint)_appID, (LibLogicalAccess.DESFireKeySettings)_keySettingsTarget, (byte)_maxNbKeys); //_keySettingsTarget
+									cmd.CreateApplication((uint)_appID, (LibLogicalAccess.DESFireKeySettings)_keySettingsTarget, (byte)_maxNbKeys);
 
 									return ERROR.NoError;
 								}
@@ -1881,7 +1865,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 						if (readerUnit.Connect())
 						{
 							ReaderUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
 							card = readerUnit.GetSingleChip();
 
@@ -2041,7 +2024,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 						if (readerUnit.Connect())
 						{
 							ReaderUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
 							card = readerUnit.GetSingleChip();
 
@@ -2121,7 +2103,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 						if (readerUnit.Connect())
 						{
 							ReaderUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
 							card = readerUnit.GetSingleChip();
 
@@ -2201,7 +2182,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 						if (readerUnit.Connect())
 						{
 							ReaderUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
 							card = readerUnit.GetSingleChip();
 
@@ -2258,7 +2238,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 					SecurityLevel = (LibLogicalAccess.EncryptionMode)EncryptionMode.CM_ENCRYPT
 				};
 
-				//IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
@@ -2274,7 +2253,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 						if (readerUnit.Connect())
 						{
 							ReaderUnitName = readerUnit.ConnectedName;
-							//readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
 							card = readerUnit.GetSingleChip();
 
@@ -2349,7 +2327,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		{
 			try
 			{
-				// IDESFireEV1Commands cmd;
 				// Keys to use for authentication
 				IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
 				CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
@@ -2456,7 +2433,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 							if (card.Type == "ISO15693")
 							{
-								var cmd = card.Commands as ISO15693Commands;// IMifareUltralightCommands;
+								var cmd = card.Commands as ISO15693Commands;
 
 								object t = cmd.GetSystemInformation();
 
@@ -2490,17 +2467,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         if (readerUnit.Connect())
                         {
                             ReaderUnitName = readerUnit.ConnectedName;
-                            //readerSerialNumber = readerUnit.GetReaderSerialNumber();
 
                             card = readerUnit.GetSingleChip();
 
 
-                            if (true) //card.getCardType() == "ISO15693"
+                            if (true)
                             {
-                                var cmd = (card as EM4135Chip).ChipIdentifier;// IMifareUltralightCommands;
-                                //object res = cmd.ReadPage(4);
+                                var cmd = (card as EM4135Chip).ChipIdentifier;
 
-                                //appIDs = (appIDsObject as UInt32[]);
                             }
 
                             return ERROR.NoError;
@@ -2516,6 +2490,26 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             }
         }
 
-        #endregion
-    }
+		#endregion
+
+		protected override void Dispose(bool disposing)
+		{
+			if (!_disposed)
+			{
+				if (disposing)
+				{
+					readerProvider.ReleaseInstance();
+				}
+
+				_disposed = true;
+			}
+		}
+
+		public override void Dispose()
+		{
+			_disposed = false;
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+	}
 }

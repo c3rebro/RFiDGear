@@ -65,7 +65,7 @@
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Top"
                 HorizontalContentAlignment="Stretch"
-                Content="{Binding DefaultReader}"
+                Content="{Binding DefaultReader, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                 DataContext="{Binding}"
                 Foreground="Black" />
             <Label
