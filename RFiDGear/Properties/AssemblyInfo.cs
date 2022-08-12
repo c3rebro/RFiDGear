@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("RFiDGear")]
-[assembly: AssemblyDescription("RFiD Frontend using LibLogicalAccess")]
+[assembly: AssemblyDescription("RFiD Encoding Frontend")]
 [assembly: AssemblyConfiguration("x86")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("RFiDGear")]
@@ -24,5 +24,5 @@ using System.Runtime.InteropServices;
 //
 // You can specify all the values or you can use the default the Revision and
 // Build Numbers by using the '*' as shown below:
-[assembly: AssemblyVersion("0.1.*")]
+[assembly: AssemblyVersion("1.0.*")]
 [assembly: Guid("a34bc413-e349-4fd1-8b90-2eb95a333436")]

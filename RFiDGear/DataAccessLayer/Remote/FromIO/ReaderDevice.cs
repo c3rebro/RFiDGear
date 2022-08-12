@@ -55,7 +55,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         private static object syncRoot = new object();
         private static ReaderDevice instance;
-        private bool _disposed;
 
         public object chip;
 

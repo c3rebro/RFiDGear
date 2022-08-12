@@ -18,7 +18,7 @@
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <WarningLevel>4</WarningLevel>
     <ReferencePath>C:\Program Files\Microsoft SDKs\Windows\v8.1A\bin\</ReferencePath>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
     <DelaySign>False</DelaySign>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     <RunCodeAnalysis>False</RunCodeAnalysis>
@@ -90,6 +90,15 @@
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
     <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignManifests>true</SignManifests>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManifestCertificateThumbprint>B4891E8EE3160D893B00DDD07424AC119A92EE88</ManifestCertificateThumbprint>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>RFiDGear.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BouncyCastle.Crypto, Version=1.9.0.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
@@ -322,6 +331,7 @@
     <None Include="3rdParty\RedCell\RedCell.Diagnostics.Update\Update.cd" />
     <None Include="app.config" />
     <None Include="packages.config" />
+    <None Include="RFiDGear.snk" />
     <Resource Include="Resources\wait.ico" />
     <Resource Include="Resources\confirm.ico" />
     <Resource Include="Resources\error.ico" />
@@ -393,11 +403,11 @@
       <Project>{786d71e7-4d92-43e4-a9eb-4e07ffe36f70}</Project>
       <Name>Log4CSharp</Name>
     </ProjectReference>
-    <ProjectReference Include="..\MVVMDialogs\MVVMDialogs.csproj">
+    <ProjectReference Include="..\..\MVVMDialogs\MVVMDialogs.csproj">
       <Project>{ef56252e-257f-41d1-974b-c9015071ce7e}</Project>
       <Name>MVVMDialogs</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PluginSystem\PluginSystem.csproj">
+    <ProjectReference Include="..\..\PluginSystem\PluginSystem.csproj">
       <Project>{e99b606a-25b8-4113-9e75-5016ccfdb410}</Project>
       <Name>PluginSystem</Name>
     </ProjectReference>
