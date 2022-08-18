@@ -8,7 +8,6 @@
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using MefMvvm.SharedContracts;
-using MefMvvm.SharedContracts.ViewModel;
 using MvvmDialogs.ViewModels;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
@@ -26,7 +25,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
@@ -35,7 +33,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of MifareClassicSetupViewModel.
     /// </summary>
-    public class MifareClassicSetupViewModel : ViewModelBase, IUserDialogViewModel
+    public class MifareClassicSetupViewModel : ViewModelBase, IUserDialogViewModel, IGenericTaskModel
     {
         #region Fields
 
@@ -310,7 +308,7 @@ namespace RFiDGear.ViewModel
                     MADVersions = CustomConverter.GenerateStringSequence(1, 3).ToArray();
                     MADSectors = CustomConverter.GenerateStringSequence(1, 39).ToArray();
 
-                    SelectedTaskIndex = "0";
+                    CurrentTaskIndex = "0";
                     SelectedTaskDescription = "Enter a Description";
                 }
 
@@ -710,7 +708,7 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         [XmlIgnore]
-        public ERROR TaskErr { get; set; }
+        public ERROR CurrentTaskErrorLevel { get; set; }
 
         /// <summary>
         ///
@@ -745,17 +743,17 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        public string SelectedTaskIndex
+        public string CurrentTaskIndex
         {
             get =>
-                selectedAccessBitsTaskIndex;
+                currentTaskIndex;
             set
             {
-                selectedAccessBitsTaskIndex = value;
+                currentTaskIndex = value;
                 IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
             }
         }
-        private string selectedAccessBitsTaskIndex;
+        private string currentTaskIndex;
 
         /// <summary>
         ///
@@ -1630,7 +1628,7 @@ namespace RFiDGear.ViewModel
         public ICommand ReadDataCommand => new RelayCommand(OnNewReadDataCommand);
         private protected void OnNewReadDataCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task classicTask =
                 new Task(() =>
@@ -1670,7 +1668,7 @@ namespace RFiDGear.ViewModel
                                                      childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = device.Sector.DataBlock[i].Data;
                                                      childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
 
-                                                     TaskErr = ERROR.NoError;
+                                                     CurrentTaskErrorLevel = ERROR.NoError;
                                                  }
                                                  else
                                                  {
@@ -1678,14 +1676,14 @@ namespace RFiDGear.ViewModel
                                                  }
                                              }
 
-                                             TaskErr = ERROR.NoError;
+                                             CurrentTaskErrorLevel = ERROR.NoError;
 
                                          }
 
                                          else
                                          {
                                              StatusText += string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
-                                             TaskErr = ERROR.AuthenticationError;
+                                             CurrentTaskErrorLevel = ERROR.AuthenticationError;
                                              return;
                                          }
                                      }
@@ -1707,14 +1705,14 @@ namespace RFiDGear.ViewModel
 
                                              StatusText = StatusText + string.Format("{0}: Successfully Read Data from MAD\n", DateTime.Now);
 
-                                             TaskErr = ERROR.NoError;
+                                             CurrentTaskErrorLevel = ERROR.NoError;
                                          }
 
                                          else
                                          {
                                              StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
 
-                                             TaskErr = ERROR.AuthenticationError;
+                                             CurrentTaskErrorLevel = ERROR.AuthenticationError;
                                              return;
                                          }
                                      }
@@ -1724,7 +1722,7 @@ namespace RFiDGear.ViewModel
 
                                  else
                                  {
-                                     TaskErr = ERROR.DeviceNotReadyError;
+                                     CurrentTaskErrorLevel = ERROR.NotReadyError;
                                      return;
                                  }
 
@@ -1734,11 +1732,11 @@ namespace RFiDGear.ViewModel
                              }
                          });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 classicTask.ContinueWith((x) =>
                 {
-                    if (TaskErr == ERROR.NoError)
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
                     {
                         IsTaskCompletedSuccessfully = true;
                     }
@@ -1759,7 +1757,7 @@ namespace RFiDGear.ViewModel
         public ICommand WriteDataCommand => new RelayCommand(OnNewWriteDataCommand);
         private protected void OnNewWriteDataCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task classicTask =
                 new Task(() =>
@@ -1786,18 +1784,18 @@ namespace RFiDGear.ViewModel
                                                                                      DateTime.Now,
                                                                                      childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
                                                                                      CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data));
-                                             TaskErr = ERROR.NoError;
+                                             CurrentTaskErrorLevel = ERROR.NoError;
                                          }
                                          else
                                          {
                                              StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
-                                             TaskErr = ERROR.AuthenticationError;
+                                             CurrentTaskErrorLevel = ERROR.AuthenticationError;
                                          }
                                      }
                                      else
                                      {
                                          StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
-                                         TaskErr = ERROR.DeviceNotReadyError;
+                                         CurrentTaskErrorLevel = ERROR.NotReadyError;
                                      }
                                  }
 
@@ -1818,24 +1816,24 @@ namespace RFiDGear.ViewModel
                                              ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data.Length,
                                              ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.MADApp);
 
-                                         TaskErr = ERROR.NoError;
+                                         CurrentTaskErrorLevel = ERROR.NoError;
                                      }
 
                                      else
                                      {
                                          StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
-                                         TaskErr = ERROR.AuthenticationError;
+                                         CurrentTaskErrorLevel = ERROR.AuthenticationError;
                                          return;
                                      }
                                  }
                              }
                          });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 classicTask.ContinueWith((x) =>
                 {
-                    if (TaskErr == ERROR.NoError)
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
                     {
                         IsTaskCompletedSuccessfully = true;
                     }

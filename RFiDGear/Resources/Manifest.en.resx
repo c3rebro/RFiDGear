@@ -861,8 +861,8 @@ Needed by:
   <data name="ENUM.ERROR.AuthenticationError" xml:space="preserve">
     <value>Authentication Error</value>
   </data>
-  <data name="ENUM.ERROR.DeviceNotReadyError" xml:space="preserve">
-    <value>Device Not Ready</value>
+  <data name="ENUM.ERROR.NotReadyError" xml:space="preserve">
+    <value>Not Ready Error</value>
   </data>
   <data name="ENUM.ERROR.Empty" xml:space="preserve">
     <value>null Error</value>
@@ -982,7 +982,7 @@ Needed by:
     <value>Read App Configuration</value>
   </data>
   <data name="ENUM.ERROR.OutOfMemory" xml:space="preserve">
-    <value>Out Of Memory</value>
+    <value>Out Of Memory Error</value>
   </data>
   <data name="buttonContentOpenReportTemplateFile" xml:space="preserve">
     <value>Open File...</value>

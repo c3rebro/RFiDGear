@@ -866,25 +866,25 @@ Wird benötigt von:
     <value>Bericht erstellen / bearbeiten</value>
   </data>
   <data name="ENUM.ERROR.AuthenticationError" xml:space="preserve">
-    <value>Authentication Error</value>
+    <value>Authentifizierungsfehler</value>
   </data>
-  <data name="ENUM.ERROR.DeviceNotReadyError" xml:space="preserve">
-    <value>Device Not Ready</value>
+  <data name="ENUM.ERROR.NotReadyError" xml:space="preserve">
+    <value>Nicht Bereit</value>
   </data>
   <data name="ENUM.ERROR.Empty" xml:space="preserve">
     <value>null Error</value>
   </data>
   <data name="ENUM.ERROR.IOError" xml:space="preserve">
-    <value>IO Error</value>
+    <value>E/A Fehler</value>
   </data>
   <data name="ENUM.ERROR.ItemAlreadyExistError" xml:space="preserve">
-    <value>Item Already Exist Error</value>
+    <value>Objekt bereits vorhanden</value>
   </data>
   <data name="ENUM.ERROR.NoError" xml:space="preserve">
-    <value>No Error</value>
+    <value>Kein Fehler</value>
   </data>
   <data name="ENUM.ERROR.NotAllowed" xml:space="preserve">
-    <value>Not Allowed</value>
+    <value>Nicht erlaubt</value>
   </data>
   <data name="ENUM.TaskType_GenericChipTask.ChangeDefault" xml:space="preserve">
     <value>Standardwerte ändern</value>

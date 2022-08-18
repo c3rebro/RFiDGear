@@ -20,12 +20,8 @@ using Log4CSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.Composition;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
@@ -34,7 +30,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of CommonTaskViewModel.
     /// </summary>
-    public class GenericChipTaskViewModel : ViewModelBase, IUserDialogViewModel
+    public class GenericChipTaskViewModel : ViewModelBase, IUserDialogViewModel, IGenericTaskModel
     {
         #region fields
         private static readonly string FacilityName = "RFiDGear";
@@ -87,7 +83,7 @@ namespace RFiDGear.ViewModel
 
                 else
                 {
-                    SelectedTaskIndex = "0";
+                    CurrentTaskIndex = "0";
                     SelectedTaskDescription = "Enter a Description";
                     SelectedExecuteConditionErrorLevel = ERROR.Empty;
                     SelectedExecuteConditionTaskIndex = "0";
@@ -103,20 +99,10 @@ namespace RFiDGear.ViewModel
         #endregion
 
         #region Dialogs
+
         [XmlIgnore]
         public ObservableCollection<IDialogViewModel> Dialogs => dialogs;
         private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
-
-        /// <summary>
-        /// 
-        /// </summary>
-        //		[XmlIgnore]
-        //		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
-        //		public ObservableCollection<IDialogViewModel> Dialogs
-        //		{
-        //			get { return dialogs; }
-        //			set { dialogs = value; }
-        //		}
 
         #endregion Dialogs
 
@@ -206,7 +192,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public string SelectedTaskIndex
+        public string CurrentTaskIndex
         {
             get => selectedTaskIndex;
 
@@ -223,7 +209,7 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         [XmlIgnore]
-        public ERROR TaskErr { get; set; }
+        public ERROR CurrentTaskErrorLevel { get; set; }
 
         /// <summary>
         ///
@@ -317,7 +303,7 @@ namespace RFiDGear.ViewModel
         public ICommand CheckChipType => new RelayCommand(OnNewCheckChipTypeCommand);
         private void OnNewCheckChipTypeCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task genericChipTask =
                 new Task(() =>
@@ -340,26 +326,26 @@ namespace RFiDGear.ViewModel
                                     result = ERROR.IsNotTrue;
                                 }
 
-                                TaskErr = result;
+                                CurrentTaskErrorLevel = result;
                                 return;
 
                             }
                         }
                         else
                         {
-                            TaskErr = ERROR.DeviceNotReadyError;
+                            CurrentTaskErrorLevel = ERROR.NotReadyError;
                             return;
                         }
                     }
                 });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
-                TaskErr = ERROR.DeviceNotReadyError;
+                CurrentTaskErrorLevel = ERROR.NotReadyError;
 
                 genericChipTask.ContinueWith((x) =>
                 {
-                    if (TaskErr == ERROR.NoError)
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
                     {
                         IsTaskCompletedSuccessfully = true;
                     }
@@ -377,7 +363,7 @@ namespace RFiDGear.ViewModel
         public ICommand CheckChipUID => new RelayCommand(OnNewCheckChipUIDCommand);
         private void OnNewCheckChipUIDCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task genericChipTask =
                 new Task(() =>
@@ -400,26 +386,26 @@ namespace RFiDGear.ViewModel
                                     result = ERROR.IsNotTrue;
                                 }
 
-                                TaskErr = result;
+                                CurrentTaskErrorLevel = result;
                                 return;
 
                             }
                         }
                         else
                         {
-                            TaskErr = ERROR.DeviceNotReadyError;
+                            CurrentTaskErrorLevel = ERROR.NotReadyError;
                             return;
                         }
                     }
                 });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
-                TaskErr = ERROR.DeviceNotReadyError;
+                CurrentTaskErrorLevel = ERROR.NotReadyError;
 
                 genericChipTask.ContinueWith((x) =>
                 {
-                    if (TaskErr == ERROR.NoError)
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
                     {
                         IsTaskCompletedSuccessfully = true;
                     }

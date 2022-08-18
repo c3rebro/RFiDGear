@@ -276,7 +276,7 @@ namespace RFiDGear.DataAccessLayer
         Empty,
         NoError,
         AuthenticationError,
-        DeviceNotReadyError,
+        NotReadyError,
         IOError,
         ItemAlreadyExistError,
         IsNotTrue,

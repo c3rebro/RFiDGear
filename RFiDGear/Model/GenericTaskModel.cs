@@ -4,22 +4,33 @@ using System.Collections.Generic;
 namespace RFiDGear.Model
 {
     /// <summary>
-    /// Description of chipUid.
+    /// This Interface contains a Description of Common Properties for all Tasks. A Task has an Execute Condition and a Result.
     /// </summary>
-    public abstract class GenericTaskModel
+    public interface IGenericTaskModel
     {
-        public GenericTaskModel()
-        {
-        }
+        /// <summary>
+        /// Indicates a Task Result and is interpreted by one of the following ERROR states: true = NoError, null = Empty, false = Everything else
+        /// </summary>
+        bool? IsTaskCompletedSuccessfully { get; set; }
 
-        public GenericTaskModel(ERROR sourceErrorLevel, ERROR targetErrorLevel)
-        {
-            TargetErrorLevel = targetErrorLevel;
-            SourceErrorLevel = sourceErrorLevel;
-        }
+        /// <summary>
+        /// The Condition of Type "ERRORLEVEL" under which an Task is Executed
+        /// </summary>
+        ERROR SelectedExecuteConditionErrorLevel { get; set; }
 
-        public abstract ERROR TargetErrorLevel { get; set; }
+        /// <summary>
+        /// The Conditions Position in the Collection as "string"
+        /// </summary>
+        string SelectedExecuteConditionTaskIndex { get; set; }
 
-        public abstract ERROR SourceErrorLevel { get; set; }
+        /// <summary>
+        /// The Errorlevel of the Current Task after it is Executed
+        /// </summary>
+        ERROR CurrentTaskErrorLevel { get; set; }
+
+        /// <summary>
+        /// The Index of the Current Task as String
+        /// </summary>
+        string CurrentTaskIndex { get; set; }
     }
 }

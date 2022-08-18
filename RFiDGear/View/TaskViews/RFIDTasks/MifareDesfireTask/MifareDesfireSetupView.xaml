@@ -124,7 +124,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
                         TabIndex="2"
-                        Text="{Binding SelectedTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                        Text="{Binding CurrentTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.Resources>
                             <Style x:Key="IsValidSelectedKeySetupTaskIndex" TargetType="TextBox">
                                 <Style.Triggers>

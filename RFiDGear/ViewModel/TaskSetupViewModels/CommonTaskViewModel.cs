@@ -7,11 +7,9 @@
 
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
-using MefMvvm.SharedContracts;
-using MefMvvm.SharedContracts.ViewModel;
+
 using MvvmDialogs.ViewModels;
 
-using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
@@ -20,11 +18,9 @@ using Log4CSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
@@ -33,7 +29,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of ReportTaskViewModel.
     /// </summary>
-    public class CommonTaskViewModel : ViewModelBase, IUserDialogViewModel
+    public class CommonTaskViewModel : ViewModelBase, IUserDialogViewModel, IGenericTaskModel
     {
         #region Fields
         private static readonly string FacilityName = "RFiDGear";
@@ -59,7 +55,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public CommonTaskViewModel()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             checkpoint = new Checkpoint();
             Checkpoints = new ObservableCollection<Checkpoint>();
@@ -79,7 +75,7 @@ namespace RFiDGear.ViewModel
         {
             try
             {
-                TaskErr = ERROR.Empty;
+                CurrentTaskErrorLevel = ERROR.Empty;
 
                 checkpoint = new Checkpoint();
                 Checkpoints = new ObservableCollection<Checkpoint>();
@@ -125,7 +121,7 @@ namespace RFiDGear.ViewModel
 
                 else
                 {
-                    SelectedTaskIndex = "0";
+                    CurrentTaskIndex = "0";
                     SelectedTaskDescription = "Enter a Description";
                     SelectedExecuteConditionErrorLevel = ERROR.Empty;
                     SelectedExecuteConditionTaskIndex = "0";
@@ -387,7 +383,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// The Indexnumber of the Task As String
         /// </summary>
-        public string SelectedTaskIndex
+        public string CurrentTaskIndex
         {
             get => selectedTaskIndex;
 
@@ -404,7 +400,7 @@ namespace RFiDGear.ViewModel
         /// Result of this Task
         /// </summary>
         [XmlIgnore]
-        public ERROR TaskErr { get; set; }
+        public ERROR CurrentTaskErrorLevel { get; set; }
 
         #endregion
 
@@ -489,19 +485,19 @@ namespace RFiDGear.ViewModel
                     switch (ssVMO)
                     {
                         case CommonTaskViewModel ssVM:
-                            availableTaskIndices.Add(ssVM.SelectedTaskIndex);
+                            availableTaskIndices.Add(ssVM.CurrentTaskIndex);
                             break;
                         case GenericChipTaskViewModel ssVM:
-                            availableTaskIndices.Add(ssVM.SelectedTaskIndex);
+                            availableTaskIndices.Add(ssVM.CurrentTaskIndex);
                             break;
                         case MifareClassicSetupViewModel ssVM:
-                            availableTaskIndices.Add(ssVM.SelectedTaskIndex);
+                            availableTaskIndices.Add(ssVM.CurrentTaskIndex);
                             break;
                         case MifareDesfireSetupViewModel ssVM:
-                            availableTaskIndices.Add(ssVM.SelectedTaskIndex);
+                            availableTaskIndices.Add(ssVM.CurrentTaskIndex);
                             break;
                         case MifareUltralightSetupViewModel ssVM:
-                            availableTaskIndices.Add(ssVM.SelectedTaskIndex);
+                            availableTaskIndices.Add(ssVM.CurrentTaskIndex);
                             break;
                     }
                 }
@@ -761,7 +757,7 @@ namespace RFiDGear.ViewModel
         private void OnNewOpenReportTemplateCommand()
         {
 
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             try
             {
@@ -807,58 +803,17 @@ namespace RFiDGear.ViewModel
         public ICommand WriteReportCommand => new RelayCommand<ReportReaderWriter>(OnNewWriteReportCommand);
         private void OnNewWriteReportCommand(ReportReaderWriter _reportReaderWriter)
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             if (_reportReaderWriter != null)
             {
+                Dictionary<string, int> checkpointDictionary = new Dictionary<string, int>();
 
-                Dictionary<string, int> taskIndices = new Dictionary<string, int>();
-
-                // create a new key,value pair of taskpositions <-> taskindex 
+                // create a new key,value pair of taskpositions (int) <-> taskindex (string)
                 // (they could be different as because item at array position 0 can have index "100")
-                foreach (object o in AvailableTasks)
+                foreach (object rfidTaskObject in AvailableTasks)
                 {
-                    switch (o)
-                    {
-                        case GenericChipTaskViewModel ssVM:
-                            if (ssVM.IsValidSelectedTaskIndex != false)
-                            {
-                                taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
-                            }
-
-                            break;
-                        case CommonTaskViewModel ssVM:
-                            if (ssVM.IsValidSelectedTaskIndex != false)
-                            {
-                                taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
-                            }
-
-                            break;
-                        case MifareClassicSetupViewModel ssVM:
-                            if (ssVM.IsValidSelectedTaskIndex != false)
-                            {
-                                taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
-                            }
-
-                            break;
-                        case MifareDesfireSetupViewModel ssVM:
-                            if (ssVM.IsValidSelectedTaskIndex != false)
-                            {
-                                taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
-                            }
-
-                            break;
-                        case MifareUltralightSetupViewModel ssVM:
-                            if (ssVM.IsValidSelectedTaskIndex != false)
-                            {
-                                taskIndices.Add(ssVM.SelectedTaskIndex, AvailableTasks.IndexOf(ssVM));
-                            }
-
-                            break;
-                        default:
-                            taskIndices.Add(null, 0);
-                            break;
-                    }
+                    checkpointDictionary.Add((rfidTaskObject as IGenericTaskModel).CurrentTaskIndex, AvailableTasks.IndexOf(rfidTaskObject));
                 }
 
                 try
@@ -928,80 +883,23 @@ namespace RFiDGear.ViewModel
                             // Does the targeted Task Equals the selected TaskResult ?
                             try
                             {
-                                if (taskIndices.TryGetValue(checkpoint.TaskIndex, out int targetIndex))
+                                // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
+                                if (checkpointDictionary.TryGetValue(checkpoint.TaskIndex, out int targetIndex))
                                 {
-                                    switch (AvailableTasks[targetIndex])
+                                    if ((AvailableTasks[targetIndex] as IGenericTaskModel).CurrentTaskErrorLevel == checkpoint.ErrorLevel)
                                     {
-                                        case GenericChipTaskViewModel tsVM:
-                                            if (tsVM.TaskErr == checkpoint.ErrorLevel)
-                                            {
-                                                if (concatenate)
-                                                {
-                                                    reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
-                                                }
-                                                else
-                                                {
-                                                    reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-                                                }
-                                            }
-
-                                            break;
-                                        case CommonTaskViewModel tsVM:
-                                            if (tsVM.TaskErr == checkpoint.ErrorLevel)
-                                            {
-                                                if (concatenate)
-                                                {
-                                                    reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
-                                                }
-                                                else
-                                                {
-                                                    reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-                                                }
-                                            }
-
-                                            break;
-                                        case MifareClassicSetupViewModel tsVM:
-                                            if (tsVM.TaskErr == checkpoint.ErrorLevel)
-                                            {
-                                                if (concatenate)
-                                                {
-                                                    reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
-                                                }
-                                                else
-                                                {
-                                                    reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-                                                }
-                                            }
-
-                                            break;
-                                        case MifareDesfireSetupViewModel tsVM:
-                                            if (tsVM.TaskErr == checkpoint.ErrorLevel)
-                                            {
-                                                if (concatenate)
-                                                {
-                                                    reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
-                                                }
-                                                else
-                                                {
-                                                    reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-                                                }
-                                            }
-
-                                            break;
-                                        case MifareUltralightSetupViewModel tsVM:
-                                            if (tsVM.TaskErr == checkpoint.ErrorLevel)
-                                            {
-                                                if (concatenate)
-                                                {
-                                                    reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
-                                                }
-                                                else
-                                                {
-                                                    reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-                                                }
-                                            }
-
-                                            break;
+                                        if (concatenate)
+                                        {
+                                            reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+                                        }
+                                        else
+                                        {
+                                            reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        targetIndex++;
                                     }
                                 }
                                 // The targeted Task is not of any vaild type. E.g. a "string"
@@ -1031,7 +929,7 @@ namespace RFiDGear.ViewModel
 
                 catch (Exception e)
                 {
-                    TaskErr = ERROR.IOError;
+                    CurrentTaskErrorLevel = ERROR.IOError;
                     IsTaskCompletedSuccessfully = false;
                     RaisePropertyChanged("TemplateFields");
 
@@ -1040,7 +938,7 @@ namespace RFiDGear.ViewModel
                     return;
                 }
 
-                TaskErr = ERROR.NoError;
+                CurrentTaskErrorLevel = ERROR.NoError;
                 IsTaskCompletedSuccessfully = true;
 
                 RaisePropertyChanged("TemplateFields");
@@ -1100,18 +998,20 @@ namespace RFiDGear.ViewModel
         public ICommand CheckLogicCondition => new RelayCommand<ObservableCollection<object>>(OnNewCheckLogicConditionCommand);
         private void OnNewCheckLogicConditionCommand(ObservableCollection<object> _tasks = null)
         {
+            CurrentTaskErrorLevel = ERROR.Empty;
+
             Task commonTask =
                 new Task(() =>
                 {
                     try
                     {
                         ERROR result = ERROR.Empty;
-                        TaskErr = result;
+                        CurrentTaskErrorLevel = result;
 
                         // here we are about to compare the results of the added "Checkpoints" in the "Check Condition" Task with the actual 
                         // conditions from the live tasks
 
-                        //lets fill a new vector with the results of all so far executed tasks... We will re-use the checkpoint objects for this
+                        // lets fill a new vector with the results of all so far executed tasks... We will re-use the checkpoint objects for this
                         ObservableCollection<Checkpoint> results = new ObservableCollection<Checkpoint>();
 
                         foreach (object task in _tasks)
@@ -1119,19 +1019,19 @@ namespace RFiDGear.ViewModel
                             switch (task)
                             {
                                 case CommonTaskViewModel ssVM:
-                                    results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex, Content = ssVM.Content, CompareValue = ssVM.CompareValue });
+                                    results.Add(new Checkpoint() { ErrorLevel = ssVM.CurrentTaskErrorLevel, TaskIndex = ssVM.CurrentTaskIndex, Content = ssVM.Content, CompareValue = ssVM.CompareValue });
                                     break;
                                 case GenericChipTaskViewModel ssVM:
-                                    results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+                                    results.Add(new Checkpoint() { ErrorLevel = ssVM.CurrentTaskErrorLevel, TaskIndex = ssVM.CurrentTaskIndex });
                                     break;
                                 case MifareClassicSetupViewModel ssVM:
-                                    results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+                                    results.Add(new Checkpoint() { ErrorLevel = ssVM.CurrentTaskErrorLevel, TaskIndex = ssVM.CurrentTaskIndex });
                                     break;
                                 case MifareDesfireSetupViewModel ssVM:
-                                    results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+                                    results.Add(new Checkpoint() { ErrorLevel = ssVM.CurrentTaskErrorLevel, TaskIndex = ssVM.CurrentTaskIndex });
                                     break;
                                 case MifareUltralightSetupViewModel ssVM:
-                                    results.Add(new Checkpoint() { ErrorLevel = ssVM.TaskErr, TaskIndex = ssVM.SelectedTaskIndex });
+                                    results.Add(new Checkpoint() { ErrorLevel = ssVM.CurrentTaskErrorLevel, TaskIndex = ssVM.CurrentTaskIndex });
                                     break;
                                 default:
                                     break;
@@ -1150,7 +1050,7 @@ namespace RFiDGear.ViewModel
                                     }
                                     else
                                     {
-                                        TaskErr = ERROR.IsNotTrue;
+                                        CurrentTaskErrorLevel = ERROR.IsNotTrue;
                                         return;
                                     }
 
@@ -1210,7 +1110,7 @@ namespace RFiDGear.ViewModel
                                     {
                                         if (resultCP.TaskIndex == outerCP.TaskIndex && resultCP.ErrorLevel == outerCP.ErrorLevel)
                                         {
-                                            TaskErr = ERROR.NoError;
+                                            CurrentTaskErrorLevel = ERROR.NoError;
                                             return;
                                         }
                                         else
@@ -1248,7 +1148,7 @@ namespace RFiDGear.ViewModel
                                     case EQUALITY_OPERATOR.EQUAL:
                                         if (loops == SelectedCheckpointCounterAsInt)
                                         {
-                                            TaskErr = ERROR.NoError;
+                                            CurrentTaskErrorLevel = ERROR.NoError;
                                             return;
                                         }
 
@@ -1257,7 +1157,7 @@ namespace RFiDGear.ViewModel
                                     case EQUALITY_OPERATOR.LESS_OR_EQUAL:
                                         if (loops <= SelectedCheckpointCounterAsInt)
                                         {
-                                            TaskErr = ERROR.NoError;
+                                            CurrentTaskErrorLevel = ERROR.NoError;
                                             return;
                                         }
 
@@ -1266,7 +1166,7 @@ namespace RFiDGear.ViewModel
                                     case EQUALITY_OPERATOR.LESS_THAN:
                                         if (loops < SelectedCheckpointCounterAsInt)
                                         {
-                                            TaskErr = ERROR.NoError;
+                                            CurrentTaskErrorLevel = ERROR.NoError;
                                             return;
                                         }
 
@@ -1275,7 +1175,7 @@ namespace RFiDGear.ViewModel
                                     case EQUALITY_OPERATOR.MORE_OR_EQUAL:
                                         if (loops >= SelectedCheckpointCounterAsInt)
                                         {
-                                            TaskErr = ERROR.NoError;
+                                            CurrentTaskErrorLevel = ERROR.NoError;
                                             return;
                                         }
 
@@ -1284,7 +1184,7 @@ namespace RFiDGear.ViewModel
                                     case EQUALITY_OPERATOR.MORE_THAN:
                                         if (loops > SelectedCheckpointCounterAsInt)
                                         {
-                                            TaskErr = ERROR.NoError;
+                                            CurrentTaskErrorLevel = ERROR.NoError;
                                             return;
                                         }
 
@@ -1317,7 +1217,7 @@ namespace RFiDGear.ViewModel
 
                                                     if (GenericChip.FreeMemory >= compareValueAsUInt)
                                                     {
-                                                        TaskErr = ERROR.NoError;
+                                                        CurrentTaskErrorLevel = ERROR.NoError;
                                                         return;
                                                     }
 
@@ -1328,7 +1228,7 @@ namespace RFiDGear.ViewModel
 
                                                     if (DesfireChip?.AppList.Count >= compareValueAsUInt)
                                                     {
-                                                        TaskErr = ERROR.NoError;
+                                                        CurrentTaskErrorLevel = ERROR.NoError;
                                                         return;
                                                     }
 
@@ -1355,7 +1255,7 @@ namespace RFiDGear.ViewModel
 
                                                     if (GenericChip.FreeMemory <= compareValueAsUInt)
                                                     {
-                                                        TaskErr = ERROR.NoError;
+                                                        CurrentTaskErrorLevel = ERROR.NoError;
                                                         return;
                                                     }
 
@@ -1382,7 +1282,7 @@ namespace RFiDGear.ViewModel
 
                                                     if (compareValueAsUInt == GenericChip.FreeMemory)
                                                     {
-                                                        TaskErr = ERROR.NoError;
+                                                        CurrentTaskErrorLevel = ERROR.NoError;
                                                         return;
                                                     }
 
@@ -1410,23 +1310,20 @@ namespace RFiDGear.ViewModel
                                 break;
                         }
 
-                        TaskErr = result;
+                        CurrentTaskErrorLevel = result;
                     }
                     catch (Exception e)
                     {
                         LogWriter.CreateLogEntry(e, FacilityName);
                     }
 
-
                 });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
-                TaskErr = ERROR.DeviceNotReadyError;
-
                 commonTask.ContinueWith((x) =>
                 {
-                    if (TaskErr == ERROR.NoError)
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
                     {
                         IsTaskCompletedSuccessfully = true;
                     }
@@ -1435,6 +1332,7 @@ namespace RFiDGear.ViewModel
                         IsTaskCompletedSuccessfully = false;
                     }
                 });
+
                 commonTask.RunSynchronously();
             }
 

@@ -108,7 +108,7 @@ namespace RFiDGear.ViewModel
 
                 else
                 {
-                    SelectedTaskIndex = "0";
+                    CurrentTaskIndex = "0";
                     SelectedTaskDescription = "Enter a Description";
                 }
 
@@ -301,7 +301,7 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         [XmlIgnore]
-        public ERROR TaskErr { get; set; }
+        public ERROR CurrentTaskErrorLevel { get; set; }
 
         /// <summary>
         ///
@@ -335,17 +335,17 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        public string SelectedTaskIndex
+        public string CurrentTaskIndex
         {
             get =>
-                selectedAccessBitsTaskIndex;
+                currentTaskIndex;
             set
             {
-                selectedAccessBitsTaskIndex = value;
+                currentTaskIndex = value;
                 IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
             }
         }
-        private string selectedAccessBitsTaskIndex;
+        private string currentTaskIndex;
 
         /// <summary>
         ///
@@ -423,7 +423,7 @@ namespace RFiDGear.ViewModel
         private void OnNewReadDataCommand()
         {
             //Mouse.OverrideCursor = Cursors.Wait;
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task classicTask =
                 new Task(() =>
@@ -436,7 +436,7 @@ namespace RFiDGear.ViewModel
                                 }
                                 else
                                 {
-                                    TaskErr = ERROR.DeviceNotReadyError;
+                                    CurrentTaskErrorLevel = ERROR.NotReadyError;
                                     return;
                                 }
 
@@ -452,7 +452,7 @@ namespace RFiDGear.ViewModel
                                      {
                                          //Mouse.OverrideCursor = null;
 
-                                         if (TaskErr == ERROR.NoError)
+                                         if (CurrentTaskErrorLevel == ERROR.NoError)
                                          {
                                              IsTaskCompletedSuccessfully = true;
                                          }
@@ -471,7 +471,7 @@ namespace RFiDGear.ViewModel
         {
             //Mouse.OverrideCursor = Cursors.Wait;
 
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task classicTask =
                 new Task(() =>
@@ -483,15 +483,15 @@ namespace RFiDGear.ViewModel
                              }
                          });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
-                TaskErr = ERROR.DeviceNotReadyError;
+                CurrentTaskErrorLevel = ERROR.NotReadyError;
 
                 classicTask.ContinueWith((x) =>
                                          {
                                              //Mouse.OverrideCursor = null;
 
-                                             if (TaskErr == ERROR.NoError)
+                                             if (CurrentTaskErrorLevel == ERROR.NoError)
                                              {
                                                  IsTaskCompletedSuccessfully = true;
                                              }

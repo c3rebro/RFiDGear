@@ -332,7 +332,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Command="{Binding ReadDataCommand}"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareClassicSetupReadData'}"/>
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareClassicSetupReadData'}" />
                     <GroupBox
                         Grid.Row="0"
                         Grid.Column="0"

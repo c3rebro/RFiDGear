@@ -334,7 +334,7 @@
 					IsReadOnly="True"
 					Binding="{Binding Path=DoorMonitoringTrigger, Converter={StaticResource Localization}, ConverterParameter={x:Type local:DoorMonEventType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
                     <DataGridTextColumn
-                        Binding="{Binding Path=SelectedTaskIndex}"
+                        Binding="{Binding Path=CurrentTaskIndex}"
                         Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridHeaderMainWindowTaskIndex', Source={StaticResource proxy}}"
                         IsReadOnly="True">
                         <DataGridTextColumn.HeaderStyle>

@@ -1,11 +1,6 @@
 ﻿using RFiDGear.Model;
-using RFiDGear.DataAccessLayer;
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
@@ -18,7 +13,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 switch (ReaderType)
                 {
                     case ReaderTypes.PCSC:
-                        lock (LibLogicalAccessProvider.syncRoot)
+                        lock (syncRoot)
                         {
                             if (instance == null)
                             {
@@ -33,7 +28,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         }
 
                     case ReaderTypes.Elatec:
-                        lock (ElatecNetProvider.syncRoot)
+                        lock (syncRoot)
                         {
                             if (instance == null)
                             {
@@ -87,6 +82,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public abstract ERROR ReadChipPublic();
 
         #endregion
+
         #region MifareClassic
         // Mifare Classic Method Definitions
         public abstract ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey);

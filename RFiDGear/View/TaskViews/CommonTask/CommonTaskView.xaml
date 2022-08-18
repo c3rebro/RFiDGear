@@ -10,10 +10,10 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:v="clr-namespace:RFiDGear.View"
     Title="{Binding Caption}"
-    dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
-    WindowStartupLocation="CenterOwner"
     Width="800"
     Height="800"
+    dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
+    WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
@@ -146,7 +146,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
                         TabIndex="2"
-                        Text="{Binding SelectedTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                        Text="{Binding CurrentTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.Resources>
                             <Style x:Key="IsValidSelectedKeySetupTaskIndex" TargetType="TextBox">
                                 <Style.Triggers>

@@ -98,7 +98,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
@@ -243,11 +243,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             }
                             return ERROR.NoError;
                         }
-                        return ERROR.DeviceNotReadyError;
+                        return ERROR.NotReadyError;
                     }
-                    return ERROR.DeviceNotReadyError;
+                    return ERROR.NotReadyError;
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
             catch (Exception e)
             {
@@ -350,7 +350,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             {
                                 return ERROR.IOError;
                             }
-                            return ERROR.DeviceNotReadyError;
+                            return ERROR.NotReadyError;
                         }
                     }
                 }
@@ -361,7 +361,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                 return ERROR.IOError;
             }
-            return ERROR.DeviceNotReadyError;
+            return ERROR.NotReadyError;
         }
 
         public override ERROR WriteMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
@@ -872,7 +872,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     }
                                 }
                                 else
-                                    return ERROR.DeviceNotReadyError;
+                                    return ERROR.NotReadyError;
                             }
 
                             catch
@@ -899,7 +899,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                     }
                                     else
-                                        return ERROR.DeviceNotReadyError;
+                                        return ERROR.NotReadyError;
                                 }
 
                                 catch
@@ -910,7 +910,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
 
             catch (Exception e)
@@ -1272,11 +1272,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
             catch
             {
@@ -1376,11 +1376,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
 
             catch
@@ -1484,11 +1484,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
 
             catch
@@ -1562,11 +1562,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             }
 
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
             catch
             {
@@ -1738,11 +1738,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             }
 
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
             catch
             {
@@ -1848,11 +1848,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
             catch
             {
@@ -2012,11 +2012,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
             catch
             {
@@ -2091,11 +2091,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     }
                                 }
                             }
-                            return ERROR.DeviceNotReadyError;
+                            return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
             catch
             {
@@ -2170,11 +2170,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
             catch
             {
@@ -2240,11 +2240,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
             catch
             {
@@ -2337,11 +2337,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
             catch
             {
@@ -2422,11 +2422,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                             else
-                                return ERROR.DeviceNotReadyError;
+                                return ERROR.NotReadyError;
                         }
                     }
                 }
-                return ERROR.DeviceNotReadyError;
+                return ERROR.NotReadyError;
             }
             catch
             {

@@ -28,7 +28,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
@@ -37,7 +36,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of MifareDesfireSetupViewModel.
     /// </summary>
-    public class MifareDesfireSetupViewModel : ViewModelBase, IUserDialogViewModel
+    public class MifareDesfireSetupViewModel : ViewModelBase, IUserDialogViewModel, IGenericTaskModel
     {
         #region Fields
         private static readonly string FacilityName = "RFiDGear";
@@ -160,7 +159,7 @@ namespace RFiDGear.ViewModel
                     IsValidDesfireReadKeyCurrent = null;
                     IsValidDesfireWriteKeyCurrent = null;
 
-                    SelectedTaskIndex = "0";
+                    CurrentTaskIndex = "0";
                     SelectedTaskDescription = ResourceLoader.GetResource("textBoxPleaseEnterTaskDescription");
 
                     FileNumberCurrent = "0";
@@ -570,16 +569,16 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        public string SelectedTaskIndex
+        public string CurrentTaskIndex
         {
-            get => selectedAccessBitsTaskIndex;
+            get => currentTaskIndex;
             set
             {
-                selectedAccessBitsTaskIndex = value;
+                currentTaskIndex = value;
                 IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
             }
         }
-        private string selectedAccessBitsTaskIndex;
+        private string currentTaskIndex;
 
         /// <summary>
         ///
@@ -666,7 +665,7 @@ namespace RFiDGear.ViewModel
         /// Result of this Task
         /// </summary>
         [XmlIgnore]
-        public ERROR TaskErr { get; set; }
+        public ERROR CurrentTaskErrorLevel { get; set; }
 
         #region Key Properties Card Master
 
@@ -1573,7 +1572,7 @@ namespace RFiDGear.ViewModel
         public ICommand CreateAppCommand { get { return new RelayCommand(OnNewCreateAppCommand); } }
         private void OnNewCreateAppCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task desfireTask =
                 new Task(() =>
@@ -1614,13 +1613,13 @@ namespace RFiDGear.ViewModel
                                              if (result == ERROR.NoError)
                                              {
                                                  StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
                                                  return;
                                              }
                                              else
                                              {
                                                  StatusText += string.Format("{0}: Unable to Create App: {1}\n", DateTime.Now, result.ToString());
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
                                                  return;
                                              }
                                          }
@@ -1647,13 +1646,13 @@ namespace RFiDGear.ViewModel
                                              if (result == ERROR.NoError)
                                              {
                                                  StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
                                                  return;
                                              }
                                              else
                                              {
                                                  StatusText += string.Format("{0}: Unable to create App: {1}\n", DateTime.Now, result.ToString());
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
                                                  return;
                                              }
                                          }
@@ -1661,17 +1660,17 @@ namespace RFiDGear.ViewModel
                                  }
                                  else
                                  {
-                                     TaskErr = ERROR.DeviceNotReadyError;
+                                     CurrentTaskErrorLevel = ERROR.NotReadyError;
                                      return;
                                  }
                              }
                          });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                                          {
-                                             if (TaskErr == ERROR.NoError)
+                                             if (CurrentTaskErrorLevel == ERROR.NoError)
                                              {
                                                  IsTaskCompletedSuccessfully = true;
                                              }
@@ -1694,7 +1693,7 @@ namespace RFiDGear.ViewModel
         public ICommand CreateFileCommand { get { return new RelayCommand(OnNewCreateFileCommand); } }
         private void OnNewCreateFileCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             accessRights.changeAccess = SelectedDesfireFileAccessRightChange;
             accessRights.readAccess = SelectedDesfireFileAccessRightRead;
@@ -1734,13 +1733,13 @@ namespace RFiDGear.ViewModel
                                              if (result == ERROR.NoError)
                                              {
                                                  StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
                                                  return;
                                              }
                                              else
                                              {
                                                  StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
                                                  return;
                                              }
                                          }
@@ -1762,13 +1761,13 @@ namespace RFiDGear.ViewModel
                                              if (result == ERROR.NoError)
                                              {
                                                  StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
                                                  return;
                                              }
                                              else
                                              {
                                                  StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
                                                  return;
                                              }
                                          }
@@ -1776,17 +1775,17 @@ namespace RFiDGear.ViewModel
                                  }
                                  else
                                  {
-                                     TaskErr = ERROR.DeviceNotReadyError;
+                                     CurrentTaskErrorLevel = ERROR.NotReadyError;
                                      return;
                                  }
                              }
                          });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                                          {
-                                             if (TaskErr == ERROR.NoError)
+                                             if (CurrentTaskErrorLevel == ERROR.NoError)
                                              {
                                                  IsTaskCompletedSuccessfully = true;
                                              }
@@ -1809,7 +1808,7 @@ namespace RFiDGear.ViewModel
         public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
         private void OnNewReadDataCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task desfireTask =
                 new Task(() =>
@@ -1847,7 +1846,7 @@ namespace RFiDGear.ViewModel
 
                                                  childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
 
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
 
                                                  RaisePropertyChanged("ChildNodeViewModelTemp");
                                                  RaisePropertyChanged("ChildNodeViewModelFromChip");
@@ -1857,31 +1856,31 @@ namespace RFiDGear.ViewModel
                                              else
                                              {
                                                  StatusText += string.Format("{0}: Unable to Read File with FileID: {1}: {2}", DateTime.Now, FileNumberCurrentAsInt, result.ToString());
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
                                                  return;
                                              }
                                          }
                                          else
                                          {
                                              StatusText += string.Format("{0}: Unable to Read File: {1}", DateTime.Now, result.ToString());
-                                             TaskErr = result;
+                                             CurrentTaskErrorLevel = result;
                                              return;
                                          }
                                      }
                                  }
                                  else
                                  {
-                                     TaskErr = ERROR.DeviceNotReadyError;
+                                     CurrentTaskErrorLevel = ERROR.NotReadyError;
                                      return;
                                  }
                              }
                          });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                                          {
-                                             if (TaskErr == ERROR.NoError)
+                                             if (CurrentTaskErrorLevel == ERROR.NoError)
                                              {
                                                  IsTaskCompletedSuccessfully = true;
                                              }
@@ -1937,7 +1936,7 @@ namespace RFiDGear.ViewModel
         public ICommand WriteDataCommand { get { return new RelayCommand(OnNewWriteDataCommand); } }
         private void OnNewWriteDataCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task desfireTask =
                 new Task(() =>
@@ -1969,37 +1968,37 @@ namespace RFiDGear.ViewModel
                                              if (result == ERROR.NoError)
                                              {
                                                  StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
                                                  return;
                                              }
                                              else
                                              {
                                                  StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
-                                                 TaskErr = result;
+                                                 CurrentTaskErrorLevel = result;
                                                  return;
                                              }
                                          }
                                          else
                                          {
                                              StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
-                                             TaskErr = result;
+                                             CurrentTaskErrorLevel = result;
                                              return;
                                          }
                                      }
                                  }
                                  else
                                  {
-                                     TaskErr = ERROR.DeviceNotReadyError;
+                                     CurrentTaskErrorLevel = ERROR.NotReadyError;
                                      return;
                                  }
                              }
                          });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                                          {
-                                             if (TaskErr == ERROR.NoError)
+                                             if (CurrentTaskErrorLevel == ERROR.NoError)
                                              {
                                                  IsTaskCompletedSuccessfully = true;
                                              }
@@ -2022,7 +2021,7 @@ namespace RFiDGear.ViewModel
         public ICommand ChangeAppKeyCommand { get { return new RelayCommand(OnNewChangeAppKeyCommand); } }
         private void OnNewChangeAppKeyCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
 
             Task desfireTask = new Task(() =>
@@ -2068,37 +2067,37 @@ namespace RFiDGear.ViewModel
                                                             if (result == ERROR.NoError)
                                                             {
                                                                 StatusText += string.Format("{0}: Successfully Changed Key {1} of AppID {2}\n", DateTime.Now, selectedDesfireAppKeyNumberTargetAsInt, AppNumberTargetAsInt);
-                                                                TaskErr = result;
+                                                                CurrentTaskErrorLevel = result;
                                                                 return;
                                                             }
                                                             else
                                                             {
                                                                 StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString());
-                                                                TaskErr = result;
+                                                                CurrentTaskErrorLevel = result;
                                                                 return;
                                                             }
                                                         }
                                                         else
                                                         {
                                                             StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString());
-                                                            TaskErr = result;
+                                                            CurrentTaskErrorLevel = result;
                                                             return;
                                                         }
                                                     }
                                                 }
                                                 else
                                                 {
-                                                    TaskErr = ERROR.DeviceNotReadyError;
+                                                    CurrentTaskErrorLevel = ERROR.NotReadyError;
                                                     return;
                                                 }
                                             }
                                         });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                                          {
-                                             if (TaskErr == ERROR.NoError)
+                                             if (CurrentTaskErrorLevel == ERROR.NoError)
                                              {
                                                  IsTaskCompletedSuccessfully = true;
                                              }
@@ -2121,7 +2120,7 @@ namespace RFiDGear.ViewModel
         public ICommand DeleteSignleCardApplicationCommand => new RelayCommand(OnNewDeleteSignleCardApplicationCommand);
         private void OnNewDeleteSignleCardApplicationCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task desfireTask = new Task(() =>
                                         {
@@ -2150,13 +2149,13 @@ namespace RFiDGear.ViewModel
                                                             if (result == ERROR.NoError)
                                                             {
                                                                 StatusText += string.Format("{0}: Successfully Deleted AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
-                                                                TaskErr = result;
+                                                                CurrentTaskErrorLevel = result;
                                                                 return;
                                                             }
                                                             else
                                                             {
                                                                 StatusText += string.Format("{0}: Unable to Remove AppID {1}: {2}\n", DateTime.Now, AppNumberNewAsInt, result.ToString());
-                                                                TaskErr = result;
+                                                                CurrentTaskErrorLevel = result;
                                                                 return;
                                                             }
                                                         }
@@ -2173,13 +2172,13 @@ namespace RFiDGear.ViewModel
                                                             if (result == ERROR.NoError)
                                                             {
                                                                 StatusText += string.Format("{0}: Successfully deleted AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
-                                                                TaskErr = result;
+                                                                CurrentTaskErrorLevel = result;
                                                                 return;
                                                             }
                                                             else
                                                             {
                                                                 StatusText += string.Format("{0}: Unable to deleted App: {1}\n", DateTime.Now, result.ToString());
-                                                                TaskErr = result;
+                                                                CurrentTaskErrorLevel = result;
                                                                 return;
                                                             }
                                                         }
@@ -2187,17 +2186,17 @@ namespace RFiDGear.ViewModel
                                                 }
                                                 else
                                                 {
-                                                    TaskErr = ERROR.DeviceNotReadyError;
+                                                    CurrentTaskErrorLevel = ERROR.NotReadyError;
                                                     return;
                                                 }
                                             }
                                         });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                                          {
-                                             if (TaskErr == ERROR.NoError)
+                                             if (CurrentTaskErrorLevel == ERROR.NoError)
                                              {
                                                  IsTaskCompletedSuccessfully = true;
                                              }
@@ -2220,7 +2219,7 @@ namespace RFiDGear.ViewModel
         public ICommand DeleteFileCommand => new RelayCommand(OnNewDeleteFileCommand);
         private void OnNewDeleteFileCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task desfireTask = new Task(() =>
                                         {
@@ -2250,13 +2249,13 @@ namespace RFiDGear.ViewModel
                                                             if (result == ERROR.NoError)
                                                             {
                                                                 StatusText += string.Format("{0}: Successfully Deleted File {1}\n", DateTime.Now, FileNumberCurrentAsInt);
-                                                                TaskErr = result;
+                                                                CurrentTaskErrorLevel = result;
                                                                 return;
                                                             }
                                                             else
                                                             {
                                                                 StatusText += string.Format("{0}: Unable to Remove FileID {1}: {2}\n", DateTime.Now, FileNumberCurrentAsInt, result.ToString());
-                                                                TaskErr = result;
+                                                                CurrentTaskErrorLevel = result;
                                                                 return;
                                                             }
                                                         }
@@ -2272,13 +2271,13 @@ namespace RFiDGear.ViewModel
                                                             if (result == ERROR.NoError)
                                                             {
                                                                 StatusText += string.Format("{0}: Successfully Deleted File {1}\n", DateTime.Now, FileNumberCurrentAsInt);
-                                                                TaskErr = result;
+                                                                CurrentTaskErrorLevel = result;
                                                                 return;
                                                             }
                                                             else
                                                             {
                                                                 StatusText += string.Format("{0}: Unable to Remove AppID {1}: {2}\n", DateTime.Now, AppNumberNewAsInt, result.ToString());
-                                                                TaskErr = result;
+                                                                CurrentTaskErrorLevel = result;
                                                                 return;
                                                             }
                                                         }
@@ -2286,17 +2285,17 @@ namespace RFiDGear.ViewModel
                                                 }
                                                 else
                                                 {
-                                                    TaskErr = ERROR.DeviceNotReadyError;
+                                                    CurrentTaskErrorLevel = ERROR.NotReadyError;
                                                     return;
                                                 }
                                             }
                                         });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                                          {
-                                             if (TaskErr == ERROR.NoError)
+                                             if (CurrentTaskErrorLevel == ERROR.NoError)
                                              {
                                                  IsTaskCompletedSuccessfully = true;
                                              }
@@ -2319,7 +2318,7 @@ namespace RFiDGear.ViewModel
         public ICommand FormatDesfireCardCommand => new RelayCommand(OnNewFormatDesfireCardCommand);
         private void OnNewFormatDesfireCardCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task desfireTask = new Task(() =>
                                         {
@@ -2359,14 +2358,14 @@ namespace RFiDGear.ViewModel
                                                                 if (result == ERROR.NoError)
                                                                 {
                                                                     StatusText += string.Format("{0}: Successfully Formatted Card\n", DateTime.Now);
-                                                                    TaskErr = result;
+                                                                    CurrentTaskErrorLevel = result;
                                                                     return;
                                                                 }
 
                                                                 else
                                                                 {
                                                                     StatusText += string.Format("{0}: Unable to Format Card: {1}\n", DateTime.Now, result.ToString());
-                                                                    TaskErr = result;
+                                                                    CurrentTaskErrorLevel = result;
                                                                     return;
                                                                 }
                                                             }
@@ -2380,14 +2379,14 @@ namespace RFiDGear.ViewModel
                                                                 if (result == ERROR.NoError)
                                                                 {
                                                                     StatusText += string.Format("{0}: Successfully Formatted Card\n", DateTime.Now);
-                                                                    TaskErr = result;
+                                                                    CurrentTaskErrorLevel = result;
                                                                     return;
                                                                 }
 
                                                                 else
                                                                 {
                                                                     StatusText += string.Format("{0}: Unable to Format Card: {1}\n", DateTime.Now, result.ToString());
-                                                                    TaskErr = result;
+                                                                    CurrentTaskErrorLevel = result;
                                                                     return;
                                                                 }
                                                             }
@@ -2395,25 +2394,25 @@ namespace RFiDGear.ViewModel
                                                         else
                                                         {
                                                             StatusText += string.Format("{0}: Unable to Format Card: {1}\n", DateTime.Now, result.ToString());
-                                                            TaskErr = result;
+                                                            CurrentTaskErrorLevel = result;
                                                             return;
                                                         }
                                                     }
                                                 }
                                                 else
                                                 {
-                                                    TaskErr = ERROR.DeviceNotReadyError;
+                                                    CurrentTaskErrorLevel = ERROR.NotReadyError;
                                                     return;
                                                 }
                                             }
                                             return;
                                         });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                                          {
-                                             if (TaskErr == ERROR.NoError)
+                                             if (CurrentTaskErrorLevel == ERROR.NoError)
                                              {
                                                  IsTaskCompletedSuccessfully = true;
                                              }
@@ -2436,7 +2435,7 @@ namespace RFiDGear.ViewModel
         public ICommand AuthenticateToCardApplicationCommand => new RelayCommand(OnNewAuthenticateToCardApplicationCommand);
         private void OnNewAuthenticateToCardApplicationCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             if (SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings)
             {
@@ -2468,12 +2467,12 @@ namespace RFiDGear.ViewModel
                             if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
                             {
                                 StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
-                                TaskErr = result;
+                                CurrentTaskErrorLevel = result;
                             }
                             else
                             {
                                 StatusText += string.Format("{0}: Unable to Authenticate: {1}\n", DateTime.Now, result.ToString());
-                                TaskErr = result;
+                                CurrentTaskErrorLevel = result;
                             }
 
                         }
@@ -2482,11 +2481,11 @@ namespace RFiDGear.ViewModel
                 return;
             });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                 {
-                    if (TaskErr == ERROR.NoError)
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
                     {
                         IsTaskCompletedSuccessfully = true;
                     }
@@ -2507,7 +2506,7 @@ namespace RFiDGear.ViewModel
         public ICommand ChangeMasterCardKeyCommand => new RelayCommand(OnNewChangeMasterCardKeyCommand);
         private void OnNewChangeMasterCardKeyCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task desfireTask = new Task(
                 () =>
@@ -2552,44 +2551,44 @@ namespace RFiDGear.ViewModel
                                         if (result == ERROR.NoError)
                                         {
                                             StatusText += string.Format("{0}: Keychange Successfull\n", DateTime.Now);
-                                            TaskErr = result;
+                                            CurrentTaskErrorLevel = result;
                                             return;
                                         }
                                         else
                                         {
                                             StatusText += string.Format("{0}: Unable to Change Key: {1}\n", DateTime.Now, result.ToString());
-                                            TaskErr = result;
+                                            CurrentTaskErrorLevel = result;
                                             return;
                                         }
                                     }
                                     else
                                     {
                                         StatusText += string.Format("{0}: Key Error: Wrong Format\n", DateTime.Now);
-                                        TaskErr = ERROR.AuthenticationError;
+                                        CurrentTaskErrorLevel = ERROR.AuthenticationError;
                                         return;
                                     }
                                 }
                                 else
                                 {
                                     StatusText += string.Format("{0}: {1}: {2}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"), result.ToString());
-                                    TaskErr = result;
+                                    CurrentTaskErrorLevel = result;
                                     return;
                                 }
                             }
                         }
                         else
                         {
-                            TaskErr = ERROR.DeviceNotReadyError;
+                            CurrentTaskErrorLevel = ERROR.NotReadyError;
                             return;
                         }
                     }
                 });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                                          {
-                                             if (TaskErr == ERROR.NoError)
+                                             if (CurrentTaskErrorLevel == ERROR.NoError)
                                              {
                                                  IsTaskCompletedSuccessfully = true;
                                              }
@@ -2612,7 +2611,7 @@ namespace RFiDGear.ViewModel
         public ICommand AuthenticateToCardMasterApplicationCommand => new RelayCommand(OnNewAuthenticateToCardMasterApplicationCommand);
         private void OnNewAuthenticateToCardMasterApplicationCommand()
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
 
             Task desfireTask = new Task(
@@ -2634,13 +2633,13 @@ namespace RFiDGear.ViewModel
                                 if (result == ERROR.NoError)
                                 {
                                     StatusText += string.Format("{0}: Successfully Authenticated to App 0\n", DateTime.Now);
-                                    TaskErr = result;
+                                    CurrentTaskErrorLevel = result;
                                     return;
                                 }
                                 else
                                 {
                                     StatusText += string.Format("{0}: {1}: {2}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"), result.ToString());
-                                    TaskErr = result;
+                                    CurrentTaskErrorLevel = result;
                                     return;
                                 }
 
@@ -2649,12 +2648,12 @@ namespace RFiDGear.ViewModel
                     }
                 });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
 
                 desfireTask.ContinueWith((x) =>
                 {
-                    if (TaskErr == ERROR.NoError)
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
                     {
                         IsTaskCompletedSuccessfully = true;
                     }
@@ -2681,7 +2680,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public void ReadAppSettingsCommand(GenericChipModel genericChip)
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task desfireTask = new Task(() =>
             {
@@ -2713,21 +2712,12 @@ namespace RFiDGear.ViewModel
                             if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
                             {
                                 StatusText += string.Format("{0}: Successfully Read App Settings of App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
-
-                                /*
-                                if (((byte)device.DesfireAppKeySetting & (byte)keySettings) != 0)
-                                {
-                                    TaskErr = ERROR.NoError;
-                                    return;
-                                }
-                                */
-                                TaskErr = ERROR.IsNotTrue;
+                                CurrentTaskErrorLevel = ERROR.IsNotTrue;
                             }
                             else
                             {
                                 StatusText += string.Format("{0}: Unable to Authenticate: {1}\n", DateTime.Now, result.ToString());
-
-                                TaskErr = result;
+                                CurrentTaskErrorLevel = result;
                             }
 
                         }
@@ -2736,11 +2726,11 @@ namespace RFiDGear.ViewModel
                 return;
             });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                 {
-                    if (TaskErr == ERROR.NoError)
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
                     {
                         IsTaskCompletedSuccessfully = true;
                     }
@@ -2761,7 +2751,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public void DoesAppExistCommand(GenericChipModel genericChip)
         {
-            TaskErr = ERROR.Empty;
+            CurrentTaskErrorLevel = ERROR.Empty;
 
             Task desfireTask = new Task(() =>
             {
@@ -2785,7 +2775,7 @@ namespace RFiDGear.ViewModel
                             {
                                 StatusText += string.Format("{0}: Success. App with ID:{1} exists\n", DateTime.Now, AppNumberNewAsInt);
 
-                                TaskErr = ERROR.NoError;
+                                CurrentTaskErrorLevel = ERROR.NoError;
                             }
 
                             // Check if ANY App exists
@@ -2793,7 +2783,7 @@ namespace RFiDGear.ViewModel
                             {
                                 StatusText += string.Format("{0}: Success. Existing Apps Detected\n", DateTime.Now);
 
-                                TaskErr = ERROR.NoError;
+                                CurrentTaskErrorLevel = ERROR.NoError;
                             }
 
                             // Ooops: Iam not allowed to get the info or Key "DesfireAppKeyCurrent" with "SelectedDesfireAppKeyEncryptionTypeCurrent" is incorrect
@@ -2801,7 +2791,7 @@ namespace RFiDGear.ViewModel
                             {
                                 StatusText += string.Format("{0}: Failed. Directory Listing is not allowed and PICC MK is Incorrect.\n", DateTime.Now);
 
-                                TaskErr = ERROR.AuthenticationError;
+                                CurrentTaskErrorLevel = ERROR.AuthenticationError;
                             }
 
                             // There are no Apps
@@ -2809,7 +2799,7 @@ namespace RFiDGear.ViewModel
                             {
                                 StatusText += string.Format("{0}: No Apps Found: {1}\n", DateTime.Now, result.ToString());
 
-                                TaskErr = ERROR.IsNotTrue;
+                                CurrentTaskErrorLevel = ERROR.IsNotTrue;
                             }
 
                         }
@@ -2818,11 +2808,11 @@ namespace RFiDGear.ViewModel
                 return;
             });
 
-            if (TaskErr == ERROR.Empty)
+            if (CurrentTaskErrorLevel == ERROR.Empty)
             {
                 desfireTask.ContinueWith((x) =>
                 {
-                    if (TaskErr == ERROR.NoError)
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
                     {
                         IsTaskCompletedSuccessfully = true;
                     }

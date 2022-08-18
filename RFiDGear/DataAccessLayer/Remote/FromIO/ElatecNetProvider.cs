@@ -93,7 +93,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
                     else
                     {
-                        return ERROR.DeviceNotReadyError;
+                        return ERROR.NotReadyError;
                     }
                 }
             }
