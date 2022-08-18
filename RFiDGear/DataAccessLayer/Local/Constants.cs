@@ -345,9 +345,9 @@ namespace RFiDGear.DataAccessLayer
     [Flags]
     public enum DESFireKeyType
     {
-        DF_KEY_3K3DES = 0,
-        DF_KEY_AES = 64,
-        DF_KEY_DES = 128
+        DF_KEY_DES = 0,
+        DF_KEY_3K3DES = 64,
+        DF_KEY_AES = 128
     }
 
     /// <summary>

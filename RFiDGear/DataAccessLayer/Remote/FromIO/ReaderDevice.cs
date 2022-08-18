@@ -26,9 +26,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 return instance;
                             }
                             else
+                            {
                                 return instance;
+                            }
+                                
                         }
-                        break;
+
                     case ReaderTypes.Elatec:
                         lock (ElatecNetProvider.syncRoot)
                         {
@@ -38,13 +41,15 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 return instance;
                             }
                             else
+                            {
                                 return instance;
+                            }
+                                
                         }
-                        break;
 
                     case ReaderTypes.None:
                         return null;
-                        break;
+
 
                     default:
                         return null;
@@ -55,8 +60,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         private static object syncRoot = new object();
         private static ReaderDevice instance;
-
-        public object chip;
 
         public static ReaderTypes ReaderType { get; set; }
         public static int PortNumber { get; set; }
@@ -79,19 +82,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public DESFireFileSettings DesfireFileSettings { get; set; }
         public DESFireKeySettings DesfireAppKeySetting { get; set; }
 
-
-
-
         #region Common
 
         public abstract ERROR ReadChipPublic();
 
-        /*
-		public ERROR ChangeProvider(ReaderTypes _provider)
-        {
-
-        }
-		*/
         #endregion
         #region MifareClassic
         // Mifare Classic Method Definitions
@@ -102,8 +96,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public abstract ERROR WriteMiFareClassicWithMAD(int _madApplicationID, int _madStartSector,
                                                string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
                                                string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
-                                               byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth = false, bool _keyToWriteUseMAD = false);
-        public abstract ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, bool _useMADToAuth = true, bool _aiToUseIsMAD = false);
+                                               byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth, bool _keyToWriteUseMAD);
+        public abstract ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, 
+                                                string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, 
+                                                bool _useMADToAuth, bool _aiToUseIsMAD);
         #endregion
 
         #region MifareUltralight

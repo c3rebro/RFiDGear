@@ -6,7 +6,7 @@ namespace RFiDGear.Model
     /// <summary>
     /// Description of chipUid.
     /// </summary>
-    public class GenericTaskModel
+    public abstract class GenericTaskModel
     {
         public GenericTaskModel()
         {
@@ -17,8 +17,9 @@ namespace RFiDGear.Model
             TargetErrorLevel = targetErrorLevel;
             SourceErrorLevel = sourceErrorLevel;
         }
-        public ERROR TargetErrorLevel { get; set; }
 
-        public ERROR SourceErrorLevel { get; set; }
+        public abstract ERROR TargetErrorLevel { get; set; }
+
+        public abstract ERROR SourceErrorLevel { get; set; }
     }
 }

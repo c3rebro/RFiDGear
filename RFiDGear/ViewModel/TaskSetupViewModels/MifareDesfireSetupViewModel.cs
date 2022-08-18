@@ -250,17 +250,6 @@ namespace RFiDGear.ViewModel
 
         #endregion
 
-        /// <summary>
-        /// 
-        /// </summary>
-        //		[XmlIgnore]
-        //		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
-        //		public ObservableCollection<IDialogViewModel> Dialogs
-        //		{
-        //			get { return dialogs; }
-        //			set { dialogs = value; }
-        //		}
-
         #endregion Dialogs
 
         #region Dependency Properties

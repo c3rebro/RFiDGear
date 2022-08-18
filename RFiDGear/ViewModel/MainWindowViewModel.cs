@@ -1124,6 +1124,9 @@ namespace RFiDGear.ViewModel
                         }
 
                         break;
+
+                    default:
+                        break;
                 }
             }
 
@@ -1234,6 +1237,9 @@ namespace RFiDGear.ViewModel
                                     }
 
                                     break;
+
+                                default:
+                                    break;
                             }
                         }
 
@@ -1255,47 +1261,9 @@ namespace RFiDGear.ViewModel
                                 {
                                     case TaskType_CommonTask.CreateReport:
                                         taskTimeout.Stop();
-
                                         switch ((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IsNotFalse:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IsNotTrue:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
                                                 taskTimeout.Start();
                                                 break;
 
@@ -1524,6 +1492,9 @@ namespace RFiDGear.ViewModel
                                                                     }
 
                                                                     break;
+
+                                                                default:
+                                                                    break;
                                                             }
                                                         }
                                                     }
@@ -1536,42 +1507,19 @@ namespace RFiDGear.ViewModel
 
                                                 taskTimeout.Start();
                                                 break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
                                         }
                                         break;
 
                                     case TaskType_CommonTask.CheckLogicCondition:
                                         switch ((taskHandler.TaskCollection[taskIndex] as CommonTaskViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IsNotTrue:
-                                            case ERROR.IsNotFalse:
-                                                taskIndex++;
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
                                                 taskTimeout.Start();
                                                 break;
 
@@ -1656,11 +1604,23 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
                                                 break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
                                         }
+                                        break;
+
+                                    default:
                                         break;
                                 }
                                 break;
@@ -1670,47 +1630,9 @@ namespace RFiDGear.ViewModel
                                 {
                                     case TaskType_GenericChipTask.ChipIsOfType:
                                         taskTimeout.Start();
-
                                         switch ((taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                taskIndex++;
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                taskIndex++;
-                                                break;
-
-                                            case ERROR.DeviceNotReadyError:
-                                                taskIndex++;
-
-                                                taskTimeout.Stop();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                taskIndex++;
-                                                break;
-
-                                            case ERROR.NoError:
-                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                taskIndex++;
-                                                break;
-
-                                            case ERROR.IsNotTrue:
-                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                taskIndex++;
-                                                break;
-
-                                            case ERROR.IsNotFalse:
-                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                taskIndex++;
-                                                break;
-
                                             case ERROR.Empty:
-
                                                 (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = true;
 
                                                 if ((taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
@@ -1779,6 +1701,9 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
@@ -1786,8 +1711,13 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             default:
+                                                (taskHandler.TaskCollection[taskIndex] as GenericChipTaskViewModel).IsFocused = false;
+                                                taskIndex++;
                                                 break;
                                         }
+                                        break;
+
+                                    default:
                                         break;
                                 }
                                 break;
@@ -1798,30 +1728,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareClassicTask.ReadData:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
                                                 taskTimeout.Start();
                                                 break;
 
@@ -1894,11 +1801,21 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
                                                 break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
+                                                break;
+
                                         }
                                         break;
 
@@ -1906,25 +1823,7 @@ namespace RFiDGear.ViewModel
 
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareClassicSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
                                                 taskTimeout.Start();
                                                 break;
 
@@ -1997,10 +1896,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -2013,26 +1921,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.FormatDesfireCard:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2105,10 +1994,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -2116,38 +2014,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.AppExistCheck:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IsNotTrue:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NotAllowed:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2159,7 +2026,6 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).DoesAppExistCommand(GenericChip);
                                                 }
 
-
                                                 else
                                                 {
 
@@ -2222,10 +2088,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -2233,38 +2108,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.ReadAppSettings:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IsNotTrue:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NotAllowed:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2276,7 +2120,6 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).ReadAppSettingsCommand(GenericChip);
                                                 }
 
-
                                                 else
                                                 {
 
@@ -2339,10 +2182,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -2350,37 +2202,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.CreateApplication:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.OutOfMemory:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2453,10 +2275,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -2464,38 +2295,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.AuthenticateApplication:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IsNotTrue:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NotAllowed:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2507,10 +2307,8 @@ namespace RFiDGear.ViewModel
                                                     (taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).AuthenticateToCardApplicationCommand.Execute(null);
                                                 }
 
-
                                                 else
                                                 {
-
                                                     if (taskIndices.TryGetValue((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).SelectedExecuteConditionTaskIndex, out int targetIndex))
                                                     {
                                                         switch (taskHandler.TaskCollection[targetIndex])
@@ -2570,10 +2368,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -2581,30 +2388,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.DeleteApplication:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2677,10 +2461,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -2688,31 +2481,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.PICCMasterKeyChangeover:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2785,10 +2554,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -2796,30 +2574,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -2892,10 +2647,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -2903,36 +2667,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.CreateFile:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.OutOfMemory:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -3005,10 +2740,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -3016,30 +2760,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.DeleteFile:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -3112,10 +2833,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -3123,31 +2853,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.ReadData:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
                                                 taskTimeout.Start();
                                                 break;
 
@@ -3220,10 +2926,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -3231,36 +2946,7 @@ namespace RFiDGear.ViewModel
                                     case TaskType_MifareDesfireTask.WriteData:
                                         switch ((taskHandler.TaskCollection[taskIndex] as MifareDesfireSetupViewModel).TaskErr)
                                         {
-                                            case ERROR.AuthenticationError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.ItemAlreadyExistError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
                                             case ERROR.DeviceNotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.IOError:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.OutOfMemory:
-                                                taskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.NoError:
-                                                taskIndex++;
                                                 taskTimeout.Start();
                                                 break;
 
@@ -3333,10 +3019,19 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 break;
+
+                                                            default:
+                                                                break;
                                                         }
                                                     }
                                                 }
 
+                                                break;
+
+                                            default:
+                                                taskIndex++;
+                                                taskTimeout.Stop();
+                                                taskTimeout.Start();
                                                 break;
                                         }
                                         break;
@@ -3344,6 +3039,9 @@ namespace RFiDGear.ViewModel
                                 break;
 
                             case MifareUltralightSetupViewModel ssVM:
+                                break;
+
+                            default:
                                 break;
                         }
 

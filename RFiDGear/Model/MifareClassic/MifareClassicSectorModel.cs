@@ -181,7 +181,7 @@ namespace RFiDGear.Model
         }
 
         public MifareClassicSectorModel(
-            int _sectorNumber = 0,
+            int _sectorNumber,
             string _keyA = "ff ff ff ff ff ff", // optional parameter: if not specified use transport configuration
             string _accessBitsAsString = "FF0780C3", // optional parameter: if not specified use transport configuration
             string _keyB = "ff ff ff ff ff ff") // optional parameter: if not specified use transport configuration
@@ -453,10 +453,10 @@ namespace RFiDGear.Model
         {
             byte[] st = new byte[4] { 0x00, 0x00, 0x00, 0xC3 };
 
-            uint sectorAccessBitsIndex = (uint)_sector.Cx; //_sector.Sector_AccessCondition.Cx;
-            uint dataBlock0AccessBitsIndex = (uint)_sector.DataBlock0.Cx; //(uint)dataBlock_AccessBits.IndexOf(_sector); //_sector.DataBlock0_AccessCondition.Cx;
-            uint dataBlock1AccessBitsIndex = (uint)_sector.DataBlock1.Cx; //_sector.DataBlock1_AccessCondition.Cx;
-            uint dataBlock2AccessBitsIndex = (uint)_sector.DataBlock2.Cx; //_sector.DataBlock2_AccessCondition.Cx;
+            uint sectorAccessBitsIndex = (uint)_sector.Cx;
+            uint dataBlock0AccessBitsIndex = (uint)_sector.DataBlock0.Cx;
+            uint dataBlock1AccessBitsIndex = (uint)_sector.DataBlock1.Cx; 
+            uint dataBlock2AccessBitsIndex = (uint)_sector.DataBlock2.Cx; 
 
             // DataBlock 0 = C1/0; C2/0; C3/0
 
