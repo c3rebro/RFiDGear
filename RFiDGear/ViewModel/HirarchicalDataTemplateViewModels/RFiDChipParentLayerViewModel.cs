@@ -112,7 +112,7 @@ namespace RFiDGear.ViewModel
 
             if (mifareClassicUidModel != null)
             {
-                ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareClassicUidModel.UidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
+                ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareClassicUidModel.UID, Enum.GetName(typeof(CARD_TYPE), CardType));
             }
         }
 
@@ -209,7 +209,7 @@ namespace RFiDGear.ViewModel
 
             if (mifareUltralightUidModel != null)
             {
-                ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareUltralightUidModel.UidNumber, Enum.GetName(typeof(CARD_TYPE), CardType));
+                ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareUltralightUidModel.UID, Enum.GetName(typeof(CARD_TYPE), CardType));
             }
         }
 
@@ -303,7 +303,7 @@ namespace RFiDGear.ViewModel
 
                         Children.Add(
                             new RFiDChipChildLayerViewModel(
-                                string.Format("Available Space: {0}Byte(s)", device.GenericChip.FreeMemory)));
+                                string.Format("Available Space: {0}Byte(s)", device.DesfireChip.FreeMemory)));
 
                         Children.Add(
                             new RFiDChipChildLayerViewModel(
@@ -563,13 +563,13 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        public string UidNumber
+        public string UID
         {
             get
             {
                 if (mifareClassicUidModel != null)
                 {
-                    return mifareClassicUidModel.UidNumber;
+                    return mifareClassicUidModel.UID;
                 }
                 else if (mifareDesfireUidModel != null)
                 {
@@ -577,7 +577,7 @@ namespace RFiDGear.ViewModel
                 }
                 else if (mifareUltralightUidModel != null)
                 {
-                    return mifareUltralightUidModel.UidNumber;
+                    return mifareUltralightUidModel.UID;
                 }
                 else
                 {

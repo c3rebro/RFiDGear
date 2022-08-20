@@ -58,9 +58,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         public static ReaderTypes ReaderType { get; set; }
         public static int PortNumber { get; set; }
+
         public MifareClassicSectorModel Sector { get; set; }
         public MifareClassicDataBlockModel DataBlock { get; set; }
+
         public GenericChipModel GenericChip { get; set; }
+        public MifareDesfireChipModel DesfireChip { get; set; }
+        public MifareClassicChipModel ClassicChip { get; set; }
+
         public ReaderTypes ReaderProvider { get; set; }
         public string ReaderUnitName { get; set; }
         public byte[] MifareClassicData { get; set; }

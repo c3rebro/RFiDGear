@@ -42,7 +42,16 @@ namespace RFiDGear.ViewModel
         private static readonly string FacilityName = "RFiDGear";
 
         private protected SettingsReaderWriter settings = new SettingsReaderWriter();
-        private protected MifareDesfireChipModel chip;
+
+        public MifareDesfireChipModel MifareDesfireChipModelToUse
+        {
+            get => chip;
+            set
+            {
+                chip = value;
+            }
+        }
+        private MifareDesfireChipModel chip;
         private protected MifareDesfireAppModel app;
         private DESFireAccessRights accessRights;
 
@@ -64,7 +73,7 @@ namespace RFiDGear.ViewModel
 
             MifareDesfireKeys = CustomConverter.GenerateStringSequence(0, 16).ToArray();
             MifareDesfireKeyCount = CustomConverter.GenerateStringSequence(1, 16).ToArray();
-
+            
             isAllowChangeMKChecked = true;
             isAllowConfigChangableChecked = true;
             isAllowListingWithoutMKChecked = true;
@@ -1566,6 +1575,64 @@ namespace RFiDGear.ViewModel
 
         #region Commands
 
+        public ICommand CommandDelegator => new RelayCommand<TaskType_MifareDesfireTask>((x) => OnNewCommandDelegatorCall(x));
+        private void OnNewCommandDelegatorCall(TaskType_MifareDesfireTask desfireTaskType)
+        {
+            switch (desfireTaskType)
+            {
+                case TaskType_MifareDesfireTask.AppExistCheck:
+                    DoesAppExistCommand(null);
+                    break;
+
+                case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
+                    OnNewChangeAppKeyCommand();
+                    break;
+
+                case TaskType_MifareDesfireTask.AuthenticateApplication:
+                    OnNewAuthenticateToCardApplicationCommand();
+                    break;
+
+                case TaskType_MifareDesfireTask.CreateApplication:
+                    OnNewCreateAppCommand();
+                    break;
+
+                case TaskType_MifareDesfireTask.CreateFile:
+                    OnNewCreateFileCommand();
+                    break;
+
+                case TaskType_MifareDesfireTask.DeleteApplication:
+                    OnNewDeleteSignleCardApplicationCommand();
+                    break;
+
+                case TaskType_MifareDesfireTask.DeleteFile:
+                    OnNewDeleteFileCommand();
+                    break;
+
+                case TaskType_MifareDesfireTask.FormatDesfireCard:
+                    OnNewFormatDesfireCardCommand();
+                    break;
+
+                case TaskType_MifareDesfireTask.PICCMasterKeyChangeover:
+                    OnNewChangeMasterCardKeyCommand();
+                    break;
+
+                case TaskType_MifareDesfireTask.ReadAppSettings:
+                    ReadAppSettingsCommand();
+                    break;
+
+                case TaskType_MifareDesfireTask.ReadData:
+                    OnNewReadDataCommand();
+                    break;
+
+                case TaskType_MifareDesfireTask.WriteData:
+                    OnNewWriteDataCommand();
+                    break;
+
+                default:
+                    break;
+            }
+
+        }
         /// <summary>
         /// return new RelayCommand<LibLogicalAccessProvider>((_device) => OnNewCreateAppCommand(_device));
         /// </summary>
@@ -2444,7 +2511,7 @@ namespace RFiDGear.ViewModel
 
             else if (SelectedTaskType == TaskType_MifareDesfireTask.AppExistCheck)
             {
-                DoesAppExistCommand(new GenericChipModel());
+                DoesAppExistCommand(new MifareDesfireChipModel());
                 return;
             }
 
@@ -2678,7 +2745,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        public void ReadAppSettingsCommand(GenericChipModel genericChip)
+        public void ReadAppSettingsCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
@@ -2706,8 +2773,8 @@ namespace RFiDGear.ViewModel
                             keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
                             keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
 
-                            genericChip.FreeMemory = device.GenericChip.FreeMemory;
-                            genericChip.UID = device.GenericChip.UID;
+                            //desfireChip.FreeMemory = device.GenericChip.FreeMemory;
+                            //desfireChip.UID = device.GenericChip.UID;
 
                             if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
                             {
@@ -2749,7 +2816,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        public void DoesAppExistCommand(GenericChipModel genericChip)
+        public void DoesAppExistCommand(MifareDesfireChipModel desfireChip)
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
@@ -2767,8 +2834,8 @@ namespace RFiDGear.ViewModel
                                     DesfireAppKeyCurrent,
                                     SelectedDesfireAppKeyEncryptionTypeCurrent);
 
-                            genericChip.FreeMemory = device.GenericChip.FreeMemory;
-                            genericChip.UID = device.GenericChip.UID;
+                            desfireChip.FreeMemory = device.DesfireChip.FreeMemory;
+                            desfireChip.UID = device.GenericChip.UID;
 
                             // Check if specified App "AppNumberCurrentAsInt" exist
                             if (IsValidAppNumberCurrent != false && AppNumberCurrentAsInt > 0 && result == ERROR.NoError && Array.Exists<uint>(device.AppIDList, x => x == (uint)AppNumberNewAsInt))

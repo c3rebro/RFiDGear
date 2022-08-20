@@ -9,7 +9,6 @@ namespace RFiDGear.Model
     /// </summary>
     public class MifareDesfireChipModel : GenericChipModel
     {
-
         public List<MifareDesfireAppModel> AppList
         {
             get => _appList;
@@ -26,5 +25,14 @@ namespace RFiDGear.Model
             UID = uid;
             CardType = cardType;
         }
+
+        public MifareDesfireChipModel(GenericChipModel genericChip)
+        {
+            UID = genericChip.UID;
+            CardType = genericChip.CardType;
+        }
+
+        //TODO: Clean this Mess up: Generic Chip should not have a "free memory" property
+        public uint FreeMemory { get; set; }
     }
 }

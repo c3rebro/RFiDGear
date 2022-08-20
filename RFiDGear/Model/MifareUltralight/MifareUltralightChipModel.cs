@@ -17,7 +17,7 @@ namespace RFiDGear.Model
     /// Description of chipMifareClassicUid.
     /// </summary>
     [XmlRootAttribute("MifareClassicChipNode", IsNullable = false)]
-    public class MifareUltralightChipModel
+    public class MifareUltralightChipModel : GenericChipModel
     {
         private readonly List<MifareUltralightPageModel> _pageList = new List<MifareUltralightPageModel>();
 
@@ -30,11 +30,7 @@ namespace RFiDGear.Model
         public MifareUltralightChipModel(string uid, CARD_TYPE cardType)
         {
             CardType = cardType;
-            UidNumber = uid;
+            UID = uid;
         }
-
-        public string UidNumber { get; set; }
-
-        public CARD_TYPE CardType { get; set; }
     }
 }

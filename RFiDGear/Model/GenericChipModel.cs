@@ -11,6 +11,7 @@ namespace RFiDGear.Model
     {
         public GenericChipModel()
         {
+
         }
 
         public GenericChipModel(string uid, CARD_TYPE cardType)
@@ -18,10 +19,8 @@ namespace RFiDGear.Model
             UID = uid;
             CardType = cardType;
         }
-        public uint FreeMemory { get; set; }
 
         public string UID { get; set; }
-
         public CARD_TYPE CardType { get; set; }
     }
 }

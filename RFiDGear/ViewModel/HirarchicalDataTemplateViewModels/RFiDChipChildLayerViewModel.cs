@@ -102,7 +102,7 @@ namespace RFiDGear.ViewModel
 
             appModel = appID;
             _cardType = cardType;
-            _parentUid = parentUID?.UidNumber;
+            _parentUid = parentUID?.UID;
 
             _cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
@@ -144,7 +144,7 @@ namespace RFiDGear.ViewModel
             //device = _device;
             pageModel = _pageModel;
             _cardType = cardType;
-            _parentUid = parentUID?.UidNumber;
+            _parentUid = parentUID?.UID;
 
             _cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
@@ -206,7 +206,7 @@ namespace RFiDGear.ViewModel
                 {
                     Caption = String.Format("{0} UID:[{1}] Type:[{2}]",
                                                              ResourceLoader.GetResource("mifareAuthSettingsDialogCaption"),
-                                                             Parent.UidNumber,
+                                                             Parent.UID,
                                                              Parent.CardType),
 
                     IsClassicAuthInfoEnabled = true,

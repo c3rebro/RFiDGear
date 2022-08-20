@@ -38,6 +38,9 @@ namespace RFiDGear.ViewModel
         private protected Checkpoint checkpoint;
 
         [XmlIgnore]
+        public ReportReaderWriter ReportReaderWriterToUse { get; set; }
+
+        [XmlIgnore]
         public ObservableCollection<object> AvailableTasks { get; set; }
 
         [XmlIgnore]
@@ -45,6 +48,9 @@ namespace RFiDGear.ViewModel
 
         [XmlIgnore]
         public MifareDesfireChipModel DesfireChip { get; set; }
+
+        [XmlIgnore]
+        public MifareClassicChipModel ClassicChip { get; set; }
 
         #endregion
 
@@ -753,6 +759,25 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
+        public ICommand CommandDelegator => new RelayCommand<TaskType_CommonTask>((x) => OnNewCommandDelegatorCall(x));
+        private void OnNewCommandDelegatorCall(TaskType_CommonTask classicTaskType)
+        {
+            switch (classicTaskType)
+            {
+                case TaskType_CommonTask.CreateReport:
+                    OnNewWriteReportCommand(ReportReaderWriterToUse);
+                    break;
+                case TaskType_CommonTask.CheckLogicCondition:
+                    OnNewCheckLogicConditionCommand();
+                    break;
+                default:
+                    break;
+            }
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
         public ICommand OpenReportTemplateCommand => new RelayCommand(OnNewOpenReportTemplateCommand);
         private void OnNewOpenReportTemplateCommand()
         {
@@ -805,147 +830,167 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            if (_reportReaderWriter != null)
+            Task commonTask = new Task(() =>
             {
-                Dictionary<string, int> checkpointDictionary = new Dictionary<string, int>();
-
-                // create a new key,value pair of taskpositions (int) <-> taskindex (string)
-                // (they could be different as because item at array position 0 can have index "100")
-                foreach (object rfidTaskObject in AvailableTasks)
+                if (_reportReaderWriter != null)
                 {
-                    checkpointDictionary.Add((rfidTaskObject as IGenericTaskModel).CurrentTaskIndex, AvailableTasks.IndexOf(rfidTaskObject));
-                }
+                    Dictionary<string, int> checkpointDictionary = new Dictionary<string, int>();
 
-                try
-                {
-                    reportReaderWriter = _reportReaderWriter;
-                    if (string.IsNullOrEmpty(reportReaderWriter.ReportTemplatePath))
+                    // create a new key,value pair of taskpositions (int) <-> taskindex (string)
+                    // (they could be different as because item at array position 0 can have index "100")
+                    foreach (object rfidTaskObject in AvailableTasks)
                     {
-                        reportReaderWriter.ReportTemplatePath = ReportTemplatePath;
+                        checkpointDictionary.Add((rfidTaskObject as IGenericTaskModel).CurrentTaskIndex, AvailableTasks.IndexOf(rfidTaskObject));
                     }
 
-                    if (!String.IsNullOrWhiteSpace(reportReaderWriter.ReportTemplatePath))
+                    try
                     {
-                        reportReaderWriter.OpenReport();
-
-                        foreach (Checkpoint checkpoint in Checkpoints)
+                        reportReaderWriter = _reportReaderWriter;
+                        if (string.IsNullOrEmpty(reportReaderWriter.ReportTemplatePath))
                         {
+                            reportReaderWriter.ReportTemplatePath = ReportTemplatePath;
+                        }
 
-                            bool hasVariable = false;
-                            bool concatenate = false;
+                        if (!String.IsNullOrWhiteSpace(reportReaderWriter.ReportTemplatePath))
+                        {
+                            reportReaderWriter.OpenReport();
 
-                            string temporaryContent = checkpoint.Content;
-
-                            if (temporaryContent.Contains("%UID"))
+                            foreach (Checkpoint checkpoint in Checkpoints)
                             {
-                                temporaryContent = temporaryContent.Replace("%UID", GenericChip.UID ?? "");
-                                hasVariable = true;
-                            }
 
-                            if (temporaryContent.Contains("%DATETIME"))
-                            {
-                                temporaryContent = temporaryContent.Replace("%DATETIME", DateTime.Now.ToString() ?? "");
-                                hasVariable = true;
-                            }
+                                bool hasVariable = false;
+                                bool concatenate = false;
 
-                            if (temporaryContent.Contains("%DATE"))
-                            {
-                                temporaryContent = temporaryContent.Replace("%DATE", DateTime.Now.ToString("dd/MM/yyyy") ?? "");
-                                hasVariable = true;
-                            }
+                                string temporaryContent = checkpoint.Content;
 
-                            if (temporaryContent.Contains("%FREEMEM"))
-                            {
-                                temporaryContent = temporaryContent.Replace("%FREEMEM", GenericChip.FreeMemory.ToString() ?? "");
-                                hasVariable = true;
-                            }
-
-                            if (temporaryContent.Contains("%LISTAPPS"))
-                            {
-                                temporaryContent = temporaryContent.Replace("%LISTAPPS", string.Join(", ", DesfireChip?.AppList.Select(x => x.appID)) ?? "");
-                                hasVariable = true;
-                            }
-
-                            if (temporaryContent.Contains("%CONCAT"))
-                            {
-                                temporaryContent = temporaryContent.Replace("%CONCAT ", string.Empty);
-                                temporaryContent = temporaryContent.Replace("%CONCAT", string.Empty);
-                                concatenate = true;
-                            }
-
-                            if (temporaryContent.Contains("%NEWLINE"))
-                            {
-                                temporaryContent = temporaryContent.Replace("%NEWLINE ", "\n");
-                                temporaryContent = temporaryContent.Replace("%NEWLINE", "\n");
-                                concatenate = true;
-                            }
-
-                            // Does the targeted Task Equals the selected TaskResult ?
-                            try
-                            {
-                                // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                if (checkpointDictionary.TryGetValue(checkpoint.TaskIndex, out int targetIndex))
+                                if (temporaryContent.Contains("%UID"))
                                 {
-                                    if ((AvailableTasks[targetIndex] as IGenericTaskModel).CurrentTaskErrorLevel == checkpoint.ErrorLevel)
+                                    temporaryContent = temporaryContent.Replace("%UID", GenericChip.UID ?? "");
+                                    hasVariable = true;
+                                }
+
+                                if (temporaryContent.Contains("%DATETIME"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%DATETIME", DateTime.Now.ToString() ?? "");
+                                    hasVariable = true;
+                                }
+
+                                if (temporaryContent.Contains("%DATE"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%DATE", DateTime.Now.ToString("dd/MM/yyyy") ?? "");
+                                    hasVariable = true;
+                                }
+
+                                if (temporaryContent.Contains("%FREEMEM"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%FREEMEM", DesfireChip?.FreeMemory.ToString() ?? "");
+                                    hasVariable = true;
+                                }
+
+                                if (temporaryContent.Contains("%LISTAPPS"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%LISTAPPS", string.Join(", ", DesfireChip?.AppList.Select(x => x.appID)) ?? "");
+                                    hasVariable = true;
+                                }
+
+                                if (temporaryContent.Contains("%CONCAT"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%CONCAT ", string.Empty);
+                                    temporaryContent = temporaryContent.Replace("%CONCAT", string.Empty);
+                                    concatenate = true;
+                                }
+
+                                if (temporaryContent.Contains("%NEWLINE"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%NEWLINE ", "\n");
+                                    temporaryContent = temporaryContent.Replace("%NEWLINE", "\n");
+                                    concatenate = true;
+                                }
+
+                                // Does the targeted Task Equals the selected TaskResult ?
+                                try
+                                {
+                                    // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
+                                    if (checkpointDictionary.TryGetValue(checkpoint.TaskIndex, out int targetIndex))
                                     {
-                                        if (concatenate)
+                                        if ((AvailableTasks[targetIndex] as IGenericTaskModel).CurrentTaskErrorLevel == checkpoint.ErrorLevel)
                                         {
-                                            reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+                                            if (concatenate)
+                                            {
+                                                reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
+                                            }
+                                            else
+                                            {
+                                                reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+                                            }
                                         }
                                         else
                                         {
-                                            reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
+                                            targetIndex++;
                                         }
+                                    }
+                                    // The targeted Task is not of any vaild type. E.g. a "string"
+                                    if (targetIndex == 0)
+                                    {
+                                        throw new Exception();
+                                    }
+                                }
+
+                                // The targeted Task does not Exist: Continue Execution anyway...
+                                catch
+                                {
+                                    if (concatenate)
+                                    {
+                                        reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
                                     }
                                     else
                                     {
-                                        targetIndex++;
+                                        reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
                                     }
                                 }
-                                // The targeted Task is not of any vaild type. E.g. a "string"
-                                if (targetIndex == 0)
-                                {
-                                    throw new Exception();
-                                }
                             }
 
-                            // The targeted Task does not Exist: Continue Execution anyway...
-                            catch
-                            {
-                                if (concatenate)
-                                {
-                                    reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
-                                }
-                                else
-                                {
-                                    reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-                                }
-                            }
+                            reportReaderWriter.CloseReport();
                         }
-
-                        reportReaderWriter.CloseReport();
                     }
-                }
 
-                catch (Exception e)
-                {
-                    CurrentTaskErrorLevel = ERROR.IOError;
-                    IsTaskCompletedSuccessfully = false;
+                    catch (Exception e)
+                    {
+                        CurrentTaskErrorLevel = ERROR.IOError;
+                        IsTaskCompletedSuccessfully = false;
+                        RaisePropertyChanged("TemplateFields");
+
+                        LogWriter.CreateLogEntry(e, FacilityName);
+
+                        return;
+                    }
+
+                    CurrentTaskErrorLevel = ERROR.NoError;
+                    IsTaskCompletedSuccessfully = true;
+
                     RaisePropertyChanged("TemplateFields");
 
-                    LogWriter.CreateLogEntry(e, FacilityName);
-
-                    return;
                 }
+            });
 
-                CurrentTaskErrorLevel = ERROR.NoError;
-                IsTaskCompletedSuccessfully = true;
+            if (CurrentTaskErrorLevel == ERROR.Empty)
+            {
+                commonTask.ContinueWith((x) =>
+                {
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
+                    {
+                        IsTaskCompletedSuccessfully = true;
+                    }
+                    else
+                    {
+                        IsTaskCompletedSuccessfully = false;
+                    }
+                });
 
-                RaisePropertyChanged("TemplateFields");
-
-                //_reportReaderWriter.CloseReport();
+                commonTask.RunSynchronously();
             }
 
+            return;
         }
 
         /// <summary>
@@ -1215,7 +1260,7 @@ namespace RFiDGear.ViewModel
                                                 case "%FREEMEM":
                                                     uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out uint compareValueAsUInt);
 
-                                                    if (GenericChip.FreeMemory >= compareValueAsUInt)
+                                                    if (DesfireChip?.FreeMemory >= compareValueAsUInt)
                                                     {
                                                         CurrentTaskErrorLevel = ERROR.NoError;
                                                         return;
@@ -1253,7 +1298,7 @@ namespace RFiDGear.ViewModel
                                                     uint compareValueAsUInt;
                                                     uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
 
-                                                    if (GenericChip.FreeMemory <= compareValueAsUInt)
+                                                    if (DesfireChip?.FreeMemory <= compareValueAsUInt)
                                                     {
                                                         CurrentTaskErrorLevel = ERROR.NoError;
                                                         return;
@@ -1280,7 +1325,7 @@ namespace RFiDGear.ViewModel
                                                     uint compareValueAsUInt;
                                                     uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
 
-                                                    if (compareValueAsUInt == GenericChip.FreeMemory)
+                                                    if (compareValueAsUInt == DesfireChip?.FreeMemory)
                                                     {
                                                         CurrentTaskErrorLevel = ERROR.NoError;
                                                         return;

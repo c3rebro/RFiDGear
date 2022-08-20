@@ -88,6 +88,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                             GenericChip.CardType = CARD_TYPE.DESFireEV3;
                                     }
 
+                                    DesfireChip = new MifareDesfireChipModel(GenericChip);
+
                                     return ERROR.NoError;
                                 }
                                 catch (Exception e)
@@ -833,11 +835,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                     try
                                     {
+                                        DesfireChip.FreeMemory = cmd.GetFreeMemory();
+
                                         object appIDsObject = cmd.GetApplicationIDs();
                                         AppIDList = (appIDsObject as UInt32[]);
-
-
-                                        GenericChip.FreeMemory = cmd.GetFreeMemory();
 
                                         return ERROR.NoError;
                                     }
@@ -846,13 +847,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         //Get AppIDs with Authentication (Directory Listing with PICC MK)
                                         try
                                         {
+                                            DesfireChip.FreeMemory = cmd.GetFreeMemory();
+
                                             cmd.SelectApplication((uint)0);
                                             cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
 
                                             object appIDsObject = cmd.GetApplicationIDs();
                                             AppIDList = (appIDsObject as UInt32[]);
-
-                                            GenericChip.FreeMemory = cmd.GetFreeMemory();
 
                                             return ERROR.NoError;
                                         }
@@ -1681,7 +1682,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         {
                                             try
                                             {
-                                                GenericChip.FreeMemory = cmd.GetFreeMemory();
+                                                DesfireChip.FreeMemory = cmd.GetFreeMemory();
                                             }
 
                                             catch { }
@@ -1710,7 +1711,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                     try
                                     {
-                                        GenericChip.FreeMemory = cmd.GetFreeMemory();
+                                        DesfireChip.FreeMemory = cmd.GetFreeMemory();
                                     }
 
                                     catch { }

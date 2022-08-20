@@ -1622,6 +1622,22 @@ namespace RFiDGear.ViewModel
 
         #region Commands
 
+        public ICommand CommandDelegator => new RelayCommand<TaskType_MifareClassicTask>((x) => OnNewCommandDelegatorCall(x));
+        private void OnNewCommandDelegatorCall(TaskType_MifareClassicTask classicTaskType)
+        {
+            switch(classicTaskType)
+            {
+                case TaskType_MifareClassicTask.ReadData:
+                    OnNewReadDataCommand();
+                    break;
+                case TaskType_MifareClassicTask.WriteData:
+                    OnNewWriteDataCommand();
+                    break;
+                default:
+                    break;
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
