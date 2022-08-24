@@ -10,14 +10,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             get
             {
-                switch (ReaderType)
+                switch (Reader)
                 {
                     case ReaderTypes.PCSC:
                         lock (syncRoot)
                         {
                             if (instance == null)
                             {
-                                instance = new LibLogicalAccessProvider(ReaderType);
+                                instance = new LibLogicalAccessProvider(Reader);
                                 return instance;
                             }
                             else
@@ -56,7 +56,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         private static object syncRoot = new object();
         private static ReaderDevice instance;
 
-        public static ReaderTypes ReaderType { get; set; }
+        public static ReaderTypes Reader { get; set; }
         public static int PortNumber { get; set; }
 
         public MifareClassicSectorModel Sector { get; set; }
@@ -74,11 +74,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public bool SectorSuccessfullyRead { get; set; }
         public bool SectorSuccesfullyAuth { get; set; }
         public byte[] MifareDESFireData { get; set; }
-        public uint[] AppIDList { get; set; }
         public byte[] FileIDList { get; set; }
         public byte[] MifareUltralightPageData { get; set; }
         public byte MaxNumberOfAppKeys { get; set; }
-        public byte EncryptionType { get; set; }
+        public DESFireKeyType EncryptionType { get; set; }
         public DESFireFileSettings DesfireFileSettings { get; set; }
         public DESFireKeySettings DesfireAppKeySetting { get; set; }
 

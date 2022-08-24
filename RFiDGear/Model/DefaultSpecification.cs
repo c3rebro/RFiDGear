@@ -62,10 +62,10 @@ namespace RFiDGear.Model
 
             mifareDesfireDefaultSecuritySettings = new List<MifareDesfireDefaultKeys>
             {
-                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey, DESFireKeyType.DF_KEY_DES, "00000000000000000000000000000000"),
+                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000"),
                 new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey, DESFireKeyType.DF_KEY_DES, "00000000000000000000000000000000"),
-                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey, DESFireKeyType.DF_KEY_DES, "00000000000000000000000000000000"),
-                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey, DESFireKeyType.DF_KEY_DES, "00000000000000000000000000000000")
+                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000"),
+                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000")
             };
 
             _classicCardDefaultSectorTrailer = "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF";

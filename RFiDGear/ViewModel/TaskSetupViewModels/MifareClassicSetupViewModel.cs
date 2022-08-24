@@ -1633,13 +1633,98 @@ namespace RFiDGear.ViewModel
                 case TaskType_MifareClassicTask.WriteData:
                     OnNewWriteDataCommand();
                     break;
+                case TaskType_MifareClassicTask.EmptyCheck:
+                    OnNewCheckEmptyCommand();
+                    break;
                 default:
                     break;
             }
         }
 
         /// <summary>
-        /// 
+        /// Check if DataBlock 0, 1 and 2 contain all 0 and if Authentication with KeyA = 6xFF works
+        /// </summary>
+        public ICommand CheckEmptyCommand => new RelayCommand(OnNewCheckEmptyCommand);
+        private protected void OnNewCheckEmptyCommand()
+        {
+            CurrentTaskErrorLevel = ERROR.Empty;
+
+            Task classicTask =
+                new Task(() =>
+                {
+                    using (ReaderDevice device = ReaderDevice.Instance)
+                    {
+                        if (device != null && device.ReadChipPublic() == ERROR.NoError)
+                        {
+                            StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                            if (device.ReadMiFareClassicSingleSector(
+                                selectedClassicSectorCurrentAsInt,
+                                ClassicKeyAKeyCurrent,
+                                ClassicKeyBKeyCurrent) == ERROR.NoError)
+                            {
+                                StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
+
+                                for (int i = 0; i < device.Sector.DataBlock.Count - 1; i++)
+                                {
+                                    for(int j = 0; j < device.Sector.DataBlock[i].Data.Length; j++)
+                                    {
+                                        if(device.Sector.DataBlock[i].Data[j] == 0 && device.Sector.IsAuthenticated == true)
+                                        {
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            CurrentTaskErrorLevel = ERROR.IsNotTrue;
+                                            return;
+                                        }
+                                    }
+                                }
+
+                                CurrentTaskErrorLevel = ERROR.NoError;
+
+                            }
+
+                            else
+                            {
+                                StatusText += string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
+                                CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                                return;
+                            }
+                        }
+
+                        else
+                        {
+                            CurrentTaskErrorLevel = ERROR.NotReadyError;
+                            return;
+                        }
+
+                        RaisePropertyChanged("ChildNodeViewModelTemp");
+
+                        return;
+                    }
+                });
+
+            if (CurrentTaskErrorLevel == ERROR.Empty)
+            {
+                classicTask.ContinueWith((x) =>
+                {
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
+                    {
+                        IsTaskCompletedSuccessfully = true;
+                    }
+                    else
+                    {
+                        IsTaskCompletedSuccessfully = false;
+                    }
+                });
+
+                classicTask.RunSynchronously();
+            }
+        }
+
+        /// <summary>
+        /// Read Data to Memory
         /// </summary>
         public ICommand ReadDataCommand => new RelayCommand(OnNewReadDataCommand);
         private protected void OnNewReadDataCommand()

@@ -25,7 +25,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         private chip card;
         private bool _disposed;
 
-        public FileSetting DesfireFileSetting { get; private set; }
+        private FileSetting desfireFileSetting { get; set; }
 
         #region contructor
         public LibLogicalAccessProvider()
@@ -40,7 +40,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 readerUnit = readerProvider.CreateReaderUnit();
 
                 GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
-                AppIDList = new uint[0];
             }
             catch (Exception e)
             {
@@ -794,7 +793,21 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         cmd.SelectApplication((uint)0);
 
                                         object appIDsObject = cmd.GetApplicationIDs();
-                                        AppIDList = (appIDsObject as UInt32[]);
+
+                                        if(DesfireChip == null)
+                                        {
+                                            DesfireChip = new MifareDesfireChipModel();
+                                        }
+                                        else
+                                        {
+                                            DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
+
+                                            foreach (uint appid in appIDsObject as UInt32[])
+                                            {
+                                                DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
+                                            }
+                                        }
+                                        
 
                                         return ERROR.NoError;
                                     }
@@ -807,7 +820,20 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                             cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
 
                                             object appIDsObject = cmd.GetApplicationIDs();
-                                            AppIDList = (appIDsObject as UInt32[]);
+
+                                            if (DesfireChip == null)
+                                            {
+                                                DesfireChip = new MifareDesfireChipModel();
+                                            }
+                                            else
+                                            {
+                                                DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
+
+                                                foreach (uint appid in appIDsObject as UInt32[])
+                                                {
+                                                    DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
+                                                }
+                                            }
 
                                             return ERROR.NoError;
                                         }
@@ -838,7 +864,20 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         DesfireChip.FreeMemory = cmd.GetFreeMemory();
 
                                         object appIDsObject = cmd.GetApplicationIDs();
-                                        AppIDList = (appIDsObject as UInt32[]);
+
+                                        if (DesfireChip == null)
+                                        {
+                                            DesfireChip = new MifareDesfireChipModel();
+                                        }
+                                        else
+                                        {
+                                            DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
+
+                                            foreach (uint appid in appIDsObject as UInt32[])
+                                            {
+                                                DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
+                                            }
+                                        }
 
                                         return ERROR.NoError;
                                     }
@@ -853,7 +892,20 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                             cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
 
                                             object appIDsObject = cmd.GetApplicationIDs();
-                                            AppIDList = (appIDsObject as UInt32[]);
+
+                                            if (DesfireChip == null)
+                                            {
+                                                DesfireChip = new MifareDesfireChipModel();
+                                            }
+                                            else
+                                            {
+                                                DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
+
+                                                foreach (uint appid in appIDsObject as UInt32[])
+                                                {
+                                                    DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
+                                                }
+                                            }
 
                                             return ERROR.NoError;
                                         }
@@ -888,7 +940,20 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
 
                                         object appIDsObject = cmd.GetApplicationIDs();
-                                        AppIDList = (appIDsObject as UInt32[]);
+
+                                        if (DesfireChip == null)
+                                        {
+                                            DesfireChip = new MifareDesfireChipModel();
+                                        }
+                                        else
+                                        {
+                                            DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
+
+                                            foreach (uint appid in appIDsObject as UInt32[])
+                                            {
+                                                DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
+                                            }
+                                        }
 
                                         return ERROR.NoError;
                                     }
@@ -954,7 +1019,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                             card = readerUnit.GetSingleChip();
 
-                            if (card.Type == "DESFireEV1" ||
+                            if (card.Type == "DESFire" ||
+                                card.Type == "DESFireEV1" ||
                                 card.Type == "DESFireEV2")
                             {
                                 try
@@ -963,7 +1029,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                     try
                                     {
-                                        cmd.SelectApplication((uint)0);
+                                        cmd.SelectApplication((uint)_appID);
                                         cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
                                     }
                                     catch
@@ -971,14 +1037,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         switch (_fileType)
                                         {
                                             case FileType_MifareDesfireFileType.StdDataFile:
-                                                cmd.CreateLinearRecordFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
+                                                cmd.CreateStdDataFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
                                                     new LibLogicalAccess.DESFireAccessRights()
                                                     {
                                                         changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
                                                         readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
                                                         writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
                                                         readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_fileSize, 255);
+                                                    }, (uint)_fileSize);
                                                 break;
 
                                             case FileType_MifareDesfireFileType.BackupFile:
@@ -1035,14 +1101,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     switch (_fileType)
                                     {
                                         case FileType_MifareDesfireFileType.StdDataFile:
-                                            cmd.CreateLinearRecordFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
+                                            cmd.CreateStdDataFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
                                                     new LibLogicalAccess.DESFireAccessRights()
                                                     {
                                                         changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
                                                         readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
                                                         writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
                                                         readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_fileSize, 255);
+                                                    }, (uint)_fileSize);
                                             break;
 
                                         case FileType_MifareDesfireFileType.BackupFile:
@@ -1092,165 +1158,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         default:
                                             break;
                                     }
-
-                                    return ERROR.NoError;
-                                }
-                                catch (Exception e)
-                                {
-                                    if (e.Message != "" && e.Message.Contains("same number already exists"))
-                                    {
-                                        return ERROR.ItemAlreadyExistError;
-                                    }
-                                    else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
-                                    {
-                                        return ERROR.AuthenticationError;
-                                    }
-                                    else if (e.Message != "" && e.Message.Contains("Insufficient NV-Memory"))
-                                    {
-                                        return ERROR.OutOfMemory;
-                                    }
-                                    else
-                                        return ERROR.IOError;
-                                }
-                            }
-                            else if (card.Type == "DESFire")
-                            {
-                                try
-                                {
-                                    var cmd = card.Commands as IDESFireCommands;
-
-                                    try
-                                    {
-                                        cmd.SelectApplication((uint)0);
-                                        cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
-                                    }
-                                    catch
-                                    {
-                                        switch (_fileType)
-                                        {
-                                            case FileType_MifareDesfireFileType.StdDataFile:
-                                                cmd.CreateLinearRecordFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
-                                                    new LibLogicalAccess.DESFireAccessRights()
-                                                    {
-                                                        changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
-                                                        readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
-                                                        writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
-                                                        readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_fileSize, 255);
-                                                break;
-
-                                            case FileType_MifareDesfireFileType.BackupFile:
-                                                cmd.CreateBackupFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
-                                                    new LibLogicalAccess.DESFireAccessRights()
-                                                    {
-                                                        changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
-                                                        readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
-                                                        writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
-                                                        readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_fileSize);
-                                                break;
-
-                                            case FileType_MifareDesfireFileType.ValueFile:
-                                                cmd.CreateValueFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
-                                                    new LibLogicalAccess.DESFireAccessRights()
-                                                    {
-                                                        changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
-                                                        readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
-                                                        writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
-                                                        readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_minValue, (uint)_maxValue, (uint)_initValue, _isValueLimited);
-                                                break;
-
-                                            case FileType_MifareDesfireFileType.CyclicRecordFile:
-                                                cmd.CreateCyclicRecordFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
-                                                    new LibLogicalAccess.DESFireAccessRights()
-                                                    {
-                                                        changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
-                                                        readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
-                                                        writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
-                                                        readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_fileSize, (uint)_maxNbOfRecords);
-                                                break;
-
-                                            case FileType_MifareDesfireFileType.LinearRecordFile:
-                                                cmd.CreateLinearRecordFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
-                                                    new LibLogicalAccess.DESFireAccessRights()
-                                                    {
-                                                        changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
-                                                        readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
-                                                        writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
-                                                        readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_fileSize, (uint)_maxNbOfRecords);
-                                                break;
-
-                                            default:
-                                                break;
-                                        }
-
-                                        return ERROR.NoError;
-                                    }
-
-                                    switch (_fileType)
-                                    {
-                                        case FileType_MifareDesfireFileType.StdDataFile:
-                                            cmd.CreateLinearRecordFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
-                                                    new LibLogicalAccess.DESFireAccessRights()
-                                                    {
-                                                        changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
-                                                        readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
-                                                        writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
-                                                        readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_fileSize, 255);
-                                            break;
-
-                                        case FileType_MifareDesfireFileType.BackupFile:
-                                            cmd.CreateBackupFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
-                                                    new LibLogicalAccess.DESFireAccessRights()
-                                                    {
-                                                        changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
-                                                        readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
-                                                        writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
-                                                        readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_fileSize);
-                                            break;
-
-                                        case FileType_MifareDesfireFileType.ValueFile:
-                                            cmd.CreateValueFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
-                                                    new LibLogicalAccess.DESFireAccessRights()
-                                                    {
-                                                        changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
-                                                        readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
-                                                        writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
-                                                        readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_minValue, (uint)_maxValue, (uint)_initValue, _isValueLimited);
-                                            break;
-
-                                        case FileType_MifareDesfireFileType.CyclicRecordFile:
-                                            cmd.CreateCyclicRecordFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
-                                                    new LibLogicalAccess.DESFireAccessRights()
-                                                    {
-                                                        changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
-                                                        readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
-                                                        writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
-                                                        readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_fileSize, (uint)_maxNbOfRecords);
-                                            break;
-
-                                        case FileType_MifareDesfireFileType.LinearRecordFile:
-                                            cmd.CreateLinearRecordFile((byte)_fileNo, (LibLogicalAccess.EncryptionMode)_encMode,
-                                                    new LibLogicalAccess.DESFireAccessRights()
-                                                    {
-                                                        changeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.changeAccess,
-                                                        readAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAccess,
-                                                        writeAccess = (LibLogicalAccess.TaskAccessRights)accessRights.writeAccess,
-                                                        readAndWriteAccess = (LibLogicalAccess.TaskAccessRights)accessRights.readAndWriteAccess
-                                                    }, (uint)_fileSize, (uint)_maxNbOfRecords);
-                                            break;
-
-                                        default:
-                                            break;
-                                    }
-
 
                                     return ERROR.NoError;
                                 }
@@ -1346,9 +1253,16 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                         cmd.Authenticate((byte)_readKeyNo, aiToWrite.ReadKey);
 
-                                        DesfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
+                                        desfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
+                                        DesfireFileSettings = new DESFireFileSettings
+                                        {
+                                            accessRights = desfireFileSetting.accessRights,
+                                            comSett = desfireFileSetting.comSett,
+                                            FileType = desfireFileSetting.FileType,
+                                            dataFile = new DataFileSetting { fileSize = desfireFileSetting.dataFile.fileSize }
+                                        };
 
-                                        MifareDESFireData = (byte[])cmd.ReadData((byte)_fileNo, 0, DesfireFileSetting.dataFile.fileSize, (LibLogicalAccess.EncryptionMode)EncryptionMode.CM_ENCRYPT);
+                                        MifareDESFireData = (byte[])cmd.ReadData((byte)_fileNo, 0, desfireFileSetting.dataFile.fileSize, (LibLogicalAccess.EncryptionMode)EncryptionMode.CM_ENCRYPT);
                                     }
                                     catch
                                     {
@@ -1579,6 +1493,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             byte maxNbrOfKeys;
             LibLogicalAccess.DESFireKeySettings keySettings;
+            LibLogicalAccess.DESFireKeyType keyType;
 
             try
             {
@@ -1604,7 +1519,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                 try
                                 {
-                                    cmd.SelectApplication((uint)0);
+                                    cmd.SelectApplication((uint)_appID);
                                     GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
 
                                     try
@@ -1618,7 +1533,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         {
                                             cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
                                             MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
-                                            EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
+                                            EncryptionType = (DESFireKeyType)(maxNbrOfKeys & 0xF0);
                                             DesfireAppKeySetting = (DESFireKeySettings)keySettings;
 
                                             return ERROR.NoError;
@@ -1639,7 +1554,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     }
                                     cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
                                     MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
-                                    EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
+                                    EncryptionType = (DESFireKeyType)(maxNbrOfKeys & 0xF0);
                                     DesfireAppKeySetting = (DESFireKeySettings)keySettings;
 
                                     return ERROR.NoError;
@@ -1668,7 +1583,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                 try
                                 {
-                                    cmd.SelectApplication((uint)0);
+                                    cmd.SelectApplication((uint)_appID);
                                     GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
 
                                     try
@@ -1687,9 +1602,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                             catch { }
 
-                                            cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
+                                            cmd.GetKeySettingsEV1(out keySettings, out maxNbrOfKeys, out keyType);
                                             MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
-                                            EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
+                                            EncryptionType = (DESFireKeyType)keyType;
                                             DesfireAppKeySetting = (DESFireKeySettings)keySettings;
 
                                             return ERROR.NoError;
@@ -1716,9 +1631,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                     catch { }
 
-                                    cmd.GetKeySettings(out keySettings, out maxNbrOfKeys);
+                                    cmd.GetKeySettingsEV1(out keySettings, out maxNbrOfKeys, out keyType);
                                     MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
-                                    EncryptionType = (byte)(maxNbrOfKeys & 0xF0);
+                                    EncryptionType = (DESFireKeyType)keyType;
                                     DesfireAppKeySetting = (DESFireKeySettings)keySettings;
 
                                     return ERROR.NoError;
@@ -2290,7 +2205,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 var cmd = card.Commands as IDESFireCommands;
                                 try
                                 {
-                                    cmd.SelectApplication((uint)0);
+                                    cmd.SelectApplication((uint)_appID);
                                     try
                                     {
                                         cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterCardKey);
@@ -2358,7 +2273,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
                 aiToUse.MasterCardKey.Value = CustomConverter.DesfireKeyToCheck;
-                aiToUse.MasterCardKey.KeyType = ((LibLogicalAccess.DESFireKeyType)_keyType);
+                aiToUse.MasterCardKey.KeyType = (LibLogicalAccess.DESFireKeyType)_keyType;
 
                 if (readerUnit.ConnectToReader())
                 {
@@ -2376,7 +2291,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 var cmd = card.Commands as IDESFireCommands;
                                 try
                                 {
-                                    cmd.SelectApplication((uint)0);
+                                    cmd.SelectApplication((uint)_appID);
                                     try
                                     {
                                         cmd.Authenticate((byte)_keyNumberCurrent, aiToUse.MasterCardKey);
@@ -2385,7 +2300,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     {
                                         try
                                         {
-                                            DesfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
+                                            desfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
+                                            DesfireFileSettings = new DESFireFileSettings 
+                                            { 
+                                                accessRights = desfireFileSetting.accessRights, 
+                                                comSett = desfireFileSetting.comSett,
+                                                FileType = desfireFileSetting.FileType,
+                                                dataFile = new DataFileSetting { fileSize = desfireFileSetting.dataFile.fileSize }
+                                            };
 
                                             return ERROR.NoError;
                                         }
@@ -2404,7 +2326,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         }
                                     }
 
-                                    DesfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
+                                    desfireFileSetting = cmd.GetFileSettings((byte)_fileNo);
+                                    DesfireFileSettings = new DESFireFileSettings
+                                    {
+                                        accessRights = desfireFileSetting.accessRights,
+                                        comSett = desfireFileSetting.comSett,
+                                        FileType = desfireFileSetting.FileType,
+                                        dataFile = new DataFileSetting { fileSize = desfireFileSetting.dataFile.fileSize }
+                                    };
 
                                     return ERROR.NoError;
                                 }

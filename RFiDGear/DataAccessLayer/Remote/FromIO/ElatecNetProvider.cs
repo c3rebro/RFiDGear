@@ -27,7 +27,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             try
             {
                 readerDevice = new TWN4ReaderDevice(PortNumber);
-                AppIDList = new uint[0];
             }
             catch (Exception e)
             {
@@ -40,7 +39,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             try
             {
                 readerDevice = new TWN4ReaderDevice(_comPort);
-                AppIDList = new uint[0];
             }
             catch (Exception e)
             {

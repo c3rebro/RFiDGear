@@ -910,20 +910,131 @@ Wird benötigt von:
   <data name="labelSelectIsChipOfType" xml:space="preserve">
     <value>Kartentyp</value>
   </data>
-  <data name="ENUM.CARD_TYPE.DESFire" xml:space="preserve">
-    <value>Desfire EV0</value>
+  <data name="ENUM.CARD_TYPE.NOTAG" xml:space="preserve">
+    <value>NULLTAG</value>
   </data>
-  <data name="ENUM.CARD_TYPE.DESFireEV1" xml:space="preserve">
-    <value>Desfire EV1</value>
+  <data name="ENUM.CARD_TYPE.Unspecified" xml:space="preserve">
+    <value>Unbekannt</value>
   </data>
-  <data name="ENUM.CARD_TYPE.DESFireEV2" xml:space="preserve">
-    <value>Desfire EV2</value>
+  <data name="ENUM.CARD_TYPE.EM4102" xml:space="preserve">
+    <value>EM4102</value>
   </data>
-  <data name="ENUM.CARD_TYPE.GENERIC_T_CL_A" xml:space="preserve">
-    <value>Generischer Typ</value>
+  <data name="ENUM.CARD_TYPE.HITAG1S" xml:space="preserve">
+    <value>HITAG1S</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.HITAG2" xml:space="preserve">
+    <value>HITAG2</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.EM4150" xml:space="preserve">
+    <value>EM4150</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.AT5555" xml:space="preserve">
+    <value>AT5555</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.ISOFDX" xml:space="preserve">
+    <value>ISOFDX</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.EM4026" xml:space="preserve">
+    <value>EM4026</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.HITAGU" xml:space="preserve">
+    <value>HITAGU</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.EM4305" xml:space="preserve">
+    <value>EM4305</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.HIDPROX" xml:space="preserve">
+    <value>HIDPROX</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.TIRIS" xml:space="preserve">
+    <value>TIRIS</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.COTAG" xml:space="preserve">
+    <value>COTAG</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.IOPROX" xml:space="preserve">
+    <value>IOPROX</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.INDITAG" xml:space="preserve">
+    <value>INDITAG</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.HONEYTAG" xml:space="preserve">
+    <value>HONEYTAG</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.AWID" xml:space="preserve">
+    <value>AWID</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.GPROX" xml:space="preserve">
+    <value>GPROX</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.PYRAMID" xml:space="preserve">
+    <value>PYRAMID</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.KERI" xml:space="preserve">
+    <value>KERI</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DEISTER" xml:space="preserve">
+    <value>DEISTER</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.CARDAX" xml:space="preserve">
+    <value>CARDAX</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NEDAP" xml:space="preserve">
+    <value>NEDAP</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.PAC" xml:space="preserve">
+    <value>PAC</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.IDTECK" xml:space="preserve">
+    <value>IDTECK</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.ULTRAPROX" xml:space="preserve">
+    <value>ULTRAPROX</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.ICT" xml:space="preserve">
+    <value>ICT</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.ISONAS" xml:space="preserve">
+    <value>ISONAS</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MIFARE" xml:space="preserve">
+    <value>MIFARE</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.ISO14443B" xml:space="preserve">
+    <value>ISO14443B</value>
   </data>
   <data name="ENUM.CARD_TYPE.ISO15693" xml:space="preserve">
     <value>ISO15693</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.LEGIC" xml:space="preserve">
+    <value>LEGIC</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.HIDICLASS" xml:space="preserve">
+    <value>HIDICLASS</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.FELICA" xml:space="preserve">
+    <value>FELICA</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SRX" xml:space="preserve">
+    <value>SRX</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NFCP2P" xml:space="preserve">
+    <value>NFCP2P</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.BLE" xml:space="preserve">
+    <value>BLE</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.TOPAZ" xml:space="preserve">
+    <value>TOPAZ</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.CTS" xml:space="preserve">
+    <value>CTS</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.BLELC" xml:space="preserve">
+    <value>BLELC</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifareMini" xml:space="preserve">
+    <value>Mifare Mini</value>
   </data>
   <data name="ENUM.CARD_TYPE.Mifare1K" xml:space="preserve">
     <value>Mifare 1K</value>
@@ -934,20 +1045,74 @@ Wird benötigt von:
   <data name="ENUM.CARD_TYPE.Mifare4K" xml:space="preserve">
     <value>Mifare 4K</value>
   </data>
+  <data name="ENUM.CARD_TYPE.SAM_AV1" xml:space="preserve">
+    <value>SAM_AV1</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SAM_AV2" xml:space="preserve">
+    <value>SAM_AV2</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL0_1K" xml:space="preserve">
+    <value>Mifare Plus SL0 1K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL0_2K" xml:space="preserve">
+    <value>Mifare Plus SL0 2K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL0_4K" xml:space="preserve">
+    <value>Mifare Plus SL0 4K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL1_1K" xml:space="preserve">
+    <value>Mifare Plus SL1 1K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL1_2K" xml:space="preserve">
+    <value>Mifare Plus SL1 2K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL1_4K" xml:space="preserve">
+    <value>Mifare Plus SL1 4K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL2_1K" xml:space="preserve">
+    <value>Mifare Plus SL2 1K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL2_2K" xml:space="preserve">
+    <value>Mifare Plus SL2 2K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus_SL2_4K" xml:space="preserve">
+    <value>Mifare Plus SL2 4K</value>
+  </data>
   <data name="ENUM.CARD_TYPE.MifarePlus_SL3_1K" xml:space="preserve">
-    <value>Mifare Plus 1K</value>
+    <value>Mifare Plus SL3 1K</value>
   </data>
   <data name="ENUM.CARD_TYPE.MifarePlus_SL3_2K" xml:space="preserve">
-    <value>Mifare Plus 2K</value>
+    <value>Mifare Plus SL3 2K</value>
   </data>
   <data name="ENUM.CARD_TYPE.MifarePlus_SL3_4K" xml:space="preserve">
-    <value>Mifare Plus 4K</value>
+    <value>Mifare Plus SL3 4K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFire" xml:space="preserve">
+    <value>Desfire EV0</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV1" xml:space="preserve">
+    <value>Desfire EV1</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV2" xml:space="preserve">
+    <value>Desfire EV2</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV3" xml:space="preserve">
+    <value>Desfire EV3</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_Mifare_2K" xml:space="preserve">
+    <value>SmartMX MifareClassic 2K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_Mifare_4K" xml:space="preserve">
+    <value>SmartMX MifareClassic 4K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.GENERIC_T_CL_A" xml:space="preserve">
+    <value>Generischer Typ</value>
   </data>
   <data name="ENUM.CARD_TYPE.MifareUltralight" xml:space="preserve">
     <value>Mifare Ultralight</value>
   </data>
-  <data name="ENUM.CARD_TYPE.Unspecified" xml:space="preserve">
-    <value>Unspezifiziert</value>
+  <data name="ENUM.CARD_TYPE.MifareUltralightC" xml:space="preserve">
+    <value>Mifare Ultralight C</value>
   </data>
   <data name="ENUM.TaskType_GenericChipTask.CheckUID" xml:space="preserve">
     <value>Prüfung der UID</value>
@@ -1082,7 +1247,7 @@ Needed by:
     <value>Update starten</value>
   </data>
   <data name="contextMenuItemExecuteSelectedItem" xml:space="preserve">
-    <value>gewählte Aufgabe ausführen</value>
+    <value>Aufgabe ausführen</value>
   </data>
   <data name="buttonContentMifareClassicSetupReadData" xml:space="preserve">
     <value>Daten lesen</value>
@@ -1164,5 +1329,30 @@ Needed by:
   </data>
   <data name="labelContentWrite" xml:space="preserve">
     <value>(S)chreiben</value>
+  </data>
+  <data name="contextMenuItemResetSelectedItem" xml:space="preserve">
+    <value>Aufgabe zurücksetzen</value>
+  </data>
+  <data name="contextMenuItemExecuteAllItems" xml:space="preserve">
+    <value>Alle Aufgaben ausführen</value>
+  </data>
+  <data name="contextMenuItemAddNewTask" xml:space="preserve">
+    <value>Neue Aufgabe anlegen</value>
+  </data>
+  <data name="menuItemAboutHeader" xml:space="preserve">
+    <value>Über RFiDGear</value>
+  </data>
+  <data name="buttonContentAboutCloseCommand" xml:space="preserve">
+    <value>Schliessen</value>
+  </data>
+  <data name="windowCaptionAboutRFiDGear" xml:space="preserve">
+    <value>Über RFiDGear</value>
+  </data>
+  <data name="textBoxTextAboutRFiDGear" xml:space="preserve">
+    <value>Your Essential Gear for RFID Encoding
+https://github.com/c3rebro/rfidgear</value>
+  </data>
+  <data name="ENUM.TaskType_MifareClassicTask.EmptyCheck" xml:space="preserve">
+    <value>Sektor-Unbenutzt Prüfung</value>
   </data>
 </root>

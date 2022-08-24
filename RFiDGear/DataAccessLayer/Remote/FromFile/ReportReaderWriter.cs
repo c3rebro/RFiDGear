@@ -106,7 +106,7 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
-                ObservableCollection<string> temp = new ObservableCollection<string>(); // = new ObservableCollection<string>(form.GetFormFields().Keys);
+                ObservableCollection<string> temp = new ObservableCollection<string>();
 
                 if (form != null)
                 {

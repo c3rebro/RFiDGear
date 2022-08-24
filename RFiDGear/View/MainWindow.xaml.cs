@@ -5,13 +5,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-
-using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
-using System.Windows.Data;
-using System.Windows.Interactivity;
 
 namespace RFiDGear
 {

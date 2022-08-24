@@ -38,15 +38,31 @@ namespace RFiDGear.DataAccessLayer
     };
 
     /// <summary>
+    /// UID and Type of Cardtechnology
+    /// </summary>
+    public struct CARD_INFO
+    {
+        public CARD_INFO(CARD_TYPE _type, string _uid)
+        {
+            CardType = _type;
+            uid = _uid;
+        }
+
+        public string uid;
+        public CARD_TYPE CardType;
+    }
+
+    /// <summary>
     /// The available FileTypes for DesFire Chips 
     /// </summary>
+    [Flags]
     public enum FileType_MifareDesfireFileType
     {
-        StdDataFile,
-        BackupFile,
-        ValueFile,
-        CyclicRecordFile,
-        LinearRecordFile
+        StdDataFile = 0,
+        BackupFile = 1,
+        ValueFile = 2,
+        LinearRecordFile = 3,
+        CyclicRecordFile = 4
     }
 
     /// <summary>
@@ -72,21 +88,6 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
-    /// UID and Type of Cardtechnology
-    /// </summary>
-    public struct CARD_INFO
-    {
-        public CARD_INFO(CARD_TYPE _type, string _uid)
-        {
-            CardType = _type;
-            uid = _uid;
-        }
-
-        public string uid;
-        public CARD_TYPE CardType;
-    }
-
-    /// <summary>
     /// The availbale "Mifare Classic Tasks"
     /// </summary>
     public enum TaskType_MifareClassicTask
@@ -94,6 +95,7 @@ namespace RFiDGear.DataAccessLayer
         None,
         ReadData,
         WriteData,
+        EmptyCheck,
         ChangeDefault
     }
 

@@ -62,11 +62,22 @@
     <Window.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
-        <ContextMenu x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+        <ContextMenu x:Key="EmptySpaceMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.EmptySpaceContextMenu}">
             <ContextMenu.ItemContainerStyle>
                 <Style TargetType="MenuItem">
                     <Setter Property="HorizontalContentAlignment" Value="Left" />
                     <Setter Property="VerticalContentAlignment" Value="Center" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding}" Value="{x:Null}">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate>
+                                        <Separator Style="{StaticResource {x:Static MenuItem.SeparatorStyleKey}}" />
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                    </Style.Triggers>
                 </Style>
             </ContextMenu.ItemContainerStyle>
         </ContextMenu>
@@ -288,6 +299,9 @@
                 SelectedItem="{Binding Path=DataContext.SelectedSetupViewModel, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
                 SelectionMode="Single"
                 VirtualizingPanel.IsVirtualizing="True">
+                <DataGrid.ContextMenu>
+                    <ContextMenu ItemsSource="{Binding EmptySpaceContextMenu}" />
+                </DataGrid.ContextMenu>
                 <DataGrid.Resources>
                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="DodgerBlue" />
                     <ContextMenu x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
@@ -295,6 +309,17 @@
                             <Style TargetType="MenuItem">
                                 <Setter Property="HorizontalContentAlignment" Value="Left" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding}" Value="{x:Null}">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate>
+                                                    <Separator Style="{StaticResource {x:Static MenuItem.SeparatorStyleKey}}" />
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
                             </Style>
                         </ContextMenu.ItemContainerStyle>
                     </ContextMenu>
@@ -462,7 +487,7 @@
                     VerticalContentAlignment="Center"
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}">
 
-                    <MenuItem Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}" />
+                    <MenuItem Command="{Binding NewAboutDialogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemAboutHeader'}" />
                 </MenuItem>
                 <!--  Help  -->
             </Menu>

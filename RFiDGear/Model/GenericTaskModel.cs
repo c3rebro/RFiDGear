@@ -32,5 +32,10 @@ namespace RFiDGear.Model
         /// The Index of the Current Task as String
         /// </summary>
         string CurrentTaskIndex { get; set; }
+
+        /// <summary>
+        /// The Index of the Current Task as Integer
+        /// </summary>
+        int SelectedTaskIndexAsInt { get; }
     }
 }

@@ -893,6 +893,12 @@ namespace RFiDGear.ViewModel
                                     hasVariable = true;
                                 }
 
+                                if (temporaryContent.Contains("%COUNTAPPS"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%COUNTAPPS", DesfireChip?.AppList?.Count.ToString());
+                                    hasVariable = true;
+                                }
+
                                 if (temporaryContent.Contains("%CONCAT"))
                                 {
                                     temporaryContent = temporaryContent.Replace("%CONCAT ", string.Empty);
@@ -1266,15 +1272,25 @@ namespace RFiDGear.ViewModel
                                                         return;
                                                     }
 
+                                                    else
+                                                    {
+                                                        CurrentTaskErrorLevel = ERROR.IsNotTrue;
+                                                    }
+
                                                     break;
 
-                                                case "%APPSCOUNT":
+                                                case "%COUNTAPPS":
                                                     uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
 
-                                                    if (DesfireChip?.AppList.Count >= compareValueAsUInt)
+                                                    if (DesfireChip?.AppIDs.Count() >= compareValueAsUInt)
                                                     {
                                                         CurrentTaskErrorLevel = ERROR.NoError;
                                                         return;
+                                                    }
+
+                                                    else
+                                                    {
+                                                        CurrentTaskErrorLevel = ERROR.IsNotTrue;
                                                     }
 
                                                     break;
@@ -1302,6 +1318,11 @@ namespace RFiDGear.ViewModel
                                                     {
                                                         CurrentTaskErrorLevel = ERROR.NoError;
                                                         return;
+                                                    }
+
+                                                    else
+                                                    {
+                                                        CurrentTaskErrorLevel = ERROR.IsNotTrue;
                                                     }
 
                                                     break;
@@ -1333,7 +1354,18 @@ namespace RFiDGear.ViewModel
 
                                                     else
                                                     {
-                                                        result = ERROR.IsNotTrue;
+                                                        CurrentTaskErrorLevel = ERROR.IsNotTrue;
+                                                    }
+
+                                                    break;
+
+                                                case "%COUNTAPPS":
+                                                    uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
+
+                                                    if (DesfireChip?.AppIDs.Count() >= compareValueAsUInt)
+                                                    {
+                                                        CurrentTaskErrorLevel = ERROR.NoError;
+                                                        return;
                                                     }
 
                                                     break;

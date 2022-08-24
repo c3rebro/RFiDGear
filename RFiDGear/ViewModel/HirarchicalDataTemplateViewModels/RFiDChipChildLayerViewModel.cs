@@ -124,7 +124,7 @@ namespace RFiDGear.ViewModel
 
             children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
-            LoadChildren();
+            //LoadChildren();
         }
 
         public RFiDChipChildLayerViewModel(
@@ -482,7 +482,7 @@ namespace RFiDGear.ViewModel
 
         #endregion
 
-        private void LoadChildren()
+        public void LoadChildren()
         {
             switch (_cardType)
             {

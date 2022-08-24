@@ -2412,9 +2412,9 @@ namespace RFiDGear.ViewModel
 
                                                             if (result == ERROR.NoError)
                                                             {
-                                                                if (device.AppIDList != null)
+                                                                if (device?.DesfireChip?.AppIDs != null)
                                                                 {
-                                                                    foreach (uint appID in device.AppIDList)
+                                                                    foreach (uint appID in device.DesfireChip.AppIDs)
                                                                     {
                                                                         StatusText += string.Format("{0}: FoundAppID {1}\n", DateTime.Now, appID);
                                                                     }
@@ -2779,6 +2779,12 @@ namespace RFiDGear.ViewModel
                             if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
                             {
                                 StatusText += string.Format("{0}: Successfully Read App Settings of App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
+
+                                if (((byte)device.DesfireAppKeySetting & (byte)keySettings) != 0)
+                                {
+                                    CurrentTaskErrorLevel = ERROR.NoError;
+                                    return;
+                                }
                                 CurrentTaskErrorLevel = ERROR.IsNotTrue;
                             }
                             else
@@ -2838,7 +2844,7 @@ namespace RFiDGear.ViewModel
                             desfireChip.UID = device.GenericChip.UID;
 
                             // Check if specified App "AppNumberCurrentAsInt" exist
-                            if (IsValidAppNumberCurrent != false && AppNumberCurrentAsInt > 0 && result == ERROR.NoError && Array.Exists<uint>(device.AppIDList, x => x == (uint)AppNumberNewAsInt))
+                            if (IsValidAppNumberCurrent != false && AppNumberCurrentAsInt > 0 && result == ERROR.NoError && Array.Exists<uint>(device.DesfireChip.AppIDs, x => x == (uint)AppNumberNewAsInt))
                             {
                                 StatusText += string.Format("{0}: Success. App with ID:{1} exists\n", DateTime.Now, AppNumberNewAsInt);
 
@@ -2846,7 +2852,7 @@ namespace RFiDGear.ViewModel
                             }
 
                             // Check if ANY App exists
-                            else if (IsValidAppNumberCurrent != false && AppNumberCurrentAsInt == 0 && result == ERROR.NoError && Array.Exists<uint>(device.AppIDList, x => x > 0))
+                            else if (IsValidAppNumberCurrent != false && AppNumberCurrentAsInt == 0 && result == ERROR.NoError && Array.Exists<uint>(device.DesfireChip.AppIDs, x => x > 0))
                             {
                                 StatusText += string.Format("{0}: Success. Existing Apps Detected\n", DateTime.Now);
 

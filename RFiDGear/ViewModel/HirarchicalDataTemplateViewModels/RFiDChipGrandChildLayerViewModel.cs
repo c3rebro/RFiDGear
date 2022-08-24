@@ -17,8 +17,6 @@ namespace RFiDGear.ViewModel
     [XmlRootAttribute("TreeViewGrandChildNode", IsNullable = false)]
     public class RFiDChipGrandChildLayerViewModel : ViewModelBase, IUserDialogViewModel
     {
-        private readonly MifareClassicSetupViewModel setupViewModel;
-
         #region Constructors
 
         public RFiDChipGrandChildLayerViewModel()
@@ -44,8 +42,6 @@ namespace RFiDGear.ViewModel
                     Data = new byte[16]
                 };
             }
-
-            setupViewModel = _setupViewModel;
 
             IsVisible = true;
 
@@ -138,8 +134,6 @@ namespace RFiDGear.ViewModel
             mifareClassicMAD = _madApp;
             children = new ObservableCollection<RFiDChipGrandGrandChildLayerViewModel>();
 
-            setupViewModel = _setupViewModel;
-
             if (mifareClassicMAD == null)
             {
                 mifareClassicMAD = new MifareClassicMADModel();
@@ -166,12 +160,6 @@ namespace RFiDGear.ViewModel
         }
 
         #endregion Constructors
-
-        #region Dialogs
-
-        //private ObservableCollection<IDialogViewModel> dialogs;
-
-        #endregion Dialogs
 
         #region SelectedItem
 
@@ -479,7 +467,7 @@ namespace RFiDGear.ViewModel
                 }
                 else if (desfireFile != null)
                 {
-                    grandChildNodeHeader = string.Format("File No.: [{0}]", DesfireFile.FileID.ToString("D3")); //dataBlockContent.dataBlockNumber.ToString("D3"), dataBlockContent.dataBlockNumber+16.ToString("D3")
+                    grandChildNodeHeader = string.Format("File No.: [{0}]", DesfireFile.FileID.ToString("D3"));
                 }
 
                 return grandChildNodeHeader;

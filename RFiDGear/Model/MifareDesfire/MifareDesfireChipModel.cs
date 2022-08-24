@@ -1,6 +1,7 @@
 ﻿using RFiDGear.DataAccessLayer;
 
 using System.Collections.Generic;
+using System;
 
 namespace RFiDGear.Model
 {
@@ -9,6 +10,21 @@ namespace RFiDGear.Model
     /// </summary>
     public class MifareDesfireChipModel : GenericChipModel
     {
+        public uint[] AppIDs 
+        {
+            get
+            {
+                uint[] appIDs = new uint[AppList.Count];
+
+                for(int i = 0; i < AppList.Count; i++)
+                {
+                    appIDs[i] = AppList[i].appID;
+                }
+
+                return appIDs;
+            }
+        }
+
         public List<MifareDesfireAppModel> AppList
         {
             get => _appList;
