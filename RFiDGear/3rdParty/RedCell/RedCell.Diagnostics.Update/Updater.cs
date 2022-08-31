@@ -114,6 +114,8 @@ namespace RedCell.Diagnostics.Update
             if (_localConfig != null)
             {
                 Log.Write("Starting monitoring every {0}s.", _localConfig.CheckInterval);
+                Check(null);
+
                 _timer = new Timer(Check, null, 5000, _localConfig.CheckInterval * 1000);
             }
 

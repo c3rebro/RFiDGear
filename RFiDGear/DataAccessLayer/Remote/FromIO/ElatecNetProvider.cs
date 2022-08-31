@@ -51,17 +51,18 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             try
             {
-                if (readerDevice.ConnectTWN4())
+                if (readerDevice != null)
                 {
-                    readerDevice.Beep();
                     readerDevice.GreenLED(true);
 
                     card = readerDevice.GetSingleChip();
 
-                    if (card?.ChipIdentifier != null)
+                    if (!string.IsNullOrWhiteSpace(card?.ChipIdentifier))
                     {
                         try
                         {
+                            readerDevice.Beep(1, 200, 2000, 50);
+
                             GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)card.CardType);
 
                             if ((CARD_TYPE)card.CardType == CARD_TYPE.DESFire || (CARD_TYPE)card.CardType == CARD_TYPE.DESFireEV1)
@@ -91,6 +92,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
                     else
                     {
+                        readerDevice.Beep(3, 50, 2000, 50);
+                        GenericChip = null;
+
                         return ERROR.NotReadyError;
                     }
                 }
@@ -226,7 +230,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             {
                 if (disposing)
                 {
-                    TWN4ReaderDevice.Instance?.DisconnectTWN4();
+
                 }
 
                 _disposed = true;
@@ -237,6 +241,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             _disposed = false;
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

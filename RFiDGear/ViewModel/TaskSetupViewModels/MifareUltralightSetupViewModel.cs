@@ -52,8 +52,6 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public MifareUltralightSetupViewModel()
         {
-            MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
-
             chipModel = new MifareUltralightChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.MifareUltralight);
 
             childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);

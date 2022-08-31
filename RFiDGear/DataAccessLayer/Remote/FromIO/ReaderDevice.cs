@@ -20,17 +20,25 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 instance = new LibLogicalAccessProvider(Reader);
                                 return instance;
                             }
+                            else if (instance != null && !(instance is LibLogicalAccessProvider))
+                            {
+                                instance = new LibLogicalAccessProvider(Reader);
+                                return instance;
+                            }
                             else
                             {
                                 return instance;
                             }
-                                
                         }
-
                     case ReaderTypes.Elatec:
                         lock (syncRoot)
                         {
                             if (instance == null)
+                            {
+                                instance = new ElatecNetProvider(PortNumber);
+                                return instance;
+                            }
+                            else if (instance != null && !(instance is ElatecNetProvider))
                             {
                                 instance = new ElatecNetProvider(PortNumber);
                                 return instance;

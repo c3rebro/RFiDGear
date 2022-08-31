@@ -40,6 +40,7 @@ namespace RFiDGear.ViewModel
         private readonly RelayCommand _cmdCreateApp;
         private readonly RelayCommand _cmdEraseDesfireCard;
 
+        private protected GenericChipModel genericChip;
         private protected MifareClassicChipModel mifareClassicUidModel;
         private protected MifareDesfireChipModel mifareDesfireUidModel;
         private protected MifareUltralightChipModel mifareUltralightUidModel;
@@ -53,6 +54,8 @@ namespace RFiDGear.ViewModel
 
             mifareClassicUidModel = new MifareClassicChipModel();
             mifareDesfireUidModel = new MifareDesfireChipModel();
+            mifareUltralightUidModel = new MifareUltralightChipModel();
+            genericChip = new GenericChipModel();
         }
 
         public RFiDChipParentLayerViewModel(string _text)
@@ -63,11 +66,12 @@ namespace RFiDGear.ViewModel
             mifareClassicUidModel = new MifareClassicChipModel();
             mifareDesfireUidModel = new MifareDesfireChipModel();
             mifareUltralightUidModel = new MifareUltralightChipModel();
+            genericChip = new GenericChipModel();
 
             ParentNodeHeader = _text;
         }
 
-        public RFiDChipParentLayerViewModel(MifareClassicChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
+        public RFiDChipParentLayerViewModel(ObservableCollection<IDialogViewModel> _dialogs, bool _isTask)
         {
             ID = new Random().Next();
 
@@ -78,6 +82,11 @@ namespace RFiDGear.ViewModel
 
             isTask = _isTask;
             settings = new SettingsReaderWriter();
+            _children = new ObservableCollection<RFiDChipChildLayerViewModel>();
+        }
+
+        public RFiDChipParentLayerViewModel(MifareClassicChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask) : this ( _dialogs, _isTask)
+        {
             mifareClassicUidModel = _uidModel;
             CardType = mifareClassicUidModel.CardType;
 
@@ -97,11 +106,10 @@ namespace RFiDGear.ViewModel
 
             ContextMenuItems.Add(new MenuItem()
             {
-                Header = "Delete Node",
+                Header = ResourceLoader.GetResource("hierarchicalDataTemplateParentNodeContextMenuDeleteNode"),
                 Command = _cmdDeleteThisNode
             });
 
-            _children = new ObservableCollection<RFiDChipChildLayerViewModel>();
 
             if (!isTask)
             {
@@ -116,18 +124,8 @@ namespace RFiDGear.ViewModel
             }
         }
 
-        public RFiDChipParentLayerViewModel(MifareDesfireChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
+        public RFiDChipParentLayerViewModel(MifareDesfireChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask) : this(_dialogs, _isTask)
         {
-            ID = new Random().Next();
-
-            if (_dialogs != null)
-            {
-                dialogs = _dialogs;
-            }
-
-            isTask = _isTask;
-            settings = new SettingsReaderWriter();
-
             mifareDesfireUidModel = _uidModel;
 
             CardType = mifareDesfireUidModel.CardType;
@@ -149,8 +147,6 @@ namespace RFiDGear.ViewModel
                 }
             });
 
-            _children = new ObservableCollection<RFiDChipChildLayerViewModel>();
-
             if (!isTask)
             {
                 LoadChildren();
@@ -160,21 +156,12 @@ namespace RFiDGear.ViewModel
 
             if (mifareDesfireUidModel != null)
             {
-                ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareDesfireUidModel.UID, Enum.GetName(typeof(CARD_TYPE), CardType));
+                ParentNodeHeader = String.Format(ResourceLoader.GetResource("hirarchicalDataTemplateParentNodeHeaderChipType") + " {1}\nUid: {0}", mifareDesfireUidModel.UID, Enum.GetName(typeof(CARD_TYPE), CardType));
             }
         }
 
-        public RFiDChipParentLayerViewModel(MifareUltralightChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask = false)
+        public RFiDChipParentLayerViewModel(MifareUltralightChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask) : this(_dialogs, _isTask)
         {
-            ID = new Random().Next();
-
-            if (_dialogs != null)
-            {
-                dialogs = _dialogs;
-            }
-
-            isTask = _isTask;
-            settings = new SettingsReaderWriter();
             mifareUltralightUidModel = _uidModel;
             CardType = mifareUltralightUidModel.CardType;
 
@@ -198,8 +185,6 @@ namespace RFiDGear.ViewModel
                 Command = _cmdDeleteThisNode
             });
 
-            _children = new ObservableCollection<RFiDChipChildLayerViewModel>();
-
             if (!isTask)
             {
                 LoadChildren();
@@ -209,7 +194,29 @@ namespace RFiDGear.ViewModel
 
             if (mifareUltralightUidModel != null)
             {
-                ParentNodeHeader = String.Format("ChipType: {1}\nUid: {0}", mifareUltralightUidModel.UID, Enum.GetName(typeof(CARD_TYPE), CardType));
+                ParentNodeHeader = String.Format(ResourceLoader.GetResource("hirarchicalDataTemplateParentNodeHeaderChipType") + " {1}\nUid: {0}", mifareUltralightUidModel.UID, Enum.GetName(typeof(CARD_TYPE), CardType));
+            }
+        }
+
+        public RFiDChipParentLayerViewModel(GenericChipModel _chipModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask) : this(_dialogs, _isTask)
+        {
+            genericChip = _chipModel;
+            CardType = genericChip.CardType;
+
+            _cmdDeleteThisNode = new RelayCommand(DeleteMeCommand);
+
+            ContextMenuItems = new List<MenuItem>();
+            ContextMenuItems.Add(new MenuItem()
+            {
+                Header = "Delete Node",
+                Command = _cmdDeleteThisNode
+            });
+
+            IsSelected = true;
+
+            if (genericChip != null)
+            {
+                ParentNodeHeader = String.Format(ResourceLoader.GetResource("hirarchicalDataTemplateParentNodeHeaderChipType") + " {1}\nUid: {0}", genericChip.UID, Enum.GetName(typeof(CARD_TYPE), CardType));
             }
         }
 
@@ -424,9 +431,9 @@ namespace RFiDGear.ViewModel
 
                         if (device.ReadMifareUltralightSinglePage(cnVM.PageNumber) == ERROR.NoError)
                         {
-                            string dataToShow = ByteConverter.HexToString(device.MifareUltralightPageData);
+                            string dataToShow = ByteConverter.GetStringFrom(device.MifareUltralightPageData);
 
-                            for (int i = (ByteConverter.HexToString(device.MifareUltralightPageData).Length) - 2; i > 0; i -= 2)
+                            for (int i = (ByteConverter.GetStringFrom(device.MifareUltralightPageData).Length) - 2; i > 0; i -= 2)
                             {
                                 dataToShow = dataToShow.Insert(i, " ");
                             }
@@ -579,6 +586,10 @@ namespace RFiDGear.ViewModel
                 {
                     return mifareUltralightUidModel.UID;
                 }
+                else if (genericChip != null)
+                {
+                    return genericChip.UID;
+                }
                 else
                 {
                     return "";
@@ -594,8 +605,9 @@ namespace RFiDGear.ViewModel
         {
             get => mifareClassicUidModel != null ? mifareClassicUidModel.CardType :
                     (mifareDesfireUidModel != null ? mifareDesfireUidModel.CardType :
-                     (mifareUltralightUidModel != null ? mifareUltralightUidModel.CardType : CARD_TYPE.Unspecified)
-                    );
+                     (mifareUltralightUidModel != null ? mifareUltralightUidModel.CardType :
+                       (genericChip != null ? genericChip.CardType : CARD_TYPE.Unspecified)
+                    ));
             set
             {
                 if (mifareClassicUidModel != null)
@@ -609,6 +621,10 @@ namespace RFiDGear.ViewModel
                 else if (mifareUltralightUidModel != null)
                 {
                     mifareUltralightUidModel.CardType = value;
+                }
+                else if (genericChip != null)
+                {
+                    genericChip.CardType = value;
                 }
 
                 RaisePropertyChanged("CardType");

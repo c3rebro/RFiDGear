@@ -150,7 +150,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
 
                 throw new ArgumentOutOfRangeException(
                     string.Format("parameter:{0}\nvalue:{1}",
@@ -208,14 +208,16 @@ namespace RFiDGear.DataAccessLayer
                 {
                     settings.ReadSettings();
 
-                    return new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
+                    string ressource = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
                         .GetString(resName, (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en"));
+
+                    return ressource.Replace("%NEWLINE", "\n");
                 }
 
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
                 return string.Empty;
             }
         }

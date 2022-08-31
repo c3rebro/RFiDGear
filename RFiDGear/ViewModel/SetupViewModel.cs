@@ -58,17 +58,17 @@ namespace RFiDGear.ViewModel
         public ICommand ConnectToReaderCommand => new RelayCommand(ConnectToReader);
         private void ConnectToReader()
         {
-            OnConnect?.Invoke(this);
+            //OnConnect?.Invoke(this);
 
             switch (SelectedReader)
             {
                 case ReaderTypes.PCSC:
                     if (device != null)
                     {
-                        if (device is ElatecNetProvider)
+                        if (!(device is LibLogicalAccessProvider))
                         {
                             device.Dispose();
-
+                            
                             device = new LibLogicalAccessProvider(SelectedReader);
                         }
                         device.ReadChipPublic();
@@ -82,8 +82,13 @@ namespace RFiDGear.ViewModel
                 case ReaderTypes.Elatec:
                     if (device != null)
                     {
-                        device.Dispose();
+                        if (!(device is ElatecNetProvider))
+                        {
+                            device.Dispose();
 
+                            device = new ElatecNetProvider();
+                        }
+                        
                         device.ReadChipPublic();
                     }
                     else
@@ -106,10 +111,11 @@ namespace RFiDGear.ViewModel
                                              + "UID: {0} "
                                              + '\n'
                                              + "Type: {1}", device.GenericChip.UID, Enum.GetName(typeof(CARD_TYPE), device.GenericChip.CardType));
+
             }
             else
             {
-                ReaderStatus = "no Reader detected";
+                ReaderStatus = "no Reader / Card detected";
             }
         }
 

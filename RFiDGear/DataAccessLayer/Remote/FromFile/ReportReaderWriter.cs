@@ -140,6 +140,7 @@ namespace RFiDGear.DataAccessLayer
                     {
                         form.GetField(_field).SetBorderWidth(1);
                         form.GetField(_field).SetVisibility(PdfFormField.VISIBLE);
+                        form.GetField(_field).SetReadOnly(false);
                         form.GetField(_field).SetValue(_value);
 
                         if (form.GetField(_field) is PdfButtonFormField)

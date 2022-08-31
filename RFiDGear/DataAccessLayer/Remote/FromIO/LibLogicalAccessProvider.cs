@@ -2464,6 +2464,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             _disposed = false;
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

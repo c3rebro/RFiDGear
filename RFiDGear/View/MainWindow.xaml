@@ -125,6 +125,25 @@
                     </Style>
                 </TreeView.ItemContainerStyle>
                 <TreeView.Resources>
+                    <ContextMenu x:Key="TreeViewEmptySpaceMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+                        <ContextMenu.ItemContainerStyle>
+                            <Style TargetType="MenuItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding}" Value="{x:Null}">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate>
+                                                    <Separator Style="{StaticResource {x:Static MenuItem.SeparatorStyleKey}}" />
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ContextMenu.ItemContainerStyle>
+                    </ContextMenu>
                     <!--<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
                       Color="White" />
 					<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
@@ -269,6 +288,9 @@
                         </TextBlock>
                     </DataTemplate>
                 </TreeView.Resources>
+                <TreeView.ContextMenu>
+                    <ContextMenu ItemsSource="{Binding EmptySpaceTreeViewContextMenu}" />
+                </TreeView.ContextMenu>
             </TreeView>
             <GridSplitter
                 Grid.Row="0"
@@ -377,10 +399,30 @@
                         Binding="{Binding Path=SelectedTaskType, Converter={StaticResource Localization}}"
                         Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridHeaderMainWindowTaskType', Source={StaticResource proxy}}"
                         IsReadOnly="True" />
-                    <DataGridTextColumn
-                        Binding="{Binding Path=SelectedTaskDescription}"
-                        Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridHeaderMainWindowTaskDescription', Source={StaticResource proxy}}"
-                        IsReadOnly="True" />
+                    <DataGridTemplateColumn 
+                                Width="auto"
+                                Header="{Binding Data.LocalizationResourceSet, 
+                        Converter={StaticResource Localization}, 
+                        ConverterParameter='dataGridHeaderMainWindowTaskDescription', 
+                        Source={StaticResource proxy}}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox
+                                    Text="{Binding Path=SelectedTaskDescription}"
+                                    TextWrapping="Wrap">
+                                    <TextBox.Style>
+                                        <Style TargetType="{x:Type TextBox}">
+                                            <Setter Property="HorizontalAlignment" Value="Left" />
+                                            <Setter Property="BorderBrush" Value="Transparent" />
+                                            <Setter Property="MaxWidth" Value="1000" />
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Setter Property="VerticalAlignment" Value="Center" />
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

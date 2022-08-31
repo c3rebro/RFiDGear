@@ -82,10 +82,6 @@ namespace RFiDGear.ViewModel
         private protected Mutex mutex;
         //one reader, one instance - only
 
-        #region Plugins
-
-        #endregion
-
         #region Events / Delegates
 
         /// <summary>
@@ -104,6 +100,7 @@ namespace RFiDGear.ViewModel
 
             bool autoLoadLastUsedDB;
             string[] args = Environment.GetCommandLineArgs();
+            updater = new Updater();
 
             using (SettingsReaderWriter settings = new SettingsReaderWriter())
             {
@@ -119,6 +116,11 @@ namespace RFiDGear.ViewModel
 
                 autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
 
+                if (settings.DefaultSpecification.AutoCheckForUpdates)
+                {
+                    updater?.StartMonitoring();
+                }
+
                 if (args.Length == 2)
                 {
                     if (File.Exists(args[1]))
@@ -128,8 +130,6 @@ namespace RFiDGear.ViewModel
                     }
                 }
             }
-
-            updater = new Updater();
 
             triggerReadChip = new DispatcherTimer
             {
@@ -167,6 +167,7 @@ namespace RFiDGear.ViewModel
 
             rowContextMenuItems = new ObservableCollection<MenuItem>();
             emptySpaceContextMenuItems = new ObservableCollection<MenuItem>();
+            emptySpaceTreeViewContextMenu = new ObservableCollection<MenuItem>();
 
             emptySpaceContextMenuItems.Add(new MenuItem()
             {
@@ -209,6 +210,12 @@ namespace RFiDGear.ViewModel
             {
                 Header = ResourceLoader.GetResource("contextMenuItemExecuteAllItems"),
                 Command = WriteToChipOnceCommand
+            });
+
+            emptySpaceTreeViewContextMenu.Add(new MenuItem()
+            {
+                Header = ResourceLoader.GetResource("contextMenuItemReadChipPublic"),
+                Command = ReadChipCommand
             });
 
             Application.Current.MainWindow.Closing += new CancelEventHandler(CloseThreads);
@@ -344,26 +351,7 @@ namespace RFiDGear.ViewModel
                     }
 
                     // fill treeview with dummy models and viewmodels
-                    switch (GenericChip.CardType)
-                    {
-                        case CARD_TYPE.Mifare1K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(GenericChip.UID, CARD_TYPE.Mifare1K), Dialogs));
-                            break;
-
-                        case CARD_TYPE.Mifare2K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(GenericChip.UID, CARD_TYPE.Mifare2K), Dialogs));
-                            break;
-
-                        case CARD_TYPE.Mifare4K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(GenericChip.UID, CARD_TYPE.Mifare4K), Dialogs));
-                            break;
-
-                        case CARD_TYPE.DESFire:
-                        case CARD_TYPE.DESFireEV1:
-                        case CARD_TYPE.DESFireEV2:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(GenericChip.UID, GenericChip.CardType), Dialogs));
-                            break;
-                    }
+                    OnNewReadChipCommand();
                     OnNewResetTaskStatusCommand();
                     OnNewWriteToChipOnceCommand();
                 }
@@ -451,6 +439,7 @@ namespace RFiDGear.ViewModel
                 }
             });
         }
+
         /// <summary>
         /// Create a new "Common" Task of Type "Report Creator"
         /// </summary>
@@ -472,7 +461,7 @@ namespace RFiDGear.ViewModel
                     {
                         dialogs.Add(new GenericChipTaskViewModel(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
                         {
-                            Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareClassicTask"),
+                            Caption = ResourceLoader.GetResource("windowCaptionAddEditGenericChipTask"),
 
                             OnOk = (sender) =>
                             {
@@ -490,16 +479,7 @@ namespace RFiDGear.ViewModel
 
                                     ChipTasks.TaskCollection.Add(sender);
 
-                                    ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x =>
-
-                                        (x is CommonTaskViewModel) ?
-                                        (x as CommonTaskViewModel).SelectedTaskIndexAsInt :
-                                        (x is GenericChipTaskViewModel) ?
-                                        (x as GenericChipTaskViewModel).SelectedTaskIndexAsInt :
-                                        (x is MifareDesfireSetupViewModel) ?
-                                        (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt :
-                                        (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt)
-                                        );
+                                    ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
 
                                     RaisePropertyChanged("ChipTasks");
                                 }
@@ -569,16 +549,7 @@ namespace RFiDGear.ViewModel
 
                             ChipTasks.TaskCollection.Add(sender);
 
-                            ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x =>
-
-                                (x is CommonTaskViewModel) ?
-                                (x as CommonTaskViewModel).SelectedTaskIndexAsInt :
-                                (x is GenericChipTaskViewModel) ?
-                                (x as GenericChipTaskViewModel).SelectedTaskIndexAsInt :
-                                (x is MifareDesfireSetupViewModel) ?
-                                (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt :
-                                (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt)
-                                );
+                            ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
 
                             RaisePropertyChanged("ChipTasks");
                         }
@@ -740,16 +711,7 @@ namespace RFiDGear.ViewModel
 
                                 ChipTasks.TaskCollection.Add(sender);
 
-                                ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x =>
-
-                                    (x is CommonTaskViewModel) ?
-                                    (x as CommonTaskViewModel).SelectedTaskIndexAsInt :
-                                    (x is GenericChipTaskViewModel) ?
-                                    (x as GenericChipTaskViewModel).SelectedTaskIndexAsInt :
-                                    (x is MifareDesfireSetupViewModel) ?
-                                    (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt :
-                                    (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt)
-                                    );
+                                ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
 
                                 RaisePropertyChanged("ChipTasks");
 
@@ -814,16 +776,7 @@ namespace RFiDGear.ViewModel
 
                                 ChipTasks.TaskCollection.Add(sender);
 
-                                ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x =>
-
-                                    (x is CommonTaskViewModel) ?
-                                    (x as CommonTaskViewModel).SelectedTaskIndexAsInt :
-                                    (x is GenericChipTaskViewModel) ?
-                                    (x as GenericChipTaskViewModel).SelectedTaskIndexAsInt :
-                                    (x is MifareDesfireSetupViewModel) ?
-                                    (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt :
-                                    (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt)
-                                    );
+                                ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
 
                                 RaisePropertyChanged("ChipTasks");
 
@@ -921,76 +874,80 @@ namespace RFiDGear.ViewModel
                     switch (device.GenericChip.CardType)
                     {
                         case CARD_TYPE.Mifare1K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare1K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare1K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.Mifare2K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare2K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare2K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.Mifare4K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare4K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.Mifare4K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.DESFire:
                         case CARD_TYPE.DESFireEV1:
                         case CARD_TYPE.DESFireEV2:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs, false));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL1_1K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL1_1K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL1_1K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL1_2K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL1_2K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL1_2K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL1_4K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL1_4K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL1_4K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL2_1K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL2_1K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL2_1K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL2_2K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL2_2K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL2_2K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL2_4K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL2_4K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL2_4K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL3_1K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL3_1K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL3_1K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL3_2K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL3_2K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL3_2K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL3_4K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL3_4K), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareClassicChipModel(device.GenericChip.UID, CARD_TYPE.MifarePlus_SL3_4K), Dialogs, false));
                             break;
 
                         case CARD_TYPE.MifareUltralight:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareUltralightChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareUltralightChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs, false));
                             break;
 
 
                         case CARD_TYPE.GENERIC_T_CL_A:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs));
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs, false));
                             break;
 
                         case CARD_TYPE.ISO15693:
 
                             break;
+
+                        default:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new GenericChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs, false));
+                            break;
                     }
 
 
                 }
-                else if (treeViewParentNodes.Any(x => x.UID == device.GenericChip.UID))
+                else if (treeViewParentNodes.Any(x => x.UID == device?.GenericChip?.UID))
                 {
                     treeViewParentNodes.First(x => x.UID == device.GenericChip.UID).IsSelected = true;
                 }
@@ -1629,6 +1586,11 @@ namespace RFiDGear.ViewModel
                             sender.Close();
 
                             settings.SaveSettings();
+
+                            CurrentReader = Enum.GetName(typeof(ReaderTypes), sender.SelectedReader);
+
+                            ReaderDevice.Reader = (ReaderTypes)Enum.Parse(typeof(ReaderTypes), CurrentReader);
+
                         },
 
                         OnConnect = (sender) =>
@@ -1758,6 +1720,12 @@ namespace RFiDGear.ViewModel
 
         #region Dependency Properties
 
+        /// <summary>
+        /// expose contextmenu on row click
+        /// </summary>
+        public ObservableCollection<MenuItem> EmptySpaceTreeViewContextMenu => emptySpaceTreeViewContextMenu;
+
+        private readonly ObservableCollection<MenuItem> emptySpaceTreeViewContextMenu;
         /// <summary>
         /// expose contextmenu on row click
         /// </summary>
@@ -2015,49 +1983,24 @@ namespace RFiDGear.ViewModel
 
         private void LoadCompleted(object sender, EventArgs e)
         {
-            mw = (MainWindow)Application.Current.MainWindow;
-            mw.Title = string.Format("RFiDGear {0}.{1}", Version.Major, Version.Minor);
-
             if (updateAvailable)
             {
                 AskForUpdateNow();
             }
 
-            Task thread = new Task(() =>
-            {
-                while (true)
-                {
-                    for (int i = 0; i <= 10; i++)
-                    {
-                        Thread.Sleep(500);
-                        ReaderStatus = string.Format("{0}", DateTime.Now);
-
-                        if (i == 10)
-                        {
-                            //TODO: Update ReaderStatus frequently
-                            //FIXME: Locking LibLogicalAccessProvider Instance in different Threads not working correctly
-                        }
-                    }
-
-                }
-            });
-
-
-            thread.ContinueWith((x) =>
-            {
-            });
-
-            thread.Start();
+            mw = (MainWindow)Application.Current.MainWindow;
+            mw.Title = string.Format("RFiDGear {0}.{1}", Version.Major, Version.Minor);
 
             if (firstRun)
-            {
+            {        
+                Task loadProjectOnStartThread;
+                Task refreshStatusBarThread;
+
                 firstRun = false;
 
                 try
                 {
                     var mySplash = new SplashScreenViewModel();
-
-                    MefHelper.Instance.Container.ComposeParts(this);
 
                     using (SettingsReaderWriter settings = new SettingsReaderWriter())
                     {
@@ -2076,7 +2019,7 @@ namespace RFiDGear.ViewModel
                             Dialogs.Add(mySplash);
                         }
 
-                        thread = new Task(() =>
+                        loadProjectOnStartThread = new Task(() =>
                         {
                             if (autoLoadLastUsedDB)
                             {
@@ -2084,31 +2027,37 @@ namespace RFiDGear.ViewModel
                             }
                         });
 
-
-                        thread.ContinueWith((x) =>
+                        loadProjectOnStartThread.ContinueWith((x) =>
                         {
                         });
 
-                        thread.RunSynchronously();
+                        
+                        loadProjectOnStartThread.RunSynchronously();
 
-                        OnNewResetTaskStatusCommand();
+                        refreshStatusBarThread = new Task(() =>
+                        {
+                            while(true)
+                            {
+                                Thread.Sleep(500);
+                                ReaderStatus = string.Format("{0}", DateTime.Now);
+                            }
+                        });
+
+                        refreshStatusBarThread.ContinueWith((x) =>
+                        {
+                        });
+
+                        refreshStatusBarThread.Start();
 
                         Dialogs.Remove(mySplash);
+
+                        OnNewResetTaskStatusCommand();
                     }
                 }
                 catch (Exception ex)
                 {
                     LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""), FacilityName);
                 }
-
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
-                {
-                    if (settings.DefaultSpecification.AutoCheckForUpdates)
-                    {
-                        updater.StartMonitoring();
-                    }
-                }
-
             }
             #endregion
         }

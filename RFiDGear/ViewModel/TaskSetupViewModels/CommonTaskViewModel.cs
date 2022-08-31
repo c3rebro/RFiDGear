@@ -613,7 +613,7 @@ namespace RFiDGear.ViewModel
                         break;
 
                     case LOGIC_STATE.COUNT:
-                        IsLogicFuncTaskLogicFuncEnabled = false;
+                        IsLogicFuncTaskLogicFuncEnabled = true;
                         IsLogicFuncTaskCountFuncEnabled = true;
                         IsLogicFuncTaskCompareWithEnabled = false;
                         break;
@@ -632,6 +632,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
+        [XmlIgnore]
         public bool IsLogicFuncTaskCompareWithEnabled
         {
             get => isLogicFuncTaskCompareWithEnabled;
@@ -646,6 +647,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
+        [XmlIgnore]
         public bool IsLogicFuncTaskCountFuncEnabled
         {
             get => isLogicFuncTaskCountFuncEnabled;
@@ -660,6 +662,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
+        [XmlIgnore]
         public bool IsLogicFuncTaskLogicFuncEnabled
         {
             get => isLogicFuncTaskLogicFuncEnabled;
@@ -865,7 +868,13 @@ namespace RFiDGear.ViewModel
 
                                 if (temporaryContent.Contains("%UID"))
                                 {
-                                    temporaryContent = temporaryContent.Replace("%UID", GenericChip.UID ?? "");
+                                    temporaryContent = temporaryContent.Replace("%UID", GenericChip?.UID ?? "");
+                                    hasVariable = true;
+                                }
+
+                                if (temporaryContent.Contains("%CHIPTYPE"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%CHIPTYPE", Enum.GetName(typeof(CARD_TYPE), GenericChip?.CardType) ?? "");
                                     hasVariable = true;
                                 }
 

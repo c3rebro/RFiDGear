@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer">
     <UserControl.Resources>
+        <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
     </UserControl.Resources>
     <Grid>
@@ -81,7 +82,7 @@
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
-                        Header="Checkpoint Setup">
+                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderCommonTaskCheckpointSetup'}">
                         <Grid
                             Grid.Row="0"
                             Grid.Column="0"
@@ -105,7 +106,7 @@
                                 Margin="10,2,10,0"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Top"
-                                Content="ErrorLevel"
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentExecuteConditionErrorType'}"
                                 IsEnabled="{Binding IsLogicFuncTaskLogicFuncEnabled}" />
                             <ComboBox
                                 Grid.Row="1"
@@ -136,7 +137,7 @@
                                 Margin="8,0,8,10"
                                 VerticalAlignment="Bottom"
                                 Command="{Binding RemoveCheckpointCommand}"
-                                Content="Remove Checkpoint" />
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentCommonTaskRemoveCheckpoint'}" />
                             <Button
                                 Grid.Row="6"
                                 Grid.Column="0"
@@ -144,7 +145,7 @@
                                 Margin="10,0,10,10"
                                 VerticalAlignment="Bottom"
                                 Command="{Binding AddEditCheckpointCommand}"
-                                Content="Add Testpoint" />
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentCommonTaskAddCheckpoint'}" />
                             <ComboBox
                                 Grid.Row="2"
                                 Grid.Column="1"
@@ -241,7 +242,7 @@
                 Margin="8,8,8,8"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireAppSettingsCurrent'}"
+                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderCommonTaskCheckpointSetup'}"
                 IsEnabled="{Binding IsLogicCheckerTabEnabled}">
                 <Grid
                     Margin="0,0,0,0"
@@ -275,7 +276,7 @@
                             Source={StaticResource proxy}}
                         -->
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Header="Index">
+                            <DataGridTemplateColumn Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridColumnHeaderCommonTaskTargetIndex', Source={StaticResource proxy}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock
@@ -292,7 +293,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="ErrorLevel">
+                            <DataGridTemplateColumn Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridColumnHeaderCommonTaskTargetResult', Source={StaticResource proxy}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock
@@ -309,13 +310,10 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Width="*" Header="Content">
+                            <DataGridTemplateColumn Width="auto" Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridColumnHeaderCommonTaskContent', Source={StaticResource proxy}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock
-                                            Width="auto"
-                                            FontFamily="Lucida Console"
-                                            Text="{Binding Content, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                        <TextBlock FontFamily="Lucida Console" Text="{Binding Content, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                                             <TextBlock.Style>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="HorizontalAlignment" Value="Left" />
@@ -326,15 +324,13 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Width="*" Header="CompareValue">
+                            <DataGridTemplateColumn Width="auto" Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridColumnHeaderCommonTaskCompareValue', Source={StaticResource proxy}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock
-                                            Width="auto"
-                                            FontFamily="Lucida Console"
-                                            Text="{Binding CompareValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                        <TextBlock FontFamily="Lucida Console" Text="{Binding CompareValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                                             <TextBlock.Style>
                                                 <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="MaxWidth" Value="1000" />
                                                     <Setter Property="HorizontalAlignment" Value="Left" />
                                                     <Setter Property="VerticalAlignment" Value="Center" />
                                                 </Style>

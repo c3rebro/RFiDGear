@@ -182,7 +182,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public MifareClassicSetupViewModel()
         {
-            MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
+            MefHelper.Instance.Container?.ComposeParts(this); //Load Plugins
 
             sectorModel = new MifareClassicSectorModel(4,
                                                        AccessCondition_MifareClassicSectorTrailer.NotAllowed,
@@ -220,8 +220,6 @@ namespace RFiDGear.ViewModel
         {
             try
             {
-                MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
-
                 sectorModel = new MifareClassicSectorModel(4,
                                                            AccessCondition_MifareClassicSectorTrailer.NotAllowed,
                                                            AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
@@ -313,6 +311,8 @@ namespace RFiDGear.ViewModel
                 }
 
                 dialogs = _dialogs;
+
+                MefHelper.Instance.Container?.ComposeParts(this); //Load Plugins
 
                 HasPlugins = items != null ? items.Any() : false;
 

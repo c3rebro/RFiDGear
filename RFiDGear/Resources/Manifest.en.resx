@@ -988,7 +988,7 @@ Needed by:
     <value>ISONAS</value>
   </data>
   <data name="ENUM.CARD_TYPE.MIFARE" xml:space="preserve">
-    <value>MIFARE</value>
+    <value>MIFARE (Generic)</value>
   </data>
   <data name="ENUM.CARD_TYPE.ISO14443B" xml:space="preserve">
     <value>ISO14443B</value>
@@ -1027,13 +1027,13 @@ Needed by:
     <value>Mifare Mini</value>
   </data>
   <data name="ENUM.CARD_TYPE.Mifare1K" xml:space="preserve">
-    <value>Mifare 1K</value>
+    <value>Mifare Classic 1K</value>
   </data>
   <data name="ENUM.CARD_TYPE.Mifare2K" xml:space="preserve">
-    <value>Mifare 2K</value>
+    <value>Mifare Classic 2K</value>
   </data>
   <data name="ENUM.CARD_TYPE.Mifare4K" xml:space="preserve">
-    <value>Mifare 4K</value>
+    <value>Mifare Classic 4K</value>
   </data>
   <data name="ENUM.CARD_TYPE.SAM_AV1" xml:space="preserve">
     <value>SAM_AV1</value>
@@ -1078,16 +1078,16 @@ Needed by:
     <value>Mifare Plus SL3 4K</value>
   </data>
   <data name="ENUM.CARD_TYPE.DESFire" xml:space="preserve">
-    <value>Desfire EV0</value>
+    <value>Mifare Desfire EV0</value>
   </data>
   <data name="ENUM.CARD_TYPE.DESFireEV1" xml:space="preserve">
-    <value>Desfire EV1</value>
+    <value>Mifare Desfire EV1</value>
   </data>
   <data name="ENUM.CARD_TYPE.DESFireEV2" xml:space="preserve">
-    <value>Desfire EV2</value>
+    <value>Mifare Desfire EV2</value>
   </data>
   <data name="ENUM.CARD_TYPE.DESFireEV3" xml:space="preserve">
-    <value>Desfire EV3</value>
+    <value>Mifare Desfire EV3</value>
   </data>
   <data name="ENUM.CARD_TYPE.SmartMX_Mifare_2K" xml:space="preserve">
     <value>SmartMX MifareClassic 2K</value>
@@ -1335,5 +1335,35 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="ENUM.TaskType_MifareClassicTask.EmptyCheck" xml:space="preserve">
     <value>Sector Unused Check</value>
+  </data>
+  <data name="contextMenuItemReadChipPublic" xml:space="preserve">
+    <value>Read Chip Public</value>
+  </data>
+  <data name="dataGridColumnHeaderCommonTaskCompareValue" xml:space="preserve">
+    <value>Compare Expression</value>
+  </data>
+  <data name="dataGridColumnHeaderCommonTaskContent" xml:space="preserve">
+    <value>Content</value>
+  </data>
+  <data name="dataGridColumnHeaderCommonTaskTargetIndex" xml:space="preserve">
+    <value>Targeted Task-%NEWLINEIndex</value>
+  </data>
+  <data name="dataGridColumnHeaderCommonTaskTargetResult" xml:space="preserve">
+    <value>Targeted Error-%NEWLINELevel</value>
+  </data>
+  <data name="dataGridColumnHeaderCommonTaskTemplateField" xml:space="preserve">
+    <value>Template Formfield</value>
+  </data>
+  <data name="dataGridColumnHeaderCommonTaskTemplateFieldContent" xml:space="preserve">
+    <value>Formfield Content</value>
+  </data>
+  <data name="hierarchicalDataTemplateParentNodeContextMenuDeleteNode" xml:space="preserve">
+    <value>Delete Node</value>
+  </data>
+  <data name="hierarchicalDataTemplateParentNodeHeaderChipType" xml:space="preserve">
+    <value>ChipType:</value>
+  </data>
+  <data name="windowCaptionAddEditGenericChipTask" xml:space="preserve">
+    <value>Add / Edit Generic RFiD Task</value>
   </data>
 </root>
