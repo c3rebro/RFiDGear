@@ -195,6 +195,9 @@
             <Component Id="CommonServiceLocatorDll" Guid="5CA5CB50-8EA8-4EBF-AA40-6BC120B61AC7" DiskId="1">
               <File Id="CommonServiceLocator.dll" Name="CommonServiceLocator.dll" Source="..\RFiDGear\bin\Release\CommonServiceLocator.dll" KeyPath="yes" />
             </Component>
+            <Component Id="ElatecNetDll" Guid="40A4332E-04AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="Elatec.NET.dll" Name="Elatec.NET.dll" Source="..\RFiDGear\bin\Release\Elatec.NET.dll" KeyPath="yes" />
+            </Component>
 						<Component Id="GalaSoftMvvmLightDll" Guid="40A4382E-00AA-479A-923F-0B45401700BB" DiskId="1">
 							<File Id="GalaSoft.MvvmLight.dll" Name="GalaSoft.MvvmLight.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.dll" KeyPath="yes" />
 						</Component>
@@ -204,9 +207,6 @@
             <Component Id="GalaSoftMvvmLightPlatformDll" Guid="FF09382E-00AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="GalaSoft.MvvmLight.Platform.dll" Name="GalaSoft.MvvmLight.Platform.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.Platform.dll" KeyPath="yes" />
             </Component>
-            <Component Id="ElatecNetDll" Guid="40A4332E-04AA-479A-923F-0B45401700BB" DiskId="1">
-              <File Id="Elatec.NET.dll" Name="Elatec.NET.dll" Source="..\RFiDGear\bin\Release\Elatec.NET.dll" KeyPath="yes" />
-            </Component>
             <Component Id="InteropLibLogicalAccessDll" Guid="266E1A03-2C6B-444E-8017-1DBE01B19B24" DiskId="1">
               <File Id="Interop.LibLogicalAccess.dll" Name="Interop.LibLogicalAccess.dll" Source="..\RFiDGear\bin\Release\Interop.LibLogicalAccess.dll" KeyPath="yes" />
             </Component>
@@ -215,6 +215,9 @@
             </Component>
             <Component Id="ITextBarcodesDll" Guid="40A4382E-00AA-478A-923F-0B45401700BB" DiskId="1">
               <File Id="itext.barcodes.dll" Name="itext.barcodes.dll" Source="..\RFiDGear\bin\Release\itext.barcodes.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="ITextCommonsDll" Guid="40A4382E-02AA-479A-923F-0B454017ACBB" DiskId="1">
+              <File Id="itext.commons.dll" Name="itext.commons.dll" Source="..\RFiDGear\bin\Release\itext.commons.dll" KeyPath="yes" />
             </Component>
             <Component Id="ITextFormsDll" Guid="40A4382E-02AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="itext.forms.dll" Name="itext.forms.dll" Source="..\RFiDGear\bin\Release\itext.forms.dll" KeyPath="yes" />
@@ -242,7 +245,60 @@
             </Component>
             <Component Id="Log4CSharpDll" Guid="40A4711D-06AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="Log4CSharp.dll" Name="Log4CSharp.dll" Source="..\RFiDGear\bin\Release\Log4CSharp.dll" KeyPath="yes" />
+            </Component>    
+            <Component Id="MicrosoftBclAsyncInterfacesDll" Guid="1186711D-06AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="Microsoft.Bcl.AsyncInterfaces.dll" Name="Microsoft.Bcl.AsyncInterfaces.dll" Source="..\RFiDGear\bin\Release\Microsoft.Bcl.AsyncInterfaces.dll" KeyPath="yes" />
             </Component>
+            <Component Id="MicrosoftExtensionsDependencyInjectionAbstractionsDll" Guid="40A4711D-BD42-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="Microsoft.Extensions.DependencyInjection.Abstractions.dll" Name="Microsoft.Extensions.DependencyInjection.Abstractions.dll" Source="..\RFiDGear\bin\Release\Microsoft.Extensions.DependencyInjection.Abstractions.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="MicrosoftExtensionsDependencyInjectionDll" Guid="40A4711D-06AA-990F-CAC5-0B45401700BB" DiskId="1">
+              <File Id="Microsoft.Extensions.DependencyInjection.dll" Name="Microsoft.Extensions.DependencyInjection.dll" Source="..\RFiDGear\bin\Release\Microsoft.Extensions.DependencyInjection.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="MicrosoftExtensionsLoggingAbstractionsDll" Guid="40A4711D-06AA-479A-923F-5115401700BB" DiskId="1">
+              <File Id="Microsoft.Extensions.Logging.Abstractions.dll" Name="Microsoft.Extensions.Logging.Abstractions.dll" Source="..\RFiDGear\bin\Release\Microsoft.Extensions.Logging.Abstractions.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="MicrosoftExtensionsLoggingDll" Guid="40A4CDF2-06AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="Microsoft.Extensions.Logging.dll" Name="Microsoft.Extensions.Logging.dll" Source="..\RFiDGear\bin\Release\Microsoft.Extensions.Logging.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="MicrosoftExtensionsOptionsDll" Guid="40A4987B-06AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="Microsoft.Extensions.Options.dll" Name="Microsoft.Extensions.Options.dll" Source="..\RFiDGear\bin\Release\Microsoft.Extensions.Options.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="MicrosoftExtensionsPrimitivesDll" Guid="40A4711D-AC12-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="Microsoft.Extensions.Primitives.dll" Name="Microsoft.Extensions.Primitives.dll" Source="..\RFiDGear\bin\Release\Microsoft.Extensions.Primitives.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="MVVMDialogsDll" Guid="1E11FAF7-1CD6-49A4-AC0C-ED87A237C1CD" DiskId="1">
+              <File Id="MVVMDialogs.dll" Name="MVVMDialogs.dll" Source="..\RFiDGear\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
+            </Component>                   
+            <Component Id="NewtonsoftJsonDll" Guid="01BB711D-06AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="Newtonsoft.Json.dll" Name="Newtonsoft.Json.dll" Source="..\RFiDGear\bin\Release\Newtonsoft.Json.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="PluginSystemDll" Guid="B6782BE0-4826-4FDD-AAF0-5660ECAAE6AA" DiskId="1">
+              <File Id="PluginSystem.dll" Name="PluginSystem.dll" Source="..\RFiDGear\bin\Release\PluginSystem.dll" KeyPath="yes" />
+            </Component>
+
+            <Component Id="SystemBuffersDll" Guid="40A4FCFC-06AA-479A-923F-1FBA401700BB" DiskId="1">
+              <File Id="System.Buffers.dll" Name="System.Buffers.dll" Source="..\RFiDGear\bin\Release\System.Buffers.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="SystemDiagnosticsDiagnosticSourceDll" Guid="40A4FCFC-06AA-479A-923F-0B451C8700BB" DiskId="1">
+              <File Id="System.Diagnostics.DiagnosticSource.dll" Name="System.Diagnostics.DiagnosticSource.dll" Source="..\RFiDGear\bin\Release\System.Diagnostics.DiagnosticSource.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="SystemMemoryDll" Guid="40A4FCFC-06AA-479A-923F-0B49911700BB" DiskId="1">
+              <File Id="System.Memory.dll" Name="System.Memory.dll" Source="..\RFiDGear\bin\Release\System.Memory.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="SystemNumericsVectorsDll" Guid="40A4FCFC-06AA-479A-923F-0B42DDD700BB" DiskId="1">
+              <File Id="System.Numerics.Vectors.dll" Name="System.Numerics.Vectors.dll" Source="..\RFiDGear\bin\Release\System.Numerics.Vectors.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="SystemRuntimeCompilerServicesUnsafeDll" Guid="40A4FCFC-06AA-479A-923F-0B49B3B700BB" DiskId="1">
+              <File Id="System.Runtime.CompilerServices.Unsafe.dll" Name="System.Runtime.CompilerServices.Unsafe.dll" Source="..\RFiDGear\bin\Release\System.Runtime.CompilerServices.Unsafe.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="SystemThreadingTasksExtensionsDll" Guid="40A4FCFC-06AA-479A-923F-0B4501FC00BB" DiskId="1">
+              <File Id="System.Threading.Tasks.Extensions.dll" Name="System.Threading.Tasks.Extensions.dll" Source="..\RFiDGear\bin\Release\System.Threading.Tasks.Extensions.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="SystemValueTupleDll" Guid="40A4FCFC-06AA-EEDE-923F-0B45401700BB" DiskId="1">
+              <File Id="System.ValueTuple.dll" Name="System.ValueTuple.dll" Source="..\RFiDGear\bin\Release\System.ValueTuple.dll" KeyPath="yes" />
+            </Component>
+            
 						<Component Id="RFiDGearExe" Guid="08A86D18-98BA-486E-BC08-42079879AE51" DiskId="1">
 							<File Id="RFiDGear.exe" Name="RFiDGear.exe" Source="..\RFiDGear\bin\Release\RFiDGear.exe" KeyPath="yes" />
 							<Shortcut Id="ExeShortcut" Directory="ProgramMenuFolder" Name="RFiDGear" Advertise="yes" Icon="StartMenuIcon.exe" IconIndex="0" />
@@ -263,12 +319,8 @@
 								<File Id="en.RFiDGear.resources.dll" Name="RFiDGear.resources.dll" Source="..\RFiDGear\bin\Release\en\RFiDGear.resources.dll" KeyPath="yes" />
 							</Component>
 						</Directory>
-						<Component Id="MVVMDialogsDll" Guid="1E11FAF7-1CD6-49A4-AC0C-ED87A237C1CD" DiskId="1">
-							<File Id="MVVMDialogs.dll" Name="MVVMDialogs.dll" Source="..\RFiDGear\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
-						</Component>
-						<Component Id="PluginSystemDll" Guid="B6782BE0-4826-4FDD-AAF0-5660ECAAE6AA" DiskId="1">
-							<File Id="PluginSystem.dll" Name="PluginSystem.dll" Source="..\RFiDGear\bin\Release\PluginSystem.dll" KeyPath="yes" />
-						</Component>
+
+
 					</Directory>
 				</Directory>
 			</Directory>
@@ -350,7 +402,8 @@
         <ComponentRef Id="GalaSoftMvvmLightDll" />
 				<ComponentRef Id="InteropLibLogicalAccessDll" />
 				<ComponentRef Id="IonicZipDll" />
-        <ComponentRef Id="ITextBarcodesDll" />
+        <ComponentRef Id="ITextBarcodesDll" /> 
+        <ComponentRef Id="ITextCommonsDll" />
         <ComponentRef Id="ITextFormsDll" />
         <ComponentRef Id="ITextIODll" />
         <ComponentRef Id="ITextKernelDll" />
@@ -360,11 +413,31 @@
         <ComponentRef Id="ITextStyledxmlparserDll" />
         <ComponentRef Id="ITextSvgDll" />
         <ComponentRef Id="Log4CSharpDll" />
+        <ComponentRef Id="MicrosoftBclAsyncInterfacesDll" />
+        <ComponentRef Id="MicrosoftExtensionsDependencyInjectionAbstractionsDll" />
+        <ComponentRef Id="MicrosoftExtensionsDependencyInjectionDll" />
+        <ComponentRef Id="MicrosoftExtensionsLoggingAbstractionsDll" />
+        <ComponentRef Id="MicrosoftExtensionsLoggingDll" />
+        <ComponentRef Id="MicrosoftExtensionsOptionsDll" />
+        <ComponentRef Id="MicrosoftExtensionsPrimitivesDll" />   
         <ComponentRef Id="MVVMDialogsDll" />
+
+        <ComponentRef Id="NewtonsoftJsonDll" />
+        
         <ComponentRef Id="PluginSystemDll" />
+
+        <ComponentRef Id="SystemBuffersDll" />
+        <ComponentRef Id="SystemDiagnosticsDiagnosticSourceDll" />
+        <ComponentRef Id="SystemMemoryDll" />
+        <ComponentRef Id="SystemNumericsVectorsDll" />
+        <ComponentRef Id="SystemRuntimeCompilerServicesUnsafeDll" />
+        <ComponentRef Id="SystemThreadingTasksExtensionsDll" />
+        <ComponentRef Id="SystemValueTupleDll" />
+        <ComponentRef Id="SystemWindowsInteractivityDll" />
+        
 				<ComponentRef Id="RFiDGearExe" />
 				<ComponentRef Id="RFiDGearexeConfig" />
-				<ComponentRef Id="SystemWindowsInteractivityDll" />
+        
 				<ComponentRef Id="RFiDGearresourcesDll" />
 				<ComponentRef Id="EnRFiDGearresourcesDll" />
         <ComponentRef Id="ReleaseGalaSoftMvvmLightDll" />

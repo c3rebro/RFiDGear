@@ -117,8 +117,8 @@ namespace RFiDGear.ViewModel
                         if (!string.IsNullOrEmpty(reportTemplatePath))
                         {
                             reader.ReportTemplatePath = reportTemplatePath;
-                            reader.OpenReport();
-                            TemplateFields = reader.GetReportFields();
+
+                            TemplateFields = new ObservableCollection<string>(reader.GetReportFields().OrderBy(x => x));
 
                             RaisePropertyChanged("SelectedTemplateField");
                         }
@@ -810,9 +810,8 @@ namespace RFiDGear.ViewModel
                         {
                             ReportTemplatePath = ReportTemplatePath
                         };
-                        reportReaderWriter.OpenReport();
 
-                        TemplateFields = reportReaderWriter.GetReportFields();
+                        TemplateFields = new ObservableCollection<string>(reportReaderWriter.GetReportFields().OrderBy(x => x));
                     }
 
                     Mouse.OverrideCursor = null;
@@ -856,7 +855,6 @@ namespace RFiDGear.ViewModel
 
                         if (!String.IsNullOrWhiteSpace(reportReaderWriter.ReportTemplatePath))
                         {
-                            reportReaderWriter.OpenReport();
 
                             foreach (Checkpoint checkpoint in Checkpoints)
                             {
@@ -923,36 +921,28 @@ namespace RFiDGear.ViewModel
                                 }
 
                                 // Does the targeted Task Equals the selected TaskResult ?
-                                try
+                                // targeted Taskindex ist not "null" so check if targeted ERRORLEVEL fits current ERRORLEVEL
+                                if (checkpointDictionary.TryGetValue(checkpoint.TaskIndex ?? "-1", out int targetIndex))
                                 {
-                                    // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                    if (checkpointDictionary.TryGetValue(checkpoint.TaskIndex, out int targetIndex))
+                                    if ((AvailableTasks[targetIndex] as IGenericTaskModel).CurrentTaskErrorLevel == checkpoint.ErrorLevel)
                                     {
-                                        if ((AvailableTasks[targetIndex] as IGenericTaskModel).CurrentTaskErrorLevel == checkpoint.ErrorLevel)
+                                        if (concatenate)
                                         {
-                                            if (concatenate)
-                                            {
-                                                reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
-                                            }
-                                            else
-                                            {
-                                                reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
-                                            }
+                                            reportReaderWriter.ConcatReportField(checkpoint.TemplateField, temporaryContent);
                                         }
                                         else
                                         {
-                                            targetIndex++;
+                                            reportReaderWriter.SetReportField(checkpoint.TemplateField, hasVariable ? temporaryContent : checkpoint.Content);
                                         }
                                     }
-                                    // The targeted Task is not of any vaild type. E.g. a "string"
-                                    if (targetIndex == 0)
+                                    else
                                     {
-                                        throw new Exception();
+                                        targetIndex++;
                                     }
                                 }
 
                                 // The targeted Task does not Exist: Continue Execution anyway...
-                                catch
+                                else
                                 {
                                     if (concatenate)
                                     {
@@ -964,8 +954,6 @@ namespace RFiDGear.ViewModel
                                     }
                                 }
                             }
-
-                            reportReaderWriter.CloseReport();
                         }
                     }
 

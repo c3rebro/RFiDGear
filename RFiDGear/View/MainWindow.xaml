@@ -321,6 +321,12 @@
                 SelectedItem="{Binding Path=DataContext.SelectedSetupViewModel, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
                 SelectionMode="Single"
                 VirtualizingPanel.IsVirtualizing="True">
+                <i:Interaction.Triggers>
+                    <i:EventTrigger 
+                        EventName="MouseDoubleClick">
+                        <i:InvokeCommandAction Command="{Binding GetAddEditCommand}"/>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
                 <DataGrid.ContextMenu>
                     <ContextMenu ItemsSource="{Binding EmptySpaceContextMenu}" />
                 </DataGrid.ContextMenu>

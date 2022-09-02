@@ -29,13 +29,9 @@ namespace RFiDGear.DataAccessLayer
         #region fields
         private static readonly string FacilityName = "RFiDGear";
 
-        PdfDocument pdfDoc;
-        PdfAcroForm form = null;
-
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
         private const string reportTemplateTempFileName = "temptemplate.pdf";
-        private const string taskDatabaseFileName = "taskdatabase.xml";
         private readonly string appDataPath;
         public string ReportOutputPath { get; set; }
         public string ReportTemplatePath { get; set; }
@@ -67,52 +63,34 @@ namespace RFiDGear.DataAccessLayer
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_path"></param>
-        public void OpenReport(string _path = "")
-        {
-            try
-            {
-                if (pdfDoc == null)
-                {
-                    if (!string.IsNullOrEmpty(ReportOutputPath))
-                    {
-                        pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath ?? _path), new PdfWriter(ReportOutputPath));
-                    }
-
-                    else
-                    {
-                        pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath ?? _path));
-                    }
-
-                    form = PdfAcroForm.GetAcroForm(pdfDoc, true);
-
-                    // Being set as true, this parameter is responsible to generate an appearance Stream
-                    // while flattening for all form fields that don't have one. Generating appearances will
-                    // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.
-                    form.SetGenerateAppearance(true);
-                }
-            }
-            catch (XmlException e)
-            {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-                Environment.Exit(0);
-            }
-        }
-
         public ObservableCollection<string> GetReportFields()
         {
             try
             {
                 ObservableCollection<string> temp = new ObservableCollection<string>();
 
-                if (form != null)
+                using (PdfDocument pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath)))
                 {
-                    foreach (KeyValuePair<string, PdfFormField> _form in form.GetFormFields())
+                    PdfAcroForm form = PdfAcroForm.GetAcroForm(pdfDoc, true);
+                    // Being set as true, this parameter is responsible to generate an appearance Stream
+                    // while flattening for all form fields that don't have one. Generating appearances will
+                    // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.
+                    form.SetGenerateAppearance(true);
+                    //form.SetNeedAppearances(true);
+
+                    try
                     {
-                        temp.Add(_form.Key);
+                        if (form != null)
+                        {
+                            foreach (KeyValuePair<string, PdfFormField> _form in form.GetFormFields())
+                            {
+                                temp.Add(_form.Key);
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LogWriter.CreateLogEntry(e, FacilityName);
                     }
                 }
 
@@ -121,7 +99,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (XmlException e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
                 return null;
             }
         }
@@ -132,31 +110,42 @@ namespace RFiDGear.DataAccessLayer
             {
                 try
                 {
-                    ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
-
-                    OpenReport();
-
-                    try
+                    using (PdfDocument pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath), new PdfWriter(ReportOutputPath)))
                     {
-                        form.GetField(_field).SetBorderWidth(1);
-                        form.GetField(_field).SetVisibility(PdfFormField.VISIBLE);
-                        form.GetField(_field).SetReadOnly(false);
-                        form.GetField(_field).SetValue(_value);
+                        ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
 
-                        if (form.GetField(_field) is PdfButtonFormField)
+                        PdfAcroForm form = PdfAcroForm.GetAcroForm(pdfDoc, true);
+                        // Being set as true, this parameter is responsible to generate an appearance Stream
+                        // while flattening for all form fields that don't have one. Generating appearances will
+                        // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.
+                        form.SetGenerateAppearance(true);
+                        //form.SetNeedAppearances(true);
+
+                        try
                         {
-                            (form.GetField(_field) as PdfButtonFormField).SetBorderColor(ColorConstants.BLACK);
-                            (form.GetField(_field) as PdfButtonFormField).SetBorderWidth(1);
+                            if (form.GetField(_field) is PdfButtonFormField)
+                            {
+                                _ = (form.GetField(_field) as PdfButtonFormField)?.SetBorderWidth(1);
+                                _ = (form.GetField(_field) as PdfButtonFormField)?.SetBorderColor(ColorConstants.BLACK);
+                            }
+
+                            _ = form.GetField(_field)?.SetVisibility(PdfFormField.VISIBLE);
+                            _ = form.GetField(_field)?.SetReadOnly(false);
+                            _ = form.GetField(_field)?.SetValue(_value);
                         }
+                        catch (Exception e)
+                        {
+                            LogWriter.CreateLogEntry(e, FacilityName);
+                        }
+
+                        pdfDoc.Close();
                     }
-                    catch (Exception e)
-                    {
-                        LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-                    }
+
+                    File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
                 }
                 catch (XmlException e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                    LogWriter.CreateLogEntry(e, FacilityName);
                 }
             }
 
@@ -170,49 +159,37 @@ namespace RFiDGear.DataAccessLayer
                 {
                     ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
 
-                    OpenReport();
-
-                    try
+                    using (PdfDocument pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath), new PdfWriter(ReportOutputPath)))
                     {
-                        form.GetField(_field).SetBorderWidth(1);
-                        form.GetField(_field).SetVisibility(PdfFormField.VISIBLE);
-                        form.GetField(_field).SetValue(string.Format("{0}{1}", form.GetField(_field).GetValueAsString(), _value));
+                        PdfAcroForm form = PdfAcroForm.GetAcroForm(pdfDoc, true);
+                        // Being set as true, this parameter is responsible to generate an appearance Stream
+                        // while flattening for all form fields that don't have one. Generating appearances will
+                        // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.
+                        form.SetGenerateAppearance(true);
+                        //form.SetNeedAppearances(true);
 
-                        if (form.GetField(_field) is PdfButtonFormField)
+                        try
                         {
-                            (form.GetField(_field) as PdfButtonFormField).SetBorderColor(ColorConstants.BLACK);
-                            (form.GetField(_field) as PdfButtonFormField).SetBorderWidth(1);
+                            form.GetField(_field)?.SetVisibility(PdfFormField.VISIBLE);
+                            form.GetField(_field)?.SetValue(string.Format("{0}{1}", form.GetField(_field)?.GetValueAsString(), _value));
                         }
+                        catch (Exception e)
+                        {
+                            LogWriter.CreateLogEntry(e, FacilityName);
+                        }
+
+                        pdfDoc.Close();
                     }
-                    catch (Exception e)
-                    {
-                        LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-                    }
+
+                    File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
+
                 }
                 catch (XmlException e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                    LogWriter.CreateLogEntry(e, FacilityName);
                 }
             }
 
-        }
-
-        public void CloseReport()
-        {
-            try
-            {
-                pdfDoc.Close();
-
-                File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
-
-                form = null;
-                pdfDoc = null;
-            }
-
-            catch (XmlException e)
-            {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-            }
         }
 
         public void DeleteDatabase()
@@ -228,21 +205,13 @@ namespace RFiDGear.DataAccessLayer
                 {
                     try
                     {
-                        if (form != null)
-                        {
-                            pdfDoc.Close();
-                            form = null;
-                            pdfDoc = null;
-                        }
-
-
                         // Dispose any managed objects
                         // ...
                     }
 
                     catch (XmlException e)
                     {
-                        LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                        LogWriter.CreateLogEntry(e, FacilityName);
                     }
                 }
 

@@ -156,7 +156,7 @@ namespace RFiDGear.ViewModel
 
             if (mifareDesfireUidModel != null)
             {
-                ParentNodeHeader = String.Format(ResourceLoader.GetResource("hirarchicalDataTemplateParentNodeHeaderChipType") + " {1}\nUid: {0}", mifareDesfireUidModel.UID, Enum.GetName(typeof(CARD_TYPE), CardType));
+                ParentNodeHeader = String.Format(ResourceLoader.GetResource("hierarchicalDataTemplateParentNodeHeaderChipType") + " {1}\nUid: {0}", mifareDesfireUidModel.UID, Enum.GetName(typeof(CARD_TYPE), CardType));
             }
         }
 

@@ -252,7 +252,7 @@ namespace RFiDGear.ViewModel
 
         #region Local Commands
 
-        private ICommand GetAddEditCommand => new RelayCommand(OnNewGetAddEditCommand);
+        public ICommand GetAddEditCommand => new RelayCommand(OnNewGetAddEditCommand);
         private void OnNewGetAddEditCommand()
         {
             switch (selectedSetupViewModel)
@@ -1129,7 +1129,7 @@ namespace RFiDGear.ViewModel
 
                             if (GenericChip != null)
                             {
-                                if (GenericChip.CardType == CARD_TYPE.DESFireEV1 || GenericChip.CardType == CARD_TYPE.DESFireEV2)
+                                if (GenericChip.CardType == CARD_TYPE.DESFire || GenericChip.CardType == CARD_TYPE.DESFireEV1 || GenericChip.CardType == CARD_TYPE.DESFireEV2)
                                 {
                                     device.GetMiFareDESFireChipAppIDs();
                                 }
@@ -1281,6 +1281,7 @@ namespace RFiDGear.ViewModel
                                                     if ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                     {
                                                         (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                                        (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
                                                         (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
                                                     }
 

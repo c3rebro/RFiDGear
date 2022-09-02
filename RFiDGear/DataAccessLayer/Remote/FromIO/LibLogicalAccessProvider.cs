@@ -87,7 +87,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                             GenericChip.CardType = CARD_TYPE.DESFireEV3;
                                     }
 
-                                    DesfireChip = new MifareDesfireChipModel(GenericChip);
+                                    DesfireChip = DesfireChip ?? new MifareDesfireChipModel(GenericChip);
 
                                     return ERROR.NoError;
                                 }
