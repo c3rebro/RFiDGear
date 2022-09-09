@@ -131,10 +131,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         public override ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey)
         {
-            var settings = new SettingsReaderWriter();
             Sector = new MifareClassicSectorModel();
-
-            settings.ReadSettings();
 
             var keyA = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(aKey) ? aKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey) };
             var keyB = new MifareKey() { Value = CustomConverter.KeyFormatQuickCheck(bKey) ? bKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey) };
@@ -231,6 +228,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                         }
+
+                        return ERROR.NoError;
                     }
                     catch
                     {
@@ -280,8 +279,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     cmd.WriteBinary(
                                         (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
                                         buffer);
-
-                                    return ERROR.NoError;
                                 }
                                 catch
                                 {
@@ -302,9 +299,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         cmd.WriteBinary(
                                             (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
                                             buffer);
-
-                                        return ERROR.NoError;
-
                                     }
                                     catch
                                     {
@@ -317,6 +311,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                             }
                         }
+
+                        return ERROR.NoError;
                     }
                     catch
                     {
@@ -355,7 +351,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                             cmd.WriteBinary((byte)(_blockNumber), buffer);
 
-                            return ERROR.NoError;
                         }
                         catch
                         { // Try Auth with keytype b
@@ -368,13 +363,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                 cmd.WriteBinary((byte)(_blockNumber), buffer);
 
-                                return ERROR.NoError;
                             }
                             catch
                             {
                                 return ERROR.AuthenticationError;
                             }
                         }
+
+                        return ERROR.NoError;
                     }
                     catch
                     {
@@ -413,7 +409,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                             MifareClassicData = (byte[])cmd.ReadBinary((byte)(_blockNumber), 48);
 
-                            return ERROR.NoError;
                         }
                         catch
                         { // Try Auth with keytype b
@@ -426,13 +421,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                 MifareClassicData = (byte[])cmd.ReadBinary((byte)(_blockNumber), 48);
 
-                                return ERROR.NoError;
                             }
                             catch
                             {
                                 return ERROR.AuthenticationError;
                             }
                         }
+
+                        return ERROR.NoError;
                     }
                     catch
                     {
@@ -510,12 +506,15 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         var cardService = card.GetService(CardServiceType.CST_STORAGE) as StorageCardService;
 
                         cardService.WriteData(mlocation, aiToUse, aiToWrite, buffer, buffer.Length, CardBehavior.CB_AUTOSWITCHAREA);
+
+                        return ERROR.NoError;
                     }
                     catch (Exception e)
                     {
                         LogWriter.CreateLogEntry(e, FacilityName);
                         return ERROR.AuthenticationError;
                     }
+
                 }
                 catch (Exception e)
                 {
@@ -523,7 +522,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 }
             }
 
-            return ERROR.NoError;
+            return ERROR.IOError;
         }
 
         public override ERROR ReadMiFareClassicWithMAD(int madApplicationID, 
@@ -567,13 +566,15 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         var cardService = card.GetService(CardServiceType.CST_STORAGE) as StorageCardService;
 
                         MifareClassicData = (byte[])cardService.ReadData(mlocation, aiToUse, _length, CardBehavior.CB_AUTOSWITCHAREA);
+
+                        return ERROR.NoError;
+
                     }
                     catch (Exception e)
                     {
                         LogWriter.CreateLogEntry(e, FacilityName);
                         return ERROR.AuthenticationError;
                     }
-                    return ERROR.NoError;
                 }
                 catch (Exception e)
                 {
@@ -581,7 +582,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 }
             }
 
-            return ERROR.NoError;
+            return ERROR.IOError;
         }
 
         #endregion mifare classic

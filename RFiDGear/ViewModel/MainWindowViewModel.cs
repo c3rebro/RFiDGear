@@ -60,20 +60,20 @@ namespace RFiDGear.ViewModel
     [ExportViewModel("MainWin")]
     public class MainWindowViewModel : ViewModelBase
     {
-        private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
         private static readonly string FacilityName = "RFiDGear";
-        private static string[] args;
+
+        private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
+        private readonly string[] args;
+        private readonly Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
+        private readonly Updater updater;
 
         private protected MainWindow mw;
-        private readonly Updater updater;
         private protected DatabaseReaderWriter databaseReaderWriter;
         private protected ReportReaderWriter reportReaderWriter;
         private protected DispatcherTimer triggerReadChip;
         private protected DispatcherTimer taskTimeout;
-        private static string reportOutputPath;
-
-        private ChipTaskHandlerModel taskHandler;
-        private Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
+        private protected string reportOutputPath;
+        private protected ChipTaskHandlerModel taskHandler; 
         private protected List<MifareClassicChipModel> mifareClassicUidModels = new List<MifareClassicChipModel>();
         private protected List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
 
