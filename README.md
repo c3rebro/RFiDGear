@@ -2,6 +2,8 @@
 
 RFiDGear: Your essential gear for programming and to re/encode (read - modify - write) rfid tags. Support for batch processing included. 
 
+![](https://messgeraetetechnik-hansen.de/rfidgear/mainWnd.jpg) 
+
 ### [Wiki](https://github.com/c3rebro/RFiDGear/wiki) | [Download](https://github.com/c3rebro/RFiDGear/releases) | [Report Bugs](https://github.com/c3rebro/RFiDGear/issues)
 
 Requirements:
