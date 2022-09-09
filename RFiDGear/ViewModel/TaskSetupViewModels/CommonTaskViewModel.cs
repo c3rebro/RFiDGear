@@ -52,6 +52,8 @@ namespace RFiDGear.ViewModel
         [XmlIgnore]
         public MifareClassicChipModel ClassicChip { get; set; }
 
+        [XmlIgnore]
+        public Dictionary<string, string> Args { get; set; }
         #endregion
 
         #region Constructors
@@ -65,6 +67,7 @@ namespace RFiDGear.ViewModel
 
             checkpoint = new Checkpoint();
             Checkpoints = new ObservableCollection<Checkpoint>();
+            Args = new Dictionary<string, string>();
 
             IsLogicFuncTaskLogicFuncEnabled = true;
             IsLogicFuncTaskCountFuncEnabled = false;
@@ -85,6 +88,7 @@ namespace RFiDGear.ViewModel
 
                 checkpoint = new Checkpoint();
                 Checkpoints = new ObservableCollection<Checkpoint>();
+                Args = new Dictionary<string, string>();
 
                 IsLogicFuncTaskLogicFuncEnabled = true;
                 IsLogicFuncTaskCountFuncEnabled = false;
@@ -818,6 +822,11 @@ namespace RFiDGear.ViewModel
 
                     RaisePropertyChanged("TemplateFields");
                 }
+
+                else
+                {
+                    ReportTemplatePath = string.Empty;
+                }
             }
 
 
@@ -917,6 +926,17 @@ namespace RFiDGear.ViewModel
                                 {
                                     temporaryContent = temporaryContent.Replace("%NEWLINE ", "\n");
                                     temporaryContent = temporaryContent.Replace("%NEWLINE", "\n");
+                                    concatenate = true;
+                                }
+
+                                // the "dollar" indicates an external variable that should be replaced
+                                if(temporaryContent.Contains("$"))
+                                {
+                                    foreach(KeyValuePair<string,string> kvArg in Args)
+                                    {
+                                        temporaryContent = temporaryContent.Replace(kvArg.Key, kvArg.Value);
+                                    }
+                                    
                                     concatenate = true;
                                 }
 

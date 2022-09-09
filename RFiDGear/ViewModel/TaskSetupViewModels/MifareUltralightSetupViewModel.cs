@@ -117,8 +117,9 @@ namespace RFiDGear.ViewModel
                 HasPlugins = items != null ? items.Any() : false;
 
                 if (HasPlugins)
+                {
                     SelectedPlugin = Items.FirstOrDefault();
-
+                }
             }
             catch (Exception e)
             {

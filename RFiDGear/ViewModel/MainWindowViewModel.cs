@@ -40,6 +40,7 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -61,6 +62,7 @@ namespace RFiDGear.ViewModel
     {
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
         private static readonly string FacilityName = "RFiDGear";
+        private static string[] args;
 
         private protected MainWindow mw;
         private readonly Updater updater;
@@ -68,9 +70,10 @@ namespace RFiDGear.ViewModel
         private protected ReportReaderWriter reportReaderWriter;
         private protected DispatcherTimer triggerReadChip;
         private protected DispatcherTimer taskTimeout;
-        private string reportOutputPath;
+        private static string reportOutputPath;
 
         private ChipTaskHandlerModel taskHandler;
+        private Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
         private protected List<MifareClassicChipModel> mifareClassicUidModels = new List<MifareClassicChipModel>();
         private protected List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
 
@@ -99,7 +102,7 @@ namespace RFiDGear.ViewModel
             RunMutex(this, null);
 
             bool autoLoadLastUsedDB;
-            string[] args = Environment.GetCommandLineArgs();
+            args = Environment.GetCommandLineArgs();
             updater = new Updater();
 
             using (SettingsReaderWriter settings = new SettingsReaderWriter())
@@ -119,15 +122,6 @@ namespace RFiDGear.ViewModel
                 if (settings.DefaultSpecification.AutoCheckForUpdates)
                 {
                     updater?.StartMonitoring();
-                }
-
-                if (args.Length == 2)
-                {
-                    if (File.Exists(args[1]))
-                    {
-                        settings.DefaultSpecification.LastUsedProjectPath = args[1];
-                        settings.SaveSettings();
-                    }
                 }
             }
 
@@ -210,6 +204,12 @@ namespace RFiDGear.ViewModel
             {
                 Header = ResourceLoader.GetResource("contextMenuItemExecuteAllItems"),
                 Command = WriteToChipOnceCommand
+            });
+
+            rowContextMenuItems.Add(new MenuItem()
+            {
+                Header = ResourceLoader.GetResource("contextMenuItemResetReportPath"),
+                Command = ResetReportTaskDirectoryCommand
             });
 
             emptySpaceTreeViewContextMenu.Add(new MenuItem()
@@ -970,8 +970,6 @@ namespace RFiDGear.ViewModel
                 {
                     case CommonTaskViewModel ssVM:
                         ssVM.IsTaskCompletedSuccessfully = null;
-                        reportOutputPath = null;
-                        reportReaderWriter = null;
                         ssVM.CurrentTaskErrorLevel = ERROR.Empty;
                         break;
                     case GenericChipTaskViewModel ssVM:
@@ -994,6 +992,24 @@ namespace RFiDGear.ViewModel
             }
         }
 
+        /// <summary>
+        /// Reset all Reporttasks directory information
+        /// </summary>
+        public ICommand ResetReportTaskDirectoryCommand => new RelayCommand(OnNewResetReportTaskDirectoryCommand);
+        private void OnNewResetReportTaskDirectoryCommand()
+        {
+            foreach (object chipTask in taskHandler.TaskCollection)
+            {
+                switch (chipTask)
+                {
+                    case CommonTaskViewModel ssVM:
+                        ssVM.IsTaskCompletedSuccessfully = null;
+                        reportOutputPath = null;
+                        ssVM.CurrentTaskErrorLevel = ERROR.Empty;
+                        break;
+                }
+            }
+        }
 
         /// <summary>
         /// Reset selected Task status information
@@ -1187,6 +1203,11 @@ namespace RFiDGear.ViewModel
                                                     taskTimeout.Start();
                                                     taskTimeout.Stop();
 
+                                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).GenericChip = device.GenericChip;
+                                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
+                                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
+                                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).Args = variablesFromArgs;
+
                                                     if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                     {
                                                         if (string.IsNullOrEmpty(reportOutputPath))
@@ -1210,9 +1231,6 @@ namespace RFiDGear.ViewModel
 
                                                         reportReaderWriter.ReportOutputPath = reportOutputPath;
 
-                                                        (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).GenericChip = device.GenericChip;
-                                                        (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
-                                                        (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
                                                         (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
                                                     }
 
@@ -1244,9 +1262,6 @@ namespace RFiDGear.ViewModel
 
                                                                 reportReaderWriter.ReportOutputPath = reportOutputPath;
 
-                                                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).GenericChip = device.GenericChip;
-                                                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
-                                                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
                                                                 (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
                                                             }
                                                             else
@@ -1711,6 +1726,29 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
+        public ICommand ShowHelpCommand { get { return new RelayCommand(OnNewShowHelpCommand); } }
+        private void OnNewShowHelpCommand()
+        {
+            var q = from p in Process.GetProcesses() where ContainsAny(p.MainWindowTitle, new string[] { "Help", "Hilfe" }) select p;
+
+            using (SettingsReaderWriter settingsReaderWriter = new SettingsReaderWriter())
+            {
+                if (!q.Any())
+                {
+                    string pathToHelpFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, settingsReaderWriter.DefaultSpecification.DefaultLanguage == "german" ? "RFiDGear_de.chm" : "RFiDGear_en.chm");
+                    if (File.Exists(pathToHelpFile))
+                    {
+                        ProcessStartInfo startInfo = new ProcessStartInfo(pathToHelpFile);
+                        Process.Start(startInfo);
+                    }
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public ICommand CloseApplication => new RelayCommand(OnCloseRequest);
         private void OnCloseRequest()
         {
@@ -1984,11 +2022,6 @@ namespace RFiDGear.ViewModel
 
         private void LoadCompleted(object sender, EventArgs e)
         {
-            if (updateAvailable)
-            {
-                AskForUpdateNow();
-            }
-
             mw = (MainWindow)Application.Current.MainWindow;
             mw.Title = string.Format("RFiDGear {0}.{1}", Version.Major, Version.Minor);
 
@@ -2005,6 +2038,26 @@ namespace RFiDGear.ViewModel
 
                     using (SettingsReaderWriter settings = new SettingsReaderWriter())
                     {
+                        if (args.Length > 1)
+                        {
+                            foreach (string arg in args)
+                            {
+                                switch (arg.Split('=')[0])
+                                {
+                                    case "LASTUSEDPROJECTPATH":
+                                        if (File.Exists(arg.Split('=')[1]))
+                                        {
+                                            settings.DefaultSpecification.LastUsedProjectPath = new DirectoryInfo(arg.Split('=')[1]).FullName;
+                                            settings.SaveSettings();
+                                        }
+                                        break;
+
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                        
                         CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
                             ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                             : settings.DefaultSpecification.DefaultReaderName;
@@ -2054,13 +2107,54 @@ namespace RFiDGear.ViewModel
 
                         OnNewResetTaskStatusCommand();
                     }
+
+                    using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                    {
+                        if (args.Length > 1)
+                        {
+                            foreach (string arg in args)
+                            {
+                                switch (arg.Split('=')[0])
+                                {
+                                    case "REPORTTARGETPATH":
+                                        if (Directory.Exists(Path.GetDirectoryName(arg.Split('=')[1])))
+                                        {
+                                            reportOutputPath = arg.Split('=')[1];
+                                        }
+                                        break;
+
+                                    case "AUTORUN":
+                                        if (arg.Split('=')[1] == "1")
+                                        {
+                                            OnNewWriteToChipOnceCommand();
+                                        }
+                                        break;
+
+                                    default:
+                                        if (arg.Split('=')[0].Contains("$"))
+                                        {
+                                            variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
+                                        }
+                                        break;
+                                }
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
                     LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""), FacilityName);
                 }
             }
-            #endregion
+
+            if (updateAvailable)
+            {
+                AskForUpdateNow();
+            }
         }
+
+        private bool ContainsAny(string haystack, params string[] needles) { return needles.Any(haystack.Contains); }
+        
+        #endregion
     }
 }

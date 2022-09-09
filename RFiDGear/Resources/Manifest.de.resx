@@ -1388,4 +1388,7 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="windowCaptionAddEditGenericChipTask" xml:space="preserve">
     <value>Typunabhängige RFiD Aufgabe erstellen / bearbeiten</value>
   </data>
+  <data name="contextMenuItemResetReportPath" xml:space="preserve">
+    <value>Alle Berichtausgabepfade zurücksetzen</value>
+  </data>
 </root>

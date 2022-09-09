@@ -6,7 +6,7 @@ using System;
 namespace RFiDGear.Model
 {
     /// <summary>
-    /// Description of chipUid.
+    /// Description of chipUID.
     /// </summary>
     public class MifareDesfireChipModel : GenericChipModel
     {
@@ -48,7 +48,6 @@ namespace RFiDGear.Model
             CardType = genericChip.CardType;
         }
 
-        //TODO: Clean this Mess up: Generic Chip should not have a "free memory" property
         public uint FreeMemory { get; set; }
     }
 }

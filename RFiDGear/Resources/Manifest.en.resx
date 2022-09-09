@@ -1366,4 +1366,7 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="windowCaptionAddEditGenericChipTask" xml:space="preserve">
     <value>Add / Edit Generic RFiD Task</value>
   </data>
+  <data name="contextMenuItemResetReportPath" xml:space="preserve">
+    <value>Reset All Report Paths</value>
+  </data>
 </root>

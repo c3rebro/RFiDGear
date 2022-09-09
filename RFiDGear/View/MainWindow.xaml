@@ -534,7 +534,7 @@
                     VerticalAlignment="Top"
                     VerticalContentAlignment="Center"
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}">
-
+                    <MenuItem Command="{Binding ShowHelpCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}" />
                     <MenuItem Command="{Binding NewAboutDialogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemAboutHeader'}" />
                 </MenuItem>
                 <!--  Help  -->
