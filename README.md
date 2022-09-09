@@ -1,6 +1,6 @@
 ![](https://messgeraetetechnik-hansen.de/rfidgear/logoRG.png) 
 
-RFiDGear: Your essential gear for programming and to re/encode (read - modify - write) rfid tags. Support for batch processing included. 
+RFiDGear: Your essential gear to encode (read - modify - write) rfid tags. Support for batch processing included. 
 
 ![](https://messgeraetetechnik-hansen.de/rfidgear/mainWnd.jpg) 
 
