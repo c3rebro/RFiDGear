@@ -29,13 +29,12 @@ namespace RFiDGear
         private readonly string _infoText = "Version Info\n\ngoes here! \n==>";
         private readonly string _baseUri = @"https://github.com/c3rebro/RFiDGear/releases/latest/download/";
 
+        private readonly XmlWriter xmlWriter;
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
         private readonly string appDataPath;
 
         private bool _disposed;
-
-        private XmlWriter xmlWriter;
 
         public DefaultSpecification DefaultSpecification
         {
@@ -139,10 +138,19 @@ namespace RFiDGear
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public bool ReadSettings()
+        {
+            return ReadSettings("");
+        }
+
+        /// <summary>
         ///
         /// </summary>
         /// <returns></returns>
-        public bool ReadSettings(string _fileName = "")
+        public bool ReadSettings(string _fileName)
         {
             TextReader reader;
             int verInfo;

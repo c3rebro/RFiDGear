@@ -27,14 +27,14 @@ namespace RedCell.Diagnostics.Update
         /// <summary>
         /// The default check interval
         /// </summary>
-        public const int DefaultCheckInterval = 900; // 900s == 15 min
+        public static readonly int DefaultCheckInterval = 900; // 900s == 15 min
 
         /// <summary>
         /// The default configuration file
         /// </summary>
-        public const string DefaultConfigFile = "update.xml";
+        public static readonly string DefaultConfigFile = "update.xml";
 
-        public const string WorkPath = "work";
+        public static readonly string WorkPath = "work";
         #endregion
 
         #region Fields

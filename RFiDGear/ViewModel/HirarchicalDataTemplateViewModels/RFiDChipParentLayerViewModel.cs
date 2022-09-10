@@ -823,7 +823,7 @@ namespace RFiDGear.ViewModel
 
                     _children.Add(
                             new RFiDChipChildLayerViewModel(
-                                new MifareUltralightPageModel(new byte[4], 0), this, CARD_TYPE.MifarePlus_SL3_1K, dialogs));
+                                new MifareClassicSectorModel(0), this, CardType, dialogs));
                     break;
 
                 default:

@@ -15,8 +15,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
     public class ElatecNetProvider : ReaderDevice, IDisposable
     {
-        private string FacilityName = "RFiDGear";
-        private TWN4ReaderDevice readerDevice;
+        private static readonly string FacilityName = "RFiDGear";
+
+        private readonly TWN4ReaderDevice readerDevice;
+
         private ChipModel card;
         private bool _disposed;
 
@@ -182,11 +184,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             throw new NotImplementedException();
         }
-        public override ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0)
+        public override ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
             throw new NotImplementedException();
         }
-        public override ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
+        public override ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
         {
             throw new NotImplementedException();
         }
@@ -202,11 +204,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             throw new NotImplementedException();
         }
-        public override ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
+        public override ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID)
         {
             throw new NotImplementedException();
         }
-        public override ERROR DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0)
+        public override ERROR DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID, int _fileID)
         {
             throw new NotImplementedException();
         }
@@ -214,11 +216,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             throw new NotImplementedException();
         }
-        public override ERROR GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
+        public override ERROR GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
         {
             throw new NotImplementedException();
         }
-        public override ERROR GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0)
+        public override ERROR GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID, int _fileNo)
         {
             throw new NotImplementedException();
         }

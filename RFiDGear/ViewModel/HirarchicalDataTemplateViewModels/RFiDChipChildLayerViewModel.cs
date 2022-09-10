@@ -49,8 +49,34 @@ namespace RFiDGear.ViewModel
             MifareClassicSectorModel _sectorModel,
             RFiDChipParentLayerViewModel parent,
             CARD_TYPE cardType,
-            ObservableCollection<IDialogViewModel> _dialogs = null,
-            bool? _isTask = null)
+            ObservableCollection<IDialogViewModel> _dialogs) : this(_sectorModel, parent, cardType, _dialogs, false)
+        {
+
+        }
+
+        public RFiDChipChildLayerViewModel(
+            MifareDesfireAppModel appID,
+            RFiDChipParentLayerViewModel parent,
+            CARD_TYPE cardType,
+            ObservableCollection<IDialogViewModel> _dialogs) : this(appID, parent, cardType, _dialogs, false)
+        {
+
+        }
+
+        public RFiDChipChildLayerViewModel(
+            MifareUltralightPageModel _pageModel,
+            RFiDChipParentLayerViewModel parentUID,
+            CARD_TYPE cardType,
+            ObservableCollection<IDialogViewModel> _dialogs) : this(_pageModel, parentUID, cardType, _dialogs, false)
+        {
+
+        }
+        public RFiDChipChildLayerViewModel(
+            MifareClassicSectorModel _sectorModel,
+            RFiDChipParentLayerViewModel parent,
+            CARD_TYPE cardType,
+            ObservableCollection<IDialogViewModel> _dialogs,
+            bool? _isTask)
         {
             if (_dialogs != null)
             {
@@ -90,8 +116,8 @@ namespace RFiDGear.ViewModel
             MifareDesfireAppModel appID,
             RFiDChipParentLayerViewModel parentUID,
             CARD_TYPE cardType,
-            ObservableCollection<IDialogViewModel> _dialogs = null,
-            bool? _isTask = null)
+            ObservableCollection<IDialogViewModel> _dialogs,
+            bool? _isTask)
         {
             if (_dialogs != null)
             {
@@ -131,8 +157,8 @@ namespace RFiDGear.ViewModel
             MifareUltralightPageModel _pageModel,
             RFiDChipParentLayerViewModel parentUID,
             CARD_TYPE cardType,
-            ObservableCollection<IDialogViewModel> _dialogs = null,
-            bool? _isTask = null)
+            ObservableCollection<IDialogViewModel> _dialogs,
+            bool? _isTask)
         {
             if (_dialogs != null)
             {

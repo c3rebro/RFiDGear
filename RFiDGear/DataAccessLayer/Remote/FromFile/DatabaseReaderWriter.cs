@@ -194,7 +194,7 @@ namespace RFiDGear.DataAccessLayer
             return false;
         }
 
-        public void WriteDatabase(ObservableCollection<RFiDChipParentLayerViewModel> objModel, string _path = "")
+        public void WriteDatabase(ObservableCollection<RFiDChipParentLayerViewModel> objModel, string _path)
         {
             ZipFile zip = new ZipFile();
 

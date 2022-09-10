@@ -180,11 +180,15 @@ namespace RFiDGear.Model
             Write_KeyB = _writeKeyB;
         }
 
+        public MifareClassicSectorModel(int _sectorNumber) : this(_sectorNumber, "ff ff ff ff ff ff", "FF0780C3" , "ff ff ff ff ff ff")
+        {
+        }
+
         public MifareClassicSectorModel(
-            int _sectorNumber,
-            string _keyA = "ff ff ff ff ff ff", // optional parameter: if not specified use transport configuration
-            string _accessBitsAsString = "FF0780C3", // optional parameter: if not specified use transport configuration
-            string _keyB = "ff ff ff ff ff ff") // optional parameter: if not specified use transport configuration
+        int _sectorNumber,
+        string _keyA, 
+        string _accessBitsAsString, 
+        string _keyB)
         {
             DataBlock = new ObservableCollection<MifareClassicDataBlockModel>();
 
