@@ -24,7 +24,7 @@ namespace RFiDGear.Model
     [XmlInclude(typeof(GenericChipTaskViewModel))]
     public class ChipTaskHandlerModel : ViewModelBase
     {
-        private Version Version = Assembly.GetExecutingAssembly().GetName().Version;
+        private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
         public ChipTaskHandlerModel()
         {
@@ -32,7 +32,7 @@ namespace RFiDGear.Model
             ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
         }
 
-        public Type GetTaskType(int _index = 0) { return (TaskCollection != null && TaskCollection.Count > 0) ? TaskCollection[_index].GetType() : null; }
+        public Type GetTaskType(int _index) { return (TaskCollection != null && TaskCollection.Count > 0) ? TaskCollection[_index].GetType() : null; }
         public Type GetTaskType(object _object) { return (TaskCollection != null && TaskCollection.Count > 0) ? TaskCollection[TaskCollection.IndexOf(_object)].GetType() : null; }
 
         /// <summary>

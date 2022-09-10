@@ -20,7 +20,7 @@ namespace RFiDGear.Model
         {
         }
 
-        public MifareClassicMADModel(byte[] _cardContent, int _madAppId = 0)
+        public MifareClassicMADModel(byte[] _cardContent, int _madAppId)
         {
             Data = _cardContent;
             MADApp = _madAppId;

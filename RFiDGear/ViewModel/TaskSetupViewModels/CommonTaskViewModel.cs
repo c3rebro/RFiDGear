@@ -1402,6 +1402,9 @@ namespace RFiDGear.ViewModel
                                 result = ERROR.IsNotTrue;
 
                                 break;
+
+                            default:
+                                break;
                         }
 
                         CurrentTaskErrorLevel = result;

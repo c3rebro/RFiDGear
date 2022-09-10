@@ -39,7 +39,7 @@ namespace RFiDGear.ViewModel
 
         private readonly string FacilityName = "RFiDGear";
 
-        private ObservableCollection<MifareClassicDataBlockAccessConditionModel> dataBlock_AccessBits = new ObservableCollection<MifareClassicDataBlockAccessConditionModel>
+        private readonly ObservableCollection<MifareClassicDataBlockAccessConditionModel> dataBlock_AccessBits = new ObservableCollection<MifareClassicDataBlockAccessConditionModel>
             (new[]
              {
                  new MifareClassicDataBlockAccessConditionModel(0,
@@ -99,7 +99,7 @@ namespace RFiDGear.ViewModel
                                                  AccessCondition_MifareClassicSectorTrailer.NotAllowed)
              });
 
-        private ObservableCollection<MifareClassicSectorAccessConditionModel> sectorTrailer_AccessBits = new ObservableCollection<MifareClassicSectorAccessConditionModel>
+        private readonly ObservableCollection<MifareClassicSectorAccessConditionModel> sectorTrailer_AccessBits = new ObservableCollection<MifareClassicSectorAccessConditionModel>
             (new[]
              {
                  new MifareClassicSectorAccessConditionModel(0,
@@ -169,7 +169,7 @@ namespace RFiDGear.ViewModel
 
         private MifareClassicSectorModel sectorModel;
 
-        private SettingsReaderWriter settings = new SettingsReaderWriter();
+        private readonly SettingsReaderWriter settings = new SettingsReaderWriter();
 
         private byte madGPB = 0xC1;
 
