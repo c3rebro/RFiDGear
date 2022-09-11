@@ -104,10 +104,11 @@ namespace RFiDGear.ViewModel
 
             bool autoLoadLastUsedDB;
             args = Environment.GetCommandLineArgs();
-            updater = new Updater();
 
             using (SettingsReaderWriter settings = new SettingsReaderWriter())
             {
+                updater = new Updater();
+
                 CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
                     ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                     : settings.DefaultSpecification.DefaultReaderName;
