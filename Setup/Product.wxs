@@ -198,15 +198,9 @@
             <Component Id="ElatecNetDll" Guid="40A4332E-04AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="Elatec.NET.dll" Name="Elatec.NET.dll" Source="..\RFiDGear\bin\Release\Elatec.NET.dll" KeyPath="yes" />
             </Component>
-						<Component Id="GalaSoftMvvmLightDll" Guid="40A4382E-00AA-479A-923F-0B45401700BB" DiskId="1">
-							<File Id="GalaSoft.MvvmLight.dll" Name="GalaSoft.MvvmLight.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.dll" KeyPath="yes" />
+						<Component Id="CommunityToolkitMvvmDll" Guid="40A4382E-00AA-479A-923F-0B45401700BB" DiskId="1">
+							<File Id="CommunityToolkit.Mvvm.dll" Name="CommunityToolkit.Mvvm.dll" Source="..\RFiDGear\bin\Release\CommunityToolkit.Mvvm.dll" KeyPath="yes" />
 						</Component>
-            <Component Id="GalaSoftMvvmLightExtrasDll" Guid="551D382E-00AA-479A-923F-0B45401700BB" DiskId="1">
-              <File Id="GalaSoft.MvvmLight.Extras.dll" Name="GalaSoft.MvvmLight.Extras.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.Extras.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="GalaSoftMvvmLightPlatformDll" Guid="FF09382E-00AA-479A-923F-0B45401700BB" DiskId="1">
-              <File Id="GalaSoft.MvvmLight.Platform.dll" Name="GalaSoft.MvvmLight.Platform.dll" Source="..\RFiDGear\bin\Release\GalaSoft.MvvmLight.Platform.dll" KeyPath="yes" />
-            </Component>
             <Component Id="InteropLibLogicalAccessDll" Guid="266E1A03-2C6B-444E-8017-1DBE01B19B24" DiskId="1">
               <File Id="Interop.LibLogicalAccess.dll" Name="Interop.LibLogicalAccess.dll" Source="..\RFiDGear\bin\Release\Interop.LibLogicalAccess.dll" KeyPath="yes" />
             </Component>
@@ -276,9 +270,11 @@
             <Component Id="PluginSystemDll" Guid="B6782BE0-4826-4FDD-AAF0-5660ECAAE6AA" DiskId="1">
               <File Id="PluginSystem.dll" Name="PluginSystem.dll" Source="..\RFiDGear\bin\Release\PluginSystem.dll" KeyPath="yes" />
             </Component>
-
             <Component Id="SystemBuffersDll" Guid="40A4FCFC-06AA-479A-923F-1FBA401700BB" DiskId="1">
               <File Id="System.Buffers.dll" Name="System.Buffers.dll" Source="..\RFiDGear\bin\Release\System.Buffers.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="SystemComponentModelAnnotationsDll" Guid="551D382E-00AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="System.ComponentModel.Annotations.dll" Name="System.ComponentModel.Annotations.dll" Source="..\RFiDGear\bin\Release\System.ComponentModel.Annotations.dll" KeyPath="yes" />
             </Component>
             <Component Id="SystemDiagnosticsDiagnosticSourceDll" Guid="40A4FCFC-06AA-479A-923F-0B451C8700BB" DiskId="1">
               <File Id="System.Diagnostics.DiagnosticSource.dll" Name="System.Diagnostics.DiagnosticSource.dll" Source="..\RFiDGear\bin\Release\System.Diagnostics.DiagnosticSource.dll" KeyPath="yes" />
@@ -298,16 +294,18 @@
             <Component Id="SystemValueTupleDll" Guid="40A4FCFC-06AA-EEDE-923F-0B45401700BB" DiskId="1">
               <File Id="System.ValueTuple.dll" Name="System.ValueTuple.dll" Source="..\RFiDGear\bin\Release\System.ValueTuple.dll" KeyPath="yes" />
             </Component>
-            
+            <Component Id="RFiDGearDeChm" Guid="FF09382E-00AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="RFiDGear_de.chm" Name="RFiDGear_de.chm" Source="..\RFiDGear\bin\Release\RFiDGear_de.chm" KeyPath="yes" />
+            </Component>
+            <Component Id="RFiDGearEnChm" Guid="FF09382E-00AA-479A-AB41-0B45401700BB" DiskId="1">
+              <File Id="RFiDGear_en.chm" Name="RFiDGear_en.chm" Source="..\RFiDGear\bin\Release\RFiDGear_en.chm" KeyPath="yes" />
+            </Component>
 						<Component Id="RFiDGearExe" Guid="08A86D18-98BA-486E-BC08-42079879AE51" DiskId="1">
 							<File Id="RFiDGear.exe" Name="RFiDGear.exe" Source="..\RFiDGear\bin\Release\RFiDGear.exe" KeyPath="yes" />
 							<Shortcut Id="ExeShortcut" Directory="ProgramMenuFolder" Name="RFiDGear" Advertise="yes" Icon="StartMenuIcon.exe" IconIndex="0" />
 						</Component>
 						<Component Id="RFiDGearexeConfig" Guid="3C27CBCF-FE57-4F75-B77D-09899C143820" DiskId="1">
 							<File Id="RFiDGear.exe.config" Name="RFiDGear.exe.config" Source="..\RFiDGear\bin\Release\RFiDGear.exe.config" KeyPath="yes" />
-						</Component>
-						<Component Id="SystemWindowsInteractivityDll" Guid="8B273297-D912-41FB-B9BB-869932B3E6B8" DiskId="1">
-							<File Id="System.Windows.Interactivity.dll" Name="System.Windows.Interactivity.dll" Source="..\RFiDGear\bin\Release\System.Windows.Interactivity.dll" KeyPath="yes" />
 						</Component>
 						<Directory Id="de" Name="de">
 							<Component Id="RFiDGearresourcesDll" Guid="FE7313B1-B080-42C2-8168-AD360BC920B9" DiskId="1">
@@ -340,17 +338,14 @@
 							<Component Id="VCNEditorDll" Guid="DF58305F-6D10-49D0-865E-F0DC41224925" DiskId="1">
 								<File Id="VCNEditor.dll" Name="VCNEditor.dll" Source="..\..\VCNEditor\bin\Release\VCNEditor.dll" KeyPath="yes" />
 							</Component>
-							<Component Id="ReleaseGalaSoftMvvmLightDll" Guid="3F4A8963-C15E-449B-B701-CC7A680CAB6E" DiskId="1">
-								<File Id="Release.GalaSoft.MvvmLight.dll" Name="GalaSoft.MvvmLight.dll" Source="..\..\VCNEditor\bin\Release\GalaSoft.MvvmLight.dll" KeyPath="yes" />
+							<Component Id="CommunityToolkitMvvmExtDll" Guid="3F4A8963-C15E-449B-B701-CC7A680CAB6E" DiskId="1">
+								<File Id="CommunityToolkitExt.Mvvm.dll" Name="CommunityToolkit.Mvvm.dll" Source="..\..\VCNEditor\bin\Release\CommunityToolkit.Mvvm.dll" KeyPath="yes" />
 							</Component>
-							<Component Id="ReleaseMVVMDialogsDll" Guid="5118101C-03AA-4014-A620-513D2E581042" DiskId="1">
-								<File Id="Release.MVVMDialogs.dll" Name="MVVMDialogs.dll" Source="..\..\VCNEditor\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
+							<Component Id="MVVMDialogsExtDll" Guid="5118101C-03AA-4014-A620-513D2E581042" DiskId="1">
+								<File Id="MVVMDialogsExt.dll" Name="MVVMDialogs.dll" Source="..\..\VCNEditor\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
 							</Component>
-							<Component Id="ReleasePluginSystemDll" Guid="AF8C7A46-7867-47C5-9D02-533D7808B48F" DiskId="1">
-								<File Id="Release.PluginSystem.dll" Name="PluginSystem.dll" Source="..\..\VCNEditor\bin\Release\PluginSystem.dll" KeyPath="yes" />
-							</Component>
-							<Component Id="ReleaseSystemWindowsInteractivityDll" Guid="D87D399C-EC03-4B71-BE10-C7E8477D6325" DiskId="1">
-								<File Id="Release.System.Windows.Interactivity.dll" Name="System.Windows.Interactivity.dll" Source="..\..\VCNEditor\bin\Release\System.Windows.Interactivity.dll" KeyPath="yes" />
+							<Component Id="PluginSystemExtDll" Guid="AF8C7A46-7867-47C5-9D02-533D7808B48F" DiskId="1">
+								<File Id="PluginSystemExt.dll" Name="PluginSystem.dll" Source="..\..\VCNEditor\bin\Release\PluginSystem.dll" KeyPath="yes" />
 							</Component>
 							<Directory Id="de_DE" Name="de-DE">
 								<Component Id="VCNEditorresourcesDll" Guid="7748ED31-8581-46D7-9D72-49631DF34E8C" DiskId="1">
@@ -391,15 +386,14 @@
 		<Feature Id="Complete" Title="!(loc.ApplicationName)" Description="!(loc.FeatureCompleteDescription)" Display="expand" Level="1" ConfigurableDirectory="INSTALLDIR">
 			<!-- A feature block for the main (GUI) program and all its dependencies -->
 			<Feature Id="MainProgram" Title="!(loc.FeatureMainProgramTitle)" Description="!(loc.FeatureMainProgramDescription)" Level="1">
+
         <ComponentRef Id="BouncyCastleCryptoDll"/>
         <ComponentRef Id="ByteArrayDll"/>
-        <ComponentRef Id="CommonLoggingDll" />
         <ComponentRef Id="CommonLoggingCoreDll" />
+        <ComponentRef Id="CommonLoggingDll" />
         <ComponentRef Id="CommonServiceLocatorDll" />
+				<ComponentRef Id="CommunityToolkitMvvmDll" />
         <ComponentRef Id="ElatecNetDll"/>
-				<ComponentRef Id="GalaSoftMvvmLightExtrasDll" />
-        <ComponentRef Id="GalaSoftMvvmLightPlatformDll" />
-        <ComponentRef Id="GalaSoftMvvmLightDll" />
 				<ComponentRef Id="InteropLibLogicalAccessDll" />
 				<ComponentRef Id="IonicZipDll" />
         <ComponentRef Id="ITextBarcodesDll" /> 
@@ -421,29 +415,23 @@
         <ComponentRef Id="MicrosoftExtensionsOptionsDll" />
         <ComponentRef Id="MicrosoftExtensionsPrimitivesDll" />   
         <ComponentRef Id="MVVMDialogsDll" />
-
         <ComponentRef Id="NewtonsoftJsonDll" />
-        
         <ComponentRef Id="PluginSystemDll" />
-
         <ComponentRef Id="SystemBuffersDll" />
+        <ComponentRef Id="SystemComponentModelAnnotationsDll" />
         <ComponentRef Id="SystemDiagnosticsDiagnosticSourceDll" />
         <ComponentRef Id="SystemMemoryDll" />
         <ComponentRef Id="SystemNumericsVectorsDll" />
         <ComponentRef Id="SystemRuntimeCompilerServicesUnsafeDll" />
         <ComponentRef Id="SystemThreadingTasksExtensionsDll" />
         <ComponentRef Id="SystemValueTupleDll" />
-        <ComponentRef Id="SystemWindowsInteractivityDll" />
         
+        <ComponentRef Id="RFiDGearDeChm" />
+        <ComponentRef Id="RFiDGearEnChm" />
 				<ComponentRef Id="RFiDGearExe" />
-				<ComponentRef Id="RFiDGearexeConfig" />
-        
+				<ComponentRef Id="RFiDGearexeConfig" />      
 				<ComponentRef Id="RFiDGearresourcesDll" />
 				<ComponentRef Id="EnRFiDGearresourcesDll" />
-        <ComponentRef Id="ReleaseGalaSoftMvvmLightDll" />
-        <ComponentRef Id="ReleaseMVVMDialogsDll" />
-        <ComponentRef Id="ReleasePluginSystemDll" />
-        <ComponentRef Id="ReleaseSystemWindowsInteractivityDll" />
         
 				<ComponentRef Id="RegValInstallLocation_comp" />
 			</Feature>
@@ -456,6 +444,9 @@
 				<!--<ComponentRef Id="RFiDGearProgramDataFolder" />-->
 				<ComponentRef Id="VCNEditorDll" />
         <ComponentRef Id="ByteArrayExtDll"/>
+        <ComponentRef Id="PluginSystemExtDll"/>
+        <ComponentRef Id="CommunityToolkitMvvmExtDll" />
+        <ComponentRef Id="MVVMDialogsExtDll" />
 				<ComponentRef Id="En_USVCNEditorresourcesDll" />
 				<ComponentRef Id="VCNEditorresourcesDll" />
 			</Feature>

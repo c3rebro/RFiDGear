@@ -119,11 +119,6 @@ namespace RFiDGear.ViewModel
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
                 autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
-
-                if (settings.DefaultSpecification.AutoCheckForUpdates)
-                {
-                    updater?.StartMonitoring();
-                }
             }
 
             triggerReadChip = new DispatcherTimer
@@ -2146,6 +2141,14 @@ namespace RFiDGear.ViewModel
                 catch (Exception ex)
                 {
                     LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""), FacilityName);
+                }
+
+                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                {
+                    if (settings.DefaultSpecification.AutoCheckForUpdates)
+                    {
+                        updater?.StartMonitoring();
+                    }
                 }
             }
 

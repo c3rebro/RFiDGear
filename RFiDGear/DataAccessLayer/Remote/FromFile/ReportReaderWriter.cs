@@ -1,12 +1,7 @@
 ﻿using iText.Forms;
 using iText.Forms.Fields;
-using iText.IO.Source;
-using iText.Kernel.Geom;
 using iText.Kernel.Pdf;
 using iText.Kernel.Colors;
-
-using RFiDGear.Model;
-using RFiDGear.ViewModel;
 
 using Log4CSharp;
 
@@ -15,9 +10,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using System.Xml;
-using System.Xml.Serialization;
 
 namespace RFiDGear.DataAccessLayer
 {
