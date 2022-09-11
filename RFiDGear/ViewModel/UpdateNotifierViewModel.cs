@@ -5,8 +5,8 @@
  *
  */
 
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MvvmDialogs.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of SetupDialogBoxViewModel.
     /// </summary>
-    public class UpdateNotifierViewModel : ViewModelBase, IUserDialogViewModel
+    public class UpdateNotifierViewModel : ObservableObject, IUserDialogViewModel
     {
         public UpdateNotifierViewModel()
         {
@@ -69,7 +69,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 updateHistoryText = value;
-                RaisePropertyChanged("UpdateHistoryText");
+                OnPropertyChanged(nameof(UpdateHistoryText));
             }
         }
         private string updateHistoryText;
@@ -124,7 +124,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _Caption = value;
-                RaisePropertyChanged(() => Caption);
+                OnPropertyChanged(nameof(Caption));
             }
         }
 

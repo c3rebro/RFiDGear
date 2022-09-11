@@ -5,8 +5,8 @@
  *
  */
 
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MvvmDialogs.ViewModels;
 using RFiDGear.DataAccessLayer;
 using System;
@@ -18,7 +18,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of SetupDialogBoxViewModel.
     /// </summary>
-    public class SplashScreenViewModel : ViewModelBase, IUserDialogViewModel
+    public class SplashScreenViewModel : ObservableObject, IUserDialogViewModel
     {
         public SplashScreenViewModel()
         {
@@ -74,7 +74,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _Caption = value;
-                RaisePropertyChanged(() => Caption);
+                OnPropertyChanged(nameof(Caption));
             }
         }
 

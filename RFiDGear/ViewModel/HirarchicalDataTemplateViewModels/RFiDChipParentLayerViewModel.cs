@@ -1,6 +1,6 @@
 ﻿using ByteArrayHelper.Extensions;
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using MvvmDialogs.ViewModels;
 
@@ -22,7 +22,7 @@ namespace RFiDGear.ViewModel
     /// Description of MifareClassic1KContentViewModel.
     /// </summary>
     [XmlRootAttribute("TreeViewParentNode", IsNullable = false)]
-    public class RFiDChipParentLayerViewModel : ViewModelBase
+    public class RFiDChipParentLayerViewModel : ObservableObject
     {
         private readonly SettingsReaderWriter settings;
 
@@ -520,7 +520,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _children = value;
-                RaisePropertyChanged("Children");
+                OnPropertyChanged(nameof(Children));
             }
         }
 
@@ -539,7 +539,7 @@ namespace RFiDGear.ViewModel
                 if (_selectedItem != value)
                 {
                     _selectedItem = value;
-                    RaisePropertyChanged("SelectedItem");
+                    OnPropertyChanged(nameof(SelectedItem));
                 }
             }
         }
@@ -557,7 +557,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 parentNodeHeader = value;
-                RaisePropertyChanged("ParentNodeHeader");
+                OnPropertyChanged(nameof(ParentNodeHeader));
             }
         }
         private string parentNodeHeader;
@@ -627,7 +627,7 @@ namespace RFiDGear.ViewModel
                     genericChip.CardType = value;
                 }
 
-                RaisePropertyChanged("CardType");
+                OnPropertyChanged(nameof(CardType));
             }
         }
 
@@ -644,7 +644,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _isExpanded = value;
-                RaisePropertyChanged("IsExpanded");
+                OnPropertyChanged(nameof(IsExpanded));
             }
         }
 
@@ -659,7 +659,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _isSelected = value;
-                RaisePropertyChanged("IsSelected");
+                OnPropertyChanged(nameof(IsSelected));
             }
         }
 
@@ -685,7 +685,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isProgrammingCompletedSuccessfully = value;
-                RaisePropertyChanged("IsProgrammingCompletedSuccessfully");
+                OnPropertyChanged(nameof(IsProgrammingCompletedSuccessfully));
             }
         }
 
@@ -700,7 +700,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isBeingProgrammed = value;
-                RaisePropertyChanged("IsBeingProgrammed");
+                OnPropertyChanged(nameof(IsBeingProgrammed));
             }
         }
 

@@ -20,7 +20,7 @@
 
             <mainview:Splash x:Key="{x:Type vm:SplashScreenViewModel}" x:Shared="False" />
 
-            <dialogsview:CustomDialogBox x:Key="{x:Type dialogsvm:CustomDialogViewModel}" x:Shared="False" />
+            
             <mainview:CommonTaskView x:Key="{x:Type vm:CommonTaskViewModel}" x:Shared="False" />
             <mainview:GenericChipTaskView x:Key="{x:Type vm:GenericChipTaskViewModel}" x:Shared="False" />
             <mainview:MifareClassicSetupView x:Key="{x:Type vm:MifareClassicSetupViewModel}" x:Shared="False" />

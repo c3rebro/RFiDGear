@@ -1,5 +1,5 @@
-﻿using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MvvmDialogs.ViewModels;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
@@ -15,7 +15,7 @@ namespace RFiDGear.ViewModel
     /// Description of RFiDChipGrandChildLayerViewModel.
     /// </summary>
     [XmlRootAttribute("TreeViewGrandChildNode", IsNullable = false)]
-    public class RFiDChipGrandChildLayerViewModel : ViewModelBase, IUserDialogViewModel
+    public class RFiDChipGrandChildLayerViewModel : ObservableObject, IUserDialogViewModel
     {
         #region Constructors
 
@@ -183,7 +183,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 children = value;
-                RaisePropertyChanged("Children");
+                OnPropertyChanged(nameof(Children));
             }
         }
         private ObservableCollection<RFiDChipGrandGrandChildLayerViewModel> children;
@@ -324,9 +324,8 @@ namespace RFiDGear.ViewModel
                     IsValidDataContent = false;
                 }
 
-                RaisePropertyChanged("DataAsCharString");
-                RaisePropertyChanged("DataAsHexString");
-                RaisePropertyChanged("DataBlockContent");
+                OnPropertyChanged(nameof(DataAsCharString));
+                OnPropertyChanged(nameof(DataAsHexString));
             }
         }
         private string dataBlockAsCharString;
@@ -386,8 +385,8 @@ namespace RFiDGear.ViewModel
 
                 SelectedDataLengthInBytes = DataAsHexString.Length / 2;
 
-                RaisePropertyChanged("DataAsHexString");
-                RaisePropertyChanged("DataAsCharString");
+                OnPropertyChanged(nameof(DataAsHexString));
+                OnPropertyChanged(nameof(DataAsCharString));
             }
         }
         private string dataBlockAsHexString;
@@ -402,7 +401,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidDataBlockContent = value;
-                RaisePropertyChanged("IsValidDataContent");
+                OnPropertyChanged(nameof(IsValidDataContent));
             }
         }
         private bool? isValidDataBlockContent;
@@ -436,9 +435,9 @@ namespace RFiDGear.ViewModel
             set
             {
                 desfireFile = value;
-                RaisePropertyChanged("DesfireFile");
-                RaisePropertyChanged("DataAsHexString");
-                RaisePropertyChanged("DataAsCharString");
+                OnPropertyChanged(nameof(DesfireFile));
+                OnPropertyChanged(nameof(DataAsHexString));
+                OnPropertyChanged(nameof(DataAsCharString));
             }
         }
         private MifareDesfireFileModel desfireFile;
@@ -497,7 +496,7 @@ namespace RFiDGear.ViewModel
                     IsValidSelectedDataIndexAndLength = false;
                 }
 
-                RaisePropertyChanged("SelectedDataLength");
+                OnPropertyChanged(nameof(SelectedDataLength));
             }
         }
         private int selectedDataLength;
@@ -522,8 +521,8 @@ namespace RFiDGear.ViewModel
                     IsValidSelectedDataIndexAndLength = false;
                 }
 
-                RaisePropertyChanged("SelectedDataIndexStart");
-                RaisePropertyChanged("SelectedDataLength");
+                OnPropertyChanged(nameof(SelectedDataIndexStart));
+                OnPropertyChanged(nameof(SelectedDataLength));
             }
         }
         private int selectedDataIndexStart;
@@ -538,7 +537,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDataLengthInBytes = value;
-                RaisePropertyChanged("SelectedDataLengthInBytes");
+                OnPropertyChanged(nameof(SelectedDataLengthInBytes));
             }
         }
         private int selectedDataLengthInBytes;
@@ -553,7 +552,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDataIndexStartInBytes = value;
-                RaisePropertyChanged("SelectedDataIndexStartInBytes");
+                OnPropertyChanged(nameof(SelectedDataIndexStartInBytes));
             }
         }
         private int selectedDataIndexStartInBytes;
@@ -571,8 +570,8 @@ namespace RFiDGear.ViewModel
                     mifareClassicDataBlock.DataBlockNumberSectorBased = value;
                 }
 
-                RaisePropertyChanged("DataBlockNumber");
-                RaisePropertyChanged("GrandChildNodeHeader");
+                OnPropertyChanged(nameof(DataBlockNumber));
+                OnPropertyChanged(nameof(GrandChildNodeHeader));
             }
         }
 
@@ -589,7 +588,7 @@ namespace RFiDGear.ViewModel
                 if (value != isExpanded)
                 {
                     isExpanded = value;
-                    RaisePropertyChanged("IsExpanded");
+                    OnPropertyChanged(nameof(IsExpanded));
                 }
 
                 // Expand all the way up to the root.
@@ -610,7 +609,7 @@ namespace RFiDGear.ViewModel
                 if (value != isSelected)
                 {
                     isSelected = value;
-                    RaisePropertyChanged("IsSelected");
+                    OnPropertyChanged(nameof(IsSelected));
                 }
             }
         }
@@ -622,7 +621,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedDataIndexAndLength = value;
-                RaisePropertyChanged("IsValidSelectedDataIndexAndLength");
+                OnPropertyChanged(nameof(IsValidSelectedDataIndexAndLength));
             }
         }
         private bool? isValidSelectedDataIndexAndLength;
@@ -636,7 +635,7 @@ namespace RFiDGear.ViewModel
                 if (value != isFocused)
                 {
                     isFocused = value;
-                    RaisePropertyChanged("IsFocused");
+                    OnPropertyChanged(nameof(IsFocused));
                 }
             }
         }
@@ -648,7 +647,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isAuth = value;
-                RaisePropertyChanged("IsAuthenticated");
+                OnPropertyChanged(nameof(IsAuthenticated));
             }
         }
         private bool? isAuth;
@@ -659,7 +658,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isTask = value;
-                RaisePropertyChanged("IsTask");
+                OnPropertyChanged(nameof(IsTask));
             }
         }
         private bool? isTask;
@@ -671,7 +670,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isVisible = value;
-                RaisePropertyChanged("IsVisible");
+                OnPropertyChanged(nameof(IsVisible));
             }
         }
         private bool? isVisible;
@@ -685,9 +684,9 @@ namespace RFiDGear.ViewModel
 
         public virtual void RequestRefresh()
         {
-            RaisePropertyChanged("DataAsHexString");
-            RaisePropertyChanged("DataAsCharString");
-            RaisePropertyChanged("GrandChildNodeHeader");
+            OnPropertyChanged(nameof(DataAsHexString));
+            OnPropertyChanged(nameof(DataAsCharString));
+            OnPropertyChanged(nameof(GrandChildNodeHeader));
         }
 
         public virtual void RequestClose()

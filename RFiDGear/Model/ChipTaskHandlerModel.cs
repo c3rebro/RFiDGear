@@ -5,7 +5,7 @@
  *
  */
 
-using GalaSoft.MvvmLight;
+using CommunityToolkit.Mvvm.ComponentModel;
 using RFiDGear.ViewModel;
 
 using System;
@@ -22,7 +22,7 @@ namespace RFiDGear.Model
     [XmlInclude(typeof(MifareClassicSetupViewModel))]
     [XmlInclude(typeof(CommonTaskViewModel))]
     [XmlInclude(typeof(GenericChipTaskViewModel))]
-    public class ChipTaskHandlerModel : ViewModelBase
+    public class ChipTaskHandlerModel : ObservableObject
     {
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
@@ -49,7 +49,8 @@ namespace RFiDGear.Model
             set
             {
                 taskCollection = value;
-                RaisePropertyChanged("TaskCollection");
+                
+                OnPropertyChanged(nameof(TaskCollection));
             }
         }
 

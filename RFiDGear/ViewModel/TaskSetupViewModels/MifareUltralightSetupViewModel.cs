@@ -4,8 +4,8 @@
  *
  */
 
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
 using MvvmDialogs.ViewModels;
@@ -32,7 +32,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of MifareClassicSetupViewModel.
     /// </summary>
-    public class MifareUltralightSetupViewModel : ViewModelBase, IUserDialogViewModel
+    public class MifareUltralightSetupViewModel : ObservableObject, IUserDialogViewModel
     {
         #region Fields
         private static readonly string FacilityName = "RFiDGear";
@@ -145,10 +145,6 @@ namespace RFiDGear.ViewModel
             {
                 selectedUltralightPageCurrent = value;
                 int.TryParse(value, out selectedUltralightPageCurrentAsInt);
-
-                //ChildNodeViewModelTemp.IsFocused = true;
-
-                RaisePropertyChanged("SelectedDataBlockToReadWrite");
             }
         }
         private string selectedUltralightPageCurrent;
@@ -163,7 +159,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isDataExplorerEditTabEnabled = value;
-                RaisePropertyChanged("IsDataExplorerEditTabEnabled");
+                OnPropertyChanged(nameof(IsDataExplorerEditTabEnabled));
             }
         }
         private bool isDataExplorerEditTabEnabled;
@@ -202,7 +198,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 hasPlugins = value;
-                RaisePropertyChanged("HasPlugins");
+                OnPropertyChanged(nameof(HasPlugins));
             }
         }
         private bool hasPlugins;
@@ -217,7 +213,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedPlugin = value;
-                RaisePropertyChanged("SelectedPlugin");
+                OnPropertyChanged(nameof(SelectedPlugin));
             }
         }
         private object selectedPlugin;
@@ -237,7 +233,7 @@ namespace RFiDGear.ViewModel
                          orderby g.Metadata.SortOrder, g.Metadata.Name
                          select g).ToArray();
 
-                RaisePropertyChanged("Items");
+                OnPropertyChanged(nameof(Items));
             }
         }
         private Lazy<IUIExtension, IUIExtensionDetails>[] items;
@@ -256,7 +252,7 @@ namespace RFiDGear.ViewModel
             {
                 selectedExecuteConditionTaskIndex = value;
                 IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
-                RaisePropertyChanged("SelectedExecuteConditionTaskIndex");
+                OnPropertyChanged(nameof(SelectedExecuteConditionTaskIndex));
             }
         }
         private string selectedExecuteConditionTaskIndex;
@@ -270,7 +266,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedExecuteConditionTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedExecuteConditionTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedExecuteConditionTaskIndex));
             }
         }
         private bool? isValidSelectedExecuteConditionTaskIndex;
@@ -291,7 +287,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedExecuteConditionErrorLevel = value;
-                RaisePropertyChanged("SelectedExecuteConditionErrorLevel");
+                OnPropertyChanged(nameof(SelectedExecuteConditionErrorLevel));
             }
         }
         private ERROR selectedExecuteConditionErrorLevel;
@@ -311,7 +307,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isTaskCompletedSuccessfully = value;
-                RaisePropertyChanged("IsTaskCompletedSuccessfully");
+                OnPropertyChanged(nameof(IsTaskCompletedSuccessfully));
             }
         }
         private bool? isTaskCompletedSuccessfully;
@@ -326,7 +322,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 statusText = value;
-                RaisePropertyChanged("StatusText");
+                OnPropertyChanged(nameof(StatusText));
             }
         }
         private string statusText;
@@ -361,7 +357,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedTaskIndex));
             }
         }
         private bool? isValidSelectedTaskIndex;
@@ -386,7 +382,7 @@ namespace RFiDGear.ViewModel
                         IsDataExplorerEditTabEnabled = false;
                         break;
                 }
-                RaisePropertyChanged("SelectedTaskType");
+                OnPropertyChanged(nameof(SelectedTaskType));
             }
         }
         private TaskType_MifareUltralightTask selectedTaskType;
@@ -400,7 +396,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedAccessBitsTaskDescription = value;
-                RaisePropertyChanged("SelectedTaskDescription");
+                OnPropertyChanged(nameof(SelectedTaskDescription));
             }
         }
         private string selectedAccessBitsTaskDescription;
@@ -439,7 +435,7 @@ namespace RFiDGear.ViewModel
                                     return;
                                 }
 
-                                RaisePropertyChanged("ChildNodeViewModelTemp");
+                                OnPropertyChanged(nameof(ChildNodeViewModelTemp));
 
                                 return;
                             }
@@ -607,7 +603,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _Caption = value;
-                RaisePropertyChanged("Caption");
+                OnPropertyChanged(nameof(Caption));
             }
         }
         private string _Caption;

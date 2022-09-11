@@ -5,8 +5,8 @@
  *
  */
 
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MvvmDialogs.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of SetupDialogBoxViewModel.
     /// </summary>
-    public class AboutViewModel : ViewModelBase, IUserDialogViewModel
+    public class AboutViewModel : ObservableObject, IUserDialogViewModel
     {
         public AboutViewModel()
         {
@@ -55,7 +55,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 aboutText = value;
-                RaisePropertyChanged("AboutText");
+                OnPropertyChanged(nameof(AboutText));
             }
         }
         private string aboutText;
@@ -110,7 +110,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _Caption = value;
-                RaisePropertyChanged(() => Caption);
+                OnPropertyChanged(nameof(Caption));
             }
         }
 

@@ -5,8 +5,8 @@
  *
  */
 
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MefMvvm.SharedContracts;
 using MvvmDialogs.ViewModels;
 
@@ -33,7 +33,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of MifareClassicSetupViewModel.
     /// </summary>
-    public class MifareClassicSetupViewModel : ViewModelBase, IUserDialogViewModel, IGenericTaskModel
+    public class MifareClassicSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTaskModel
     {
         #region Fields
 
@@ -341,8 +341,8 @@ namespace RFiDGear.ViewModel
             {
                 selected_DataBlockType = value;
 
-                RaisePropertyChanged("Selected_DataBlock_AccessCondition");
-                RaisePropertyChanged("Selected_DataBlockType");
+                OnPropertyChanged(nameof(Selected_DataBlock_AccessCondition));
+                OnPropertyChanged(nameof(Selected_DataBlockType));
             }
         }
         private SectorTrailer_DataBlock selected_DataBlockType;
@@ -356,7 +356,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedAccessBitsTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedAccessBitsTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedAccessBitsTaskIndex));
             }
         }
         private bool isValidSelectedAccessBitsTaskIndex;
@@ -370,7 +370,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isAccessBitsEditTabEnabled = value;
-                RaisePropertyChanged("IsAccessBitsEditTabEnabled");
+                OnPropertyChanged(nameof(IsAccessBitsEditTabEnabled));
             }
         }
         private bool isAccessBitsEditTabEnabled;
@@ -434,8 +434,8 @@ namespace RFiDGear.ViewModel
                         break;
                 }
 
-                RaisePropertyChanged("Selected_DataBlock_AccessCondition");
-                RaisePropertyChanged("SectorTrailer");
+                OnPropertyChanged(nameof(Selected_DataBlock_AccessCondition));
+                OnPropertyChanged(nameof(SectorTrailer));
             }
         }
 
@@ -451,8 +451,8 @@ namespace RFiDGear.ViewModel
 
                 sectorModel.SectorAccessCondition = selected_Sector_AccessCondition;
 
-                RaisePropertyChanged("Selected_Sector_AccessCondition");
-                RaisePropertyChanged("SectorTrailer");
+                OnPropertyChanged(nameof(Selected_Sector_AccessCondition));
+                OnPropertyChanged(nameof(SectorTrailer));
             }
         }
         private MifareClassicSectorAccessConditionModel selected_Sector_AccessCondition;
@@ -467,8 +467,8 @@ namespace RFiDGear.ViewModel
             {
                 sectorModel.AccessBitsAsString = value.ToUpper(CultureInfo.CurrentCulture);
                 IsValidSectorTrailer = sectorModel.IsValidSectorTrailer;
-                RaisePropertyChanged("Selected_Sector_AccessCondition");
-                RaisePropertyChanged("Selected_DataBlock_AccessCondition");
+                OnPropertyChanged(nameof(Selected_Sector_AccessCondition));
+                OnPropertyChanged(nameof(Selected_DataBlock_AccessCondition));
             }
         }
 
@@ -481,7 +481,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSectorTrailer = value;
-                RaisePropertyChanged("IsValidSectorTrailer");
+                OnPropertyChanged(nameof(IsValidSectorTrailer));
             }
         }
         private bool isValidSectorTrailer;
@@ -506,7 +506,7 @@ namespace RFiDGear.ViewModel
 
                 ChildNodeViewModelTemp.Children.First(x => x.DataBlockNumber == (int)SelectedDataBlockToReadWrite).IsFocused = true;
 
-                RaisePropertyChanged("SelectedDataBlockToReadWrite");
+                OnPropertyChanged(nameof(SelectedDataBlockToReadWrite));
             }
         }
         private DataExplorer_DataBlock selectedDataBlockToReadWrite;
@@ -520,7 +520,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isWriteFromMemoryToChipChecked = value;
-                RaisePropertyChanged("IsWriteFromMemoryToChipChecked");
+                OnPropertyChanged(nameof(IsWriteFromMemoryToChipChecked));
             }
         }
         private bool isWriteFromMemoryToChipChecked;
@@ -534,7 +534,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isWriteFromFileToChipChecked = value;
-                RaisePropertyChanged("IsWriteFromFileToChipChecked");
+                OnPropertyChanged(nameof(IsWriteFromFileToChipChecked));
             }
         }
         private bool isWriteFromFileToChipChecked;
@@ -548,7 +548,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isDataExplorerEditTabEnabled = value;
-                RaisePropertyChanged("IsDataExplorerEditTabEnabled");
+                OnPropertyChanged(nameof(IsDataExplorerEditTabEnabled));
             }
         }
         private bool isDataExplorerEditTabEnabled;
@@ -594,7 +594,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 hasPlugins = value;
-                RaisePropertyChanged("HasPlugins");
+                OnPropertyChanged(nameof(HasPlugins));
             }
         }
         private bool hasPlugins;
@@ -609,7 +609,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedPlugin = value;
-                RaisePropertyChanged("SelectedPlugin");
+                OnPropertyChanged(nameof(SelectedPlugin));
             }
         }
         private object selectedPlugin;
@@ -629,7 +629,7 @@ namespace RFiDGear.ViewModel
                          orderby g.Metadata.SortOrder, g.Metadata.Name
                          select g).ToArray();
 
-                RaisePropertyChanged("Items");
+                OnPropertyChanged(nameof(Items));
             }
         }
         private Lazy<IUIExtension, IUIExtensionDetails>[] items;
@@ -662,7 +662,7 @@ namespace RFiDGear.ViewModel
             {
                 selectedExecuteConditionTaskIndex = value;
                 IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
-                RaisePropertyChanged("SelectedExecuteConditionTaskIndex");
+                OnPropertyChanged(nameof(SelectedExecuteConditionTaskIndex));
             }
         }
         private string selectedExecuteConditionTaskIndex;
@@ -677,7 +677,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedExecuteConditionTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedExecuteConditionTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedExecuteConditionTaskIndex));
             }
         }
         private bool? isValidSelectedExecuteConditionTaskIndex;
@@ -699,7 +699,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedExecuteConditionErrorLevel = value;
-                RaisePropertyChanged("SelectedExecuteConditionErrorLevel");
+                OnPropertyChanged(nameof(SelectedExecuteConditionErrorLevel));
             }
         }
         private ERROR selectedExecuteConditionErrorLevel;
@@ -720,7 +720,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isTaskCompletedSuccessfully = value;
-                RaisePropertyChanged("IsTaskCompletedSuccessfully");
+                OnPropertyChanged(nameof(IsTaskCompletedSuccessfully));
             }
         }
         private bool? isTaskCompletedSuccessfully;
@@ -735,7 +735,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 statusText = value;
-                RaisePropertyChanged("StatusText");
+                OnPropertyChanged(nameof(StatusText));
             }
         }
         private string statusText;
@@ -772,7 +772,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedTaskIndex));
             }
         }
         private bool? isValidSelectedTaskIndex;
@@ -818,7 +818,7 @@ namespace RFiDGear.ViewModel
                     default:
                         break;
                 }
-                RaisePropertyChanged("SelectedTaskType");
+                OnPropertyChanged(nameof(SelectedTaskType));
             }
         }
         private TaskType_MifareClassicTask selectedAccessBitsTaskType;
@@ -832,7 +832,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedAccessBitsTaskDescription = value;
-                RaisePropertyChanged("SelectedTaskDescription");
+                OnPropertyChanged(nameof(SelectedTaskDescription));
             }
         }
         private string selectedAccessBitsTaskDescription;
@@ -894,12 +894,12 @@ namespace RFiDGear.ViewModel
                     childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
                     childNodeViewModelTemp = new RFiDChipChildLayerViewModel(sectorModel, null, CARD_TYPE.Mifare4K, null, true);
 
-                    RaisePropertyChanged("ChildNodeViewModelFromChip");
-                    RaisePropertyChanged("ChildNodeViewModelTemp");
+                    OnPropertyChanged(nameof(ChildNodeViewModelFromChip));
+                    OnPropertyChanged(nameof(ChildNodeViewModelTemp));
                 }
 
-                RaisePropertyChanged("UseMAD");
-                RaisePropertyChanged("UseMADInvert");
+                OnPropertyChanged(nameof(UseMAD));
+                OnPropertyChanged(nameof(UseMADInvert));
             }
         }
         private bool useMAD;
@@ -919,7 +919,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isClassicAuthInfoEnabled = value;
-                RaisePropertyChanged("IsClassicAuthInfoEnabled");
+                OnPropertyChanged(nameof(IsClassicAuthInfoEnabled));
             }
         }
         private bool isClassicAuthInfoEnabled;
@@ -933,7 +933,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isClassicKeyEditingEnabled = value;
-                RaisePropertyChanged("IsClassicKeyEditingEnabled");
+                OnPropertyChanged(nameof(IsClassicKeyEditingEnabled));
             }
         }
         private bool isClassicKeyEditingEnabled;
@@ -949,7 +949,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedKeySetupTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedKeySetupTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedKeySetupTaskIndex));
             }
         }
         private bool isValidSelectedKeySetupTaskIndex;
@@ -983,7 +983,7 @@ namespace RFiDGear.ViewModel
                     sectorModel.KeyA = classicKeyAKeyCurrent;
                 }
 
-                RaisePropertyChanged("ClassicKeyAKeyCurrent");
+                OnPropertyChanged(nameof(ClassicKeyAKeyCurrent));
             }
         }
         private string classicKeyAKeyCurrent;
@@ -998,7 +998,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidClassicKeyAKeyCurrent = value;
-                RaisePropertyChanged("IsValidClassicKeyAKeyCurrent");
+                OnPropertyChanged(nameof(IsValidClassicKeyAKeyCurrent));
             }
         }
         private bool? isValidClassicKeyAKeyCurrent;
@@ -1031,7 +1031,7 @@ namespace RFiDGear.ViewModel
                     sectorModel.KeyB = classicKeyBKeyCurrent;
                 }
 
-                RaisePropertyChanged("ClassicKeyBKeyCurrent");
+                OnPropertyChanged(nameof(ClassicKeyBKeyCurrent));
             }
         }
         private string classicKeyBKeyCurrent;
@@ -1046,7 +1046,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidClassicKeyBKeyCurrent = value;
-                RaisePropertyChanged("IsValidClassicKeyBKeyCurrent");
+                OnPropertyChanged(nameof(IsValidClassicKeyBKeyCurrent));
             }
         }
         private bool? isValidClassicKeyBKeyCurrent;
@@ -1062,7 +1062,7 @@ namespace RFiDGear.ViewModel
                 if (int.TryParse(value, out selectedClassicKeyANumberCurrentAsInt))
                 {
                     selectedClassicKeyANumberCurrent = value;
-                    RaisePropertyChanged("SelectedClassicKeyANumberCurrent");
+                    OnPropertyChanged(nameof(SelectedClassicKeyANumberCurrent));
                 }
             }
         }
@@ -1080,7 +1080,7 @@ namespace RFiDGear.ViewModel
                 if (int.TryParse(value, out selectedClassicKeyBNumberCurrentAsInt))
                 {
                     selectedClassicKeyBNumberCurrent = value;
-                    RaisePropertyChanged("SelectedClassicKeyBNumberCurrent");
+                    OnPropertyChanged(nameof(SelectedClassicKeyBNumberCurrent));
                 }
             }
         }
@@ -1143,7 +1143,7 @@ namespace RFiDGear.ViewModel
                     {
                         sectorModel.SectorNumber = selectedClassicSectorCurrentAsInt;
                     }
-                    RaisePropertyChanged("SelectedClassicSectorCurrent");
+                    OnPropertyChanged(nameof(SelectedClassicSectorCurrent));
                 }
             }
         }
@@ -1162,10 +1162,8 @@ namespace RFiDGear.ViewModel
                     Selected_DataBlockType = SectorTrailer_DataBlock.BlockAll;
                 }
 
-                RaisePropertyChanged("SelectedDataBlockItem");
-                RaisePropertyChanged("DataBlockIsCombinedToggleButtonIsChecked");
-                RaisePropertyChanged("DataBlockSelectionComboBoxIsEnabled");
-                RaisePropertyChanged("DataBlockSelection");
+                OnPropertyChanged(nameof(DataBlockIsCombinedToggleButtonIsChecked));
+                OnPropertyChanged(nameof(DataBlockSelectionComboBoxIsEnabled));
             }
         }
         private bool dataBlockIsCombinedToggleButtonIsChecked;
@@ -1196,7 +1194,7 @@ namespace RFiDGear.ViewModel
                     madGPB = (byte)((madGPB &= 0xFC) | selectedMADVersionAsByte);
                 }
 
-                RaisePropertyChanged("SelectedMADVersion");
+                OnPropertyChanged(nameof(SelectedMADVersion));
             }
         }
         private string selectedMADVersion;
@@ -1223,7 +1221,7 @@ namespace RFiDGear.ViewModel
                     madGPB &= 0xBF;
                 }
 
-                RaisePropertyChanged("IsMultiApplication");
+                OnPropertyChanged(nameof(IsMultiApplication));
             }
         }
         private bool isMultiApplication;
@@ -1237,7 +1235,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 useMADAuth = value;
-                RaisePropertyChanged("UseMadAuth");
+                OnPropertyChanged(nameof(UseMadAuth));
             }
         }
         private bool useMADAuth;
@@ -1278,7 +1276,7 @@ namespace RFiDGear.ViewModel
                     }
                 }
 
-                RaisePropertyChanged("FileSize");
+                OnPropertyChanged(nameof(FileSize));
             }
         }
         private string fileSize;
@@ -1294,7 +1292,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidFileSize = value;
-                RaisePropertyChanged("IsValidFileSize");
+                OnPropertyChanged(nameof(IsValidFileSize));
             }
         }
         private bool? isValidFileSize;
@@ -1309,7 +1307,7 @@ namespace RFiDGear.ViewModel
             {
                 applicationCode = value.Length > 2 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(2, value.Length - 2) : value.ToUpper(CultureInfo.CurrentCulture);
                 IsValidApplicationCode = (CustomConverter.IsInHexFormat(applicationCode) && applicationCode.Length <= 2);
-                RaisePropertyChanged("ApplicationCode");
+                OnPropertyChanged(nameof(ApplicationCode));
             }
         }
         private string applicationCode;
@@ -1330,7 +1328,7 @@ namespace RFiDGear.ViewModel
                     appNumberAsInt &= 0xff00;
                     appNumberAsInt |= CustomConverter.GetBytes(applicationCode, out int _)[0];
                 }
-                RaisePropertyChanged("IsValidApplicationCode");
+                OnPropertyChanged(nameof(IsValidApplicationCode));
             }
         }
         private bool? isValidApplicationCode;
@@ -1345,7 +1343,7 @@ namespace RFiDGear.ViewModel
             {
                 functionClusterCode = value.Length > 2 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(2, value.Length - 2) : value.ToUpper(CultureInfo.CurrentCulture);
                 IsValidFunctionClusterCode = (CustomConverter.IsInHexFormat(functionClusterCode) && functionClusterCode.Length <= 2);
-                RaisePropertyChanged("FunctionClusterCode");
+                OnPropertyChanged(nameof(FunctionClusterCode));
             }
         }
         private string functionClusterCode;
@@ -1366,7 +1364,7 @@ namespace RFiDGear.ViewModel
                     appNumberAsInt &= 0x00ff;
                     appNumberAsInt |= (CustomConverter.GetBytes(functionClusterCode, out int _)[0] << 8);
                 }
-                RaisePropertyChanged("IsValidFunctionClusterCode");
+                OnPropertyChanged(nameof(IsValidFunctionClusterCode));
             }
         }
         private bool? isValidFunctionClusterCode;
@@ -1382,7 +1380,7 @@ namespace RFiDGear.ViewModel
             {
                 appNumber = value;
                 IsValidAppNumber = (int.TryParse(value, out appNumberAsInt) && appNumberAsInt <= 0xFFFF);
-                RaisePropertyChanged("AppNumberNew");
+                OnPropertyChanged(nameof(AppNumberNew));
             }
         }
         private string appNumber;
@@ -1399,7 +1397,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidAppNumber = value;
-                RaisePropertyChanged("IsValidAppNumber");
+                OnPropertyChanged(nameof(IsValidAppNumber));
             }
         }
         private bool? isValidAppNumber;
@@ -1418,7 +1416,7 @@ namespace RFiDGear.ViewModel
                     selectedMADSector = value;
                 }
 
-                RaisePropertyChanged("SelectedMADSector");
+                OnPropertyChanged(nameof(SelectedMADSector));
             }
         }
         private string selectedMADSector;
@@ -1436,7 +1434,7 @@ namespace RFiDGear.ViewModel
 
                 IsValidClassicMADKeyAKeyCurrent = (CustomConverter.IsInHexFormat(classicMADKeyAKeyCurrent) && classicMADKeyAKeyCurrent.Length == 12);
 
-                RaisePropertyChanged("ClassicMADKeyAKeyCurrent");
+                OnPropertyChanged(nameof(ClassicMADKeyAKeyCurrent));
             }
         }
         private string classicMADKeyAKeyCurrent;
@@ -1451,7 +1449,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidClassicMADKeyAKeyCurrent = value;
-                RaisePropertyChanged("IsValidClassicMADKeyAKeyCurrent");
+                OnPropertyChanged(nameof(IsValidClassicMADKeyAKeyCurrent));
             }
         }
         private bool? isValidClassicMADKeyAKeyCurrent;
@@ -1468,7 +1466,7 @@ namespace RFiDGear.ViewModel
 
                 IsValidClassicMADKeyBKeyCurrent = (CustomConverter.IsInHexFormat(classicMADKeyBKeyCurrent) && classicMADKeyBKeyCurrent.Length == 12);
 
-                RaisePropertyChanged("ClassicMADKeyBKeyCurrent");
+                OnPropertyChanged(nameof(ClassicMADKeyBKeyCurrent));
             }
         }
         private string classicMADKeyBKeyCurrent;
@@ -1483,7 +1481,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidClassicMADKeyBKeyCurrent = value;
-                RaisePropertyChanged("IsValidClassicMADKeyBKeyCurrent");
+                OnPropertyChanged(nameof(IsValidClassicMADKeyBKeyCurrent));
             }
         }
         private bool? isValidClassicMADKeyBKeyCurrent;
@@ -1500,7 +1498,7 @@ namespace RFiDGear.ViewModel
 
                 IsValidClassicMADKeyAKeyTarget = (CustomConverter.IsInHexFormat(classicMADKeyAKeyTarget) && classicMADKeyAKeyTarget.Length == 12);
 
-                RaisePropertyChanged("ClassicMADKeyAKeyTarget");
+                OnPropertyChanged(nameof(ClassicMADKeyAKeyTarget));
             }
         }
         private string classicMADKeyAKeyTarget;
@@ -1515,7 +1513,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidClassicMADKeyAKeyTarget = value;
-                RaisePropertyChanged("IsValidClassicMADKeyAKeyTarget");
+                OnPropertyChanged(nameof(IsValidClassicMADKeyAKeyTarget));
             }
         }
         private bool? isValidClassicMADKeyAKeyTarget;
@@ -1532,7 +1530,7 @@ namespace RFiDGear.ViewModel
 
                 IsValidClassicMADKeyBKeyTarget = (CustomConverter.IsInHexFormat(classicMADKeyBKeyTarget) && classicMADKeyBKeyTarget.Length == 12);
 
-                RaisePropertyChanged("ClassicMADKeyBKeyTarget");
+                OnPropertyChanged(nameof(ClassicMADKeyBKeyTarget));
             }
         }
         private string classicMADKeyBKeyTarget;
@@ -1547,7 +1545,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidClassicMADKeyBKeyTarget = value;
-                RaisePropertyChanged("IsValidClassicMADKeyBKeyTarget");
+                OnPropertyChanged(nameof(IsValidClassicMADKeyBKeyTarget));
             }
         }
         private bool? isValidClassicMADKeyBKeyTarget;
@@ -1564,7 +1562,7 @@ namespace RFiDGear.ViewModel
 
                 IsValidClassicKeyAKeyTarget = (CustomConverter.IsInHexFormat(classicKeyAKeyTarget) && classicKeyAKeyTarget.Length == 12);
 
-                RaisePropertyChanged("ClassicKeyAKeyTarget");
+                OnPropertyChanged(nameof(ClassicKeyAKeyTarget));
             }
         }
         private string classicKeyAKeyTarget;
@@ -1579,7 +1577,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidClassicKeyAKeyTarget = value;
-                RaisePropertyChanged("IsValidClassicKeyAKeyTarget");
+                OnPropertyChanged(nameof(IsValidClassicKeyAKeyTarget));
             }
         }
         private bool? isValidClassicKeyAKeyTarget;
@@ -1596,7 +1594,7 @@ namespace RFiDGear.ViewModel
 
                 IsValidClassicKeyBKeyTarget = (CustomConverter.IsInHexFormat(classicKeyBKeyTarget) && classicKeyBKeyTarget.Length == 12);
 
-                RaisePropertyChanged("ClassicKeyBKeyTarget");
+                OnPropertyChanged(nameof(ClassicKeyBKeyTarget));
             }
         }
         private string classicKeyBKeyTarget;
@@ -1611,7 +1609,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidClassicKeyBKeyTarget = value;
-                RaisePropertyChanged("IsValidClassicKeyBKeyTarget");
+                OnPropertyChanged(nameof(IsValidClassicKeyBKeyTarget));
             }
         }
         private bool? isValidClassicKeyBKeyTarget;
@@ -1699,7 +1697,7 @@ namespace RFiDGear.ViewModel
                             return;
                         }
 
-                        RaisePropertyChanged("ChildNodeViewModelTemp");
+                        OnPropertyChanged(nameof(ChildNodeViewModelTemp));
 
                         return;
                     }
@@ -1827,7 +1825,7 @@ namespace RFiDGear.ViewModel
                                      return;
                                  }
 
-                                 RaisePropertyChanged("ChildNodeViewModelTemp");
+                                 OnPropertyChanged(nameof(ChildNodeViewModelTemp));
 
                                  return;
                              }
@@ -1971,8 +1969,8 @@ namespace RFiDGear.ViewModel
 
                     childNodeViewModelTemp.Children.Single().DataAsHexString = data;
 
-                    RaisePropertyChanged("ChildNodeViewModelTemp");
-                    RaisePropertyChanged("ChildNodeViewModelFromChip");
+                    OnPropertyChanged(nameof(ChildNodeViewModelTemp));
+                    OnPropertyChanged(nameof(ChildNodeViewModelFromChip));
                 }
                 catch (Exception e)
                 {
@@ -2082,7 +2080,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _Caption = value;
-                RaisePropertyChanged("Caption");
+                OnPropertyChanged(nameof(Caption));
             }
         }
         private string _Caption;

@@ -5,8 +5,8 @@
  *
  */
 
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using MvvmDialogs.ViewModels;
 
@@ -22,7 +22,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of SetupDialogBoxViewModel.
     /// </summary>
-    public class SetupViewModel : ViewModelBase, IUserDialogViewModel
+    public class SetupViewModel : ObservableObject, IUserDialogViewModel
     {
         private ReaderDevice device;
 
@@ -200,7 +200,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 readerStatus = value;
-                RaisePropertyChanged("ReaderStatus");
+                OnPropertyChanged(nameof(ReaderStatus));
             }
         }
         private string readerStatus;
@@ -211,7 +211,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 defaultReader = value;
-                RaisePropertyChanged("DefaultReader");
+                OnPropertyChanged(nameof(DefaultReader));
             }
         }
         private string defaultReader;
@@ -286,7 +286,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _Caption = value;
-                RaisePropertyChanged(() => Caption);
+                OnPropertyChanged(nameof(Caption));
             }
         }
 

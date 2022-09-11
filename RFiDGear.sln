@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.30711.63
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear", "RFiDGear\RFiDGear.csproj", "{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}"
+	ProjectSection(ProjectDependencies) = postProject
+		{909DB876-4A74-42AC-BACF-C681017D0C77} = {909DB876-4A74-42AC-BACF-C681017D0C77}
+	EndProjectSection
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Setup", "Setup\Setup.wixproj", "{856CA06C-0B4C-46C6-AD71-873317F1C763}"
 EndProject

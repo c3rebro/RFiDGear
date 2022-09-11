@@ -5,8 +5,8 @@
  *
  */
 
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
@@ -36,7 +36,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of MifareDesfireSetupViewModel.
     /// </summary>
-    public class MifareDesfireSetupViewModel : ViewModelBase, IUserDialogViewModel, IGenericTaskModel
+    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTaskModel
     {
         #region Fields
         private static readonly string FacilityName = "RFiDGear";
@@ -216,7 +216,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 hasPlugins = value;
-                RaisePropertyChanged("HasPlugins");
+                OnPropertyChanged(nameof(HasPlugins));
             }
         }
         private bool hasPlugins;
@@ -231,7 +231,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedPlugin = value;
-                RaisePropertyChanged("SelectedPlugin");
+                OnPropertyChanged(nameof(SelectedPlugin));
             }
         }
         private object selectedPlugin;
@@ -251,7 +251,7 @@ namespace RFiDGear.ViewModel
                          orderby g.Metadata.SortOrder, g.Metadata.Name
                          select g).ToArray();
 
-                RaisePropertyChanged("Items");
+                OnPropertyChanged(nameof(Items));
             }
         }
         private Lazy<IUIExtension, IUIExtensionDetails>[] items;
@@ -273,7 +273,7 @@ namespace RFiDGear.ViewModel
             {
                 selectedExecuteConditionTaskIndex = value;
                 IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
-                RaisePropertyChanged("SelectedExecuteConditionTaskIndex");
+                OnPropertyChanged(nameof(SelectedExecuteConditionTaskIndex));
             }
         }
         private string selectedExecuteConditionTaskIndex;
@@ -288,7 +288,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedExecuteConditionTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedExecuteConditionTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedExecuteConditionTaskIndex));
             }
         }
         private bool? isValidSelectedExecuteConditionTaskIndex;
@@ -310,7 +310,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedExecuteConditionErrorLevel = value;
-                RaisePropertyChanged("SelectedExecuteConditionErrorLevel");
+                OnPropertyChanged(nameof(SelectedExecuteConditionErrorLevel));
             }
         }
         private ERROR selectedExecuteConditionErrorLevel;
@@ -324,7 +324,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isDesfireFileAuthoringTabEnabled = value;
-                RaisePropertyChanged("IsDesfireFileAuthoringTabEnabled");
+                OnPropertyChanged(nameof(IsDesfireFileAuthoringTabEnabled));
             }
         }
         private bool isDesfireFileAuthoringTabEnabled;
@@ -338,7 +338,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isDataExplorerEditTabEnabled = value;
-                RaisePropertyChanged("IsDataExplorerEditTabEnabled");
+                OnPropertyChanged(nameof(IsDataExplorerEditTabEnabled));
             }
         }
         private bool isDataExplorerEditTabEnabled;
@@ -352,7 +352,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isDesfirePICCAuthoringTabEnabled = value;
-                RaisePropertyChanged("IsDesfirePICCAuthoringTabEnabled");
+                OnPropertyChanged(nameof(IsDesfirePICCAuthoringTabEnabled));
             }
         }
         private bool isDesfirePICCAuthoringTabEnabled;
@@ -366,7 +366,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isDesfireAuthenticationTabEnabled = value;
-                RaisePropertyChanged("IsDesfireAuthenticationTabEnabled");
+                OnPropertyChanged(nameof(IsDesfireAuthenticationTabEnabled));
             }
         }
         private bool isDesfireAuthenticationTabEnabled;
@@ -380,7 +380,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isDesfireAppAuthenticationTabEnabled = value;
-                RaisePropertyChanged("IsDesfireAppAuthenticationTabEnabled");
+                OnPropertyChanged(nameof(IsDesfireAppAuthenticationTabEnabled));
             }
         }
         private bool isDesfireAppAuthenticationTabEnabled;
@@ -394,7 +394,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isDesfireAppAuthoringTabEnabled = value;
-                RaisePropertyChanged("IsDesfireAppAuthoringTabEnabled");
+                OnPropertyChanged(nameof(IsDesfireAppAuthoringTabEnabled));
             }
         }
         private bool isDesfireAppAuthoringTabEnabled;
@@ -408,7 +408,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isDesfireAppCreationTabEnabled = value;
-                RaisePropertyChanged("IsDesfireAppCreationTabEnabled");
+                OnPropertyChanged(nameof(IsDesfireAppCreationTabEnabled));
             }
         }
         private bool isDesfireAppCreationTabEnabled;
@@ -570,7 +570,7 @@ namespace RFiDGear.ViewModel
                         IsDesfireAppCreationTabEnabled = false;
                         break;
                 }
-                RaisePropertyChanged("SelectedTaskType");
+                OnPropertyChanged(nameof(SelectedTaskType));
             }
         }
         private TaskType_MifareDesfireTask selectedAccessBitsTaskType;
@@ -606,7 +606,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedTaskIndex));
             }
         }
         private bool? isValidSelectedTaskIndex;
@@ -633,7 +633,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isTaskCompletedSuccessfully = value;
-                RaisePropertyChanged("IsTaskCompletedSuccessfully");
+                OnPropertyChanged(nameof(IsTaskCompletedSuccessfully));
             }
         }
         private bool? isTaskCompletedSuccessfully;
@@ -650,7 +650,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedAccessBitsTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedAccessBitsTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedAccessBitsTaskIndex));
             }
         }
         private bool isValidSelectedAccessBitsTaskIndex;
@@ -665,7 +665,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 statusText = value;
-                RaisePropertyChanged("StatusText");
+                OnPropertyChanged(nameof(StatusText));
             }
         }
         private string statusText;
@@ -693,7 +693,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireMasterKeyEncryptionTypeCurrent = value;
-                RaisePropertyChanged("SelectedDesfireMasterKeyEncryptionTypeCurrent");
+                OnPropertyChanged(nameof(SelectedDesfireMasterKeyEncryptionTypeCurrent));
             }
         }
         private DESFireKeyType selectedDesfireMasterKeyEncryptionTypeCurrent;
@@ -715,7 +715,7 @@ namespace RFiDGear.ViewModel
                     desfireMasterKeyCurrent = value.ToUpper();
                 }
                 IsValidDesfireMasterKeyCurrent = (CustomConverter.IsInHexFormat(desfireMasterKeyCurrent) && desfireMasterKeyCurrent.Length == 32);
-                RaisePropertyChanged("DesfireMasterKeyCurrent");
+                OnPropertyChanged(nameof(DesfireMasterKeyCurrent));
             }
         }
         private string desfireMasterKeyCurrent;
@@ -730,7 +730,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidDesfireMasterKeyCurrent = value;
-                RaisePropertyChanged("IsValidDesfireMasterKeyCurrent");
+                OnPropertyChanged(nameof(IsValidDesfireMasterKeyCurrent));
             }
         }
         private bool? isValidDesfireMasterKeyCurrent;
@@ -744,7 +744,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireMasterKeyEncryptionTypeTarget = value;
-                RaisePropertyChanged("SelectedDesfireMasterKeyEncryptionTypeCurrent");
+                OnPropertyChanged(nameof(SelectedDesfireMasterKeyEncryptionTypeCurrent));
             }
         }
         private DESFireKeyType selectedDesfireMasterKeyEncryptionTypeTarget;
@@ -769,7 +769,7 @@ namespace RFiDGear.ViewModel
                 IsValidDesfireMasterKeyTarget = (
                     CustomConverter.IsInHexFormat(desfireMasterKeyTarget) &&
                     desfireMasterKeyTarget.Length == 32);
-                RaisePropertyChanged("DesfireMasterKeyTarget");
+                OnPropertyChanged(nameof(DesfireMasterKeyTarget));
             }
         }
         private string desfireMasterKeyTarget;
@@ -784,7 +784,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidDesfireMasterKeyTarget = value;
-                RaisePropertyChanged("IsValidDesfireMasterKeyTarget");
+                OnPropertyChanged(nameof(IsValidDesfireMasterKeyTarget));
             }
         }
         private bool? isValidDesfireMasterKeyTarget;
@@ -804,7 +804,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedCreateDesfireAppKeyEncryptionTypeCurrent = value;
-                RaisePropertyChanged("SelectedDesfireAppKeyEncryptionTypeCreateNewApp");
+                OnPropertyChanged(nameof(SelectedDesfireAppKeyEncryptionTypeCreateNewApp));
             }
         }
         private DESFireKeyType selectedCreateDesfireAppKeyEncryptionTypeCurrent;
@@ -821,7 +821,7 @@ namespace RFiDGear.ViewModel
                 {
                     selectedDesfireAppMaxNumberOfKeys = value;
                 }
-                RaisePropertyChanged("SelectedDesfireAppMaxNumberOfKeys");
+                OnPropertyChanged(nameof(SelectedDesfireAppMaxNumberOfKeys));
             }
         }
         private string selectedDesfireAppMaxNumberOfKeys;
@@ -836,7 +836,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireAppKeySettingsTarget = value;
-                RaisePropertyChanged("SelectedDesfireAppKeySettingsCreateNewApp");
+                OnPropertyChanged(nameof(SelectedDesfireAppKeySettingsCreateNewApp));
             }
         }
         private AccessCondition_MifareDesfireAppCreation selectedDesfireAppKeySettingsTarget;
@@ -858,7 +858,7 @@ namespace RFiDGear.ViewModel
                     appNumberNew = value.ToUpper();
                 }
                 IsValidAppNumberNew = (int.TryParse(value, out appNumberNewAsInt) && appNumberNewAsInt <= (int)0xFFFFFF);
-                RaisePropertyChanged("AppNumberNew");
+                OnPropertyChanged(nameof(AppNumberNew));
             }
         }
         private string appNumberNew;
@@ -880,7 +880,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidAppNumberNew = value;
-                RaisePropertyChanged("IsValidAppNumberNew");
+                OnPropertyChanged(nameof(IsValidAppNumberNew));
             }
         }
         private bool? isValidAppNumberNew;
@@ -894,7 +894,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isAllowChangeMKChecked = value;
-                RaisePropertyChanged("IsAllowChangeMKChecked");
+                OnPropertyChanged(nameof(IsAllowChangeMKChecked));
             }
         }
         private bool isAllowChangeMKChecked;
@@ -908,7 +908,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isAllowListingWithoutMKChecked = value;
-                RaisePropertyChanged("IsAllowListingWithoutMKChecked");
+                OnPropertyChanged(nameof(IsAllowListingWithoutMKChecked));
             }
         }
         private bool isAllowListingWithoutMKChecked;
@@ -922,7 +922,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isAllowCreateDelWithoutMKChecked = value;
-                RaisePropertyChanged("IsAllowCreateDelWithoutMKChecked");
+                OnPropertyChanged(nameof(IsAllowCreateDelWithoutMKChecked));
             }
         }
         private bool isAllowCreateDelWithoutMKChecked;
@@ -936,7 +936,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isAllowConfigChangableChecked = value;
-                RaisePropertyChanged("IsAllowConfigChangableChecked");
+                OnPropertyChanged(nameof(IsAllowConfigChangableChecked));
             }
         }
         private bool isAllowConfigChangableChecked;
@@ -954,7 +954,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireAppKeyEncryptionTypeCurrent = value;
-                RaisePropertyChanged("SelectedDesfireAppKeyEncryptionTypeCurrent");
+                OnPropertyChanged(nameof(SelectedDesfireAppKeyEncryptionTypeCurrent));
             }
         }
         private DESFireKeyType selectedDesfireAppKeyEncryptionTypeCurrent;
@@ -971,7 +971,7 @@ namespace RFiDGear.ViewModel
                 {
                     selectedDesfireAppKeyNumberCurrent = value;
                 }
-                RaisePropertyChanged("SelectedDesfireAppKeyNumberCurrent");
+                OnPropertyChanged(nameof(SelectedDesfireAppKeyNumberCurrent));
             }
         }
         private string selectedDesfireAppKeyNumberCurrent;
@@ -994,7 +994,7 @@ namespace RFiDGear.ViewModel
                     desfireAppKeyCurrent = value.ToUpper();
                 }
                 IsValidDesfireAppKeyCurrent = (CustomConverter.IsInHexFormat(desfireAppKeyCurrent) && desfireAppKeyCurrent.Length == 32);
-                RaisePropertyChanged("DesfireAppKeyCurrent");
+                OnPropertyChanged(nameof(DesfireAppKeyCurrent));
             }
         }
         private string desfireAppKeyCurrent;
@@ -1009,7 +1009,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidDesfireAppKeyCurrent = value;
-                RaisePropertyChanged("IsValidDesfireAppKeyCurrent");
+                OnPropertyChanged(nameof(IsValidDesfireAppKeyCurrent));
             }
         }
         private bool? isValidDesfireAppKeyCurrent;
@@ -1031,7 +1031,7 @@ namespace RFiDGear.ViewModel
                     appNumberCurrent = value.ToUpper();
                 }
                 IsValidAppNumberCurrent = (int.TryParse(value, out appNumberCurrentAsInt) && appNumberCurrentAsInt <= (int)0xFFFFFF);
-                RaisePropertyChanged("AppNumberCurrent");
+                OnPropertyChanged(nameof(AppNumberCurrent));
             }
         }
         private string appNumberCurrent;
@@ -1053,7 +1053,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidAppNumberCurrent = value;
-                RaisePropertyChanged("IsValidAppNumberCurrent");
+                OnPropertyChanged(nameof(IsValidAppNumberCurrent));
             }
         }
         private bool? isValidAppNumberCurrent;
@@ -1071,7 +1071,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireAppKeyEncryptionTypeTarget = value;
-                RaisePropertyChanged("SelectedDesfireAppKeyEncryptionTypeTarget");
+                OnPropertyChanged(nameof(SelectedDesfireAppKeyEncryptionTypeTarget));
             }
         }
         private DESFireKeyType selectedDesfireAppKeyEncryptionTypeTarget;
@@ -1088,7 +1088,7 @@ namespace RFiDGear.ViewModel
                 {
                     selectedDesfireAppKeyNumberTarget = value;
                 }
-                RaisePropertyChanged("SelectedDesfireAppKeyNumberTarget");
+                OnPropertyChanged(nameof(SelectedDesfireAppKeyNumberTarget));
             }
         }
         private string selectedDesfireAppKeyNumberTarget;
@@ -1109,7 +1109,7 @@ namespace RFiDGear.ViewModel
                 {
                     selectedDesfireAppKeyVersionTarget = value;
                 }
-                RaisePropertyChanged("SelectedDesfireAppKeyVersionTarget");
+                OnPropertyChanged(nameof(SelectedDesfireAppKeyVersionTarget));
             }
         }
         private string selectedDesfireAppKeyVersionTarget;
@@ -1135,7 +1135,7 @@ namespace RFiDGear.ViewModel
                 IsValidDesfireAppKeyTarget = (
                     CustomConverter.IsInHexFormat(desfireAppKeyTarget) &&
                     desfireAppKeyTarget.Length == 32);
-                RaisePropertyChanged("DesfireAppKeyTarget");
+                OnPropertyChanged(nameof(DesfireAppKeyTarget));
             }
         }
         private string desfireAppKeyTarget;
@@ -1150,7 +1150,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidDesfireAppKeyTarget = value;
-                RaisePropertyChanged("IsValidDesfireAppKeyTarget");
+                OnPropertyChanged(nameof(IsValidDesfireAppKeyTarget));
             }
         }
         private bool? isValidDesfireAppKeyTarget;
@@ -1172,7 +1172,7 @@ namespace RFiDGear.ViewModel
                     appNumberTarget = value.ToUpper();
                 }
                 IsValidAppNumberTarget = (int.TryParse(value, out appNumberTargetAsInt) && appNumberTargetAsInt <= (int)0xFFFFFF);
-                RaisePropertyChanged("AppNumberTarget");
+                OnPropertyChanged(nameof(AppNumberTarget));
             }
         }
         private string appNumberTarget;
@@ -1194,7 +1194,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidAppNumberTarget = value;
-                RaisePropertyChanged("IsValidAppNumberTarget");
+                OnPropertyChanged(nameof(IsValidAppNumberTarget));
             }
         }
         private bool? isValidAppNumberTarget;
@@ -1216,7 +1216,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireFileAccessRightReadWrite = value;
-                RaisePropertyChanged("SelectedDesfireFileAccessRightReadWrite");
+                OnPropertyChanged(nameof(SelectedDesfireFileAccessRightReadWrite));
             }
         }
         private TaskAccessRights selectedDesfireFileAccessRightReadWrite;
@@ -1230,7 +1230,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireFileAccessRightChange = value;
-                RaisePropertyChanged("SelectedDesfireFileAccessRightChange");
+                OnPropertyChanged(nameof(SelectedDesfireFileAccessRightChange));
             }
         }
         private TaskAccessRights selectedDesfireFileAccessRightChange;
@@ -1244,7 +1244,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireFileAccessRightRead = value;
-                RaisePropertyChanged("SelectedDesfireFileAccessRightRead");
+                OnPropertyChanged(nameof(SelectedDesfireFileAccessRightRead));
             }
         }
         private TaskAccessRights selectedDesfireFileAccessRightRead;
@@ -1258,7 +1258,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireFileAccessRightWrite = value;
-                RaisePropertyChanged("SelectedDesfireFileAccessRightWrite");
+                OnPropertyChanged(nameof(SelectedDesfireFileAccessRightWrite));
             }
         }
         private TaskAccessRights selectedDesfireFileAccessRightWrite;
@@ -1272,7 +1272,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireFileCryptoMode = value;
-                RaisePropertyChanged("SelectedDesfireFileCryptoMode");
+                OnPropertyChanged(nameof(SelectedDesfireFileCryptoMode));
             }
         }
         private EncryptionMode selectedDesfireFileCryptoMode;
@@ -1286,7 +1286,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireFileType = value;
-                RaisePropertyChanged("SelectedDesfireFileType");
+                OnPropertyChanged(nameof(SelectedDesfireFileType));
             }
         }
         private FileType_MifareDesfireFileType selectedDesfireFileType;
@@ -1301,7 +1301,7 @@ namespace RFiDGear.ViewModel
             {
                 fileNumberCurrent = value;
                 IsValidFileNumberCurrent = (int.TryParse(value, out fileNumberCurrentAsInt) && fileNumberCurrentAsInt <= (int)0xFFFF);
-                RaisePropertyChanged("FileNumberCurrent");
+                OnPropertyChanged(nameof(FileNumberCurrent));
             }
         }
         private string fileNumberCurrent;
@@ -1323,7 +1323,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidFileNumberCurrent = value;
-                RaisePropertyChanged("IsValidFileNumberCurrent");
+                OnPropertyChanged(nameof(IsValidFileNumberCurrent));
             }
         }
         private bool? isValidFileNumberCurrent;
@@ -1361,7 +1361,7 @@ namespace RFiDGear.ViewModel
                     }
                 }
 
-                RaisePropertyChanged("FileSizeCurrent");
+                OnPropertyChanged(nameof(FileSizeCurrent));
             }
         }
         private string fileSizeCurrent;
@@ -1383,7 +1383,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidFileSizeCurrent = value;
-                RaisePropertyChanged("IsValidFileSizeCurrent");
+                OnPropertyChanged(nameof(IsValidFileSizeCurrent));
             }
         }
         private bool? isValidFileSizeCurrent;
@@ -1413,7 +1413,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 childNodeViewModelTemp = value;
-                RaisePropertyChanged("ChildNodeViewModelTemp");
+                OnPropertyChanged(nameof(ChildNodeViewModelTemp));
             }
         }
         private RFiDChipChildLayerViewModel childNodeViewModelTemp;
@@ -1444,7 +1444,7 @@ namespace RFiDGear.ViewModel
                     CustomConverter.IsInHexFormat(desfireReadKeyCurrent) &&
                     desfireReadKeyCurrent.Length == 32);
 
-                RaisePropertyChanged("DesfireReadKeyCurrent");
+                OnPropertyChanged(nameof(DesfireReadKeyCurrent));
             }
         }
         private string desfireReadKeyCurrent;
@@ -1461,7 +1461,7 @@ namespace RFiDGear.ViewModel
                 {
                     selectedDesfireReadKeyNumber = value;
                 }
-                RaisePropertyChanged("SelectedDesfireReadKeyNumber");
+                OnPropertyChanged(nameof(SelectedDesfireReadKeyNumber));
             }
         }
         private string selectedDesfireReadKeyNumber;
@@ -1477,7 +1477,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidDesfireReadKeyCurrent = value;
-                RaisePropertyChanged("IsValidDesfireReadKeyCurrent");
+                OnPropertyChanged(nameof(IsValidDesfireReadKeyCurrent));
             }
         }
         private bool? isValidDesfireReadKeyCurrent;
@@ -1503,7 +1503,7 @@ namespace RFiDGear.ViewModel
                     CustomConverter.IsInHexFormat(desfireWriteKeyCurrent) &&
                     desfireWriteKeyCurrent.Length == 32);
 
-                RaisePropertyChanged("DesfireWriteKeyCurrent");
+                OnPropertyChanged(nameof(DesfireWriteKeyCurrent));
             }
         }
         private string desfireWriteKeyCurrent;
@@ -1520,7 +1520,7 @@ namespace RFiDGear.ViewModel
                 {
                     selectedDesfireWriteKeyNumber = value;
                 }
-                RaisePropertyChanged("SelectedDesfireWriteKeyNumber");
+                OnPropertyChanged(nameof(SelectedDesfireWriteKeyNumber));
             }
         }
         private string selectedDesfireWriteKeyNumber;
@@ -1536,7 +1536,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidDesfireWriteKeyCurrent = value;
-                RaisePropertyChanged("IsValidDesfireWriteKeyCurrent");
+                OnPropertyChanged(nameof(IsValidDesfireWriteKeyCurrent));
             }
         }
         private bool? isValidDesfireWriteKeyCurrent;
@@ -1550,7 +1550,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireReadKeyEncryptionType = value;
-                RaisePropertyChanged("SelectedDesfireReadKeyEncryptionType");
+                OnPropertyChanged(nameof(SelectedDesfireReadKeyEncryptionType));
             }
         }
         private DESFireKeyType selectedDesfireReadKeyEncryptionType;
@@ -1564,7 +1564,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDesfireWriteKeyEncryptionType = value;
-                RaisePropertyChanged("SelectedDesfireWriteKeyEncryptionType");
+                OnPropertyChanged(nameof(SelectedDesfireWriteKeyEncryptionType));
             }
         }
         private DESFireKeyType selectedDesfireWriteKeyEncryptionType;
@@ -1915,8 +1915,8 @@ namespace RFiDGear.ViewModel
 
                                                  CurrentTaskErrorLevel = result;
 
-                                                 RaisePropertyChanged("ChildNodeViewModelTemp");
-                                                 RaisePropertyChanged("ChildNodeViewModelFromChip");
+                                                 OnPropertyChanged(nameof(ChildNodeViewModelTemp));
+                                                 OnPropertyChanged(nameof(ChildNodeViewModelFromChip));
 
                                                  return;
                                              }
@@ -1987,8 +1987,8 @@ namespace RFiDGear.ViewModel
 
                     childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel((CustomConverter.GetBytes(data, out err)), 0);
 
-                    RaisePropertyChanged("ChildNodeViewModelTemp");
-                    RaisePropertyChanged("ChildNodeViewModelFromChip");
+                    OnPropertyChanged(nameof(ChildNodeViewModelTemp));
+                    OnPropertyChanged(nameof(ChildNodeViewModelFromChip));
                 }
                 catch (Exception e)
                 {
@@ -2980,7 +2980,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _Caption = value;
-                RaisePropertyChanged("Caption");
+                OnPropertyChanged(nameof(Caption));
             }
         }
         private string _Caption;

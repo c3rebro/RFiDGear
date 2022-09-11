@@ -19,8 +19,8 @@
  * - 
  */
 
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using MefMvvm.SharedContracts.ViewModel;
 
@@ -58,7 +58,7 @@ namespace RFiDGear.ViewModel
     /// Description of MainWindowViewModel.
     /// </summary>
     [ExportViewModel("MainWin")]
-    public class MainWindowViewModel : ViewModelBase
+    public class MainWindowViewModel : ObservableObject
     {
         private static readonly string FacilityName = "RFiDGear";
 
@@ -76,6 +76,7 @@ namespace RFiDGear.ViewModel
         private protected ChipTaskHandlerModel taskHandler; 
         private protected List<MifareClassicChipModel> mifareClassicUidModels = new List<MifareClassicChipModel>();
         private protected List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
+        private protected bool _runSelectedOnly;
 
         private int currentTaskIndex = 0;
         //set if task was completed; indicates greenlight to continue execution
@@ -305,7 +306,7 @@ namespace RFiDGear.ViewModel
 
                 //Mouse.OverrideCursor = null;
 
-                RaisePropertyChanged("ChipTasks");
+                OnPropertyChanged(nameof(ChipTasks));
             }
         }
         #endregion
@@ -481,7 +482,7 @@ namespace RFiDGear.ViewModel
 
                                     ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
 
-                                    RaisePropertyChanged("ChipTasks");
+                                    OnPropertyChanged(nameof(ChipTasks));
                                 }
                                 sender.Close();
                             },
@@ -514,7 +515,7 @@ namespace RFiDGear.ViewModel
 
             triggerReadChip.IsEnabled = timerState;
 
-            RaisePropertyChanged("ChipTasks");
+            OnPropertyChanged(nameof(ChipTasks));
         }
 
         /// <summary>
@@ -551,7 +552,7 @@ namespace RFiDGear.ViewModel
 
                             ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
 
-                            RaisePropertyChanged("ChipTasks");
+                            OnPropertyChanged(nameof(ChipTasks));
                         }
                         sender.Close();
                     },
@@ -582,7 +583,7 @@ namespace RFiDGear.ViewModel
 
             triggerReadChip.IsEnabled = timerState;
 
-            RaisePropertyChanged("ChipTasks");
+            OnPropertyChanged(nameof(ChipTasks));
         }
 
         /// <summary>
@@ -630,7 +631,7 @@ namespace RFiDGear.ViewModel
 
                                     ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
 
-                                    RaisePropertyChanged("ChipTasks");
+                                    OnPropertyChanged(nameof(ChipTasks));
                                 }
                                 sender.Close();
                             },
@@ -713,7 +714,7 @@ namespace RFiDGear.ViewModel
 
                                 ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
 
-                                RaisePropertyChanged("ChipTasks");
+                                OnPropertyChanged(nameof(ChipTasks));
 
                                 sender.Close();
                             }
@@ -778,7 +779,7 @@ namespace RFiDGear.ViewModel
 
                                 ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
 
-                                RaisePropertyChanged("ChipTasks");
+                                OnPropertyChanged(nameof(ChipTasks));
 
                                 sender.Close();
                             }
@@ -1091,18 +1092,19 @@ namespace RFiDGear.ViewModel
         public ICommand WriteSelectedTaskToChipOnceCommand => new RelayCommand(OnNewWriteSelectedTaskToChipOnceCommand);
         private void OnNewWriteSelectedTaskToChipOnceCommand()
         {
-            OnNewWriteToChipOnceCommand(true);
+            _runSelectedOnly = true;
+            OnNewWriteToChipOnceCommand();
         }
 
         /// <summary>
         /// 
         /// </summary>
-        public ICommand WriteToChipOnceCommand => new RelayCommand<bool>(OnNewWriteToChipOnceCommand);
-        private void OnNewWriteToChipOnceCommand(bool _runSelectedOnly = false)
+        public ICommand WriteToChipOnceCommand => new RelayCommand(OnNewWriteToChipOnceCommand);
+        private void OnNewWriteToChipOnceCommand()
         {
             OnNewReadChipCommand();
-            RaisePropertyChanged("TreeViewParentNodes");
-            RaisePropertyChanged("ChipTasks");
+            OnPropertyChanged(nameof(TreeViewParentNodes));
+            OnPropertyChanged(nameof(ChipTasks));
 
             GenericChipModel GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
             MifareDesfireChipModel DesfireChip = new MifareDesfireChipModel("", CARD_TYPE.Unspecified);
@@ -1474,10 +1476,10 @@ namespace RFiDGear.ViewModel
                                 break;
                             }
 
-                            RaisePropertyChanged("TreeViewParentNodes");
+                            OnPropertyChanged(nameof(TreeViewParentNodes));
                         }
                     }
-                    RaisePropertyChanged("TreeViewParentNodes");
+                    OnPropertyChanged(nameof(TreeViewParentNodes));
 
                     taskTimeout.Stop();
 
@@ -1630,8 +1632,8 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand NewOpenFileDialogCommand => new RelayCommand<bool>(OnNewOpenFileDialog);
-        private void OnNewOpenFileDialog(bool omitFileDlg = false)
+        public ICommand NewOpenFileDialogCommand => new RelayCommand(OnNewOpenFileDialog);
+        private void OnNewOpenFileDialog()
         {
             bool autoLoadLastUsedDB;
             string lastUsedDBPath;
@@ -1684,7 +1686,7 @@ namespace RFiDGear.ViewModel
             }
             Mouse.OverrideCursor = null;
 
-            RaisePropertyChanged("ChipTasks");
+            OnPropertyChanged(nameof(ChipTasks));
         }
 
         /// <summary>
@@ -1787,7 +1789,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedSetupViewModel = value;
-                RaisePropertyChanged("SelectedSetupViewModel");
+                OnPropertyChanged(nameof(SelectedSetupViewModel));
             }
 
         }
@@ -1803,7 +1805,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 treeViewParentNodes = value;
-                RaisePropertyChanged("TreeViewParentNodes");
+                OnPropertyChanged(nameof(TreeViewParentNodes));
             }
         }
         private ObservableCollection<RFiDChipParentLayerViewModel> treeViewParentNodes;
@@ -1818,7 +1820,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 taskHandler = value;
-                RaisePropertyChanged("ChipTasks");
+                OnPropertyChanged(nameof(ChipTasks));
             }
         }
 
@@ -1842,7 +1844,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 currentReader = value;
-                RaisePropertyChanged("CurrentReader");
+                OnPropertyChanged(nameof(CurrentReader));
             }
         }
         private string currentReader;
@@ -1856,7 +1858,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 readerStatus = value;
-                RaisePropertyChanged("ReaderStatus");
+                OnPropertyChanged(nameof(ReaderStatus));
             }
         }
         private string readerStatus;
@@ -1894,7 +1896,7 @@ namespace RFiDGear.ViewModel
                     settings.DefaultSpecification.AutoCheckForUpdates = value;
                     settings.SaveSettings();
                 }
-                RaisePropertyChanged("IsCheckForUpdatesChecked");
+                OnPropertyChanged(nameof(IsCheckForUpdatesChecked));
 
             }
         }
@@ -1927,7 +1929,7 @@ namespace RFiDGear.ViewModel
                         value = false;
                     }
 
-                    RaisePropertyChanged("RadioButtonGermanLanguageSelectedState");
+                    OnPropertyChanged(nameof(RadioButtonGermanLanguageSelectedState));
                 }
             }
         }
@@ -1960,7 +1962,7 @@ namespace RFiDGear.ViewModel
                         value = false;
                     }
 
-                    RaisePropertyChanged("RadioButtonEnglishLanguageSelectedState");
+                    OnPropertyChanged(nameof(RadioButtonEnglishLanguageSelectedState));
                 }
             }
         }

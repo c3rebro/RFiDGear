@@ -1,11 +1,11 @@
-﻿using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
-
-using MvvmDialogs.ViewModels;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+
+using MvvmDialogs.ViewModels;
 
 using System;
 using System.Collections.Generic;
@@ -20,7 +20,7 @@ namespace RFiDGear.ViewModel
     /// Description of RFiDChipChildLayerViewModel.
     /// </summary>
     [XmlRootAttribute("TreeViewChildNode", IsNullable = false)]
-    public class RFiDChipChildLayerViewModel : ViewModelBase, IUserDialogViewModel
+    public class RFiDChipChildLayerViewModel : ObservableObject, IUserDialogViewModel
     {
         private readonly ResourceLoader resLoader = new ResourceLoader();
         private readonly RFiDChipParentLayerViewModel _parent;
@@ -281,7 +281,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedItem = value;
-                RaisePropertyChanged("SelectedItem");
+                OnPropertyChanged(nameof(SelectedItem));
             }
         }
         private object selectedItem;
@@ -301,7 +301,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 children = value;
-                RaisePropertyChanged("Children");
+                OnPropertyChanged(nameof(Children));
             }
         }
         private ObservableCollection<RFiDChipGrandChildLayerViewModel> children;
@@ -316,7 +316,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isSelected = value;
-                RaisePropertyChanged("IsSelected");
+                OnPropertyChanged(nameof(IsSelected));
             }
         }
         private bool isSelected;
@@ -331,7 +331,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isExpanded = value;
-                RaisePropertyChanged("IsExpanded");
+                OnPropertyChanged(nameof(IsExpanded));
 
                 // Expand all the way up to the root.
                 if (isExpanded && _parent != null)
@@ -351,7 +351,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 hasChanged = value;
-                RaisePropertyChanged("HasChanged");
+                OnPropertyChanged(nameof(HasChanged));
             }
         }
         private bool? hasChanged;
@@ -365,7 +365,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isTask = value;
-                RaisePropertyChanged("IsTask");
+                OnPropertyChanged(nameof(IsTask));
             }
         }
         private bool? isTask;
@@ -379,7 +379,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isAuth = value;
-                RaisePropertyChanged("IsAuthenticated");
+                OnPropertyChanged(nameof(IsAuthenticated));
             }
         }
         private bool? isAuth;
@@ -473,7 +473,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 childNodeHeader = value;
-                RaisePropertyChanged("ChildNodeHeader");
+                OnPropertyChanged(nameof(ChildNodeHeader));
             }
         }
         private string childNodeHeader;

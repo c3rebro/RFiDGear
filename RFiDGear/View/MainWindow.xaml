@@ -3,13 +3,10 @@
     x:Class="RFiDGear.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:c="clr-namespace:RFiDGear.View"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
     xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
-    xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
     xmlns:local="clr-namespace:RFiDGear"
-    xmlns:m="clr-namespace:RFiDGear.Model"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:RFiDGear.ViewModel"
     x:Name="homeWindow"
@@ -321,15 +318,12 @@
                 SelectedItem="{Binding Path=DataContext.SelectedSetupViewModel, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
                 SelectionMode="Single"
                 VirtualizingPanel.IsVirtualizing="True">
-                <i:Interaction.Triggers>
-                    <i:EventTrigger 
-                        EventName="MouseDoubleClick">
-                        <i:InvokeCommandAction Command="{Binding GetAddEditCommand}"/>
-                    </i:EventTrigger>
-                </i:Interaction.Triggers>
                 <DataGrid.ContextMenu>
                     <ContextMenu ItemsSource="{Binding EmptySpaceContextMenu}" />
                 </DataGrid.ContextMenu>
+                <DataGrid.InputBindings>
+                    <MouseBinding Gesture="LeftDoubleClick" Command="{Binding GetAddEditCommand}" />
+                </DataGrid.InputBindings>
                 <DataGrid.Resources>
                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="DodgerBlue" />
                     <ContextMenu x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">

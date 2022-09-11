@@ -1,4 +1,4 @@
-﻿using GalaSoft.MvvmLight;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
@@ -7,7 +7,7 @@ namespace RFiDGear.ViewModel
     /// Description of RFiDChipGrandChildLayerViewModel.
     /// </summary>
     [XmlRootAttribute("TreeViewGrandGrandChildNode", IsNullable = false)]
-    public class RFiDChipGrandGrandChildLayerViewModel : ViewModelBase
+    public class RFiDChipGrandGrandChildLayerViewModel : ObservableObject
     {
         #region Constructors
 
@@ -44,7 +44,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 parent = value;
-                RaisePropertyChanged("Parent");
+                OnPropertyChanged(nameof(Parent));
             }
         }
         private RFiDChipGrandChildLayerViewModel parent;
@@ -70,7 +70,7 @@ namespace RFiDGear.ViewModel
                 if (value != isExpanded)
                 {
                     isExpanded = value;
-                    RaisePropertyChanged("IsExpanded");
+                    OnPropertyChanged(nameof(IsExpanded));
                 }
 
                 // Expand all the way up to the root.
@@ -91,7 +91,7 @@ namespace RFiDGear.ViewModel
                 if (value != isSelected)
                 {
                     isSelected = value;
-                    RaisePropertyChanged("IsSelected");
+                    OnPropertyChanged(nameof(IsSelected));
                 }
             }
         }
@@ -104,7 +104,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isAuth = value;
-                RaisePropertyChanged("IsAuthenticated");
+                OnPropertyChanged(nameof(IsAuthenticated));
             }
         }
 
@@ -116,7 +116,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isTask = value;
-                RaisePropertyChanged("IsTask");
+                OnPropertyChanged(nameof(IsTask));
             }
         }
 
@@ -128,7 +128,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isVisible = value;
-                RaisePropertyChanged("IsVisible");
+                OnPropertyChanged(nameof(IsVisible));
             }
         }
 

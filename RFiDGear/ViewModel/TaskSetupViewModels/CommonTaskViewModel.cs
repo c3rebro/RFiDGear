@@ -5,8 +5,8 @@
  *
  */
 
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using MvvmDialogs.ViewModels;
 
@@ -29,7 +29,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of ReportTaskViewModel.
     /// </summary>
-    public class CommonTaskViewModel : ViewModelBase, IUserDialogViewModel, IGenericTaskModel
+    public class CommonTaskViewModel : ObservableObject, IUserDialogViewModel, IGenericTaskModel
     {
         #region Fields
         private static readonly string FacilityName = "RFiDGear";
@@ -124,7 +124,7 @@ namespace RFiDGear.ViewModel
 
                             TemplateFields = new ObservableCollection<string>(reader.GetReportFields().OrderBy(x => x));
 
-                            RaisePropertyChanged("SelectedTemplateField");
+                            OnPropertyChanged(nameof(SelectedTemplateField));
                         }
                     }
                 }
@@ -209,7 +209,7 @@ namespace RFiDGear.ViewModel
             {
                 selectedExecuteConditionTaskIndex = value;
                 IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
-                RaisePropertyChanged("SelectedExecuteConditionTaskIndex");
+                OnPropertyChanged(nameof(SelectedExecuteConditionTaskIndex));
             }
         }
         private string selectedExecuteConditionTaskIndex;
@@ -224,7 +224,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedExecuteConditionTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedExecuteConditionTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedExecuteConditionTaskIndex));
             }
         }
         private bool? isValidSelectedExecuteConditionTaskIndex;
@@ -246,7 +246,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedExecuteConditionErrorLevel = value;
-                RaisePropertyChanged("SelectedExecuteConditionErrorLevel");
+                OnPropertyChanged(nameof(SelectedExecuteConditionErrorLevel));
             }
         }
         private ERROR selectedExecuteConditionErrorLevel;
@@ -261,7 +261,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isTaskCompletedSuccessfully = value;
-                RaisePropertyChanged("IsTaskCompletedSuccessfully");
+                OnPropertyChanged(nameof(IsTaskCompletedSuccessfully));
             }
         }
         private bool? isTaskCompletedSuccessfully;
@@ -283,7 +283,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedTaskIndex));
             }
         }
         private bool? isValidSelectedTaskIndex;
@@ -329,7 +329,7 @@ namespace RFiDGear.ViewModel
                         IsTabPageLogicTaskSettingsViewEnabled = true;
                         break;
                 }
-                RaisePropertyChanged("SelectedTaskType");
+                OnPropertyChanged(nameof(SelectedTaskType));
             }
         }
         private TaskType_CommonTask selectedTaskType;
@@ -342,7 +342,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedTabIndex = value;
-                RaisePropertyChanged("SelectedTabIndex");
+                OnPropertyChanged(nameof(SelectedTabIndex));
             }
             get => selectedTabIndex;
         }
@@ -356,7 +356,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isTabPageLogicTaskSettingsViewEnabled = value;
-                RaisePropertyChanged("IsTabPageLogicTaskSettingsViewEnabled");
+                OnPropertyChanged(nameof(IsTabPageLogicTaskSettingsViewEnabled));
             }
             get => isTabPageLogicTaskSettingsViewEnabled;
         }
@@ -370,7 +370,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isTabPageReportSettingsViewEnabled = value;
-                RaisePropertyChanged("IsTabPageReportSettingsViewEnabled");
+                OnPropertyChanged(nameof(IsTabPageReportSettingsViewEnabled));
             }
             get => isTabPageReportSettingsViewEnabled;
         }
@@ -385,7 +385,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedTaskDescription = value;
-                RaisePropertyChanged("SelectedTaskDescription");
+                OnPropertyChanged(nameof(SelectedTaskDescription));
             }
         }
         private string selectedTaskDescription;
@@ -401,7 +401,6 @@ namespace RFiDGear.ViewModel
             {
                 selectedTaskIndex = value;
                 IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
-                RaisePropertyChanged("SelectedTaskIndexForThisReport");
             }
         }
         private string selectedTaskIndex;
@@ -426,7 +425,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isReportSetupTabEnabled = value;
-                RaisePropertyChanged("IsReportSetupTabEnabled");
+                OnPropertyChanged(nameof(IsReportSetupTabEnabled));
             }
         }
         private bool isReportSetupTabEnabled;
@@ -440,7 +439,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isLogicCheckerTabEnabled = value;
-                RaisePropertyChanged("IsLogicCheckerTabEnabled");
+                OnPropertyChanged(nameof(IsLogicCheckerTabEnabled));
             }
         }
         private bool isLogicCheckerTabEnabled;
@@ -454,7 +453,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 checkpoints = value;
-                RaisePropertyChanged("Checkpoints");
+                OnPropertyChanged(nameof(Checkpoints));
             }
         }
         private ObservableCollection<Checkpoint> checkpoints;
@@ -476,7 +475,7 @@ namespace RFiDGear.ViewModel
                     SelectedTemplateField = selectedCheckpoint.TemplateField;
                 }
 
-                RaisePropertyChanged("SelectedCheckpoint");
+                OnPropertyChanged(nameof(SelectedCheckpoint));
             }
         }
         private Checkpoint selectedCheckpoint;
@@ -527,7 +526,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedErrorLevel = value;
-                RaisePropertyChanged("SelectedErrorLevel");
+                OnPropertyChanged(nameof(SelectedErrorLevel));
             }
         }
         private ERROR selectedErrorLevel;
@@ -542,7 +541,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedTaskIndexFromAvailableTasks = value;
-                RaisePropertyChanged("SelectedTaskIndexFromAvailableTasks");
+                OnPropertyChanged(nameof(SelectedTaskIndexFromAvailableTasks));
             }
         }
         private string selectedTaskIndexFromAvailableTasks;
@@ -564,7 +563,7 @@ namespace RFiDGear.ViewModel
             {
                 selectedCheckpointCounter = value;
                 int.TryParse(value, out selectedCheckpointCounterAsInt);
-                RaisePropertyChanged("SelectedCheckpointCounter");
+                OnPropertyChanged(nameof(SelectedCheckpointCounter));
             }
         }
         private string selectedCheckpointCounter;
@@ -628,7 +627,7 @@ namespace RFiDGear.ViewModel
                         IsLogicFuncTaskCompareWithEnabled = true;
                         break;
                 }
-                RaisePropertyChanged("SelectedLogicCondition");
+                OnPropertyChanged(nameof(SelectedLogicCondition));
             }
         }
         private LOGIC_STATE selectedLogicCondition;
@@ -643,7 +642,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isLogicFuncTaskCompareWithEnabled = value;
-                RaisePropertyChanged("isLogicFuncTaskCompareWithEnabled");
+                OnPropertyChanged(nameof(isLogicFuncTaskCompareWithEnabled));
             }
         }
         private bool isLogicFuncTaskCompareWithEnabled;
@@ -658,7 +657,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isLogicFuncTaskCountFuncEnabled = value;
-                RaisePropertyChanged("IsLogicFuncTaskCountFuncEnabled");
+                OnPropertyChanged(nameof(IsLogicFuncTaskCountFuncEnabled));
             }
         }
         private bool isLogicFuncTaskCountFuncEnabled;
@@ -673,7 +672,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isLogicFuncTaskLogicFuncEnabled = value;
-                RaisePropertyChanged("IsLogicFuncTaskLogicFuncEnabled");
+                OnPropertyChanged(nameof(IsLogicFuncTaskLogicFuncEnabled));
             }
         }
         private bool isLogicFuncTaskLogicFuncEnabled;
@@ -686,7 +685,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 compareValue = value;
-                RaisePropertyChanged("CompareValue");
+                OnPropertyChanged(nameof(CompareValue));
             }
         }
         private string compareValue;
@@ -705,7 +704,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 reportTemplatePath = value;
-                RaisePropertyChanged("ReportTemplatePath");
+                OnPropertyChanged(nameof(ReportTemplatePath));
             }
         }
         private string reportTemplatePath;
@@ -721,7 +720,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 templateFields = value;
-                RaisePropertyChanged("TemplateFields");
+                OnPropertyChanged(nameof(TemplateFields));
             }
         }
         private ObservableCollection<string> templateFields;
@@ -736,7 +735,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedTemplateField = value;
-                RaisePropertyChanged("SelectedTemplateField");
+                OnPropertyChanged(nameof(SelectedTemplateField));
             }
         }
         private string selectedTemplateField;
@@ -751,7 +750,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 content = value;
-                RaisePropertyChanged("Content");
+                OnPropertyChanged(nameof(Content));
             }
         }
         private string content;
@@ -820,7 +819,7 @@ namespace RFiDGear.ViewModel
 
                     Mouse.OverrideCursor = null;
 
-                    RaisePropertyChanged("TemplateFields");
+                    OnPropertyChanged(nameof(TemplateFields));
                 }
 
                 else
@@ -981,7 +980,7 @@ namespace RFiDGear.ViewModel
                     {
                         CurrentTaskErrorLevel = ERROR.IOError;
                         IsTaskCompletedSuccessfully = false;
-                        RaisePropertyChanged("TemplateFields");
+                        OnPropertyChanged(nameof(TemplateFields));
 
                         LogWriter.CreateLogEntry(e, FacilityName);
 
@@ -991,7 +990,7 @@ namespace RFiDGear.ViewModel
                     CurrentTaskErrorLevel = ERROR.NoError;
                     IsTaskCompletedSuccessfully = true;
 
-                    RaisePropertyChanged("TemplateFields");
+                    OnPropertyChanged(nameof(TemplateFields));
 
                 }
             });
@@ -1049,7 +1048,7 @@ namespace RFiDGear.ViewModel
                     Checkpoints.Add(checkpoint);
                 }
 
-                RaisePropertyChanged("Checkpoints");
+                OnPropertyChanged(nameof(Checkpoints));
             }
 
             catch (Exception e)
@@ -1546,7 +1545,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _Caption = value;
-                RaisePropertyChanged("Caption");
+                OnPropertyChanged(nameof(Caption));
             }
         }
         private string _Caption;

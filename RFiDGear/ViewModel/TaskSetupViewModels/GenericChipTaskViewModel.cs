@@ -5,8 +5,8 @@
  *
  */
 
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
 using MvvmDialogs.ViewModels;
@@ -30,7 +30,7 @@ namespace RFiDGear.ViewModel
     /// <summary>
     /// Description of CommonTaskViewModel.
     /// </summary>
-    public class GenericChipTaskViewModel : ViewModelBase, IUserDialogViewModel, IGenericTaskModel
+    public class GenericChipTaskViewModel : ObservableObject, IUserDialogViewModel, IGenericTaskModel
     {
         #region fields
         private static readonly string FacilityName = "RFiDGear";
@@ -133,7 +133,7 @@ namespace RFiDGear.ViewModel
             {
                 selectedExecuteConditionTaskIndex = value;
                 IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
-                RaisePropertyChanged("SelectedExecuteConditionTaskIndex");
+                OnPropertyChanged(nameof(SelectedExecuteConditionTaskIndex));
             }
         }
         private string selectedExecuteConditionTaskIndex;
@@ -148,7 +148,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedExecuteConditionTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedExecuteConditionTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedExecuteConditionTaskIndex));
             }
         }
         private bool? isValidSelectedExecuteConditionTaskIndex;
@@ -170,7 +170,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedExecuteConditionErrorLevel = value;
-                RaisePropertyChanged("SelectedExecuteConditionErrorLevel");
+                OnPropertyChanged(nameof(SelectedExecuteConditionErrorLevel));
             }
         }
         private ERROR selectedExecuteConditionErrorLevel;
@@ -184,7 +184,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedChipType = value;
-                RaisePropertyChanged("SelectedChipType");
+                OnPropertyChanged(nameof(SelectedChipType));
             }
         }
         private CARD_TYPE selectedChipType;
@@ -200,7 +200,6 @@ namespace RFiDGear.ViewModel
             {
                 selectedTaskIndex = value;
                 IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
-                RaisePropertyChanged("SelectedTaskIndexForThisReport");
             }
         }
         private string selectedTaskIndex;
@@ -221,7 +220,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isTaskCompletedSuccessfully = value;
-                RaisePropertyChanged("IsTaskCompletedSuccessfully");
+                OnPropertyChanged(nameof(IsTaskCompletedSuccessfully));
             }
         }
         private bool? isTaskCompletedSuccessfully;
@@ -243,7 +242,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 isValidSelectedTaskIndex = value;
-                RaisePropertyChanged("IsValidSelectedTaskIndex");
+                OnPropertyChanged(nameof(IsValidSelectedTaskIndex));
             }
         }
         private bool? isValidSelectedTaskIndex;
@@ -271,7 +270,7 @@ namespace RFiDGear.ViewModel
 
                         break;
                 }
-                RaisePropertyChanged("SelectedTaskType");
+                OnPropertyChanged(nameof(SelectedTaskType));
             }
         }
         private TaskType_GenericChipTask selectedTaskType;
@@ -285,7 +284,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedTaskDescription = value;
-                RaisePropertyChanged("SelectedTaskDescription");
+                OnPropertyChanged(nameof(SelectedTaskDescription));
             }
         }
         private string selectedTaskDescription;
@@ -520,7 +519,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 _Caption = value;
-                RaisePropertyChanged("Caption");
+                OnPropertyChanged(nameof(Caption));
             }
         }
         private string _Caption;
