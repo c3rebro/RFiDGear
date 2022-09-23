@@ -18,6 +18,7 @@ using Log4CSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -33,6 +34,8 @@ namespace RFiDGear.ViewModel
     {
         #region Fields
         private static readonly string FacilityName = "RFiDGear";
+        private static int IterCounter = 1; //Initial Value of Counter: How often have "this" been called (+1 per "run all tasks")
+        // The Counter could be replaced in an pdf by %n; %nn or %nnn. increased once per run all tasks: %n -> 1 on first execution
 
         private protected ReportReaderWriter reportReaderWriter;
         private protected Checkpoint checkpoint;
@@ -303,12 +306,16 @@ namespace RFiDGear.ViewModel
                         IsLogicCheckerTabEnabled = false;
                         IsTabPageLogicTaskSettingsViewEnabled = false;
                         IsReportSetupTabEnabled = false;
+                        IsTabPageExecuteProgramViewEnabled = false;
+                        IsProgramExecuterTabEnabled = false;
                         IsTabPageReportSettingsViewEnabled = false;
                         break;
 
                     case TaskType_CommonTask.CreateReport:
                         IsLogicCheckerTabEnabled = false;
                         IsReportSetupTabEnabled = true;
+                        IsTabPageExecuteProgramViewEnabled = false;
+                        IsProgramExecuterTabEnabled = false;
                         SelectedTabIndex = 1;
                         IsTabPageLogicTaskSettingsViewEnabled = false;
                         IsTabPageReportSettingsViewEnabled = true;
@@ -317,9 +324,20 @@ namespace RFiDGear.ViewModel
                     case TaskType_CommonTask.CheckLogicCondition:
                         IsLogicCheckerTabEnabled = true;
                         IsReportSetupTabEnabled = false;
+                        IsTabPageExecuteProgramViewEnabled = false;
+                        IsProgramExecuterTabEnabled = false;
                         SelectedTabIndex = 0;
                         IsTabPageLogicTaskSettingsViewEnabled = true;
                         IsTabPageReportSettingsViewEnabled = false;
+                        break;
+
+                    case TaskType_CommonTask.ExecuteProgram:
+                        IsLogicCheckerTabEnabled = false;
+                        IsTabPageReportSettingsViewEnabled = false;
+                        IsReportSetupTabEnabled = false;
+                        IsTabPageLogicTaskSettingsViewEnabled = false;
+                        IsTabPageExecuteProgramViewEnabled = true;
+                        IsProgramExecuterTabEnabled = true;
                         break;
 
                     case TaskType_CommonTask.ChangeDefault:
@@ -327,6 +345,9 @@ namespace RFiDGear.ViewModel
                         IsTabPageReportSettingsViewEnabled = true;
                         IsReportSetupTabEnabled = true;
                         IsTabPageLogicTaskSettingsViewEnabled = true;
+                        break;
+
+                    default:
                         break;
                 }
                 OnPropertyChanged(nameof(SelectedTaskType));
@@ -443,6 +464,34 @@ namespace RFiDGear.ViewModel
             }
         }
         private bool isLogicCheckerTabEnabled;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool IsTabPageExecuteProgramViewEnabled
+        {
+            set
+            {
+                isTabPageExecuteProgramViewEnabled = value;
+                OnPropertyChanged(nameof(IsTabPageExecuteProgramViewEnabled));
+            }
+            get => isTabPageExecuteProgramViewEnabled;
+        }
+        private bool isTabPageExecuteProgramViewEnabled;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool IsProgramExecuterTabEnabled
+        {
+            get => isProgramExecuterTabEnabled;
+            set
+            {
+                isProgramExecuterTabEnabled = value;
+                OnPropertyChanged(nameof(IsProgramExecuterTabEnabled));
+            }
+        }
+        private bool isProgramExecuterTabEnabled;
 
         /// <summary>
         /// 
@@ -758,6 +807,24 @@ namespace RFiDGear.ViewModel
 
         #endregion
 
+        #region ExecuteApplication
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string ProgramToExecute
+        {
+            get => programToExecute;
+            set
+            {
+                programToExecute = value;
+                OnPropertyChanged(nameof(ProgramToExecute));
+            }
+        }
+        private string programToExecute;
+
+        #endregion
+
         #endregion General Properties
 
         #region Commands
@@ -775,6 +842,9 @@ namespace RFiDGear.ViewModel
                     break;
                 case TaskType_CommonTask.CheckLogicCondition:
                     OnNewCheckLogicConditionCommand();
+                    break;
+                case TaskType_CommonTask.ExecuteProgram:
+                    //OnNewExecuteProgramCommand();
                     break;
                 default:
                     break;
@@ -794,7 +864,7 @@ namespace RFiDGear.ViewModel
             {
                 var dlg = new OpenFileDialogViewModel
                 {
-                    Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
+                    Title = ResourceLoader.GetResource("windowCaptionOpenReport"),
                     Filter = ResourceLoader.GetResource("filterStringSaveReport"),
                     Multiselect = false
                 };
@@ -824,7 +894,7 @@ namespace RFiDGear.ViewModel
 
                 else
                 {
-                    ReportTemplatePath = string.Empty;
+                    //ReportTemplatePath = string.Empty;
                 }
             }
 
@@ -880,7 +950,8 @@ namespace RFiDGear.ViewModel
 
                                 if (temporaryContent.Contains("%CHIPTYPE"))
                                 {
-                                    temporaryContent = temporaryContent.Replace("%CHIPTYPE", Enum.GetName(typeof(CARD_TYPE), GenericChip?.CardType) ?? "");
+                                    temporaryContent = temporaryContent.Replace("%CHIPTYPE", ResourceLoader.GetResource(
+                                    string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.CardType))) ?? "");
                                     hasVariable = true;
                                 }
 
@@ -928,8 +999,26 @@ namespace RFiDGear.ViewModel
                                     concatenate = true;
                                 }
 
+                                if (temporaryContent.Contains("%nnn"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%nnn", IterCounter.ToString("D3"));
+                                    IterCounter++;
+                                }
+
+                                if (temporaryContent.Contains("%nn"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%nn", IterCounter.ToString("D2"));
+                                    IterCounter++;
+                                }
+
+                                if (temporaryContent.Contains("%n"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%n", IterCounter.ToString("D1"));
+                                    IterCounter++;
+                                }
+
                                 // the "dollar" indicates an external variable that should be replaced
-                                if(temporaryContent.Contains("$"))
+                                if (temporaryContent.Contains("$"))
                                 {
                                     foreach(KeyValuePair<string,string> kvArg in Args)
                                     {
@@ -1010,50 +1099,6 @@ namespace RFiDGear.ViewModel
                 });
 
                 commonTask.RunSynchronously();
-            }
-
-            return;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public ICommand AddEditCheckpointCommand => new RelayCommand(OnNewAddEditCheckpointCommand);
-        private void OnNewAddEditCheckpointCommand()
-        {
-            try
-            {
-                checkpoint = new Checkpoint
-                {
-                    ErrorLevel = ERROR.Empty
-                };
-
-                if (SelectedTaskType == TaskType_CommonTask.CreateReport)
-                {
-                    checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
-                    checkpoint.ErrorLevel = SelectedErrorLevel;
-                    checkpoint.TemplateField = SelectedTemplateField;
-                    checkpoint.Content = Content;
-
-                    Checkpoints.Add(checkpoint);
-                }
-
-                else if (SelectedTaskType == TaskType_CommonTask.CheckLogicCondition)
-                {
-                    checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
-                    checkpoint.ErrorLevel = SelectedErrorLevel;
-                    checkpoint.Content = "";
-                    checkpoint.CompareValue = CompareValue;
-
-                    Checkpoints.Add(checkpoint);
-                }
-
-                OnPropertyChanged(nameof(Checkpoints));
-            }
-
-            catch (Exception e)
-            {
-                LogWriter.CreateLogEntry(e, FacilityName);
             }
 
             return;
@@ -1349,13 +1394,26 @@ namespace RFiDGear.ViewModel
                                         }
                                     }
 
-                                    else if (CompareValue.Contains("="))
+                                    else if (CompareValue.Contains("!="))
                                     {
-                                        string[] comparetemp = CompareValue.Replace(" ", string.Empty).Split('=');
+                                        string[] comparetemp = CompareValue.Split(new string[] { "!=" }, 2, StringSplitOptions.None);
 
                                         //assume 2 values to compare
                                         if (comparetemp.Length == 2)
                                         {
+                                            // the "dollar" indicates an external variable that should be replaced
+                                            if (comparetemp[0].Contains("$"))
+                                            {
+                                                foreach (KeyValuePair<string, string> kvArg in Args)
+                                                {
+                                                    if (Args[comparetemp[0]] != comparetemp[1])
+                                                    {
+                                                        CurrentTaskErrorLevel = ERROR.NoError;
+                                                        return;
+                                                    }
+                                                }
+                                            }
+
                                             switch (comparetemp[0])
                                             {
                                                 case "%FREEMEM":
@@ -1389,6 +1447,66 @@ namespace RFiDGear.ViewModel
                                                 default:
                                                     break;
                                             }
+
+
+                                        }
+                                    }
+
+                                    else if (CompareValue.Contains("=="))
+                                    {
+                                        string[] comparetemp = CompareValue.Split(new string[] { "==" }, 2, StringSplitOptions.None);
+
+                                        //assume 2 values to compare
+                                        if (comparetemp.Length == 2)
+                                        {
+                                            // the "dollar" indicates an external variable that should be replaced
+                                            if (comparetemp[0].Contains("$"))
+                                            {
+                                                foreach (KeyValuePair<string, string> kvArg in Args)
+                                                {
+                                                    if (Args[comparetemp[0]] == comparetemp[1])
+                                                    {
+                                                        CurrentTaskErrorLevel = ERROR.NoError;
+                                                        return;
+                                                    }
+                                                }
+                                            }
+
+                                            switch (comparetemp[0])
+                                            {
+                                                case "%FREEMEM":
+                                                    uint compareValueAsUInt;
+                                                    uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
+
+                                                    if (compareValueAsUInt == DesfireChip?.FreeMemory)
+                                                    {
+                                                        CurrentTaskErrorLevel = ERROR.NoError;
+                                                        return;
+                                                    }
+
+                                                    else
+                                                    {
+                                                        CurrentTaskErrorLevel = ERROR.IsNotTrue;
+                                                    }
+
+                                                    break;
+
+                                                case "%COUNTAPPS":
+                                                    uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
+
+                                                    if (DesfireChip?.AppIDs.Count() >= compareValueAsUInt)
+                                                    {
+                                                        CurrentTaskErrorLevel = ERROR.NoError;
+                                                        return;
+                                                    }
+
+                                                    break;
+
+                                                default:
+                                                    break;
+                                            }
+
+
                                         }
                                     }
                                 }
@@ -1430,6 +1548,143 @@ namespace RFiDGear.ViewModel
                 });
 
                 commonTask.RunSynchronously();
+            }
+
+            return;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand ExecuteProgramCommand => new RelayCommand(OnNewExecuteProgramCommand);
+        private void OnNewExecuteProgramCommand()
+        {
+            try
+            {
+                Process p = new Process();
+                ProcessStartInfo info;
+
+                //Run Program from RFiDGear Argument 
+                if (ProgramToExecute.Contains("$"))
+                {
+                    info = new ProcessStartInfo()
+                    {
+                        FileName = Args[ProgramToExecute],
+                        UseShellExecute = 
+                        ProgramToExecute.Contains("bat") || 
+                        ProgramToExecute.Contains("exe") || 
+                        ProgramToExecute.Contains("msi") ? false : true
+                    };
+                }
+
+                else
+                {
+                    string fileName = ProgramToExecute.Split('\"')[1];
+                    string args = ProgramToExecute.Split('\"')[2];
+
+                    if (ProgramToExecute.Contains("%UID"))
+                    {
+                        ProgramToExecute = ProgramToExecute.Replace("%UID", GenericChip?.UID ?? "");
+                    }
+
+                    if (ProgramToExecute.Contains("%CHIPTYPE"))
+                    {
+                        ProgramToExecute = ProgramToExecute.Replace("%CHIPTYPE", ResourceLoader.GetResource(
+                        string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip.CardType))) ?? "");
+                    }
+
+                    if (ProgramToExecute.Contains("%DATETIME"))
+                    {
+                        ProgramToExecute = ProgramToExecute.Replace("%DATETIME", DateTime.Now.ToString() ?? "");
+                    }
+
+                    if (ProgramToExecute.Contains("%DATE"))
+                    {
+                        ProgramToExecute = ProgramToExecute.Replace("%DATE", DateTime.Now.ToString("dd/MM/yyyy") ?? "");
+                    }
+
+                    if (ProgramToExecute.Contains("%FREEMEM"))
+                    {
+                        ProgramToExecute = ProgramToExecute.Replace("%FREEMEM", DesfireChip?.FreeMemory.ToString() ?? "");
+                    }
+
+                    if (ProgramToExecute.Contains("%LISTAPPS"))
+                    {
+                        ProgramToExecute = ProgramToExecute.Replace("%LISTAPPS", string.Join(", ", DesfireChip?.AppList.Select(x => x.appID)) ?? "");
+                    }
+
+                    if (ProgramToExecute.Contains("%COUNTAPPS"))
+                    {
+                        ProgramToExecute = ProgramToExecute.Replace("%COUNTAPPS", DesfireChip?.AppList?.Count.ToString());
+                    }
+
+                    info = new ProcessStartInfo()
+                    {
+                        FileName = string.IsNullOrWhiteSpace(fileName) ? ProgramToExecute : fileName,
+                        Arguments = string.IsNullOrWhiteSpace(args) ? "" : args,
+                        UseShellExecute = 
+                        fileName.Contains("bat") || 
+                        fileName.Contains("exe") || 
+                        fileName.Contains("msi") ? false : true
+                    };
+                }
+
+                p.StartInfo = info;
+
+                if(p.Start())
+                {
+                    CurrentTaskErrorLevel = ERROR.NoError;
+                    IsTaskCompletedSuccessfully = true;
+                }
+            }
+
+            catch(Exception e)
+            {
+                CurrentTaskErrorLevel = ERROR.IsNotTrue;
+                IsTaskCompletedSuccessfully = false;
+                LogWriter.CreateLogEntry(e, FacilityName);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand AddEditCheckpointCommand => new RelayCommand(OnNewAddEditCheckpointCommand);
+        private void OnNewAddEditCheckpointCommand()
+        {
+            try
+            {
+                checkpoint = new Checkpoint
+                {
+                    ErrorLevel = ERROR.Empty
+                };
+
+                if (SelectedTaskType == TaskType_CommonTask.CreateReport)
+                {
+                    checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
+                    checkpoint.ErrorLevel = SelectedErrorLevel;
+                    checkpoint.TemplateField = SelectedTemplateField;
+                    checkpoint.Content = Content;
+
+                    Checkpoints.Add(checkpoint);
+                }
+
+                else if (SelectedTaskType == TaskType_CommonTask.CheckLogicCondition)
+                {
+                    checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
+                    checkpoint.ErrorLevel = SelectedErrorLevel;
+                    checkpoint.Content = "";
+                    checkpoint.CompareValue = CompareValue;
+
+                    Checkpoints.Add(checkpoint);
+                }
+
+                OnPropertyChanged(nameof(Checkpoints));
+            }
+
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(e, FacilityName);
             }
 
             return;

@@ -238,7 +238,7 @@
                     <Label
                         Grid.Row="0"
                         Grid.Column="0"
-                        Width="115"
+                        Width="132"
                         Height="26"
                         Margin="8,9,0,0"
                         HorizontalAlignment="Left"
@@ -284,7 +284,7 @@
                     <Label
                         Grid.Row="1"
                         Grid.Column="0"
-                        Margin="8,1.4,12.2,6.6"
+                        Margin="8,1,0,6"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
@@ -308,6 +308,23 @@
                         VerticalAlignment="Bottom"
                         Command="{Binding FormatDesfireCardCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireCardMasteringFormatButton'}" />
+                    <ComboBox
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Width="81"
+                        Height="26"
+                        Margin="9,3,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        ItemsSource="{Binding KeyVersions}"
+                        SelectedItem="{Binding KeyVersionCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <Label
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Margin="8,1,0,6"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareDesfireKeyVersion, Converter={StaticResource Localization}}" />
                     <Grid.RowDefinitions>
                         <RowDefinition Height="42" />
                         <RowDefinition Height="36" />

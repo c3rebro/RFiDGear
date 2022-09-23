@@ -1656,7 +1656,7 @@ namespace RFiDGear.ViewModel
                         {
                             StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                            if (device.ReadMiFareClassicSingleSector(
+                            if (device.ReadMifareClassicSingleSector(
                                 selectedClassicSectorCurrentAsInt,
                                 ClassicKeyAKeyCurrent,
                                 ClassicKeyBKeyCurrent) == ERROR.NoError)
@@ -1740,7 +1740,7 @@ namespace RFiDGear.ViewModel
 
                                      if (!useMAD)
                                      {
-                                         if (device.ReadMiFareClassicSingleSector(
+                                         if (device.ReadMifareClassicSingleSector(
                                              selectedClassicSectorCurrentAsInt,
                                              ClassicKeyAKeyCurrent,
                                              ClassicKeyBKeyCurrent) == ERROR.NoError)
@@ -1792,7 +1792,7 @@ namespace RFiDGear.ViewModel
                                          ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
                                          ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 
-                                         if (device.ReadMiFareClassicWithMAD(appNumberAsInt,
+                                         if (device.ReadMifareClassicWithMAD(appNumberAsInt,
                                              ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent, fileSizeAsInt,
                                              madGPB, UseMAD, useMADAuth) == ERROR.NoError)
                                          {
@@ -1874,7 +1874,7 @@ namespace RFiDGear.ViewModel
 
                                          device.ReadChipPublic();
 
-                                         if (device.WriteMiFareClassicSingleBlock(CustomConverter.GetChipBasedDataBlockNumber(device.GenericChip.CardType, selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite),
+                                         if (device.WriteMifareClassicSingleBlock(CustomConverter.GetChipBasedDataBlockNumber(selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite),
                                                                                   ClassicKeyAKeyCurrent,
                                                                                   ClassicKeyBKeyCurrent,
                                                                                   childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data) == ERROR.NoError)
@@ -1903,7 +1903,7 @@ namespace RFiDGear.ViewModel
                                      ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
                                      ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 
-                                     if (device.WriteMiFareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
+                                     if (device.WriteMifareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
                                                                           ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent,
                                                                           ClassicKeyAKeyTarget, ClassicKeyBKeyTarget,
                                                                           ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent,

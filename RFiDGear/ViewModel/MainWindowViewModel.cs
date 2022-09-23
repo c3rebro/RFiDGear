@@ -124,7 +124,7 @@ namespace RFiDGear.ViewModel
 
             triggerReadChip = new DispatcherTimer
             {
-                Interval = new TimeSpan(0, 0, 0, 0, 500)
+                Interval = new TimeSpan(0, 0, 0, 2, 500)
             };
 
             triggerReadChip.Tick += UpdateChip;
@@ -141,7 +141,7 @@ namespace RFiDGear.ViewModel
 #else
             taskTimeout = new DispatcherTimer
             {
-                Interval = new TimeSpan(0, 0, 0, 2, 0)
+                Interval = new TimeSpan(0, 0, 0, 4, 0)
             };
 #endif
             taskTimeout.Tick += TaskTimeout;
@@ -163,18 +163,24 @@ namespace RFiDGear.ViewModel
             emptySpaceContextMenuItems.Add(new MenuItem()
             {
                 Header = ResourceLoader.GetResource("contextMenuItemAddNewTask"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
                 Command = GetAddEditCommand
             });
 
             rowContextMenuItems.Add(new MenuItem()
             {
                 Header = ResourceLoader.GetResource("contextMenuItemAddOrEditTask"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
                 Command = GetAddEditCommand
             });
 
             rowContextMenuItems.Add(new MenuItem()
             {
                 Header = ResourceLoader.GetResource("contextMenuItemDeleteSelectedItem"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
                 Command = new RelayCommand(() =>
                 {
                     taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
@@ -186,12 +192,16 @@ namespace RFiDGear.ViewModel
             rowContextMenuItems.Add(new MenuItem()
             {
                 Header = ResourceLoader.GetResource("contextMenuItemExecuteSelectedItem"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
                 Command = WriteSelectedTaskToChipOnceCommand
             });
 
             rowContextMenuItems.Add(new MenuItem()
             {
                 Header = ResourceLoader.GetResource("contextMenuItemResetSelectedItem"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
                 Command = ResetSelectedTaskStatusCommand
             });
 
@@ -200,18 +210,24 @@ namespace RFiDGear.ViewModel
             rowContextMenuItems.Add(new MenuItem()
             {
                 Header = ResourceLoader.GetResource("contextMenuItemExecuteAllItems"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
                 Command = WriteToChipOnceCommand
             });
 
             rowContextMenuItems.Add(new MenuItem()
             {
                 Header = ResourceLoader.GetResource("contextMenuItemResetReportPath"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
                 Command = ResetReportTaskDirectoryCommand
             });
 
             emptySpaceTreeViewContextMenu.Add(new MenuItem()
             {
                 Header = ResourceLoader.GetResource("contextMenuItemReadChipPublic"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
                 Command = ReadChipCommand
             });
 
@@ -433,6 +449,7 @@ namespace RFiDGear.ViewModel
                 OnCloseRequest = (sender) =>
                 {
                     sender.Close();
+                    mw.Activate();
                 }
             });
         }
@@ -481,11 +498,13 @@ namespace RFiDGear.ViewModel
                                     OnPropertyChanged(nameof(ChipTasks));
                                 }
                                 sender.Close();
+                                mw.Activate();
                             },
 
                             OnCancel = (sender) =>
                             {
                                 sender.Close();
+                                mw.Activate();
                             },
 
                             OnAuth = (sender) =>
@@ -495,6 +514,7 @@ namespace RFiDGear.ViewModel
                             OnCloseRequest = (sender) =>
                             {
                                 sender.Close();
+                                mw.Activate();
                             }
                         });
                     }
@@ -536,12 +556,12 @@ namespace RFiDGear.ViewModel
                     {
 
                         if (sender.SelectedTaskType == TaskType_CommonTask.CreateReport ||
-                            sender.SelectedTaskType == TaskType_CommonTask.CheckLogicCondition)
+                            sender.SelectedTaskType == TaskType_CommonTask.CheckLogicCondition ||
+                            sender.SelectedTaskType == TaskType_CommonTask.ExecuteProgram)
                         {
-                            if ((ChipTasks.TaskCollection.OfType<CommonTaskViewModel>().Where(x => (x as CommonTaskViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
+                            if (ChipTasks.TaskCollection.OfType<CommonTaskViewModel>().Where(x => (x as CommonTaskViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any())
                             {
                                 ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
-
                             }
 
                             ChipTasks.TaskCollection.Add(sender);
@@ -551,11 +571,13 @@ namespace RFiDGear.ViewModel
                             OnPropertyChanged(nameof(ChipTasks));
                         }
                         sender.Close();
+                        mw.Activate();
                     },
 
                     OnCancel = (sender) =>
                     {
                         sender.Close();
+                        mw.Activate();
                     },
 
                     OnAuth = (sender) =>
@@ -565,6 +587,7 @@ namespace RFiDGear.ViewModel
                     OnCloseRequest = (sender) =>
                     {
                         sender.Close();
+                        mw.Activate();
                     }
                 });
             }
@@ -630,11 +653,13 @@ namespace RFiDGear.ViewModel
                                     OnPropertyChanged(nameof(ChipTasks));
                                 }
                                 sender.Close();
+                                mw.Activate();
                             },
 
                             OnCancel = (sender) =>
                             {
                                 sender.Close();
+                                mw.Activate();
                             },
 
                             OnAuth = (sender) =>
@@ -644,6 +669,7 @@ namespace RFiDGear.ViewModel
                             OnCloseRequest = (sender) =>
                             {
                                 sender.Close();
+                                mw.Activate();
                             }
                         });
                     }
@@ -713,17 +739,20 @@ namespace RFiDGear.ViewModel
                                 OnPropertyChanged(nameof(ChipTasks));
 
                                 sender.Close();
+                                mw.Activate();
                             }
                         },
 
                         OnCancel = (sender) =>
                         {
                             sender.Close();
+                            mw.Activate();
                         },
 
                         OnCloseRequest = (sender) =>
                         {
                             sender.Close();
+                            mw.Activate();
                         }
                     });
                 }
@@ -778,17 +807,20 @@ namespace RFiDGear.ViewModel
                                 OnPropertyChanged(nameof(ChipTasks));
 
                                 sender.Close();
+                                mw.Activate();
                             }
                         },
 
                         OnCancel = (sender) =>
                         {
                             sender.Close();
+                            mw.Activate();
                         },
 
                         OnCloseRequest = (sender) =>
                         {
                             sender.Close();
+                            mw.Activate();
                         }
                     });
                 }
@@ -816,24 +848,17 @@ namespace RFiDGear.ViewModel
                     treeViewParentNodes.FirstOrDefault().IsSelected = true;
                 }
 
-                switch (treeViewParentNodes.Single(x => x.IsSelected == true).CardType)
+                if (treeViewParentNodes.Single(x => x.IsSelected == true).CardType == CARD_TYPE.Mifare1K ||
+                    treeViewParentNodes.Single(x => x.IsSelected == true).CardType == CARD_TYPE.Mifare2K || 
+                    treeViewParentNodes.Single(x => x.IsSelected == true).CardType == CARD_TYPE.Mifare4K)
                 {
-                    case CARD_TYPE.Mifare1K:
-                    case CARD_TYPE.Mifare2K:
-                    case CARD_TYPE.Mifare4K:
+                    treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteClassicQuickCheckCommand.Execute(null);
+                } // Mifare Classic
 
-                        treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteClassicQuickCheckCommand.Execute(null);
-
-                        break;
-
-                    case CARD_TYPE.DESFire:
-                    case CARD_TYPE.DESFireEV1:
-                    case CARD_TYPE.DESFireEV2:
-
-                        treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteDesfireQuickCheckCommand.Execute(null);
-
-                        break;
-                }
+                else if (Enum.GetName(typeof(CARD_TYPE), treeViewParentNodes.Single(x => x.IsSelected == true).CardType).ToLower().Contains("desfire"))
+                {
+                    treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteDesfireQuickCheckCommand.Execute(null);
+                } // Mifare Desfire
 
                 Mouse.OverrideCursor = null;
 
@@ -885,6 +910,24 @@ namespace RFiDGear.ViewModel
                         case CARD_TYPE.DESFire:
                         case CARD_TYPE.DESFireEV1:
                         case CARD_TYPE.DESFireEV2:
+                        case CARD_TYPE.DESFireEV3:
+                        case CARD_TYPE.DESFire_256:
+                        case CARD_TYPE.DESFire_2K:
+                        case CARD_TYPE.DESFire_4K:
+                        case CARD_TYPE.DESFireEV1_256:
+                        case CARD_TYPE.DESFireEV1_2K:
+                        case CARD_TYPE.DESFireEV1_4K:
+                        case CARD_TYPE.DESFireEV1_8K:
+                        case CARD_TYPE.DESFireEV2_2K:
+                        case CARD_TYPE.DESFireEV2_4K:
+                        case CARD_TYPE.DESFireEV2_8K:
+                        case CARD_TYPE.DESFireEV2_16K:
+                        case CARD_TYPE.DESFireEV2_32K:
+                        case CARD_TYPE.DESFireEV3_2K:
+                        case CARD_TYPE.DESFireEV3_4K:
+                        case CARD_TYPE.DESFireEV3_8K:
+                        case CARD_TYPE.DESFireEV3_16K:
+                        case CARD_TYPE.DESFireEV3_32K:
                             treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs, false));
                             break;
 
@@ -1002,6 +1045,8 @@ namespace RFiDGear.ViewModel
                     case CommonTaskViewModel ssVM:
                         ssVM.IsTaskCompletedSuccessfully = null;
                         reportOutputPath = null;
+                        reportReaderWriter.ReportOutputPath = null;
+                        reportReaderWriter.ReportTemplatePath = null;
                         ssVM.CurrentTaskErrorLevel = ERROR.Empty;
                         break;
                 }
@@ -1187,6 +1232,12 @@ namespace RFiDGear.ViewModel
                             {
 
                                 case CommonTaskViewModel csVM:
+
+                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
+                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
+                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
+                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).Args = variablesFromArgs;
+
                                     switch (csVM.SelectedTaskType)
                                     {
                                         case TaskType_CommonTask.CreateReport:
@@ -1201,18 +1252,13 @@ namespace RFiDGear.ViewModel
                                                     taskTimeout.Start();
                                                     taskTimeout.Stop();
 
-                                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).GenericChip = device.GenericChip;
-                                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
-                                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
-                                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).Args = variablesFromArgs;
-
                                                     if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                     {
                                                         if (string.IsNullOrEmpty(reportOutputPath))
                                                         {
                                                             var dlg = new SaveFileDialogViewModel
                                                             {
-                                                                Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
+                                                                Title = ResourceLoader.GetResource("windowCaptionSaveReport"),
                                                                 Filter = ResourceLoader.GetResource("filterStringSaveReport")
                                                             };
 
@@ -1293,8 +1339,6 @@ namespace RFiDGear.ViewModel
 
                                                     if ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                     {
-                                                        (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
-                                                        (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
                                                         (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
                                                     }
 
@@ -1305,8 +1349,6 @@ namespace RFiDGear.ViewModel
                                                         {
                                                             if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                                             {
-                                                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).GenericChip = device.GenericChip;
-                                                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
                                                                 (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.Execute(taskHandler.TaskCollection);
                                                             }
                                                             else
@@ -1325,13 +1367,54 @@ namespace RFiDGear.ViewModel
                                             }
                                             break;
 
+                                        case TaskType_CommonTask.ExecuteProgram:
+                                            switch ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CurrentTaskErrorLevel)
+                                            {
+                                                case ERROR.NotReadyError:
+                                                    taskTimeout.Start();
+                                                    break;
+
+                                                case ERROR.Empty:
+                                                    (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
+                                                    taskTimeout.Start();
+
+                                                    if ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    {
+                                                        (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
+                                                    }
+
+                                                    else
+                                                    {
+                                                        // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
+                                                        if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out int targetTaskIndex))
+                                                        {
+                                                            if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                                            {
+                                                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
+                                                            }
+                                                            else
+                                                            {
+                                                                currentTaskIndex++;
+                                                            }
+                                                        }
+                                                    }
+                                                    break;
+
+                                                default:
+                                                    currentTaskIndex++;
+                                                    taskTimeout.Stop();
+                                                    taskTimeout.Start();
+                                                    break;
+                                            }
+                                            break;
+
+
                                         default:
                                             break;
                                     }
                                     break;
 
                                 case GenericChipTaskViewModel csVM:
-
                                     switch (csVM.SelectedTaskType)
                                     {
                                         case TaskType_GenericChipTask.ChipIsOfType:
@@ -1414,7 +1497,6 @@ namespace RFiDGear.ViewModel
                                             taskTimeout.Start();
                                             break;
                                     }
-
                                     break;
 
                                 case MifareDesfireSetupViewModel csVM:
@@ -1578,7 +1660,7 @@ namespace RFiDGear.ViewModel
             {
                 DefaultSpecification currentSettings = settings.DefaultSpecification;
 
-                ReaderDevice.PortNumber = int.Parse(currentSettings.LastUsedComPort);
+                ReaderDevice.PortNumber = int.TryParse(currentSettings.LastUsedComPort, out int portNumber) ? portNumber : 0;
                 ReaderDevice.Reader = currentSettings.DefaultReaderProvider;
 
                 using (ReaderDevice device = ReaderDevice.Instance)
@@ -1614,11 +1696,13 @@ namespace RFiDGear.ViewModel
                         OnCancel = (sender) =>
                         {
                             sender.Close();
+                            mw.Activate();
                         },
 
                         OnCloseRequest = (sender) =>
                         {
                             sender.Close();
+                            mw.Activate();
                         }
                     });
                 }
@@ -2060,7 +2144,16 @@ namespace RFiDGear.ViewModel
                             ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                             : settings.DefaultSpecification.DefaultReaderName;
 
-                        ReaderDevice.PortNumber = int.Parse(settings.DefaultSpecification.LastUsedComPort);
+                        if(int.TryParse(settings.DefaultSpecification.LastUsedComPort,out int portNumber))
+                        {
+                            ReaderDevice.PortNumber = portNumber;
+                        }
+
+                        else
+                        {
+                            ReaderDevice.PortNumber = 0;
+                        }
+                        
 
                         culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 

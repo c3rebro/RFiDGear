@@ -122,6 +122,22 @@ namespace RFiDGear.ViewModel
 
         #region Dependency Properties
 
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        public string SelectedUIDOfChip
+        {
+            get => selectedUIDOfChip;
+
+            set
+            {
+                selectedUIDOfChip = value;
+                OnPropertyChanged(nameof(SelectedUIDOfChip));
+            }
+        }
+        private string selectedUIDOfChip;
+
         /// <summary>
         /// The Indexnumber of the ExecuteCondition Task As String
         /// </summary>
@@ -320,6 +336,55 @@ namespace RFiDGear.ViewModel
                                 {
                                     result = ERROR.NoError;
                                 }
+                                else if(Enum.GetName(typeof(CARD_TYPE), SelectedChipType).ToLower().Contains("desfire"))
+                                {
+                                    result = ERROR.IsNotTrue;
+
+                                    switch (SelectedChipType)
+                                    {
+                                        case CARD_TYPE.DESFire:
+                                            if (device.GenericChip.CardType == CARD_TYPE.DESFire_256 ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFire_2K ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFire_4K)
+                                            {
+                                                result = ERROR.NoError;
+                                            }
+                                            break;
+                                        case CARD_TYPE.DESFireEV1:
+                                            if (device.GenericChip.CardType == CARD_TYPE.DESFireEV1_256 ||
+                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV1_2K ||
+                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV1_4K ||
+                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV1_8K)
+                                            {
+                                                result = ERROR.NoError;
+                                            }
+                                            break;
+                                        case CARD_TYPE.DESFireEV2:
+                                            if (device.GenericChip.CardType == CARD_TYPE.DESFireEV2_2K ||
+                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV2_4K ||
+                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV2_8K ||
+                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV2_16K ||
+                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV2_32K)
+                                            {
+                                                result = ERROR.NoError;
+                                            }
+                                            break;
+                                        case CARD_TYPE.DESFireEV3:
+                                            if (device.GenericChip.CardType == CARD_TYPE.DESFireEV3_2K ||
+                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV3_4K ||
+                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV3_8K ||
+                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV3_16K ||
+                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV3_32K)
+                                            {
+                                                result = ERROR.NoError;
+                                            }
+                                            break;
+
+                                        default:
+                                            result = ERROR.IsNotTrue;
+                                            break;
+                                    }
+                                }
                                 else
                                 {
                                     result = ERROR.IsNotTrue;
@@ -376,7 +441,7 @@ namespace RFiDGear.ViewModel
                             if (result == ERROR.NoError)
                             {
 
-                                if (device.GenericChip.CardType == SelectedChipType)
+                                if (device.GenericChip.UID.ToLower() == SelectedUIDOfChip.ToLower())
                                 {
                                     result = ERROR.NoError;
                                 }

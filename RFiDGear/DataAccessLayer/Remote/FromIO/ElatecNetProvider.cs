@@ -55,7 +55,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             {
                 if (readerDevice != null)
                 {
+                    if(!IsConnected)
+                    {
+                        Instance.Connect();
+                    }
+
                     readerDevice.GreenLED(true);
+                    readerDevice.RedLED(true);
 
                     card = readerDevice.GetSingleChip();
 
@@ -63,27 +69,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     {
                         try
                         {
-                            readerDevice.Beep(1, 200, 2000, 50);
+                            readerDevice.Beep(1, 50, 1000, 100);
 
                             GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)card.CardType);
 
-                            if ((CARD_TYPE)card.CardType == CARD_TYPE.DESFire || (CARD_TYPE)card.CardType == CARD_TYPE.DESFireEV1)
-                            {
-                                int version = readerDevice.GetDesFireVersion();
-
-                                if (version == 1)
-                                {
-                                    GenericChip.CardType = CARD_TYPE.DESFireEV1;
-                                }
-                                else if (version == 2)
-                                {
-                                    GenericChip.CardType = CARD_TYPE.DESFireEV2;
-                                }
-                                else if (version == 3)
-                                {
-                                    GenericChip.CardType = CARD_TYPE.DESFire;
-                                }
-                            }
                             return ERROR.NoError;
                         }
                         catch (Exception e)
@@ -94,7 +83,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
                     else
                     {
-                        readerDevice.Beep(3, 50, 2000, 50);
+                        readerDevice.Beep(3, 25, 600, 100);
                         GenericChip = null;
 
                         return ERROR.NotReadyError;
@@ -116,36 +105,113 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override ERROR Connect()
+        {
+            return ERROR.NoError;
+        }
+
         #endregion
 
         #region MifareClassic
-        public override ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+        public override ERROR WriteMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
+        {
+            return WriteMifareClassicSingleSector(
+                CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber), _aKey, _bKey, buffer);
+        }
+        public override ERROR ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+        {
+            return readWriteAccessOnClassicSector(sectorNumber, aKey, bKey, null);
+        }
+        public override ERROR WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
+        {
+            return readWriteAccessOnClassicSector(sectorNumber, aKey, bKey, buffer);
+        }
+        public override ERROR WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
+            string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
+            string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
+            byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth = false, bool _keyToWriteUseMAD = false)
         {
             throw new NotImplementedException();
         }
-        public override ERROR WriteMiFareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer)
+        public override ERROR ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse, 
+            string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, 
+            bool _useMADToAuth = true, bool _aiToUseIsMAD = false)
         {
             throw new NotImplementedException();
         }
-        public override ERROR WriteMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
+       
+        private ERROR readWriteAccessOnClassicSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
         {
-            throw new NotImplementedException();
+            Sector = new MifareClassicSectorModel();
+
+            var elatecSpecificSectorNumber = sectorNumber > 31 ? (sectorNumber - 32) * 4 + 32 : sectorNumber; // elatec uses special sectornumbers
+
+            for (byte k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
+            {
+                DataBlock = new MifareClassicDataBlockModel(
+                    (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
+                    k);
+
+                try
+                {
+                    bool isAuth = readerDevice.MifareClassicLogin(aKey, 0, (byte)elatecSpecificSectorNumber);
+
+                    if (buffer == null || buffer.Length != 16) // Read Mode
+                    {
+                        byte[] data = readerDevice.MifareClassicReadBlock((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k));
+
+                        if (data.Length > 1)
+                        {
+                            DataBlock.Data = data;
+                            DataBlock.IsAuthenticated = true;
+                            Sector.IsAuthenticated = isAuth;
+                            Sector.DataBlock.Add(DataBlock);
+                        }
+
+                        else // No Read Access Allowed, try bKey
+                        {
+                            isAuth = readerDevice.MifareClassicLogin(bKey, 1, (byte)elatecSpecificSectorNumber);
+
+                            data = readerDevice.MifareClassicReadBlock(k);
+
+                            if (data.Length > 1)
+                            {
+                                DataBlock.Data = data;
+                                DataBlock.IsAuthenticated = true;
+                                Sector.IsAuthenticated = isAuth;
+                                Sector.DataBlock.Add(DataBlock);
+                            }
+                            else
+                            {
+                                Sector.IsAuthenticated = false;
+                                DataBlock.IsAuthenticated = false; // finally failed to read data
+                            }
+                        }
+                    } // read Data
+
+                    else if (buffer != null && buffer.Length == 16)
+                    {
+                        return readerDevice.MifareClassicWriteBlock(buffer, k) == true ? ERROR.NoError : ERROR.AuthenticationError;
+                    } // write Data
+                }
+                catch
+                {
+                    return ERROR.IOError; // IO ERROR
+                }
+            }
+
+            if(Sector.IsAuthenticated)
+            {
+                return ERROR.NoError; //NO ERROR
+            }
+
+            return ERROR.AuthenticationError; // Auth ERROR
         }
-        public override ERROR ReadMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey)
-        {
-            throw new NotImplementedException();
-        }
-        public override ERROR WriteMiFareClassicWithMAD(int _madApplicationID, int _madStartSector,
-                                               string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
-                                               string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
-                                               byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth = false, bool _keyToWriteUseMAD = false)
-        {
-            throw new NotImplementedException();
-        }
-        public override ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, bool _useMADToAuth = true, bool _aiToUseIsMAD = false)
-        {
-            throw new NotImplementedException();
-        }
+
         #endregion
 
         #region MifareUltralight
@@ -156,9 +222,22 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         #endregion
 
         #region MifareDesfire
-        public override ERROR GetMiFareDESFireChipAppIDs(string _appMasterKey = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", DESFireKeyType _keyTypeAppMasterKey = DESFireKeyType.DF_KEY_DES)
+        public override ERROR GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
         {
-            throw new NotImplementedException();
+            if (DesfireChip == null)
+            {
+                DesfireChip = new MifareDesfireChipModel();
+            }
+
+            DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
+
+            foreach (uint appid in readerDevice.GetDesfireAppIDs(_appMasterKey, (Elatec.NET.DESFireKeyType)_keyTypeAppMasterKey))
+            {
+                DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
+            }
+            
+
+            return ERROR.NoError;
         }
         public override ERROR CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
                                      int _appID, int _fileNo, int _fileSize,
@@ -186,7 +265,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         }
         public override ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
-            throw new NotImplementedException();
+            ReadChipPublic();
+
+            return readerDevice.DesfireAuthenticate(_applicationMasterKey, (byte)_keyNumber, 0, 0) == true ? ERROR.NoError : ERROR.NotAllowed;
+
         }
         public override ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
         {
@@ -200,7 +282,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         }
         public override ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
                                         string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
-                                        DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, DESFireKeySettings keySettings)
+                                        DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, DESFireKeySettings keySettings, int keyVersion)
         {
             throw new NotImplementedException();
         }
@@ -243,6 +325,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             _disposed = false;
             Dispose(true);
+            readerDevice.GreenLED(false);
             GC.SuppressFinalize(this);
         }
     }

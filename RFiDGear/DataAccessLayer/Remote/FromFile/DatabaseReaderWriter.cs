@@ -26,7 +26,7 @@ namespace RFiDGear.DataAccessLayer
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
         private const string chipDatabaseFileName = "chipdatabase.xml";
-        private const string chipDatabaseFileNameCompressed = "chipdatabase.rfPrj";
+        private const string taskDatabaseFileNameCompressed = "chipdatabase.rfPrj";
         private const string taskDatabaseFileName = "taskdatabase.xml";
         private readonly string appDataPath;
 
@@ -62,15 +62,18 @@ namespace RFiDGear.DataAccessLayer
                     writer.Close();
                 }
 
-                if (!File.Exists(Path.Combine(appDataPath, taskDatabaseFileName)))
+                if (File.Exists(Path.Combine(appDataPath, taskDatabaseFileName)))
                 {
-                    XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
+                    File.Delete(Path.Combine(appDataPath, taskDatabaseFileName));
+                }
 
-                    TextWriter writer = new StreamWriter(Path.Combine(appDataPath, taskDatabaseFileName));
-
-                    serializer.Serialize(writer, SetupModel);
-
-                    writer.Close();
+                foreach(string file in Directory.GetFiles(appDataPath))
+                {
+                    FileInfo fi = new FileInfo(file);
+                    if (fi.Extension.ToLower().Contains("rfprj"))
+                    {
+                        fi.Delete();
+                    }
                 }
             }
             catch (Exception e)
@@ -119,6 +122,8 @@ namespace RFiDGear.DataAccessLayer
                     }
                     catch (Exception e)
                     {
+                        LogWriter.CreateLogEntry(e, FacilityName);
+
                         try
                         {
                             XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
@@ -126,8 +131,7 @@ namespace RFiDGear.DataAccessLayer
                         }
                         catch (Exception innerE)
                         {
-                            LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-                            LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, innerE.Message, innerE.InnerException != null ? innerE.InnerException.Message : ""), FacilityName);
+                            LogWriter.CreateLogEntry(innerE, FacilityName);
                             return true;
                         }
                     }
@@ -137,7 +141,7 @@ namespace RFiDGear.DataAccessLayer
                 if (file.Extension.ToLower(CultureInfo.CurrentCulture) == ".rfprj")
                 {
                     using (ZipFile zip1 = ZipFile.Read(string.IsNullOrWhiteSpace(_fileName) ?
-                    @Path.Combine(appDataPath, chipDatabaseFileNameCompressed) :
+                    @Path.Combine(appDataPath, taskDatabaseFileNameCompressed) :
                     _fileName))
                     {
                         if (Directory.GetFiles(appDataPath, "*.tmp").Length > 0)
@@ -150,13 +154,23 @@ namespace RFiDGear.DataAccessLayer
                         zip1.ExtractAll(appDataPath, ExtractExistingFileAction.OverwriteSilently);
                     }
 
-                    doc.Load(@Path.Combine(appDataPath, file.Name));
+                    reader = null;
 
-                    XmlNode node = doc.SelectSingleNode("//ManifestVersion");
-                    verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
-
-                    reader = new StreamReader(@Path.Combine(appDataPath, file.Name));
-
+                    if (File.Exists(@Path.Combine(appDataPath, file.Name)))
+                    {
+                        doc.Load(@Path.Combine(appDataPath, file.Name));
+                        XmlNode node = doc.SelectSingleNode("//ManifestVersion");
+                        verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
+                        reader = new StreamReader(@Path.Combine(appDataPath, file.Name));
+                    } // old Variant. Needed to open old databases
+                    else if(File.Exists(@Path.Combine(appDataPath, taskDatabaseFileName)))
+                    {
+                        doc.Load(@Path.Combine(appDataPath, taskDatabaseFileName));
+                        XmlNode node = doc.SelectSingleNode("//ManifestVersion");
+                        verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
+                        reader = new StreamReader(@Path.Combine(appDataPath, taskDatabaseFileName));
+                    }
+                    
                     try
                     {
                         XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
@@ -164,6 +178,8 @@ namespace RFiDGear.DataAccessLayer
                     }
                     catch (Exception e)
                     {
+                        LogWriter.CreateLogEntry(e, FacilityName);
+
                         try
                         {
                             XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
@@ -171,8 +187,7 @@ namespace RFiDGear.DataAccessLayer
                         }
                         catch (Exception innerE)
                         {
-                            LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-                            LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, innerE.Message, innerE.InnerException != null ? innerE.InnerException.Message : ""), FacilityName);
+                            LogWriter.CreateLogEntry(innerE, FacilityName);
                             return true;
                         }
                     }
@@ -187,7 +202,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
                 return true;
             }
 
@@ -221,8 +236,8 @@ namespace RFiDGear.DataAccessLayer
                     @_path, chipDatabaseFileName));
 
                 zip.Save(@Path.Combine(string.IsNullOrWhiteSpace(_path) ?
-                    @Path.Combine(appDataPath, chipDatabaseFileNameCompressed) :
-                    @_path, chipDatabaseFileNameCompressed));
+                    @Path.Combine(appDataPath, taskDatabaseFileNameCompressed) :
+                    @_path, taskDatabaseFileNameCompressed));
             }
             catch (XmlException e)
             {
@@ -243,10 +258,9 @@ namespace RFiDGear.DataAccessLayer
 
                 if (!string.IsNullOrEmpty(_path))
                 {
-                    writer = new StreamWriter(@_path);
+                    writer = new StreamWriter(Path.Combine(appDataPath, taskDatabaseFileName));
                     serializer.Serialize(writer, objModel);
                     writer.Close();
-                    file = new FileInfo(@_path);
                 }
                 else
                 {
@@ -256,18 +270,16 @@ namespace RFiDGear.DataAccessLayer
                     file = new FileInfo(@Path.Combine(appDataPath, taskDatabaseFileName));
                 }
 
-                zip.AddFile(string.IsNullOrWhiteSpace(_path) ?
-                    @Path.Combine(appDataPath, chipDatabaseFileName) :
-                    @_path, "");
+                zip.AddFile(@Path.Combine(appDataPath, taskDatabaseFileName), "");
 
                 zip.Save(string.IsNullOrWhiteSpace(_path) ?
-                    @Path.Combine(appDataPath, chipDatabaseFileNameCompressed) :
+                    @Path.Combine(appDataPath, taskDatabaseFileNameCompressed) :
                     @_path);
 
             }
             catch (XmlException e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
                 Environment.Exit(0);
             }
         }

@@ -13,8 +13,8 @@
     Width="800"
     Height="800"
     dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
-    WindowStartupLocation="CenterOwner"
     SizeToContent="Width"
+    WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
@@ -70,6 +70,12 @@
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderReportSettingsView'}"
                     IsEnabled="{Binding IsTabPageReportSettingsViewEnabled}">
                     <v:TabPageReportSettingsView />
+                </TabItem>
+                <TabItem
+                    MinWidth="50"
+                    Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderExecuteProgramTaskView'}"
+                    IsEnabled="{Binding IsTabPageExecuteProgramViewEnabled}">
+                    <v:TabPageExecuteProgramTaskView />
                 </TabItem>
             </TabControl>
         </Grid>
@@ -169,7 +175,7 @@
                         x:Name="groupBox"
                         Grid.Row="2"
                         Grid.ColumnSpan="4"
-                        Margin="8,0,8,0" 
+                        Margin="8,0,8,0"
                         Header="{Binding LocalizationResourceSet, ConverterParameter=groupBoxHeaderAllTasksExecuteCondition, Converter={StaticResource Localization}}">
                         <Grid>
                             <Grid.ColumnDefinitions>

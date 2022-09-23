@@ -248,7 +248,7 @@ namespace RFiDGear.ViewModel
 
                     OnAuth = (sender) =>
                     {
-                        IsAuthenticated = device.SectorSuccesfullyAuth;
+                        IsAuthenticated = device.SectorSuccessfullyAuth;
 
                         foreach (RFiDChipGrandChildLayerViewModel gcVM in Children)
                         {
@@ -459,13 +459,15 @@ namespace RFiDGear.ViewModel
                     case CARD_TYPE.MifarePlus_SL1_4K:
                         childNodeHeader = string.Format("Sector: [{0}]", sectorModel.SectorNumber);
                         break;
-                    case CARD_TYPE.DESFire:
-                    case CARD_TYPE.DESFireEV1:
-                    case CARD_TYPE.DESFireEV2:
-                        childNodeHeader = string.Format("AppID: {0}", appModel.appID);
-                        break;
                     case CARD_TYPE.MifareUltralight:
                         childNodeHeader = string.Format("Page: {0}", pageModel.PageNumber);
+                        break;
+
+                    default:
+                        if(Enum.GetName(typeof(CARD_TYPE), _cardType).ToLower().Contains("desfire"))
+                        {
+                            childNodeHeader = string.Format("AppID: {0}", appModel.appID);
+                        }
                         break;
                 }
                 return childNodeHeader;

@@ -66,6 +66,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         public static ReaderTypes Reader { get; set; }
         public static int PortNumber { get; set; }
+        public static bool IsConnected { get; set; }
 
         public MifareClassicSectorModel Sector { get; set; }
         public MifareClassicDataBlockModel DataBlock { get; set; }
@@ -77,10 +78,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public ReaderTypes ReaderProvider { get; set; }
         public string ReaderUnitName { get; set; }
         public byte[] MifareClassicData { get; set; }
-        public bool DataBlockSuccessfullyRead { get; set; }
-        public bool DataBlockSuccesfullyAuth { get; set; }
-        public bool SectorSuccessfullyRead { get; set; }
-        public bool SectorSuccesfullyAuth { get; set; }
+        public bool DataBlockSuccessfullyAuth { get; set; }
+        public bool SectorSuccessfullyAuth { get; set; }
         public byte[] MifareDESFireData { get; set; }
         public byte[] FileIDList { get; set; }
         public byte[] MifareUltralightPageData { get; set; }
@@ -90,22 +89,21 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public DESFireKeySettings DesfireAppKeySetting { get; set; }
 
         #region Common
-
+        public abstract ERROR Connect();
         public abstract ERROR ReadChipPublic();
 
         #endregion
 
         #region MifareClassic
         // Mifare Classic Method Definitions
-        public abstract ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey);
-        public abstract ERROR WriteMiFareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer);
-        public abstract ERROR WriteMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer);
-        public abstract ERROR ReadMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey);
-        public abstract ERROR WriteMiFareClassicWithMAD(int _madApplicationID, int _madStartSector,
+        public abstract ERROR ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey);
+        public abstract ERROR WriteMifareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer);
+        public abstract ERROR WriteMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer);
+        public abstract ERROR WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
                                                string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
                                                string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
                                                byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth, bool _keyToWriteUseMAD);
-        public abstract ERROR ReadMiFareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, 
+        public abstract ERROR ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, 
                                                 string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, 
                                                 bool _useMADToAuth, bool _aiToUseIsMAD);
         #endregion
@@ -138,7 +136,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public abstract ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
                                         string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget,
-                                        DESFireKeySettings keySettings);
+                                        DESFireKeySettings keySettings, int keyVersion);
         public abstract ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0);
         public abstract ERROR DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0);
         public abstract ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0);

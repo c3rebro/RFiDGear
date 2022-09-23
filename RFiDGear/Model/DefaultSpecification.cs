@@ -37,7 +37,7 @@ namespace RFiDGear.Model
             autoCheckForUpdates = true;
             _autoLoadProjectOnStart = false;
             _lastUsedProjectPath = "";
-            LastUsedComPort = "0";
+            LastUsedComPort = "USB";
             LastUsedBaudRate = "9600";
 
             mifareClassicDefaultSecuritySettings = new List<MifareClassicDefaultKeys>

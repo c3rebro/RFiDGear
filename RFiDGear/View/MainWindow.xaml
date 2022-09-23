@@ -188,14 +188,6 @@
                                         <Setter Property="Foreground" Value="Red" />
                                         <Setter Property="FontWeight" Value="Normal" />
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsTask}" Value="True">
-                                        <Setter Property="Foreground" Value="DarkViolet" />
-                                        <Setter Property="FontWeight" Value="Bold" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsTask}" Value="False">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="FontWeight" Value="Bold" />
-                                    </DataTrigger>
                                     <DataTrigger Binding="{Binding HasChanged}" Value="True">
                                         <Setter Property="Foreground" Value="DarkViolet" />
                                         <Setter Property="FontWeight" Value="Bold" />
@@ -286,7 +278,10 @@
                     </DataTemplate>
                 </TreeView.Resources>
                 <TreeView.ContextMenu>
-                    <ContextMenu ItemsSource="{Binding EmptySpaceTreeViewContextMenu}" />
+                    <ContextMenu
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        ItemsSource="{Binding EmptySpaceTreeViewContextMenu}" />
                 </TreeView.ContextMenu>
             </TreeView>
             <GridSplitter
@@ -306,6 +301,8 @@
                 Margin="3,0,0,0"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
                 local:SelectingItemAttachedProperty.SelectingItem="{Binding SelectedSetupViewModel, Mode=TwoWay}"
                 AlternatingRowBackground="LightGray"
                 AutoGenerateColumns="False"
@@ -322,7 +319,7 @@
                     <ContextMenu ItemsSource="{Binding EmptySpaceContextMenu}" />
                 </DataGrid.ContextMenu>
                 <DataGrid.InputBindings>
-                    <MouseBinding Gesture="LeftDoubleClick" Command="{Binding GetAddEditCommand}" />
+                    <MouseBinding Command="{Binding GetAddEditCommand}" Gesture="LeftDoubleClick" />
                 </DataGrid.InputBindings>
                 <DataGrid.Resources>
                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="DodgerBlue" />
@@ -399,17 +396,10 @@
                         Binding="{Binding Path=SelectedTaskType, Converter={StaticResource Localization}}"
                         Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridHeaderMainWindowTaskType', Source={StaticResource proxy}}"
                         IsReadOnly="True" />
-                    <DataGridTemplateColumn 
-                                Width="auto"
-                                Header="{Binding Data.LocalizationResourceSet, 
-                        Converter={StaticResource Localization}, 
-                        ConverterParameter='dataGridHeaderMainWindowTaskDescription', 
-                        Source={StaticResource proxy}}">
+                    <DataGridTemplateColumn Width="auto" Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridHeaderMainWindowTaskDescription', Source={StaticResource proxy}}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox
-                                    Text="{Binding Path=SelectedTaskDescription}"
-                                    TextWrapping="Wrap">
+                                <TextBox Text="{Binding Path=SelectedTaskDescription}" TextWrapping="Wrap">
                                     <TextBox.Style>
                                         <Style TargetType="{x:Type TextBox}">
                                             <Setter Property="HorizontalAlignment" Value="Left" />

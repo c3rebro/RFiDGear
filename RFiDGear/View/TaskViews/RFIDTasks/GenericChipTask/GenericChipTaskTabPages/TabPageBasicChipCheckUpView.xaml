@@ -58,6 +58,24 @@
                             Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectIsChipOfType'}"
                             DataContext="{Binding}"
                             Foreground="Black" />
+                        <Label
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="8,10,8,0"
+                            HorizontalContentAlignment="Stretch"
+                            Content="{Binding LocalizationResourceSet, ConverterParameter=labelSelectUIDOfChip, Converter={StaticResource Localization}}"
+                            DataContext="{Binding}"
+                            Foreground="Black" />
+                        <TextBox
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Width="124"
+                            Height="23"
+                            Margin="8,10,8,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Text="{Binding SelectedUIDOfChip, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                            TextWrapping="NoWrap" />
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="165" />
                             <ColumnDefinition />

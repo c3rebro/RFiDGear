@@ -73,7 +73,10 @@ namespace RFiDGear.ViewModel
 
             MifareDesfireKeys = CustomConverter.GenerateStringSequence(0, 16).ToArray();
             MifareDesfireKeyCount = CustomConverter.GenerateStringSequence(1, 16).ToArray();
-            
+            KeyVersions = CustomConverter.GenerateStringSequence(0, 16).ToArray();
+
+            KeyVersionCurrent = "0";
+
             isAllowChangeMKChecked = true;
             isAllowConfigChangableChecked = true;
             isAllowListingWithoutMKChecked = true;
@@ -99,6 +102,7 @@ namespace RFiDGear.ViewModel
 
                 MifareDesfireKeys = CustomConverter.GenerateStringSequence(0, 16).ToArray();
                 MifareDesfireKeyCount = CustomConverter.GenerateStringSequence(1, 16).ToArray();
+                KeyVersions = CustomConverter.GenerateStringSequence(0, 16).ToArray();
 
                 isAllowChangeMKChecked = true;
                 isAllowConfigChangableChecked = true;
@@ -145,6 +149,8 @@ namespace RFiDGear.ViewModel
 
                     DesfireWriteKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey).Key;
                     SelectedDesfireWriteKeyNumber = "1";
+
+                    KeyVersionCurrent = "0";
 
                     accessRights = new DESFireAccessRights();
 
@@ -683,6 +689,25 @@ namespace RFiDGear.ViewModel
 
         [XmlIgnore]
         public string[] MifareDesfireKeyCount { get; set; }
+
+        [XmlIgnore]
+        public string[] KeyVersions { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string KeyVersionCurrent
+        {
+            get => keyVersionCurrent;
+            set
+            {
+                keyVersionCurrent = value;
+                keyVersionCurrentAsInt = int.Parse(keyVersionCurrent);
+                OnPropertyChanged(nameof(KeyVersionCurrent));
+            }
+        }
+        private string keyVersionCurrent;
+        private int keyVersionCurrentAsInt;
 
         /// <summary>
         /// 
@@ -2129,7 +2154,7 @@ namespace RFiDGear.ViewModel
                                                                                                          selectedDesfireAppKeyNumberTargetAsInt,
                                                                                                          selectedDesfireAppKeyVersionTargetAsInt,
                                                                                                          SelectedDesfireAppKeyEncryptionTypeTarget,
-                                                                                                         AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings);
+                                                                                                         AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings, keyVersionCurrentAsInt);
 
                                                             if (result == ERROR.NoError)
                                                             {
@@ -2613,7 +2638,7 @@ namespace RFiDGear.ViewModel
                                             DesfireMasterKeyTarget,
                                             selectedDesfireAppKeyNumberTargetAsInt,
                                             0,
-                                            SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings);
+                                            SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings, keyVersionCurrentAsInt);
 
                                         if (result == ERROR.NoError)
                                         {

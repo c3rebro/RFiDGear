@@ -249,35 +249,28 @@ namespace RFiDGear
 
         #region Converter
 
-        public static int GetChipBasedDataBlockNumber(CARD_TYPE _cardType, int _sectorNumber, int _dataBlockNumberSectorBased)
+        public static int GetChipBasedDataBlockNumber(int _sectorNumber, int _dataBlockNumberSectorBased)
         {
-            int blockCount = 0;
+            int blockCount;
             int dataBlockNumberChipBased = 0;
 
-            switch (_cardType)
-            {
-                case CARD_TYPE.Mifare1K:
-                case CARD_TYPE.MifarePlus_SL1_1K:
-                case CARD_TYPE.Mifare2K:
-                case CARD_TYPE.MifarePlus_SL1_2K:
-                    blockCount = 4;
-                    break;
-
-                case CARD_TYPE.Mifare4K:
-                case CARD_TYPE.MifarePlus_SL1_4K:
-                    blockCount = (_sectorNumber <= 31 ? 4 : 16);
-                    break;
-
-                default:
-                    throw new InvalidOperationException("Unexpected Card Type");
-
-            }
+            blockCount = (_sectorNumber <= 31 ? 4 : 16);
 
             dataBlockNumberChipBased = _sectorNumber <= 31
                 ? (((_sectorNumber + 1) * blockCount) - (blockCount - dataBlockNumberChipBased))
                 : ((128 + (_sectorNumber - 31) * blockCount) - (blockCount - dataBlockNumberChipBased));
 
             return dataBlockNumberChipBased + _dataBlockNumberSectorBased;
+        }
+
+        public static int GetSectorBasedDataBlockNumber(int chipBasedDataBlockNumber)
+        {
+            return chipBasedDataBlockNumber <= 127 ? (chipBasedDataBlockNumber % 4) : (chipBasedDataBlockNumber % 16);
+        }
+
+        public static int GetSectorNumberFromChipBasedDataBlockNumber(int chipBasedDataBlockNumber)
+        {
+            return (chipBasedDataBlockNumber / 4);
         }
 
         public static bool SectorTrailerHasWrongFormat(byte[] st)

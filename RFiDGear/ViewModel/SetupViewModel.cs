@@ -106,11 +106,13 @@ namespace RFiDGear.ViewModel
             {
                 DefaultReader = Enum.GetName(typeof(ReaderTypes), SelectedReader);
 
-                ReaderStatus = string.Format("Connected to Card:"
+                ReaderStatus = string.Format(ResourceLoader.GetResource("labelReaderSetupReaderConnectStatus")
                                              + '\n'
                                              + "UID: {0} "
                                              + '\n'
-                                             + "Type: {1}", device.GenericChip.UID, Enum.GetName(typeof(CARD_TYPE), device.GenericChip.CardType));
+                                             + "Type: {1}", 
+                                             device.GenericChip.UID, 
+                                             ResourceLoader.GetResource(string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), device.GenericChip.CardType))));
 
             }
             else
@@ -150,7 +152,10 @@ namespace RFiDGear.ViewModel
         public ReaderTypes SelectedReader
         {
             get => selectedReader;
-            set => selectedReader = value;
+            set
+            {
+                selectedReader = value;
+            }
         }
         private ReaderTypes selectedReader;
 
@@ -183,7 +188,14 @@ namespace RFiDGear.ViewModel
             set
             {
                 comPort = value;
-                int.TryParse(comPort, out comPortAsInt);
+                if(!int.TryParse(comPort, out comPortAsInt))
+                {
+                    if(comPort == "USB")
+                    {
+                        comPortAsInt = 0;
+                    }
+                }
+                
             }
         }
         private string comPort;
@@ -236,7 +248,7 @@ namespace RFiDGear.ViewModel
         }
         private bool checkOnStart;
 
-        #region IUserDialogViewModel Implementation
+#region IUserDialogViewModel Implementation
 
         public Action<SetupViewModel> OnOk { get; set; }
         public Action<SetupViewModel> OnCancel { get; set; }
@@ -269,9 +281,9 @@ namespace RFiDGear.ViewModel
             collection.Add(this);
         }
 
-        #endregion IUserDialogViewModel Implementation
+#endregion IUserDialogViewModel Implementation
 
-        #region Localization
+#region Localization
 
         /// <summary>
         /// Act as a proxy between RessourceLoader and View directly.
@@ -290,6 +302,6 @@ namespace RFiDGear.ViewModel
             }
         }
 
-        #endregion Localization
+#endregion Localization
     }
 }

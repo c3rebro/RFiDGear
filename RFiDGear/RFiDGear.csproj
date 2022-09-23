@@ -295,6 +295,9 @@
     <Compile Include="View\AboutView.xaml.cs">
       <DependentUpon>AboutView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="View\TaskViews\CommonTask\CommonTasksTabPages\TabPageExecuteProgramTaskView.xaml.cs">
+      <DependentUpon>TabPageExecuteProgramTaskView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\UpdateNotifierView.xaml.cs">
       <DependentUpon>UpdateNotifierView.xaml</DependentUpon>
     </Compile>
@@ -395,6 +398,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="View\TaskViews\CommonTask\CommonTasksTabPages\TabPageExecuteProgramTaskView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="View\UpdateNotifierView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -440,8 +447,12 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Manifest.de.resx" />
-    <EmbeddedResource Include="Resources\Manifest.en.resx" />
+    <EmbeddedResource Include="Resources\Manifest.de.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Manifest.en.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ByteArray\ByteArray.csproj">

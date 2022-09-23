@@ -1099,8 +1099,8 @@ Wird benötigt von:
   <data name="ENUM.CARD_TYPE.DESFireEV3" xml:space="preserve">
     <value>Mifare Desfire EV3</value>
   </data>
-  <data name="ENUM.CARD_TYPE.SmartMX_Mifare_2K" xml:space="preserve">
-    <value>SmartMX MifareClassic 2K</value>
+  <data name="ENUM.CARD_TYPE.SmartMX_Mifare_1K" xml:space="preserve">
+    <value>SmartMX MifareClassic 1K</value>
   </data>
   <data name="ENUM.CARD_TYPE.SmartMX_Mifare_4K" xml:space="preserve">
     <value>SmartMX MifareClassic 4K</value>
@@ -1390,5 +1390,86 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="contextMenuItemResetReportPath" xml:space="preserve">
     <value>Alle Berichtausgabepfade zurücksetzen</value>
+  </data>
+  <data name="labelSelectUIDOfChip" xml:space="preserve">
+    <value>UID</value>
+  </data>
+  <data name="tabPageHeaderExecuteProgramTaskView" xml:space="preserve">
+    <value>Externes Programm ausführen</value>
+  </data>
+  <data name="ENUM.TaskType_CommonTask.ExecuteProgram" xml:space="preserve">
+    <value>Programm ausführen</value>
+  </data>
+  <data name="labelExecuteProgramTaskProgramToExecute" xml:space="preserve">
+    <value>Programmpfad (ggf. mit Argumenten)</value>
+  </data>
+  <data name="labelContentMifareDesfireKeyVersion" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV1_256" xml:space="preserve">
+    <value>Mifare Desfire EV1 (256)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV1_2K" xml:space="preserve">
+    <value>Mifare Desfire EV1 (2K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV1_4K" xml:space="preserve">
+    <value>Mifare Desfire EV1 (4K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV1_8K" xml:space="preserve">
+    <value>Mifare Desfire EV1 (8K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV2_16K" xml:space="preserve">
+    <value>Mifare Desfire EV2 (16K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV2_2K" xml:space="preserve">
+    <value>Mifare Desfire EV2 (2K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV2_32K" xml:space="preserve">
+    <value>Mifare Desfire EV2 (32K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV2_4K" xml:space="preserve">
+    <value>Mifare Desfire EV2 (4K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV2_8K" xml:space="preserve">
+    <value>Mifare Desfire EV2 (8K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV3_16K" xml:space="preserve">
+    <value>Mifare Desfire EV3 (16K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV3_2K" xml:space="preserve">
+    <value>Mifare Desfire EV3 (2K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV3_32K" xml:space="preserve">
+    <value>Mifare Desfire EV3 (32K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV3_4K" xml:space="preserve">
+    <value>Mifare Desfire EV3 (4K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV3_8K" xml:space="preserve">
+    <value>Mifare Desfire EV3 (8K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFire_256" xml:space="preserve">
+    <value>Mifare Desfire EV0 (256)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFire_2K" xml:space="preserve">
+    <value>Mifare Desfire EV0 (2K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFire_4K" xml:space="preserve">
+    <value>Mifare Desfire EV0 (4K)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireLight" xml:space="preserve">
+    <value>Desfire Light</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NTAG" xml:space="preserve">
+    <value>NTAG</value>
+  </data>
+  <data name="windowCaptionSaveReport" xml:space="preserve">
+    <value>PDF Speichern unter...</value>
+  </data>
+  <data name="windowCaptionOpenReport" xml:space="preserve">
+    <value>PDF-Vorlage auswählen...</value>
+  </data>
+  <data name="labelReaderSetupReaderConnectStatus" xml:space="preserve">
+    <value>Verbunden:</value>
   </data>
 </root>

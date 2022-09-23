@@ -51,6 +51,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         #region common
 
+        public override ERROR Connect()
+        {
+            return initPCSC();
+        }
+
         private ERROR initPCSC()
         {
             try
@@ -94,18 +99,106 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                         DESFireCardVersion version = cmd.GetVersion();
 
-                        if (version.softwareMjVersion == 1)
+                        switch (version.hardwareMjVersion & 0x0F) // Desfire(Sub)Type by lower Nibble of Major Version
                         {
-                            GenericChip.CardType = CARD_TYPE.DESFireEV1;
+                            case 0: //DESFIRE EV0
+                                GenericChip.CardType = CARD_TYPE.DESFire;
+
+                                switch (version.hardwareStorageSize)
+                                {
+                                    case 0x10:
+                                        GenericChip.CardType = CARD_TYPE.DESFire_256; // DESFIRE 256B
+                                        break;
+                                    case 0x16:
+                                        GenericChip.CardType = CARD_TYPE.DESFire_2K; // DESFIRE 2K
+                                        break;
+                                    case 0x18:
+                                        GenericChip.CardType = CARD_TYPE.DESFire_4K; // 4K
+                                        break;
+                                    default:
+                                        break;
+                                } // Size ?
+                                break;
+
+                            case 1: // DESFIRE EV1
+                                GenericChip.CardType = CARD_TYPE.DESFireEV1;
+
+                                switch (version.hardwareStorageSize) 
+                                {
+                                    case 0x10:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV1_256; //DESFIRE 256B
+                                        break;
+                                    case 0x16:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV1_2K; // DESFIRE 2K
+                                        break;
+                                    case 0x18:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV1_4K; // 4K
+                                        break;
+                                    case 0x1A:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV1_8K; // 8K
+                                        break;
+                                    default:
+                                        break;
+                                } // Size ?
+                                break;
+
+                            case 2: // EV2
+                                GenericChip.CardType = CARD_TYPE.DESFireEV2;
+
+                                switch (version.hardwareStorageSize)
+                                {
+                                    case 0x16:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV2_2K; // DESFIRE 2K
+                                        break;
+                                    case 0x18:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV2_4K; // 4K
+                                        break;
+                                    case 0x1A:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV2_8K; // 8K
+                                        break;
+                                    case 0x1C:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV2_16K; // 16K
+                                        break;
+                                    case 0x1E:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV2_32K; // 32K
+                                        break;
+                                    default:
+                                        break;
+                                } // SIZE ?
+                                break;
+
+                            case 3: // EV3
+                                GenericChip.CardType = CARD_TYPE.DESFireEV3;
+
+                                switch (version.hardwareStorageSize)
+                                {
+                                    case 0x16:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV3_2K; // DESFIRE 2K
+                                        break;
+                                    case 0x18:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV3_4K; // 4K
+                                        break;
+                                    case 0x1A:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV3_8K; // 8K
+                                        break;
+                                    case 0x1C:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV3_16K; // 16K
+                                        break;
+                                    case 0x1E:
+                                        GenericChip.CardType = CARD_TYPE.DESFireEV3_32K; // 32K
+                                        break;
+                                    default:
+                                        break;
+                                } // SIZE ?
+                                break;
+
+                            default:
+                                GenericChip.CardType = CARD_TYPE.Unspecified;
+
+                                break;
                         }
-                        else if (version.softwareMjVersion == 2)
-                        {
-                            GenericChip.CardType = CARD_TYPE.DESFireEV2;
-                        }
-                        else if (version.softwareMjVersion == 3)
-                        {
-                            GenericChip.CardType = CARD_TYPE.DESFireEV3;
-                        }
+
+
                     }
 
                     DesfireChip = DesfireChip ?? new MifareDesfireChipModel(GenericChip);
@@ -129,7 +222,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         #region mifare classic
 
-        public override ERROR ReadMiFareClassicSingleSector(int sectorNumber, string aKey, string bKey)
+        public override ERROR ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
         {
             Sector = new MifareClassicSectorModel();
 
@@ -152,12 +245,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A);
 
                             DataBlock = new MifareClassicDataBlockModel(
-                                (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
                                 k);
 
                             try
                             {
-                                cmd.AuthenticateKeyNo((byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                cmd.AuthenticateKeyNo((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
                                                       (byte)0,
                                                       MifareKeyType.KT_KEY_A);
 
@@ -166,7 +259,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 try
                                 {
                                     object data = cmd.ReadBinary(
-                                        (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                        (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
                                         48);
 
                                     DataBlock.Data = (byte[])data;
@@ -189,7 +282,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     cmd.LoadKeyNo((byte)1, keyB, MifareKeyType.KT_KEY_B);
 
                                     cmd.AuthenticateKeyNo(
-                                        (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                        (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
                                         (byte)1,
                                         MifareKeyType.KT_KEY_B);
 
@@ -198,7 +291,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     try
                                     {
                                         object data = cmd.ReadBinary(
-                                            (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                            (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
                                             48);
 
                                         DataBlock.Data = (byte[])data;
@@ -245,7 +338,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             return ERROR.IOError;
         }
 
-        public override ERROR WriteMiFareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer)
+        public override ERROR WriteMifareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer)
         {
             var keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey) };
             var keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey) };
@@ -270,14 +363,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             try
                             {
                                 cmd.AuthenticateKeyNo(
-                                    (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                    (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
                                     (byte)0,
                                     MifareKeyType.KT_KEY_A);
 
                                 try
                                 {
                                     cmd.WriteBinary(
-                                        (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                        (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
                                         buffer);
                                 }
                                 catch
@@ -290,14 +383,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                 try
                                 {
-                                    cmd.AuthenticateKeyNo((byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                    cmd.AuthenticateKeyNo((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
                                                           (byte)1,
                                                           MifareKeyType.KT_KEY_B);
 
                                     try
                                     {
                                         cmd.WriteBinary(
-                                            (byte)CustomConverter.GetChipBasedDataBlockNumber(GenericChip.CardType, sectorNumber, k),
+                                            (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
                                             buffer);
                                     }
                                     catch
@@ -328,7 +421,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             return ERROR.IOError;
         }
 
-        public override ERROR WriteMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
+        public override ERROR WriteMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
         {
             var keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey) };
             var keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey) };
@@ -386,65 +479,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             return ERROR.IOError;
         }
 
-        public override ERROR ReadMiFareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey)
-        {
-            var keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey) };
-            var keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey) };
-
-            if (initPCSC() == ERROR.NoError && !string.IsNullOrWhiteSpace(card.ChipIdentifier))
-            {
-                try
-                {
-                    GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
-
-                    try
-                    {
-                        var cmd = card.Commands as IMifareCommands;
-
-                        cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A); // FIXME "sectorNumber" to 0
-
-                        try
-                        { //try to Auth with Keytype A
-                            cmd.AuthenticateKeyNo((byte)(_blockNumber), (byte)0, MifareKeyType.KT_KEY_A); // FIXME same as '303
-
-                            MifareClassicData = (byte[])cmd.ReadBinary((byte)(_blockNumber), 48);
-
-                        }
-                        catch
-                        { // Try Auth with keytype b
-
-                            cmd.LoadKeyNo((byte)0, keyB, MifareKeyType.KT_KEY_B);
-
-                            try
-                            {
-                                cmd.AuthenticateKeyNo((byte)(_blockNumber), (byte)0, MifareKeyType.KT_KEY_B); // FIXME same as '303
-
-                                MifareClassicData = (byte[])cmd.ReadBinary((byte)(_blockNumber), 48);
-
-                            }
-                            catch
-                            {
-                                return ERROR.AuthenticationError;
-                            }
-                        }
-
-                        return ERROR.NoError;
-                    }
-                    catch
-                    {
-                        return ERROR.AuthenticationError;
-                    }
-                }
-                catch (Exception e)
-                {
-                    LogWriter.CreateLogEntry(e, FacilityName);
-                }
-            }
-
-            return ERROR.IOError;
-        }
-
-        public override ERROR WriteMiFareClassicWithMAD(int _madApplicationID, int _madStartSector,
+        public override ERROR WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
                                                string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
                                                string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
                                                byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth, bool _keyToWriteUseMAD)
@@ -525,7 +560,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             return ERROR.IOError;
         }
 
-        public override ERROR ReadMiFareClassicWithMAD(int madApplicationID, 
+        public override ERROR ReadMifareClassicWithMAD(int madApplicationID, 
             string _aKeyToUse, string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, 
             int _length, byte _madGPB, bool _useMADToAuth, bool _aiToUseIsMAD)
         {
@@ -1692,7 +1727,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public override ERROR ChangeMifareDesfireApplicationKey(
             string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
             string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
-            DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, DESFireKeySettings keySettings)
+            DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, DESFireKeySettings keySettings, int keyVersion)
         {
             try
             {
@@ -1703,7 +1738,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
                 masterApplicationKey.Value = CustomConverter.DesfireKeyToCheck;
-                masterApplicationKey.KeyVersion = 0;
+                masterApplicationKey.KeyVersion = (byte)keyVersion;
 
                 DESFireKey applicationMasterKeyTarget = new DESFireKeyClass
                 {
@@ -1711,7 +1746,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 };
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
                 applicationMasterKeyTarget.Value = CustomConverter.DesfireKeyToCheck;
-                applicationMasterKeyTarget.KeyVersion = applicationMasterKeyTarget.KeyVersion = +1;
+                //applicationMasterKeyTarget.KeyVersion = applicationMasterKeyTarget.KeyVersion = 1;
 
                 if (readerUnit.ConnectToReader())
                 {
