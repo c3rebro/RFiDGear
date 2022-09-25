@@ -1,7 +1,6 @@
 ![](https://messgeraetetechnik-hansen.de/rfidgear/logoRG.png) 
 
-RFiDGear: Your essential gear to encode (read - modify - write) rfid tags. Support for batch processing included. 
-Codacy Code Quality: [![Codacy Badge](https://api.codacy.com/project/badge/Grade/ac98d255ca38466bb5803f9e2e4a11ae)](https://www.codacy.com/app/c3rebro/rfidgear)
+RFiDGear: Your essential gear to encode (read - modify - write) rfid tags. Support for batch processing included. [![Codacy Badge](https://api.codacy.com/project/badge/Grade/ac98d255ca38466bb5803f9e2e4a11ae)](https://www.codacy.com/app/c3rebro/rfidgear)
 
 ![](https://messgeraetetechnik-hansen.de/rfidgear/mainWnd.jpg) 
 
