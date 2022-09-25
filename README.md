@@ -1,4 +1,4 @@
-![](https://messgeraetetechnik-hansen.de/rfidgear/logoG.png) 
+![](https://messgeraetetechnik-hansen.de/rfidgear/logoRG.png) 
 
 RFiDGear: Your essential gear to encode (read - modify - write) rfid tags. Support for batch processing included. 
 
