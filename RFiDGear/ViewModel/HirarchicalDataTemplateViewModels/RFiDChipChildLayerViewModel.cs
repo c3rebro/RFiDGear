@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
+using System.Globalization;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
@@ -464,7 +465,7 @@ namespace RFiDGear.ViewModel
                         break;
 
                     default:
-                        if(Enum.GetName(typeof(CARD_TYPE), _cardType).ToLower().Contains("desfire"))
+                        if(Enum.GetName(typeof(CARD_TYPE), _cardType).ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
                         {
                             childNodeHeader = string.Format("AppID: {0}", appModel.appID);
                         }

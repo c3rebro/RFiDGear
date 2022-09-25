@@ -4,6 +4,7 @@ using RFiDGear.Model;
 using Log4CSharp;
 
 using System;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -101,7 +102,7 @@ namespace RFiDGear
                     doc.DocumentElement.AppendChild(PayLoadElem);
                     doc.DocumentElement.AppendChild(InfoTextElem);
 
-                    CheckIntervalElem.InnerText = _updateInterval.ToString();
+                    CheckIntervalElem.InnerText = _updateInterval.ToString(CultureInfo.CurrentCulture);
                     RemoteConfigUriElem.InnerText = _updateURL;
                     SecurityTokenElem.InnerText = _securityToken;
                     BaseUriElem.InnerText = _baseUri;

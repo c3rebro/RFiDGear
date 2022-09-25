@@ -1746,7 +1746,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 };
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
                 applicationMasterKeyTarget.Value = CustomConverter.DesfireKeyToCheck;
-                //applicationMasterKeyTarget.KeyVersion = applicationMasterKeyTarget.KeyVersion = 1;
 
                 if (readerUnit.ConnectToReader())
                 {

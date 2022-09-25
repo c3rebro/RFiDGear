@@ -20,6 +20,7 @@ using Log4CSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -336,7 +337,7 @@ namespace RFiDGear.ViewModel
                                 {
                                     result = ERROR.NoError;
                                 }
-                                else if(Enum.GetName(typeof(CARD_TYPE), SelectedChipType).ToLower().Contains("desfire"))
+                                else if(Enum.GetName(typeof(CARD_TYPE), SelectedChipType).ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
                                 {
                                     result = ERROR.IsNotTrue;
 
@@ -441,7 +442,7 @@ namespace RFiDGear.ViewModel
                             if (result == ERROR.NoError)
                             {
 
-                                if (device.GenericChip.UID.ToLower() == SelectedUIDOfChip.ToLower())
+                                if (device.GenericChip.UID.ToLower(CultureInfo.CurrentCulture) == SelectedUIDOfChip.ToLower(CultureInfo.CurrentCulture))
                                 {
                                     result = ERROR.NoError;
                                 }

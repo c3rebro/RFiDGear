@@ -70,7 +70,7 @@ namespace RFiDGear.DataAccessLayer
                 foreach(string file in Directory.GetFiles(appDataPath))
                 {
                     FileInfo fi = new FileInfo(file);
-                    if (fi.Extension.ToLower().Contains("rfprj"))
+                    if (fi.Extension.ToLower(CultureInfo.CurrentCulture).Contains("rfprj"))
                     {
                         fi.Delete();
                     }

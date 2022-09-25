@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -957,7 +958,7 @@ namespace RFiDGear.ViewModel
 
                                 if (temporaryContent.Contains("%DATETIME"))
                                 {
-                                    temporaryContent = temporaryContent.Replace("%DATETIME", DateTime.Now.ToString() ?? "");
+                                    temporaryContent = temporaryContent.Replace("%DATETIME", DateTime.Now.ToString(CultureInfo.CurrentCulture) ?? "");
                                     hasVariable = true;
                                 }
 
@@ -969,7 +970,7 @@ namespace RFiDGear.ViewModel
 
                                 if (temporaryContent.Contains("%FREEMEM"))
                                 {
-                                    temporaryContent = temporaryContent.Replace("%FREEMEM", DesfireChip?.FreeMemory.ToString() ?? "");
+                                    temporaryContent = temporaryContent.Replace("%FREEMEM", DesfireChip?.FreeMemory.ToString(CultureInfo.CurrentCulture) ?? "");
                                     hasVariable = true;
                                 }
 
@@ -981,7 +982,7 @@ namespace RFiDGear.ViewModel
 
                                 if (temporaryContent.Contains("%COUNTAPPS"))
                                 {
-                                    temporaryContent = temporaryContent.Replace("%COUNTAPPS", DesfireChip?.AppList?.Count.ToString());
+                                    temporaryContent = temporaryContent.Replace("%COUNTAPPS", DesfireChip?.AppList?.Count.ToString(CultureInfo.CurrentCulture));
                                     hasVariable = true;
                                 }
 
@@ -1396,7 +1397,7 @@ namespace RFiDGear.ViewModel
 
                                     else if (CompareValue.Contains("!="))
                                     {
-                                        string[] comparetemp = CompareValue.Split(new string[] { "!=" }, 2, StringSplitOptions.None);
+                                        var comparetemp = CompareValue.Split(new string[] { "!=" }, 2, StringSplitOptions.None);
 
                                         //assume 2 values to compare
                                         if (comparetemp.Length == 2)
@@ -1454,7 +1455,7 @@ namespace RFiDGear.ViewModel
 
                                     else if (CompareValue.Contains("=="))
                                     {
-                                        string[] comparetemp = CompareValue.Split(new string[] { "==" }, 2, StringSplitOptions.None);
+                                        var comparetemp = CompareValue.Split(new string[] { "==" }, 2, StringSplitOptions.None);
 
                                         //assume 2 values to compare
                                         if (comparetemp.Length == 2)
@@ -1595,7 +1596,7 @@ namespace RFiDGear.ViewModel
 
                     if (ProgramToExecute.Contains("%DATETIME"))
                     {
-                        ProgramToExecute = ProgramToExecute.Replace("%DATETIME", DateTime.Now.ToString() ?? "");
+                        ProgramToExecute = ProgramToExecute.Replace("%DATETIME", DateTime.Now.ToString(CultureInfo.CurrentCulture) ?? "");
                     }
 
                     if (ProgramToExecute.Contains("%DATE"))
@@ -1605,7 +1606,7 @@ namespace RFiDGear.ViewModel
 
                     if (ProgramToExecute.Contains("%FREEMEM"))
                     {
-                        ProgramToExecute = ProgramToExecute.Replace("%FREEMEM", DesfireChip?.FreeMemory.ToString() ?? "");
+                        ProgramToExecute = ProgramToExecute.Replace("%FREEMEM", DesfireChip?.FreeMemory.ToString(CultureInfo.CurrentCulture) ?? "");
                     }
 
                     if (ProgramToExecute.Contains("%LISTAPPS"))
@@ -1615,17 +1616,17 @@ namespace RFiDGear.ViewModel
 
                     if (ProgramToExecute.Contains("%COUNTAPPS"))
                     {
-                        ProgramToExecute = ProgramToExecute.Replace("%COUNTAPPS", DesfireChip?.AppList?.Count.ToString());
+                        ProgramToExecute = ProgramToExecute.Replace("%COUNTAPPS", DesfireChip?.AppList?.Count.ToString(CultureInfo.CurrentCulture));
                     }
 
                     info = new ProcessStartInfo()
                     {
                         FileName = string.IsNullOrWhiteSpace(fileName) ? ProgramToExecute : fileName,
                         Arguments = string.IsNullOrWhiteSpace(args) ? "" : args,
-                        UseShellExecute = 
+                        UseShellExecute = (fileName != null) ? (
                         fileName.Contains("bat") || 
                         fileName.Contains("exe") || 
-                        fileName.Contains("msi") ? false : true
+                        fileName.Contains("msi") ? false : true ) : false,
                     };
                 }
 

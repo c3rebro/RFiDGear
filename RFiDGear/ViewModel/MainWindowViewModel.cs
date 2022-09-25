@@ -843,25 +843,24 @@ namespace RFiDGear.ViewModel
 
                 ReadChipCommand.Execute(null);
 
-                if (treeViewParentNodes != null && !treeViewParentNodes.Any(x => x.IsSelected) && treeViewParentNodes.Count > 0)
+                if (treeViewParentNodes != null && treeViewParentNodes.Any(x => x.IsSelected) && treeViewParentNodes.Count > 0)
                 {
                     treeViewParentNodes.FirstOrDefault().IsSelected = true;
+
+                    if (treeViewParentNodes.Single(x => x.IsSelected == true).CardType == CARD_TYPE.Mifare1K ||
+                        treeViewParentNodes.Single(x => x.IsSelected == true).CardType == CARD_TYPE.Mifare2K ||
+                        treeViewParentNodes.Single(x => x.IsSelected == true).CardType == CARD_TYPE.Mifare4K)
+                    {
+                        treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteClassicQuickCheckCommand.Execute(null);
+                    } // Mifare Classic
+
+                    else if (Enum.GetName(typeof(CARD_TYPE), treeViewParentNodes.Single(x => x.IsSelected == true).CardType).ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
+                    {
+                        treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteDesfireQuickCheckCommand.Execute(null);
+                    } // Mifare Desfire
                 }
 
-                if (treeViewParentNodes.Single(x => x.IsSelected == true).CardType == CARD_TYPE.Mifare1K ||
-                    treeViewParentNodes.Single(x => x.IsSelected == true).CardType == CARD_TYPE.Mifare2K || 
-                    treeViewParentNodes.Single(x => x.IsSelected == true).CardType == CARD_TYPE.Mifare4K)
-                {
-                    treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteClassicQuickCheckCommand.Execute(null);
-                } // Mifare Classic
-
-                else if (Enum.GetName(typeof(CARD_TYPE), treeViewParentNodes.Single(x => x.IsSelected == true).CardType).ToLower().Contains("desfire"))
-                {
-                    treeViewParentNodes.Single(x => x.IsSelected == true).ExecuteDesfireQuickCheckCommand.Execute(null);
-                } // Mifare Desfire
-
                 Mouse.OverrideCursor = null;
-
             }
             catch
             {

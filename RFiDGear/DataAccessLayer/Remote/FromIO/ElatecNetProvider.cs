@@ -122,24 +122,29 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             return WriteMifareClassicSingleSector(
                 CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber), _aKey, _bKey, buffer);
         }
+
         public override ERROR ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
         {
             return readWriteAccessOnClassicSector(sectorNumber, aKey, bKey, null);
         }
+
         public override ERROR WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
         {
             return readWriteAccessOnClassicSector(sectorNumber, aKey, bKey, buffer);
         }
+ 
         public override ERROR WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
             string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
-            string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
-            byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth = false, bool _keyToWriteUseMAD = false)
+            string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, 
+            string _madBKeyToWrite, byte[] buffer, byte _madGPB, SectorAccessBits _sab, 
+            bool _useMADToAuth, bool _keyToWriteUseMAD)
         {
             throw new NotImplementedException();
         }
+
         public override ERROR ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse, 
             string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, 
-            bool _useMADToAuth = true, bool _aiToUseIsMAD = false)
+            bool _useMADToAuth, bool _aiToUseIsMAD)
         {
             throw new NotImplementedException();
         }
@@ -239,6 +244,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             return ERROR.NoError;
         }
+ 
         public override ERROR CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
                                      int _appID, int _fileNo, int _fileSize,
                                      int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
@@ -246,6 +252,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             throw new NotImplementedException();
         }
+
         public override ERROR ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
                                        string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                        string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
@@ -254,6 +261,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             throw new NotImplementedException();
         }
+
         public override ERROR WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
                                         string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
                                         string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,

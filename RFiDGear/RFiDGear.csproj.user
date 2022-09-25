@@ -5,7 +5,7 @@
     <StartWorkingDirectory>D:\Seafile\Dokumente Privat\Steven\Projekte\Software\Windows\RFIDGear\RFiDGear\bin\Debug\</StartWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup>
-    <PublishUrlHistory />
+    <PublishUrlHistory>publish\</PublishUrlHistory>
     <InstallUrlHistory />
     <SupportUrlHistory />
     <UpdateUrlHistory />

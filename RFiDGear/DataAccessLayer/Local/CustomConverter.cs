@@ -352,7 +352,7 @@ namespace RFiDGear
         {
             while (n1 <= n2)
             {
-                yield return n1++.ToString();
+                yield return n1++.ToString(CultureInfo.CurrentCulture);
             }
         }
 
