@@ -27,4 +27,4 @@ using System.Runtime.InteropServices;
 // Build Numbers by using the '*' as shown below:
 [assembly: AssemblyVersion("1.1.*")]
 [assembly: Guid("a34bc413-e349-4fd1-8b90-2eb95a333436")]
-[assembly: NeutralResourcesLanguage("en")]
+[assembly: NeutralResourcesLanguage("")]

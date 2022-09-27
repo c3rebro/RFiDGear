@@ -439,7 +439,7 @@ slot of an available reader</value>
   <data name="menuItemOpenProject" xml:space="preserve">
     <value>_Open Project...</value>
   </data>
-  <data name="menuItemSaveTask" xml:space="preserve">
+  <data name="menuItemSaveTaskAs" xml:space="preserve">
     <value>_Save Tasks...</value>
   </data>
   <data name="menuItemSaveChip" xml:space="preserve">
@@ -540,7 +540,7 @@ Use a csv file to acuire default keys for authentication</value>
   <data name="menuItemShortcutOpenProject" xml:space="preserve">
     <value>Ctrl + O</value>
   </data>
-  <data name="menuItemShortcutSaveTask" xml:space="preserve">
+  <data name="menuItemShortcutSaveTaskAs" xml:space="preserve">
     <value>Ctrl + S</value>
   </data>
   <data name="menuItemShortcutReadChipPublic" xml:space="preserve">
@@ -1449,5 +1449,17 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="labelReaderSetupReaderConnectStatus" xml:space="preserve">
     <value>Connected:</value>
+  </data>
+  <data name="menuItemResetTasksReportTargetPath" xml:space="preserve">
+    <value>Rese_t Report Target Paths</value>
+  </data>
+  <data name="menuItemSaveTask" xml:space="preserve">
+    <value>Save Tasks</value>
+  </data>
+  <data name="messageBoxMessageSetProjectAsDefault" xml:space="preserve">
+    <value>Do you want to set this Project as default when "Load last used Project on Start" is set?</value>
+  </data>
+  <data name="windowCaptionAskTaskDefault" xml:space="preserve">
+    <value>Set as Default?</value>
   </data>
 </root>

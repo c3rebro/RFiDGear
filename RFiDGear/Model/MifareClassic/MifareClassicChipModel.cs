@@ -23,5 +23,7 @@ namespace RFiDGear.Model
             CardType = cardType;
             UID = uid;
         }
+
+        public uint FreeMemory { get; set; }
     }
 }

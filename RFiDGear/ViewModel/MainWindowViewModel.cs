@@ -375,7 +375,7 @@ namespace RFiDGear.ViewModel
             {
                 Mouse.OverrideCursor = null;
 
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                LogWriter.CreateLogEntry(e, FacilityName);
             }
         }
 
@@ -391,25 +391,7 @@ namespace RFiDGear.ViewModel
             taskTimeout.Stop();
             taskTimeout.IsEnabled = false;
 
-
-            switch (taskHandler.TaskCollection[currentTaskIndex])
-            {
-                case GenericChipTaskViewModel tsVM:
-                    tsVM.IsTaskCompletedSuccessfully = false;
-                    break;
-                case CommonTaskViewModel tsVM:
-                    tsVM.IsTaskCompletedSuccessfully = false;
-                    break;
-                case MifareClassicSetupViewModel tsVM:
-                    tsVM.IsTaskCompletedSuccessfully = false;
-                    break;
-                case MifareDesfireSetupViewModel tsVM:
-                    tsVM.IsTaskCompletedSuccessfully = false;
-                    break;
-                case MifareUltralightSetupViewModel tsVM:
-                    tsVM.IsTaskCompletedSuccessfully = false;
-                    break;
-            }
+            (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).IsTaskCompletedSuccessfully = false;
 #else
             taskTimeout.IsEnabled = false;
             taskTimeout.Stop();
@@ -1003,31 +985,10 @@ namespace RFiDGear.ViewModel
         public ICommand ResetTaskStatusCommand => new RelayCommand(OnNewResetTaskStatusCommand);
         private void OnNewResetTaskStatusCommand()
         {
-            foreach (object chipTask in taskHandler.TaskCollection)
+            foreach (IGenericTaskModel chipTask in taskHandler.TaskCollection)
             {
-                switch (chipTask)
-                {
-                    case CommonTaskViewModel ssVM:
-                        ssVM.IsTaskCompletedSuccessfully = null;
-                        ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                        break;
-                    case GenericChipTaskViewModel ssVM:
-                        ssVM.IsTaskCompletedSuccessfully = null;
-                        ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                        break;
-                    case MifareClassicSetupViewModel ssVM:
-                        ssVM.IsTaskCompletedSuccessfully = null;
-                        ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                        break;
-                    case MifareDesfireSetupViewModel ssVM:
-                        ssVM.IsTaskCompletedSuccessfully = null;
-                        ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                        break;
-                    case MifareUltralightSetupViewModel ssVM:
-                        ssVM.IsTaskCompletedSuccessfully = null;
-                        ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                        break;
-                }
+                chipTask.IsTaskCompletedSuccessfully = null;
+                chipTask.CurrentTaskErrorLevel = ERROR.Empty;
             }
         }
 
@@ -1037,18 +998,25 @@ namespace RFiDGear.ViewModel
         public ICommand ResetReportTaskDirectoryCommand => new RelayCommand(OnNewResetReportTaskDirectoryCommand);
         private void OnNewResetReportTaskDirectoryCommand()
         {
-            foreach (object chipTask in taskHandler.TaskCollection)
+            try
             {
-                switch (chipTask)
+                foreach (object chipTask in taskHandler.TaskCollection)
                 {
-                    case CommonTaskViewModel ssVM:
-                        ssVM.IsTaskCompletedSuccessfully = null;
-                        reportOutputPath = null;
-                        reportReaderWriter.ReportOutputPath = null;
-                        reportReaderWriter.ReportTemplatePath = null;
-                        ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                        break;
+                    switch (chipTask)
+                    {
+                        case CommonTaskViewModel ssVM:
+                            ssVM.IsTaskCompletedSuccessfully = null;
+                            reportOutputPath = null;
+                            reportReaderWriter.ReportOutputPath = null;
+                            reportReaderWriter.ReportTemplatePath = null;
+                            ssVM.CurrentTaskErrorLevel = ERROR.Empty;
+                            break;
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(e, FacilityName);
             }
         }
 
@@ -1058,31 +1026,8 @@ namespace RFiDGear.ViewModel
         public ICommand ResetSelectedTaskStatusCommand => new RelayCommand(OnNewResetSelectedTaskStatusCommand);
         private void OnNewResetSelectedTaskStatusCommand()
         {
-            switch (SelectedSetupViewModel)
-            {
-                case CommonTaskViewModel ssVM:
-                    ssVM.IsTaskCompletedSuccessfully = null;
-                    reportOutputPath = null;
-                    reportReaderWriter = null;
-                    ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                    break;
-                case GenericChipTaskViewModel ssVM:
-                    ssVM.IsTaskCompletedSuccessfully = null;
-                    ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                    break;
-                case MifareClassicSetupViewModel ssVM:
-                    ssVM.IsTaskCompletedSuccessfully = null;
-                    ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                    break;
-                case MifareDesfireSetupViewModel ssVM:
-                    ssVM.IsTaskCompletedSuccessfully = null;
-                    ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                    break;
-                case MifareUltralightSetupViewModel ssVM:
-                    ssVM.IsTaskCompletedSuccessfully = null;
-                    ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                    break;
-            }
+            (SelectedSetupViewModel as IGenericTaskModel).IsTaskCompletedSuccessfully = null;
+            (SelectedSetupViewModel as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.Empty;
         }
 
         /// <summary>
@@ -1251,6 +1196,19 @@ namespace RFiDGear.ViewModel
                                                     taskTimeout.Start();
                                                     taskTimeout.Stop();
 
+                                                    DirectoryInfo reportTargetPathDirInfo;
+                                                    
+                                                    try
+                                                    {
+                                                        string initDir = variablesFromArgs["REPORTTARGETPATH"];
+                                                        reportTargetPathDirInfo = new DirectoryInfo(Path.GetDirectoryName(initDir));
+                                                        
+                                                    }
+                                                    catch
+                                                    {
+                                                        reportTargetPathDirInfo = null;
+                                                    }
+
                                                     if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                     {
                                                         if (string.IsNullOrEmpty(reportOutputPath))
@@ -1258,7 +1216,9 @@ namespace RFiDGear.ViewModel
                                                             var dlg = new SaveFileDialogViewModel
                                                             {
                                                                 Title = ResourceLoader.GetResource("windowCaptionSaveReport"),
-                                                                Filter = ResourceLoader.GetResource("filterStringSaveReport")
+                                                                Filter = ResourceLoader.GetResource("filterStringSaveReport"),
+                                                                InitialDirectory = reportTargetPathDirInfo != null ? 
+                                                                (reportTargetPathDirInfo.Exists ? reportTargetPathDirInfo.FullName : null) : null
                                                             };
 
                                                             if (dlg.Show(Dialogs) && dlg.FileName != null)
@@ -1286,10 +1246,13 @@ namespace RFiDGear.ViewModel
                                                             {
                                                                 if (string.IsNullOrEmpty(reportOutputPath))
                                                                 {
+
                                                                     var dlg = new SaveFileDialogViewModel
                                                                     {
                                                                         Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
-                                                                        Filter = ResourceLoader.GetResource("filterStringSaveReport")
+                                                                        Filter = ResourceLoader.GetResource("filterStringSaveReport"),
+                                                                        InitialDirectory = reportTargetPathDirInfo != null ? 
+                                                                        (reportTargetPathDirInfo.Exists ? reportTargetPathDirInfo.FullName : null) : null
                                                                     };
 
                                                                     if (dlg.Show(Dialogs) && dlg.FileName != null)
@@ -1769,20 +1732,59 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// Expose Command to Save As Menu Item
+        /// Expose Command to Save ProjectFile Menu Item
         /// </summary>
         public ICommand SaveTaskDialogCommand => new RelayCommand(OnNewSaveTaskDialogCommand);
         private void OnNewSaveTaskDialogCommand()
         {
+            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            {
+                databaseReaderWriter.WriteDatabase(ChipTasks, settings.DefaultSpecification.LastUsedProjectPath);
+            }  
+        }            
+
+        /// <summary>
+        /// Expose Command to Save As Menu Item
+        /// </summary>
+        public ICommand SaveTaskAsDialogCommand => new RelayCommand(OnNewSaveTaskAsDialogCommand);
+        private void OnNewSaveTaskAsDialogCommand()
+        {
+            string fileName = "";
+
             var dlg = new SaveFileDialogViewModel
             {
                 Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
-                Filter = ResourceLoader.GetResource("filterStringSaveTasks")
+                Filter = ResourceLoader.GetResource("filterStringSaveTasks"),
             };
 
             if (dlg.Show(Dialogs) && dlg.FileName != null)
             {
-                databaseReaderWriter.WriteDatabase(ChipTasks, dlg.FileName);
+                fileName = dlg.FileName;
+            }
+            else
+            {
+                return;
+            }
+
+            var mbox = new MessageBoxViewModel
+            {
+                Caption = ResourceLoader.GetResource("windowCaptionAskTaskDefault"),
+                Message = ResourceLoader.GetResource("messageBoxMessageSetProjectAsDefault"),
+                Buttons = MessageBoxButton.YesNo
+            };
+
+            if (mbox.Show(Dialogs) == MessageBoxResult.Yes)
+            {
+                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                {
+                    settings.DefaultSpecification.LastUsedProjectPath = fileName;
+                    settings.SaveSettings();
+                }
+            }
+
+            if (!string.IsNullOrEmpty(fileName))
+            {
+                databaseReaderWriter.WriteDatabase(ChipTasks, fileName);
             }
         }
 
@@ -2207,6 +2209,9 @@ namespace RFiDGear.ViewModel
                                 switch (arg.Split('=')[0])
                                 {
                                     case "REPORTTARGETPATH":
+
+                                        variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
+
                                         if (Directory.Exists(Path.GetDirectoryName(arg.Split('=')[1])))
                                         {
                                             reportOutputPath = arg.Split('=')[1];

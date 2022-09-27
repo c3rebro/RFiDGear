@@ -221,7 +221,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         #endregion common
 
         #region mifare classic
-
         public override ERROR ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
         {
             Sector = new MifareClassicSectorModel();

@@ -37,7 +37,7 @@
             Modifiers="Control" />
         <KeyBinding
             Key="S"
-            Command="{Binding SaveTaskDialogCommand}"
+            Command="{Binding SaveTaskAsDialogCommand}"
             Modifiers="Control" />
         <KeyBinding
             Key="X"
@@ -431,8 +431,11 @@
                         InputGestureText="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemShortcutOpenProject'}" />
                     <MenuItem
                         Command="{Binding SaveTaskDialogCommand}"
-                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemSaveTask'}"
-                        InputGestureText="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemShortcutSaveTask'}" />
+                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemSaveTask'}"/>
+                    <MenuItem
+                        Command="{Binding SaveTaskAsDialogCommand}"
+                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemSaveTaskAs'}"
+                        InputGestureText="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemShortcutSaveTaskAs'}" />
                     <MenuItem Command="{Binding SaveChipDialogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemSaveChip'}" />
                     <Separator />
                     <MenuItem Command="{Binding CloseApplication}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemExitHeader'}" />
@@ -458,6 +461,11 @@
                     </MenuItem>
                     <Separator />
                     <MenuItem Command="{Binding RemoveChipsFromTreeCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemRemoveCardsHeader'}" />
+                    <MenuItem Command="{Binding RemoveAllTasksCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemRemoveAllTasks'}" />
+                    <Separator />
+                    <MenuItem Command="{Binding ResetTaskStatusCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemSetTaskStatusToUndone'}" />
+                    <MenuItem Command="{Binding ResetReportTaskDirectoryCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemResetTasksReportTargetPath'}" />
+                    
                 </MenuItem>
                 <!--  Edit  -->
                 <MenuItem
@@ -478,20 +486,20 @@
                         Command="{Binding WriteToChipOnceCommand}"
                         Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemRunAllTasksOnce'}"
                         InputGestureText="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemShortcutWriteToChipOnce'}" />
-                    <MenuItem Command="{Binding WriteSelectedTaskToChipOnceCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemRunSelectedTaskOnce'}" />
-                    <Separator />
-                    <MenuItem
-                        Command="{Binding WriteSelectedTaskToChipAutoCommand}"
-                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemRunSelectedTaskAutomatically'}"
-                        IsChecked="{Binding IsWriteSelectedToChipAutoChecked, Mode=OneWay}" />
                     <MenuItem
                         Command="{Binding WriteToAllChipAutoCommand}"
                         Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemRunAllTasksAutomatically'}"
                         IsCheckable="True"
                         IsChecked="{Binding IsWriteToAllChipAutoChecked, Mode=OneWay}" />
                     <Separator />
-                    <MenuItem Command="{Binding ResetTaskStatusCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemSetTaskStatusToUndone'}" />
-                    <MenuItem Command="{Binding RemoveAllTasksCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemRemoveAllTasks'}" />
+                    <MenuItem 
+                        Command="{Binding WriteSelectedTaskToChipOnceCommand}" 
+                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemRunSelectedTaskOnce'}" />
+                    <MenuItem
+                        Command="{Binding WriteSelectedTaskToChipAutoCommand}"
+                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemRunSelectedTaskAutomatically'}"
+                        IsChecked="{Binding IsWriteSelectedToChipAutoChecked, Mode=OneWay}" />
+
                 </MenuItem>
                 <!--  Programming  -->
                 <MenuItem

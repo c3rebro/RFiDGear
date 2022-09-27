@@ -327,7 +327,8 @@ namespace RedCell.Diagnostics.Update
                 ProcessStartInfo info = new ProcessStartInfo()
                 {
                     FileName = "msiexec.exe",
-                    Arguments = string.Format("/i \"{0}\" /lv \"c:\\temp\\rfidgeardeploy.log\"", Path.Combine(appDataPath, WorkPath, "Setup.msi")),
+                    Verb="runas",
+                    Arguments = string.Format("/i \"{0}\" ", Path.Combine(appDataPath, WorkPath, "Setup.msi")),
                     UseShellExecute = false
                 };
 

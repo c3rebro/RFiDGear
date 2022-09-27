@@ -437,13 +437,13 @@ ein Kartenlesegerät auswählen</value>
     <value>_Aufgabenstatus zurücksetzen</value>
   </data>
   <data name="menuItemRunAllTasksAutomatically" xml:space="preserve">
-    <value>_Alle Aufgaben automatisch ausführen</value>
+    <value>_Alle Aufgaben automatisch wiederholen</value>
   </data>
   <data name="menuItemRunSelectedTaskAutomatically" xml:space="preserve">
-    <value>_Markierte Aufgabe automatisch ausführen</value>
+    <value>_Markierte Aufgabe automatisch wiederholen</value>
   </data>
   <data name="menuItemRunSelectedTaskOnce" xml:space="preserve">
-    <value>Markierte Aufgaben _einmalig ausführen</value>
+    <value>Markierte Aufgabe(n) _einmalig ausführen</value>
   </data>
   <data name="menuItemRunAllTasksOnce" xml:space="preserve">
     <value>Alle A_ufgaben einmalig ausführen</value>
@@ -451,11 +451,11 @@ ein Kartenlesegerät auswählen</value>
   <data name="menuItemOpenProject" xml:space="preserve">
     <value>Projektdatei _öffnen...</value>
   </data>
-  <data name="menuItemSaveTask" xml:space="preserve">
-    <value>_Projektdatei Speichern unter...</value>
+  <data name="menuItemSaveTaskAs" xml:space="preserve">
+    <value>_Projekt Speichern unter...</value>
   </data>
   <data name="menuItemSaveChip" xml:space="preserve">
-    <value>_RFiD Chipliste Speichern unter...</value>
+    <value>_Chipliste Speichern unter...</value>
   </data>
   <data name="menuItemReadChipPublic" xml:space="preserve">
     <value>_RFiD Chip einlesen</value>
@@ -555,7 +555,7 @@ Soll die Aktualisierung jetzt herunter geladen und installiert werden?</value>
   <data name="menuItemShortcutOpenProject" xml:space="preserve">
     <value>Strg + O</value>
   </data>
-  <data name="menuItemShortcutSaveTask" xml:space="preserve">
+  <data name="menuItemShortcutSaveTaskAs" xml:space="preserve">
     <value>Strg + S</value>
   </data>
   <data name="menuItemShortcutReadChipPublic" xml:space="preserve">
@@ -1334,7 +1334,7 @@ Needed by:
     <value>Aufgabe zurücksetzen</value>
   </data>
   <data name="contextMenuItemExecuteAllItems" xml:space="preserve">
-    <value>Alle Aufgaben ausführen</value>
+    <value>Alle Aufgaben zurücksetzen und ausführen</value>
   </data>
   <data name="contextMenuItemAddNewTask" xml:space="preserve">
     <value>Neue Aufgabe anlegen</value>
@@ -1471,5 +1471,17 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="labelReaderSetupReaderConnectStatus" xml:space="preserve">
     <value>Verbunden:</value>
+  </data>
+  <data name="menuItemResetTasksReportTargetPath" xml:space="preserve">
+    <value>_Berichtausgabepfade zurücksetzen</value>
+  </data>
+  <data name="menuItemSaveTask" xml:space="preserve">
+    <value>Projekt _Speichern</value>
+  </data>
+  <data name="messageBoxMessageSetProjectAsDefault" xml:space="preserve">
+    <value>Soll dieses Projekt als Voreinstellung gesetzt und beim Start automatisch geladen werden? (Einstellung "Projekt automatisch laden muss gesetzt sein")</value>
+  </data>
+  <data name="windowCaptionAskTaskDefault" xml:space="preserve">
+    <value>Als Voreinstellung speichern?</value>
   </data>
 </root>

@@ -40,6 +40,7 @@ namespace RFiDGear.ViewModel
 
         private protected ReportReaderWriter reportReaderWriter;
         private protected Checkpoint checkpoint;
+        private protected string lastUsedReportPath;
 
         [XmlIgnore]
         public ReportReaderWriter ReportReaderWriterToUse { get; set; }
@@ -858,7 +859,7 @@ namespace RFiDGear.ViewModel
         public ICommand OpenReportTemplateCommand => new RelayCommand(OnNewOpenReportTemplateCommand);
         private void OnNewOpenReportTemplateCommand()
         {
-
+            
             CurrentTaskErrorLevel = ERROR.Empty;
 
             try
@@ -876,7 +877,7 @@ namespace RFiDGear.ViewModel
                     Mouse.OverrideCursor = Cursors.AppStarting;
 
                     string path = dlg.FileName;
-
+                    
                     if (!String.IsNullOrWhiteSpace(path))
                     {
                         ReportTemplatePath = path;
@@ -974,6 +975,12 @@ namespace RFiDGear.ViewModel
                                     hasVariable = true;
                                 }
 
+                                if (temporaryContent.Contains("%FREECLASSICMEM"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%FREECLASSICMEM", ClassicChip?.FreeMemory.ToString(CultureInfo.CurrentCulture) ?? "");
+                                    hasVariable = true;
+                                }
+
                                 if (temporaryContent.Contains("%LISTAPPS"))
                                 {
                                     temporaryContent = temporaryContent.Replace("%LISTAPPS", string.Join(", ", DesfireChip?.AppList.Select(x => x.appID)) ?? "");
@@ -1003,18 +1010,21 @@ namespace RFiDGear.ViewModel
                                 if (temporaryContent.Contains("%nnn"))
                                 {
                                     temporaryContent = temporaryContent.Replace("%nnn", IterCounter.ToString("D3"));
+                                    hasVariable = true;
                                     IterCounter++;
                                 }
 
                                 if (temporaryContent.Contains("%nn"))
                                 {
                                     temporaryContent = temporaryContent.Replace("%nn", IterCounter.ToString("D2"));
+                                    hasVariable = true;
                                     IterCounter++;
                                 }
 
                                 if (temporaryContent.Contains("%n"))
                                 {
                                     temporaryContent = temporaryContent.Replace("%n", IterCounter.ToString("D1"));
+                                    hasVariable = true;
                                     IterCounter++;
                                 }
 
