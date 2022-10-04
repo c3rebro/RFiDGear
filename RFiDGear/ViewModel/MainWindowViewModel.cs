@@ -79,12 +79,12 @@ namespace RFiDGear.ViewModel
         private protected bool _runSelectedOnly;
 
         private int currentTaskIndex = 0;
-        //set if task was completed; indicates greenlight to continue execution
-        //if programming takes too long; quit the process
+        // set if task was completed; indicates greenlight to continue execution
+        // if programming takes too long; quit the process
         private bool firstRun = true;
         private bool updateAvailable = false;
         private protected Mutex mutex;
-        //one reader, one instance - only
+        // one reader, one instance - only
 
         #region Events / Delegates
 
@@ -697,17 +697,17 @@ namespace RFiDGear.ViewModel
                             }
 
                             if (sender.SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.AppExistCheck ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.AuthenticateApplication ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateApplication ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteFile ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateFile ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadData ||
-                                            sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData)
+                                sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover ||
+                                sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings ||
+                                sender.SelectedTaskType == TaskType_MifareDesfireTask.AppExistCheck ||
+                                sender.SelectedTaskType == TaskType_MifareDesfireTask.AuthenticateApplication ||
+                                sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover ||
+                                sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication ||
+                                sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateApplication ||
+                                sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteFile ||
+                                sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateFile ||
+                                sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadData ||
+                                sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData)
                             {
                                 if (ChipTasks.TaskCollection.OfType<MifareDesfireSetupViewModel>().Any(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt))
                                 {
@@ -1132,7 +1132,7 @@ namespace RFiDGear.ViewModel
 
                             if (GenericChip != null)
                             {
-                                if (GenericChip.CardType == CARD_TYPE.DESFire || GenericChip.CardType == CARD_TYPE.DESFireEV1 || GenericChip.CardType == CARD_TYPE.DESFireEV2)
+                                if (GenericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
                                 {
                                     device.GetMiFareDESFireChipAppIDs();
                                 }
@@ -2077,12 +2077,14 @@ namespace RFiDGear.ViewModel
                 {
                     updater.AllowUpdate = false;
                     updateAction.Close();
+                    mw.Activate();
                 },
 
                 OnCloseRequest = (updateAction) =>
                 {
                     updater.AllowUpdate = false;
                     updateAction.Close();
+                    mw.Activate();
                 }
             });
         }

@@ -58,10 +58,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     if(!IsConnected)
                     {
                         Instance.Connect();
-                    }
-
-                    readerDevice.GreenLED(true);
-                    readerDevice.RedLED(true);
+                    }                   
 
                     card = readerDevice.GetSingleChip();
 
@@ -72,7 +69,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             readerDevice.Beep(1, 50, 1000, 100);
 
                             GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)card.CardType);
-
+                            readerDevice.GreenLED(true);
+                            readerDevice.RedLED(false);
                             return ERROR.NoError;
                         }
                         catch (Exception e)
@@ -84,6 +82,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     else
                     {
                         readerDevice.Beep(3, 25, 600, 100);
+                        readerDevice.GreenLED(false);
+                        readerDevice.RedLED(true);
                         GenericChip = null;
 
                         return ERROR.NotReadyError;
@@ -275,7 +275,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             ReadChipPublic();
 
-            return readerDevice.DesfireAuthenticate(_applicationMasterKey, (byte)_keyNumber, 0, 0) == true ? ERROR.NoError : ERROR.NotAllowed;
+            return readerDevice.DesfireAuthenticate(
+                _applicationMasterKey, 
+                (byte)_keyNumber, 
+                (byte)Enum.Parse(typeof(Elatec.NET.DESfireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)),
+                1) == true ? ERROR.NoError : ERROR.NotAllowed;
 
         }
         public override ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
@@ -286,7 +290,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication,
                                         int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
         {
-            throw new NotImplementedException();
+            return readerDevice.DesfireCreateApplication((Elatec.NET.DESFireKeySettings)_keySettingsTarget, (Elatec.NET.DESFireKeyType)_keyTypeTargetApplication, _maxNbKeys, _appID) == true ? ERROR.NoError : ERROR.NotAllowed;
         }
         public override ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
                                         string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
