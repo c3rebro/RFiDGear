@@ -139,7 +139,7 @@ namespace RFiDGear.ViewModel
 
             CardType = mifareDesfireUidModel.CardType;
 
-            RelayCommand _cmdReadAppIds = new RelayCommand(MifareDesfireQuickCheck);
+            var _cmdReadAppIds = new RelayCommand(MifareDesfireQuickCheck);
 
             _cmdCreateApp = new RelayCommand(CreateApp);
             _cmdEraseDesfireCard = new RelayCommand(EraseDesfireCard);
@@ -251,13 +251,13 @@ namespace RFiDGear.ViewModel
         {
             if (!isTask)
             {
-                using (ReaderDevice device = ReaderDevice.Instance)
+                using (var device = ReaderDevice.Instance)
                 {
                     Mouse.OverrideCursor = Cursors.Wait;
 
-                    foreach (RFiDChipChildLayerViewModel cnVM in Children)
+                    foreach (var cnVM in Children)
                     {
-                        foreach (string key in settings.DefaultSpecification.MifareClassicDefaultQuickCheckKeys)
+                        foreach (var key in settings.DefaultSpecification.MifareClassicDefaultQuickCheckKeys)
                         {
                             if (device.ReadMifareClassicSingleSector(cnVM.SectorNumber, key, key) == ERROR.NoError)
                             {
@@ -272,7 +272,7 @@ namespace RFiDGear.ViewModel
                             break;
                         }
 
-                        foreach (RFiDChipGrandChildLayerViewModel gcVM in cnVM.Children.Where(x => x.MifareClassicDataBlock != null))
+                        foreach (var gcVM in cnVM.Children.Where(x => x.MifareClassicDataBlock != null))
                         {
                             if (device.Sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber)) // (gcVM.DataBlockContent != null)
                             {
@@ -304,7 +304,7 @@ namespace RFiDGear.ViewModel
         {
             if (!isTask)
             {
-                using (ReaderDevice device = ReaderDevice.Instance)
+                using (var device = ReaderDevice.Instance)
                 {
                     if (device != null && device.ReadChipPublic() == ERROR.NoError)
                     {
@@ -334,7 +334,7 @@ namespace RFiDGear.ViewModel
                         {
                             if (appIDs != null)
                             {
-                                foreach (uint appID in appIDs)
+                                foreach (var appID in appIDs)
                                 {
                                     if (appID == 0)
                                     {
@@ -363,7 +363,7 @@ namespace RFiDGear.ViewModel
                                         settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType,
                                         0, (int)appID) == ERROR.NoError)
                                     {
-                                        foreach (byte fileID in device.FileIDList)
+                                        foreach (var fileID in device.FileIDList)
                                         {
                                             Children.First(x => x.AppID == appID).Children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(null, fileID), Children.First(x => x.AppID == appID)));
 
@@ -371,7 +371,7 @@ namespace RFiDGear.ViewModel
                                                                                     settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType,
                                                                                     0, (int)appID, fileID) == ERROR.NoError)
                                             {
-                                                RFiDChipGrandChildLayerViewModel grandChild = Children.First(x => x.AppID == appID).Children.First(y => (y.DesfireFile != null ? y.DesfireFile.FileID : -1) == fileID);
+                                                var grandChild = Children.First(x => x.AppID == appID).Children.First(y => (y.DesfireFile != null ? y.DesfireFile.FileID : -1) == fileID);
 
                                                 grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileType: {0}", Enum.GetName(typeof(FileType_MifareDesfireFileType), device.DesfireFileSettings.FileType)), grandChild));
                                                 grandChild.Children.Add(new RFiDChipGrandGrandChildLayerViewModel(string.Format("FileSize: {0}Bytes", device.DesfireFileSettings.dataFile.fileSize.ToString(CultureInfo.CurrentCulture)), grandChild));
@@ -437,18 +437,18 @@ namespace RFiDGear.ViewModel
         {
             if (!isTask)
             {
-                using (ReaderDevice device = ReaderDevice.Instance)
+                using (var device = ReaderDevice.Instance)
                 {
                     Mouse.OverrideCursor = Cursors.Wait;
 
-                    foreach (RFiDChipChildLayerViewModel cnVM in Children)
+                    foreach (var cnVM in Children)
                     {
 
                         if (device.ReadMifareUltralightSinglePage(cnVM.PageNumber) == ERROR.NoError)
                         {
-                            string dataToShow = ByteConverter.GetStringFrom(device.MifareUltralightPageData);
+                            var dataToShow = ByteConverter.GetStringFrom(device.MifareUltralightPageData);
 
-                            for (int i = (ByteConverter.GetStringFrom(device.MifareUltralightPageData).Length) - 2; i > 0; i -= 2)
+                            for (var i = (ByteConverter.GetStringFrom(device.MifareUltralightPageData).Length) - 2; i > 0; i -= 2)
                             {
                                 dataToShow = dataToShow.Insert(i, " ");
                             }
@@ -465,7 +465,7 @@ namespace RFiDGear.ViewModel
                             continue;
                         }
 
-                        foreach (RFiDChipGrandChildLayerViewModel gcVM in cnVM.Children.Where(x => x.MifareClassicDataBlock != null))
+                        foreach (var gcVM in cnVM.Children.Where(x => x.MifareClassicDataBlock != null))
                         {
                             if (device.Sector.DataBlock.Any(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber)) // (gcVM.DataBlockContent != null)
                             {
@@ -497,7 +497,7 @@ namespace RFiDGear.ViewModel
         {
             if (!isTask)
             {
-                using (ReaderDevice device = ReaderDevice.Instance)
+                using (var device = ReaderDevice.Instance)
                 {
                     Mouse.OverrideCursor = Cursors.Wait;
 
@@ -753,16 +753,16 @@ namespace RFiDGear.ViewModel
                 case CARD_TYPE.Mifare1K:
                 case CARD_TYPE.MifarePlus_SL1_1K:
                     {
-                        for (int i = 0; i < 16; i++)
+                        for (var i = 0; i < 16; i++)
                         {
                             _children.Add(
                                 new RFiDChipChildLayerViewModel(
                                     new MifareClassicSectorModel(i), this, CardType, dialogs));
                         }
 
-                        for (int i = 0; i < _children.Count; i++)
+                        for (var i = 0; i < _children.Count; i++)
                         {
-                            for (int j = 0; j < _children[i].Children.Count(); j++)
+                            for (var j = 0; j < _children[i].Children.Count(); j++)
                             {
                                 _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
                             }
@@ -774,16 +774,16 @@ namespace RFiDGear.ViewModel
                 case CARD_TYPE.Mifare2K:
                 case CARD_TYPE.MifarePlus_SL1_2K:
                     {
-                        for (int i = 0; i < 32; i++)
+                        for (var i = 0; i < 32; i++)
                         {
                             _children.Add(
                                 new RFiDChipChildLayerViewModel(
                                     new MifareClassicSectorModel(i), this, CardType, dialogs));
                         }
 
-                        for (int i = 0; i < _children.Count; i++)
+                        for (var i = 0; i < _children.Count; i++)
                         {
-                            for (int j = 0; j < _children[i].Children.Count(); j++)
+                            for (var j = 0; j < _children[i].Children.Count(); j++)
                             {
                                 _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
                             }
@@ -794,16 +794,16 @@ namespace RFiDGear.ViewModel
                 case CARD_TYPE.Mifare4K:
                 case CARD_TYPE.MifarePlus_SL1_4K:
                     {
-                        for (int i = 0; i < 40; i++)
+                        for (var i = 0; i < 40; i++)
                         {
                             _children.Add(
                                 new RFiDChipChildLayerViewModel(
                                     new MifareClassicSectorModel(i), this, CardType, dialogs));
                         }
 
-                        for (int i = 0; i < _children.Count; i++)
+                        for (var i = 0; i < _children.Count; i++)
                         {
-                            for (int j = 0; j < _children[i].Children.Count(); j++)
+                            for (var j = 0; j < _children[i].Children.Count(); j++)
                             {
                                 _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
                             }
@@ -813,7 +813,7 @@ namespace RFiDGear.ViewModel
 
                 case CARD_TYPE.MifareUltralight:
 
-                    for (int i = 0; i < 15; i++)
+                    for (var i = 0; i < 15; i++)
                     {
                         _children.Add(
                             new RFiDChipChildLayerViewModel(

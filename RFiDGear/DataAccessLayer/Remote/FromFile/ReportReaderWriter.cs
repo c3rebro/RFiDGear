@@ -60,11 +60,11 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
-                ObservableCollection<string> temp = new ObservableCollection<string>();
+                var temp = new ObservableCollection<string>();
 
-                using (PdfDocument pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath)))
+                using (var pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath)))
                 {
-                    PdfAcroForm form = PdfAcroForm.GetAcroForm(pdfDoc, true);
+                    var form = PdfAcroForm.GetAcroForm(pdfDoc, true);
                     // Being set as true, this parameter is responsible to generate an appearance Stream
                     // while flattening for all form fields that don't have one. Generating appearances will
                     // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.
@@ -75,7 +75,7 @@ namespace RFiDGear.DataAccessLayer
                     {
                         if (form != null)
                         {
-                            foreach (KeyValuePair<string, PdfFormField> _form in form.GetFormFields())
+                            foreach (var _form in form.GetFormFields())
                             {
                                 temp.Add(_form.Key);
                             }
@@ -103,11 +103,11 @@ namespace RFiDGear.DataAccessLayer
             {
                 try
                 {
-                    using (PdfDocument pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath), new PdfWriter(ReportOutputPath)))
+                    using (var pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath), new PdfWriter(ReportOutputPath)))
                     {
                         ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
 
-                        PdfAcroForm form = PdfAcroForm.GetAcroForm(pdfDoc, true);
+                        var form = PdfAcroForm.GetAcroForm(pdfDoc, true);
                         // Being set as true, this parameter is responsible to generate an appearance Stream
                         // while flattening for all form fields that don't have one. Generating appearances will
                         // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.
@@ -152,9 +152,9 @@ namespace RFiDGear.DataAccessLayer
                 {
                     ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
 
-                    using (PdfDocument pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath), new PdfWriter(ReportOutputPath)))
+                    using (var pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath), new PdfWriter(ReportOutputPath)))
                     {
-                        PdfAcroForm form = PdfAcroForm.GetAcroForm(pdfDoc, true);
+                        var form = PdfAcroForm.GetAcroForm(pdfDoc, true);
                         // Being set as true, this parameter is responsible to generate an appearance Stream
                         // while flattening for all form fields that don't have one. Generating appearances will
                         // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.

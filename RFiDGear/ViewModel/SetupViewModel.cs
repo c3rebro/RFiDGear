@@ -32,7 +32,7 @@ namespace RFiDGear.ViewModel
 
         public SetupViewModel(ReaderDevice _device)
         {
-            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            using (var settings = new SettingsReaderWriter())
             {
                 device = _device;
 

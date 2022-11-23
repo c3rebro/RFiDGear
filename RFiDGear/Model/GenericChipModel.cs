@@ -22,5 +22,7 @@ namespace RFiDGear.Model
 
         public string UID { get; set; }
         public CARD_TYPE CardType { get; set; }
+        public string SAK { get; set; }
+        public string RATS { get; set; }
     }
 }

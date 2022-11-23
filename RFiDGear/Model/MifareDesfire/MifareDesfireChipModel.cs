@@ -14,9 +14,9 @@ namespace RFiDGear.Model
         {
             get
             {
-                uint[] appIDs = new uint[AppList.Count];
+                var appIDs = new uint[AppList.Count];
 
-                for(int i = 0; i < AppList.Count; i++)
+                for(var i = 0; i < AppList.Count; i++)
                 {
                     appIDs[i] = AppList[i].appID;
                 }

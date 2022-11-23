@@ -225,7 +225,7 @@ namespace RFiDGear.ViewModel
 
         public void ReadSectorWithCustoms()
         {
-            using (ReaderDevice device = ReaderDevice.Instance)
+            using (var device = ReaderDevice.Instance)
             {
                 IsSelected = true;
 
@@ -251,7 +251,7 @@ namespace RFiDGear.ViewModel
                     {
                         IsAuthenticated = device.SectorSuccessfullyAuth;
 
-                        foreach (RFiDChipGrandChildLayerViewModel gcVM in Children)
+                        foreach (var gcVM in Children)
                         {
                         }
                     },
@@ -520,7 +520,7 @@ namespace RFiDGear.ViewModel
                 case CARD_TYPE.MifarePlus_SL1_1K:
                 case CARD_TYPE.MifarePlus_SL1_2K:
                     {
-                        for (int i = 0; i <= 3; i++)
+                        for (var i = 0; i <= 3; i++)
                         {
                             children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), this));
                         }
@@ -532,14 +532,14 @@ namespace RFiDGear.ViewModel
                     {
                         if (SectorNumber < 32)
                         {
-                            for (int i = 0; i <= 3; i++)
+                            for (var i = 0; i <= 3; i++)
                             {
                                 children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), this));
                             }
                         }
                         else
                         {
-                            for (int i = 0; i <= 15; i++)
+                            for (var i = 0; i <= 15; i++)
                             {
                                 children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), this));
                             }
@@ -556,7 +556,7 @@ namespace RFiDGear.ViewModel
                     break;
 
                 case CARD_TYPE.Unspecified: //TODO: Add Card Type "TASK_MF_Classic" for every type
-                    for (int i = 0; i <= 3; i++)
+                    for (var i = 0; i <= 3; i++)
                     {
                         children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), new MifareClassicSetupViewModel()));
                     }

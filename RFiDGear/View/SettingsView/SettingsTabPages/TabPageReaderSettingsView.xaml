@@ -3,6 +3,8 @@
     x:Class="RFiDGear.View.TabPageReaderSettingsView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer">
     <UserControl.Resources>
         <dal:ResourceLoader x:Key="Localization" />
@@ -17,8 +19,8 @@
             <ComboBox
                 Grid.Row="0"
                 Grid.Column="1"
-                Height="26"
-                Margin="9,6,8,0"
+                Height="auto"
+                Margin="8,7,8,3"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Top"
                 IsSynchronizedWithCurrentItem="True"
@@ -49,31 +51,31 @@
                 Grid.Row="1"
                 Grid.Column="0"
                 Width="198"
-                Height="26"
-                Margin="8,3,0,0"
+                Height="auto"
+                Margin="8,7,8,3"
                 HorizontalAlignment="Left"
-                VerticalAlignment="Top"
-                HorizontalContentAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Left"
                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectedReader'}"
                 DataContext="{Binding}"
                 Foreground="Black" />
             <Label
                 Grid.Row="1"
                 Grid.Column="1"
-                Height="26"
-                Margin="9,3,8,0"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Top"
-                HorizontalContentAlignment="Stretch"
+                Height="auto"
+                Margin="8,7,8,3"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Left"
                 Content="{Binding DefaultReader, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                 DataContext="{Binding}"
                 Foreground="Black" />
             <Label
                 Grid.Row="2"
                 Grid.Column="1"
-                Width="1023"
-                Height="281"
-                Margin="9,7,0,0"
+                Width="auto"
+                Height="auto"
+                Margin="8,7,8,03"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 HorizontalContentAlignment="Stretch"
@@ -84,19 +86,22 @@
                 Grid.Row="2"
                 Grid.Column="0"
                 Width="198"
-                Height="26"
+                Height="auto"
                 Margin="8,7,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
+                VerticalContentAlignment="Center"
+                HorizontalContentAlignment="Left"
+                Foreground="Black"
                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelReaderStatus'}" />
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="213" />
-                <ColumnDefinition Width="0.5*" />
+                <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="42" />
-                <RowDefinition Height="37" />
-                <RowDefinition Height="0.5*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
             </Grid.RowDefinitions>
         </Grid>
     </Grid>

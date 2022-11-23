@@ -82,10 +82,10 @@ namespace RFiDGear.DataAccessLayer
         /// <returns></returns>
         public override object ProvideValue(IServiceProvider serviceProvider)
         {
-            string[] names = Enum.GetNames(Type);
-            string[] values = new string[names.Length];
+            var names = Enum.GetNames(Type);
+            var values = new string[names.Length];
 
-            for (int i = 0; i < names.Length; i++)
+            for (var i = 0; i < names.Length; i++)
             { values[i] = ResourceLoader.GetResource(string.Format("ENUM.{0}.{1}", Type.Name, names[i])); }
 
             return values;
@@ -128,7 +128,7 @@ namespace RFiDGear.DataAccessLayer
                 {
                     var collection = new ObservableCollection<string>();
 
-                    foreach (string s in value as ObservableCollection<string>)
+                    foreach (var s in value as ObservableCollection<string>)
                     {
                         collection.Add(ResourceLoader.GetResource(string.Format("ENUM.{0}", s)));
                     }
@@ -136,7 +136,7 @@ namespace RFiDGear.DataAccessLayer
                 }
                 else if (value != null && !(value is string))
                 {
-                    string t = string.Format("ENUM.{0}.{1}", value.GetType().Name, Enum.GetName(value.GetType(), value));
+                    var t = string.Format("ENUM.{0}.{1}", value.GetType().Name, Enum.GetName(value.GetType(), value));
                     return ResourceLoader.GetResource(string.Format("ENUM.{0}.{1}", value.GetType().Name, Enum.GetName(value.GetType(), value)));
                 }
                 else if (value is string)
@@ -171,10 +171,10 @@ namespace RFiDGear.DataAccessLayer
         {
             if (value != null)
             {
-                string[] names = Enum.GetNames(parameter as Type);
-                string[] values = new string[names.Length];
+                var names = Enum.GetNames(parameter as Type);
+                var values = new string[names.Length];
 
-                for (int i = 0; i < names.Length; i++)
+                for (var i = 0; i < names.Length; i++)
                 {
                     values[i] = ResourceLoader.GetResource(string.Format("ENUM.{0}.{1}", targetType.Name, names[i]));
                     if ((string)value == values[i])
@@ -204,11 +204,11 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                using (var settings = new SettingsReaderWriter())
                 {
                     settings.ReadSettings();
 
-                    string ressource = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
+                    var ressource = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
                         .GetString(resName, (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en"));
 
                     return ressource.Replace("%NEWLINE", "\n");

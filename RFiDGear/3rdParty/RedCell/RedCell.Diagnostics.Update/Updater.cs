@@ -87,7 +87,7 @@ namespace RedCell.Diagnostics.Update
                     return;
                 }
 
-                string data = File.ReadAllText(configFile.FullName, new UTF8Encoding(false));
+                var data = File.ReadAllText(configFile.FullName, new UTF8Encoding(false));
 
                 _localConfig = new Manifest(data);
 #if DEBUG
@@ -195,7 +195,7 @@ namespace RedCell.Diagnostics.Update
                     return;
                 }
 
-                string data = Encoding.UTF8.GetString(http.ResponseData);
+                var data = Encoding.UTF8.GetString(http.ResponseData);
                 _remoteConfig = new Manifest(data);
 
                 if (_remoteConfig == null)
@@ -283,7 +283,7 @@ namespace RedCell.Diagnostics.Update
 
 
             // Download files in manifest.
-            foreach (string update in _remoteConfig.Payloads)
+            foreach (var update in _remoteConfig.Payloads)
             {
                 Log.Write("Fetching '{0}'.", update);
                 var url = _remoteConfig.BaseUri + update; //TODO: make this localizable ? e.g. + (settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/")
@@ -323,8 +323,8 @@ namespace RedCell.Diagnostics.Update
 
             if (IsUserNotified && AllowUpdate)
             {
-                Process p = new Process();
-                ProcessStartInfo info = new ProcessStartInfo()
+                var p = new Process();
+                var info = new ProcessStartInfo()
                 {
                     FileName = "msiexec.exe",
                     Verb="runas",

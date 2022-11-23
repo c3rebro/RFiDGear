@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Window
+<ui:UiWindow
     x:Class="RFiDGear.View.MifareClassicSetupView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:local="clr-namespace:RFiDGear"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
     xmlns:v="clr-namespace:RFiDGear.View"
     Title="{Binding Caption}"
     MinWidth="900"
@@ -14,7 +14,7 @@
     SizeToContent="WidthAndHeight"
     WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
-    <Window.Resources>
+    <ui:UiWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
@@ -30,7 +30,7 @@
 				</Style>
 			</ContextMenu.ItemContainerStyle>
 		</ContextMenu>-->
-    </Window.Resources>
+    </ui:UiWindow.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="165" />
@@ -308,4 +308,4 @@
                 IsCancel="True" />
         </Grid>
     </Grid>
-</Window>
+</ui:UiWindow>

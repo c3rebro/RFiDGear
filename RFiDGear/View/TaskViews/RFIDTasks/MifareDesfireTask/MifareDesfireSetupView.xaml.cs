@@ -6,17 +6,25 @@
  */
 
 using System.Windows;
+using System.Windows.Input;
+using Wpf.Ui.Controls;
 
 namespace RFiDGear.View
 {
     /// <summary>
     /// Interaction logic for MifareDesfireSetupView.xaml
     /// </summary>
-    public partial class MifareDesfireSetupView : Window
+    public partial class MifareDesfireSetupView : UiWindow
     {
         public MifareDesfireSetupView()
         {
             InitializeComponent();
+            this.MaxHeight = (uint)SystemParameters.MaximizedPrimaryScreenHeight - 8;
+        }
+
+        private void WindowMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            DragMove();
         }
     }
 }

@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Stretch"
@@ -50,8 +51,8 @@
                         Grid.Row="5"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Height="26"
-                        Margin="8,0,10.2,6.6"
+                        Height="auto"
+                        Margin="8,7,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Command="{Binding ChangeAppKeyCommand}"
@@ -59,16 +60,17 @@
                     <Label
                         Grid.Row="1"
                         Grid.Column="0"
-                        Height="26"
-                        Margin="8,3,7,0"
+                        Height="auto"
+                        Margin="8,7,8,3"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}" />
-                    <TextBox
+                    <ui:TextBox
                         Grid.Row="1"
                         Grid.Column="1"
-                        Height="26"
-                        Margin="10,3,9,0"
+                        Height="auto"
+                        Margin="8,7,8,3"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
                         HorizontalContentAlignment="Left"
@@ -90,35 +92,36 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </TextBox>
+                    </ui:TextBox>
                     <Label
                         Grid.Row="0"
                         Grid.Column="0"
-                        Margin="8,9,7,7"
+                        Margin="8,7,8,3"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
                         Content="App ID" />
                     <Label
                         Grid.Row="3"
                         Grid.Column="0"
-                        Margin="8,3,7,7"
+                        Margin="8,7,8,3"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireKeyNumber'}" />
                     <ComboBox
                         Grid.Row="3"
                         Grid.Column="1"
-                        Width="81"
-                        Margin="8.8,3.4,0,6.6"
-                        HorizontalAlignment="Left"
+                        Margin="8,7,8,3"
+                        HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         ItemsSource="{Binding MifareDesfireKeys}"
                         SelectedItem="{Binding SelectedDesfireAppKeyNumberTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
-                    <TextBox
+                    <ui:TextBox
                         Grid.Row="0"
                         Grid.Column="1"
-                        Height="26"
-                        Margin="10,9,9,0"
+                        Height="auto"
+                        Margin="8,7,8,3"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
                         HorizontalContentAlignment="Left"
@@ -140,15 +143,14 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </TextBox>
+                    </ui:TextBox>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="42" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
                         <RowDefinition Height="*" />
-                        <RowDefinition Height="36" />
+                        <RowDefinition Height="auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="155" />
@@ -179,41 +181,42 @@
                         Grid.Row="5"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Height="26"
-                        Margin="8,0,10,6.6"
+                        Margin="8,7,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Bottom"
+                        VerticalAlignment="Stretch"
                         Command="{Binding AuthenticateToCardApplicationCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeAuthenticate'}" />
                     <Label
                         Grid.Row="2"
                         Grid.Column="0"
-                        Margin="10,3,5,6"
+                        Margin="8,7,8,3"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
                     <ComboBox
                         Grid.Row="2"
                         Grid.Column="1"
-                        Width="81"
-                        Margin="10,3,0,7"
-                        HorizontalAlignment="Left"
+                        Width="auto"
+                        Margin="8,7,8,3"
+                        HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
                         SelectedItem="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="1"
                         Grid.Column="0"
-                        Height="26"
-                        Margin="10,4,5,6"
+                        Height="auto"
+                        Margin="8,7,8,3"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}" />
-                    <TextBox
+                    <ui:TextBox
                         Grid.Row="1"
                         Grid.Column="1"
-                        Height="26"
-                        Margin="10,4,9,6"
+                        Height="auto"
+                        Margin="8,7,8,3"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
@@ -235,36 +238,35 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </TextBox>
+                    </ui:TextBox>
                     <Label
                         Grid.Row="0"
                         Grid.Column="0"
-                        Height="26"
-                        Margin="8,9,7,7"
+                        Margin="8,7,8,3"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
                         Content="App ID" />
                     <Label
                         Grid.Row="3"
                         Grid.Column="0"
-                        Margin="10,3,5,7"
+                        Margin="8,7,8,3"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireKeyNumber'}" />
                     <ComboBox
                         Grid.Row="3"
                         Grid.Column="1"
-                        Width="80"
-                        Height="26"
-                        Margin="10,3,0,0"
-                        HorizontalAlignment="Left"
+                        Margin="8,7,8,3"
+                        HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
                         ItemsSource="{Binding MifareDesfireKeys}"
                         SelectedItem="{Binding SelectedDesfireAppKeyNumberCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
-                    <TextBox
+                    <ui:TextBox
                         Grid.Row="0"
                         Grid.Column="1"
-                        Margin="10,10,9,5"
+                        Margin="8,7,8,3"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
@@ -286,14 +288,14 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </TextBox>
+                    </ui:TextBox>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="42" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
                         <RowDefinition Height="*" />
-                        <RowDefinition Height="36" />
+                        <RowDefinition Height="auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150" />

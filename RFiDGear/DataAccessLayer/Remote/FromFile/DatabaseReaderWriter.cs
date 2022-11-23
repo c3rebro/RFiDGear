@@ -53,7 +53,7 @@ namespace RFiDGear.DataAccessLayer
 
                 if (!File.Exists(Path.Combine(appDataPath, chipDatabaseFileName)))
                 {
-                    XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
+                    var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
 
                     TextWriter writer = new StreamWriter(Path.Combine(appDataPath, chipDatabaseFileName));
 
@@ -67,9 +67,9 @@ namespace RFiDGear.DataAccessLayer
                     File.Delete(Path.Combine(appDataPath, taskDatabaseFileName));
                 }
 
-                foreach(string file in Directory.GetFiles(appDataPath))
+                foreach(var file in Directory.GetFiles(appDataPath))
                 {
-                    FileInfo fi = new FileInfo(file);
+                    var fi = new FileInfo(file);
                     if (fi.Extension.ToLower(CultureInfo.CurrentCulture).Contains("rfprj"))
                     {
                         fi.Delete();
@@ -90,7 +90,7 @@ namespace RFiDGear.DataAccessLayer
         public bool ReadDatabase(string _fileName = "")
         {
             TextReader reader;
-            int verInfo = 0;
+            var verInfo = 0;
             FileInfo file;
 
             if (string.IsNullOrWhiteSpace(_fileName) || !File.Exists(_fileName))
@@ -104,20 +104,20 @@ namespace RFiDGear.DataAccessLayer
 
             try
             {
-                XmlDocument doc = new XmlDocument();
+                var doc = new XmlDocument();
 
                 if (file.Extension.ToLower(CultureInfo.CurrentCulture) == ".xml")
                 {
                     doc.Load(_fileName);
 
-                    XmlNode node = doc.SelectSingleNode("//ManifestVersion");
+                    var node = doc.SelectSingleNode("//ManifestVersion");
                     verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
 
                     reader = new StreamReader(_fileName);
 
                     try
                     {
-                        XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
+                        var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
                         SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
                     }
                     catch (Exception e)
@@ -126,7 +126,7 @@ namespace RFiDGear.DataAccessLayer
 
                         try
                         {
-                            XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
+                            var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
                             TreeViewModel = (serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>);
                         }
                         catch (Exception innerE)
@@ -140,13 +140,13 @@ namespace RFiDGear.DataAccessLayer
 
                 if (file.Extension.ToLower(CultureInfo.CurrentCulture) == ".rfprj")
                 {
-                    using (ZipFile zip1 = ZipFile.Read(string.IsNullOrWhiteSpace(_fileName) ?
+                    using (var zip1 = ZipFile.Read(string.IsNullOrWhiteSpace(_fileName) ?
                     @Path.Combine(appDataPath, taskDatabaseFileNameCompressed) :
                     _fileName))
                     {
                         if (Directory.GetFiles(appDataPath, "*.tmp").Length > 0)
                         {
-                            foreach (string tempFile in Directory.GetFiles(appDataPath, "*.tmp"))
+                            foreach (var tempFile in Directory.GetFiles(appDataPath, "*.tmp"))
                             {
                                 File.Delete(tempFile);
                             }
@@ -159,21 +159,21 @@ namespace RFiDGear.DataAccessLayer
                     if (File.Exists(@Path.Combine(appDataPath, file.Name)))
                     {
                         doc.Load(@Path.Combine(appDataPath, file.Name));
-                        XmlNode node = doc.SelectSingleNode("//ManifestVersion");
+                        var node = doc.SelectSingleNode("//ManifestVersion");
                         verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
                         reader = new StreamReader(@Path.Combine(appDataPath, file.Name));
                     } // old Variant. Needed to open old databases
                     else if(File.Exists(@Path.Combine(appDataPath, taskDatabaseFileName)))
                     {
                         doc.Load(@Path.Combine(appDataPath, taskDatabaseFileName));
-                        XmlNode node = doc.SelectSingleNode("//ManifestVersion");
+                        var node = doc.SelectSingleNode("//ManifestVersion");
                         verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
                         reader = new StreamReader(@Path.Combine(appDataPath, taskDatabaseFileName));
                     }
                     
                     try
                     {
-                        XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
+                        var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
                         SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
                     }
                     catch (Exception e)
@@ -182,7 +182,7 @@ namespace RFiDGear.DataAccessLayer
 
                         try
                         {
-                            XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
+                            var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
                             TreeViewModel = (serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>);
                         }
                         catch (Exception innerE)
@@ -211,12 +211,12 @@ namespace RFiDGear.DataAccessLayer
 
         public void WriteDatabase(ObservableCollection<RFiDChipParentLayerViewModel> objModel, string _path)
         {
-            ZipFile zip = new ZipFile();
+            var zip = new ZipFile();
 
             try
             {
                 TextWriter writer;
-                XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
+                var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
 
                 if (!string.IsNullOrEmpty(_path))
                 {
@@ -250,11 +250,11 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
-                ZipFile zip = new ZipFile();
+                var zip = new ZipFile();
                 FileInfo file;
 
                 TextWriter writer;
-                XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
+                var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
 
                 if (!string.IsNullOrEmpty(_path))
                 {

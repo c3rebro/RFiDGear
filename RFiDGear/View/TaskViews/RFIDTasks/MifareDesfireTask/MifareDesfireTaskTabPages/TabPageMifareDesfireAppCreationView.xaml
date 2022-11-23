@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Stretch"
@@ -44,171 +45,147 @@
                 <Grid>
                     <Label
                         Grid.Row="0"
-                        Margin="10,8,10,8.4"
-                        HorizontalAlignment="Stretch"
+                        Margin="8,3,8,7"
+                        Height="auto"
                         VerticalAlignment="Stretch"
+                        HorizontalAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="App ID" />
                     <Label
                         Grid.Row="1"
-                        Width="152"
-                        Margin="10,2.6,0,7.4"
-                        HorizontalAlignment="Left"
+                        Margin="8,3,8,7"
                         VerticalAlignment="Stretch"
+                        HorizontalAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
                     <ComboBox
                         Grid.Row="1"
                         Grid.Column="1"
-                        Width="80"
-                        Margin="10,2.6,0,7.4"
-                        HorizontalAlignment="Left"
+                        Margin="10,3,10,7"
+                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                        HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
-                        SelectedItem="{Binding SelectedDesfireAppKeyEncryptionTypeCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        SelectedItem="{Binding SelectedDesfireAppKeyEncryptionTypeCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
                     <Label
                         Grid.Row="2"
                         Width="154"
-                        Margin="10,2.6,0,7.4"
-                        HorizontalAlignment="Left"
+                        Margin="8,3,8,7"
                         VerticalAlignment="Stretch"
+                        HorizontalAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="Max Keys"
                         RenderTransformOrigin="0.5,0.5" />
                     <ComboBox
                         Grid.Row="2"
                         Grid.Column="1"
-                        Width="80"
-                        Margin="10,2.6,0,7.4"
-                        HorizontalAlignment="Left"
+                        Margin="10,3,10,7"
                         VerticalAlignment="Stretch"
+                        ScrollViewer.VerticalScrollBarVisibility="Auto"
                         ItemsSource="{Binding MifareDesfireKeyCount}"
                         SelectedItem="{Binding SelectedDesfireAppMaxNumberOfKeys, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="3"
                         Width="154"
-                        Margin="10,2.6,0,7.4"
-                        HorizontalAlignment="Left"
+                        Height="auto"
+                        Margin="8,3,8,3"
                         VerticalAlignment="Stretch"
+                        HorizontalAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireAppSetupKeySettings'}" />
                     <ComboBox
                         Grid.Row="3"
                         Grid.Column="1"
-                        Height="26"
-                        Margin="10,2.6,10,0"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        Margin="10,3,10,0"
+                        VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:AccessCondition_MifareDesfireAppCreation}}"
-                        SelectedItem="{Binding SelectedDesfireAppKeySettingsCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareDesfireAppCreation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
-                    <CheckBox
-                        Grid.Row="5"
-                        Grid.ColumnSpan="2"
-                        Height="14"
-                        Margin="10,9.6,0,0"
+                        SelectedItem="{Binding SelectedDesfireAppKeySettingsCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareDesfireAppCreation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
+                    <ui:ToggleSwitch
+                        Grid.Row="0"
+                        Grid.Column="2"
+                        Margin="10,0,0,0"
                         HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowChangeMK'}"
                         IsChecked="{Binding IsAllowChangeMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <CheckBox.Style>
-                            <Style>
-                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                            </Style>
-                        </CheckBox.Style>
-                        <CheckBox.ToolTip>
+                        <ui:ToggleSwitch.ToolTip>
                             <ToolTip>
                                 <StackPanel>
-                                    <TextBlock FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowChangeMK'}" />
+                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowChangeMK'}" />
                                 </StackPanel>
                             </ToolTip>
-                        </CheckBox.ToolTip>
-                    </CheckBox>
-                    <CheckBox
-                        Grid.Row="6"
-                        Grid.ColumnSpan="2"
-                        Height="14"
-                        Margin="10,9.6,0,0"
+                        </ui:ToggleSwitch.ToolTip>
+                    </ui:ToggleSwitch>
+                    <ui:ToggleSwitch
+                        Grid.Row="1"
+                        Grid.Column="2"
+                        Margin="10,0,0,0"
                         HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowListing'}"
                         IsChecked="{Binding IsAllowListingWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <CheckBox.Style>
-                            <Style>
-                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                            </Style>
-                        </CheckBox.Style>
-                        <CheckBox.ToolTip>
+
+                        <ui:ToggleSwitch.ToolTip>
                             <ToolTip>
                                 <StackPanel>
-                                    <TextBlock FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowListing'}" />
+                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowListing'}" />
                                 </StackPanel>
                             </ToolTip>
-                        </CheckBox.ToolTip>
-                    </CheckBox>
-                    <CheckBox
-                        Grid.Row="7"
-                        Grid.ColumnSpan="2"
-                        Height="14"
-                        Margin="10,9.6,0,0"
+                        </ui:ToggleSwitch.ToolTip>
+                    </ui:ToggleSwitch>
+                    <ui:ToggleSwitch
+                        Grid.Row="2"
+                        Grid.Column="2"
+                        Height="auto"
+                        Margin="10,0,0,0"
                         HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowCreateDelete'}"
                         IsChecked="{Binding IsAllowCreateDelWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <CheckBox.Style>
-                            <Style>
-                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                            </Style>
-                        </CheckBox.Style>
-                        <CheckBox.ToolTip>
+                        <ui:ToggleSwitch.ToolTip>
                             <ToolTip>
                                 <StackPanel>
-                                    <TextBlock FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowCreateDelete'}" />
+                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowCreateDelete'}" />
                                 </StackPanel>
                             </ToolTip>
-                        </CheckBox.ToolTip>
-                    </CheckBox>
-                    <CheckBox
-                        Grid.Row="8"
-                        Grid.ColumnSpan="2"
-                        Height="14"
-                        Margin="10,9.6,0,0"
+                        </ui:ToggleSwitch.ToolTip>
+                    </ui:ToggleSwitch>
+                    <ui:ToggleSwitch
+                        Grid.Row="3"
+                        Grid.Column="2"
+                        Margin="10,0,0,0"
                         HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowConfigChange'}"
                         IsChecked="{Binding IsAllowConfigChangableChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <CheckBox.Style>
-                            <Style>
-                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                            </Style>
-                        </CheckBox.Style>
-                        <CheckBox.ToolTip>
+                        <ToggleButton.ToolTip>
                             <ToolTip>
                                 <StackPanel>
-                                    <TextBlock FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxConfigChangeable'}" />
+                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxConfigChangeable'}" />
                                 </StackPanel>
                             </ToolTip>
-                        </CheckBox.ToolTip>
-                    </CheckBox>
+                        </ToggleButton.ToolTip>
+                    </ui:ToggleSwitch>
                     <Button
-                        Grid.Row="11"
-                        Grid.ColumnSpan="2"
-                        Height="26"
-                        Margin="10,2.6,10,0"
+                        Grid.Row="6"
+                        Grid.ColumnSpan="3"
+                        Margin="10,3,10,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
                         Command="{Binding CreateAppCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireAppCreationCreateApp'}" />
                     <Button
-                        Grid.Row="12"
-                        Grid.ColumnSpan="2"
-                        Height="26"
-                        Margin="10,2.6,10,0"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
-                        Command="{Binding DeleteSignleCardApplicationCommand}"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireAppCreationDeleteApp'}" />
-                    <TextBox
-                        Grid.Row="0"
-                        Grid.Column="1"
-                        Margin="10,8,10,8.4"
+                        Grid.Row="5"
+                        Grid.ColumnSpan="3"
+                        Margin="10,3,10,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
+                        Command="{Binding DeleteSignleCardApplicationCommand}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireAppCreationDeleteApp'}" />
+                    <ui:TextBox
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Margin="10,8,10,8"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
                         Text="{Binding AppNumberNew, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
@@ -228,25 +205,20 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </TextBox>
+                    </ui:TextBox>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="42" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="16" />
-                        <RowDefinition Height="32" />
-                        <RowDefinition Height="32" />
-                        <RowDefinition Height="32" />
-                        <RowDefinition Height="32" />
-                        <RowDefinition Height="16" />
-                        <RowDefinition Height="26.5501346902125*" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="172" />
-                        <ColumnDefinition Width="*" MinWidth="100" />
+                        <ColumnDefinition Width="auto" MinWidth="100" />
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                 </Grid>
             </GroupBox>

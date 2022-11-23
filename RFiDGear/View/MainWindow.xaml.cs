@@ -1,4 +1,7 @@
 ﻿using RFiDGear.ViewModel;
+
+using Wpf.Ui.Controls;
+
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,17 +18,21 @@ namespace RFiDGear
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow
+    public partial class MainWindow : UiWindow
     {
-
         public MainWindow()
         {
             InitializeComponent();
+            this.MaxHeight = (uint)SystemParameters.MaximizedPrimaryScreenHeight-8;
         }
 
         private void WindowMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            DragMove();
+            try
+            {
+                DragMove();
+            }
+            catch { } // workaround wpfui windowbar probl.
         }
 
         private void OnAutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e)
@@ -37,26 +44,26 @@ namespace RFiDGear
         {
             if (sender != null)
             {
-                TreeView item = sender as TreeView;
+                var item = sender as TreeView;
 
-                DependencyObject dep = (DependencyObject)e.OriginalSource;
-                while ((dep != null) && !(dep is TreeViewItem))
+                var dep = (DependencyObject)e.OriginalSource;
+                while ((dep != null) && !(dep is Wpf.Ui.Controls.TreeViewItem))
                 {
                     dep = VisualTreeHelper.GetParent(dep);
                 }
                 if (dep == null)
                 {
-                    foreach (object o in item.Items)
+                    foreach (var o in item.Items)
                     {
                         if (o is RFiDChipParentLayerViewModel && (o as RFiDChipParentLayerViewModel).Children != null)
                         {
-                            foreach (RFiDChipChildLayerViewModel child in (o as RFiDChipParentLayerViewModel).Children)
+                            foreach (var child in (o as RFiDChipParentLayerViewModel).Children)
                             {
                                 child.IsSelected = false;
 
                                 if (child.Children != null)
                                 {
-                                    foreach (RFiDChipGrandChildLayerViewModel grandChild in child.Children)
+                                    foreach (var grandChild in child.Children)
                                     {
                                         grandChild.IsSelected = false;
                                     }
@@ -93,7 +100,7 @@ namespace RFiDGear
 
         static void OnSelectingItemChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
         {
-            var grid = sender as DataGrid;
+            var grid = sender as System.Windows.Controls.DataGrid;
             if (grid == null || grid.SelectedItem == null)
             {
                 return;

@@ -3,6 +3,7 @@
     x:Class="RFiDGear.View.TabPageMiscReaderSettingsView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer">
     <UserControl.Resources>
         <dal:ResourceLoader x:Key="Localization" />
@@ -14,11 +15,11 @@
             Margin="12,15,8,8"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
-            <TextBox
+            <ui:TextBox
                 Grid.Row="0"
                 Grid.Column="1"
-                Height="26"
-                Margin="9,10,8,0"
+                Height="auto"
+                Margin="8,7,8,3"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Top"
                 Text="{Binding ComPort}">
@@ -30,16 +31,16 @@
                         </StackPanel>
                     </ToolTip>
                 </TextBox.ToolTip>
-            </TextBox>
+            </ui:TextBox>
             <Label
                 Grid.Row="0"
                 Grid.Column="0"
                 Width="195"
-                Height="26"
-                Margin="8,10,0,0"
+                Margin="8,7,8,3"
                 HorizontalAlignment="Left"
-                VerticalAlignment="Top"
+                VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Center"
                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectedComPort'}"
                 DataContext="{Binding}"
                 Foreground="Black" />
@@ -47,19 +48,19 @@
                 Grid.Row="1"
                 Grid.Column="0"
                 Width="195"
-                Height="26"
-                Margin="8,6,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top"
-                HorizontalContentAlignment="Stretch"
+                Margin="8,7,8,3"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Left"
+                VerticalContentAlignment="Center"
                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectedBaudRate'}"
                 DataContext="{Binding}"
                 Foreground="Black" />
             <ComboBox
                 Grid.Row="1"
                 Grid.Column="1"
-                Height="26"
-                Margin="9,6,8,0"
+                Height="auto"
+                Margin="8,7,8,3"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Top"
                 IsSynchronizedWithCurrentItem="True"
@@ -74,19 +75,19 @@
                     </ToolTip>
                 </ComboBox.ToolTip>
             </ComboBox>
-            <CheckBox
+            <ui:ToggleSwitch
                 Grid.Row="2"
                 Grid.ColumnSpan="2"
-                Margin="8,10,0,0"
+                Margin="8,7,8,3"
                 HorizontalAlignment="Left"
-                VerticalAlignment="Top"
+                VerticalAlignment="Stretch"
                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelLoadLastProjectOnStart, Converter={StaticResource Localization}}"
                 IsChecked="{Binding LoadOnStart, Mode=TwoWay}" />
-            <CheckBox
+            <ui:ToggleSwitch
                 Grid.Row="3"
-                Margin="8,10,0,0"
+                Margin="8,7,8,3"
                 HorizontalAlignment="Left"
-                VerticalAlignment="Top"
+                VerticalAlignment="Stretch"
                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelCheckForUpdatesOnStart, Converter={StaticResource Localization}}"
                 IsChecked="{Binding CheckOnStart, Mode=TwoWay}" />
             <Grid.ColumnDefinitions>
@@ -94,12 +95,12 @@
                 <ColumnDefinition Width="0.5*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="42" />
-                <RowDefinition Height="37" />
-                <RowDefinition Height="37" />
-                <RowDefinition Height="37" />
-                <RowDefinition Height="37" />
-                <RowDefinition Height="0.5*" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
         </Grid>
     </Grid>

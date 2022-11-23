@@ -22,24 +22,22 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using Log4CSharp;
+
 using MefMvvm.SharedContracts.ViewModel;
 
 using MvvmDialogs.ViewModels;
 
 using RedCell.Diagnostics.Update;
 
-using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.Model;
 
-using Log4CSharp;
-
 using System;
-using System.ComponentModel;
-using System.ComponentModel.Composition;
-using System.ComponentModel.Composition.Hosting;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -82,10 +80,11 @@ namespace RFiDGear.ViewModel
         // set if task was completed; indicates greenlight to continue execution
         // if programming takes too long; quit the process
         private bool firstRun = true;
-        private bool updateAvailable = false;
+        private bool userIsNotifiedForAvailableUpdate = false;
+        private bool updateIsAvailable = false;
         private protected Mutex mutex;
         // one reader, one instance - only
-
+        
         #region Events / Delegates
 
         /// <summary>
@@ -105,7 +104,7 @@ namespace RFiDGear.ViewModel
             bool autoLoadLastUsedDB;
             args = Environment.GetCommandLineArgs();
 
-            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            using (var settings = new SettingsReaderWriter())
             {
                 updater = new Updater();
 
@@ -290,10 +289,10 @@ namespace RFiDGear.ViewModel
 
         private void OpenLastProjectFile()
         {
-            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            using (var settings = new SettingsReaderWriter())
             {
-                bool autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
-                string lastUsedDBPath = settings.DefaultSpecification.LastUsedProjectPath;
+                var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
+                var lastUsedDBPath = settings.DefaultSpecification.LastUsedProjectPath;
 
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
@@ -306,12 +305,12 @@ namespace RFiDGear.ViewModel
 
                 databaseReaderWriter.ReadDatabase(lastUsedDBPath);
 
-                foreach (RFiDChipParentLayerViewModel vm in databaseReaderWriter.TreeViewModel)
+                foreach (var vm in databaseReaderWriter.TreeViewModel)
                 {
                     TreeViewParentNodes.Add(vm);
                 }
 
-                foreach (object setup in databaseReaderWriter.SetupModel.TaskCollection)
+                foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
                 {
                     ChipTasks.TaskCollection.Add(setup);
                 }
@@ -340,7 +339,7 @@ namespace RFiDGear.ViewModel
                 Mouse.OverrideCursor = Cursors.AppStarting;
 
                 //try to get singleton instance
-                using (ReaderDevice device = ReaderDevice.Instance)
+                using (var device = ReaderDevice.Instance)
                 {
                     //reader was ready - proceed
                     if (device != null)
@@ -358,7 +357,7 @@ namespace RFiDGear.ViewModel
                 if (!string.IsNullOrWhiteSpace(GenericChip.UID) &&
                     !treeViewParentNodes.Any(x => (x.UID == GenericChip.UID)))
                 {
-                    foreach (RFiDChipParentLayerViewModel item in treeViewParentNodes)
+                    foreach (var item in treeViewParentNodes)
                     {
                         item.IsExpanded = false;
                     }
@@ -417,6 +416,11 @@ namespace RFiDGear.ViewModel
         public ICommand NewAboutDialogCommand => new RelayCommand(OnNewNewAboutDialogCommand);
         private void OnNewNewAboutDialogCommand()
         {
+            if (updateIsAvailable)
+            {
+                AskForUpdateNow();
+            }
+
             Dialogs.Add(new AboutViewModel()
             {
                 Caption = ResourceLoader.GetResource("windowCaptionAboutRFiDGear"),
@@ -442,7 +446,7 @@ namespace RFiDGear.ViewModel
         public ICommand CreateGenericChipTaskCommand => new RelayCommand(OnNewCreateGenericChipTaskCommand);
         private void OnNewCreateGenericChipTaskCommand()
         {
-            bool timerState = triggerReadChip.IsEnabled;
+            var timerState = triggerReadChip.IsEnabled;
 
             triggerReadChip.IsEnabled = false;
 
@@ -450,7 +454,7 @@ namespace RFiDGear.ViewModel
 
             try
             {
-                using (ReaderDevice device = ReaderDevice.Instance)
+                using (var device = ReaderDevice.Instance)
                 {
                     // only call dialog if device is ready
                     if (device != null)
@@ -522,7 +526,7 @@ namespace RFiDGear.ViewModel
         public ICommand CreateGenericTaskCommand => new RelayCommand(OnNewNewCreateReportTaskCommand);
         private void OnNewNewCreateReportTaskCommand()
         {
-            bool timerState = triggerReadChip.IsEnabled;
+            var timerState = triggerReadChip.IsEnabled;
 
             triggerReadChip.IsEnabled = false;
 
@@ -593,7 +597,7 @@ namespace RFiDGear.ViewModel
         public ICommand CreateClassicTaskCommand => new RelayCommand(OnNewCreateClassicTaskCommand);
         private void OnNewCreateClassicTaskCommand()
         {
-            bool timerState = triggerReadChip.IsEnabled;
+            var timerState = triggerReadChip.IsEnabled;
 
             triggerReadChip.IsEnabled = false;
 
@@ -601,7 +605,7 @@ namespace RFiDGear.ViewModel
 
             try
             {
-                using (ReaderDevice device = ReaderDevice.Instance)
+                using (var device = ReaderDevice.Instance)
                 {
                     // only call dialog if device is ready
                     if (device != null)
@@ -675,13 +679,13 @@ namespace RFiDGear.ViewModel
         public ICommand CreateDesfireTaskCommand => new RelayCommand(OnNewCreateDesfireTaskCommand);
         private void OnNewCreateDesfireTaskCommand()
         {
-            bool timerState = triggerReadChip.IsEnabled;
+            var timerState = triggerReadChip.IsEnabled;
 
             triggerReadChip.IsEnabled = false;
 
             Mouse.OverrideCursor = Cursors.AppStarting;
 
-            using (ReaderDevice device = ReaderDevice.Instance)
+            using (var device = ReaderDevice.Instance)
             {
                 if (device != null)
                 {
@@ -752,13 +756,13 @@ namespace RFiDGear.ViewModel
         private void OnNewCreateUltralightTaskCommand()
         {
 
-            bool timerState = triggerReadChip.IsEnabled;
+            var timerState = triggerReadChip.IsEnabled;
 
             triggerReadChip.IsEnabled = false;
 
             Mouse.OverrideCursor = Cursors.AppStarting;
 
-            using (ReaderDevice device = ReaderDevice.Instance)
+            using (var device = ReaderDevice.Instance)
             {
                 if (device != null)
                 {
@@ -856,16 +860,16 @@ namespace RFiDGear.ViewModel
         public ICommand ReadChipCommand => new RelayCommand(OnNewReadChipCommand);
         private void OnNewReadChipCommand()
         {
-            bool timerState = triggerReadChip.IsEnabled;
+            var timerState = triggerReadChip.IsEnabled;
 
             triggerReadChip.IsEnabled = false;
 
             Mouse.OverrideCursor = Cursors.Wait;
 
-            using (ReaderDevice device = ReaderDevice.Instance)
+            using (var device = ReaderDevice.Instance)
             {
 
-                foreach (RFiDChipParentLayerViewModel item in treeViewParentNodes)
+                foreach (var item in treeViewParentNodes)
                 {
                     item.IsExpanded = false;
                 }
@@ -1000,7 +1004,7 @@ namespace RFiDGear.ViewModel
         {
             try
             {
-                foreach (object chipTask in taskHandler.TaskCollection)
+                foreach (var chipTask in taskHandler.TaskCollection)
                 {
                     switch (chipTask)
                     {
@@ -1091,16 +1095,16 @@ namespace RFiDGear.ViewModel
             OnPropertyChanged(nameof(TreeViewParentNodes));
             OnPropertyChanged(nameof(ChipTasks));
 
-            GenericChipModel GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
-            MifareDesfireChipModel DesfireChip = new MifareDesfireChipModel("", CARD_TYPE.Unspecified);
-            MifareClassicChipModel ClassicChip = new MifareClassicChipModel("", CARD_TYPE.Unspecified);
+            var GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+            var DesfireChip = new MifareDesfireChipModel("", CARD_TYPE.Unspecified);
+            var ClassicChip = new MifareClassicChipModel("", CARD_TYPE.Unspecified);
 
             currentTaskIndex = 0;
-            Dictionary<string, int> taskDictionary = new Dictionary<string, int>();
+            var taskDictionary = new Dictionary<string, int>();
 
             // create a new key,value pair of taskpositions (int) <-> taskindex (string)
             // (they could be different as because item at array position 0 can have index "100")
-            foreach (object rfidTaskObject in taskHandler.TaskCollection)
+            foreach (var rfidTaskObject in taskHandler.TaskCollection)
             {
                 taskDictionary.Add((rfidTaskObject as IGenericTaskModel).CurrentTaskIndex, taskHandler.TaskCollection.IndexOf(rfidTaskObject));
             }
@@ -1115,12 +1119,12 @@ namespace RFiDGear.ViewModel
             triggerReadChip.Tag = triggerReadChip.IsEnabled;
             triggerReadChip.IsEnabled = false;
 
-            Task thread = new Task(() =>
+            var thread = new Task(() =>
             {
                 try
                 {
                     //try to get singleton instance
-                    using (ReaderDevice device = ReaderDevice.Instance)
+                    using (var device = ReaderDevice.Instance)
                     {
                         //reader was ready - proceed
                         if (device != null)
@@ -1200,7 +1204,7 @@ namespace RFiDGear.ViewModel
                                                     
                                                     try
                                                     {
-                                                        string initDir = variablesFromArgs["REPORTTARGETPATH"];
+                                                        var initDir = variablesFromArgs["REPORTTARGETPATH"];
                                                         reportTargetPathDirInfo = new DirectoryInfo(Path.GetDirectoryName(initDir));
                                                         
                                                     }
@@ -1240,7 +1244,7 @@ namespace RFiDGear.ViewModel
                                                     else
                                                     {
                                                         // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                        if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out int targetTaskIndex))
+                                                        if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                                         {
                                                             if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                                             {
@@ -1307,7 +1311,7 @@ namespace RFiDGear.ViewModel
                                                     else
                                                     {
                                                         // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                        if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out int targetTaskIndex))
+                                                        if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                                         {
                                                             if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                                             {
@@ -1348,7 +1352,7 @@ namespace RFiDGear.ViewModel
                                                     else
                                                     {
                                                         // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                        if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out int targetTaskIndex))
+                                                        if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                                         {
                                                             if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                                             {
@@ -1393,7 +1397,7 @@ namespace RFiDGear.ViewModel
                                                     else
                                                     {
                                                         // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                        if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out int targetTaskIndex))
+                                                        if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                                         {
                                                             if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                                             {
@@ -1438,7 +1442,7 @@ namespace RFiDGear.ViewModel
                                             else
                                             {
                                                 // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out int targetTaskIndex))
+                                                if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                                 {
                                                     if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                                     {
@@ -1480,7 +1484,7 @@ namespace RFiDGear.ViewModel
                                             else
                                             {
                                                 // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out int targetTaskIndex))
+                                                if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                                 {
                                                     if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                                     {
@@ -1567,7 +1571,7 @@ namespace RFiDGear.ViewModel
         public ICommand SwitchLanguageToGerman => new RelayCommand(SetGermanLanguage);
         private void SetGermanLanguage()
         {
-            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            using (var settings = new SettingsReaderWriter())
             {
                 if (settings.DefaultSpecification.DefaultLanguage != "german")
                 {
@@ -1584,7 +1588,7 @@ namespace RFiDGear.ViewModel
         public ICommand SwitchLanguageToEnglish => new RelayCommand(SetEnglishLanguage);
         private void SetEnglishLanguage()
         {
-            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            using (var settings = new SettingsReaderWriter())
             {
                 if (settings.DefaultSpecification.DefaultLanguage != "english")
                 {
@@ -1597,6 +1601,24 @@ namespace RFiDGear.ViewModel
 
         private void OnNewLanguageChangedDialog()
         {
+            Dialogs.Add(new CustomDialogViewModel()
+                {
+                Message = ResourceLoader.GetResource("messageBoxRestartRequiredMessage"),
+                Caption = ResourceLoader.GetResource("messageBoxRestartRequiredCaption"),
+
+                OnCancel = (sender) =>
+                {
+                    sender.Close();
+                },
+
+                OnOk = (sender) =>
+                {
+                    {
+                        Environment.Exit(0);
+                    }
+                }
+            });
+            /*
             if(new MessageBoxViewModel
             {
                 Message = ResourceLoader.GetResource("messageBoxRestartRequiredMessage"),
@@ -1605,10 +1627,7 @@ namespace RFiDGear.ViewModel
                 Image = MessageBoxImage.Question
 
             }.Show(this.Dialogs) == MessageBoxResult.OK)
-            
-            {
-                Environment.Exit(0);
-            }
+            */
 
         }
 
@@ -1618,14 +1637,14 @@ namespace RFiDGear.ViewModel
         public ICommand NewReaderSetupDialogCommand => new RelayCommand(OnNewReaderSetupDialog);
         private void OnNewReaderSetupDialog()
         {
-            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            using (var settings = new SettingsReaderWriter())
             {
-                DefaultSpecification currentSettings = settings.DefaultSpecification;
+                var currentSettings = settings.DefaultSpecification;
 
-                ReaderDevice.PortNumber = int.TryParse(currentSettings.LastUsedComPort, out int portNumber) ? portNumber : 0;
+                ReaderDevice.PortNumber = int.TryParse(currentSettings.LastUsedComPort, out var portNumber) ? portNumber : 0;
                 ReaderDevice.Reader = currentSettings.DefaultReaderProvider;
 
-                using (ReaderDevice device = ReaderDevice.Instance)
+                using (var device = ReaderDevice.Instance)
                 {
                     Dialogs.Add(new SetupViewModel(device)
                     {
@@ -1680,7 +1699,7 @@ namespace RFiDGear.ViewModel
             bool autoLoadLastUsedDB;
             string lastUsedDBPath;
 
-            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            using (var settings = new SettingsReaderWriter())
             {
                 CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
                     ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
@@ -1713,12 +1732,12 @@ namespace RFiDGear.ViewModel
                     settings.DefaultSpecification.LastUsedProjectPath = dlg.FileName;
                     settings.SaveSettings();
 
-                    foreach (RFiDChipParentLayerViewModel vm in databaseReaderWriter.TreeViewModel)
+                    foreach (var vm in databaseReaderWriter.TreeViewModel)
                     {
                         TreeViewParentNodes.Add(vm);
                     }
 
-                    foreach (object setup in databaseReaderWriter.SetupModel.TaskCollection)
+                    foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
                     {
                         ChipTasks.TaskCollection.Add(setup);
                     }
@@ -1737,7 +1756,7 @@ namespace RFiDGear.ViewModel
         public ICommand SaveTaskDialogCommand => new RelayCommand(OnNewSaveTaskDialogCommand);
         private void OnNewSaveTaskDialogCommand()
         {
-            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            using (var settings = new SettingsReaderWriter())
             {
                 databaseReaderWriter.WriteDatabase(ChipTasks, settings.DefaultSpecification.LastUsedProjectPath);
             }  
@@ -1749,7 +1768,7 @@ namespace RFiDGear.ViewModel
         public ICommand SaveTaskAsDialogCommand => new RelayCommand(OnNewSaveTaskAsDialogCommand);
         private void OnNewSaveTaskAsDialogCommand()
         {
-            string fileName = "";
+            var fileName = "";
 
             var dlg = new SaveFileDialogViewModel
             {
@@ -1775,7 +1794,7 @@ namespace RFiDGear.ViewModel
 
             if (mbox.Show(Dialogs) == MessageBoxResult.Yes)
             {
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                using (var settings = new SettingsReaderWriter())
                 {
                     settings.DefaultSpecification.LastUsedProjectPath = fileName;
                     settings.SaveSettings();
@@ -1814,14 +1833,14 @@ namespace RFiDGear.ViewModel
         {
             var q = from p in Process.GetProcesses() where ContainsAny(p.MainWindowTitle, new string[] { "Help", "Hilfe" }) select p;
 
-            using (SettingsReaderWriter settingsReaderWriter = new SettingsReaderWriter())
+            using (var settingsReaderWriter = new SettingsReaderWriter())
             {
                 if (!q.Any())
                 {
-                    string pathToHelpFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, settingsReaderWriter.DefaultSpecification.DefaultLanguage == "german" ? "RFiDGear_de.chm" : "RFiDGear_en.chm");
+                    var pathToHelpFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, settingsReaderWriter.DefaultSpecification.DefaultLanguage == "german" ? "RFiDGear_de.chm" : "RFiDGear_en.chm");
                     if (File.Exists(pathToHelpFile))
                     {
-                        ProcessStartInfo startInfo = new ProcessStartInfo(pathToHelpFile);
+                        var startInfo = new ProcessStartInfo(pathToHelpFile);
                         Process.Start(startInfo);
                     }
 
@@ -1956,14 +1975,14 @@ namespace RFiDGear.ViewModel
         {
             get
             {
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                using (var settings = new SettingsReaderWriter())
                 {
                     return settings.DefaultSpecification != null && settings.DefaultSpecification.AutoCheckForUpdates;
                 }
             }
             set
             {
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                using (var settings = new SettingsReaderWriter())
                 {
                     if (value)
                     {
@@ -1989,7 +2008,7 @@ namespace RFiDGear.ViewModel
         {
             get
             {
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                using (var settings = new SettingsReaderWriter())
                 {
                     if (settings.DefaultSpecification.DefaultLanguage == "german")
                     {
@@ -2003,7 +2022,7 @@ namespace RFiDGear.ViewModel
             }
             set
             {
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                using (var settings = new SettingsReaderWriter())
                 {
                     if (settings.DefaultSpecification.DefaultLanguage == "english")
                     {
@@ -2022,7 +2041,7 @@ namespace RFiDGear.ViewModel
         {
             get
             {
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                using (var settings = new SettingsReaderWriter())
                 {
                     if (settings.DefaultSpecification.DefaultLanguage == "german")
                     {
@@ -2036,7 +2055,7 @@ namespace RFiDGear.ViewModel
             }
             set
             {
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                using (var settings = new SettingsReaderWriter())
                 {
                     if (settings.DefaultSpecification.DefaultLanguage == "german")
                     {
@@ -2054,12 +2073,13 @@ namespace RFiDGear.ViewModel
 
         private void EnableUpdate(object sender, EventArgs e)
         {
-            updateAvailable = true;
+            userIsNotifiedForAvailableUpdate = true;
+            updateIsAvailable = true;
         }
 
         private void AskForUpdateNow()
         {
-            updateAvailable = false;
+            userIsNotifiedForAvailableUpdate = false;
 
             Dialogs.Add(new UpdateNotifierViewModel(updater.UpdateInfoText)
             {
@@ -2092,7 +2112,7 @@ namespace RFiDGear.ViewModel
         //Only one instance is allowed due to the singleton pattern of the reader class
         private void RunMutex(object sender, StartupEventArgs e)
         {
-            mutex = new Mutex(true, "App", out bool aIsNewInstance);
+            mutex = new Mutex(true, "App", out var aIsNewInstance);
 
             if (!aIsNewInstance)
             {
@@ -2119,13 +2139,11 @@ namespace RFiDGear.ViewModel
 
                 try
                 {
-                    var mySplash = new SplashScreenViewModel();
-
-                    using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                    using (var settings = new SettingsReaderWriter())
                     {
                         if (args.Length > 1)
                         {
-                            foreach (string arg in args)
+                            foreach (var arg in args)
                             {
                                 switch (arg.Split('=')[0])
                                 {
@@ -2147,7 +2165,7 @@ namespace RFiDGear.ViewModel
                             ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                             : settings.DefaultSpecification.DefaultReaderName;
 
-                        if(int.TryParse(settings.DefaultSpecification.LastUsedComPort,out int portNumber))
+                        if(int.TryParse(settings.DefaultSpecification.LastUsedComPort,out var portNumber))
                         {
                             ReaderDevice.PortNumber = portNumber;
                         }
@@ -2161,6 +2179,8 @@ namespace RFiDGear.ViewModel
                         culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
                         var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
+
+                        var mySplash = new SplashScreenViewModel();
 
                         if (autoLoadLastUsedDB)
                         {
@@ -2202,11 +2222,11 @@ namespace RFiDGear.ViewModel
                         OnNewResetTaskStatusCommand();
                     }
 
-                    using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                    using (var settings = new SettingsReaderWriter())
                     {
                         if (args.Length > 1)
                         {
-                            foreach (string arg in args)
+                            foreach (var arg in args)
                             {
                                 switch (arg.Split('=')[0])
                                 {
@@ -2240,10 +2260,10 @@ namespace RFiDGear.ViewModel
                 }
                 catch (Exception ex)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, ex.Message, ex.InnerException != null ? ex.InnerException.Message : ""), FacilityName);
+                    LogWriter.CreateLogEntry(ex, FacilityName);
                 }
 
-                using (SettingsReaderWriter settings = new SettingsReaderWriter())
+                using (var settings = new SettingsReaderWriter())
                 {
                     if (settings.DefaultSpecification.AutoCheckForUpdates)
                     {
@@ -2252,7 +2272,7 @@ namespace RFiDGear.ViewModel
                 }
             }
 
-            if (updateAvailable)
+            if (userIsNotifiedForAvailableUpdate)
             {
                 AskForUpdateNow();
             }
