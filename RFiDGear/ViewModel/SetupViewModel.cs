@@ -88,7 +88,8 @@ namespace RFiDGear.ViewModel
 
                             device = new ElatecNetProvider();
                         }
-                        
+
+                        device.Connect();
                         device.ReadChipPublic();
                     }
                     else

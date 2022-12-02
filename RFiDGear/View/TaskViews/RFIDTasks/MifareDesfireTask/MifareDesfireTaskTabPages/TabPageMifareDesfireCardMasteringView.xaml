@@ -51,8 +51,7 @@
                     <Label
                         Grid.Row="0"
                         Grid.Column="0"
-                        Margin="8,7,8,3"
-                        Height="auto"
+                        Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
@@ -61,9 +60,9 @@
                     <ui:TextBox
                         Grid.Row="0"
                         Grid.Column="1"
-                        Margin="8,7,8,3"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
+                        Margin="8,8,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
                         Text="{Binding DesfireMasterKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
@@ -87,8 +86,8 @@
                     <Label
                         Grid.Row="1"
                         Grid.Column="0"
-                        Margin="8,3,8,3"
-                        Height="auto"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
@@ -96,22 +95,20 @@
                     <ComboBox
                         Grid.Row="1"
                         Grid.Column="1"
-                        Width="auto"
-                        Height="auto"
-                        Margin="8,3,8,3"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
-                        HorizontalContentAlignment="Left"
-                        VerticalContentAlignment="Center"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
                         SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeTarget, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ui:ToggleSwitch
                         Grid.Row="3"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Margin="8,12,0,0"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowChangeMK'}"
                         IsChecked="{Binding IsAllowChangeMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <ui:ToggleSwitch.ToolTip>
@@ -126,9 +123,11 @@
                         Grid.Row="4"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Margin="8,12,0,0"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowListing'}"
                         IsChecked="{Binding IsAllowListingWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <ui:ToggleSwitch.ToolTip>
@@ -143,9 +142,11 @@
                         Grid.Row="5"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Margin="8,12,0,0"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowCreateDelete'}"
                         IsChecked="{Binding IsAllowCreateDelWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <ui:ToggleSwitch.ToolTip>
@@ -160,9 +161,11 @@
                         Grid.Row="6"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Margin="8,13,0,0"
-                        HorizontalAlignment="Left"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowConfigChange'}"
                         IsChecked="{Binding IsAllowConfigChangableChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <ui:ToggleSwitch.ToolTip>
@@ -222,8 +225,7 @@
                     <Label
                         Grid.Row="0"
                         Grid.Column="0"
-                        Height="auto"
-                        Margin="8,7,0,0"
+                        Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
@@ -232,10 +234,9 @@
                     <ui:TextBox
                         Grid.Row="0"
                         Grid.Column="1"
-                        Height="auto"
-                        Margin="8,7,8,3"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
+                        Margin="8,8,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
                         Text="{Binding DesfireMasterKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
@@ -269,8 +270,7 @@
                     <Label
                         Grid.Row="1"
                         Grid.Column="0"
-                        Margin="8,3,0,0"
-                        Height="auto"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
@@ -279,10 +279,9 @@
                     <ComboBox
                         Grid.Row="1"
                         Grid.Column="1"
-                        Height="auto"
-                        Margin="8,3,8,3"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
                         SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Button
@@ -298,17 +297,15 @@
                     <ComboBox
                         Grid.Row="2"
                         Grid.Column="1"
-                        Height="auto"
-                        Margin="8,3,8,3"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
                         ItemsSource="{Binding KeyVersions}"
                         SelectedItem="{Binding KeyVersionCurrent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <Label
                         Grid.Row="2"
                         Grid.Column="0"
-                        Height="auto"
-                        Margin="8,3,0,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"

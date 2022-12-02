@@ -1484,4 +1484,22 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="windowCaptionAskTaskDefault" xml:space="preserve">
     <value>Als Voreinstellung speichern?</value>
   </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFire_16K" xml:space="preserve">
+    <value>Desfire 16K (Emuliert - z.B. SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFire_2K" xml:space="preserve">
+    <value>Desfire 2K (Emuliert - z.B. SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFire_32K" xml:space="preserve">
+    <value>Desfire 32K (Emuliert - z.B. SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFire_4K" xml:space="preserve">
+    <value>Desfire 4K (Emuliert - z.B. SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFire_8K" xml:space="preserve">
+    <value>Desfire 8K (Emuliert - z.B. SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFire_Generic" xml:space="preserve">
+    <value>Desfire Generic (Emuliert - z.B. SmartMX)</value>
+  </data>
 </root>

@@ -522,8 +522,6 @@ namespace RFiDGear.ViewModel
                 if (selectedCheckpoint != null)
                 {
                     Content = selectedCheckpoint.Content;
-                    selectedErrorLevel = selectedCheckpoint.ErrorLevel;
-                    selectedTaskIndexFromAvailableTasks = selectedCheckpoint.TaskIndex;
                     selectedTemplateField = selectedCheckpoint.TemplateField;
                 }
 
@@ -568,37 +566,6 @@ namespace RFiDGear.ViewModel
                 return availableTaskIndices;
             }
         }
-
-        /// <summary>
-        /// The Selected Error Level that Trigger the Field in the PDF to be filled
-        /// </summary>
-        public ERROR SelectedErrorLevel
-        {
-            get => selectedErrorLevel;
-            set
-            {
-                selectedErrorLevel = value;
-                selectedCheckpoint.ErrorLevel = selectedErrorLevel;
-                OnPropertyChanged(nameof(SelectedErrorLevel));
-            }
-        }
-        private ERROR selectedErrorLevel;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public string SelectedTaskIndexFromAvailableTasks
-        {
-            get => selectedTaskIndexFromAvailableTasks;
-
-            set
-            {
-                selectedTaskIndexFromAvailableTasks = value;
-                selectedCheckpoint.TaskIndex = selectedTaskIndexFromAvailableTasks;
-                OnPropertyChanged(nameof(SelectedTaskIndexFromAvailableTasks));
-            }
-        }
-        private string selectedTaskIndexFromAvailableTasks;
 
         /// <summary>
         /// 
@@ -1675,8 +1642,8 @@ namespace RFiDGear.ViewModel
 
                 if (SelectedTaskType == TaskType_CommonTask.CreateReport)
                 {
-                    checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
-                    checkpoint.ErrorLevel = SelectedErrorLevel;
+                    checkpoint.TaskIndex = "";
+                    checkpoint.ErrorLevel = ERROR.Empty;
                     checkpoint.TemplateField = SelectedTemplateField;
                     checkpoint.Content = Content;
 
@@ -1685,8 +1652,8 @@ namespace RFiDGear.ViewModel
 
                 else if (SelectedTaskType == TaskType_CommonTask.CheckLogicCondition)
                 {
-                    checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
-                    checkpoint.ErrorLevel = SelectedErrorLevel;
+                    checkpoint.TaskIndex = "";
+                    checkpoint.ErrorLevel = ERROR.Empty;
                     checkpoint.Content = "";
                     checkpoint.CompareValue = CompareValue;
 

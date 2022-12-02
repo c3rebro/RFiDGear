@@ -66,7 +66,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         public static ReaderTypes Reader { get; set; }
         public static int PortNumber { get; set; }
-        public static bool IsConnected { get; set; }
 
         public MifareClassicSectorModel Sector { get; set; }
         public MifareClassicDataBlockModel DataBlock { get; set; }
@@ -132,7 +131,17 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         int _fileNo, int _appID, byte[] _data);
         public abstract ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0);
         public abstract ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0);
+
+        /// <summary>
+        /// Creates a new Application
+        /// </summary>
+        /// <param name="_keySettingsTarget">byte: KS_CHANGE_KEY_WITH_MK = 0, KS_ALLOW_CHANGE_MK = 1, KS_FREE_LISTING_WITHOUT_MK = 2, KS_FREE_CREATE_DELETE_WITHOUT_MK = 4, KS_CONFIGURATION_CHANGEABLE = 8, KS_DEFAULT = 11, KS_CHANGE_KEY_WITH_TARGETED_KEYNO = 224, KS_CHANGE_KEY_FROZEN = 240</param>
+        /// <param name="_keyTypeTargetApplication">byte: 0 = 3DES, 1 = 3K3DES, 2 = AES</param>
+        /// <param name="_maxNbKeys">int max. number of keys</param>
+        /// <param name="_appID">int application id</param>
+        /// <returns>True if the Operation was successful, false otherwise</returns>
         public abstract ERROR CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true);
+
         public abstract ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
                                         string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget,

@@ -46,6 +46,8 @@ namespace RFiDGear.Model
         {
             UID = genericChip.UID;
             CardType = genericChip.CardType;
+            RATS = genericChip.RATS;
+            SAK = genericChip.SAK;
         }
 
         public uint FreeMemory { get; set; }

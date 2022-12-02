@@ -6,11 +6,13 @@ using RFiDGear.Model;
 using Log4CSharp;
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
+using ByteArrayHelper.Extensions;
 
 namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
@@ -23,7 +25,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         private ChipModel card;
         private bool _disposed;
 
-        #region Common
+        #region Constructor
 
         public ElatecNetProvider()
         {
@@ -50,16 +52,25 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         }
 
+        #endregion
+
+        #region Common
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public override ERROR ReadChipPublic()
         {
             try
             {
                 if (readerDevice != null)
                 {
-                    if(!IsConnected)
+                    if (!readerDevice.IsConnected)
                     {
                         Instance.Connect();
-                    }                   
+                    }
 
                     card = readerDevice.GetSingleChip();
 
@@ -67,11 +78,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     {
                         try
                         {
-                            readerDevice.Beep(1, 50, 1000, 100);
+                            GenericChip = new GenericChipModel(card.ChipIdentifier, 
+                                (CARD_TYPE)card.CardType, 
+                                ByteConverter.GetStringFrom(readerDevice.SAK), 
+                                ByteConverter.GetStringFrom(readerDevice.ATS)
+                                );
 
-                            GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)card.CardType);
-                            readerDevice.GreenLED(true);
-                            readerDevice.RedLED(false);
                             return ERROR.NoError;
                         }
                         catch (Exception e)
@@ -83,12 +95,16 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     else
                     {
                         readerDevice.Beep(3, 25, 600, 100);
-                        readerDevice.GreenLED(false);
                         readerDevice.RedLED(true);
                         GenericChip = null;
 
                         return ERROR.NotReadyError;
                     }
+                }
+
+                else
+                {
+                    return ERROR.IOError;
                 }
             }
             catch (Exception e)
@@ -102,8 +118,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                 return ERROR.IOError;
             }
-            return ERROR.IOError;
-
         }
 
         /// <summary>
@@ -112,7 +126,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         /// <returns></returns>
         public override ERROR Connect()
         {
-            return ERROR.NoError;
+            readerDevice.Beep(1, 50, 1000, 100);
+            readerDevice.GreenLED(true);
+            readerDevice.RedLED(false);
+
+            return TWN4ReaderDevice.Instance.Connect() == true ? ERROR.NoError : ERROR.IOError;
         }
 
         #endregion
@@ -228,6 +246,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         #endregion
 
         #region MifareDesfire
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_appMasterKey"></param>
+        /// <param name="_keyTypeAppMasterKey"></param>
+        /// <returns></returns>
         public override ERROR GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
         {
             if (DesfireChip == null)
@@ -236,13 +261,21 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             }
 
             DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
-
-            foreach (var appid in readerDevice.GetDesfireAppIDs(_appMasterKey, (Elatec.NET.DESFireKeyType)_keyTypeAppMasterKey))
+            if (readerDevice.DesfireSelectApplication(0))
             {
-                DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
+                DesfireChip.FreeMemory = readerDevice.GetDesfireFreeMemory() ?? 0;
+
+                var appArr = readerDevice.GetDesfireAppIDs();
+
+                if (appArr != null)
+                {
+                    foreach (var appid in appArr)
+                    {
+                        DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
+                    }
+                }
             }
-            
-            
+
             return ERROR.NoError;
         }
  
@@ -275,35 +308,57 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         public override ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
-            ReadChipPublic();
 
-            return readerDevice.DesfireAuthenticate(
-                _applicationMasterKey, 
-                (byte)_keyNumber,
-                (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)),
-                1) == true ? ERROR.NoError : ERROR.NotAllowed;
-
-        }
-        public override ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
-        {
-            AuthToMifareDesfireApplication(_applicationMasterKey, _keyType, _keyNumberCurrent, _appID);
-            
-            if(readerDevice.GetDesFireKeySettings((uint)_appID))
+            if (readerDevice.DesfireSelectApplication((uint)_appID))
             {
-                DesfireFileSettings.accessRights[0] = readerDevice.KeySettings;
-                return ERROR.NoError;
+                return readerDevice.DesfireAuthenticate(
+                    _applicationMasterKey,
+                    (byte)_keyNumber,
+                    (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)),
+                    1) == true ? ERROR.NoError : ERROR.NotAllowed;
             }
             else
             {
-                return ERROR.AuthenticationError;
+                return ERROR.NotReadyError;
             }
+
         }
+
+        public override ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
+        {
+            if (readerDevice.DesfireSelectApplication((uint)_appID))
+            {
+                if (readerDevice.GetDesFireKeySettings())
+                {
+                    MaxNumberOfAppKeys = readerDevice.NumberOfKeys;
+                    EncryptionType = (DESFireKeyType)readerDevice.KeyType;
+                    DesfireAppKeySetting = (DESFireKeySettings)readerDevice.KeySettings;
+
+                    return ERROR.NoError;
+                } // Get Settings without authentication
+                else
+                {
+                    if (readerDevice.DesfireAuthenticate(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)), 1))
+                    {
+                        MaxNumberOfAppKeys = readerDevice.NumberOfKeys;
+                        EncryptionType = (DESFireKeyType)readerDevice.KeyType;
+                        DesfireAppKeySetting = (DESFireKeySettings)readerDevice.KeySettings;
+
+                        return ERROR.NoError;
+                    }
+                    return ERROR.AuthenticationError;
+                } // authenticate first
+
+            }
+
+            return ERROR.AuthenticationError;
+        }
+
         public override ERROR CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget,
                                         DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication,
                                         int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
         {
-            var s = (int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTargetApplication));
-
+            //TODO: AUTHT FIRST and ERROR Handling 
             return readerDevice.DesfireCreateApplication((Elatec.NET.DESFireKeySettings)_keySettingsTarget, (Elatec.NET.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTargetApplication)), _maxNbKeys, _appID) == true ? ERROR.NoError : ERROR.NotAllowed;
         }
         public override ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
@@ -324,13 +379,61 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             throw new NotImplementedException();
         }
-        public override ERROR GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
+        public override ERROR GetMifareDesfireFileList(string _applicationMasterKey, RFiDGear.DataAccessLayer.DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
         {
-            throw new NotImplementedException();
+            if (readerDevice.DesfireSelectApplication((uint)_appID))
+            {
+                if (readerDevice.DesfireAuthenticate(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)), 1))
+                {
+                    var appids = readerDevice.GetDesfireFileIDs();
+                    if (appids != null)
+                    {
+                        FileIDList = appids;
+                        return ERROR.NoError;
+                    }
+                    else
+                    {
+                        return ERROR.AuthenticationError;
+                    }
+                }
+            }
+
+            return ERROR.NotReadyError;
         }
         public override ERROR GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID, int _fileNo)
         {
-            throw new NotImplementedException();
+            if (readerDevice.DesfireSelectApplication((uint)_appID))
+            {
+                if (readerDevice.DesfireAuthenticate(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)), 1))
+                {
+                    var fileSettings = readerDevice.GetDesFireFileSettings((byte)_fileNo);
+                    uint fileSize = 0x00000000;
+
+                    for (uint i = 9; i >= 6; i--)
+                    {
+                        fileSize = fileSize << 8;
+                        fileSize |= (byte)(fileSettings[i]);
+                    }
+                    if (fileSettings != null)
+                    {
+                        DesfireFileSettings = new DESFireFileSettings();
+
+                        DesfireFileSettings.FileType = fileSettings[2];
+                        DesfireFileSettings.comSett = fileSettings[3];
+                        DesfireFileSettings.dataFile.fileSize = fileSize;
+                        DesfireFileSettings.accessRights = new byte[2];
+                        DesfireFileSettings.accessRights[0] = fileSettings[4];
+                        DesfireFileSettings.accessRights[1] = fileSettings[5];
+                        return ERROR.NoError;
+                    }
+                    else
+                    {
+                        return ERROR.AuthenticationError;
+                    }
+                }
+            }
+
+            return ERROR.AuthenticationError;
         }
         #endregion
 
@@ -351,7 +454,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             _disposed = false;
             Dispose(true);
-            readerDevice.GreenLED(false);
             GC.SuppressFinalize(this);
         }
     }

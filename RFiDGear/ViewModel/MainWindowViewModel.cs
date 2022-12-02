@@ -83,8 +83,9 @@ namespace RFiDGear.ViewModel
         private bool userIsNotifiedForAvailableUpdate = false;
         private bool updateIsAvailable = false;
         private protected Mutex mutex;
+
         // one reader, one instance - only
-        
+
         #region Events / Delegates
 
         /// <summary>
@@ -291,31 +292,32 @@ namespace RFiDGear.ViewModel
         {
             using (var settings = new SettingsReaderWriter())
             {
-                var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
+                Application.Current.Dispatcher.BeginInvoke((Action)(() => {
+                    var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
                 var lastUsedDBPath = settings.DefaultSpecification.LastUsedProjectPath;
 
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
-
-                //Mouse.OverrideCursor = Cursors.AppStarting;
 
                 if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
                 {
                     ChipTasks.TaskCollection.Clear();
                 }
-
+                
                 databaseReaderWriter.ReadDatabase(lastUsedDBPath);
 
                 foreach (var vm in databaseReaderWriter.TreeViewModel)
                 {
                     TreeViewParentNodes.Add(vm);
                 }
+                
+                
+                        foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
+                        {
+                                ChipTasks.TaskCollection.Add(setup);
+                        }
 
-                foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
-                {
-                    ChipTasks.TaskCollection.Add(setup);
-                }
-
-                //Mouse.OverrideCursor = null;
+                    Dialogs.RemoveAt(0);
+                }));
 
                 OnPropertyChanged(nameof(ChipTasks));
             }
@@ -913,7 +915,13 @@ namespace RFiDGear.ViewModel
                         case CARD_TYPE.DESFireEV3_8K:
                         case CARD_TYPE.DESFireEV3_16K:
                         case CARD_TYPE.DESFireEV3_32K:
-                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip.UID, device.GenericChip.CardType), Dialogs, false));
+                        case CARD_TYPE.SmartMX_DESFire_Generic:
+                        case CARD_TYPE.SmartMX_DESFire_2K:
+                        case CARD_TYPE.SmartMX_DESFire_4K:
+                        case CARD_TYPE.SmartMX_DESFire_8K:
+                        case CARD_TYPE.SmartMX_DESFire_16K:
+                        case CARD_TYPE.SmartMX_DESFire_32K:
+                            treeViewParentNodes.Add(new RFiDChipParentLayerViewModel(new MifareDesfireChipModel(device.GenericChip), Dialogs, false));
                             break;
 
                         case CARD_TYPE.MifarePlus_SL1_1K:
@@ -2130,147 +2138,150 @@ namespace RFiDGear.ViewModel
             mw = (MainWindow)Application.Current.MainWindow;
             mw.Title = string.Format("RFiDGear {0}.{1}", Version.Major, Version.Minor);
 
-            if (firstRun)
-            {        
-                Task loadProjectOnStartThread;
-                Task refreshStatusBarThread;
-
-                firstRun = false;
-
-                try
+                if (firstRun)
                 {
-                    using (var settings = new SettingsReaderWriter())
-                    {
-                        if (args.Length > 1)
-                        {
-                            foreach (var arg in args)
-                            {
-                                switch (arg.Split('=')[0])
-                                {
-                                    case "LASTUSEDPROJECTPATH":
-                                        if (File.Exists(arg.Split('=')[1]))
-                                        {
-                                            settings.DefaultSpecification.LastUsedProjectPath = new DirectoryInfo(arg.Split('=')[1]).FullName;
-                                            settings.SaveSettings();
-                                        }
-                                        break;
+                    Task loadProjectOnStartThread;
+                    Task refreshStatusBarThread;
 
-                                    default:
-                                        break;
+                    firstRun = false;
+
+                    try
+                    {
+                        using (var settings = new SettingsReaderWriter())
+                        {
+                            if (args.Length > 1)
+                            {
+                                foreach (var arg in args)
+                                {
+                                    switch (arg.Split('=')[0])
+                                    {
+                                        case "LASTUSEDPROJECTPATH":
+                                            if (File.Exists(arg.Split('=')[1]))
+                                            {
+                                                settings.DefaultSpecification.LastUsedProjectPath = new DirectoryInfo(arg.Split('=')[1]).FullName;
+                                                settings.SaveSettings();
+                                            }
+                                            break;
+
+                                        default:
+                                            break;
+                                    }
                                 }
                             }
-                        }
-                        
-                        CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
-                            ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
-                            : settings.DefaultSpecification.DefaultReaderName;
 
-                        if(int.TryParse(settings.DefaultSpecification.LastUsedComPort,out var portNumber))
-                        {
-                            ReaderDevice.PortNumber = portNumber;
-                        }
+                            CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
+                                ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
+                                : settings.DefaultSpecification.DefaultReaderName;
 
-                        else
-                        {
-                            ReaderDevice.PortNumber = 0;
-                        }
-                        
+                            if (int.TryParse(settings.DefaultSpecification.LastUsedComPort, out var portNumber))
+                            {
+                                ReaderDevice.PortNumber = portNumber;
+                            }
 
-                        culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
+                            else
+                            {
+                                ReaderDevice.PortNumber = 0;
+                            }
 
-                        var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
 
-                        var mySplash = new SplashScreenViewModel();
+                            culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
-                        if (autoLoadLastUsedDB)
-                        {
-                            Dialogs.Add(mySplash);
-                        }
+                            var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
 
-                        loadProjectOnStartThread = new Task(() =>
-                        {
+                            var mySplash = new SplashScreenViewModel();
+
                             if (autoLoadLastUsedDB)
                             {
-                                OpenLastProjectFile();
+                                Dialogs.Add(mySplash);
                             }
-                        });
-
-                        loadProjectOnStartThread.ContinueWith((x) =>
-                        {
-                        });
-
-                        
-                        loadProjectOnStartThread.RunSynchronously();
-
-                        refreshStatusBarThread = new Task(() =>
-                        {
-                            while(true)
+                            
+                            loadProjectOnStartThread = new Task(() =>
                             {
-                                Thread.Sleep(500);
-                                ReaderStatus = string.Format("{0}", DateTime.Now);
-                            }
-                        });
-
-                        refreshStatusBarThread.ContinueWith((x) =>
-                        {
-                        });
-
-                        refreshStatusBarThread.Start();
-
-                        Dialogs.Remove(mySplash);
-
-                        OnNewResetTaskStatusCommand();
-                    }
-
-                    using (var settings = new SettingsReaderWriter())
-                    {
-                        if (args.Length > 1)
-                        {
-                            foreach (var arg in args)
-                            {
-                                switch (arg.Split('=')[0])
+                                if (autoLoadLastUsedDB)
                                 {
-                                    case "REPORTTARGETPATH":
+                                    OpenLastProjectFile();
+                                }
+                            });
 
-                                        variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
+                            loadProjectOnStartThread.ContinueWith((x) =>
+                            {
+                            });
 
-                                        if (Directory.Exists(Path.GetDirectoryName(arg.Split('=')[1])))
-                                        {
-                                            reportOutputPath = arg.Split('=')[1];
-                                        }
-                                        break;
 
-                                    case "AUTORUN":
-                                        if (arg.Split('=')[1] == "1")
-                                        {
-                                            OnNewWriteToChipOnceCommand();
-                                        }
-                                        break;
+                            loadProjectOnStartThread.Start();
 
-                                    default:
-                                        if (arg.Split('=')[0].Contains("$"))
-                                        {
+                            refreshStatusBarThread = new Task(() =>
+                            {
+                                while (true)
+                                {
+                                    Thread.Sleep(500);
+                                    ReaderStatus = string.Format("{0}", DateTime.Now);
+                                }
+                            });
+
+                            refreshStatusBarThread.ContinueWith((x) =>
+                            {
+                            });
+
+                            refreshStatusBarThread.Start();
+
+                            
+
+                            OnNewResetTaskStatusCommand();
+                        }
+
+                        using (var settings = new SettingsReaderWriter())
+                        {
+                            if (args.Length > 1)
+                            {
+                                foreach (var arg in args)
+                                {
+                                    switch (arg.Split('=')[0])
+                                    {
+                                        case "REPORTTARGETPATH":
+
                                             variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
-                                        }
-                                        break;
+
+                                            if (Directory.Exists(Path.GetDirectoryName(arg.Split('=')[1])))
+                                            {
+                                                reportOutputPath = arg.Split('=')[1];
+                                            }
+                                            break;
+
+                                        case "AUTORUN":
+                                            if (arg.Split('=')[1] == "1")
+                                            {
+                                                OnNewWriteToChipOnceCommand();
+                                            }
+                                            break;
+
+                                        default:
+                                            if (arg.Split('=')[0].Contains("$"))
+                                            {
+                                                variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
+                                            }
+                                            break;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    LogWriter.CreateLogEntry(ex, FacilityName);
-                }
-
-                using (var settings = new SettingsReaderWriter())
-                {
-                    if (settings.DefaultSpecification.AutoCheckForUpdates)
+                    catch (Exception ex)
                     {
-                        updater?.StartMonitoring();
+                        LogWriter.CreateLogEntry(ex, FacilityName);
+                    }
+
+                    using (var settings = new SettingsReaderWriter())
+                    {
+                        if (settings.DefaultSpecification.AutoCheckForUpdates)
+                        {
+                            updater?.StartMonitoring();
+                        }
                     }
                 }
-            }
+
+
+            
 
             if (userIsNotifiedForAvailableUpdate)
             {

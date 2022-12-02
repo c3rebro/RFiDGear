@@ -1,17 +1,19 @@
-﻿using RFiDGear.Model;
-using RFiDGear.ViewModel;
-
-using Log4CSharp;
+﻿using CommunityToolkit.Mvvm.Input;
 
 using System;
-using System.Globalization;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 using Ionic.Zip;
+using Log4CSharp;
+using RFiDGear.Model;
+using RFiDGear.ViewModel;
 
 namespace RFiDGear.DataAccessLayer
 {
@@ -32,6 +34,7 @@ namespace RFiDGear.DataAccessLayer
 
         public ObservableCollection<RFiDChipParentLayerViewModel> TreeViewModel;
         public ChipTaskHandlerModel SetupModel;
+        public IAsyncRelayCommand AsyncRelayCommandLoadDB { get;  }
 
         #endregion fields
 
@@ -39,6 +42,8 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
+                AsyncRelayCommandLoadDB = new AsyncRelayCommand<TextReader>(LoadXMLAsync,AsyncRelayCommandOptions.AllowConcurrentExecutions);
+
                 // Combine the base folder with the specific folder....
                 appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear");
 
@@ -89,7 +94,6 @@ namespace RFiDGear.DataAccessLayer
         /// <returns></returns>
         public bool ReadDatabase(string _fileName = "")
         {
-            TextReader reader;
             var verInfo = 0;
             FileInfo file;
 
@@ -113,27 +117,16 @@ namespace RFiDGear.DataAccessLayer
                     var node = doc.SelectSingleNode("//ManifestVersion");
                     verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
 
-                    reader = new StreamReader(_fileName);
+                    TextReader reader = new StreamReader(_fileName);
 
                     try
                     {
                         var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-                        SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
+                        AsyncRelayCommandLoadDB.ExecuteAsync(reader);
                     }
                     catch (Exception e)
                     {
                         LogWriter.CreateLogEntry(e, FacilityName);
-
-                        try
-                        {
-                            var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
-                            TreeViewModel = (serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>);
-                        }
-                        catch (Exception innerE)
-                        {
-                            LogWriter.CreateLogEntry(innerE, FacilityName);
-                            return true;
-                        }
                     }
 
                 }
@@ -154,7 +147,7 @@ namespace RFiDGear.DataAccessLayer
                         zip1.ExtractAll(appDataPath, ExtractExistingFileAction.OverwriteSilently);
                     }
 
-                    reader = null;
+                    TextReader reader = null;
 
                     if (File.Exists(@Path.Combine(appDataPath, file.Name)))
                     {
@@ -174,22 +167,11 @@ namespace RFiDGear.DataAccessLayer
                     try
                     {
                         var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-                        SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
+                        AsyncRelayCommandLoadDB.ExecuteAsync(reader);
                     }
                     catch (Exception e)
                     {
                         LogWriter.CreateLogEntry(e, FacilityName);
-
-                        try
-                        {
-                            var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
-                            TreeViewModel = (serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>);
-                        }
-                        catch (Exception innerE)
-                        {
-                            LogWriter.CreateLogEntry(innerE, FacilityName);
-                            return true;
-                        }
                     }
                 }
 
@@ -287,6 +269,36 @@ namespace RFiDGear.DataAccessLayer
         public void DeleteDatabase()
         {
             File.Delete(Path.Combine(appDataPath, chipDatabaseFileName));
+        }
+ 
+        private Task<ChipTaskHandlerModel> LoadXMLAsync(TextReader reader)
+        {
+            try
+            {
+                var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
+                SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
+
+                return Task.FromResult(SetupModel);
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(e, FacilityName);
+
+                try
+                {
+                    var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
+                    //treeViewModelTask = (T)(serializer.Deserialize(reader));
+
+                    //return Task.FromResult(treeViewModelTask);
+                }
+
+                catch (Exception innerE)
+                {
+                    LogWriter.CreateLogEntry(innerE, FacilityName);
+                } 
+            }
+
+            return null;
         }
     }
 }

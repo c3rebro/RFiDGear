@@ -99,7 +99,7 @@
                         VerticalContentAlignment="Center"
                         ItemsSource="{dal:Enumerate {x:Type dal:TaskType_MifareDesfireTask}}"
                         SelectedItem="{Binding SelectedTaskType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskType_MifareDesfireTask}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                        ScrollViewer.VerticalScrollBarVisibility="Visible"
                         TabIndex="1" />
                     <Label
                         Grid.Row="1"
@@ -330,19 +330,18 @@
             <ui:TextBox
                 Grid.Row="0"
                 Grid.Column="0"
-                Margin="8,0,8,42"
+                Margin="8,0,8,45"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 FontFamily="Segoe Ui"
                 HorizontalScrollBarVisibility="Auto"
                 IsReadOnly="True"
                 Text="{Binding StatusText}"
-                VerticalScrollBarVisibility="Visible" />
+                VerticalScrollBarVisibility="Visible" Cursor="IBeam" />
             <Button
                 Grid.Row="0"
                 Grid.Column="0"
                 Width="140"
-                Height="29"
                 Margin="9,0,0,8"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Bottom"
@@ -352,7 +351,6 @@
                 Grid.Row="0"
                 Grid.Column="0"
                 Width="140"
-                Height="29"
                 Margin="157,0,0,8"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Bottom"

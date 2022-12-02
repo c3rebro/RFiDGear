@@ -45,65 +45,74 @@
                 <Grid>
                     <Label
                         Grid.Row="0"
-                        Margin="8,3,8,7"
-                        Height="auto"
+                        Margin="8,8,8,8"
                         VerticalAlignment="Stretch"
-                        HorizontalAlignment="Left"
+                        HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
                         Content="App ID" />
                     <Label
                         Grid.Row="1"
-                        Margin="8,3,8,7"
+                        Margin="8,0,8,8"
                         VerticalAlignment="Stretch"
-                        HorizontalAlignment="Left"
+                        HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
                     <ComboBox
                         Grid.Row="1"
                         Grid.Column="1"
-                        Margin="10,3,10,7"
                         ScrollViewer.VerticalScrollBarVisibility="Auto"
-                        HorizontalAlignment="Stretch"
+                        Margin="8,0,8,8"
                         VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
                         ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
                         SelectedItem="{Binding SelectedDesfireAppKeyEncryptionTypeCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
                     <Label
                         Grid.Row="2"
-                        Width="154"
-                        Margin="8,3,8,7"
+                        Margin="8,0,8,8"
                         VerticalAlignment="Stretch"
-                        HorizontalAlignment="Left"
+                        HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
                         Content="Max Keys"
                         RenderTransformOrigin="0.5,0.5" />
                     <ComboBox
                         Grid.Row="2"
                         Grid.Column="1"
-                        Margin="10,3,10,7"
+                        Margin="8,0,8,8"
                         VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
                         ScrollViewer.VerticalScrollBarVisibility="Auto"
                         ItemsSource="{Binding MifareDesfireKeyCount}"
                         SelectedItem="{Binding SelectedDesfireAppMaxNumberOfKeys, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="3"
-                        Width="154"
                         Height="auto"
-                        Margin="8,3,8,3"
+                        Margin="8,0,8,8"
                         VerticalAlignment="Stretch"
-                        HorizontalAlignment="Left"
+                        HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireAppSetupKeySettings'}" />
                     <ComboBox
                         Grid.Row="3"
                         Grid.Column="1"
-                        Margin="10,3,10,0"
+                        Margin="8,0,8,8"
                         VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
                         ItemsSource="{dal:Enumerate {x:Type dal:AccessCondition_MifareDesfireAppCreation}}"
                         SelectedItem="{Binding SelectedDesfireAppKeySettingsCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareDesfireAppCreation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
                     <ui:ToggleSwitch
                         Grid.Row="0"
                         Grid.Column="2"
-                        Margin="10,0,0,0"
+                        Margin="8,8,8,8"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowChangeMK'}"
@@ -119,7 +128,7 @@
                     <ui:ToggleSwitch
                         Grid.Row="1"
                         Grid.Column="2"
-                        Margin="10,0,0,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowListing'}"
@@ -137,7 +146,7 @@
                         Grid.Row="2"
                         Grid.Column="2"
                         Height="auto"
-                        Margin="10,0,0,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowCreateDelete'}"
@@ -153,7 +162,7 @@
                     <ui:ToggleSwitch
                         Grid.Row="3"
                         Grid.Column="2"
-                        Margin="10,0,0,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowConfigChange'}"
@@ -185,10 +194,12 @@
                     <ui:TextBox
                         Grid.Row="0"
                         Grid.Column="1"
-                        Margin="10,8,10,8"
-                        HorizontalContentAlignment="Left"
+                        Margin="8,8,8,8"
+                        VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
-                        Text="{Binding AppNumberNew, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                        HorizontalContentAlignment="Left"
+                        Text="{Binding AppNumberNew, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
                                 <Style.Triggers>

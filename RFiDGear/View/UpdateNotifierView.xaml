@@ -58,7 +58,9 @@
                 TextWrapping="Wrap" 
                 IsReadOnly="True" 
                 AcceptsReturn="True" 
+                Focusable="True"
                 AcceptsTab="True"
+                ScrollViewer.VerticalScrollBarVisibility="Visible"
                 Text="{Binding UpdateHistoryText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
         </GroupBox>
         <Button Grid.Column="1" 

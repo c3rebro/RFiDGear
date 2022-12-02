@@ -10,7 +10,7 @@
     Width="auto"
     Height="300"
     MinWidth="430"
-    MinHeight="300"
+    MinHeight="350"
     ResizeMode="NoResize"
     HorizontalContentAlignment="Left"
     FontFamily="Segoe UI"
@@ -27,10 +27,22 @@
         <dal:ResourceLoader x:Key="Localization" />
     </ui:UiWindow.Resources>
     <Grid>
+        <ui:TitleBar          
+                Margin="3,3,3,0"
+                MinimizeToTray="False"
+                ShowHelp="False"
+                ShowClose="True"
+                ShowMaximize="False"
+                ShowMinimize="False">
+            <ui:TitleBar.Header>
+                <Label Content="{Binding Caption}" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" FontWeight="Bold" Margin="8"/>
+            </ui:TitleBar.Header>
+        </ui:TitleBar>
+        
         <TabControl
             Grid.Row="0"
             Grid.Column="0"
-            Margin="0,0,0,49"
+            Margin="8,45,8,49"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
             <TabItem MinWidth="50" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderReaderSetup'}">

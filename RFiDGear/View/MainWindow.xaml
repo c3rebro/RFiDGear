@@ -88,8 +88,8 @@
     </ui:UiWindow.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="700"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="400"/>
+            <ColumnDefinition MinWidth="400" Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid
             Grid.Row="0"
@@ -109,7 +109,8 @@
                 VerticalAlignment="Stretch"
                 BorderBrush="LightGray"
                 BorderThickness="1,1,1,1"
-                
+                ScrollViewer.VerticalScrollBarVisibility="Auto"
+                ScrollViewer.CanContentScroll="True"
                 ItemsSource="{Binding TreeViewParentNodes}"
                 MouseLeftButtonDown="MainWindowTreeViewControlMouseButtonDown"
                 MouseRightButtonDown="MainWindowTreeViewControlMouseButtonDown">
@@ -132,6 +133,9 @@
                     </Style>
                 </TreeView.ItemContainerStyle>
                 <TreeView.Resources>
+                    <Style TargetType="TreeView">
+                        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+                    </Style>
                     <ContextMenu x:Key="TreeViewEmptySpaceMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
                         <ContextMenu.ItemContainerStyle>
                             <Style TargetType="MenuItem">
