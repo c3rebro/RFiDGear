@@ -16,10 +16,14 @@
     AllowsTransparency="True"
     Opacity="1"
     WindowStyle="None"
+    WindowCornerPreference="Round"
     ResizeMode="CanResizeWithGrip"
     SizeToContent="Manual"
     ExtendsContentIntoTitleBar="True"
+    BorderBrush="Black"
+    BorderThickness="1"
     WindowBackdropType="Mica"
+    UseLayoutRounding="True"
     WindowStartupLocation="CenterOwner">
     <Window.Resources>
         <vm:ViewModelLocator x:Key="Locator" />
@@ -219,7 +223,7 @@
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
             <TabControl Margin="8,8,8,8">
-                <TabItem MinWidth="50">
+                <TabItem MinWidth="50" IsSelected="{Binding IsDesfirePICCAuthoringTabEnabled, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Visibility="{Binding IsDesfirePICCAuthoringTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, FallbackValue=Hidden}">
                     <TabItem.Header>
                         <TextBlock
                             Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderPICCMasterKeySetup'}"
@@ -233,7 +237,7 @@
                         </Style>
                     </TabItem.Style> -->
                 </TabItem>
-                <TabItem MinWidth="50">
+                <TabItem MinWidth="50" IsSelected="{Binding IsDesfireAppCreationTabEnabled, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Visibility="{Binding IsDesfireAppCreationTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, FallbackValue=Hidden}">
                     <TabItem.Header>
                         <TextBlock
                             Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderApplicationSetup'}"
@@ -252,7 +256,7 @@
                         </ToolTip>
                     </TabItem.ToolTip>-->
                 </TabItem>
-                <TabItem MinWidth="50">
+                <TabItem MinWidth="50" IsSelected="{Binding IsDesfireAppAuthoringTabEnabled, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Visibility="{Binding IsDesfireAppAuthoringTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay,  FallbackValue=Visible}">
                     <TabItem.Header>
                         <TextBlock
                             Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderApplicationKeySetup'}"
@@ -261,7 +265,7 @@
                     </TabItem.Header>
                     <v:TabPageMifareDesfireApplicationMasteringView />
                 </TabItem>
-                <TabItem MinWidth="50">
+                <TabItem MinWidth="50" IsSelected="{Binding IsDesfireFileAuthoringTabEnabled, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Visibility="{Binding IsDesfireFileAuthoringTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay,  FallbackValue=Visible}">
                     <TabItem.Header>
                         <TextBlock
                             Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderFileSetup'}"
@@ -270,7 +274,7 @@
                     </TabItem.Header>
                     <v:TabPageMifareDesfireFileMasteringView />
                 </TabItem>
-                <TabItem MinWidth="50">
+                <TabItem MinWidth="50" Visibility="{Binding IsDataExplorerEditTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, FallbackValue=Visible}">
                     <TabItem.Header>
                         <TextBlock
                             Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderFileExplorer'}"
@@ -279,7 +283,7 @@
                     </TabItem.Header>
                     <v:TabPageMifareDesfireDataExplorerView />
                 </TabItem>
-                <TabItem MinWidth="50" Visibility="{Binding HasPlugins, Converter={StaticResource BoolToVisConv}, FallbackValue=Hidden}">
+                <TabItem MinWidth="50" Visibility="{Binding HasPlugins, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, FallbackValue=Hidden}">
                     <TabItem.Header>
                         <TextBlock
                             Text="Plugins"
@@ -297,7 +301,6 @@
                         <ComboBox
                             Grid.Row="0"
                             Grid.Column="0"
-                            Height="23"
                             Margin="8,5,3,0"
                             ScrollViewer.VerticalScrollBarVisibility="Auto"
                             HorizontalAlignment="Stretch"
@@ -314,8 +317,8 @@
                             <Frame Source="{Binding SelectedPlugin.Metadata.Uri, UpdateSourceTrigger=PropertyChanged}" />
                         </Grid>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="37" />
-                            <RowDefinition Height="0.785887688659717*" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="1*" />
                         </Grid.RowDefinitions>
                     </Grid>
                 </TabItem>

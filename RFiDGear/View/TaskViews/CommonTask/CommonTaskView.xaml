@@ -22,6 +22,8 @@
     ExtendsContentIntoTitleBar="True"
     WindowBackdropType="Mica"
     WindowStartupLocation="CenterOwner"
+    UseLayoutRounding="True"
+    WindowCornerPreference="Round"
     mc:Ignorable="d">
     <ui:UiWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
@@ -81,19 +83,19 @@
                 <TabItem
                     MinWidth="50"
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderLogicTaskSettingsView'}"
-                    IsEnabled="{Binding IsTabPageLogicTaskSettingsViewEnabled}">
+                    IsEnabled="{Binding IsTabPageLogicTaskSettingsViewEnabled}" Visibility="{Binding IsTabPageLogicTaskSettingsViewEnabled, Converter={StaticResource BoolToVisConv}}">
                     <v:TabPageLogicTaskView />
                 </TabItem>
                 <TabItem
                     MinWidth="50"
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderReportSettingsView'}"
-                    IsEnabled="{Binding IsTabPageReportSettingsViewEnabled}">
+                    IsEnabled="{Binding IsTabPageReportSettingsViewEnabled}" Visibility="{Binding IsTabPageReportSettingsViewEnabled, Converter={StaticResource BoolToVisConv}}">
                     <v:TabPageReportSettingsView />
                 </TabItem>
                 <TabItem
                     MinWidth="50"
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderExecuteProgramTaskView'}"
-                    IsEnabled="{Binding IsTabPageExecuteProgramViewEnabled}">
+                    IsEnabled="{Binding IsTabPageExecuteProgramViewEnabled}" Visibility="{Binding IsTabPageExecuteProgramViewEnabled, Converter={StaticResource BoolToVisConv}}">
                     <v:TabPageExecuteProgramTaskView />
                 </TabItem>
             </TabControl>

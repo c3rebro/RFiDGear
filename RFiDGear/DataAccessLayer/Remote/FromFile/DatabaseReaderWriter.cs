@@ -112,16 +112,15 @@ namespace RFiDGear.DataAccessLayer
 
                 if (file.Extension.ToLower(CultureInfo.CurrentCulture) == ".xml")
                 {
-                    doc.Load(_fileName);
+                    doc.Load(@_fileName);
+                    TextReader reader = new StreamReader(_fileName);
 
                     var node = doc.SelectSingleNode("//ManifestVersion");
                     verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
 
-                    TextReader reader = new StreamReader(_fileName);
-
                     try
                     {
-                        var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
+                        //var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
                         AsyncRelayCommandLoadDB.ExecuteAsync(reader);
                     }
                     catch (Exception e)
@@ -168,6 +167,7 @@ namespace RFiDGear.DataAccessLayer
                     {
                         var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
                         AsyncRelayCommandLoadDB.ExecuteAsync(reader);
+                        SetupModel = (SetupModel as ChipTaskHandlerModel);
                     }
                     catch (Exception e)
                     {
@@ -193,8 +193,6 @@ namespace RFiDGear.DataAccessLayer
 
         public void WriteDatabase(ObservableCollection<RFiDChipParentLayerViewModel> objModel, string _path)
         {
-            var zip = new ZipFile();
-
             try
             {
                 TextWriter writer;
@@ -212,14 +210,6 @@ namespace RFiDGear.DataAccessLayer
                 serializer.Serialize(writer, objModel);
 
                 writer.Close();
-
-                zip.AddFile(@Path.Combine(string.IsNullOrWhiteSpace(_path) ?
-                    @Path.Combine(appDataPath, chipDatabaseFileName) :
-                    @_path, chipDatabaseFileName));
-
-                zip.Save(@Path.Combine(string.IsNullOrWhiteSpace(_path) ?
-                    @Path.Combine(appDataPath, taskDatabaseFileNameCompressed) :
-                    @_path, taskDatabaseFileNameCompressed));
             }
             catch (XmlException e)
             {
@@ -271,14 +261,14 @@ namespace RFiDGear.DataAccessLayer
             File.Delete(Path.Combine(appDataPath, chipDatabaseFileName));
         }
  
-        private Task<ChipTaskHandlerModel> LoadXMLAsync(TextReader reader)
+        private Task<object> LoadXMLAsync(TextReader reader)
         {
             try
             {
                 var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
                 SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
 
-                return Task.FromResult(SetupModel);
+                return Task.FromResult(SetupModel as object);
             }
             catch (Exception e)
             {
@@ -287,9 +277,9 @@ namespace RFiDGear.DataAccessLayer
                 try
                 {
                     var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
-                    //treeViewModelTask = (T)(serializer.Deserialize(reader));
+                    TreeViewModel = serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>;
 
-                    //return Task.FromResult(treeViewModelTask);
+                    return Task.FromResult(TreeViewModel as object);
                 }
 
                 catch (Exception innerE)

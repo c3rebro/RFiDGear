@@ -16,6 +16,7 @@ using System.Globalization;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Xml.Serialization;
+using System.Reflection;
 
 namespace RFiDGear.ViewModel
 {
@@ -29,7 +30,7 @@ namespace RFiDGear.ViewModel
 
         private static object _selectedItem;
 
-        private ObservableCollection<IDialogViewModel> dialogs;
+        private protected ObservableCollection<IDialogViewModel> dialogs;
 
         //private readonly CARD_TYPE _CardType;
         private readonly List<MenuItem> ContextMenuItems;
@@ -46,6 +47,8 @@ namespace RFiDGear.ViewModel
         private protected MifareDesfireChipModel mifareDesfireUidModel;
         private protected MifareUltralightChipModel mifareUltralightUidModel;
 
+        private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
+
         #region Constructors
 
         public RFiDChipParentLayerViewModel()
@@ -57,6 +60,8 @@ namespace RFiDGear.ViewModel
             mifareDesfireUidModel = new MifareDesfireChipModel();
             mifareUltralightUidModel = new MifareUltralightChipModel();
             genericChip = new GenericChipModel();
+
+            ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
         }
 
         public RFiDChipParentLayerViewModel(string _text)
@@ -70,6 +75,8 @@ namespace RFiDGear.ViewModel
             genericChip = new GenericChipModel();
 
             ParentNodeHeader = _text;
+
+            ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
         }
 
         public RFiDChipParentLayerViewModel(ObservableCollection<IDialogViewModel> _dialogs, bool _isTask)
@@ -84,6 +91,8 @@ namespace RFiDGear.ViewModel
             isTask = _isTask;
             settings = new SettingsReaderWriter();
             _children = new ObservableCollection<RFiDChipChildLayerViewModel>();
+
+            ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
         }
 
         public RFiDChipParentLayerViewModel(MifareClassicChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask) : this ( _dialogs, _isTask)
@@ -131,6 +140,8 @@ namespace RFiDGear.ViewModel
                             string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), CardType))));
                 }
             }
+
+            ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
         }
 
         public RFiDChipParentLayerViewModel(MifareDesfireChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask) : this(_dialogs, _isTask)
@@ -156,27 +167,46 @@ namespace RFiDGear.ViewModel
                 }
             });
 
-            if (!isTask)
-            {
-                LoadChildren();
-            }
-
             IsSelected = true;
 
             if (mifareDesfireUidModel != null)
             {
                 ParentNodeHeader = String.Format(
-                    ResourceLoader.GetResource("hierarchicalDataTemplateParentNodeHeaderChipType") + 
+                    ResourceLoader.GetResource("hierarchicalDataTemplateParentNodeHeaderChipType") +
                     " {1}\n" +
-                    "Uid: {0}\n" +
-                    "SAK: {2}\n" +
-                    "ATS: {3}" , 
+                    "Uid: {0}", 
                     mifareDesfireUidModel.UID, 
                     ResourceLoader.GetResource(
-                        string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), CardType))),
-                    mifareDesfireUidModel.SAK,
-                    mifareDesfireUidModel.RATS);
+                        string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), CardType))));
+
+                if (mifareDesfireUidModel.Slave != null)
+                {
+                    ParentNodeHeaderRed += 
+                        String.Format("\nHybridTag: {0}\nUID: {1}", 
+                        Enum.GetName(typeof(CARD_TYPE), mifareDesfireUidModel.Slave.CardType),
+                        mifareDesfireUidModel.Slave.UID);
+                }
+
+                Children.Add(
+                    new RFiDChipChildLayerViewModel(
+                        string.Format("SAK: {0}", mifareDesfireUidModel.SAK)));
+
+                Children.Add(
+                    new RFiDChipChildLayerViewModel(
+                        string.Format("ATS: {0}", mifareDesfireUidModel.RATS)));
+
+                Children.Add(
+                    new RFiDChipChildLayerViewModel(
+                        string.Format("VER.: {0}", mifareDesfireUidModel.L4Version)));
+
             }
+
+            if (!isTask)
+            {
+                LoadChildren();
+            }
+
+            ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
         }
 
         public RFiDChipParentLayerViewModel(MifareUltralightChipModel _uidModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask) : this(_dialogs, _isTask)
@@ -216,6 +246,8 @@ namespace RFiDGear.ViewModel
                 ParentNodeHeader = String.Format(ResourceLoader.GetResource("hierarchicalDataTemplateParentNodeHeaderChipType") + " {1}\nUid: {0}", mifareUltralightUidModel.UID, 
                     ResourceLoader.GetResource(string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), CardType))));
             }
+
+            ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
         }
 
         public RFiDChipParentLayerViewModel(GenericChipModel _chipModel, ObservableCollection<IDialogViewModel> _dialogs, bool _isTask) : this(_dialogs, _isTask)
@@ -239,6 +271,8 @@ namespace RFiDGear.ViewModel
                 ParentNodeHeader = String.Format(ResourceLoader.GetResource("hierarchicalDataTemplateParentNodeHeaderChipType") + " {1}\nUid: {0}", genericChip.UID,
                     ResourceLoader.GetResource(string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), CardType))));
             }
+
+            ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
         }
 
         #endregion Constructors
@@ -326,6 +360,18 @@ namespace RFiDGear.ViewModel
                         }
 
                         Children.Clear();
+
+                        Children.Add(
+                            new RFiDChipChildLayerViewModel(
+                                string.Format("SAK: {0}", mifareDesfireUidModel.SAK)));
+
+                        Children.Add(
+                            new RFiDChipChildLayerViewModel(
+                                string.Format("ATS: {0}", mifareDesfireUidModel.RATS)));
+
+                        Children.Add(
+                            new RFiDChipChildLayerViewModel(
+                                string.Format("VER.: {0}", mifareDesfireUidModel.L4Version)));
 
                         Children.Add(
                             new RFiDChipChildLayerViewModel(
@@ -570,6 +616,14 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        public string ManifestVersion
+        {
+            get; set;
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
         public string ParentNodeHeader
         {
             get => parentNodeHeader;
@@ -580,6 +634,21 @@ namespace RFiDGear.ViewModel
             }
         }
         private string parentNodeHeader;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string ParentNodeHeaderRed
+        {
+            get => parentNodeHeaderRed;
+            set
+            {
+                parentNodeHeaderRed = value;
+                OnPropertyChanged(nameof(ParentNodeHeaderRed));
+            }
+        }
+        private string parentNodeHeaderRed;
+
 
         /// <summary>
         ///
@@ -750,6 +819,7 @@ namespace RFiDGear.ViewModel
         public RelayCommand CmdCreateApp => _cmdCreateApp;
 
         #endregion
+
         private void LoadChildren()
         {
             switch (CardType)

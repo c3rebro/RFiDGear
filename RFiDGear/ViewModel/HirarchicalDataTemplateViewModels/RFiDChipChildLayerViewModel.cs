@@ -143,13 +143,13 @@ namespace RFiDGear.ViewModel
                     new MenuItem()
                     {
                         Header = "Read Sector using default Configuration",
-                        Command = _cmdReadSectorWithDefaults
+                        Command = null //_cmdReadSectorWithDefaults
                     },
 
                     new MenuItem()
                     {
                         Header = "Edit Authentication Settings and Modify Sector",
-                        Command = _cmdEditAuthAndModifySector
+                        Command = null // _cmdEditAuthAndModifySector
                     }
                 };
             }));
@@ -283,6 +283,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public object SelectedItem
         {
             get => selectedItem;
@@ -353,6 +354,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public bool? HasChanged
         {
             get => hasChanged;
@@ -367,6 +369,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public bool? IsTask
         {
             get => isTask;
@@ -381,6 +384,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public bool? IsAuthenticated
         {
             get => isAuth;

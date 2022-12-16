@@ -234,7 +234,7 @@
                                         <ComboBox
                                             ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.TemplateFields, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             
-                                            SelectedItem="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.SelectedTemplateField, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            SelectedItem="{Binding TemplateField, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             
                                             FontFamily="Lucida Console">
                                             <ComboBox.Style>

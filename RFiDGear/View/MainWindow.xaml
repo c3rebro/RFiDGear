@@ -25,6 +25,8 @@
     WindowStyle="None"
     AllowsTransparency="True"
     ExtendsContentIntoTitleBar="True"
+    BorderBrush="Black"
+    BorderThickness="1"
     WindowBackdropType="Mica"
     MouseLeftButtonDown="WindowMouseLeftButtonDown"
     SizeToContent="Manual"
@@ -155,11 +157,6 @@
                             </Style>
                         </ContextMenu.ItemContainerStyle>
                     </ContextMenu>
-                    <!--<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
-                      Color="White" />
-					<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
-                      Color="Black" />
-					<FontWeightConverter x:Key="{x:Static FontWeights.Bold}" />-->
                     <HierarchicalDataTemplate DataType="{x:Type vm:RFiDChipParentLayerViewModel}" ItemsSource="{Binding Children}">
                         <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\Region.png" /> -->
                         <HierarchicalDataTemplate.Resources>
@@ -184,7 +181,8 @@
                                 </Style.Triggers>
                             </Style>
                         </HierarchicalDataTemplate.Resources>
-                        <TextBlock Text="{Binding ParentNodeHeader}">
+                        <TextBlock Text="{Binding ParentNodeHeader}" Margin="0,0,8,0">
+                            <Run Text="{Binding ParentNodeHeaderRed}" Foreground="Red"/>
                             <TextBlock.ContextMenu>
                                 <ContextMenu ItemsSource="{Binding ContextMenu}" />
                             </TextBlock.ContextMenu>
@@ -214,7 +212,7 @@
                             </Style>
                         </HierarchicalDataTemplate.Resources>
                         <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\State.png" /> -->
-                        <TextBlock Text="{Binding ChildNodeHeader}">
+                        <TextBlock Text="{Binding ChildNodeHeader}" Margin="0,0,8,0">
                             <TextBlock.ContextMenu>
                                 <ContextMenu ItemsSource="{Binding ContextMenu}" />
                             </TextBlock.ContextMenu>
@@ -222,7 +220,7 @@
                     </HierarchicalDataTemplate>
                     <HierarchicalDataTemplate DataType="{x:Type vm:RFiDChipGrandChildLayerViewModel}" ItemsSource="{Binding Children}">
                         <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\City.png" /> -->
-                        <TextBlock Text="{Binding GrandChildNodeHeader}">
+                        <TextBlock Text="{Binding GrandChildNodeHeader}" Margin="0,0,8,0">
                             <TextBlock.Resources>
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>
@@ -257,7 +255,7 @@
                     </HierarchicalDataTemplate>
                     <DataTemplate DataType="{x:Type vm:RFiDChipGrandGrandChildLayerViewModel}">
                         <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\City.png" /> -->
-                        <TextBlock Text="{Binding GrandGrandChildNodeHeader}">
+                        <TextBlock Text="{Binding GrandGrandChildNodeHeader}" Margin="0,0,8,0">
                             <TextBlock.Resources>
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>
@@ -428,6 +426,7 @@
                         </DataGridTextColumn.HeaderStyle>
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Margin" Value="5,0,5,0" />
                                 <Setter Property="HorizontalAlignment" Value="Left" />
                                 <Setter Property="VerticalAlignment" Value="Center" />
                             </Style>
@@ -436,7 +435,7 @@
                     <DataGridTemplateColumn Width="auto" Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridHeaderMainWindowTaskDescription', Source={StaticResource proxy}}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <ui:TextBox Text="{Binding Path=SelectedTaskDescription}" TextWrapping="Wrap">
+                                <ui:TextBox Text="{Binding Path=SelectedTaskDescription}" TextWrapping="Wrap" Margin="3,0,0,3">
                                     <ui:TextBox.Style>
                                         <Style TargetType="{x:Type TextBox}">
                                             <Setter Property="HorizontalAlignment" Value="Left" />
@@ -570,6 +569,7 @@
                     VerticalContentAlignment="Center"
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}">
                     <ui:MenuItem Command="{Binding ShowHelpCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}" />
+                    <ui:MenuItem Command="{Binding CheckUpdateCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemCheckUpdatesHeader'}" />
                     <ui:MenuItem Command="{Binding NewAboutDialogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemAboutHeader'}" />
                 </ui:MenuItem>
                 <!--  Help  -->

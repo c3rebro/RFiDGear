@@ -13,6 +13,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 using ByteArrayHelper.Extensions;
+using RFiDGear.ViewModel;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
@@ -56,7 +58,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         #region Common
 
-
         /// <summary>
         /// 
         /// </summary>
@@ -72,7 +73,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         Instance.Connect();
                     }
 
-                    card = readerDevice.GetSingleChip();
+                    card = readerDevice.GetSingleChip(true);
 
                     if (!string.IsNullOrWhiteSpace(card?.ChipIdentifier))
                     {
@@ -81,8 +82,17 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             GenericChip = new GenericChipModel(card.ChipIdentifier, 
                                 (CARD_TYPE)card.CardType, 
                                 ByteConverter.GetStringFrom(readerDevice.SAK), 
-                                ByteConverter.GetStringFrom(readerDevice.ATS)
+                                ByteConverter.GetStringFrom(readerDevice.ATS),
+                                ByteConverter.GetStringFrom(readerDevice.L4VERSION)
                                 );
+
+                            var lfTag = readerDevice.GetSingleChip(false);
+
+                            if (lfTag != null && lfTag?.CardType != ChipType.NOTAG)
+                            {
+                                GenericChip.Slave = new GenericChipModel(lfTag.ChipIdentifier, (RFiDGear.DataAccessLayer.CARD_TYPE)lfTag.CardType);
+                            }
+                            readerDevice.GetSingleChip(true);
 
                             return ERROR.NoError;
                         }
@@ -252,7 +262,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         /// </summary>
         /// <param name="_appMasterKey"></param>
         /// <param name="_keyTypeAppMasterKey"></param>
-        /// <returns></returns>
+        /// <returns>ERROR Level</returns>
         public override ERROR GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
         {
             if (DesfireChip == null)
@@ -278,34 +288,15 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             return ERROR.NoError;
         }
- 
-        public override ERROR CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
-                                     int _appID, int _fileNo, int _fileSize,
-                                     int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
-                                     int _maxNbOfRecords = 100)
-        {
-            throw new NotImplementedException();
-        }
 
-        public override ERROR ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
-                                       string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
-                                       string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
-                                       EncryptionMode _encMode,
-                                       int _fileNo, int _appID, int _fileSize)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override ERROR WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
-                                        string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
-                                        string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
-                                        string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
-                                        EncryptionMode _encMode,
-                                        int _fileNo, int _appID, byte[] _data)
-        {
-            throw new NotImplementedException();
-        }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_applicationMasterKey"></param>
+        /// <param name="_keyType"></param>
+        /// <param name="_keyNumber"></param>
+        /// <param name="_appID"></param>
+        /// <returns></returns>
         public override ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
 
@@ -324,6 +315,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_applicationMasterKey"></param>
+        /// <param name="_keyType"></param>
+        /// <param name="_keyNumberCurrent"></param>
+        /// <param name="_appID"></param>
+        /// <returns></returns>
         public override ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
         {
             if (readerDevice.DesfireSelectApplication((uint)_appID))
@@ -331,7 +330,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 if (readerDevice.GetDesFireKeySettings())
                 {
                     MaxNumberOfAppKeys = readerDevice.NumberOfKeys;
-                    EncryptionType = (DESFireKeyType)readerDevice.KeyType;
+                    EncryptionType = (DESFireKeyType)Enum.Parse(typeof(DESFireKeyType), Enum.GetName(typeof(Elatec.NET.DESFireKeyType), readerDevice.KeyType));
                     DesfireAppKeySetting = (DESFireKeySettings)readerDevice.KeySettings;
 
                     return ERROR.NoError;
@@ -354,31 +353,181 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             return ERROR.AuthenticationError;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_piccMasterKey"></param>
+        /// <param name="_keySettingsTarget"></param>
+        /// <param name="_keyTypePiccMasterKey"></param>
+        /// <param name="_keyTypeTargetApplication"></param>
+        /// <param name="_maxNbKeys"></param>
+        /// <param name="_appID"></param>
+        /// <param name="authenticateToPICCFirst"></param>
+        /// <returns></returns>
         public override ERROR CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget,
                                         DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication,
                                         int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
         {
-            //TODO: AUTHT FIRST and ERROR Handling 
-            return readerDevice.DesfireCreateApplication((Elatec.NET.DESFireKeySettings)_keySettingsTarget, (Elatec.NET.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTargetApplication)), _maxNbKeys, _appID) == true ? ERROR.NoError : ERROR.NotAllowed;
+            if (readerDevice.DesfireSelectApplication(0))
+            {
+                if (readerDevice.DesfireAuthenticate(_piccMasterKey, 0x00, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypePiccMasterKey)), 1))
+                {
+                    if (readerDevice.DesfireCreateApplication(
+                        (Elatec.NET.DESFireKeySettings)_keySettingsTarget, 
+                        (Elatec.NET.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTargetApplication)),
+                        _maxNbKeys,
+                        _appID))
+                    {
+                        return ERROR.NoError;
+                    }
+                    else
+                    {
+                        return ERROR.AuthenticationError;
+                    }
+                }
+                else
+                {
+                    if (readerDevice.DesfireCreateApplication((Elatec.NET.DESFireKeySettings)_keySettingsTarget, (Elatec.NET.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTargetApplication)), _maxNbKeys, _appID))
+                    {
+                        return ERROR.NoError;
+                    }
+                    else
+                    {
+                        return ERROR.AuthenticationError;
+                    }
+                }
+            }
+            return ERROR.IOError;
+                    
         }
+
         public override ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
                                         string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, DESFireKeySettings keySettings, int keyVersion)
         {
-            throw new NotImplementedException();
+            if (readerDevice.DesfireSelectApplication((uint)_appIDCurrent))
+            {
+                if (readerDevice.DesfireAuthenticate(_applicationMasterKeyCurrent, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeCurrent)), 1))
+                {
+                    if (readerDevice.DesfireChangeKey(
+                        _applicationMasterKeyCurrent, 
+                        _applicationMasterKeyTarget, 
+                        (byte)keyVersion, 
+                        _keyNumberCurrent == 0 ? (byte)keySettings : (byte)((byte)keySettings | 0xE0), 
+                        (byte)_keyNumberTarget, 
+                        1,
+                        (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTarget))))
+                    {
+                        return ERROR.NoError;
+                    }
+                    else
+                    {
+                        return ERROR.AuthenticationError;
+                    }
+                }
+            }
+            return ERROR.NotReadyError;
         }
-        public override ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID)
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_applicationMasterKey"></param>
+        /// <param name="_keyTypePiccMasterKey"></param>
+        /// <param name="_appID"></param>
+        /// <returns></returns>
+        public override ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyTypePiccMasterKey, int _appID)
         {
-            throw new NotImplementedException();
+            if (readerDevice.DesfireSelectApplication((uint)_appID))
+            {
+                if (readerDevice.DesfireAuthenticate(_applicationMasterKey, 0x00, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypePiccMasterKey)), 1))
+                {
+                    if (readerDevice.DesfireDeleteApplication((uint)_appID))
+                    {
+                        return ERROR.NoError;
+                    }
+                    else
+                    {
+                        return ERROR.AuthenticationError;
+                    }
+                }
+                else
+                {
+                    if (readerDevice.DesfireDeleteApplication((uint)_appID))
+                    {
+                        return ERROR.NoError;
+                    }
+                    else
+                    {
+                        return ERROR.AuthenticationError;
+                    }
+                }
+            }
+            return ERROR.IOError;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_applicationMasterKey"></param>
+        /// <param name="_keyType"></param>
+        /// <param name="_appID"></param>
+        /// <param name="_fileID"></param>
+        /// <returns></returns>
         public override ERROR DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID, int _fileID)
         {
-            throw new NotImplementedException();
+            if (readerDevice.DesfireSelectApplication((uint)_appID))
+            {
+                if (readerDevice.DesfireAuthenticate(_applicationMasterKey, 0x00, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)), 1))
+                {
+                    if (readerDevice.DesfireDeleteFile((byte)_fileID))
+                    {
+                        return ERROR.NoError;
+                    }
+                    else
+                    {
+                        return ERROR.AuthenticationError;
+                    }
+                }
+            }
+            return ERROR.NotReadyError;
         }
-        public override ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0)
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_applicationMasterKey"></param>
+        /// <param name="_keyType"></param>
+        /// <param name="_appID"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public override ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType)
         {
-            throw new NotImplementedException();
+            if (readerDevice.DesfireSelectApplication(0))
+            {
+                if (readerDevice.DesfireAuthenticate(_applicationMasterKey, 0x00, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)), 1))
+                {
+                    if (readerDevice.DesfireFormatTag())
+                    {
+                        return ERROR.NoError;
+                    }
+                    else
+                    {
+                        return ERROR.AuthenticationError;
+                    }
+                }
+            }
+            return ERROR.NotReadyError;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_applicationMasterKey"></param>
+        /// <param name="_keyType"></param>
+        /// <param name="_keyNumberCurrent"></param>
+        /// <param name="_appID"></param>
+        /// <returns></returns>
         public override ERROR GetMifareDesfireFileList(string _applicationMasterKey, RFiDGear.DataAccessLayer.DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
         {
             if (readerDevice.DesfireSelectApplication((uint)_appID))
@@ -400,6 +549,16 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             return ERROR.NotReadyError;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_applicationMasterKey"></param>
+        /// <param name="_keyType"></param>
+        /// <param name="_keyNumberCurrent"></param>
+        /// <param name="_appID"></param>
+        /// <param name="_fileNo"></param>
+        /// <returns></returns>
         public override ERROR GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID, int _fileNo)
         {
             if (readerDevice.DesfireSelectApplication((uint)_appID))
@@ -435,6 +594,131 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             return ERROR.AuthenticationError;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_appMasterKey"></param>
+        /// <param name="_keyTypeAppMasterKey"></param>
+        /// <param name="_fileType"></param>
+        /// <param name="_accessRights"></param>
+        /// <param name="_encMode"></param>
+        /// <param name="_appID"></param>
+        /// <param name="_fileNo"></param>
+        /// <param name="_fileSize"></param>
+        /// <param name="_minValue"></param>
+        /// <param name="_maxValue"></param>
+        /// <param name="_initValue"></param>
+        /// <param name="_isValueLimited"></param>
+        /// <param name="_maxNbOfRecords"></param>
+        /// <returns></returns>
+        public override ERROR CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
+                                     int _appID, int _fileNo, int _fileSize,
+                                     int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
+                                     int _maxNbOfRecords = 100)
+        {
+            try
+            {
+                if (readerDevice.DesfireSelectApplication((uint)_appID))
+                {
+                    if (readerDevice.DesfireAuthenticate(_appMasterKey, (byte)0x00, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeAppMasterKey)), 1))
+                    {
+                        UInt16 accessRights = 0x0000;
+                        accessRights |= (byte)((((byte)_accessRights.readAccess) & 0xF0) >> 4);
+                        accessRights |= (byte)((((byte)_accessRights.writeAccess) & 0x0F));
+                        accessRights |= (byte)((((byte)_accessRights.readAndWriteAccess) & 0xF0) >> 4); //lsb, upper nibble
+                        accessRights |= (byte)((((byte)_accessRights.changeAccess) & 0x0F)); //lsb , lower nibble
+
+                        if (readerDevice.DesfireCreateFile((byte)_fileNo, (byte)_fileType, (byte)_encMode, accessRights, (UInt32)_fileSize))
+                        {
+                            return ERROR.NoError;
+                        }
+                        else
+                        {
+                            return ERROR.AuthenticationError;
+                        }
+                    }
+                    else
+                    {
+                        return ERROR.AuthenticationError;
+                    }
+                }
+
+                return ERROR.AuthenticationError;
+
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(e, FacilityName);
+                return ERROR.IOError;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_appMasterKey"></param>
+        /// <param name="_keyTypeAppMasterKey"></param>
+        /// <param name="_appReadKey"></param>
+        /// <param name="_keyTypeAppReadKey"></param>
+        /// <param name="_readKeyNo"></param>
+        /// <param name="_appWriteKey"></param>
+        /// <param name="_keyTypeAppWriteKey"></param>
+        /// <param name="_writeKeyNo"></param>
+        /// <param name="_encMode"></param>
+        /// <param name="_fileNo"></param>
+        /// <param name="_appID"></param>
+        /// <param name="_fileSize"></param>
+        /// <returns></returns>
+        public override ERROR ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
+                                       string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
+                                       string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
+                                       EncryptionMode _encMode,
+                                       int _fileNo, int _appID, int _fileSize)
+        {
+            try
+            {
+                if (readerDevice.DesfireSelectApplication((uint)_appID))
+                {
+                    if (readerDevice.DesfireAuthenticate(_appReadKey, (byte)_readKeyNo, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeAppReadKey)), 1))
+                    {
+                        MifareDESFireData = readerDevice.DesfireReadData((byte)_fileNo, _fileSize, (byte)_encMode);
+
+                        if (MifareDESFireData != null)
+                        {
+                            return ERROR.NoError;
+                        }
+                        else
+                        {
+                            return ERROR.AuthenticationError;
+                        }
+                    }
+                    else
+                    {
+                        return ERROR.AuthenticationError;
+                    }
+                }
+
+                return ERROR.AuthenticationError;
+
+            }
+            catch (Exception e)
+            {
+                LogWriter.CreateLogEntry(e, FacilityName);
+                return ERROR.IOError;
+            }
+        }
+
+        public override ERROR WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
+                                        string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
+                                        string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
+                                        string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
+                                        EncryptionMode _encMode,
+                                        int _fileNo, int _appID, byte[] _data)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         protected override void Dispose(bool disposing)

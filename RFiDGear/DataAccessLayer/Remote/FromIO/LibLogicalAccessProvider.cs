@@ -2056,7 +2056,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             }
         }
 
-        public override ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType, int _appID)
+        public override ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType)
         {
             try
             {
@@ -2064,7 +2064,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 IDESFireLocation location = new DESFireLocation
                 {
                     // The Application ID to use
-                    aid = _appID,
+                    aid = 0,
                     // File communication requires encryption
                     SecurityLevel = (LibLogicalAccess.EncryptionMode)EncryptionMode.CM_ENCRYPT
                 };

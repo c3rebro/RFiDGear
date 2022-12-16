@@ -44,8 +44,7 @@
                 Grid.Column="2"
                 Margin="8,8,8,8"
                 VerticalAlignment="Stretch"
-                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireAppSettingsTarget'}"
-                IsEnabled="{Binding IsDesfireAppAuthoringTabEnabled}">
+                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireAppSettingsTarget'}">
                 <Grid>
                     <Button
                         Grid.Row="5"

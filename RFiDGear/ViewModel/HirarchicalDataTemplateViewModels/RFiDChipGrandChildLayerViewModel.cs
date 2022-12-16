@@ -155,7 +155,7 @@ namespace RFiDGear.ViewModel
         public RFiDChipGrandChildLayerViewModel(string _displayItem)
         {
             children = new ObservableCollection<RFiDChipGrandGrandChildLayerViewModel>();
-            grandChildNodeHeader = _displayItem;
+            GrandChildNodeHeader = _displayItem;
             isVisible = false;
         }
 
@@ -169,7 +169,7 @@ namespace RFiDGear.ViewModel
         #endregion SelectedItem
 
         #region Parent
-
+        [XmlIgnore]
         public RFiDChipChildLayerViewModel Parent => parent; private readonly RFiDChipChildLayerViewModel parent;
 
         #endregion Parent
@@ -333,7 +333,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// DependencyProperty
         /// </summary>
-
         public string DataAsHexString
         {
             get
@@ -394,7 +393,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        [XmlIgnore]
         public bool? IsValidDataContent
         {
             get => isValidDataBlockContent;
@@ -451,7 +449,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        [XmlIgnore]
         public string GrandChildNodeHeader
         {
             get
@@ -471,13 +468,16 @@ namespace RFiDGear.ViewModel
 
                 return grandChildNodeHeader;
             }
+            set
+            {
+                grandChildNodeHeader = value;
+            }
         }
         private string grandChildNodeHeader;
 
         /// <summary>
         ///
         /// </summary>
-        [XmlIgnore]
         public int SelectedDataLength
         {
             get => selectedDataLength;
@@ -504,7 +504,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        [XmlIgnore]
         public int SelectedDataIndexStart
         {
             get => selectedDataIndexStart;
@@ -530,7 +529,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        [XmlIgnore]
         public int SelectedDataLengthInBytes
         {
             get => selectedDataLengthInBytes;
@@ -615,6 +613,7 @@ namespace RFiDGear.ViewModel
         }
         private bool isSelected;
 
+        [XmlIgnore]
         public bool? IsValidSelectedDataIndexAndLength
         {
             get => isValidSelectedDataIndexAndLength;
@@ -641,6 +640,7 @@ namespace RFiDGear.ViewModel
         }
         private bool isFocused;
 
+        [XmlIgnore]
         public bool? IsAuthenticated
         {
             get => isAuth;
@@ -652,6 +652,7 @@ namespace RFiDGear.ViewModel
         }
         private bool? isAuth;
 
+        [XmlIgnore]
         public bool? IsTask
         {
             get => isTask;

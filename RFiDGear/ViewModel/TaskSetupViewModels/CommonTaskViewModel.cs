@@ -129,8 +129,6 @@ namespace RFiDGear.ViewModel
                             reader.ReportTemplatePath = reportTemplatePath;
 
                             TemplateFields = new ObservableCollection<string>(reader.GetReportFields().OrderBy(x => x));
-
-                            OnPropertyChanged(nameof(SelectedTemplateField));
                         }
                     }
                 }
@@ -522,7 +520,6 @@ namespace RFiDGear.ViewModel
                 if (selectedCheckpoint != null)
                 {
                     Content = selectedCheckpoint.Content;
-                    selectedTemplateField = selectedCheckpoint.TemplateField;
                 }
 
                 OnPropertyChanged(nameof(SelectedCheckpoint));
@@ -749,21 +746,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public string SelectedTemplateField
-        {
-            get => selectedTemplateField;
-
-            set
-            {
-                selectedTemplateField = value;
-                OnPropertyChanged(nameof(SelectedTemplateField));
-            }
-        }
-        private string selectedTemplateField;
-
-        /// <summary>
-        /// 
-        /// </summary>
         public string Content
         {
             get => content;
@@ -924,6 +906,20 @@ namespace RFiDGear.ViewModel
                                 {
                                     temporaryContent = temporaryContent.Replace("%CHIPTYPE", ResourceLoader.GetResource(
                                     string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.CardType))) ?? "");
+                                    hasVariable = true;
+                                }
+
+                                if (temporaryContent.Contains("%CHIPTYPEOFSLAVE"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%CHIPTYPEOFSLAVE", ResourceLoader.GetResource(
+                                    string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.Slave?.CardType))) ?? "");
+                                    hasVariable = true;
+                                }
+
+                                if (temporaryContent.Contains("%UIDOFSLAVE"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%UIDOFSLAVE", ResourceLoader.GetResource(
+                                    string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.Slave?.UID))) ?? "");
                                     hasVariable = true;
                                 }
 
@@ -1644,7 +1640,6 @@ namespace RFiDGear.ViewModel
                 {
                     checkpoint.TaskIndex = "";
                     checkpoint.ErrorLevel = ERROR.Empty;
-                    checkpoint.TemplateField = SelectedTemplateField;
                     checkpoint.Content = Content;
 
                     Checkpoints.Add(checkpoint);

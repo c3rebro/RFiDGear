@@ -462,9 +462,9 @@ namespace RFiDGear.ViewModel
                         IsDataExplorerEditTabEnabled = false;
                         IsDesfirePICCAuthoringTabEnabled = false;
                         IsDesfireAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
-                        IsDesfireAppCreationTabEnabled = false;
+                        IsDesfireAppAuthenticationTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
+                        IsDesfireAppCreationTabEnabled = true;
                         break;
 
                     case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
@@ -490,7 +490,7 @@ namespace RFiDGear.ViewModel
                     case TaskType_MifareDesfireTask.CreateApplication:
                         IsDesfireFileAuthoringTabEnabled = false;
                         IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
+                        IsDesfirePICCAuthoringTabEnabled = true;
                         IsDesfireAuthenticationTabEnabled = true;
                         IsDesfireAppAuthenticationTabEnabled = false;
                         IsDesfireAppAuthoringTabEnabled = false;
@@ -501,9 +501,9 @@ namespace RFiDGear.ViewModel
                         IsDesfireFileAuthoringTabEnabled = false;
                         IsDataExplorerEditTabEnabled = false;
                         IsDesfirePICCAuthoringTabEnabled = false;
-                        IsDesfireAuthenticationTabEnabled = false;
+                        IsDesfireAuthenticationTabEnabled = true;
                         IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
                         IsDesfireAppCreationTabEnabled = false;
                         break;
 
@@ -513,14 +513,14 @@ namespace RFiDGear.ViewModel
                         IsDesfirePICCAuthoringTabEnabled = false;
                         IsDesfireAuthenticationTabEnabled = false;
                         IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
                         IsDesfireAppCreationTabEnabled = false;
                         break;
 
                     case TaskType_MifareDesfireTask.DeleteApplication:
                         IsDesfireFileAuthoringTabEnabled = false;
                         IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
+                        IsDesfirePICCAuthoringTabEnabled = true;
                         IsDesfireAuthenticationTabEnabled = true;
                         IsDesfireAppAuthenticationTabEnabled = false;
                         IsDesfireAppAuthoringTabEnabled = false;
@@ -533,14 +533,14 @@ namespace RFiDGear.ViewModel
                         IsDesfirePICCAuthoringTabEnabled = false;
                         IsDesfireAuthenticationTabEnabled = false;
                         IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
                         IsDesfireAppCreationTabEnabled = false;
                         break;
 
                     case TaskType_MifareDesfireTask.FormatDesfireCard:
                         IsDesfireFileAuthoringTabEnabled = false;
                         IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
+                        IsDesfirePICCAuthoringTabEnabled = true;
                         IsDesfireAuthenticationTabEnabled = true;
                         IsDesfireAppAuthenticationTabEnabled = false;
                         IsDesfireAppAuthoringTabEnabled = false;
@@ -563,7 +563,7 @@ namespace RFiDGear.ViewModel
                         IsDesfirePICCAuthoringTabEnabled = false;
                         IsDesfireAuthenticationTabEnabled = false;
                         IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
                         IsDesfireAppCreationTabEnabled = false;
                         break;
 
@@ -573,7 +573,7 @@ namespace RFiDGear.ViewModel
                         IsDesfirePICCAuthoringTabEnabled = false;
                         IsDesfireAuthenticationTabEnabled = false;
                         IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
                         IsDesfireAppCreationTabEnabled = false;
                         break;
                 }
@@ -2326,7 +2326,7 @@ namespace RFiDGear.ViewModel
                                                     {
                                                         var result = device.AuthToMifareDesfireApplication(
                                                                 DesfireAppKeyCurrent,
-                                                                SelectedDesfireMasterKeyEncryptionTypeCurrent,
+                                                                SelectedDesfireAppKeyEncryptionTypeCurrent,
                                                                 selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt);
 
                                                         if (IsValidAppNumberCurrent != false && result == ERROR.NoError)

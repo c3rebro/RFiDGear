@@ -43,6 +43,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Remoting.Messaging;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -418,11 +419,6 @@ namespace RFiDGear.ViewModel
         public ICommand NewAboutDialogCommand => new RelayCommand(OnNewNewAboutDialogCommand);
         private void OnNewNewAboutDialogCommand()
         {
-            if (updateIsAvailable)
-            {
-                AskForUpdateNow();
-            }
-
             Dialogs.Add(new AboutViewModel()
             {
                 Caption = ResourceLoader.GetResource("windowCaptionAboutRFiDGear"),
@@ -472,7 +468,9 @@ namespace RFiDGear.ViewModel
                                     sender.Settings.SaveSettings();
                                 }
 
-                                if (sender.SelectedTaskType == TaskType_GenericChipTask.ChipIsOfType)
+                                if (sender.SelectedTaskType == TaskType_GenericChipTask.ChipIsOfType ||
+                                sender.SelectedTaskType == TaskType_GenericChipTask.CheckUID ||
+                                sender.SelectedTaskType == TaskType_GenericChipTask.ChipIsMultiChip)
                                 {
                                     if ((ChipTasks.TaskCollection.OfType<GenericChipTaskViewModel>().Where(x => x.SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
                                     {
@@ -1426,6 +1424,40 @@ namespace RFiDGear.ViewModel
                                             }
                                             break;
 
+                                        case TaskType_GenericChipTask.ChipIsMultiChip:
+                                            taskTimeout.Start();
+                                            switch ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
+                                            {
+                                                case ERROR.Empty:
+                                                    (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).IsFocused = true;
+
+                                                    if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                    {
+                                                        (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).CheckChipIsMultiTecChip.Execute(null);
+                                                    }
+                                                    else
+                                                    {
+                                                        // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
+                                                        if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                                        {
+                                                            if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                                            {
+                                                                (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).CheckChipIsMultiTecChip.Execute(null);
+                                                            }
+                                                            else
+                                                            {
+                                                                currentTaskIndex++;
+                                                            }
+                                                        }
+                                                    }
+                                                    break;
+
+                                                default:
+                                                    (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).IsFocused = false;
+                                                    currentTaskIndex++;
+                                                    break;
+                                            }
+                                            break;
                                         default:
                                             break;
                                     }
@@ -1607,6 +1639,9 @@ namespace RFiDGear.ViewModel
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         private void OnNewLanguageChangedDialog()
         {
             Dialogs.Add(new CustomDialogViewModel()
@@ -1859,6 +1894,19 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
+        public ICommand CheckUpdateCommand => new RelayCommand(OnNewCheckUpdateCommand);
+        private void OnNewCheckUpdateCommand()
+        {
+            if (updateIsAvailable)
+            {
+                AskForUpdateNow();
+            }
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
         public ICommand CloseApplication => new RelayCommand(OnCloseRequest);
         private void OnCloseRequest()
         {
@@ -2078,7 +2126,6 @@ namespace RFiDGear.ViewModel
         #endregion Dependency Properties
 
         #region Extensions
-
         private void EnableUpdate(object sender, EventArgs e)
         {
             userIsNotifiedForAvailableUpdate = true;

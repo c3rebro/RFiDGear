@@ -48,8 +48,11 @@ namespace RFiDGear.Model
             CardType = genericChip.CardType;
             RATS = genericChip.RATS;
             SAK = genericChip.SAK;
+            L4Version = genericChip.VersionL4;
+            Slave = genericChip.Slave;
         }
 
+        public string L4Version { get; set; }
         public uint FreeMemory { get; set; }
     }
 }

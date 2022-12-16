@@ -72,6 +72,7 @@ namespace RFiDGear.DataAccessLayer
     {
         None,
         ChipIsOfType,
+        ChipIsMultiChip,
         CheckUID,
         ChangeDefault
     }

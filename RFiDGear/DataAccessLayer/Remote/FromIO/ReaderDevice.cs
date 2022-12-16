@@ -148,7 +148,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         DESFireKeySettings keySettings, int keyVersion);
         public abstract ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0);
         public abstract ERROR DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0);
-        public abstract ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0);
+        public abstract ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType);
         public abstract ERROR GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0);
         public abstract ERROR GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0);
 

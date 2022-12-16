@@ -316,6 +316,9 @@ namespace RFiDGear.ViewModel
 
         #region Commands
 
+        /// <summary>
+        /// 
+        /// </summary>
         public ICommand CheckChipType => new RelayCommand(OnNewCheckChipTypeCommand);
         private void OnNewCheckChipTypeCommand()
         {
@@ -425,6 +428,72 @@ namespace RFiDGear.ViewModel
             return;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand CheckChipIsMultiTecChip => new RelayCommand(OnNewCheckChipIsMultiTecChipCommand);
+        private void OnNewCheckChipIsMultiTecChipCommand()
+        {
+            CurrentTaskErrorLevel = ERROR.Empty;
+
+            var genericChipTask =
+                new Task(() =>
+                {
+                    using (var device = ReaderDevice.Instance)
+                    {
+                        if (device != null)
+                        {
+                            var result = device.ReadChipPublic();
+
+                            if (result == ERROR.NoError)
+                            {
+
+                                if (device.GenericChip.Slave != null)
+                                {
+                                    result = ERROR.NoError;
+                                }
+                                else
+                                {
+                                    result = ERROR.IsNotTrue;
+                                }
+
+                                CurrentTaskErrorLevel = result;
+                                return;
+
+                            }
+                        }
+                        else
+                        {
+                            CurrentTaskErrorLevel = ERROR.NotReadyError;
+                            return;
+                        }
+                    }
+                });
+
+            if (CurrentTaskErrorLevel == ERROR.Empty)
+            {
+                CurrentTaskErrorLevel = ERROR.NotReadyError;
+
+                genericChipTask.ContinueWith((x) =>
+                {
+                    if (CurrentTaskErrorLevel == ERROR.NoError)
+                    {
+                        IsTaskCompletedSuccessfully = true;
+                    }
+                    else
+                    {
+                        IsTaskCompletedSuccessfully = false;
+                    }
+                });
+                genericChipTask.RunSynchronously();
+            }
+
+            return;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public ICommand CheckChipUID => new RelayCommand(OnNewCheckChipUIDCommand);
         private void OnNewCheckChipUIDCommand()
         {
