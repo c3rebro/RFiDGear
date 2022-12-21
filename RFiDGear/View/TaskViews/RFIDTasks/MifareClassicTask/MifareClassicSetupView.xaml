@@ -146,6 +146,7 @@
                         Grid.ColumnSpan="3"
                         Margin="8,7,8,3"
                         VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
                         TabIndex="3"
                         Text="{Binding SelectedTaskDescription}" Cursor="IBeam" />
                     <Label
@@ -159,6 +160,7 @@
                         Grid.Column="3"
                         Margin="8,7,8,3"
                         VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
                         TabIndex="2"
                         Text="{Binding CurrentTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
                         <TextBox.Resources>
@@ -199,6 +201,7 @@
                                 Grid.Column="3"
                                 Margin="8,7,8,3"
                                 VerticalAlignment="Stretch"
+                                VerticalContentAlignment="Center"
                                 TabIndex="2"
                                 Text="{Binding SelectedExecuteConditionTaskIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Cursor="IBeam">
                                 <TextBox.Resources>
