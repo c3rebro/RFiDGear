@@ -86,15 +86,15 @@ namespace RFiDGear.ViewModel
 
                 if (_selectedSetupViewModel is MifareUltralightSetupViewModel)
                 {
-                    PropertyInfo[] properties = typeof(MifareUltralightSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                    var properties = typeof(MifareUltralightSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-                    foreach (PropertyInfo p in properties)
+                    foreach (var p in properties)
                     {
                         // If not writable then cannot null it; if not readable then cannot check it's value
                         if (!p.CanWrite || !p.CanRead) { continue; }
 
-                        MethodInfo mget = p.GetGetMethod(false);
-                        MethodInfo mset = p.GetSetMethod(false);
+                        var mget = p.GetGetMethod(false);
+                        var mset = p.GetSetMethod(false);
 
                         // Get and set methods have to be public
                         if (mget == null) { continue; }
@@ -420,10 +420,10 @@ namespace RFiDGear.ViewModel
             //Mouse.OverrideCursor = Cursors.Wait;
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task classicTask =
+            var classicTask =
                 new Task(() =>
                         {
-                            using (ReaderDevice device = ReaderDevice.Instance)
+                            using (var device = ReaderDevice.Instance)
                             {
                                 if (device != null && device.ReadChipPublic() == ERROR.NoError)
                                 {
@@ -468,10 +468,10 @@ namespace RFiDGear.ViewModel
 
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task classicTask =
+            var classicTask =
                 new Task(() =>
                          {
-                             using (ReaderDevice device = ReaderDevice.Instance)
+                             using (var device = ReaderDevice.Instance)
                              {
                                  StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 

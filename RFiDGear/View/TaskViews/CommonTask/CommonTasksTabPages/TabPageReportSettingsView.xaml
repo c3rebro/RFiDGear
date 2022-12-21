@@ -39,7 +39,7 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="120" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <GroupBox
@@ -53,50 +53,54 @@
                             Grid.Row="0"
                             Grid.Column="0"
                             Margin="8,8,8,8"
+                            Height="auto"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="165" />
-                                <ColumnDefinition />
+                                <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="42" />
-                                <RowDefinition Height="36" />
+                                <RowDefinition Height="auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Label
                                 Grid.Row="0"
                                 Grid.Column="0"
-                                Height="26"
-                                Margin="8,6,10,0"
-                                VerticalAlignment="Top"
-                                HorizontalContentAlignment="Stretch"
+                                Margin="8,0,10,8"
+                                VerticalAlignment="Stretch"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                VerticalContentAlignment="Center"
                                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelSelectReportTemplate, Converter={StaticResource Localization}}"
                                 DataContext="{Binding}"
                                 Foreground="Black" />
                             <Label
                                 Grid.Row="1"
                                 Grid.Column="0"
-                                Height="26"
-                                Margin="8,3,10,0"
-                                VerticalAlignment="Top"
-                                HorizontalContentAlignment="Stretch"
+                                Margin="8,0,10,8"
+                                VerticalAlignment="Stretch"
+                                HorizontalAlignment="Stretch"
+                                VerticalContentAlignment="Center"
+                                HorizontalContentAlignment="Left"
                                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelSelectedReportTemplate, Converter={StaticResource Localization}}"
                                 DataContext="{Binding}"
                                 Foreground="Black" />
                             <Button
                                 Grid.Column="1"
-                                Height="26"
-                                Margin="10,6,10,0"
-                                VerticalAlignment="Top"
+                                Margin="10,0,10,8"
+                                VerticalAlignment="Stretch"
+                                HorizontalAlignment="Stretch"
+                                VerticalContentAlignment="Center"
+                                HorizontalContentAlignment="Center"
                                 Command="{Binding OpenReportTemplateCommand}"
                                 Content="{Binding LocalizationResourceSet, ConverterParameter=buttonContentOpenReportTemplateFile, Converter={StaticResource Localization}}" />
                             <TextBlock
                                 Grid.Row="1"
                                 Grid.Column="1"
-                                Height="26"
-                                Margin="10,3,10,0"
+                                Margin="10,0,10,8"
                                 HorizontalAlignment="Stretch"
-                                VerticalAlignment="Top"
+                                VerticalAlignment="Stretch"
                                 DataContext="{Binding}"
                                 Foreground="Black"
                                 Text="{Binding ReportTemplatePath}"
@@ -104,119 +108,38 @@
                         </Grid>
                     </GroupBox>
 
-                    <GroupBox
-                        Grid.Row="1"
-                        Grid.Column="0"
-                        Margin="0,0,0,0"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        Header="{Binding LocalizationResourceSet, ConverterParameter=groupBoxHeaderCommonTaskCheckpointSetup, Converter={StaticResource Localization}}">
-                        <Grid
-                            Grid.Row="0"
+                    <Grid
+                            Grid.Row="1"
                             Grid.Column="0"
                             Margin="8,8,8,0"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="165" />
-                                <ColumnDefinition />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="42" />
-                                <RowDefinition Height="36" />
-                                <RowDefinition Height="36" />
-                                <RowDefinition Height="36" />
-                                <RowDefinition Height="*" />
-                                <RowDefinition Height="36" />
-                            </Grid.RowDefinitions>
-                            <TextBox
-                                Grid.Row="3"
-                                Grid.RowSpan="2"
-                                Grid.Column="1"
-                                Height="23"
-                                Margin="9,6,7,0"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Top"
-                                Text="{Binding Content, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                            <Label
-                                Grid.Row="3"
-                                Grid.Column="0"
-                                Height="26"
-                                Margin="8,0,8,8"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Bottom"
-                                Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentCommonTaskCheckpointContent, Converter={StaticResource Localization}}" />
-                            <ComboBox
-                                Grid.Row="0"
-                                Grid.Column="1"
-                                Height="26"
-                                Margin="8,0,8,8"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Bottom"
-                                ItemsSource="{Binding AvailableTaskIndices, UpdateSourceTrigger=PropertyChanged}"
-                                SelectedItem="{Binding SelectedTaskIndexFromAvailableTasks, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                            <Label
-                                Grid.Row="1"
-                                Grid.Column="0"
-                                Height="26"
-                                Margin="8,3,8,0"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Top"
-                                Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentCommonTaskCheckpointErrorLevel, Converter={StaticResource Localization}}" />
-                            <ComboBox
-                                Grid.Row="1"
-                                Grid.Column="1"
-                                Height="26"
-                                Margin="8,0,8,8"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Bottom"
-                                ItemsSource="{dal:Enumerate {x:Type dal:ERROR}}"
-                                SelectedItem="{Binding SelectedErrorLevel, ConverterParameter={x:Type dal:ERROR}, Converter={StaticResource Localization}, Mode=TwoWay}" />
-                            <Label
-                                Grid.Row="2"
-                                Grid.Column="0"
-                                Height="26"
-                                Margin="8,3,8,0"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Top"
-                                Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentCommonTaskCheckpointTemplateField, Converter={StaticResource Localization}}" />
-                            <ComboBox
-                                Grid.Row="2"
-                                Grid.Column="1"
-                                Height="26"
-                                Margin="8,0,8,8"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Bottom"
-                                ItemsSource="{Binding TemplateFields, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                SelectedValue="{Binding SelectedTemplateField, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                            <Label
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                Height="26"
-                                Margin="8,9,8,0"
-                                VerticalAlignment="Top"
-                                HorizontalContentAlignment="Stretch"
-                                Content="{Binding LocalizationResourceSet, ConverterParameter=labelSelectReportTemplate, Converter={StaticResource Localization}}"
-                                DataContext="{Binding}"
-                                Foreground="Black" />
-                            <Button
-                                Grid.Row="5"
-                                Grid.Column="1"
-                                Height="26"
-                                Margin="10,0,8,10"
-                                VerticalAlignment="Bottom"
-                                Command="{Binding RemoveCheckpointCommand}"
-                                Content="{Binding LocalizationResourceSet, ConverterParameter=buttonContentCommonTaskRemoveCheckpoint, Converter={StaticResource Localization}}" />
-                            <Button
-                                Grid.Row="5"
-                                Grid.Column="0"
-                                Height="26"
-                                Margin="10,0,10,10"
-                                VerticalAlignment="Bottom"
-                                Command="{Binding AddEditCheckpointCommand}"
-                                Content="{Binding LocalizationResourceSet, ConverterParameter=buttonContentCommonTaskAddCheckpoint, Converter={StaticResource Localization}}" />
-                        </Grid>
-                    </GroupBox>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="165" />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="auto" />
+                        </Grid.RowDefinitions>
+                        <Button
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Height="auto"
+                            Margin="10,0,8,10"
+                            VerticalAlignment="Bottom"
+                            HorizontalAlignment="Center"
+                            Command="{Binding RemoveCheckpointCommand}"
+                            Content="{Binding LocalizationResourceSet, ConverterParameter=buttonContentCommonTaskRemoveCheckpoint, Converter={StaticResource Localization}}" />
+                        <Button
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="10,0,10,10"
+                            VerticalAlignment="Bottom"
+                            HorizontalAlignment="Center"
+                            Command="{Binding AddEditCheckpointCommand}"
+                            Content="{Binding LocalizationResourceSet, ConverterParameter=buttonContentCommonTaskAddCheckpoint, Converter={StaticResource Localization}}" />
+                    </Grid>
                 </Grid>
             </GroupBox>
             <GridSplitter
@@ -272,51 +195,58 @@
                             <DataGridTemplateColumn Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridColumnHeaderCommonTaskTargetIndex', Source={StaticResource proxy}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock
-                                            Width="auto"
-                                            FontFamily="Lucida Console"
-                                            Text="{Binding TaskIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                            <TextBlock.Style>
-                                                <Style TargetType="{x:Type TextBlock}">
-                                                    <Setter Property="HorizontalAlignment" Value="Center" />
-                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                        <ComboBox
+                                            ItemsSource="{Binding DataContext.AvailableTaskIndices, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, UpdateSourceTrigger=PropertyChanged}"
+                                            SelectedItem="{Binding TaskIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            FontFamily="Lucida Console">
+                                            <ComboBox.Style>
+                                                <Style TargetType="{x:Type ComboBox}">
+                                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                                    <Setter Property="VerticalAlignment" Value="Stretch" />
+                                                    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
                                                 </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
+                                            </ComboBox.Style>
+                                        </ComboBox>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                             <DataGridTemplateColumn Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridColumnHeaderCommonTaskTargetResult', Source={StaticResource proxy}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock
-                                            Width="auto"
-                                            FontFamily="Lucida Console"
-                                            Text="{Binding ErrorLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                            <TextBlock.Style>
-                                                <Style TargetType="{x:Type TextBlock}">
-                                                    <Setter Property="HorizontalAlignment" Value="Center" />
-                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                        <ComboBox
+                                            ItemsSource="{dal:Enumerate {x:Type dal:ERROR}}"
+                                            
+                                            SelectedItem="{Binding ErrorLevel, ConverterParameter={x:Type dal:ERROR}, Converter={StaticResource Localization}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            
+                                            FontFamily="Lucida Console">
+                                            <ComboBox.Style>
+                                                <Style TargetType="{x:Type ComboBox}">
+                                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                                    <Setter Property="VerticalAlignment" Value="Stretch" />
+                                                    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
                                                 </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
+                                            </ComboBox.Style>
+                                        </ComboBox>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                             <DataGridTemplateColumn Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridColumnHeaderCommonTaskTemplateField', Source={StaticResource proxy}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock
-                                            Width="auto"
-                                            FontFamily="Lucida Console"
-                                            Text="{Binding TemplateField, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                            <TextBlock.Style>
-                                                <Style TargetType="{x:Type TextBlock}">
-                                                    <Setter Property="HorizontalAlignment" Value="Left" />
-                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                        <ComboBox
+                                            ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.TemplateFields, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            
+                                            SelectedItem="{Binding TemplateField, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            
+                                            FontFamily="Lucida Console">
+                                            <ComboBox.Style>
+                                                <Style TargetType="{x:Type ComboBox}">
+                                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                                    <Setter Property="VerticalAlignment" Value="Stretch" />
+                                                    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
                                                 </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
+                                            </ComboBox.Style>
+                                        </ComboBox>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>

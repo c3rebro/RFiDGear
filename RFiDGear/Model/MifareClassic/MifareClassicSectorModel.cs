@@ -426,7 +426,7 @@ namespace RFiDGear.Model
         {
             _ = new byte[255];
 
-            string[] sectorTrailer = st.Split(new[] { ',', ';' });
+            var sectorTrailer = st.Split(new[] { ',', ';' });
             if (sectorTrailer.Count() != 3 ||
                 !(CustomConverter.IsInHexFormat(sectorTrailer[1]) && sectorTrailer[1].Length == 8) ||
                 !(CustomConverter.IsInHexFormat(sectorTrailer[0]) && sectorTrailer[0].Length == 12) ||
@@ -435,7 +435,7 @@ namespace RFiDGear.Model
                 return true;
             }
 
-            byte[] _bytes = CustomConverter.GetBytes(sectorTrailer[1], out int _);
+            var _bytes = CustomConverter.GetBytes(sectorTrailer[1], out var _);
 
             if (!decodeSectorTrailer(_bytes, ref _sector))
             {
@@ -455,12 +455,12 @@ namespace RFiDGear.Model
         /// <returns></returns>
         private string encodeSectorTrailer(MifareClassicSectorModel _sector)
         {
-            byte[] st = new byte[4] { 0x00, 0x00, 0x00, 0xC3 };
+            var st = new byte[4] { 0x00, 0x00, 0x00, 0xC3 };
 
-            uint sectorAccessBitsIndex = (uint)_sector.Cx;
-            uint dataBlock0AccessBitsIndex = (uint)_sector.DataBlock0.Cx;
-            uint dataBlock1AccessBitsIndex = (uint)_sector.DataBlock1.Cx; 
-            uint dataBlock2AccessBitsIndex = (uint)_sector.DataBlock2.Cx; 
+            var sectorAccessBitsIndex = (uint)_sector.Cx;
+            var dataBlock0AccessBitsIndex = (uint)_sector.DataBlock0.Cx;
+            var dataBlock1AccessBitsIndex = (uint)_sector.DataBlock1.Cx; 
+            var dataBlock2AccessBitsIndex = (uint)_sector.DataBlock2.Cx; 
 
             // DataBlock 0 = C1/0; C2/0; C3/0
 

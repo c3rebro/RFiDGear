@@ -5,10 +5,12 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+    
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Stretch"
     VerticalAlignment="Stretch"
+    MinWidth="800"
     mc:Ignorable="d">
 
     <UserControl.Resources>
@@ -43,48 +45,49 @@
                 IsEnabled="{Binding IsDesfireFileAuthoringTabEnabled}">
                 <Grid>
                     <Button
-                        Grid.Row="6"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="5"
-                        Height="26"
-                        Margin="8,0,9.6,6.8"
+                        Grid.Row="4"
+                        Grid.Column="5"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Bottom"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
                         Command="{Binding DeleteFileCommand}"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileMasteringDeleteFile'}" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileMasteringDeleteFile'}" Grid.RowSpan="2" />
                     <Button
-                        Grid.Row="5"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="5"
-                        Height="26"
-                        Margin="8,0,9.6,6.8"
+                        Grid.Row="3"
+                        Grid.Column="5"                        
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Bottom"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
                         Command="{Binding CreateFileCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileMasteringCreateFile'}" />
                     <Label
                         Grid.Row="0"
                         Grid.Column="0"
-                        Height="26"
-                        Margin="8,7,10,0"
+                        Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireFileNumber'}" />
                     <Label
                         Grid.Row="0"
                         Grid.Column="2"
-                        Height="26"
-                        Margin="9,7,7,0"
+                        Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireFileSize'}" />
                     <TextBox
                         Grid.Row="0"
                         Grid.Column="3"
-                        Height="26"
-                        Margin="9,7,7,0"
+                        Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
                         Text="{Binding FileSizeCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
@@ -108,10 +111,9 @@
                     <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
-                        Height="26"
-                        Margin="9,7,7,0"
+                        Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
                         Text="{Binding FileNumberCurrent}">
@@ -135,90 +137,91 @@
                     <Label
                         Grid.Row="2"
                         Grid.Column="0"
-                        Height="26"
-                        Margin="8,3,7,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
                     <Label
                         Grid.Row="3"
                         Grid.Column="2"
-                        Height="26"
-                        Margin="8,3,7,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentWrite'}" />
                     <Label
                         Grid.Row="3"
                         Grid.Column="0"
-                        Height="26"
-                        Margin="8,3,7,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentRead'}" />
                     <Label
                         Grid.Row="4"
                         Grid.Column="0"
-                        Height="26"
-                        Margin="8,3,7,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentReadAndWrite'}" />
                     <Label
                         Grid.Row="4"
                         Grid.Column="2"
-                        Height="26"
-                        Margin="9,3,7,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentChange'}" />
                     <ComboBox
                         x:Name="rnwriteCB"
                         Grid.Row="4"
                         Grid.Column="1"
-                        Height="26"
-                        Margin="9,3,7,0"
+                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:TaskAccessRights}}"
                         SelectedItem="{Binding SelectedDesfireFileAccessRightReadWrite, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="0"
                         Grid.Column="4"
-                        Width="64"
-                        Height="26"
-                        Margin="1,7,0,0"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
+                        Margin="8,8,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="Byte(s)" />
                     <ComboBox
                         x:Name="changeCB"
                         Grid.Row="4"
                         Grid.Column="3"
-                        Height="26"
-                        Margin="9,3,7,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:TaskAccessRights}}"
                         SelectedItem="{Binding SelectedDesfireFileAccessRightChange, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="writeCB"
                         Grid.Row="3"
                         Grid.Column="3"
-                        Height="26"
-                        Margin="9,3,7,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:TaskAccessRights}}"
                         SelectedItem="{Binding SelectedDesfireFileAccessRightWrite, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="readCB"
                         Grid.Row="3"
                         Grid.Column="1"
-                        Height="26"
-                        Margin="9,3,7,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:TaskAccessRights}}"
                         SelectedItem="{Binding SelectedDesfireFileAccessRightRead, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
@@ -226,29 +229,28 @@
                         Grid.Row="2"
                         Grid.Column="1"
                         Grid.ColumnSpan="3"
-                        Height="26"
-                        Margin="9,3,7,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:EncryptionMode}}"
                         SelectedItem="{Binding SelectedDesfireFileCryptoMode, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:EncryptionMode}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="1"
                         Grid.Column="0"
-                        Height="26"
-                        Margin="8,3,7,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireFileType'}" />
                     <ComboBox
                         x:Name="encModeCB_Copy"
                         Grid.Row="1"
                         Grid.Column="1"
                         Grid.ColumnSpan="3"
-                        Height="26"
-                        Margin="9,3,7,0"
+                        Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:FileType_MifareDesfireFileType}}"
                         SelectedItem="{Binding SelectedDesfireFileType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:FileType_MifareDesfireFileType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Grid.ColumnDefinitions>
@@ -256,16 +258,18 @@
                         <ColumnDefinition Width="100" />
                         <ColumnDefinition Width="145" />
                         <ColumnDefinition Width="100" />
-                        <ColumnDefinition Width="*" MinWidth="80" />
+                        <ColumnDefinition Width="80"  />
+                        <ColumnDefinition  />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="40" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="0.738003309431881*" />
-                        <RowDefinition Height="36" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="1*" />
                     </Grid.RowDefinitions>
                 </Grid>
             </GroupBox>

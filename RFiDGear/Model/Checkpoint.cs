@@ -21,7 +21,7 @@ namespace RFiDGear.Model
 
         public Checkpoint()
         {
-            Random rnd = new Random();
+            var rnd = new Random();
             UUID = rnd.Next();
             ErrorLevel = ERROR.Empty;
         }

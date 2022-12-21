@@ -6,6 +6,8 @@
  */
 
 using System.Windows;
+using System.Windows.Input;
+using System.Windows;
 
 namespace RFiDGear.View
 {
@@ -17,6 +19,12 @@ namespace RFiDGear.View
         public SetupView()
         {
             InitializeComponent();
+            this.MaxHeight = (uint)SystemParameters.MaximizedPrimaryScreenHeight - 8;
+        }
+
+        private void WindowMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            DragMove();
         }
     }
 }

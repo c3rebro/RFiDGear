@@ -32,7 +32,7 @@ namespace RFiDGear.ViewModel
 
         public SetupViewModel(ReaderDevice _device)
         {
-            using (SettingsReaderWriter settings = new SettingsReaderWriter())
+            using (var settings = new SettingsReaderWriter())
             {
                 device = _device;
 
@@ -62,6 +62,7 @@ namespace RFiDGear.ViewModel
 
             switch (SelectedReader)
             {
+                /*
                 case ReaderTypes.PCSC:
                     if (device != null)
                     {
@@ -78,7 +79,7 @@ namespace RFiDGear.ViewModel
                         device = new LibLogicalAccessProvider(SelectedReader);
                     }
                     break;
-
+                */
                 case ReaderTypes.Elatec:
                     if (device != null)
                     {
@@ -88,7 +89,8 @@ namespace RFiDGear.ViewModel
 
                             device = new ElatecNetProvider();
                         }
-                        
+
+                        device.Connect();
                         device.ReadChipPublic();
                     }
                     else

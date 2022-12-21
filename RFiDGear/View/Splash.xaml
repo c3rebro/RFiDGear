@@ -1,35 +1,31 @@
 ﻿<Window
     x:Class="RFiDGear.View.Splash"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:gif="http://wpfanimatedgif.codeplex.com"
-    xmlns:local="clr-namespace:RFiDGear.View"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Width="600"
-    Height="600"
-    d:DesignHeight="600"
-    d:DesignWidth="600"
-    AllowsTransparency="true"
+    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+    AllowsTransparency="True"
+    Opacity="1"
+    ResizeMode="NoResize"
     WindowStartupLocation="CenterScreen"
     WindowStyle="None"
+    Background="Transparent" BorderBrush="Black"
     mc:Ignorable="d">
     <Window.Resources>
         <dal:ResourceLoader x:Key="Localization"/>
     </Window.Resources>
-    <Window.Background>
-        <SolidColorBrush Opacity="0" Color="White" />
-    </Window.Background>
+
     <Grid>
         <Image
             x:Name="image"
             Width="600"
             Height="600"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Opacity="1"
-            Source="/Resources/splash.png" />
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            Source="/Resources/splash.png" OpacityMask="White" />
+
         <Label
             x:Name="label"
             Margin="238,286,0,0"

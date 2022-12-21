@@ -201,8 +201,7 @@
                         Grid.Row="0"
                         Grid.Column="1"
                         Width="90"
-                        Height="26"
-                        Margin="9,9,0,0"
+                        Margin="8,8,8,8"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Top"
                         IsEnabled="{Binding DataBlockSelectionComboBoxIsEnabled}"
@@ -267,9 +266,9 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="42" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="0.428309803725103*" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="1*" />
                     </Grid.RowDefinitions>
                 </Grid>
             </GroupBox>

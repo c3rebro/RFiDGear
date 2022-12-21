@@ -65,7 +65,7 @@ namespace RedCell.Diagnostics.Update
         /// <param name="args">The arguments.</param>
         public static void Write(string format, params object[] args)
         {
-            string message = string.Format(format, args);
+            var message = string.Format(format, args);
             OnEvent(message);
             if (Console)
             {

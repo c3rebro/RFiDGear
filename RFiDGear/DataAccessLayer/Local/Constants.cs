@@ -72,6 +72,7 @@ namespace RFiDGear.DataAccessLayer
     {
         None,
         ChipIsOfType,
+        ChipIsMultiChip,
         CheckUID,
         ChangeDefault
     }
@@ -265,6 +266,12 @@ namespace RFiDGear.DataAccessLayer
         DESFireEV1 = 0xC6,
         DESFireEV2 = 0xC7,
         DESFireEV3 = 0xC8,
+        SmartMX_DESFire_Generic = 0xC9,
+        SmartMX_DESFire_2K = 0xCA,
+        SmartMX_DESFire_4K = 0xCB,
+        SmartMX_DESFire_8K = 0xCC,
+        SmartMX_DESFire_16K = 0xCD,
+        SmartMX_DESFire_32K = 0xCE,
         DESFire_256 = 0xD0,
         DESFire_2K = 0xD1,
         DESFire_4K = 0xD2,
@@ -388,7 +395,7 @@ namespace RFiDGear.DataAccessLayer
         KS_CHANGE_KEY_FROZEN = 240
     }
 
-    public struct DESFireFileSettings
+    public class DESFireFileSettings
     {
         public byte[] accessRights;
         public byte FileType;

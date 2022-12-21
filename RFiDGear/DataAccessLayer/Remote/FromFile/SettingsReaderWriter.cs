@@ -72,7 +72,7 @@ namespace RFiDGear
                     Directory.CreateDirectory(appDataPath);
                 }
 
-                XmlWriterSettings xmlSettings = new XmlWriterSettings();
+                var xmlSettings = new XmlWriterSettings();
                 xmlSettings.Encoding = new UTF8Encoding(false);
 
                 xmlWriter = XmlWriter.Create(Path.Combine(appDataPath, _updateConfigFileFileName), xmlSettings);
@@ -88,12 +88,12 @@ namespace RFiDGear
 
                 if (doc.SelectSingleNode("//CheckInterval") == null)
                 {
-                    XmlElement CheckIntervalElem = doc.CreateElement("CheckInterval");
-                    XmlElement RemoteConfigUriElem = doc.CreateElement("RemoteConfigUri");
-                    XmlElement SecurityTokenElem = doc.CreateElement("SecurityToken");
-                    XmlElement BaseUriElem = doc.CreateElement("BaseUri");
-                    XmlElement PayLoadElem = doc.CreateElement("Payload");
-                    XmlElement InfoTextElem = doc.CreateElement("VersionInfoText");
+                    var CheckIntervalElem = doc.CreateElement("CheckInterval");
+                    var RemoteConfigUriElem = doc.CreateElement("RemoteConfigUri");
+                    var SecurityTokenElem = doc.CreateElement("SecurityToken");
+                    var BaseUriElem = doc.CreateElement("BaseUri");
+                    var PayLoadElem = doc.CreateElement("Payload");
+                    var InfoTextElem = doc.CreateElement("VersionInfoText");
 
                     doc.DocumentElement.AppendChild(CheckIntervalElem);
                     doc.DocumentElement.AppendChild(RemoteConfigUriElem);
@@ -182,7 +182,7 @@ namespace RFiDGear
                     {
                         doc.Load(_fileName);
 
-                        XmlNode node = doc.SelectSingleNode("//ManifestVersion");
+                        var node = doc.SelectSingleNode("//ManifestVersion");
                         verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
 
                         reader = new StreamReader(_fileName);

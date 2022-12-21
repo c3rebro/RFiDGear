@@ -71,6 +71,7 @@ namespace RFiDGear.ViewModel
             CurrentTaskErrorLevel = ERROR.Empty;
 
             checkpoint = new Checkpoint();
+            SelectedCheckpoint = checkpoint;
             Checkpoints = new ObservableCollection<Checkpoint>();
             Args = new Dictionary<string, string>();
 
@@ -101,15 +102,15 @@ namespace RFiDGear.ViewModel
 
                 if (_selectedSetupViewModel is CommonTaskViewModel)
                 {
-                    PropertyInfo[] properties = typeof(CommonTaskViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                    var properties = typeof(CommonTaskViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-                    foreach (PropertyInfo p in properties)
+                    foreach (var p in properties)
                     {
                         // If not writable then cannot null it; if not readable then cannot check it's value
                         if (!p.CanWrite || !p.CanRead) { continue; }
 
-                        MethodInfo mget = p.GetGetMethod(false);
-                        MethodInfo mset = p.GetSetMethod(false);
+                        var mget = p.GetGetMethod(false);
+                        var mset = p.GetSetMethod(false);
 
                         // Get and set methods have to be public
                         if (mget == null) { continue; }
@@ -121,15 +122,13 @@ namespace RFiDGear.ViewModel
                     var copy = Checkpoints;
                     Checkpoints = new ObservableCollection<Checkpoint>(copy);
 
-                    using (ReportReaderWriter reader = new ReportReaderWriter())
+                    using (var reader = new ReportReaderWriter())
                     {
                         if (!string.IsNullOrEmpty(reportTemplatePath))
                         {
                             reader.ReportTemplatePath = reportTemplatePath;
 
                             TemplateFields = new ObservableCollection<string>(reader.GetReportFields().OrderBy(x => x));
-
-                            OnPropertyChanged(nameof(SelectedTemplateField));
                         }
                     }
                 }
@@ -521,9 +520,6 @@ namespace RFiDGear.ViewModel
                 if (selectedCheckpoint != null)
                 {
                     Content = selectedCheckpoint.Content;
-                    SelectedErrorLevel = selectedCheckpoint.ErrorLevel;
-                    SelectedTaskIndexFromAvailableTasks = selectedCheckpoint.TaskIndex;
-                    SelectedTemplateField = selectedCheckpoint.TemplateField;
                 }
 
                 OnPropertyChanged(nameof(SelectedCheckpoint));
@@ -540,7 +536,7 @@ namespace RFiDGear.ViewModel
             get
             {
                 var availableTaskIndices = new ObservableCollection<string>();
-                foreach (object ssVMO in AvailableTasks)
+                foreach (var ssVMO in AvailableTasks)
                 {
                     switch (ssVMO)
                     {
@@ -567,35 +563,6 @@ namespace RFiDGear.ViewModel
                 return availableTaskIndices;
             }
         }
-
-        /// <summary>
-        /// The Selected Error Level that Trigger the Field in the PDF to be filled
-        /// </summary>
-        public ERROR SelectedErrorLevel
-        {
-            get => selectedErrorLevel;
-            set
-            {
-                selectedErrorLevel = value;
-                OnPropertyChanged(nameof(SelectedErrorLevel));
-            }
-        }
-        private ERROR selectedErrorLevel;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public string SelectedTaskIndexFromAvailableTasks
-        {
-            get => selectedTaskIndexFromAvailableTasks;
-
-            set
-            {
-                selectedTaskIndexFromAvailableTasks = value;
-                OnPropertyChanged(nameof(SelectedTaskIndexFromAvailableTasks));
-            }
-        }
-        private string selectedTaskIndexFromAvailableTasks;
 
         /// <summary>
         /// 
@@ -779,21 +746,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public string SelectedTemplateField
-        {
-            get => selectedTemplateField;
-
-            set
-            {
-                selectedTemplateField = value;
-                OnPropertyChanged(nameof(SelectedTemplateField));
-            }
-        }
-        private string selectedTemplateField;
-
-        /// <summary>
-        /// 
-        /// </summary>
         public string Content
         {
             get => content;
@@ -876,7 +828,7 @@ namespace RFiDGear.ViewModel
                 {
                     Mouse.OverrideCursor = Cursors.AppStarting;
 
-                    string path = dlg.FileName;
+                    var path = dlg.FileName;
                     
                     if (!String.IsNullOrWhiteSpace(path))
                     {
@@ -912,15 +864,15 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task commonTask = new Task(() =>
+            var commonTask = new Task(() =>
             {
                 if (_reportReaderWriter != null)
                 {
-                    Dictionary<string, int> checkpointDictionary = new Dictionary<string, int>();
+                    var checkpointDictionary = new Dictionary<string, int>();
 
                     // create a new key,value pair of taskpositions (int) <-> taskindex (string)
                     // (they could be different as because item at array position 0 can have index "100")
-                    foreach (object rfidTaskObject in AvailableTasks)
+                    foreach (var rfidTaskObject in AvailableTasks)
                     {
                         checkpointDictionary.Add((rfidTaskObject as IGenericTaskModel).CurrentTaskIndex, AvailableTasks.IndexOf(rfidTaskObject));
                     }
@@ -936,13 +888,13 @@ namespace RFiDGear.ViewModel
                         if (!String.IsNullOrWhiteSpace(reportReaderWriter.ReportTemplatePath))
                         {
 
-                            foreach (Checkpoint checkpoint in Checkpoints)
+                            foreach (var checkpoint in Checkpoints)
                             {
 
-                                bool hasVariable = false;
-                                bool concatenate = false;
+                                var hasVariable = false;
+                                var concatenate = false;
 
-                                string temporaryContent = checkpoint.Content;
+                                var temporaryContent = checkpoint.Content;
 
                                 if (temporaryContent.Contains("%UID"))
                                 {
@@ -954,6 +906,20 @@ namespace RFiDGear.ViewModel
                                 {
                                     temporaryContent = temporaryContent.Replace("%CHIPTYPE", ResourceLoader.GetResource(
                                     string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.CardType))) ?? "");
+                                    hasVariable = true;
+                                }
+
+                                if (temporaryContent.Contains("%CHIPTYPEOFSLAVE"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%CHIPTYPEOFSLAVE", ResourceLoader.GetResource(
+                                    string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.Slave?.CardType))) ?? "");
+                                    hasVariable = true;
+                                }
+
+                                if (temporaryContent.Contains("%UIDOFSLAVE"))
+                                {
+                                    temporaryContent = temporaryContent.Replace("%UIDOFSLAVE", ResourceLoader.GetResource(
+                                    string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.Slave?.UID))) ?? "");
                                     hasVariable = true;
                                 }
 
@@ -1031,7 +997,7 @@ namespace RFiDGear.ViewModel
                                 // the "dollar" indicates an external variable that should be replaced
                                 if (temporaryContent.Contains("$"))
                                 {
-                                    foreach(KeyValuePair<string,string> kvArg in Args)
+                                    foreach(var kvArg in Args)
                                     {
                                         temporaryContent = temporaryContent.Replace(kvArg.Key, kvArg.Value);
                                     }
@@ -1041,7 +1007,7 @@ namespace RFiDGear.ViewModel
 
                                 // Does the targeted Task Equals the selected TaskResult ?
                                 // targeted Taskindex ist not "null" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                if (checkpointDictionary.TryGetValue(checkpoint.TaskIndex ?? "-1", out int targetIndex))
+                                if (checkpointDictionary.TryGetValue(checkpoint.TaskIndex ?? "-1", out var targetIndex))
                                 {
                                     if ((AvailableTasks[targetIndex] as IGenericTaskModel).CurrentTaskErrorLevel == checkpoint.ErrorLevel)
                                     {
@@ -1123,21 +1089,21 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task commonTask =
+            var commonTask =
                 new Task(() =>
                 {
                     try
                     {
-                        ERROR result = ERROR.Empty;
+                        var result = ERROR.Empty;
                         CurrentTaskErrorLevel = result;
 
                         // here we are about to compare the results of the added "Checkpoints" in the "Check Condition" Task with the actual 
                         // conditions from the live tasks
 
                         // lets fill a new vector with the results of all so far executed tasks... We will re-use the checkpoint objects for this
-                        ObservableCollection<Checkpoint> results = new ObservableCollection<Checkpoint>();
+                        var results = new ObservableCollection<Checkpoint>();
 
-                        foreach (object task in _tasks)
+                        foreach (var task in _tasks)
                         {
                             switch (task)
                             {
@@ -1165,7 +1131,7 @@ namespace RFiDGear.ViewModel
                         {
                             case LOGIC_STATE.AND:
 
-                                foreach (Checkpoint cp in Checkpoints)
+                                foreach (var cp in Checkpoints)
                                 {
                                     if (cp.ErrorLevel == results.Where<Checkpoint>(x => x.TaskIndex == cp.TaskIndex).Single().ErrorLevel)
                                     {
@@ -1185,9 +1151,9 @@ namespace RFiDGear.ViewModel
 
                             case LOGIC_STATE.NAND:
 
-                                foreach (Checkpoint cp in Checkpoints)
+                                foreach (var cp in Checkpoints)
                                 {
-                                    for (int i = 0; i < Checkpoints.Count(); i++)
+                                    for (var i = 0; i < Checkpoints.Count(); i++)
                                     {
                                         if (cp.ErrorLevel == Checkpoints[i].ErrorLevel)
                                         {
@@ -1206,9 +1172,9 @@ namespace RFiDGear.ViewModel
 
                             case LOGIC_STATE.NOR:
 
-                                foreach (Checkpoint cp in Checkpoints)
+                                foreach (var cp in Checkpoints)
                                 {
-                                    for (int i = 0; i < Checkpoints.Count(); i++)
+                                    for (var i = 0; i < Checkpoints.Count(); i++)
                                     {
                                         if (cp.ErrorLevel == Checkpoints[i].ErrorLevel)
                                         {
@@ -1227,9 +1193,9 @@ namespace RFiDGear.ViewModel
 
                             case LOGIC_STATE.OR:
 
-                                foreach (Checkpoint outerCP in Checkpoints)
+                                foreach (var outerCP in Checkpoints)
                                 {
-                                    foreach (Checkpoint resultCP in results)
+                                    foreach (var resultCP in results)
                                     {
                                         if (resultCP.TaskIndex == outerCP.TaskIndex && resultCP.ErrorLevel == outerCP.ErrorLevel)
                                         {
@@ -1248,11 +1214,11 @@ namespace RFiDGear.ViewModel
 
                             case LOGIC_STATE.COUNT:
 
-                                int loops = 0;
+                                var loops = 0;
 
-                                foreach (Checkpoint outerCP in Checkpoints)
+                                foreach (var outerCP in Checkpoints)
                                 {
-                                    foreach (Checkpoint resultCP in results)
+                                    foreach (var resultCP in results)
                                     {
                                         if (resultCP.TaskIndex == outerCP.TaskIndex && resultCP.ErrorLevel == outerCP.ErrorLevel)
                                         {
@@ -1328,7 +1294,7 @@ namespace RFiDGear.ViewModel
                                 {
                                     if (CompareValue.Contains(">="))
                                     {
-                                        string[] comparetemp = CompareValue.Replace(" ", string.Empty).Replace(">", string.Empty).Split('=');
+                                        var comparetemp = CompareValue.Replace(" ", string.Empty).Replace(">", string.Empty).Split('=');
 
                                         //assume 2 values to compare
                                         if (comparetemp.Length == 2)
@@ -1336,7 +1302,7 @@ namespace RFiDGear.ViewModel
                                             switch (comparetemp[0])
                                             {
                                                 case "%FREEMEM":
-                                                    uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out uint compareValueAsUInt);
+                                                    uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out var compareValueAsUInt);
 
                                                     if (DesfireChip?.FreeMemory >= compareValueAsUInt)
                                                     {
@@ -1375,7 +1341,7 @@ namespace RFiDGear.ViewModel
 
                                     else if (CompareValue.Contains("<="))
                                     {
-                                        string[] comparetemp = CompareValue.Replace(" ", string.Empty).Replace("<", string.Empty).Split('=');
+                                        var comparetemp = CompareValue.Replace(" ", string.Empty).Replace("<", string.Empty).Split('=');
 
                                         //assume 2 values to compare
                                         if (comparetemp.Length == 2)
@@ -1415,7 +1381,7 @@ namespace RFiDGear.ViewModel
                                             // the "dollar" indicates an external variable that should be replaced
                                             if (comparetemp[0].Contains("$"))
                                             {
-                                                foreach (KeyValuePair<string, string> kvArg in Args)
+                                                foreach (var kvArg in Args)
                                                 {
                                                     if (Args[comparetemp[0]] != comparetemp[1])
                                                     {
@@ -1473,7 +1439,7 @@ namespace RFiDGear.ViewModel
                                             // the "dollar" indicates an external variable that should be replaced
                                             if (comparetemp[0].Contains("$"))
                                             {
-                                                foreach (KeyValuePair<string, string> kvArg in Args)
+                                                foreach (var kvArg in Args)
                                                 {
                                                     if (Args[comparetemp[0]] == comparetemp[1])
                                                     {
@@ -1572,7 +1538,7 @@ namespace RFiDGear.ViewModel
         {
             try
             {
-                Process p = new Process();
+                var p = new Process();
                 ProcessStartInfo info;
 
                 //Run Program from RFiDGear Argument 
@@ -1590,8 +1556,8 @@ namespace RFiDGear.ViewModel
 
                 else
                 {
-                    string fileName = ProgramToExecute.Split('\"')[1];
-                    string args = ProgramToExecute.Split('\"')[2];
+                    var fileName = ProgramToExecute.Split('\"')[1];
+                    var args = ProgramToExecute.Split('\"')[2];
 
                     if (ProgramToExecute.Contains("%UID"))
                     {
@@ -1672,9 +1638,8 @@ namespace RFiDGear.ViewModel
 
                 if (SelectedTaskType == TaskType_CommonTask.CreateReport)
                 {
-                    checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
-                    checkpoint.ErrorLevel = SelectedErrorLevel;
-                    checkpoint.TemplateField = SelectedTemplateField;
+                    checkpoint.TaskIndex = "";
+                    checkpoint.ErrorLevel = ERROR.Empty;
                     checkpoint.Content = Content;
 
                     Checkpoints.Add(checkpoint);
@@ -1682,8 +1647,8 @@ namespace RFiDGear.ViewModel
 
                 else if (SelectedTaskType == TaskType_CommonTask.CheckLogicCondition)
                 {
-                    checkpoint.TaskIndex = SelectedTaskIndexFromAvailableTasks;
-                    checkpoint.ErrorLevel = SelectedErrorLevel;
+                    checkpoint.TaskIndex = "";
+                    checkpoint.ErrorLevel = ERROR.Empty;
                     checkpoint.Content = "";
                     checkpoint.CompareValue = CompareValue;
 

@@ -111,15 +111,15 @@ namespace RFiDGear.ViewModel
 
                 if (_selectedSetupViewModel is MifareDesfireSetupViewModel)
                 {
-                    PropertyInfo[] properties = typeof(MifareDesfireSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                    var properties = typeof(MifareDesfireSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-                    foreach (PropertyInfo p in properties.Where(x => x.PropertyType != items.GetType()))
+                    foreach (var p in properties.Where(x => x.PropertyType != items.GetType()))
                     {
                         // If not writable then cannot null it; if not readable then cannot check it's value
                         if (!p.CanWrite || !p.CanRead) { continue; }
 
-                        MethodInfo mget = p.GetGetMethod(false);
-                        MethodInfo mset = p.GetSetMethod(false);
+                        var mget = p.GetGetMethod(false);
+                        var mset = p.GetSetMethod(false);
 
                         // Get and set methods have to be public
                         if (mget == null) { continue; }
@@ -462,9 +462,9 @@ namespace RFiDGear.ViewModel
                         IsDataExplorerEditTabEnabled = false;
                         IsDesfirePICCAuthoringTabEnabled = false;
                         IsDesfireAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
-                        IsDesfireAppCreationTabEnabled = false;
+                        IsDesfireAppAuthenticationTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
+                        IsDesfireAppCreationTabEnabled = true;
                         break;
 
                     case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
@@ -490,7 +490,7 @@ namespace RFiDGear.ViewModel
                     case TaskType_MifareDesfireTask.CreateApplication:
                         IsDesfireFileAuthoringTabEnabled = false;
                         IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
+                        IsDesfirePICCAuthoringTabEnabled = true;
                         IsDesfireAuthenticationTabEnabled = true;
                         IsDesfireAppAuthenticationTabEnabled = false;
                         IsDesfireAppAuthoringTabEnabled = false;
@@ -501,9 +501,9 @@ namespace RFiDGear.ViewModel
                         IsDesfireFileAuthoringTabEnabled = false;
                         IsDataExplorerEditTabEnabled = false;
                         IsDesfirePICCAuthoringTabEnabled = false;
-                        IsDesfireAuthenticationTabEnabled = false;
+                        IsDesfireAuthenticationTabEnabled = true;
                         IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
                         IsDesfireAppCreationTabEnabled = false;
                         break;
 
@@ -513,14 +513,14 @@ namespace RFiDGear.ViewModel
                         IsDesfirePICCAuthoringTabEnabled = false;
                         IsDesfireAuthenticationTabEnabled = false;
                         IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
                         IsDesfireAppCreationTabEnabled = false;
                         break;
 
                     case TaskType_MifareDesfireTask.DeleteApplication:
                         IsDesfireFileAuthoringTabEnabled = false;
                         IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
+                        IsDesfirePICCAuthoringTabEnabled = true;
                         IsDesfireAuthenticationTabEnabled = true;
                         IsDesfireAppAuthenticationTabEnabled = false;
                         IsDesfireAppAuthoringTabEnabled = false;
@@ -533,14 +533,14 @@ namespace RFiDGear.ViewModel
                         IsDesfirePICCAuthoringTabEnabled = false;
                         IsDesfireAuthenticationTabEnabled = false;
                         IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
                         IsDesfireAppCreationTabEnabled = false;
                         break;
 
                     case TaskType_MifareDesfireTask.FormatDesfireCard:
                         IsDesfireFileAuthoringTabEnabled = false;
                         IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
+                        IsDesfirePICCAuthoringTabEnabled = true;
                         IsDesfireAuthenticationTabEnabled = true;
                         IsDesfireAppAuthenticationTabEnabled = false;
                         IsDesfireAppAuthoringTabEnabled = false;
@@ -563,7 +563,7 @@ namespace RFiDGear.ViewModel
                         IsDesfirePICCAuthoringTabEnabled = false;
                         IsDesfireAuthenticationTabEnabled = false;
                         IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
                         IsDesfireAppCreationTabEnabled = false;
                         break;
 
@@ -573,7 +573,7 @@ namespace RFiDGear.ViewModel
                         IsDesfirePICCAuthoringTabEnabled = false;
                         IsDesfireAuthenticationTabEnabled = false;
                         IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = false;
+                        IsDesfireAppAuthoringTabEnabled = true;
                         IsDesfireAppCreationTabEnabled = false;
                         break;
                 }
@@ -1667,10 +1667,10 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task desfireTask =
+            var desfireTask =
                 new Task(() =>
                          {
-                             using (ReaderDevice device = ReaderDevice.Instance)
+                             using (var device = ReaderDevice.Instance)
                              {
                                  if (device != null)
                                  {
@@ -1678,7 +1678,7 @@ namespace RFiDGear.ViewModel
 
                                      if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                                      {
-                                         ERROR result = device.AuthToMifareDesfireApplication(
+                                         var result = device.AuthToMifareDesfireApplication(
                                                    DesfireMasterKeyCurrent,
                                                    SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                                    0);
@@ -1793,10 +1793,10 @@ namespace RFiDGear.ViewModel
             accessRights.writeAccess = SelectedDesfireFileAccessRightWrite;
             accessRights.readAndWriteAccess = SelectedDesfireFileAccessRightReadWrite;
 
-            Task desfireTask =
+            var desfireTask =
                 new Task(() =>
                          {
-                             using (ReaderDevice device = ReaderDevice.Instance)
+                             using (var device = ReaderDevice.Instance)
                              {
                                  if (device != null)
                                  {
@@ -1804,7 +1804,7 @@ namespace RFiDGear.ViewModel
 
                                      if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR && IsValidAppNumberNew != false)
                                      {
-                                         ERROR result = device.AuthToMifareDesfireApplication(
+                                         var result = device.AuthToMifareDesfireApplication(
                                                  DesfireAppKeyCurrent,
                                                  SelectedDesfireAppKeyEncryptionTypeCurrent,
                                                  selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt);
@@ -1903,10 +1903,10 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task desfireTask =
+            var desfireTask =
                 new Task(() =>
                          {
-                             using (ReaderDevice device = ReaderDevice.Instance)
+                             using (var device = ReaderDevice.Instance)
                              {
                                  if (device != null)
                                  {
@@ -1914,7 +1914,7 @@ namespace RFiDGear.ViewModel
 
                                      if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                                      {
-                                         ERROR result = device.AuthToMifareDesfireApplication(
+                                         var result = device.AuthToMifareDesfireApplication(
                                                  DesfireReadKeyCurrent,
                                                  SelectedDesfireReadKeyEncryptionType,
                                                  selectedDesfireReadKeyNumberAsInt, AppNumberCurrentAsInt);
@@ -2031,10 +2031,10 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task desfireTask =
+            var desfireTask =
                 new Task(() =>
                          {
-                             using (ReaderDevice device = ReaderDevice.Instance)
+                             using (var device = ReaderDevice.Instance)
                              {
                                  if (device != null)
                                  {
@@ -2043,7 +2043,7 @@ namespace RFiDGear.ViewModel
                                      if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                                      {
 
-                                         ERROR result = device.AuthToMifareDesfireApplication(
+                                         var result = device.AuthToMifareDesfireApplication(
                                                                                           DesfireWriteKeyCurrent,
                                                                                           SelectedDesfireWriteKeyEncryptionType,
                                                                                           selectedDesfireWriteKeyNumberAsInt, AppNumberCurrentAsInt);
@@ -2117,9 +2117,9 @@ namespace RFiDGear.ViewModel
             CurrentTaskErrorLevel = ERROR.Empty;
 
 
-            Task desfireTask = new Task(() =>
+            var desfireTask = new Task(() =>
                                         {
-                                            using (ReaderDevice device = ReaderDevice.Instance)
+                                            using (var device = ReaderDevice.Instance)
                                             {
                                                 if (device != null)
                                                 {
@@ -2127,7 +2127,7 @@ namespace RFiDGear.ViewModel
 
                                                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                                                     {
-                                                        ERROR result = device.AuthToMifareDesfireApplication(
+                                                        var result = device.AuthToMifareDesfireApplication(
                                                                 DesfireAppKeyCurrent,
                                                                 SelectedDesfireAppKeyEncryptionTypeCurrent,
                                                                 selectedDesfireAppKeyNumberCurrentAsInt,
@@ -2140,7 +2140,7 @@ namespace RFiDGear.ViewModel
                                                         {
                                                             StatusText += string.Format("{0}: Successfully Authenticated to AppID {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
-                                                            DESFireKeySettings keySettings = DESFireKeySettings.KS_DEFAULT;
+                                                            var keySettings = DESFireKeySettings.KS_DEFAULT;
                                                             keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
 
                                                             keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
@@ -2215,9 +2215,9 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task desfireTask = new Task(() =>
+            var desfireTask = new Task(() =>
                                         {
-                                            using (ReaderDevice device = ReaderDevice.Instance)
+                                            using (var device = ReaderDevice.Instance)
                                             {
                                                 if (device != null)
                                                 {
@@ -2225,7 +2225,7 @@ namespace RFiDGear.ViewModel
 
                                                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                                                     {
-                                                        ERROR result = device.AuthToMifareDesfireApplication(
+                                                        var result = device.AuthToMifareDesfireApplication(
                                                                 DesfireMasterKeyCurrent,
                                                                 SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                                                 0);
@@ -2314,9 +2314,9 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task desfireTask = new Task(() =>
+            var desfireTask = new Task(() =>
                                         {
-                                            using (ReaderDevice device = ReaderDevice.Instance)
+                                            using (var device = ReaderDevice.Instance)
                                             {
                                                 if (device != null)
                                                 {
@@ -2324,9 +2324,9 @@ namespace RFiDGear.ViewModel
 
                                                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                                                     {
-                                                        ERROR result = device.AuthToMifareDesfireApplication(
+                                                        var result = device.AuthToMifareDesfireApplication(
                                                                 DesfireAppKeyCurrent,
-                                                                SelectedDesfireMasterKeyEncryptionTypeCurrent,
+                                                                SelectedDesfireAppKeyEncryptionTypeCurrent,
                                                                 selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt);
 
                                                         if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
@@ -2413,9 +2413,9 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task desfireTask = new Task(() =>
+            var desfireTask = new Task(() =>
                                         {
-                                            using (ReaderDevice device = ReaderDevice.Instance)
+                                            using (var device = ReaderDevice.Instance)
                                             {
                                                 if (device != null)
                                                 {
@@ -2423,7 +2423,7 @@ namespace RFiDGear.ViewModel
 
                                                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                                                     {
-                                                        ERROR result = device.AuthToMifareDesfireApplication(
+                                                        var result = device.AuthToMifareDesfireApplication(
                                                                 DesfireMasterKeyCurrent,
                                                                 SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                                                 0);
@@ -2440,7 +2440,7 @@ namespace RFiDGear.ViewModel
                                                             {
                                                                 if (device?.DesfireChip?.AppIDs != null)
                                                                 {
-                                                                    foreach (uint appID in device.DesfireChip.AppIDs)
+                                                                    foreach (var appID in device.DesfireChip.AppIDs)
                                                                     {
                                                                         StatusText += string.Format("{0}: FoundAppID {1}\n", DateTime.Now, appID);
                                                                     }
@@ -2541,9 +2541,9 @@ namespace RFiDGear.ViewModel
                 return;
             }
 
-            Task desfireTask = new Task(() =>
+            var desfireTask = new Task(() =>
             {
-                using (ReaderDevice device = ReaderDevice.Instance)
+                using (var device = ReaderDevice.Instance)
                 {
                     if (device != null)
                     {
@@ -2551,7 +2551,7 @@ namespace RFiDGear.ViewModel
 
                         if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                         {
-                            ERROR result = device.AuthToMifareDesfireApplication(
+                            var result = device.AuthToMifareDesfireApplication(
                                     DesfireAppKeyCurrent,
                                     SelectedDesfireAppKeyEncryptionTypeCurrent,
                                     selectedDesfireAppKeyNumberCurrentAsInt,
@@ -2601,10 +2601,10 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task desfireTask = new Task(
+            var desfireTask = new Task(
                 () =>
                 {
-                    using (ReaderDevice device = ReaderDevice.Instance)
+                    using (var device = ReaderDevice.Instance)
                     {
                         if (device != null)
                         {
@@ -2620,7 +2620,7 @@ namespace RFiDGear.ViewModel
                                 keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
                                 keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
 
-                                ERROR result = device.AuthToMifareDesfireApplication(
+                                var result = device.AuthToMifareDesfireApplication(
                                     CustomConverter.DesfireKeyToCheck,
                                     SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                     0);
@@ -2707,10 +2707,10 @@ namespace RFiDGear.ViewModel
             CurrentTaskErrorLevel = ERROR.Empty;
 
 
-            Task desfireTask = new Task(
+            var desfireTask = new Task(
                 () =>
                 {
-                    using (ReaderDevice device = ReaderDevice.Instance)
+                    using (var device = ReaderDevice.Instance)
                     {
                         if (device != null)
                         {
@@ -2718,7 +2718,7 @@ namespace RFiDGear.ViewModel
 
                             if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireMasterKeyCurrent) == KEY_ERROR.NO_ERROR)
                             {
-                                ERROR result = device.AuthToMifareDesfireApplication(
+                                var result = device.AuthToMifareDesfireApplication(
                                     DesfireMasterKeyCurrent,
                                     SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                     0);
@@ -2775,9 +2775,9 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task desfireTask = new Task(() =>
+            var desfireTask = new Task(() =>
             {
-                using (ReaderDevice device = ReaderDevice.Instance)
+                using (var device = ReaderDevice.Instance)
                 {
                     if (device != null)
                     {
@@ -2785,7 +2785,7 @@ namespace RFiDGear.ViewModel
 
                         if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                         {
-                            ERROR result = device.GetMifareDesfireAppSettings(
+                            var result = device.GetMifareDesfireAppSettings(
                                     DesfireMasterKeyTarget,
                                     SelectedDesfireAppKeyEncryptionTypeCurrent,
                                     selectedDesfireAppKeyNumberCurrentAsInt,
@@ -2852,9 +2852,9 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task desfireTask = new Task(() =>
+            var desfireTask = new Task(() =>
             {
-                using (ReaderDevice device = ReaderDevice.Instance)
+                using (var device = ReaderDevice.Instance)
                 {
                     if (device != null)
                     {
@@ -2862,7 +2862,7 @@ namespace RFiDGear.ViewModel
 
                         if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
                         {
-                            ERROR result = device.GetMiFareDESFireChipAppIDs(
+                            var result = device.GetMiFareDESFireChipAppIDs(
                                     DesfireAppKeyCurrent,
                                     SelectedDesfireAppKeyEncryptionTypeCurrent);
 

@@ -14,9 +14,9 @@ namespace RFiDGear.Model
         {
             get
             {
-                uint[] appIDs = new uint[AppList.Count];
+                var appIDs = new uint[AppList.Count];
 
-                for(int i = 0; i < AppList.Count; i++)
+                for(var i = 0; i < AppList.Count; i++)
                 {
                     appIDs[i] = AppList[i].appID;
                 }
@@ -46,8 +46,13 @@ namespace RFiDGear.Model
         {
             UID = genericChip.UID;
             CardType = genericChip.CardType;
+            RATS = genericChip.RATS;
+            SAK = genericChip.SAK;
+            L4Version = genericChip.VersionL4;
+            Slave = genericChip.Slave;
         }
 
+        public string L4Version { get; set; }
         public uint FreeMemory { get; set; }
     }
 }

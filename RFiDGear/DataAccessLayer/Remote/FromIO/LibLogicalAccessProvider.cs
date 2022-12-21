@@ -97,7 +97,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     {
                         var cmd = card.Commands as DESFireCommands;
 
-                        DESFireCardVersion version = cmd.GetVersion();
+                        var version = cmd.GetVersion();
 
                         switch (version.hardwareMjVersion & 0x0F) // Desfire(Sub)Type by lower Nibble of Major Version
                         {
@@ -239,7 +239,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                         var cmd = card.Commands as IMifareCommands;
 
-                        for (int k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
+                        for (var k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
                         {
                             cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A);
 
@@ -257,7 +257,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                 try
                                 {
-                                    object data = cmd.ReadBinary(
+                                    var data = cmd.ReadBinary(
                                         (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
                                         48);
 
@@ -289,7 +289,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                     try
                                     {
-                                        object data = cmd.ReadBinary(
+                                        var data = cmd.ReadBinary(
                                             (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
                                             48);
 
@@ -342,7 +342,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             var keyA = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey) };
             var keyB = new MifareKey() { Value = CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey) };
 
-            int blockCount = 0;
+            var blockCount = 0;
 
             if (initPCSC() == ERROR.NoError && !string.IsNullOrWhiteSpace(card.ChipIdentifier))
             {
@@ -357,7 +357,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         cmd.LoadKeyNo((byte)0, keyA, MifareKeyType.KT_KEY_A);
                         cmd.LoadKeyNo((byte)1, keyB, MifareKeyType.KT_KEY_B);
 
-                        for (int k = 0; k < blockCount; k++)
+                        for (var k = 0; k < blockCount; k++)
                         {
                             try
                             {
@@ -577,7 +577,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 {
                     GenericChip = new GenericChipModel(card.ChipIdentifier, (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.Type));
 
-                    MifareLocation mlocation = card.CreateLocation() as MifareLocation;
+                    var mlocation = card.CreateLocation() as MifareLocation;
                     mlocation.MADApplicationID = (ushort)madApplicationID;
                     mlocation.UseMAD = _useMADToAuth;
 
@@ -692,7 +692,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     {
                                         cmd.SelectApplication((uint)0);
 
-                                        object appIDsObject = cmd.GetApplicationIDs();
+                                        var appIDsObject = cmd.GetApplicationIDs();
 
                                         if(DesfireChip == null)
                                         {
@@ -702,7 +702,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         {
                                             DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
 
-                                            foreach (uint appid in appIDsObject as UInt32[])
+                                            foreach (var appid in appIDsObject as UInt32[])
                                             {
                                                 DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
                                             }
@@ -719,7 +719,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                             cmd.SelectApplication((uint)0);
                                             cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
 
-                                            object appIDsObject = cmd.GetApplicationIDs();
+                                            var appIDsObject = cmd.GetApplicationIDs();
 
                                             if (DesfireChip == null)
                                             {
@@ -729,7 +729,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                             {
                                                 DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
 
-                                                foreach (uint appid in appIDsObject as UInt32[])
+                                                foreach (var appid in appIDsObject as UInt32[])
                                                 {
                                                     DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
                                                 }
@@ -765,7 +765,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     {
                                         DesfireChip.FreeMemory = cmd.GetFreeMemory();
 
-                                        object appIDsObject = cmd.GetApplicationIDs();
+                                        var appIDsObject = cmd.GetApplicationIDs();
 
                                         if (DesfireChip == null)
                                         {
@@ -775,7 +775,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         {
                                             DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
 
-                                            foreach (uint appid in appIDsObject as UInt32[])
+                                            foreach (var appid in appIDsObject as UInt32[])
                                             {
                                                 DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
                                             }
@@ -793,7 +793,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                             cmd.SelectApplication((uint)0);
                                             cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
 
-                                            object appIDsObject = cmd.GetApplicationIDs();
+                                            var appIDsObject = cmd.GetApplicationIDs();
 
                                             if (DesfireChip == null)
                                             {
@@ -803,7 +803,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                             {
                                                 DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
 
-                                                foreach (uint appid in appIDsObject as UInt32[])
+                                                foreach (var appid in appIDsObject as UInt32[])
                                                 {
                                                     DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
                                                 }
@@ -845,7 +845,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         cmd.SelectApplication((uint)0);
                                         cmd.Authenticate((byte)0, aiToUse.MasterCardKey);
 
-                                        object appIDsObject = cmd.GetApplicationIDs();
+                                        var appIDsObject = cmd.GetApplicationIDs();
 
                                         if (DesfireChip == null)
                                         {
@@ -855,7 +855,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         {
                                             DesfireChip.AppList = new System.Collections.Generic.List<MifareDesfireAppModel>();
 
-                                            foreach (uint appid in appIDsObject as UInt32[])
+                                            foreach (var appid in appIDsObject as UInt32[])
                                             {
                                                 DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
                                             }
@@ -911,7 +911,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             try
             {
-                DESFireAccessRights accessRights = _accessRights;
+                var accessRights = _accessRights;
 
                 // Keys to use for authentication
                 IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
@@ -1128,7 +1128,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 // Keys to use for authentication
 
                 // Get the card storage service
-                IStorageCardService storage = (IStorageCardService)card.GetService(CardServiceType.CST_STORAGE);
+                var storage = (IStorageCardService)card.GetService(CardServiceType.CST_STORAGE);
 
                 // Change keys with the following ones
                 IDESFireAccessInfo aiToWrite = new DESFireAccessInfo();
@@ -1246,7 +1246,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 // Keys to use for authentication
 
                 // Get the card storage service
-                IStorageCardService storage = (IStorageCardService)card.GetService(CardServiceType.CST_STORAGE);
+                var storage = (IStorageCardService)card.GetService(CardServiceType.CST_STORAGE);
 
                 // Change keys with the following ones
                 IDESFireAccessInfo aiToUse = new DESFireAccessInfo();
@@ -2056,7 +2056,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             }
         }
 
-        public override ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType, int _appID)
+        public override ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType)
         {
             try
             {
@@ -2064,7 +2064,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 IDESFireLocation location = new DESFireLocation
                 {
                     // The Application ID to use
-                    aid = _appID,
+                    aid = 0,
                     // File communication requires encryption
                     SecurityLevel = (LibLogicalAccess.EncryptionMode)EncryptionMode.CM_ENCRYPT
                 };

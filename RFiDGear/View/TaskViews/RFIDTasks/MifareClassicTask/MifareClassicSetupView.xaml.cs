@@ -6,6 +6,7 @@
  */
 
 using System.ComponentModel;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace RFiDGear.View
@@ -13,11 +14,12 @@ namespace RFiDGear.View
     /// <summary>
     /// Interaction logic for MifareClassicSetupView.xaml
     /// </summary>
-    public partial class MifareClassicSetupView
+    public partial class MifareClassicSetupView : Window
     {
         public MifareClassicSetupView()
         {
             InitializeComponent();
+            this.MaxHeight = (uint)SystemParameters.MaximizedPrimaryScreenHeight - 8;
         }
 
         private void OnAutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e)

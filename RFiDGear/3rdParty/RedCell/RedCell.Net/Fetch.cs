@@ -83,7 +83,7 @@ namespace RedCell.Net
         /// <returns></returns>
         public void Load(string url)
         {
-            for (int retry = 0; retry < Retries; retry++)
+            for (var retry = 0; retry < Retries; retry++)
             {
                 try
                 {

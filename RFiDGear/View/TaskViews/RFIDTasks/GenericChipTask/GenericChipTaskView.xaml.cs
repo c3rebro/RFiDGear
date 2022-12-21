@@ -5,9 +5,9 @@
  *
  */
 
-using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
+
+using System.Windows;
 
 namespace RFiDGear.View
 {
@@ -19,6 +19,7 @@ namespace RFiDGear.View
         public GenericChipTaskView()
         {
             InitializeComponent();
+            this.MaxHeight = (uint)SystemParameters.MaximizedPrimaryScreenHeight - 8;
         }
     }
 }

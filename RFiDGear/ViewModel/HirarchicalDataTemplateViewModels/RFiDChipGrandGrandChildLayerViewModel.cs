@@ -17,7 +17,7 @@ namespace RFiDGear.ViewModel
 
         public RFiDChipGrandGrandChildLayerViewModel(string _displayItem, RFiDChipGrandChildLayerViewModel _parent)
         {
-            grandGrandChildNodeHeader = _displayItem;
+            GrandGrandChildNodeHeader = _displayItem;
             Parent = _parent;
         }
 
@@ -38,6 +38,7 @@ namespace RFiDGear.ViewModel
 
         #region Parent
 
+        [XmlIgnore]
         public RFiDChipGrandChildLayerViewModel Parent
         {
             get => parent;
@@ -53,15 +54,21 @@ namespace RFiDGear.ViewModel
 
         #region (Dependency) Properties
 
-        [XmlIgnore]
-        public string GrandGrandChildNodeHeader => grandGrandChildNodeHeader;
-
-        private readonly string grandGrandChildNodeHeader;
+        public string GrandGrandChildNodeHeader
+        {
+            get => grandGrandChildNodeHeader;
+            set
+            {
+                grandGrandChildNodeHeader = value;
+            }
+        } 
+        private string grandGrandChildNodeHeader;
 
         #endregion (Dependency) Properties
 
         #region View Switches
 
+        [XmlIgnore]
         public bool IsExpanded
         {
             get => isExpanded;
@@ -80,9 +87,9 @@ namespace RFiDGear.ViewModel
                 }
             }
         }
-
         private bool isExpanded;
 
+        [XmlIgnore]
         public bool IsSelected
         {
             get => isSelected;
@@ -95,9 +102,9 @@ namespace RFiDGear.ViewModel
                 }
             }
         }
-
         private bool isSelected;
 
+        [XmlIgnore]
         public bool? IsAuthenticated
         {
             get => isAuth;
@@ -107,9 +114,9 @@ namespace RFiDGear.ViewModel
                 OnPropertyChanged(nameof(IsAuthenticated));
             }
         }
-
         private bool? isAuth;
 
+        [XmlIgnore]
         public bool? IsTask
         {
             get => isTask;
@@ -119,9 +126,9 @@ namespace RFiDGear.ViewModel
                 OnPropertyChanged(nameof(IsTask));
             }
         }
-
         private bool? isTask;
 
+        [XmlIgnore]
         public bool? IsVisible
         {
             get => isVisible;
@@ -131,7 +138,6 @@ namespace RFiDGear.ViewModel
                 OnPropertyChanged(nameof(IsVisible));
             }
         }
-
         private bool? isVisible;
 
         #endregion View Switches

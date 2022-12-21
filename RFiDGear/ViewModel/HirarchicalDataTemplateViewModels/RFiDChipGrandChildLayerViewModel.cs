@@ -155,7 +155,7 @@ namespace RFiDGear.ViewModel
         public RFiDChipGrandChildLayerViewModel(string _displayItem)
         {
             children = new ObservableCollection<RFiDChipGrandGrandChildLayerViewModel>();
-            grandChildNodeHeader = _displayItem;
+            GrandChildNodeHeader = _displayItem;
             isVisible = false;
         }
 
@@ -169,7 +169,7 @@ namespace RFiDGear.ViewModel
         #endregion SelectedItem
 
         #region Parent
-
+        [XmlIgnore]
         public RFiDChipChildLayerViewModel Parent => parent; private readonly RFiDChipChildLayerViewModel parent;
 
         #endregion Parent
@@ -200,8 +200,8 @@ namespace RFiDGear.ViewModel
             {
                 if (mifareClassicDataBlock != null && mifareClassicDataBlock.Data.Length == 16 && dataBlockAsCharString.Length == 16)
                 {
-                    char[] tempString = new char[mifareClassicDataBlock.Data.Length];
-                    for (int i = 0; i < mifareClassicDataBlock.Data.Length; i++)
+                    var tempString = new char[mifareClassicDataBlock.Data.Length];
+                    for (var i = 0; i < mifareClassicDataBlock.Data.Length; i++)
                     {
                         if (mifareClassicDataBlock.Data[i] < 27 || mifareClassicDataBlock.Data[i] > 127)
                         {
@@ -218,8 +218,8 @@ namespace RFiDGear.ViewModel
 
                 else if (desfireFile != null)
                 {
-                    char[] tempString = new char[desfireFile.Data.Length];
-                    for (int i = 0; i < desfireFile.Data.Length; i++)
+                    var tempString = new char[desfireFile.Data.Length];
+                    for (var i = 0; i < desfireFile.Data.Length; i++)
                     {
                         if (desfireFile.Data[i] < 27 || desfireFile.Data[i] > 127)
                         {
@@ -236,8 +236,8 @@ namespace RFiDGear.ViewModel
 
                 else if (mifareClassicMAD != null)
                 {
-                    char[] tempString = new char[mifareClassicMAD.Data.Length];
-                    for (int i = 0; i < mifareClassicMAD.Data.Length; i++)
+                    var tempString = new char[mifareClassicMAD.Data.Length];
+                    for (var i = 0; i < mifareClassicMAD.Data.Length; i++)
                     {
                         if (mifareClassicMAD.Data[i] < 27 || mifareClassicMAD.Data[i] > 127)
                         {
@@ -267,7 +267,7 @@ namespace RFiDGear.ViewModel
                     {
                         if (mifareClassicDataBlock != null)
                         {
-                            for (int i = 0; i < mifareClassicDataBlock.Data.Length; i++)
+                            for (var i = 0; i < mifareClassicDataBlock.Data.Length; i++)
                             {
                                 if (mifareClassicDataBlock.Data != null &&
                                     ((char)mifareClassicDataBlock.Data[i] != value[i])
@@ -283,7 +283,7 @@ namespace RFiDGear.ViewModel
 
                         else if (desfireFile != null)
                         {
-                            for (int i = 0; i < desfireFile.Data.Length; i++)
+                            for (var i = 0; i < desfireFile.Data.Length; i++)
                             {
                                 if ((char)desfireFile.Data[i] != value[i]
                                     && (!((char)desfireFile.Data[i] < 27 || (char)desfireFile.Data[i] > 127))//do not perform overwrite datablockat position 'i' if non printable character...
@@ -297,7 +297,7 @@ namespace RFiDGear.ViewModel
 
                         else if (mifareClassicMAD != null)
                         {
-                            for (int i = 0; i < mifareClassicMAD.Data.Length; i++)
+                            for (var i = 0; i < mifareClassicMAD.Data.Length; i++)
                             {
                                 if ((char)mifareClassicMAD.Data[i] != value[i]
                                     && (!((char)mifareClassicMAD.Data[i] < 27 || (char)mifareClassicMAD.Data[i] > 127))//do not perform overwrite datablockat position 'i' if non printable character...
@@ -333,7 +333,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// DependencyProperty
         /// </summary>
-
         public string DataAsHexString
         {
             get
@@ -394,7 +393,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        [XmlIgnore]
         public bool? IsValidDataContent
         {
             get => isValidDataBlockContent;
@@ -451,7 +449,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        [XmlIgnore]
         public string GrandChildNodeHeader
         {
             get
@@ -471,13 +468,16 @@ namespace RFiDGear.ViewModel
 
                 return grandChildNodeHeader;
             }
+            set
+            {
+                grandChildNodeHeader = value;
+            }
         }
         private string grandChildNodeHeader;
 
         /// <summary>
         ///
         /// </summary>
-        [XmlIgnore]
         public int SelectedDataLength
         {
             get => selectedDataLength;
@@ -504,7 +504,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        [XmlIgnore]
         public int SelectedDataIndexStart
         {
             get => selectedDataIndexStart;
@@ -530,7 +529,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        [XmlIgnore]
         public int SelectedDataLengthInBytes
         {
             get => selectedDataLengthInBytes;
@@ -615,6 +613,7 @@ namespace RFiDGear.ViewModel
         }
         private bool isSelected;
 
+        [XmlIgnore]
         public bool? IsValidSelectedDataIndexAndLength
         {
             get => isValidSelectedDataIndexAndLength;
@@ -641,6 +640,7 @@ namespace RFiDGear.ViewModel
         }
         private bool isFocused;
 
+        [XmlIgnore]
         public bool? IsAuthenticated
         {
             get => isAuth;
@@ -652,6 +652,7 @@ namespace RFiDGear.ViewModel
         }
         private bool? isAuth;
 
+        [XmlIgnore]
         public bool? IsTask
         {
             get => isTask;

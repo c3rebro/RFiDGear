@@ -2,13 +2,15 @@
 <Window
     x:Class="RFiDGear.View.UpdateNotifierView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:local="clr-namespace:RFiDGear.View"
-    xmlns:v="clr-namespace:RFiDGear.View"
     Title="{Binding Caption}"
-    Width="500"
+    Width="600"
     Height="600"
+    ResizeMode="CanResizeWithGrip"
+    MouseLeftButtonDown="WindowMouseLeftButtonDown"
+    SizeToContent="Manual"
     WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <dal:ResourceLoader x:Key="Localization"/>
@@ -16,17 +18,19 @@
     <Grid Margin="0,0,0,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
-            <RowDefinition Height="42" />
+            <RowDefinition Height="45" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="250" />
+            <ColumnDefinition Width="350" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
+        <DockPanel RenderTransformOrigin="0.5,0.5" Grid.ColumnSpan="3">
+        </DockPanel>
         <GroupBox
             x:Name="groupBox"
             Grid.ColumnSpan="3"
-            Margin="10,10,10,10"
+            Margin="10,35,10,10"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
             Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderUpdateWindowVersionInfo'}">
@@ -37,23 +41,25 @@
                 TextWrapping="Wrap" 
                 IsReadOnly="True" 
                 AcceptsReturn="True" 
+                Focusable="True"
                 AcceptsTab="True"
+                ScrollViewer.VerticalScrollBarVisibility="Visible"
                 Text="{Binding UpdateHistoryText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
         </GroupBox>
         <Button Grid.Column="1" 
-                HorizontalAlignment="Left" 
-                VerticalAlignment="Top"
-                Margin="10,10,0,0" 
+                VerticalAlignment="Bottom"
+                HorizontalAlignment="Left"
+                Margin="10,0,0,15" 
                 Grid.Row="1" 
-                Width="95"
+                Width="120"
                 Command="{Binding OkCommand}"
                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentDoUpdateCommand'}" />
         <Button Grid.Column="1" 
                 HorizontalAlignment="Right" 
-                Margin="0,10,10,0" 
+                Margin="0,0,10,15" 
                 Grid.Row="1" 
-                VerticalAlignment="Top" 
-                Width="95"
+                VerticalAlignment="Bottom" 
+                Width="120"
                 Command="{Binding CancelCommand}"
                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentCancelUpdateCommand'}" 
                 />

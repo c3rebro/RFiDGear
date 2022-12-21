@@ -15,6 +15,7 @@
     Height="500"
     MinWidth="900"
     MinHeight="500"
+    ResizeMode="CanResizeWithGrip"
     HorizontalContentAlignment="Left"
     dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
     DataContext="{Binding Source={StaticResource Locator}, Path=MainWin}"
@@ -22,7 +23,7 @@
     FontWeight="Normal"
     MouseLeftButtonDown="WindowMouseLeftButtonDown"
     SizeToContent="Manual"
-    WindowStartupLocation="CenterScreen"
+    WindowStartupLocation="CenterScreen" 
     mc:Ignorable="d">
     <Window.InputBindings>
         <KeyBinding Key="Escape" Command="{Binding CloseApplication}" />
@@ -80,26 +81,35 @@
         </ContextMenu>
     </Window.Resources>
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="400"/>
+            <ColumnDefinition MinWidth="400" Width="*"/>
+        </Grid.ColumnDefinitions>
         <Grid
             Grid.Row="0"
             Grid.Column="0"
-            Margin="15,36,8,40"
-            HorizontalAlignment="Stretch"
-            VerticalAlignment="Stretch">
+            Margin="8,8,8,45" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto" MinWidth="200" />
                 <ColumnDefinition Width="5" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="8"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
             <TreeView
                 x:Name="treeViewOnline"
-                Grid.Row="0"
+                Grid.Row="1"
                 Grid.Column="0"
-                Margin="0,0,3,0"
+                Margin="0,8,8,10"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Background="Transparent"
+                BorderBrush="LightGray"
                 BorderThickness="1,1,1,1"
+                ScrollViewer.VerticalScrollBarVisibility="Auto"
+                ScrollViewer.CanContentScroll="True"
                 ItemsSource="{Binding TreeViewParentNodes}"
                 MouseLeftButtonDown="MainWindowTreeViewControlMouseButtonDown"
                 MouseRightButtonDown="MainWindowTreeViewControlMouseButtonDown">
@@ -122,6 +132,9 @@
                     </Style>
                 </TreeView.ItemContainerStyle>
                 <TreeView.Resources>
+                    <Style TargetType="TreeView">
+                        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+                    </Style>
                     <ContextMenu x:Key="TreeViewEmptySpaceMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
                         <ContextMenu.ItemContainerStyle>
                             <Style TargetType="MenuItem">
@@ -141,11 +154,6 @@
                             </Style>
                         </ContextMenu.ItemContainerStyle>
                     </ContextMenu>
-                    <!--<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
-                      Color="White" />
-					<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
-                      Color="Black" />
-					<FontWeightConverter x:Key="{x:Static FontWeights.Bold}" />-->
                     <HierarchicalDataTemplate DataType="{x:Type vm:RFiDChipParentLayerViewModel}" ItemsSource="{Binding Children}">
                         <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\Region.png" /> -->
                         <HierarchicalDataTemplate.Resources>
@@ -170,7 +178,8 @@
                                 </Style.Triggers>
                             </Style>
                         </HierarchicalDataTemplate.Resources>
-                        <TextBlock Text="{Binding ParentNodeHeader}">
+                        <TextBlock Text="{Binding ParentNodeHeader}" Margin="0,0,8,0">
+                            <Run Text="{Binding ParentNodeHeaderRed}" Foreground="Red"/>
                             <TextBlock.ContextMenu>
                                 <ContextMenu ItemsSource="{Binding ContextMenu}" />
                             </TextBlock.ContextMenu>
@@ -200,7 +209,7 @@
                             </Style>
                         </HierarchicalDataTemplate.Resources>
                         <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\State.png" /> -->
-                        <TextBlock Text="{Binding ChildNodeHeader}">
+                        <TextBlock Text="{Binding ChildNodeHeader}" Margin="0,0,8,0">
                             <TextBlock.ContextMenu>
                                 <ContextMenu ItemsSource="{Binding ContextMenu}" />
                             </TextBlock.ContextMenu>
@@ -208,7 +217,7 @@
                     </HierarchicalDataTemplate>
                     <HierarchicalDataTemplate DataType="{x:Type vm:RFiDChipGrandChildLayerViewModel}" ItemsSource="{Binding Children}">
                         <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\City.png" /> -->
-                        <TextBlock Text="{Binding GrandChildNodeHeader}">
+                        <TextBlock Text="{Binding GrandChildNodeHeader}" Margin="0,0,8,0">
                             <TextBlock.Resources>
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>
@@ -243,7 +252,7 @@
                     </HierarchicalDataTemplate>
                     <DataTemplate DataType="{x:Type vm:RFiDChipGrandGrandChildLayerViewModel}">
                         <!-- <Image Width="16" Height="16" Margin="3,0" Source="Images\City.png" /> -->
-                        <TextBlock Text="{Binding GrandGrandChildNodeHeader}">
+                        <TextBlock Text="{Binding GrandGrandChildNodeHeader}" Margin="0,0,8,0">
                             <TextBlock.Resources>
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>
@@ -285,10 +294,10 @@
                 </TreeView.ContextMenu>
             </TreeView>
             <GridSplitter
-                Grid.Row="0"
+                Grid.Row="1"
                 Grid.Column="1"
                 Width="5"
-                Margin="0,0,0,0"
+                Margin="0,8,0,8"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 Background="#FFD9D9DB"
@@ -296,12 +305,13 @@
                 ResizeDirection="Auto" />
             <DataGrid
                 x:Name="myDataGrid"
-                Grid.Row="0"
+                Grid.Row="1"
                 Grid.Column="2"
-                Margin="3,0,0,0"
+                Margin="8,8,0,10"
+                BorderBrush="LightGray"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
+                HorizontalContentAlignment="Left"
                 VerticalContentAlignment="Center"
                 local:SelectingItemAttachedProperty.SelectingItem="{Binding SelectedSetupViewModel, Mode=TwoWay}"
                 AlternatingRowBackground="LightGray"
@@ -346,15 +356,17 @@
                 <DataGrid.RowStyle>
                     <Style TargetType="{x:Type DataGridRow}">
                         <Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />
+                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.RowHeaderTemplate>
                     <DataTemplate>
                         <Image
                             x:Name="editImage"
-                            Width="16"
-                            Margin="1,0"
-                            HorizontalAlignment="Center"
+                            Width="auto"
+                            Height="20"
+                            HorizontalAlignment="Left"
                             VerticalAlignment="Center" />
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}, Path=DataContext.IsTaskCompletedSuccessfully}" Value="True">
@@ -369,6 +381,11 @@
                         </DataTemplate.Triggers>
                     </DataTemplate>
                 </DataGrid.RowHeaderTemplate>
+                <DataGrid.RowHeaderStyle>
+                    <Style TargetType="{x:Type DataGridRowHeader}">
+                        <Setter Property="Width" Value="auto" />
+                    </Style>
+                </DataGrid.RowHeaderStyle>
                 <DataGrid.Columns>
                     <!-- <DataGridTextColumn
 					Header="{Binding Data.LocalizationResourceSet,
@@ -384,22 +401,38 @@
                         <DataGridTextColumn.HeaderStyle>
                             <Style TargetType="{x:Type DataGridColumnHeader}">
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
                             </Style>
                         </DataGridTextColumn.HeaderStyle>
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="HorizontalAlignment" Value="Center" />
+                                <Setter Property="VerticalAlignment" Value="Center" />
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
                     <DataGridTextColumn
                         Binding="{Binding Path=SelectedTaskType, Converter={StaticResource Localization}}"
                         Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridHeaderMainWindowTaskType', Source={StaticResource proxy}}"
-                        IsReadOnly="True" />
+                        IsReadOnly="True">
+                        <DataGridTextColumn.HeaderStyle>
+                            <Style TargetType="{x:Type DataGridColumnHeader}">
+                                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                            </Style>
+                        </DataGridTextColumn.HeaderStyle>
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Margin" Value="5,0,5,0" />
+                                <Setter Property="HorizontalAlignment" Value="Left" />
+                                <Setter Property="VerticalAlignment" Value="Center" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                     <DataGridTemplateColumn Width="auto" Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridHeaderMainWindowTaskDescription', Source={StaticResource proxy}}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding Path=SelectedTaskDescription}" TextWrapping="Wrap">
+                                <TextBox Text="{Binding Path=SelectedTaskDescription}" TextWrapping="Wrap" Margin="3,0,0,3">
                                     <TextBox.Style>
                                         <Style TargetType="{x:Type TextBox}">
                                             <Setter Property="HorizontalAlignment" Value="Left" />
@@ -412,13 +445,21 @@
                                 </TextBox>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn.HeaderStyle>
+                            <Style TargetType="{x:Type DataGridColumnHeader}">
+                                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                            </Style>
+                        </DataGridTemplateColumn.HeaderStyle>
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>
-        <DockPanel RenderTransformOrigin="0.5,0.5">
+        <DockPanel Grid.ColumnSpan="2" Grid.Row="0">
             <Menu
                 HorizontalContentAlignment="Right"
+                VerticalAlignment="Top"
+                Margin="0,2,0,0"
                 Background="{x:Null}"
                 DockPanel.Dock="Top">
                 <MenuItem
@@ -465,7 +506,7 @@
                     <Separator />
                     <MenuItem Command="{Binding ResetTaskStatusCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemSetTaskStatusToUndone'}" />
                     <MenuItem Command="{Binding ResetReportTaskDirectoryCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemResetTasksReportTargetPath'}" />
-                    
+
                 </MenuItem>
                 <!--  Edit  -->
                 <MenuItem
@@ -527,26 +568,29 @@
                     VerticalContentAlignment="Center"
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}">
                     <MenuItem Command="{Binding ShowHelpCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemHelpHeader'}" />
+                    <MenuItem Command="{Binding CheckUpdateCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemCheckUpdatesHeader'}" />
                     <MenuItem Command="{Binding NewAboutDialogCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemAboutHeader'}" />
                 </MenuItem>
                 <!--  Help  -->
             </Menu>
         </DockPanel>
-        <DockPanel>
-            <StatusBar VerticalAlignment="Bottom" DockPanel.Dock="Bottom">
+        <DockPanel Grid.ColumnSpan="2" Grid.Row="2">
+            <StatusBar VerticalAlignment="Bottom" DockPanel.Dock="Bottom" Height="49" VerticalContentAlignment="Center">
+                <StatusBarItem Height="auto" VerticalAlignment="Center" Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectedReader'}" />
                 <StatusBarItem>
-                    <Label Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectedReader'}" />
+                    <TextBlock Text="{Binding CurrentReader}" FontWeight="Bold"/>
                 </StatusBarItem>
                 <StatusBarItem>
-                    <TextBlock Text="{Binding CurrentReader}" />
+                    <TextBlock Text="{Binding LocalizationResourceSet, 
+                        Converter={StaticResource Localization}, 
+                        ConverterParameter='labelReaderStatus'}"
+                           Height="auto"/>
                 </StatusBarItem>
                 <StatusBarItem>
-                    <Label Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelReaderStatus'}" />
+                    <TextBlock Text="{Binding ReaderStatus}" Height="auto" FontWeight="Bold"/>
                 </StatusBarItem>
+                <!--				
                 <StatusBarItem>
-                    <TextBlock Text="{Binding ReaderStatus}" />
-                </StatusBarItem>
-                <!--				<StatusBarItem>
 					<ProgressBar
 						Minimum="0"
 						Maximum="100"

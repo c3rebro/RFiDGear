@@ -26,6 +26,7 @@ namespace RFiDGear.View
         public MifareUltralightSetupView()
         {
             InitializeComponent();
+            this.MaxHeight = (uint)SystemParameters.MaximizedPrimaryScreenHeight - 8;
         }
     }
 }

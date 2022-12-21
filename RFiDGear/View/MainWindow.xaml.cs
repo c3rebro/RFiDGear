@@ -1,4 +1,5 @@
 ﻿using RFiDGear.ViewModel;
+
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,17 +16,21 @@ namespace RFiDGear
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow
+    public partial class MainWindow : Window
     {
-
         public MainWindow()
         {
             InitializeComponent();
+            this.MaxHeight = (uint)SystemParameters.MaximizedPrimaryScreenHeight-8;
         }
 
         private void WindowMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            DragMove();
+            try
+            {
+                DragMove();
+            }
+            catch { } // workaround wpfui windowbar probl.
         }
 
         private void OnAutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e)
@@ -35,41 +40,49 @@ namespace RFiDGear
 
         private void MainWindowTreeViewControlMouseButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender != null)
+            try
             {
-                TreeView item = sender as TreeView;
+                if (sender != null)
+                {
+                    var item = sender as TreeView;
 
-                DependencyObject dep = (DependencyObject)e.OriginalSource;
-                while ((dep != null) && !(dep is TreeViewItem))
-                {
-                    dep = VisualTreeHelper.GetParent(dep);
-                }
-                if (dep == null)
-                {
-                    foreach (object o in item.Items)
+                    var dep = (DependencyObject)e.OriginalSource;
+                    while ((dep != null) && !(dep is System.Windows.Controls.TreeViewItem))
                     {
-                        if (o is RFiDChipParentLayerViewModel && (o as RFiDChipParentLayerViewModel).Children != null)
+                        dep = VisualTreeHelper.GetParent(dep);
+                    }
+                    if (dep == null)
+                    {
+                        foreach (var o in item.Items)
                         {
-                            foreach (RFiDChipChildLayerViewModel child in (o as RFiDChipParentLayerViewModel).Children)
+                            if (o is RFiDChipParentLayerViewModel && (o as RFiDChipParentLayerViewModel).Children != null)
                             {
-                                child.IsSelected = false;
-
-                                if (child.Children != null)
+                                foreach (var child in (o as RFiDChipParentLayerViewModel).Children)
                                 {
-                                    foreach (RFiDChipGrandChildLayerViewModel grandChild in child.Children)
+                                    child.IsSelected = false;
+
+                                    if (child.Children != null)
                                     {
-                                        grandChild.IsSelected = false;
+                                        foreach (var grandChild in child.Children)
+                                        {
+                                            grandChild.IsSelected = false;
+                                        }
                                     }
                                 }
+
+                                (o as RFiDChipParentLayerViewModel).IsSelected = false;
                             }
 
-                            (o as RFiDChipParentLayerViewModel).IsSelected = false;
                         }
-
+                        return;
                     }
-                    return;
                 }
             }
+            //Missing Visual implementation in "Run" Method of Textblock
+            catch
+            {
+            }
+            
         }
     }
 
@@ -93,7 +106,7 @@ namespace RFiDGear
 
         static void OnSelectingItemChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
         {
-            var grid = sender as DataGrid;
+            var grid = sender as System.Windows.Controls.DataGrid;
             if (grid == null || grid.SelectedItem == null)
             {
                 return;

@@ -265,15 +265,15 @@ namespace RFiDGear.ViewModel
 
                 if (_selectedSetupViewModel is MifareClassicSetupViewModel)
                 {
-                    PropertyInfo[] properties = typeof(MifareClassicSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                    var properties = typeof(MifareClassicSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-                    foreach (PropertyInfo p in properties)
+                    foreach (var p in properties)
                     {
                         // If not writable then cannot null it; if not readable then cannot check it's value
                         if (!p.CanWrite || !p.CanRead) { continue; }
 
-                        MethodInfo mget = p.GetGetMethod(false);
-                        MethodInfo mset = p.GetSetMethod(false);
+                        var mget = p.GetGetMethod(false);
+                        var mset = p.GetSetMethod(false);
 
                         // Get and set methods have to be public
                         if (mget == null) { continue; }
@@ -499,7 +499,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedDataBlockToReadWrite = value;
-                foreach (RFiDChipGrandChildLayerViewModel gCNVM in ChildNodeViewModelTemp.Children)
+                foreach (var gCNVM in ChildNodeViewModelTemp.Children)
                 {
                     gCNVM.IsFocused = false;
                 }
@@ -968,7 +968,7 @@ namespace RFiDGear.ViewModel
 
                 if (IsValidClassicKeyAKeyCurrent != false && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
                 {
-                    string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyANumberCurrentAsInt].AccessBits;
+                    var currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyANumberCurrentAsInt].AccessBits;
                     currentSectorTrailer = string.Join(",", new[]
                                                        {
                                                            classicKeyAKeyCurrent,
@@ -1016,7 +1016,7 @@ namespace RFiDGear.ViewModel
                 IsValidClassicKeyBKeyCurrent = (CustomConverter.IsInHexFormat(classicKeyBKeyCurrent) && classicKeyBKeyCurrent.Length == 12);
                 if (IsValidClassicKeyBKeyCurrent != false && SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
                 {
-                    string currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyBNumberCurrentAsInt].AccessBits;
+                    var currentSectorTrailer = settings.DefaultSpecification.MifareClassicDefaultSecuritySettings[selectedClassicKeyBNumberCurrentAsInt].AccessBits;
                     currentSectorTrailer = string.Join(",", new[]
                                                        {
                                                            currentSectorTrailer.Split(new[] {',',';'})[0],
@@ -1326,7 +1326,7 @@ namespace RFiDGear.ViewModel
                 if (isValidApplicationCode == true)
                 {
                     appNumberAsInt &= 0xff00;
-                    appNumberAsInt |= CustomConverter.GetBytes(applicationCode, out int _)[0];
+                    appNumberAsInt |= CustomConverter.GetBytes(applicationCode, out var _)[0];
                 }
                 OnPropertyChanged(nameof(IsValidApplicationCode));
             }
@@ -1362,7 +1362,7 @@ namespace RFiDGear.ViewModel
                 if (isValidFunctionClusterCode == true)
                 {
                     appNumberAsInt &= 0x00ff;
-                    appNumberAsInt |= (CustomConverter.GetBytes(functionClusterCode, out int _)[0] << 8);
+                    appNumberAsInt |= (CustomConverter.GetBytes(functionClusterCode, out var _)[0] << 8);
                 }
                 OnPropertyChanged(nameof(IsValidFunctionClusterCode));
             }
@@ -1647,10 +1647,10 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task classicTask =
+            var classicTask =
                 new Task(() =>
                 {
-                    using (ReaderDevice device = ReaderDevice.Instance)
+                    using (var device = ReaderDevice.Instance)
                     {
                         if (device != null && device.ReadChipPublic() == ERROR.NoError)
                         {
@@ -1663,9 +1663,9 @@ namespace RFiDGear.ViewModel
                             {
                                 StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 
-                                for (int i = 0; i < device.Sector.DataBlock.Count - 1; i++)
+                                for (var i = 0; i < device.Sector.DataBlock.Count - 1; i++)
                                 {
-                                    for(int j = 0; j < device.Sector.DataBlock[i].Data.Length; j++)
+                                    for(var j = 0; j < device.Sector.DataBlock[i].Data.Length; j++)
                                     {
                                         if(device.Sector.DataBlock[i].Data[j] == 0 && device.Sector.IsAuthenticated == true)
                                         {
@@ -1729,10 +1729,10 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task classicTask =
+            var classicTask =
                 new Task(() =>
                          {
-                             using (ReaderDevice device = ReaderDevice.Instance)
+                             using (var device = ReaderDevice.Instance)
                              {
                                  if (device != null && device.ReadChipPublic() == ERROR.NoError)
                                  {
@@ -1751,7 +1751,7 @@ namespace RFiDGear.ViewModel
 
                                              StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
 
-                                             for (int i = 0; i < device.Sector.DataBlock.Count; i++)
+                                             for (var i = 0; i < device.Sector.DataBlock.Count; i++)
                                              {
                                                  childNodeViewModelFromChip.Children[i].DataBlockNumber = i;
                                                  childNodeViewModelTemp.Children[i].DataBlockNumber = i;
@@ -1858,10 +1858,10 @@ namespace RFiDGear.ViewModel
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            Task classicTask =
+            var classicTask =
                 new Task(() =>
                          {
-                             using (ReaderDevice device = ReaderDevice.Instance)
+                             using (var device = ReaderDevice.Instance)
                              {
                                  StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 

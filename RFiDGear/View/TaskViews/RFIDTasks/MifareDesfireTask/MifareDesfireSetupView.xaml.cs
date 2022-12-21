@@ -6,6 +6,7 @@
  */
 
 using System.Windows;
+using System.Windows.Input;
 
 namespace RFiDGear.View
 {
@@ -17,6 +18,12 @@ namespace RFiDGear.View
         public MifareDesfireSetupView()
         {
             InitializeComponent();
+            this.MaxHeight = (uint)SystemParameters.MaximizedPrimaryScreenHeight - 8;
+        }
+
+        private void WindowMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            DragMove();
         }
     }
 }

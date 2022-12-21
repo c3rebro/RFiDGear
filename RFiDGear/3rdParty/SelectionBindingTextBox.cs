@@ -73,7 +73,7 @@ namespace RFiDGear._3rdParty
 
             if (!textBox.changeFromUI)
             {
-                int newValue = (int)args.NewValue;
+                var newValue = (int)args.NewValue;
                 textBox.SelectionStart = newValue;
             }
             else
@@ -88,7 +88,7 @@ namespace RFiDGear._3rdParty
 
             if (!textBox.changeFromUI)
             {
-                int newValue = (int)args.NewValue;
+                var newValue = (int)args.NewValue;
                 textBox.SelectionLength = newValue;
             }
             else

@@ -20,7 +20,7 @@ namespace RFiDGear
 
         public static bool KeyFormatQuickCheck(string keyToCheck)
         {
-            foreach (char c in keyToCheck.ToCharArray())
+            foreach (var c in keyToCheck.ToCharArray())
             {
                 if (c == ' ')
                 {
@@ -32,10 +32,10 @@ namespace RFiDGear
 
         public static int GetByteCount(string hexString)
         {
-            int numHexChars = 0;
+            var numHexChars = 0;
             char c;
             // remove all none A-F, 0-9, characters
-            for (int i = 0; i < hexString.Length; i++)
+            for (var i = 0; i < hexString.Length; i++)
             {
                 c = hexString[i];
                 if (IsHexDigit(c))
@@ -54,10 +54,10 @@ namespace RFiDGear
         public static byte[] GetBytes(string hexString, out int discarded)
         {
             discarded = 0;
-            string newString = "";
+            var newString = "";
             char c;
             // remove all none A-F, 0-9, characters
-            for (int i = 0; i < hexString.Length; i++)
+            for (var i = 0; i < hexString.Length; i++)
             {
                 c = hexString[i];
                 if (IsHexDigit(c))
@@ -76,11 +76,11 @@ namespace RFiDGear
                 newString = newString.Substring(0, newString.Length - 1);
             }
 
-            int byteLength = newString.Length / 2;
-            byte[] bytes = new byte[byteLength];
+            var byteLength = newString.Length / 2;
+            var bytes = new byte[byteLength];
             string hex;
-            int j = 0;
-            for (int i = 0; i < bytes.Length; i++)
+            var j = 0;
+            for (var i = 0; i < bytes.Length; i++)
             {
                 hex = new String(new Char[] { newString[j], newString[j + 1] });
                 bytes[i] = HexToByte(hex);
@@ -91,8 +91,8 @@ namespace RFiDGear
 
         public static string HexToString(byte[] bytes)
         {
-            string hexString = "";
-            for (int i = 0; i < bytes.Length; i++)
+            var hexString = "";
+            for (var i = 0; i < bytes.Length; i++)
             {
                 hexString += bytes[i].ToString("X2");
             }
@@ -101,7 +101,7 @@ namespace RFiDGear
 
         public static string HexToString(byte bytes)
         {
-            string hexString = "";
+            var hexString = "";
             {
                 hexString += bytes.ToString("X2");
             }
@@ -110,9 +110,9 @@ namespace RFiDGear
 
         public static bool IsInHexFormat(string hexString)
         {
-            bool hexFormat = true;
+            var hexFormat = true;
 
-            foreach (char digit in hexString)
+            foreach (var digit in hexString)
             {
                 if (!IsHexDigit(digit))
                 {
@@ -126,8 +126,8 @@ namespace RFiDGear
         public static bool IsHexDigit(Char c)
         {
             int numChar;
-            int numA = Convert.ToInt32('A');
-            int num1 = Convert.ToInt32('0');
+            var numA = Convert.ToInt32('A');
+            var num1 = Convert.ToInt32('0');
             c = Char.ToUpper(c);
             numChar = Convert.ToInt32(c);
             if (numChar >= numA && numChar < (numA + 6))
@@ -145,7 +145,7 @@ namespace RFiDGear
 
         public static string FormatMifareClassicKeyWithSpacesEachByte(string Str)
         {
-            string temp = Str;
+            var temp = Str;
 
             if (string.IsNullOrEmpty(temp))
             {
@@ -163,7 +163,7 @@ namespace RFiDGear
             }
             else
             {
-                for (int i = (Str.Length) - 2; i > 0; i -= 2)
+                for (var i = (Str.Length) - 2; i > 0; i -= 2)
                 {
                     temp = temp.Insert(i, " ");
                 }
@@ -174,7 +174,7 @@ namespace RFiDGear
 
         public static KEY_ERROR FormatMifareDesfireKeyStringWithSpacesEachByte(string Str)
         {
-            string temp = Str;
+            var temp = Str;
 
             if (string.IsNullOrEmpty(temp))
             {
@@ -191,7 +191,7 @@ namespace RFiDGear
                 return KEY_ERROR.KEY_HAS_WRONG_LENGTH;
             }
 
-            for (int i = (Str.Length) - 2; i > 0; i -= 2)
+            for (var i = (Str.Length) - 2; i > 0; i -= 2)
             {
                 temp = temp.Insert(i, " ");
             }
@@ -203,7 +203,7 @@ namespace RFiDGear
 
         public static KEY_ERROR FormatMifareClassicKeyStringWithSpacesEachByte(string Str)
         {
-            string temp = Str;
+            var temp = Str;
 
             if (string.IsNullOrEmpty(temp))
             {
@@ -220,7 +220,7 @@ namespace RFiDGear
                 return KEY_ERROR.KEY_HAS_WRONG_LENGTH;
             }
 
-            for (int i = (Str.Length) - 2; i > 0; i -= 2)
+            for (var i = (Str.Length) - 2; i > 0; i -= 2)
             {
                 temp = temp.Insert(i, " ");
             }
@@ -232,9 +232,9 @@ namespace RFiDGear
 
         public static string NormalizeKey(string keyToNormalize)
         {
-            char[] c = keyToNormalize.ToCharArray();
+            var c = keyToNormalize.ToCharArray();
 
-            for (int i = 0; i < keyToNormalize.Length; i++)
+            for (var i = 0; i < keyToNormalize.Length; i++)
             {
                 if (c[i] == ' ')
                 {
@@ -252,7 +252,7 @@ namespace RFiDGear
         public static int GetChipBasedDataBlockNumber(int _sectorNumber, int _dataBlockNumberSectorBased)
         {
             int blockCount;
-            int dataBlockNumberChipBased = 0;
+            var dataBlockNumberChipBased = 0;
 
             blockCount = (_sectorNumber <= 31 ? 4 : 16);
 
@@ -332,7 +332,7 @@ namespace RFiDGear
         public static bool SectorTrailerHasWrongFormat(string stString)
         {
             _ = new byte[255];
-            byte[] st = GetBytes(stString, out int _);
+            var st = GetBytes(stString, out var _);
 
             if (!SectorTrailerHasWrongFormat(st))
             {
@@ -363,7 +363,7 @@ namespace RFiDGear
                 throw new ArgumentException("hex must be 1 or 2 characters in length");
             }
 
-            byte newByte = byte.Parse(hex, System.Globalization.NumberStyles.HexNumber);
+            var newByte = byte.Parse(hex, System.Globalization.NumberStyles.HexNumber);
             return newByte;
         }
 
@@ -371,7 +371,7 @@ namespace RFiDGear
         {
             uint _C1, _C2, _C3;
 
-            byte[] new_st = new byte[st.Length];
+            var new_st = new byte[st.Length];
 
             _C3 = st[2];
             _C3 ^= 0xFF;
@@ -419,7 +419,7 @@ namespace RFiDGear
 
                 byte crc = 0xc7;
 
-                foreach (byte b in val)
+                foreach (var b in val)
                 {
                     crc = table[(byte)(crc ^ b)];
                 }
@@ -435,13 +435,13 @@ namespace RFiDGear
 
             public byte[] GenerateTable(CRC8_POLY polynomial)
             {
-                byte[] csTable = new byte[256];
+                var csTable = new byte[256];
 
-                for (int i = 0; i < 256; ++i)
+                for (var i = 0; i < 256; ++i)
                 {
-                    int curr = i;
+                    var curr = i;
 
-                    for (int j = 0; j < 8; ++j)
+                    for (var j = 0; j < 8; ++j)
                     {
                         if ((curr & 0x80) != 0)
                         {

@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Globalization;
+using System.Windows;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
@@ -93,21 +94,22 @@ namespace RFiDGear.ViewModel
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
             _cmdReadSectorWithCustoms = new RelayCommand(ReadSectorWithCustoms);
 
-            ContextMenuItems = new List<MenuItem>
-            {
-                new MenuItem()
+            Application.Current.Dispatcher.BeginInvoke((Action)(() => {
+                ContextMenuItems = new List<MenuItem>
                 {
-                    Header = "Read Sector with default Keys",
-                    Command = _cmdReadSectorWithDefaults
-                },
+                    new MenuItem()
+                    {
+                        Header = "Read Sector with default Keys",
+                        Command = _cmdReadSectorWithDefaults
+                    },
 
-                new MenuItem()
-                {
-                    Header = "Read Sector with custom Keys",
-                    Command = _cmdReadSectorWithCustoms
-                }
-            };
-
+                    new MenuItem()
+                    {
+                        Header = "Read Sector with custom Keys",
+                        Command = _cmdReadSectorWithCustoms
+                    }
+                };
+            }));
             children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
             LoadChildren();
@@ -134,20 +136,23 @@ namespace RFiDGear.ViewModel
             _cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
 
-            ContextMenuItems = new List<MenuItem>
+            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
-                new MenuItem()
+                ContextMenuItems = new List<MenuItem>
                 {
-                    Header = "Read Sector using default Configuration",
-                    Command = _cmdReadSectorWithDefaults
-                },
+                    new MenuItem()
+                    {
+                        Header = "Read Sector using default Configuration",
+                        Command = null //_cmdReadSectorWithDefaults
+                    },
 
-                new MenuItem()
-                {
-                    Header = "Edit Authentication Settings and Modify Sector",
-                    Command = _cmdEditAuthAndModifySector
-                }
-            };
+                    new MenuItem()
+                    {
+                        Header = "Edit Authentication Settings and Modify Sector",
+                        Command = null // _cmdEditAuthAndModifySector
+                    }
+                };
+            }));
 
             children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
@@ -176,21 +181,23 @@ namespace RFiDGear.ViewModel
             _cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
 
-            ContextMenuItems = new List<MenuItem>
+            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
-                new MenuItem()
+                ContextMenuItems = new List<MenuItem>
                 {
-                    Header = "Read Sector using default Configuration",
-                    Command = _cmdReadSectorWithDefaults
-                },
+                    new MenuItem()
+                    {
+                        Header = "Read Sector using default Configuration",
+                        Command = _cmdReadSectorWithDefaults
+                    },
 
-                new MenuItem()
-                {
-                    Header = "Edit Authentication Settings and Modify Sector",
-                    Command = _cmdEditAuthAndModifySector
-                }
-            };
-
+                    new MenuItem()
+                    {
+                        Header = "Edit Authentication Settings and Modify Sector",
+                        Command = _cmdEditAuthAndModifySector
+                    }
+                };
+            }));
             children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
             LoadChildren();
@@ -217,7 +224,7 @@ namespace RFiDGear.ViewModel
         [XmlIgnore]
         public List<MenuItem> ContextMenu => ContextMenuItems;
 
-        private readonly List<MenuItem> ContextMenuItems;
+        private List<MenuItem> ContextMenuItems;
 
         public void ReadSectorWithDefaults()
         {
@@ -225,7 +232,7 @@ namespace RFiDGear.ViewModel
 
         public void ReadSectorWithCustoms()
         {
-            using (ReaderDevice device = ReaderDevice.Instance)
+            using (var device = ReaderDevice.Instance)
             {
                 IsSelected = true;
 
@@ -251,7 +258,7 @@ namespace RFiDGear.ViewModel
                     {
                         IsAuthenticated = device.SectorSuccessfullyAuth;
 
-                        foreach (RFiDChipGrandChildLayerViewModel gcVM in Children)
+                        foreach (var gcVM in Children)
                         {
                         }
                     },
@@ -276,6 +283,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public object SelectedItem
         {
             get => selectedItem;
@@ -346,6 +354,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public bool? HasChanged
         {
             get => hasChanged;
@@ -360,6 +369,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public bool? IsTask
         {
             get => isTask;
@@ -374,6 +384,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
+        [XmlIgnore]
         public bool? IsAuthenticated
         {
             get => isAuth;
@@ -520,7 +531,7 @@ namespace RFiDGear.ViewModel
                 case CARD_TYPE.MifarePlus_SL1_1K:
                 case CARD_TYPE.MifarePlus_SL1_2K:
                     {
-                        for (int i = 0; i <= 3; i++)
+                        for (var i = 0; i <= 3; i++)
                         {
                             children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), this));
                         }
@@ -532,14 +543,14 @@ namespace RFiDGear.ViewModel
                     {
                         if (SectorNumber < 32)
                         {
-                            for (int i = 0; i <= 3; i++)
+                            for (var i = 0; i <= 3; i++)
                             {
                                 children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), this));
                             }
                         }
                         else
                         {
-                            for (int i = 0; i <= 15; i++)
+                            for (var i = 0; i <= 15; i++)
                             {
                                 children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), this));
                             }
@@ -556,7 +567,7 @@ namespace RFiDGear.ViewModel
                     break;
 
                 case CARD_TYPE.Unspecified: //TODO: Add Card Type "TASK_MF_Classic" for every type
-                    for (int i = 0; i <= 3; i++)
+                    for (var i = 0; i <= 3; i++)
                     {
                         children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), new MifareClassicSetupViewModel()));
                     }
