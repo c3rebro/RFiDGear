@@ -3,7 +3,7 @@
     x:Class="RFiDGear.View.TabPageMiscReaderSettingsView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer">
     <UserControl.Resources>
         <dal:ResourceLoader x:Key="Localization" />
@@ -15,7 +15,7 @@
             Margin="12,15,8,8"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
-            <ui:TextBox
+            <TextBox
                 Grid.Row="0"
                 Grid.Column="1"
                 Height="auto"
@@ -31,7 +31,7 @@
                         </StackPanel>
                     </ToolTip>
                 </TextBox.ToolTip>
-            </ui:TextBox>
+            </TextBox>
             <Label
                 Grid.Row="0"
                 Grid.Column="0"
@@ -75,7 +75,7 @@
                     </ToolTip>
                 </ComboBox.ToolTip>
             </ComboBox>
-            <ui:ToggleSwitch
+            <CheckBox
                 Grid.Row="2"
                 Grid.ColumnSpan="2"
                 Margin="8,7,8,3"
@@ -83,7 +83,7 @@
                 VerticalAlignment="Stretch"
                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelLoadLastProjectOnStart, Converter={StaticResource Localization}}"
                 IsChecked="{Binding LoadOnStart, Mode=TwoWay}" />
-            <ui:ToggleSwitch
+            <CheckBox
                 Grid.Row="3"
                 Margin="8,7,8,3"
                 HorizontalAlignment="Left"

@@ -6,7 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
     xmlns:local="clr-namespace:RFiDGear"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Height="auto"
     MinHeight="300"
@@ -57,7 +57,7 @@
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentMasterKey'}" />
-                    <ui:TextBox
+                    <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
                         Margin="8,8,8,8"
@@ -67,7 +67,7 @@
                         VerticalContentAlignment="Center"
                         Text="{Binding DesfireMasterKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
                         <TextBox.Resources>
-                            <Style TargetType="ui:TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                            <Style TargetType="TextBox" >
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsValidDesfireMasterKeyTarget}" Value="True">
                                         <Setter Property="Foreground" Value="Green" />
@@ -82,7 +82,7 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </ui:TextBox>
+                    </TextBox>
                     <Label
                         Grid.Row="1"
                         Grid.Column="0"
@@ -100,7 +100,7 @@
                         VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
                         SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeTarget, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
-                    <ui:ToggleSwitch
+                    <CheckBox
                         Grid.Row="3"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
@@ -111,15 +111,15 @@
                         VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowChangeMK'}"
                         IsChecked="{Binding IsAllowChangeMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <ui:ToggleSwitch.ToolTip>
+                        <CheckBox.ToolTip>
                             <ToolTip>
                                 <StackPanel>
                                     <TextBlock FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowChangeMK'}" />
                                 </StackPanel>
                             </ToolTip>
-                        </ui:ToggleSwitch.ToolTip>
-                    </ui:ToggleSwitch>
-                    <ui:ToggleSwitch
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+                    <CheckBox
                         Grid.Row="4"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
@@ -130,15 +130,15 @@
                         VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowListing'}"
                         IsChecked="{Binding IsAllowListingWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <ui:ToggleSwitch.ToolTip>
+                        <CheckBox.ToolTip>
                             <ToolTip>
                                 <StackPanel>
                                     <TextBlock FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowListing'}" />
                                 </StackPanel>
                             </ToolTip>
-                        </ui:ToggleSwitch.ToolTip>
-                    </ui:ToggleSwitch>
-                    <ui:ToggleSwitch
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+                    <CheckBox
                         Grid.Row="5"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
@@ -149,15 +149,15 @@
                         VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowCreateDelete'}"
                         IsChecked="{Binding IsAllowCreateDelWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <ui:ToggleSwitch.ToolTip>
+                        <CheckBox.ToolTip>
                             <ToolTip>
                                 <StackPanel>
                                     <TextBlock FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowCreateDelete'}" />
                                 </StackPanel>
                             </ToolTip>
-                        </ui:ToggleSwitch.ToolTip>
-                    </ui:ToggleSwitch>
-                    <ui:ToggleSwitch
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+                    <CheckBox
                         Grid.Row="6"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
@@ -168,14 +168,14 @@
                         VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowConfigChange'}"
                         IsChecked="{Binding IsAllowConfigChangableChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <ui:ToggleSwitch.ToolTip>
+                        <CheckBox.ToolTip>
                             <ToolTip>
                                 <StackPanel>
                                     <TextBlock FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxConfigChangeable'}" />
                                 </StackPanel>
                             </ToolTip>
-                        </ui:ToggleSwitch.ToolTip>
-                    </ui:ToggleSwitch>
+                        </CheckBox.ToolTip>
+                    </CheckBox>
                     <Button
                         Grid.Row="8"
                         Grid.Column="0"
@@ -231,7 +231,7 @@
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentMasterKey'}" />
-                    <ui:TextBox
+                    <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
                         Margin="8,8,8,8"
@@ -241,7 +241,7 @@
                         VerticalContentAlignment="Center"
                         Text="{Binding DesfireMasterKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.Resources>
-                            <Style TargetType="ui:TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                            <Style TargetType="TextBox" >
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsValidDesfireMasterKeyCurrent}" Value="True">
                                         <Setter Property="Foreground" Value="Green" />
@@ -256,7 +256,7 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </ui:TextBox>
+                    </TextBox>
                     <Button
                         Grid.Row="4"
                         Grid.Column="0"

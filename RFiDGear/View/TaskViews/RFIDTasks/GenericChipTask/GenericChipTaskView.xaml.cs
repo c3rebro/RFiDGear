@@ -7,14 +7,14 @@
 
 using System.Windows;
 
-using Wpf.Ui.Controls;
+using System.Windows;
 
 namespace RFiDGear.View
 {
     /// <summary>
     /// Interaction logic for CreateReportTaskView.xaml
     /// </summary>
-    public partial class GenericChipTaskView : UiWindow
+    public partial class GenericChipTaskView : Window
     {
         public GenericChipTaskView()
         {

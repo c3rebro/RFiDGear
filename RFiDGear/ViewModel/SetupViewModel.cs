@@ -62,6 +62,7 @@ namespace RFiDGear.ViewModel
 
             switch (SelectedReader)
             {
+                /*
                 case ReaderTypes.PCSC:
                     if (device != null)
                     {
@@ -78,7 +79,7 @@ namespace RFiDGear.ViewModel
                         device = new LibLogicalAccessProvider(SelectedReader);
                     }
                     break;
-
+                */
                 case ReaderTypes.Elatec:
                     if (device != null)
                     {

@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Stretch"
@@ -82,7 +82,7 @@
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireFileSize'}" />
-                    <ui:TextBox
+                    <TextBox
                         Grid.Row="0"
                         Grid.Column="3"
                         Margin="8,8,8,8"
@@ -107,8 +107,8 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </ui:TextBox>
-                    <ui:TextBox
+                    </TextBox>
+                    <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
                         Margin="8,8,8,8"
@@ -133,7 +133,7 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </ui:TextBox>
+                    </TextBox>
                     <Label
                         Grid.Row="2"
                         Grid.Column="0"

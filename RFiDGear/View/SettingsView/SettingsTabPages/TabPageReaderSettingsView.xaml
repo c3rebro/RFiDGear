@@ -3,7 +3,7 @@
     x:Class="RFiDGear.View.TabPageReaderSettingsView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        
 
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer">
     <UserControl.Resources>
@@ -39,10 +39,9 @@
                 Grid.Row="0"
                 Grid.Column="0"
                 Width="198"
-                Height="26"
-                Margin="8,6,0,0"
+                Margin="8,8,8,8"
                 HorizontalAlignment="Left"
-                VerticalAlignment="Top"
+                VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Stretch"
                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAvailableReaders'}"
                 DataContext="{Binding}"

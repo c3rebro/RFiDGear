@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ui:UiWindow
+<Window
     x:Class="RFiDGear.View.CommonTaskView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
@@ -14,18 +14,12 @@
     Width="1000"
     Height="800"
     dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
-    AllowsTransparency="True"
-    Opacity="1"
-    WindowStyle="None"
     ResizeMode="CanResizeWithGrip"
     SizeToContent="Manual"
-    ExtendsContentIntoTitleBar="True"
-    WindowBackdropType="Mica"
     WindowStartupLocation="CenterOwner"
     UseLayoutRounding="True"
-    WindowCornerPreference="Round"
     mc:Ignorable="d">
-    <ui:UiWindow.Resources>
+    <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
@@ -42,7 +36,7 @@
 				</Style>
 			</ContextMenu.ItemContainerStyle>
 		</ContextMenu>-->
-    </ui:UiWindow.Resources>
+    </Window.Resources>
     
     <Grid>
         <Grid.RowDefinitions>
@@ -51,17 +45,6 @@
             <RowDefinition Height="11" />
             <RowDefinition Height="0.3*" />
         </Grid.RowDefinitions>
-        <ui:TitleBar          
-                Margin="3,3,3,0"
-                MinimizeToTray="False"
-                ShowHelp="False"
-                ShowClose="True"
-                ShowMaximize="True"
-                ShowMinimize="True">
-            <ui:TitleBar.Header>
-                <Label Content="{Binding Caption}" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" FontWeight="Bold" Margin="8"/>
-            </ui:TitleBar.Header>
-        </ui:TitleBar>
         <GridSplitter
             Grid.Row="2"
             Grid.Column="0"
@@ -108,7 +91,7 @@
             <GroupBox
                 Grid.Row="0"
                 Grid.Column="0"
-                Margin="9,40,8,8"
+                Margin="9,8,8,8"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareClassicSetupTaskConfiguration'}">
@@ -127,7 +110,7 @@
                         Grid.Row="0"
                         Grid.Column="1"
                         Margin="8,7,8,0"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         ItemsSource="{dal:Enumerate {x:Type dal:TaskType_CommonTask}}"
                         SelectedItem="{Binding SelectedTaskType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskType_CommonTask}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
@@ -157,6 +140,7 @@
                         Grid.Column="3"
                         Margin="8,7,8,3"
                         VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
                         TabIndex="2"
                         Text="{Binding CurrentTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
                         <TextBox.Resources>
@@ -197,6 +181,7 @@
                                 Grid.Column="3"
                                 Margin="8,7,8,3"
                                 VerticalAlignment="Stretch"
+                                VerticalContentAlignment="Center"
                                 TabIndex="2"
                                 Text="{Binding SelectedExecuteConditionTaskIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Cursor="IBeam">
                                 <TextBox.Resources>
@@ -237,8 +222,8 @@
                         <ColumnDefinition MinWidth="150" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="45" />
-                        <RowDefinition Height="45" />
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                 </Grid>
@@ -283,4 +268,4 @@
                 IsCancel="True" />
         </Grid>
     </Grid>
-</ui:UiWindow>
+</Window>

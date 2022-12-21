@@ -61,7 +61,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="42" />
+                                <RowDefinition Height="auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Label
@@ -120,18 +120,21 @@
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*" />
+                            <RowDefinition Height="auto" />
                         </Grid.RowDefinitions>
                         <Button
-                            Grid.Row="0"
+                            Grid.Row="1"
                             Grid.Column="1"
+                            Height="auto"
                             Margin="10,0,8,10"
                             VerticalAlignment="Bottom"
                             HorizontalAlignment="Center"
                             Command="{Binding RemoveCheckpointCommand}"
                             Content="{Binding LocalizationResourceSet, ConverterParameter=buttonContentCommonTaskRemoveCheckpoint, Converter={StaticResource Localization}}" />
                         <Button
-                            Grid.Row="0"
+                            Grid.Row="1"
                             Grid.Column="0"
+                            Height="auto"
                             Margin="10,0,10,10"
                             VerticalAlignment="Bottom"
                             HorizontalAlignment="Center"
@@ -198,7 +201,7 @@
                                             SelectedItem="{Binding TaskIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             FontFamily="Lucida Console">
                                             <ComboBox.Style>
-                                                <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource DefaultComboBoxStyle}">
+                                                <Style TargetType="{x:Type ComboBox}">
                                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                     <Setter Property="VerticalAlignment" Value="Stretch" />
                                                     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
@@ -218,7 +221,7 @@
                                             
                                             FontFamily="Lucida Console">
                                             <ComboBox.Style>
-                                                <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource DefaultComboBoxStyle}">
+                                                <Style TargetType="{x:Type ComboBox}">
                                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                     <Setter Property="VerticalAlignment" Value="Stretch" />
                                                     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
@@ -238,7 +241,7 @@
                                             
                                             FontFamily="Lucida Console">
                                             <ComboBox.Style>
-                                                <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource DefaultComboBoxStyle}">
+                                                <Style TargetType="{x:Type ComboBox}">
                                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                     <Setter Property="VerticalAlignment" Value="Stretch" />
                                                     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>

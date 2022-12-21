@@ -2,14 +2,14 @@
 using System.Windows.Navigation;
 using System.Windows.Input;
 
-using Wpf.Ui.Controls;
+using System.Windows;
 
 namespace RFiDGear.View
 {
     /// <summary>
     /// Interaktionslogik für Splash.xaml
     /// </summary>
-    public partial class AboutView : UiWindow
+    public partial class AboutView : Window
     {
         public AboutView()
         {

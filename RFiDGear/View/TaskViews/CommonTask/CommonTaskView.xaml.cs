@@ -9,15 +9,13 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
-using Wpf.Ui.Controls;
-
 
 namespace RFiDGear.View
 {
     /// <summary>
     /// Interaction logic for CreateReportTaskView.xaml
     /// </summary>
-    public partial class CommonTaskView : UiWindow
+    public partial class CommonTaskView : Window
     {
         public CommonTaskView()
         {

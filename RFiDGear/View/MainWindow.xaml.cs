@@ -1,7 +1,5 @@
 ﻿using RFiDGear.ViewModel;
 
-using Wpf.Ui.Controls;
-
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,7 +16,7 @@ namespace RFiDGear
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : UiWindow
+    public partial class MainWindow : Window
     {
         public MainWindow()
         {
@@ -49,7 +47,7 @@ namespace RFiDGear
                     var item = sender as TreeView;
 
                     var dep = (DependencyObject)e.OriginalSource;
-                    while ((dep != null) && !(dep is Wpf.Ui.Controls.TreeViewItem))
+                    while ((dep != null) && !(dep is System.Windows.Controls.TreeViewItem))
                     {
                         dep = VisualTreeHelper.GetParent(dep);
                     }

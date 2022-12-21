@@ -6,7 +6,6 @@
     xmlns:_3rdP="clr-namespace:RFiDGear._3rdParty"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:RFiDGear.ViewModel"

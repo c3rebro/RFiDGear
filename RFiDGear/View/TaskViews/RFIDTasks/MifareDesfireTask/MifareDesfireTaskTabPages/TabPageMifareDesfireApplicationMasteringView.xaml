@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Stretch"
@@ -65,7 +65,7 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}" />
-                    <ui:TextBox
+                    <TextBox
                         Grid.Row="1"
                         Grid.Column="1"
                         Height="auto"
@@ -91,7 +91,7 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </ui:TextBox>
+                    </TextBox>
                     <Label
                         Grid.Row="0"
                         Grid.Column="0"
@@ -118,7 +118,7 @@
                         HorizontalAlignment="Stretch"
                         ItemsSource="{Binding MifareDesfireKeys}"
                         SelectedItem="{Binding SelectedDesfireAppKeyNumberTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
-                    <ui:TextBox
+                    <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
                         Margin="8,8,8,8"
@@ -143,7 +143,7 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </ui:TextBox>
+                    </TextBox>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
@@ -214,7 +214,7 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}" />
-                    <ui:TextBox
+                    <TextBox
                         Grid.Row="1"
                         Grid.Column="1"
                         Height="auto"
@@ -240,7 +240,7 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </ui:TextBox>
+                    </TextBox>
                     <Label
                         Grid.Row="0"
                         Grid.Column="0"
@@ -267,7 +267,7 @@
                         HorizontalAlignment="Stretch"
                         ItemsSource="{Binding MifareDesfireKeys}"
                         SelectedItem="{Binding SelectedDesfireAppKeyNumberCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
-                    <ui:TextBox
+                    <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
                         Margin="8,8,8,8"
@@ -292,7 +292,7 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </ui:TextBox>
+                    </TextBox>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />

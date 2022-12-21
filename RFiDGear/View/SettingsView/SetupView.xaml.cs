@@ -7,14 +7,14 @@
 
 using System.Windows;
 using System.Windows.Input;
-using Wpf.Ui.Controls;
+using System.Windows;
 
 namespace RFiDGear.View
 {
     /// <summary>
     /// Interaction logic for SetupDialogBoxView.xaml
     /// </summary>
-    public partial class SetupView : UiWindow
+    public partial class SetupView : Window
     {
         public SetupView()
         {

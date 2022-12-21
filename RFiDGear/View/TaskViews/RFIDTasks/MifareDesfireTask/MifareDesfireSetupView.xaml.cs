@@ -7,14 +7,13 @@
 
 using System.Windows;
 using System.Windows.Input;
-using Wpf.Ui.Controls;
 
 namespace RFiDGear.View
 {
     /// <summary>
     /// Interaction logic for MifareDesfireSetupView.xaml
     /// </summary>
-    public partial class MifareDesfireSetupView : UiWindow
+    public partial class MifareDesfireSetupView : Window
     {
         public MifareDesfireSetupView()
         {

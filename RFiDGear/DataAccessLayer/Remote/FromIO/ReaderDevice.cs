@@ -12,6 +12,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             {
                 switch (Reader)
                 {
+                    /*
                     case ReaderTypes.PCSC:
                         lock (syncRoot)
                         {
@@ -30,6 +31,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 return instance;
                             }
                         }
+                    */
                     case ReaderTypes.Elatec:
                         lock (syncRoot)
                         {

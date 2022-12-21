@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Stretch"
@@ -109,7 +109,7 @@
                         HorizontalContentAlignment="Left"
                         ItemsSource="{dal:Enumerate {x:Type dal:AccessCondition_MifareDesfireAppCreation}}"
                         SelectedItem="{Binding SelectedDesfireAppKeySettingsCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:AccessCondition_MifareDesfireAppCreation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
-                    <ui:ToggleSwitch
+                    <CheckBox
                         Grid.Row="0"
                         Grid.Column="2"
                         Margin="8,8,8,8"
@@ -117,15 +117,15 @@
                         VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowChangeMK'}"
                         IsChecked="{Binding IsAllowChangeMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <ui:ToggleSwitch.ToolTip>
+                        <CheckBox.ToolTip>
                             <ToolTip>
                                 <StackPanel>
                                     <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowChangeMK'}" />
                                 </StackPanel>
                             </ToolTip>
-                        </ui:ToggleSwitch.ToolTip>
-                    </ui:ToggleSwitch>
-                    <ui:ToggleSwitch
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+                    <CheckBox
                         Grid.Row="1"
                         Grid.Column="2"
                         Margin="8,0,8,8"
@@ -134,32 +134,31 @@
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowListing'}"
                         IsChecked="{Binding IsAllowListingWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
 
-                        <ui:ToggleSwitch.ToolTip>
+                        <CheckBox.ToolTip>
                             <ToolTip>
                                 <StackPanel>
                                     <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowListing'}" />
                                 </StackPanel>
                             </ToolTip>
-                        </ui:ToggleSwitch.ToolTip>
-                    </ui:ToggleSwitch>
-                    <ui:ToggleSwitch
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+                    <CheckBox
                         Grid.Row="2"
                         Grid.Column="2"
-                        Height="auto"
                         Margin="8,0,8,8"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowCreateDelete'}"
                         IsChecked="{Binding IsAllowCreateDelWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <ui:ToggleSwitch.ToolTip>
+                        <CheckBox.ToolTip>
                             <ToolTip>
                                 <StackPanel>
                                     <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowCreateDelete'}" />
                                 </StackPanel>
                             </ToolTip>
-                        </ui:ToggleSwitch.ToolTip>
-                    </ui:ToggleSwitch>
-                    <ui:ToggleSwitch
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+                    <CheckBox
                         Grid.Row="3"
                         Grid.Column="2"
                         Margin="8,0,8,8"
@@ -174,7 +173,7 @@
                                 </StackPanel>
                             </ToolTip>
                         </ToggleButton.ToolTip>
-                    </ui:ToggleSwitch>
+                    </CheckBox>
                     <Button
                         Grid.Row="6"
                         Grid.ColumnSpan="3"
@@ -191,7 +190,7 @@
                         VerticalAlignment="Stretch"
                         Command="{Binding DeleteSignleCardApplicationCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireAppCreationDeleteApp'}" />
-                    <ui:TextBox
+                    <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
                         Margin="8,8,8,8"
@@ -216,7 +215,7 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Resources>
-                    </ui:TextBox>
+                    </TextBox>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />

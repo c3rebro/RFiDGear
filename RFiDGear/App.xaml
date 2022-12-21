@@ -11,17 +11,12 @@
     xmlns:mainvm="clr-namespace:MefMvvm.SharedContracts.ViewModel;assembly=PluginSystem"
     xmlns:pre="clr-namespace:MvvmDialogs.Presenters;assembly=MVVMDialogs"
     xmlns:vm="clr-namespace:RFiDGear.ViewModel"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    
     d1p1:Ignorable="d"
     StartupUri="View/MainWindow.xaml">
 
     <Application.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ui:ThemesDictionary Theme="Light" />
-                <ui:ControlsDictionary />
-            </ResourceDictionary.MergedDictionaries>
-            
             <mainvm:ViewModelLocator x:Key="Locator" d:IsDataSource="True" />
 
             <mainview:Splash x:Key="{x:Type vm:SplashScreenViewModel}" x:Shared="False" />

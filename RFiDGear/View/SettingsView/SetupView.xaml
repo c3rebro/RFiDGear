@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ui:UiWindow
+<Window
     x:Class="RFiDGear.View.SetupView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
     xmlns:v="clr-namespace:RFiDGear.View"
@@ -15,30 +15,13 @@
     HorizontalContentAlignment="Left"
     FontFamily="Segoe UI"
     FontWeight="Normal"
-    WindowStyle="None"
-    AllowsTransparency="True"
-    ExtendsContentIntoTitleBar="True"
-    WindowBackdropType="Mica"
     MouseLeftButtonDown="WindowMouseLeftButtonDown"
     SizeToContent="Width"
-    WindowStartupLocation="CenterScreen" 
-    WindowCornerPreference="Round">
-    <ui:UiWindow.Resources>
+    WindowStartupLocation="CenterScreen" >
+    <Window.Resources>
         <dal:ResourceLoader x:Key="Localization" />
-    </ui:UiWindow.Resources>
+    </Window.Resources>
     <Grid>
-        <ui:TitleBar          
-                Margin="3,3,3,0"
-                MinimizeToTray="False"
-                ShowHelp="False"
-                ShowClose="True"
-                ShowMaximize="False"
-                ShowMinimize="False">
-            <ui:TitleBar.Header>
-                <Label Content="{Binding Caption}" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" FontWeight="Bold" Margin="8"/>
-            </ui:TitleBar.Header>
-        </ui:TitleBar>
-        
         <TabControl
             Grid.Row="0"
             Grid.Column="0"
@@ -100,4 +83,4 @@
                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonSaveAndExitReaderSetupText'}" Grid.ColumnSpan="2" />
         </Grid>
     </Grid>
-</ui:UiWindow>
+</Window>

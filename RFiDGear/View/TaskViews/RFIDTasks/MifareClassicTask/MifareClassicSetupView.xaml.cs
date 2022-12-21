@@ -9,14 +9,12 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
-using Wpf.Ui.Controls;
-
 namespace RFiDGear.View
 {
     /// <summary>
     /// Interaction logic for MifareClassicSetupView.xaml
     /// </summary>
-    public partial class MifareClassicSetupView : UiWindow
+    public partial class MifareClassicSetupView : Window
     {
         public MifareClassicSetupView()
         {

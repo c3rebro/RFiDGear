@@ -2,7 +2,6 @@
 <UserControl
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer" xmlns:av="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="av"
     x:Class="RFiDGear.View.TabPageLogicTaskView"
     >
@@ -226,7 +225,7 @@
                     Margin="0,0,0,0"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch">
-                    <ui:DataGrid
+                    <DataGrid
                         Margin="8,8,8,8"
                         AutoGenerateColumns="False"
                         Background="Transparent"
@@ -236,7 +235,7 @@
                         CanUserSortColumns="False"
                         ItemsSource="{Binding Checkpoints, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                         SelectedItem="{Binding SelectedCheckpoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                        <ui:DataGrid.RowStyle>
+                        <DataGrid.RowStyle>
                             <Style TargetType="{x:Type DataGridRow}">
                                 <!--<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />-->
                                 <!--<Setter Property="ToolTip" Value="{StaticResource DescriptionToolTip}" />-->
@@ -246,14 +245,14 @@
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                 <Setter Property="VerticalContentAlignment" Value="Stretch" />
                             </Style>
-                        </ui:DataGrid.RowStyle>
+                        </DataGrid.RowStyle>
                         <!--
                             {Binding Data.LocalizationResourceSet,
                             Converter={StaticResource Localization},
                             ConverterParameter='dataGridHeaderMainWindowEventName',
                             Source={StaticResource proxy}}
                         -->
-                        <ui:DataGrid.Columns>
+                        <DataGrid.Columns>
                             <DataGridTemplateColumn Header="{Binding Data.LocalizationResourceSet, ConverterParameter=dataGridColumnHeaderCommonTaskTargetIndex, Converter={StaticResource Localization}, Source={StaticResource proxy}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -262,7 +261,7 @@
                                             SelectedItem="{Binding TaskIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             FontFamily="Lucida Console">
                                             <ComboBox.Style>
-                                                <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource DefaultComboBoxStyle}">
+                                                <Style TargetType="{x:Type ComboBox}" >
                                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                     <Setter Property="VerticalAlignment" Value="Stretch" />
                                                     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
@@ -282,7 +281,7 @@
                                             ScrollViewer.VerticalScrollBarVisibility="Visible"
                                             FontFamily="Lucida Console">
                                             <ComboBox.Style>
-                                                <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource DefaultComboBoxStyle}">
+                                                <Style TargetType="{x:Type ComboBox}" >
                                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                     <Setter Property="VerticalAlignment" Value="Stretch" />
                                                     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
@@ -321,8 +320,8 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                        </ui:DataGrid.Columns>
-                    </ui:DataGrid>
+                        </DataGrid.Columns>
+                    </DataGrid>
                 </Grid>
             </GroupBox>
         </Grid>
