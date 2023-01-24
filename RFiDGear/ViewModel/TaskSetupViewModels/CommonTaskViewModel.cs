@@ -1547,11 +1547,18 @@ namespace RFiDGear.ViewModel
                     info = new ProcessStartInfo()
                     {
                         FileName = Args[ProgramToExecute],
-                        UseShellExecute = 
-                        ProgramToExecute.Contains("bat") || 
-                        ProgramToExecute.Contains("exe") || 
+                        UseShellExecute =
+                        ProgramToExecute.Contains("bat") ||
+                        ProgramToExecute.Contains("exe") ||
                         ProgramToExecute.Contains("msi") ? false : true
                     };
+                }
+
+                else if (ProgramToExecute.ToLower() == @"%exit%")
+                {
+                    info = null;
+
+                    Environment.Exit(0);
                 }
 
                 else
@@ -1600,9 +1607,9 @@ namespace RFiDGear.ViewModel
                         FileName = string.IsNullOrWhiteSpace(fileName) ? ProgramToExecute : fileName,
                         Arguments = string.IsNullOrWhiteSpace(args) ? "" : args,
                         UseShellExecute = (fileName != null) ? (
-                        fileName.Contains("bat") || 
-                        fileName.Contains("exe") || 
-                        fileName.Contains("msi") ? false : true ) : false,
+                        fileName.Contains("bat") ||
+                        fileName.Contains("exe") ||
+                        fileName.Contains("msi") ? false : true) : false,
                     };
                 }
 

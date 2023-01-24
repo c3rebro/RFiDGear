@@ -11,7 +11,6 @@
     xmlns:mainvm="clr-namespace:MefMvvm.SharedContracts.ViewModel;assembly=PluginSystem"
     xmlns:pre="clr-namespace:MvvmDialogs.Presenters;assembly=MVVMDialogs"
     xmlns:vm="clr-namespace:RFiDGear.ViewModel"
-    
     d1p1:Ignorable="d"
     StartupUri="View/MainWindow.xaml">
 

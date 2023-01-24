@@ -459,7 +459,7 @@
             <Menu
                 HorizontalContentAlignment="Right"
                 VerticalAlignment="Top"
-                Margin="0,2,0,0"
+                Margin="2,2,0,0"
                 Background="{x:Null}"
                 DockPanel.Dock="Top">
                 <MenuItem
@@ -575,8 +575,8 @@
             </Menu>
         </DockPanel>
         <DockPanel Grid.ColumnSpan="2" Grid.Row="2">
-            <StatusBar VerticalAlignment="Bottom" DockPanel.Dock="Bottom" Height="49" VerticalContentAlignment="Center">
-                <StatusBarItem Height="auto" VerticalAlignment="Center" Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectedReader'}" />
+            <StatusBar VerticalAlignment="Bottom" DockPanel.Dock="Bottom" Height="49" VerticalContentAlignment="Center" >
+                <StatusBarItem Margin="4,0,0,0" Height="auto" VerticalAlignment="Center" Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectedReader'}" />
                 <StatusBarItem>
                     <TextBlock Text="{Binding CurrentReader}" FontWeight="Bold"/>
                 </StatusBarItem>
@@ -587,7 +587,10 @@
                            Height="auto"/>
                 </StatusBarItem>
                 <StatusBarItem>
-                    <TextBlock Text="{Binding ReaderStatus}" Height="auto" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding ReaderStatus}" Height="auto" FontWeight="Bold" HorizontalAlignment="Left"/>
+                </StatusBarItem>
+                <StatusBarItem HorizontalAlignment="Right" Margin="0,0,12,0">
+                    <TextBlock Text="{Binding DateTimeStatusBar, UpdateSourceTrigger=PropertyChanged}" Height="auto" FontWeight="Bold" HorizontalAlignment="Left"/>
                 </StatusBarItem>
                 <!--				
                 <StatusBarItem>

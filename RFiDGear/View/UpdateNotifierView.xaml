@@ -30,7 +30,7 @@
         <GroupBox
             x:Name="groupBox"
             Grid.ColumnSpan="3"
-            Margin="10,35,10,10"
+            Margin="10,10,10,10"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
             Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderUpdateWindowVersionInfo'}">

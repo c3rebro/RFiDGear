@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Window
     x:Class="RFiDGear.View.SetupView"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
     xmlns:v="clr-namespace:RFiDGear.View"
@@ -25,7 +24,7 @@
         <TabControl
             Grid.Row="0"
             Grid.Column="0"
-            Margin="8,45,8,49"
+            Margin="8,8,8,49"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
             <TabItem MinWidth="50" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderReaderSetup'}">

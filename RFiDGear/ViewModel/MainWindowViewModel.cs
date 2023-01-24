@@ -81,6 +81,7 @@ namespace RFiDGear.ViewModel
         // set if task was completed; indicates greenlight to continue execution
         // if programming takes too long; quit the process
         private bool firstRun = true;
+        private bool _isLoadingProject = true;
         private bool userIsNotifiedForAvailableUpdate = false;
         private bool updateIsAvailable = false;
         private protected Mutex mutex;
@@ -154,6 +155,7 @@ namespace RFiDGear.ViewModel
             taskHandler = new ChipTaskHandlerModel();
 
             ReaderStatus = CurrentReader == "None" ? "" : "ready";
+            DateTimeStatusBar = "";
             databaseReaderWriter = new DatabaseReaderWriter();
             resLoader = new ResourceLoader();
 
@@ -293,8 +295,7 @@ namespace RFiDGear.ViewModel
         {
             using (var settings = new SettingsReaderWriter())
             {
-                Application.Current.Dispatcher.BeginInvoke((Action)(() => {
-                    var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
+                var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
                 var lastUsedDBPath = settings.DefaultSpecification.LastUsedProjectPath;
 
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
@@ -303,22 +304,21 @@ namespace RFiDGear.ViewModel
                 {
                     ChipTasks.TaskCollection.Clear();
                 }
-                
+
                 databaseReaderWriter.ReadDatabase(lastUsedDBPath);
 
                 foreach (var vm in databaseReaderWriter.TreeViewModel)
                 {
                     TreeViewParentNodes.Add(vm);
                 }
-                
-                
-                        foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
-                        {
-                                ChipTasks.TaskCollection.Add(setup);
-                        }
 
-                    Dialogs.RemoveAt(0);
-                }));
+
+                foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
+                {
+                    ChipTasks.TaskCollection.Add(setup);
+                }
+
+                Dialogs.RemoveAt(0);
 
                 OnPropertyChanged(nameof(ChipTasks));
             }
@@ -347,9 +347,12 @@ namespace RFiDGear.ViewModel
                     //reader was ready - proceed
                     if (device != null)
                     {
+                        ReaderStatus = "busy";
                         device.ReadChipPublic();
 
                         GenericChip = device.GenericChip;
+
+                        ReaderStatus = "ready";
                     }
                     else
                     {
@@ -865,10 +868,10 @@ namespace RFiDGear.ViewModel
             triggerReadChip.IsEnabled = false;
 
             Mouse.OverrideCursor = Cursors.Wait;
+            ReaderStatus = "busy";
 
             using (var device = ReaderDevice.Instance)
             {
-
                 foreach (var item in treeViewParentNodes)
                 {
                     item.IsExpanded = false;
@@ -985,6 +988,7 @@ namespace RFiDGear.ViewModel
             }
 
             Mouse.OverrideCursor = null;
+            ReaderStatus = "ready";
 
             triggerReadChip.IsEnabled = timerState;
         }
@@ -1137,11 +1141,11 @@ namespace RFiDGear.ViewModel
                         {
                             device.ReadChipPublic();
 
-                            GenericChip.CardType = device.GenericChip.CardType;
-                            GenericChip.UID = device.GenericChip.UID;
-
-                            if (GenericChip != null)
+                            if (device.GenericChip != null)
                             {
+                                GenericChip.CardType = device.GenericChip.CardType;
+                                GenericChip.UID = device.GenericChip.UID;
+
                                 if (GenericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
                                 {
                                     device.GetMiFareDESFireChipAppIDs();
@@ -2020,6 +2024,20 @@ namespace RFiDGear.ViewModel
         private string readerStatus;
 
         /// <summary>
+        ///
+        /// </summary>
+        public string DateTimeStatusBar
+        {
+            get => dateTimeStatusBar;
+            set
+            {
+                dateTimeStatusBar = value;
+                OnPropertyChanged(nameof(DateTimeStatusBar));
+            }
+        }
+        private string dateTimeStatusBar;
+
+        /// <summary>
         /// 
         /// </summary>
         public bool IsSelected { get; set; }
@@ -2167,9 +2185,9 @@ namespace RFiDGear.ViewModel
         //Only one instance is allowed due to the singleton pattern of the reader class
         private void RunMutex(object sender, StartupEventArgs e)
         {
-            mutex = new Mutex(true, "App", out var aIsNewInstance);
+            mutex = new Mutex(true, "App", out var isANewInstance);
 
-            if (!aIsNewInstance)
+            if (!isANewInstance)
             {
                 Environment.Exit(0);
             }
@@ -2187,7 +2205,6 @@ namespace RFiDGear.ViewModel
 
                 if (firstRun)
                 {
-                    Task loadProjectOnStartThread;
                     Task refreshStatusBarThread;
 
                     firstRun = false;
@@ -2241,28 +2258,18 @@ namespace RFiDGear.ViewModel
                             {
                                 Dialogs.Add(mySplash);
                             }
-                            
-                            loadProjectOnStartThread = new Task(() =>
+
+                            if (autoLoadLastUsedDB)
                             {
-                                if (autoLoadLastUsedDB)
-                                {
-                                    OpenLastProjectFile();
-                                }
-                            });
-
-                            loadProjectOnStartThread.ContinueWith((x) =>
-                            {
-                            });
-
-
-                            loadProjectOnStartThread.Start();
+                                OpenLastProjectFile();
+                            }
 
                             refreshStatusBarThread = new Task(() =>
                             {
                                 while (true)
                                 {
                                     Thread.Sleep(500);
-                                    ReaderStatus = string.Format("{0}", DateTime.Now);
+                                    DateTimeStatusBar = string.Format("{0}", DateTime.Now);
                                 }
                             });
 
@@ -2298,6 +2305,7 @@ namespace RFiDGear.ViewModel
                                         case "AUTORUN":
                                             if (arg.Split('=')[1] == "1")
                                             {
+                                                _isLoadingProject = true;
                                                 OnNewWriteToChipOnceCommand();
                                             }
                                             break;

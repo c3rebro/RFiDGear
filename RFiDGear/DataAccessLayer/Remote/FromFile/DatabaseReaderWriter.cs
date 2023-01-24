@@ -42,7 +42,7 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
-                AsyncRelayCommandLoadDB = new AsyncRelayCommand<TextReader>(LoadXMLAsync,AsyncRelayCommandOptions.AllowConcurrentExecutions);
+                //AsyncRelayCommandLoadDB = new AsyncRelayCommand<TextReader>(LoadXML,AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
                 // Combine the base folder with the specific folder....
                 appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear");
@@ -165,9 +165,8 @@ namespace RFiDGear.DataAccessLayer
                     
                     try
                     {
-                        var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-                        AsyncRelayCommandLoadDB.ExecuteAsync(reader);
-                        SetupModel = (SetupModel as ChipTaskHandlerModel);
+                        XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
+                        SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
                     }
                     catch (Exception e)
                     {
@@ -261,14 +260,12 @@ namespace RFiDGear.DataAccessLayer
             File.Delete(Path.Combine(appDataPath, chipDatabaseFileName));
         }
  
-        private Task<object> LoadXMLAsync(TextReader reader)
+        private object LoadXML(TextReader reader)
         {
             try
             {
                 var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-                SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
-
-                return Task.FromResult(SetupModel as object);
+                return (serializer.Deserialize(reader) as ChipTaskHandlerModel);
             }
             catch (Exception e)
             {
@@ -277,9 +274,7 @@ namespace RFiDGear.DataAccessLayer
                 try
                 {
                     var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
-                    TreeViewModel = serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>;
-
-                    return Task.FromResult(TreeViewModel as object);
+                    return serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>;
                 }
 
                 catch (Exception innerE)
