@@ -1,7 +1,4 @@
-﻿using iText.Forms;
-using iText.Forms.Fields;
-using iText.Kernel.Pdf;
-using iText.Kernel.Colors;
+﻿using GemBox.Pdf;
 
 using Log4CSharp;
 
@@ -35,6 +32,9 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
+                // Set license key to use GemBox.Pdf in Free mode.
+                ComponentInfo.SetLicense("FREE-LIMITED-KEY");
+
                 appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
                 appDataPath = System.IO.Path.Combine(appDataPath, "RFiDGear");
@@ -62,22 +62,17 @@ namespace RFiDGear.DataAccessLayer
             {
                 var temp = new ObservableCollection<string>();
 
-                using (var pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath)))
+                using (var pdfDoc = PdfDocument.Load(ReportTemplatePath))
                 {
-                    var form = PdfAcroForm.GetAcroForm(pdfDoc, true);
-                    // Being set as true, this parameter is responsible to generate an appearance Stream
-                    // while flattening for all form fields that don't have one. Generating appearances will
-                    // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.
-                    form.SetGenerateAppearance(true);
-                    //form.SetNeedAppearances(true);
+                    var form = pdfDoc.Form;
 
                     try
                     {
                         if (form != null)
                         {
-                            foreach (var _form in form.GetFormFields())
+                            foreach (var _form in form.Fields)
                             {
-                                temp.Add(_form.Key);
+                                temp.Add(_form.Name);
                             }
                         }
                     }
@@ -103,38 +98,28 @@ namespace RFiDGear.DataAccessLayer
             {
                 try
                 {
-                    using (var pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath), new PdfWriter(ReportOutputPath)))
+                    using (var pdfDoc = PdfDocument.Load(ReportTemplatePath)) // (new PdfReader(ReportTemplatePath), new PdfWriter(ReportOutputPath)))
                     {
-                        ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
-
-                        var form = PdfAcroForm.GetAcroForm(pdfDoc, true);
-                        // Being set as true, this parameter is responsible to generate an appearance Stream
-                        // while flattening for all form fields that don't have one. Generating appearances will
-                        // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.
-                        form.SetGenerateAppearance(true);
-                        //form.SetNeedAppearances(true);
-
                         try
                         {
-                            if (form.GetField(_field) is PdfButtonFormField)
-                            {
-                                _ = (form.GetField(_field) as PdfButtonFormField)?.SetBorderWidth(1);
-                                _ = (form.GetField(_field) as PdfButtonFormField)?.SetBorderColor(ColorConstants.BLACK);
-                            }
+                            ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
 
-                            _ = form.GetField(_field)?.SetVisibility(PdfFormField.VISIBLE);
-                            _ = form.GetField(_field)?.SetReadOnly(false);
-                            _ = form.GetField(_field)?.SetValue(_value);
+                            var form = pdfDoc.Form;
+
+                            pdfDoc.Form.Fields[_field].Hidden = false;
+                            pdfDoc.Form.Fields[_field].ReadOnly = false;
+                            pdfDoc.Form.Fields[_field].Value = _value;
+
+                            pdfDoc.Save(ReportOutputPath);
+                            pdfDoc.Close();
+
+                            File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
                         }
                         catch (Exception e)
                         {
                             LogWriter.CreateLogEntry(e, FacilityName);
                         }
-
-                        pdfDoc.Close();
                     }
-
-                    File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
                 }
                 catch (XmlException e)
                 {
@@ -152,30 +137,26 @@ namespace RFiDGear.DataAccessLayer
                 {
                     ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
 
-                    using (var pdfDoc = new PdfDocument(new PdfReader(ReportTemplatePath), new PdfWriter(ReportOutputPath)))
+                    using (var pdfDoc = PdfDocument.Load(ReportTemplatePath))
                     {
-                        var form = PdfAcroForm.GetAcroForm(pdfDoc, true);
-                        // Being set as true, this parameter is responsible to generate an appearance Stream
-                        // while flattening for all form fields that don't have one. Generating appearances will
-                        // slow down form flattening, but otherwise Acrobat might render the pdf on its own rules.
-                        form.SetGenerateAppearance(true);
-                        //form.SetNeedAppearances(true);
-
                         try
                         {
-                            form.GetField(_field)?.SetVisibility(PdfFormField.VISIBLE);
-                            form.GetField(_field)?.SetValue(string.Format("{0}{1}", form.GetField(_field)?.GetValueAsString(), _value));
+                            var form = pdfDoc.Form;
+
+                            pdfDoc.Form.Fields[_field].Hidden = false;
+                            pdfDoc.Form.Fields[_field].ReadOnly = false;
+                            pdfDoc.Form.Fields[_field].Value = string.Format("{0}{1}", pdfDoc.Form.Fields[_field]?.Value, _value);
+
+                            pdfDoc.Save(ReportOutputPath);
+                            pdfDoc.Close();
+
+                            File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
                         }
                         catch (Exception e)
                         {
                             LogWriter.CreateLogEntry(e, FacilityName);
                         }
-
-                        pdfDoc.Close();
                     }
-
-                    File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
-
                 }
                 catch (XmlException e)
                 {
