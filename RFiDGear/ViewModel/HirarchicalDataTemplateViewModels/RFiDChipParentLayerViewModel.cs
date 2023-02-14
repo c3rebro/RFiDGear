@@ -344,7 +344,7 @@ namespace RFiDGear.ViewModel
             {
                 using (var device = ReaderDevice.Instance)
                 {
-                    if (device != null && device.ReadChipPublic() == ERROR.NoError)
+                    if (device != null)
                     {
                         Mouse.OverrideCursor = Cursors.Wait;
 

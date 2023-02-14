@@ -499,26 +499,17 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        public MifareClassicSectorModel SectorModel
-        {
-            get => sectorModel;
-        }
+        public MifareClassicSectorModel SectorModel => sectorModel;
 
         /// <summary>
         ///
         /// </summary>
-        public MifareDesfireAppModel AppModel
-        {
-            get => appModel;
-        }
+        public MifareDesfireAppModel AppModel => appModel;
 
         /// <summary>
         ///
         /// </summary>
-        public MifareUltralightPageModel PageModel
-        {
-            get => pageModel;
-        }
+        public MifareUltralightPageModel PageModel => pageModel;
 
         #endregion
 
@@ -598,7 +589,7 @@ namespace RFiDGear.ViewModel
 
         public event EventHandler DialogClosing;
 
-        public ICommand OKCommand { get { return new RelayCommand(Ok); } }
+        public ICommand OKCommand => new RelayCommand(Ok);
 
         protected virtual void Ok()
         {
@@ -616,7 +607,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
+        public ICommand CancelCommand => new RelayCommand(Cancel);
 
         protected virtual void Cancel()
         {

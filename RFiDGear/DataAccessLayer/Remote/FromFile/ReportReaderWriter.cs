@@ -105,6 +105,8 @@ namespace RFiDGear.DataAccessLayer
                             ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
 
                             var form = pdfDoc.Form;
+                            pdfDoc.Info.Title = "RFiDGear Report";
+                            pdfDoc.Info.Author = "RFiDGear";
 
                             pdfDoc.Form.Fields[_field].Hidden = false;
                             pdfDoc.Form.Fields[_field].ReadOnly = false;

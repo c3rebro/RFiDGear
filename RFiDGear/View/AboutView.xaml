@@ -65,6 +65,8 @@
             Grid.Row="3"
             Grid.Column="1"
             Width="90"
+            Height="26"
+            Padding="5,2"
             Margin="0,8,0,8"
             HorizontalAlignment="Center"
             VerticalAlignment="Stretch"

@@ -59,7 +59,7 @@
             <ComboBox
                 Grid.Row="1"
                 Grid.Column="1"
-                Height="auto"
+                Height="26"
                 Margin="8,7,8,3"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Top"

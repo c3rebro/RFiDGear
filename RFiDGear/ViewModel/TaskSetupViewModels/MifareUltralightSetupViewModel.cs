@@ -414,7 +414,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
+        public ICommand ReadDataCommand => new RelayCommand(OnNewReadDataCommand);
         private void OnNewReadDataCommand()
         {
             //Mouse.OverrideCursor = Cursors.Wait;
@@ -425,7 +425,7 @@ namespace RFiDGear.ViewModel
                         {
                             using (var device = ReaderDevice.Instance)
                             {
-                                if (device != null && device.ReadChipPublic() == ERROR.NoError)
+                                if (device != null)
                                 {
                                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource(""));
                                 }

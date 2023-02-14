@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartArguments>REPORTTARGETPATH="C:\temp\test file.pdf" AUTORUN=1 %24JobNumber=1234 %24CardType=</StartArguments>
+    <StartArguments>REPORTTARGETPATH="C:\temp\test file.pdf" AUTORUN=0 %24JobNumber=1234 %24CardType=</StartArguments>
     <StartWorkingDirectory>D:\Seafile\Dokumente Privat\Steven\Projekte\Software\Windows\RFIDGear\RFiDGear\bin\Debug\</StartWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup>

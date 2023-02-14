@@ -1652,7 +1652,7 @@ namespace RFiDGear.ViewModel
                 {
                     using (var device = ReaderDevice.Instance)
                     {
-                        if (device != null && device.ReadChipPublic() == ERROR.NoError)
+                        if (device != null)
                         {
                             StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
@@ -1734,7 +1734,7 @@ namespace RFiDGear.ViewModel
                          {
                              using (var device = ReaderDevice.Instance)
                              {
-                                 if (device != null && device.ReadChipPublic() == ERROR.NoError)
+                                 if (device != null)
                                  {
                                      StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 

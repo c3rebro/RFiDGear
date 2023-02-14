@@ -59,24 +59,25 @@
                                 <ColumnDefinition />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="42" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Label
                                 Grid.Row="0"
                                 Grid.Column="0"
                                 Height="26"
-                                Margin="8,6,10,0"
-                                VerticalAlignment="Top"
+                                Margin="8,0,8,8"
+                                VerticalAlignment="Center"
                                 HorizontalContentAlignment="Stretch"
                                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelSelectLogicFunction, Converter={StaticResource Localization}}"
                                 DataContext="{Binding}"
                                 Foreground="Black" />
                             <ComboBox
                                 Grid.Row="0"
+                                Height="26"
                                 Grid.Column="1"
                                 Margin="8,0,8,8"
                                 HorizontalAlignment="Stretch"
-                                VerticalAlignment="Bottom"
+                                VerticalAlignment="Center"
                                 ItemsSource="{dal:Enumerate {x:Type dal:LOGIC_STATE}}"
                                 SelectedItem="{Binding SelectedLogicCondition, ConverterParameter={x:Type dal:LOGIC_STATE}, Converter={StaticResource Localization}, Mode=TwoWay}" />
                         </Grid>
@@ -113,6 +114,7 @@
                                 Grid.Row="0"
                                 Grid.Column="1"
                                 Margin="8,0,8,8"
+                                Height="26"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Bottom"
                                 IsEnabled="{Binding IsLogicFuncTaskCountFuncEnabled}"
@@ -133,6 +135,7 @@
                                 Grid.Row="1"
                                 Grid.Column="1"
                                 Margin="8,0,8,8"
+                                Height="26"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Bottom"
                                 IsEnabled="{Binding IsLogicFuncTaskCountFuncEnabled}"
@@ -153,6 +156,7 @@
                                 Grid.Row="2"
                                 Grid.Column="1"
                                 Margin="8,0,8,8"
+                                Height="26"
                                 VerticalAlignment="Top"
                                 VerticalContentAlignment="Center"
                                 HorizontalContentAlignment="Left"
@@ -187,6 +191,8 @@
                         </Grid.RowDefinitions>
                         <Button
                             Grid.Column="1"
+                            Height="26"
+                            Padding="5,2"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Center"
                             VerticalContentAlignment="Center"
@@ -196,6 +202,8 @@
                         <Button
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
+                            Height="26"
+                            Padding="5,2"
                             VerticalContentAlignment="Center"
                             HorizontalContentAlignment="Left"
                             Command="{Binding AddEditCheckpointCommand}"
@@ -276,7 +284,6 @@
                                     <DataTemplate>
                                         <ComboBox
                                             ItemsSource="{dal:Enumerate {x:Type dal:ERROR}}"
-                                            
                                             SelectedItem="{Binding ErrorLevel, ConverterParameter={x:Type dal:ERROR}, Converter={StaticResource Localization}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             ScrollViewer.VerticalScrollBarVisibility="Visible"
                                             FontFamily="Lucida Console">

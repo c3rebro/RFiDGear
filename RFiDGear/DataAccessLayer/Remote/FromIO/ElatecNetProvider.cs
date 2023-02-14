@@ -234,16 +234,16 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 }
                 catch
                 {
-                    return ERROR.IOError; // IO ERROR
+                    return ERROR.IOError; // IO ElatecError
                 }
             }
 
             if(Sector.IsAuthenticated)
             {
-                return ERROR.NoError; //NO ERROR
+                return ERROR.NoError; //NO ElatecError
             }
 
-            return ERROR.AuthenticationError; // Auth ERROR
+            return ERROR.AuthenticationError; // Auth ElatecError
         }
 
         #endregion
@@ -262,7 +262,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         /// </summary>
         /// <param name="_appMasterKey"></param>
         /// <param name="_keyTypeAppMasterKey"></param>
-        /// <returns>ERROR Level</returns>
+        /// <returns>ElatecError Level</returns>
         public override ERROR GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
         {
             if (DesfireChip == null)
@@ -306,7 +306,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     _applicationMasterKey,
                     (byte)_keyNumber,
                     (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)),
-                    1) == true ? ERROR.NoError : ERROR.NotAllowed;
+                    1) == true ? ERROR.NoError : ERROR.AuthenticationError;
             }
             else
             {

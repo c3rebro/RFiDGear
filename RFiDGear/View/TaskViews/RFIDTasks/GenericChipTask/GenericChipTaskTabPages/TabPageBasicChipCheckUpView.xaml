@@ -28,18 +28,19 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch">
                     <ComboBox
-                            xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
-                            xmlns:local="clr-namespace:RFiDGear"
-                            xmlns:system="clr-namespace:System;assembly=mscorlib"
-                            xmlns:v="clr-namespace:RFiDGear.View"
-                            Grid.Row="0"
-                            Grid.Column="1"
-                            Margin="8,0,8,8"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Bottom"
+                        xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
+                        xmlns:local="clr-namespace:RFiDGear"
+                        xmlns:system="clr-namespace:System;assembly=mscorlib"
+                        xmlns:v="clr-namespace:RFiDGear.View"
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Height="26"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
                         ScrollViewer.VerticalScrollBarVisibility="Visible"
-                            ItemsSource="{dal:Enumerate {x:Type dal:CARD_TYPE}}"
-                            SelectedItem="{Binding SelectedChipType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:CARD_TYPE}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type dal:CARD_TYPE}}"
+                        SelectedItem="{Binding SelectedChipType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:CARD_TYPE}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                             Grid.Row="0"
                             Grid.Column="0"

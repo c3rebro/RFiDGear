@@ -25,6 +25,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
+using Elatec.NET;
 
 namespace RFiDGear.ViewModel
 {
@@ -331,73 +332,68 @@ namespace RFiDGear.ViewModel
                     {
                         if (device != null)
                         {
-                            var result = device.ReadChipPublic();
+                            var result = ERROR.Empty;
 
-                            if (result == ERROR.NoError)
+                            if (device.GenericChip.CardType == SelectedChipType)
                             {
-
-                                if (device.GenericChip.CardType == SelectedChipType)
-                                {
-                                    result = ERROR.NoError;
-                                }
-                                else if(Enum.GetName(typeof(CARD_TYPE), SelectedChipType).ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
-                                {
-                                    result = ERROR.IsNotTrue;
-
-                                    switch (SelectedChipType)
-                                    {
-                                        case CARD_TYPE.DESFire:
-                                            if (device.GenericChip.CardType == CARD_TYPE.DESFire_256 ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFire_2K ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFire_4K)
-                                            {
-                                                result = ERROR.NoError;
-                                            }
-                                            break;
-                                        case CARD_TYPE.DESFireEV1:
-                                            if (device.GenericChip.CardType == CARD_TYPE.DESFireEV1_256 ||
-                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV1_2K ||
-                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV1_4K ||
-                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV1_8K)
-                                            {
-                                                result = ERROR.NoError;
-                                            }
-                                            break;
-                                        case CARD_TYPE.DESFireEV2:
-                                            if (device.GenericChip.CardType == CARD_TYPE.DESFireEV2_2K ||
-                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV2_4K ||
-                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV2_8K ||
-                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV2_16K ||
-                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV2_32K)
-                                            {
-                                                result = ERROR.NoError;
-                                            }
-                                            break;
-                                        case CARD_TYPE.DESFireEV3:
-                                            if (device.GenericChip.CardType == CARD_TYPE.DESFireEV3_2K ||
-                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV3_4K ||
-                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV3_8K ||
-                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV3_16K ||
-                                                device.GenericChip.CardType == CARD_TYPE.DESFireEV3_32K)
-                                            {
-                                                result = ERROR.NoError;
-                                            }
-                                            break;
-
-                                        default:
-                                            result = ERROR.IsNotTrue;
-                                            break;
-                                    }
-                                }
-                                else
-                                {
-                                    result = ERROR.IsNotTrue;
-                                }
-
-                                CurrentTaskErrorLevel = result;
-                                return;
-
+                                result = ERROR.NoError;
                             }
+                            else if (Enum.GetName(typeof(CARD_TYPE), SelectedChipType).ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
+                            {
+                                result = ERROR.IsNotTrue;
+
+                                switch (SelectedChipType)
+                                {
+                                    case CARD_TYPE.DESFire:
+                                        if (device.GenericChip.CardType == CARD_TYPE.DESFire_256 ||
+                                        device.GenericChip.CardType == CARD_TYPE.DESFire_2K ||
+                                        device.GenericChip.CardType == CARD_TYPE.DESFire_4K)
+                                        {
+                                            result = ERROR.NoError;
+                                        }
+                                        break;
+                                    case CARD_TYPE.DESFireEV1:
+                                        if (device.GenericChip.CardType == CARD_TYPE.DESFireEV1_256 ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV1_2K ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV1_4K ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV1_8K)
+                                        {
+                                            result = ERROR.NoError;
+                                        }
+                                        break;
+                                    case CARD_TYPE.DESFireEV2:
+                                        if (device.GenericChip.CardType == CARD_TYPE.DESFireEV2_2K ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV2_4K ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV2_8K ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV2_16K ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV2_32K)
+                                        {
+                                            result = ERROR.NoError;
+                                        }
+                                        break;
+                                    case CARD_TYPE.DESFireEV3:
+                                        if (device.GenericChip.CardType == CARD_TYPE.DESFireEV3_2K ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV3_4K ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV3_8K ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV3_16K ||
+                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV3_32K)
+                                        {
+                                            result = ERROR.NoError;
+                                        }
+                                        break;
+
+                                    default:
+                                        result = ERROR.IsNotTrue;
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                result = ERROR.IsNotTrue;
+                            }
+
+                            CurrentTaskErrorLevel = result;
+                            return;
                         }
                         else
                         {

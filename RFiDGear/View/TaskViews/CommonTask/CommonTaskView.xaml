@@ -109,6 +109,7 @@
                     <ComboBox
                         Grid.Row="0"
                         Grid.Column="1"
+                        Height="26"
                         Margin="8,7,8,0"
                         VerticalAlignment="Stretch"
                         VerticalContentAlignment="Center"
@@ -210,6 +211,7 @@
                             <ComboBox
                                 Grid.Column="1"
                                 Margin="8,7,8,3"
+                                Height="26"
                                 ScrollViewer.VerticalScrollBarVisibility="Visible"
                                 VerticalAlignment="Stretch"
                                 ItemsSource="{dal:Enumerate {x:Type dal:ERROR}}"
@@ -251,6 +253,8 @@
                 Grid.Row="0"
                 Grid.Column="0"
                 Width="140"
+                Height="26"
+                Padding="5,2"
                 Margin="9,8,8,8"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Bottom"
@@ -261,6 +265,8 @@
                 Grid.Row="0"
                 Grid.Column="0"
                 Width="140"
+                Height="26"
+                Padding="5,2"
                 Margin="157,8,8,8"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Bottom"

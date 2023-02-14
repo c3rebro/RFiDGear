@@ -385,7 +385,7 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// What to do if timer has ended without success i.e. ErrorLevel != ERROR.NoError ?
+        /// What to do if timer has ended without success i.e. ErrorLevel != ElatecError.NoError ?
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -448,9 +448,7 @@ namespace RFiDGear.ViewModel
         private void OnNewCreateGenericChipTaskCommand()
         {
             var timerState = triggerReadChip.IsEnabled;
-
             triggerReadChip.IsEnabled = false;
-
             Mouse.OverrideCursor = Cursors.AppStarting;
 
             try
@@ -1143,8 +1141,9 @@ namespace RFiDGear.ViewModel
 
                             if (device.GenericChip != null)
                             {
-                                GenericChip.CardType = device.GenericChip.CardType;
-                                GenericChip.UID = device.GenericChip.UID;
+                                //GenericChip.CardType = device.GenericChip.CardType;
+                                //GenericChip.UID = device.GenericChip.UID;
+                                GenericChip = device.GenericChip;
 
                                 if (GenericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
                                 {
@@ -1181,6 +1180,7 @@ namespace RFiDGear.ViewModel
 
                             taskTimeout.Stop();
                             taskTimeout.Start();
+                            taskTimeout.IsEnabled = true;
                             taskTimeout.Tag = currentTaskIndex;
 
                             SelectedSetupViewModel = taskHandler.TaskCollection[currentTaskIndex];
@@ -1665,16 +1665,6 @@ namespace RFiDGear.ViewModel
                     }
                 }
             });
-            /*
-            if(new MessageBoxViewModel
-            {
-                Message = ResourceLoader.GetResource("messageBoxRestartRequiredMessage"),
-                Caption = ResourceLoader.GetResource("messageBoxRestartRequiredCaption"),
-                Buttons = MessageBoxButton.OKCancel,
-                Image = MessageBoxImage.Question
-
-            }.Show(this.Dialogs) == MessageBoxResult.OK)
-            */
 
         }
 
@@ -1875,7 +1865,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand ShowHelpCommand { get { return new RelayCommand(OnNewShowHelpCommand); } }
+        public ICommand ShowHelpCommand => new RelayCommand(OnNewShowHelpCommand);
         private void OnNewShowHelpCommand()
         {
             var q = from p in Process.GetProcesses() where ContainsAny(p.MainWindowTitle, new string[] { "Help", "Hilfe" }) select p;

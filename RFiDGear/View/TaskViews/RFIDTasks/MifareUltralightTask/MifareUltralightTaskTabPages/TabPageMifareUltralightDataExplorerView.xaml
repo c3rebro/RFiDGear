@@ -299,7 +299,8 @@
                         Grid.Row="2"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Height="23"
+                        Height="26"
+                        Padding="5,2"
                         Margin="7.5,0,7.5,7"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
@@ -309,7 +310,8 @@
                         Grid.Row="3"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Height="23"
+                        Height="26"
+                        Padding="5,2"
                         Margin="7.5,0,7.5,7"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
@@ -339,7 +341,7 @@
                             <ComboBox
                                 Grid.Row="0"
                                 Grid.Column="1"
-                                Height="23"
+                                Height="26"
                                 Margin="9,8,7,0"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Top"
@@ -355,8 +357,8 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="80.7203331950994" />
                         <RowDefinition Height="0.352718148131878*" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                 </Grid>
             </GroupBox>

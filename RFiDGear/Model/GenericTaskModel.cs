@@ -9,7 +9,7 @@ namespace RFiDGear.Model
     public interface IGenericTaskModel
     {
         /// <summary>
-        /// Indicates a Task Result and is interpreted by one of the following ERROR states: true = NoError, null = Empty, false = Everything else
+        /// Indicates a Task Result and is interpreted by one of the following ElatecError states: true = NoError, null = Empty, false = Everything else
         /// </summary>
         bool? IsTaskCompletedSuccessfully { get; set; }
 

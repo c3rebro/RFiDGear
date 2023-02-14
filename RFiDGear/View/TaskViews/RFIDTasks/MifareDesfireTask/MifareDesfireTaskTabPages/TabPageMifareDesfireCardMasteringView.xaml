@@ -95,6 +95,7 @@
                     <ComboBox
                         Grid.Row="1"
                         Grid.Column="1"
+                        Height="26"
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
@@ -180,7 +181,8 @@
                         Grid.Row="8"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Height="auto"
+                        Height="26"
+                        Padding="5,2"
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
@@ -261,7 +263,8 @@
                         Grid.Row="4"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Height="auto"
+                        Height="26"
+                        Padding="5,2"
                         Margin="8,3,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
@@ -278,6 +281,7 @@
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
                     <ComboBox
                         Grid.Row="1"
+                        Height="26"
                         Grid.Column="1"
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
@@ -288,7 +292,8 @@
                         Grid.Row="3"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Height="auto"
+                        Height="26"
+                        Padding="5,2"
                         Margin="8,3,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
@@ -297,6 +302,7 @@
                     <ComboBox
                         Grid.Row="2"
                         Grid.Column="1"
+                        Height="26"
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"

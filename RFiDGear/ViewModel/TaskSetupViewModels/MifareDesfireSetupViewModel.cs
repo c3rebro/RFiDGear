@@ -1662,7 +1662,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// return new RelayCommand<LibLogicalAccessProvider>((_device) => OnNewCreateAppCommand(_device));
         /// </summary>
-        public ICommand CreateAppCommand { get { return new RelayCommand(OnNewCreateAppCommand); } }
+        public ICommand CreateAppCommand => new RelayCommand(OnNewCreateAppCommand);
         private void OnNewCreateAppCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
@@ -1783,7 +1783,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// return new RelayCommand<LibLogicalAccessProvider>((_device) => OnNewCreateAppCommand(_device));
         /// </summary>
-        public ICommand CreateFileCommand { get { return new RelayCommand(OnNewCreateFileCommand); } }
+        public ICommand CreateFileCommand => new RelayCommand(OnNewCreateFileCommand);
         private void OnNewCreateFileCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
@@ -1898,7 +1898,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand ReadDataCommand { get { return new RelayCommand(OnNewReadDataCommand); } }
+        public ICommand ReadDataCommand => new RelayCommand(OnNewReadDataCommand);
         private void OnNewReadDataCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
@@ -1993,7 +1993,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand GetDataFromFileCommand { get { return new RelayCommand(OnNewGetDataFromFileCommand); } }
+        public ICommand GetDataFromFileCommand => new RelayCommand(OnNewGetDataFromFileCommand);
         private void OnNewGetDataFromFileCommand()
         {
             var dlg = new OpenFileDialogViewModel
@@ -2026,7 +2026,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand WriteDataCommand { get { return new RelayCommand(OnNewWriteDataCommand); } }
+        public ICommand WriteDataCommand => new RelayCommand(OnNewWriteDataCommand);
         private void OnNewWriteDataCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
@@ -2111,7 +2111,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         ///
         /// </summary>
-        public ICommand ChangeAppKeyCommand { get { return new RelayCommand(OnNewChangeAppKeyCommand); } }
+        public ICommand ChangeAppKeyCommand => new RelayCommand(OnNewChangeAppKeyCommand);
         private void OnNewChangeAppKeyCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;

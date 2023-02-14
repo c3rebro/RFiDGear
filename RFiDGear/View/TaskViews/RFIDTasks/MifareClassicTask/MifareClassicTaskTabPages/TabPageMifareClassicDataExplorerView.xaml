@@ -317,7 +317,8 @@
                         Grid.Row="3"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Height="23"
+                        Height="26"
+                        Padding="5,2"
                         Margin="10,0,10,10"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
@@ -327,7 +328,8 @@
                         Grid.Row="4"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Height="23"
+                        Height="26"
+                        Padding="5,2"
                         Margin="10,0,10,10"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
@@ -371,7 +373,8 @@
                         Grid.Row="2"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        Height="23"
+                        Height="26"
+                        Padding="5,2"
                         Margin="10,0,10,10"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
@@ -384,9 +387,9 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="80.7203331950994" />
                         <RowDefinition Height="0.352718148131878*" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                 </Grid>
             </GroupBox>

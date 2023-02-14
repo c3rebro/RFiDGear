@@ -909,17 +909,16 @@ namespace RFiDGear.ViewModel
                                     hasVariable = true;
                                 }
 
-                                if (temporaryContent.Contains("%CHIPTYPEOFSLAVE"))
+                                if (temporaryContent.Contains("%SLAVECHIPTYPE"))
                                 {
-                                    temporaryContent = temporaryContent.Replace("%CHIPTYPEOFSLAVE", ResourceLoader.GetResource(
+                                    temporaryContent = temporaryContent.Replace("%SLAVECHIPTYPE", ResourceLoader.GetResource(
                                     string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.Slave?.CardType))) ?? "");
                                     hasVariable = true;
                                 }
 
-                                if (temporaryContent.Contains("%UIDOFSLAVE"))
+                                if (temporaryContent.Contains("%SLAVEUID"))
                                 {
-                                    temporaryContent = temporaryContent.Replace("%UIDOFSLAVE", ResourceLoader.GetResource(
-                                    string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.Slave?.UID))) ?? "");
+                                    temporaryContent = temporaryContent.Replace("%SLAVEUID", GenericChip?.Slave?.UID ?? "");
                                     hasVariable = true;
                                 }
 

@@ -90,6 +90,7 @@
                     <ComboBox
                         Grid.Row="0"
                         Grid.Column="1"
+                        Height="26"
                         Margin="8,7,8,0"
                         VerticalAlignment="Top"
                         VerticalContentAlignment="Center"
@@ -190,6 +191,7 @@
                                 Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentExecuteConditionTaskIndex, Converter={StaticResource Localization}}" />
                             <ComboBox
                                 Grid.Column="1"
+                                Height="26"
                                 Margin="8,7,8,3"
                                 ScrollViewer.VerticalScrollBarVisibility="Visible"
                                 VerticalAlignment="Stretch"
@@ -231,6 +233,8 @@
             <Button
                 Grid.Row="0"
                 Grid.Column="0"
+                Height="26"
+                Padding="5,2"
                 Width="140"
                 Margin="9,0,0,8"
                 HorizontalAlignment="Left"
@@ -240,6 +244,8 @@
                 IsDefault="True" />
             <Button
                 Grid.Row="0"
+                Height="26"
+                Padding="5,2"
                 Grid.Column="0"
                 Width="140"
                 Margin="157,0,0,8"
