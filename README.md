@@ -10,6 +10,7 @@ Requirements:
 
 * Microsoft Windows 7 32/64bit (or later)
 * .NET Framework 4.5.2 (or later - included)
+* Elatec Reader TWN4
 
 Hint: PCSC Support was removed due to unanswered license questions
 
