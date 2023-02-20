@@ -91,7 +91,7 @@ namespace RFiDGear.ViewModel
             try
             {
                 CurrentTaskErrorLevel = ERROR.Empty;
-
+                
                 checkpoint = new Checkpoint();
                 Checkpoints = new ObservableCollection<Checkpoint>();
                 Args = new Dictionary<string, string>();
@@ -911,15 +911,21 @@ namespace RFiDGear.ViewModel
 
                                 if (temporaryContent.Contains("%SLAVECHIPTYPE"))
                                 {
-                                    temporaryContent = temporaryContent.Replace("%SLAVECHIPTYPE", ResourceLoader.GetResource(
-                                    string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.Slave?.CardType))) ?? "");
-                                    hasVariable = true;
+                                    if (GenericChip?.Slave != null)
+                                    {
+                                        temporaryContent = temporaryContent.Replace("%SLAVECHIPTYPE", ResourceLoader.GetResource(
+                                            string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.Slave?.CardType))) ?? "");
+                                        hasVariable = true;
+                                    }
                                 }
 
                                 if (temporaryContent.Contains("%SLAVEUID"))
                                 {
-                                    temporaryContent = temporaryContent.Replace("%SLAVEUID", GenericChip?.Slave?.UID ?? "");
-                                    hasVariable = true;
+                                    if (GenericChip?.Slave != null)
+                                    {
+                                        temporaryContent = temporaryContent.Replace("%SLAVEUID", GenericChip?.Slave?.UID ?? "");
+                                        hasVariable = true;
+                                    }
                                 }
 
                                 if (temporaryContent.Contains("%DATETIME"))
@@ -1553,7 +1559,7 @@ namespace RFiDGear.ViewModel
                     };
                 }
 
-                else if (ProgramToExecute.ToLower() == @"%exit%")
+                else if (ProgramToExecute.ToLower() == @"%exit")
                 {
                     info = null;
 
@@ -1765,7 +1771,7 @@ namespace RFiDGear.ViewModel
         {
             collection.Add(this);
         }
-
+        
         #endregion IUserDialogViewModel Implementation
 
         #region Localization

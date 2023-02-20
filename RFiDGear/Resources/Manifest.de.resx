@@ -1464,7 +1464,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>NTAG</value>
   </data>
   <data name="windowCaptionSaveReport" xml:space="preserve">
-    <value>PDF Speichern unter...</value>
+    <value>PDF Bericht Speichern unter...</value>
   </data>
   <data name="windowCaptionOpenReport" xml:space="preserve">
     <value>PDF-Vorlage auswählen...</value>

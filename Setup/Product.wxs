@@ -97,7 +97,7 @@
       -->
 		<Condition Message="!(loc.OS2Old)"><![CDATA[Installed OR (VersionNT >= 601)]]></Condition>
 		<Condition Message="!(loc.NetFramework452Required)"><![CDATA[Installed OR WIX_IS_NETFRAMEWORK_452_OR_LATER_INSTALLED]]></Condition>
-		<Condition Message="!(loc.LibLogicalAccessRequired)"><![CDATA[Installed OR SYSTEM_HAS_ISLOG]]></Condition>
+		<!--<Condition Message="!(loc.LibLogicalAccessRequired)"><![CDATA[Installed OR SYSTEM_HAS_ISLOG]]></Condition> -->
 		<!--
          2. Check OS bitness
             Unfortunately 32-bit MSI packages cannot write to 64-bit ProgramFiles directory. That is the only reason we need separate MSIs for 32-bit and 64-bit.
@@ -186,56 +186,17 @@
             <Component Id="ByteArrayDll" Guid="0907B24F-F549-41D5-8222-645C550BB7E7" DiskId="1">
               <File Id="ByteArray.dll" Name="ByteArray.dll" Source="..\RFiDGear\bin\Release\ByteArray.dll" KeyPath="yes" />
             </Component>
-            <Component Id="CommonLoggingDll" Guid="5CA5CB50-8EA8-4EBF-AA40-6BC990B61AC7" DiskId="1">
-              <File Id="Common.Logging.dll" Name="Common.Logging.dll" Source="..\RFiDGear\bin\Release\Common.Logging.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="CommonLoggingCoreDll" Guid="5CA5CB50-8EA8-4EBF-AA40-6BC120B6FEC7" DiskId="1">
-              <File Id="Common.Logging.Core.dll" Name="Common.Logging.Core.dll" Source="..\RFiDGear\bin\Release\Common.Logging.Core.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="CommonServiceLocatorDll" Guid="5CA5CB50-8EA8-4EBF-AA40-6BC120B61AC7" DiskId="1">
-              <File Id="CommonServiceLocator.dll" Name="CommonServiceLocator.dll" Source="..\RFiDGear\bin\Release\CommonServiceLocator.dll" KeyPath="yes" />
-            </Component>
             <Component Id="ElatecNetDll" Guid="40A4332E-04AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="Elatec.NET.dll" Name="Elatec.NET.dll" Source="..\RFiDGear\bin\Release\Elatec.NET.dll" KeyPath="yes" />
             </Component>
 						<Component Id="CommunityToolkitMvvmDll" Guid="40A4382E-00AA-479A-923F-0B45401700BB" DiskId="1">
 							<File Id="CommunityToolkit.Mvvm.dll" Name="CommunityToolkit.Mvvm.dll" Source="..\RFiDGear\bin\Release\CommunityToolkit.Mvvm.dll" KeyPath="yes" />
 						</Component>
-            <Component Id="InteropLibLogicalAccessDll" Guid="266E1A03-2C6B-444E-8017-1DBE01B19B24" DiskId="1">
-              <File Id="Interop.LibLogicalAccess.dll" Name="Interop.LibLogicalAccess.dll" Source="..\RFiDGear\bin\Release\Interop.LibLogicalAccess.dll" KeyPath="yes" />
+            <Component Id="GemBoxPDFDll" Guid="455F2A03-2C6B-444E-8017-1DBE01B19B24" DiskId="1">
+              <File Id="GemBox.Pdf.dll" Name="GemBox.Pdf.dll" Source="..\RFiDGear\bin\Release\GemBox.Pdf.dll" KeyPath="yes" />
             </Component>
             <Component Id="IonicZipDll" Guid="DC246BF8-25A3-42BF-A2A5-CEE429219381" DiskId="1">
               <File Id="Ionic.Zip.dll" Name="Ionic.Zip.dll" Source="..\RFiDGear\bin\Release\Ionic.Zip.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="ITextBarcodesDll" Guid="40A4382E-00AA-478A-923F-0B45401700BB" DiskId="1">
-              <File Id="itext.barcodes.dll" Name="itext.barcodes.dll" Source="..\RFiDGear\bin\Release\itext.barcodes.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="ITextCommonsDll" Guid="40A4382E-02AA-479A-923F-0B454017ACBB" DiskId="1">
-              <File Id="itext.commons.dll" Name="itext.commons.dll" Source="..\RFiDGear\bin\Release\itext.commons.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="ITextFormsDll" Guid="40A4382E-02AA-479A-923F-0B45401700BB" DiskId="1">
-              <File Id="itext.forms.dll" Name="itext.forms.dll" Source="..\RFiDGear\bin\Release\itext.forms.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="ITextIODll" Guid="40A4382E-04AA-479A-923F-0B45401700BB" DiskId="1">
-              <File Id="itext.io.dll" Name="itext.io.dll" Source="..\RFiDGear\bin\Release\itext.io.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="ITextKernelDll" Guid="40A4382E-06AA-479A-923F-0B45401700BB" DiskId="1">
-              <File Id="itext.kernel.dll" Name="itext.kernel.dll" Source="..\RFiDGear\bin\Release\itext.kernel.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="ITextLayoutDll" Guid="40A4382E-09AA-479A-923F-0B45401700BB" DiskId="1">
-              <File Id="itext.layout.dll" Name="itext.layout.dll" Source="..\RFiDGear\bin\Release\itext.layout.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="ITextPdfaDll" Guid="40FF382E-00AA-478A-923F-0B45401700BB" DiskId="1">
-              <File Id="itext.pdfa.dll" Name="itext.pdfa.dll" Source="..\RFiDGear\bin\Release\itext.pdfa.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="ITextSignDll" Guid="40ABC82E-02AA-479A-923F-0B45401700BB" DiskId="1">
-              <File Id="itext.sign.dll" Name="itext.sign.dll" Source="..\RFiDGear\bin\Release\itext.sign.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="ITextStyledxmlparserDll" Guid="40ACC82E-04AA-479A-923F-0B45401700BB" DiskId="1">
-              <File Id="itext.styledxmlparser.dll" Name="itext.styledxmlparser.dll" Source="..\RFiDGear\bin\Release\itext.styledxmlparser.dll" KeyPath="yes" />
-            </Component>
-            <Component Id="ITextSvgDll" Guid="40A438DD-06AA-479A-923F-0B45401700BB" DiskId="1">
-              <File Id="itext.svg.dll" Name="itext.svg.dll" Source="..\RFiDGear\bin\Release\itext.svg.dll" KeyPath="yes" />
             </Component>
             <Component Id="Log4CSharpDll" Guid="40A4711D-06AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="Log4CSharp.dll" Name="Log4CSharp.dll" Source="..\RFiDGear\bin\Release\Log4CSharp.dll" KeyPath="yes" />
@@ -266,6 +227,9 @@
             </Component>                   
             <Component Id="NewtonsoftJsonDll" Guid="01BB711D-06AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="Newtonsoft.Json.dll" Name="Newtonsoft.Json.dll" Source="..\RFiDGear\bin\Release\Newtonsoft.Json.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="Pkcs11InteropDll" Guid="B6782BE0-4826-F027-AAF0-5660ECAAE6AA" DiskId="1">
+              <File Id="Pkcs11Interop.dll" Name="Pkcs11Interop.dll" Source="..\RFiDGear\bin\Release\Pkcs11Interop.dll" KeyPath="yes" />
             </Component>
             <Component Id="PluginSystemDll" Guid="B6782BE0-4826-4FDD-AAF0-5660ECAAE6AA" DiskId="1">
               <File Id="PluginSystem.dll" Name="PluginSystem.dll" Source="..\RFiDGear\bin\Release\PluginSystem.dll" KeyPath="yes" />
@@ -389,23 +353,10 @@
 
         <ComponentRef Id="BouncyCastleCryptoDll"/>
         <ComponentRef Id="ByteArrayDll"/>
-        <ComponentRef Id="CommonLoggingCoreDll" />
-        <ComponentRef Id="CommonLoggingDll" />
-        <ComponentRef Id="CommonServiceLocatorDll" />
 				<ComponentRef Id="CommunityToolkitMvvmDll" />
+        <ComponentRef Id="GemBoxPDFDll" />
         <ComponentRef Id="ElatecNetDll"/>
-				<ComponentRef Id="InteropLibLogicalAccessDll" />
 				<ComponentRef Id="IonicZipDll" />
-        <ComponentRef Id="ITextBarcodesDll" /> 
-        <ComponentRef Id="ITextCommonsDll" />
-        <ComponentRef Id="ITextFormsDll" />
-        <ComponentRef Id="ITextIODll" />
-        <ComponentRef Id="ITextKernelDll" />
-        <ComponentRef Id="ITextLayoutDll" />
-        <ComponentRef Id="ITextPdfaDll" />
-        <ComponentRef Id="ITextSignDll" />
-        <ComponentRef Id="ITextStyledxmlparserDll" />
-        <ComponentRef Id="ITextSvgDll" />
         <ComponentRef Id="Log4CSharpDll" />
         <ComponentRef Id="MicrosoftBclAsyncInterfacesDll" />
         <ComponentRef Id="MicrosoftExtensionsDependencyInjectionAbstractionsDll" />
@@ -416,6 +367,7 @@
         <ComponentRef Id="MicrosoftExtensionsPrimitivesDll" />   
         <ComponentRef Id="MVVMDialogsDll" />
         <ComponentRef Id="NewtonsoftJsonDll" />
+        <ComponentRef Id="Pkcs11InteropDll" />
         <ComponentRef Id="PluginSystemDll" />
         <ComponentRef Id="SystemBuffersDll" />
         <ComponentRef Id="SystemComponentModelAnnotationsDll" />
