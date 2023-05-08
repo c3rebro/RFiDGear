@@ -2637,7 +2637,7 @@ namespace RFiDGear.ViewModel
                                             0,
                                             SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                             DesfireMasterKeyTarget,
-                                            selectedDesfireAppKeyNumberTargetAsInt,
+                                            0,
                                             0,
                                             SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings, keyVersionCurrentAsInt);
 

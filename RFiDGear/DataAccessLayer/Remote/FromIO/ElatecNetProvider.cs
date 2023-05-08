@@ -24,7 +24,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         private readonly TWN4ReaderDevice readerDevice;
 
-        private ChipModel card;
+        private ChipModel hfTag;
         private bool _disposed;
 
         #region Constructor
@@ -73,26 +73,38 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         Instance.Connect();
                     }
 
-                    card = readerDevice.GetSingleChip(true);
+                    hfTag = readerDevice.GetSingleChip(true);
 
-                    if (!string.IsNullOrWhiteSpace(card?.ChipIdentifier))
+                    var lfTag = readerDevice.GetSingleChip(false);
+                    var legicTag = readerDevice.GetSingleChip(true, true);
+
+                    if (
+                            !(
+                                string.IsNullOrWhiteSpace(hfTag?.ChipIdentifier) & 
+                                string.IsNullOrWhiteSpace(lfTag?.ChipIdentifier) &
+                                string.IsNullOrWhiteSpace(legicTag?.ChipIdentifier)
+                            )
+                        )
                     {
                         try
                         {
-                            GenericChip = new GenericChipModel(card.ChipIdentifier, 
-                                (CARD_TYPE)card.CardType, 
+
+                            GenericChip = new GenericChipModel(hfTag.ChipIdentifier, 
+                                (CARD_TYPE)hfTag.CardType, 
                                 ByteConverter.GetStringFrom(readerDevice.SAK), 
                                 ByteConverter.GetStringFrom(readerDevice.ATS),
                                 ByteConverter.GetStringFrom(readerDevice.L4VERSION)
                                 );
 
-                            var lfTag = readerDevice.GetSingleChip(false);
-
                             if (lfTag != null && lfTag?.CardType != ChipType.NOTAG)
                             {
                                 GenericChip.Slave = new GenericChipModel(lfTag.ChipIdentifier, (RFiDGear.DataAccessLayer.CARD_TYPE)lfTag.CardType);
                             }
-                            readerDevice.GetSingleChip(true);
+                            else if(legicTag != null && legicTag?.CardType != ChipType.NOTAG)
+                            {
+                                GenericChip.Slave = new GenericChipModel(legicTag.ChipIdentifier, (RFiDGear.DataAccessLayer.CARD_TYPE)legicTag.CardType);
+                            }
+                            //readerDevice.GetSingleChip(true);
 
                             return ERROR.NoError;
                         }
@@ -148,8 +160,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         #region MifareClassic
         public override ERROR WriteMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
         {
-            return WriteMifareClassicSingleSector(
-                CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber), _aKey, _bKey, buffer);
+            if (!readerDevice.MifareClassicLogin(_aKey, 0, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber))) // No Access Allowed, try bKey
+            {
+                readerDevice.MifareClassicLogin(_bKey, 1, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
+                
+            } // Login
+
+            return readerDevice.MifareClassicWriteBlock(buffer, (byte)_blockNumber) == true ? ERROR.NoError : ERROR.AuthenticationError;
         }
 
         public override ERROR ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
@@ -418,10 +435,20 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         1,
                         (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTarget))))
                     {
+                        if (readerDevice.DesfireAuthenticate(_applicationMasterKeyTarget, (byte)_keyNumberTarget, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTarget)), 1))
+                        {
+                            readerDevice.DesfireChangeKeySettings((byte)keySettings, 0, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTarget)));
+                        }
+
                         return ERROR.NoError;
                     }
                     else
                     {
+                        if (readerDevice.DesfireAuthenticate(_applicationMasterKeyTarget, (byte)_keyNumberTarget, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTarget)), 1))
+                        {
+                            readerDevice.DesfireChangeKeySettings((byte)keySettings, 0, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTarget)));
+                        }
+
                         return ERROR.AuthenticationError;
                     }
                 }

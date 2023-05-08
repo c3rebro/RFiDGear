@@ -90,12 +90,6 @@ namespace RFiDGear.ViewModel
 
         #region Events / Delegates
 
-        /// <summary>
-        /// will raise notifier to inform user about available updates
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public delegate void updateReady(object sender, EventArgs e);
         #endregion
 
         #region Constructors
@@ -1158,12 +1152,12 @@ namespace RFiDGear.ViewModel
                             treeViewParentNodes.First(x => x.IsSelected).IsSelected = false;
                         }
 
-                        //only run if theres a card on the reader and its uid was previously added
+                        //only run if theres a hfTag on the reader and its uid was previously added
                         if (
                             !string.IsNullOrWhiteSpace(GenericChip.UID) &&
                             treeViewParentNodes.Any(x => x.UID == GenericChip.UID))
                         {
-                            //select current parentnode (card) on reader
+                            //select current parentnode (hfTag) on reader
                             treeViewParentNodes.First(x => x.UID == GenericChip.UID).IsSelected = true;
                             treeViewParentNodes.First(x => x.IsSelected).IsBeingProgrammed = true;
                         }
