@@ -10,8 +10,16 @@ Requirements:
 
 * Microsoft Windows 7 32/64bit (or later)
 * .NET Framework 4.5.2 (or later - included)
-* LibLogicalAccess 1.87 (or later - included)
-* a (tested) PCSC compatibile Reader:
-   + Omnikey 5321 
-   + Sciel SCL3711
-   + ACR 122U
+* Elatec Reader TWN4
+
+Hint: PCSC Support was removed due to unanswered license questions
+
+~~LibLogicalAccess 1.87 (or later - included)~~
+
+~~a (tested) PCSC compatibile Reader:~~
+
+~~Omnikey 5321~~ 
+
+~~Sciel SCL3711~~
+
+~~ACR 122U~~
