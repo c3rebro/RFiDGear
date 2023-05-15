@@ -444,7 +444,7 @@ namespace RFiDGear.ViewModel
                             if (result == ERROR.NoError)
                             {
 
-                                if (device.GenericChip.Slave != null)
+                                if (device.GenericChip.Child != null)
                                 {
                                     result = ERROR.NoError;
                                 }

@@ -911,19 +911,19 @@ namespace RFiDGear.ViewModel
 
                                 if (temporaryContent.Contains("%SLAVECHIPTYPE"))
                                 {
-                                    if (GenericChip?.Slave != null)
+                                    if (GenericChip?.Child != null)
                                     {
                                         temporaryContent = temporaryContent.Replace("%SLAVECHIPTYPE", ResourceLoader.GetResource(
-                                            string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.Slave?.CardType))) ?? "");
+                                            string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), GenericChip?.Child?.CardType))) ?? "");
                                         hasVariable = true;
                                     }
                                 }
 
                                 if (temporaryContent.Contains("%SLAVEUID"))
                                 {
-                                    if (GenericChip?.Slave != null)
+                                    if (GenericChip?.Child != null)
                                     {
-                                        temporaryContent = temporaryContent.Replace("%SLAVEUID", GenericChip?.Slave?.UID ?? "");
+                                        temporaryContent = temporaryContent.Replace("%SLAVEUID", GenericChip?.Child?.UID ?? "");
                                         hasVariable = true;
                                     }
                                 }

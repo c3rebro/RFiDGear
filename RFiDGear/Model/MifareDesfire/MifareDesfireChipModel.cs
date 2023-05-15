@@ -49,7 +49,7 @@ namespace RFiDGear.Model
             RATS = genericChip.RATS;
             SAK = genericChip.SAK;
             L4Version = genericChip.VersionL4;
-            Slave = genericChip.Slave;
+            Child = genericChip.Child;
         }
 
         public string L4Version { get; set; }

@@ -42,6 +42,7 @@ namespace RFiDGear.Model
         public string SAK { get; set; }
         public string RATS { get; set; }
         public string VersionL4 { get; set; }
-        public GenericChipModel Slave { get; set; }
+        public GenericChipModel Child { get; set; }
+        public GenericChipModel GrandChild  {  get; set;  }
     }
 }

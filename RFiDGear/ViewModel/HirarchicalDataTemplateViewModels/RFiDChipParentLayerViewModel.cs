@@ -179,12 +179,12 @@ namespace RFiDGear.ViewModel
                     ResourceLoader.GetResource(
                         string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), CardType))));
 
-                if (mifareDesfireUidModel.Slave != null)
+                if (mifareDesfireUidModel.Child != null)
                 {
                     ParentNodeHeaderRed += 
                         String.Format("\nHybridTag: {0}\nUID: {1}", 
-                        Enum.GetName(typeof(CARD_TYPE), mifareDesfireUidModel.Slave.CardType),
-                        mifareDesfireUidModel.Slave.UID);
+                        Enum.GetName(typeof(CARD_TYPE), mifareDesfireUidModel.Child.CardType),
+                        mifareDesfireUidModel.Child.UID);
                 }
 
                 Children.Add(

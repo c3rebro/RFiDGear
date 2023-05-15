@@ -24,7 +24,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         private readonly TWN4ReaderDevice readerDevice;
 
-        private ChipModel hfTag;
+        private GenericChipModel hfTag;
+        private GenericChipModel lfTag;
+        private GenericChipModel legicTag;
+
         private bool _disposed;
 
         #region Constructor
@@ -73,36 +76,41 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         Instance.Connect();
                     }
 
-                    hfTag = readerDevice.GetSingleChip(true);
-
-                    var lfTag = readerDevice.GetSingleChip(false);
-                    var legicTag = readerDevice.GetSingleChip(true, true);
+                    var tmpTag = readerDevice.GetSingleChip(true);
+                    hfTag = new GenericChipModel(tmpTag.UID, (RFiDGear.DataAccessLayer.CARD_TYPE)tmpTag.CardType, tmpTag.SAK, tmpTag.RATS, tmpTag.VersionL4);
+                    tmpTag = readerDevice.GetSingleChip(false);
+                    lfTag = new GenericChipModel(tmpTag.UID, (RFiDGear.DataAccessLayer.CARD_TYPE)tmpTag.CardType);
+                    tmpTag = readerDevice.GetSingleChip(true, true);
+                    legicTag = new GenericChipModel(tmpTag.UID, (RFiDGear.DataAccessLayer.CARD_TYPE)tmpTag.CardType);
+                    readerDevice.GetSingleChip(true);
 
                     if (
                             !(
-                                string.IsNullOrWhiteSpace(hfTag?.ChipIdentifier) & 
-                                string.IsNullOrWhiteSpace(lfTag?.ChipIdentifier) &
-                                string.IsNullOrWhiteSpace(legicTag?.ChipIdentifier)
+                                string.IsNullOrWhiteSpace(hfTag?.UID) & 
+                                string.IsNullOrWhiteSpace(lfTag?.UID) &
+                                string.IsNullOrWhiteSpace(legicTag?.UID)
                             )
                         )
                     {
                         try
                         {
+                            readerDevice.GreenLED(true);
+                            readerDevice.RedLED(false);
 
-                            GenericChip = new GenericChipModel(hfTag.ChipIdentifier, 
+                            GenericChip = new GenericChipModel(hfTag.UID, 
                                 (CARD_TYPE)hfTag.CardType, 
-                                ByteConverter.GetStringFrom(readerDevice.SAK), 
-                                ByteConverter.GetStringFrom(readerDevice.ATS),
-                                ByteConverter.GetStringFrom(readerDevice.L4VERSION)
+                                hfTag.SAK, 
+                                hfTag.RATS,
+                                hfTag.VersionL4
                                 );
 
-                            if (lfTag != null && lfTag?.CardType != ChipType.NOTAG)
+                            if (lfTag != null && lfTag?.CardType != CARD_TYPE.NOTAG)
                             {
-                                GenericChip.Slave = new GenericChipModel(lfTag.ChipIdentifier, (RFiDGear.DataAccessLayer.CARD_TYPE)lfTag.CardType);
+                                GenericChip.Child = new GenericChipModel(lfTag.UID, (RFiDGear.DataAccessLayer.CARD_TYPE)lfTag.CardType);
                             }
-                            else if(legicTag != null && legicTag?.CardType != ChipType.NOTAG)
+                            else if(legicTag != null && legicTag?.CardType != CARD_TYPE.NOTAG)
                             {
-                                GenericChip.Slave = new GenericChipModel(legicTag.ChipIdentifier, (RFiDGear.DataAccessLayer.CARD_TYPE)legicTag.CardType);
+                                GenericChip.Child = new GenericChipModel(legicTag.UID, (RFiDGear.DataAccessLayer.CARD_TYPE)legicTag.CardType);
                             }
                             //readerDevice.GetSingleChip(true);
 
