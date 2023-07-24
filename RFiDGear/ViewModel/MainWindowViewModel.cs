@@ -19,21 +19,6 @@
  * - 
  */
 
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-
-using Log4CSharp;
-
-using MefMvvm.SharedContracts.ViewModel;
-
-using MvvmDialogs.ViewModels;
-
-using RedCell.Diagnostics.Update;
-
-using RFiDGear.DataAccessLayer;
-using RFiDGear.DataAccessLayer.Remote.FromIO;
-using RFiDGear.Model;
-
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -43,13 +28,21 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Remoting.Messaging;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Log4CSharp;
+using MefMvvm.SharedContracts.ViewModel;
+using MvvmDialogs.ViewModels;
+using RedCell.Diagnostics.Update;
+using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.Remote.FromIO;
+using RFiDGear.Model;
 
 namespace RFiDGear.ViewModel
 {
@@ -287,10 +280,24 @@ namespace RFiDGear.ViewModel
 
         private void OpenLastProjectFile()
         {
+            OpenLastProjectFile(string.Empty);
+        }
+
+        private void OpenLastProjectFile(string projectFileToUse)
+        {
             using (var settings = new SettingsReaderWriter())
             {
                 var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
-                var lastUsedDBPath = settings.DefaultSpecification.LastUsedProjectPath;
+                string lastUsedDBPath;
+
+                if (string.IsNullOrEmpty(projectFileToUse))
+                {
+                    lastUsedDBPath = settings.DefaultSpecification.LastUsedProjectPath;
+                }
+                else
+                {
+                    lastUsedDBPath = projectFileToUse;
+                }
 
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
@@ -408,6 +415,15 @@ namespace RFiDGear.ViewModel
         private void OnNewRemoveChipsFromTreeCommand()
         {
             TreeViewParentNodes.Clear();
+        }
+
+        /// <summary>
+        /// Show Detailed Version Info
+        /// </summary>
+        public ICommand ShowChangeLogCommand => new RelayCommand(OnNewShowChangeLogCommand);
+        private void OnNewShowChangeLogCommand()
+        {
+            AskForUpdateNow(true);
         }
 
         /// <summary>
@@ -1893,7 +1909,6 @@ namespace RFiDGear.ViewModel
             }
         }
 
-
         /// <summary>
         /// 
         /// </summary>
@@ -2138,18 +2153,26 @@ namespace RFiDGear.ViewModel
 
         private void AskForUpdateNow()
         {
+            AskForUpdateNow(false);
+        }
+
+        private void AskForUpdateNow(bool updateDisabled)
+        {
             userIsNotifiedForAvailableUpdate = false;
 
             Dialogs.Add(new UpdateNotifierViewModel(updater.UpdateInfoText)
             {
-                Caption = "Update Available",
+
+                Caption = updateDisabled ? "Changelog" : "Update Available",
 
                 OnOk = (updateAction) =>
                 {
-                    Mouse.OverrideCursor = Cursors.AppStarting;
-                    updater.Update();
+                    if (!updateDisabled)
+                    {
+                        Mouse.OverrideCursor = Cursors.AppStarting;
+                        updater.Update();
+                    }
                     updateAction.Close();
-                    Mouse.OverrideCursor = null;
                 },
 
                 OnCancel = (updateAction) =>
@@ -2189,168 +2212,185 @@ namespace RFiDGear.ViewModel
             mw = (MainWindow)Application.Current.MainWindow;
             mw.Title = string.Format("RFiDGear {0}.{1}", Version.Major, Version.Minor);
 
-                if (firstRun)
+            if (firstRun)
+            {                
+                Task refreshStatusBarThread;
+
+                var projectFileToUse = "";
+
+                firstRun = false;
+
+                try
                 {
-                    Task refreshStatusBarThread;
-
-                    firstRun = false;
-
-                    try
+                    using (var settings = new SettingsReaderWriter())
                     {
-                        using (var settings = new SettingsReaderWriter())
+                        if (args.Length > 1)
                         {
-                            if (args.Length > 1)
+                            foreach (var arg in args)
                             {
-                                foreach (var arg in args)
+                                switch (arg.Split('=')[0])
                                 {
-                                    switch (arg.Split('=')[0])
-                                    {
-                                        case "LASTUSEDPROJECTPATH":
-                                            if (File.Exists(arg.Split('=')[1]))
-                                            {
-                                                settings.DefaultSpecification.LastUsedProjectPath = new DirectoryInfo(arg.Split('=')[1]).FullName;
-                                                settings.SaveSettings();
-                                            }
-                                            break;
 
-                                        default:
-                                            break;
-                                    }
-                                }
-                            }
-
-                            CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
-                                ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
-                                : settings.DefaultSpecification.DefaultReaderName;
-
-                            if (int.TryParse(settings.DefaultSpecification.LastUsedComPort, out var portNumber))
-                            {
-                                ReaderDevice.PortNumber = portNumber;
-                            }
-
-                            else
-                            {
-                                ReaderDevice.PortNumber = 0;
-                            }
-
-
-                            culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
-
-                            var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
-
-                            var mySplash = new SplashScreenViewModel();
-
-                            if (autoLoadLastUsedDB)
-                            {
-                                Dialogs.Add(mySplash);
-                            }
-
-                            if (autoLoadLastUsedDB)
-                            {
-                                OpenLastProjectFile();
-                            }
-
-                            refreshStatusBarThread = new Task(() =>
-                            {
-                                while (true)
-                                {
-                                    Thread.Sleep(500);
-                                    DateTimeStatusBar = string.Format("{0}", DateTime.Now);
-                                }
-                            });
-
-                            refreshStatusBarThread.ContinueWith((x) =>
-                            {
-                            });
-
-                            refreshStatusBarThread.Start();
-
-                            
-
-                            OnNewResetTaskStatusCommand();
-                        }
-
-                        using (var settings = new SettingsReaderWriter())
-                        {
-                            if (args.Length > 1)
-                            {
-                                foreach (var arg in args)
-                                {
-                                    switch (arg.Split('=')[0])
-                                    {
-                                        case "REPORTTARGETPATH":
-
-                                        variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
-
-                                        if (Directory.Exists(Path.GetDirectoryName(arg.Split('=')[1])))
+                                    case "LASTUSEDPROJECTPATH":
+                                        if (File.Exists(arg.Split('=')[1]))
                                         {
-                                            reportOutputPath = arg.Split('=')[1];
-                                            var numbersInFileNames = new int[Directory.GetFiles(Path.GetDirectoryName(reportOutputPath)).Length];
-
-                                            if (reportOutputPath.Contains("?"))
-                                            {
-                                                for (int i = 0; i < numbersInFileNames.Length; i++)
-                                                {
-                                                    var fileName = Directory.GetFiles(Path.GetDirectoryName(reportOutputPath))[i];
-
-                                                    if (fileName.Replace(".pdf",string.Empty).ToLower().Contains(reportOutputPath.ToLower().Replace("?",string.Empty).Replace(".pdf",string.Empty)))
-                                                    {
-                                                        _ = int.TryParse(fileName.ToLower().Replace(
-                                                            reportOutputPath.ToLower().Replace("?", string.Empty).Replace(".pdf", string.Empty), string.Empty).Replace(".pdf", string.Empty), out int n);
-                                                        numbersInFileNames[i] = n;
-                                                    }
-                                                }
-                                            }
-
-                                            if (reportOutputPath.Contains("???"))
-                                            {
-                                                reportOutputPath = reportOutputPath.Replace("???", string.Format("{0:D3}", numbersInFileNames.Max() + 1));
-                                            }
-
-                                            else if (reportOutputPath.Contains("??"))
-                                            {
-                                                reportOutputPath = reportOutputPath.Replace("??", string.Format("{0:D2}", numbersInFileNames.Max() + 1));
-                                            }
-
-                                            else if (reportOutputPath.Contains("?"))
-                                            {
-                                                reportOutputPath = reportOutputPath.Replace("?", string.Format("{0:D1}", numbersInFileNames.Max() + 1));
-                                            }
+                                            settings.DefaultSpecification.LastUsedProjectPath = new DirectoryInfo(arg.Split('=')[1]).FullName;
+                                            settings.SaveSettings();
                                         }
                                         break;
 
-                                        case "AUTORUN":
-                                            if (arg.Split('=')[1] == "1")
-                                            {
-                                                _isLoadingProject = true;
-                                                OnNewWriteToChipOnceCommand();
-                                            }
-                                            break;
+                                    case "CUSTOMPROJECTFILE":
 
-                                        default:
-                                            if (arg.Split('=')[0].Contains("$"))
-                                            {
-                                                variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
-                                            }
+                                        if (File.Exists(arg.Split('=')[1]))
+                                        {
+                                            projectFileToUse = new DirectoryInfo(arg.Split('=')[1]).FullName;
+                                        }
+                                        break;
+
+                                    default:
                                             break;
-                                    }
                                 }
                             }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogWriter.CreateLogEntry(ex, FacilityName);
+
+                        CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
+                            ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
+                            : settings.DefaultSpecification.DefaultReaderName;
+
+                        if (int.TryParse(settings.DefaultSpecification.LastUsedComPort, out var portNumber))
+                        {
+                            ReaderDevice.PortNumber = portNumber;
+                        }
+
+                        else
+                        {
+                            ReaderDevice.PortNumber = 0;
+                        }
+
+
+                        culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
+
+                        var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
+
+                        var mySplash = new SplashScreenViewModel();
+
+                        if (autoLoadLastUsedDB)
+                        {
+                            Dialogs.Add(mySplash);
+                        }
+
+                        if (autoLoadLastUsedDB)
+                        {
+                            if (string.IsNullOrEmpty(projectFileToUse))
+                            {
+                                OpenLastProjectFile();
+                            }
+                            else
+                            {
+                                OpenLastProjectFile(projectFileToUse);
+                            }
+                                
+                        }
+
+                        refreshStatusBarThread = new Task(() =>
+                        {
+                            while (true)
+                            {
+                                Thread.Sleep(500);
+                                DateTimeStatusBar = string.Format("{0}", DateTime.Now);
+                            }
+                        });
+
+                        refreshStatusBarThread.ContinueWith((x) =>
+                        {
+                        });
+
+                        refreshStatusBarThread.Start();
+
+                        OnNewResetTaskStatusCommand();
                     }
 
                     using (var settings = new SettingsReaderWriter())
                     {
-                        if (settings.DefaultSpecification.AutoCheckForUpdates)
+                        if (args.Length > 1)
                         {
-                            updater?.StartMonitoring();
+                            foreach (var arg in args)
+                            {
+                                switch (arg.Split('=')[0])
+                                {
+                                    case "REPORTTARGETPATH":
+
+                                    variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
+
+                                    if (Directory.Exists(Path.GetDirectoryName(arg.Split('=')[1])))
+                                    {
+                                        reportOutputPath = arg.Split('=')[1];
+                                        var numbersInFileNames = new int[Directory.GetFiles(Path.GetDirectoryName(reportOutputPath)).Length];
+
+                                        if (reportOutputPath.Contains("?"))
+                                        {
+                                            for (int i = 0; i < numbersInFileNames.Length; i++)
+                                            {
+                                                var fileName = Directory.GetFiles(Path.GetDirectoryName(reportOutputPath))[i];
+
+                                                if (fileName.Replace(".pdf",string.Empty).ToLower().Contains(reportOutputPath.ToLower().Replace("?",string.Empty).Replace(".pdf",string.Empty)))
+                                                {
+                                                    _ = int.TryParse(fileName.ToLower().Replace(
+                                                        reportOutputPath.ToLower().Replace("?", string.Empty).Replace(".pdf", string.Empty), string.Empty).Replace(".pdf", string.Empty), out int n);
+                                                    numbersInFileNames[i] = n;
+                                                }
+                                            }
+                                        }
+
+                                        if (reportOutputPath.Contains("???"))
+                                        {
+                                            reportOutputPath = reportOutputPath.Replace("???", string.Format("{0:D3}", numbersInFileNames.Max() + 1));
+                                        }
+
+                                        else if (reportOutputPath.Contains("??"))
+                                        {
+                                            reportOutputPath = reportOutputPath.Replace("??", string.Format("{0:D2}", numbersInFileNames.Max() + 1));
+                                        }
+
+                                        else if (reportOutputPath.Contains("?"))
+                                        {
+                                            reportOutputPath = reportOutputPath.Replace("?", string.Format("{0:D1}", numbersInFileNames.Max() + 1));
+                                        }
+                                    }
+                                    break;
+
+                                    case "AUTORUN":
+                                        if (arg.Split('=')[1] == "1")
+                                        {
+                                            _isLoadingProject = true;
+                                            OnNewWriteToChipOnceCommand();
+                                        }
+                                        break;
+
+                                    default:
+                                        if (arg.Split('=')[0].Contains("$"))
+                                        {
+                                            variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
+                                        }
+                                        break;
+                                }
+                            }
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    LogWriter.CreateLogEntry(ex, FacilityName);
+                }
+
+                using (var settings = new SettingsReaderWriter())
+                {
+                    if (settings.DefaultSpecification.AutoCheckForUpdates)
+                    {
+                        updater?.StartMonitoring();
+                    }
+                }
+            }
 
 
             

@@ -1486,4 +1486,7 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="ENUM.TaskType_GenericChipTask.ChipIsMultiChip" xml:space="preserve">
     <value>Check Tag Is MultiTag</value>
   </data>
+  <data name="menuItemShowChangeLogHeader" xml:space="preserve">
+    <value>Changelog</value>
+  </data>
 </root>

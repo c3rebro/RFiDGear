@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System;
+using RFiDGear.Model;
 
 namespace RFiDGear
 {
@@ -119,7 +120,8 @@ namespace RFiDGear
 
                 if (grid.SelectedItem != null)
                 {
-                    grid.ScrollIntoView(grid.SelectedItem, null);
+                    grid.ScrollIntoView(grid.SelectedItem, grid.Columns[0]);
+                    
                 }
             });
 
@@ -129,7 +131,7 @@ namespace RFiDGear
                 grid.UpdateLayout();
                 if (grid.SelectedItem != null)
                 {
-                    grid.ScrollIntoView(grid.SelectedItem, null);
+                    grid.ScrollIntoView(grid.SelectedItem, grid.Columns[0]);
                 }
             }));
         }

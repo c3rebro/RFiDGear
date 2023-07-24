@@ -1508,4 +1508,7 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="ENUM.TaskType_GenericChipTask.ChipIsMultiChip" xml:space="preserve">
     <value>Prüfung auf Multitechnologiekarte</value>
   </data>
+  <data name="menuItemShowChangeLogHeader" xml:space="preserve">
+    <value>Changelog</value>
+  </data>
 </root>
