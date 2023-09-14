@@ -65,6 +65,7 @@ namespace RFiDGear.ViewModel
         private protected DispatcherTimer triggerReadChip;
         private protected DispatcherTimer taskTimeout;
         private protected string reportOutputPath;
+        private protected string reportTemplateFile;
         private protected ChipTaskHandlerModel taskHandler; 
         private protected List<MifareClassicChipModel> mifareClassicUidModels = new List<MifareClassicChipModel>();
         private protected List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
@@ -1030,7 +1031,7 @@ namespace RFiDGear.ViewModel
                             ssVM.IsTaskCompletedSuccessfully = null;
                             reportOutputPath = null;
                             reportReaderWriter.ReportOutputPath = null;
-                            reportReaderWriter.ReportTemplatePath = null;
+                            reportReaderWriter.ReportTemplateFile = null;
                             ssVM.CurrentTaskErrorLevel = ERROR.Empty;
                             break;
                     }
@@ -1224,8 +1225,9 @@ namespace RFiDGear.ViewModel
                                                     
                                                     try
                                                     {
-                                                        var initDir = variablesFromArgs["REPORTTARGETPATH"];
-                                                        reportTargetPathDirInfo = new DirectoryInfo(Path.GetDirectoryName(initDir));
+                                                        var targetReportDir = variablesFromArgs["REPORTTARGETPATH"];
+                                                        var sourceTemplateFile = variablesFromArgs["REPORTTEMPLATEFILE"];
+                                                        reportTargetPathDirInfo = new DirectoryInfo(Path.GetDirectoryName(targetReportDir));
                                                         
                                                     }
                                                     catch
@@ -1258,6 +1260,10 @@ namespace RFiDGear.ViewModel
                                                         }
 
                                                         reportReaderWriter.ReportOutputPath = reportOutputPath;
+                                                        if (!string.IsNullOrEmpty(reportTemplateFile))
+                                                        {
+                                                            reportReaderWriter.ReportTemplateFile = reportTemplateFile;
+                                                        }
 
                                                         (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
                                                     }
@@ -1292,6 +1298,10 @@ namespace RFiDGear.ViewModel
                                                                 }
 
                                                                 reportReaderWriter.ReportOutputPath = reportOutputPath;
+                                                                if (!string.IsNullOrEmpty(reportTemplateFile))
+                                                                {
+                                                                    reportReaderWriter.ReportTemplateFile = reportTemplateFile;
+                                                                }
 
                                                                 (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).WriteReportCommand.Execute(reportReaderWriter);
                                                             }
@@ -2320,44 +2330,54 @@ namespace RFiDGear.ViewModel
                                 {
                                     case "REPORTTARGETPATH":
 
-                                    variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
+                                        variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
 
-                                    if (Directory.Exists(Path.GetDirectoryName(arg.Split('=')[1])))
-                                    {
-                                        reportOutputPath = arg.Split('=')[1];
-                                        var numbersInFileNames = new int[Directory.GetFiles(Path.GetDirectoryName(reportOutputPath)).Length];
-
-                                        if (reportOutputPath.Contains("?"))
+                                        if (Directory.Exists(Path.GetDirectoryName(arg.Split('=')[1])))
                                         {
-                                            for (int i = 0; i < numbersInFileNames.Length; i++)
-                                            {
-                                                var fileName = Directory.GetFiles(Path.GetDirectoryName(reportOutputPath))[i];
+                                            reportOutputPath = arg.Split('=')[1];
+                                            var numbersInFileNames = new int[Directory.GetFiles(Path.GetDirectoryName(reportOutputPath)).Length];
 
-                                                if (fileName.Replace(".pdf",string.Empty).ToLower().Contains(reportOutputPath.ToLower().Replace("?",string.Empty).Replace(".pdf",string.Empty)))
+                                            if (reportOutputPath.Contains("?"))
+                                            {
+                                                for (int i = 0; i < numbersInFileNames.Length; i++)
                                                 {
-                                                    _ = int.TryParse(fileName.ToLower().Replace(
-                                                        reportOutputPath.ToLower().Replace("?", string.Empty).Replace(".pdf", string.Empty), string.Empty).Replace(".pdf", string.Empty), out int n);
-                                                    numbersInFileNames[i] = n;
+                                                    var fileName = Directory.GetFiles(Path.GetDirectoryName(reportOutputPath))[i];
+
+                                                    if (fileName.Replace(".pdf",string.Empty).ToLower().Contains(reportOutputPath.ToLower().Replace("?",string.Empty).Replace(".pdf",string.Empty)))
+                                                    {
+                                                        _ = int.TryParse(fileName.ToLower().Replace(
+                                                            reportOutputPath.ToLower().Replace("?", string.Empty).Replace(".pdf", string.Empty), string.Empty).Replace(".pdf", string.Empty), out int n);
+                                                        numbersInFileNames[i] = n;
+                                                    }
                                                 }
                                             }
-                                        }
 
-                                        if (reportOutputPath.Contains("???"))
-                                        {
-                                            reportOutputPath = reportOutputPath.Replace("???", string.Format("{0:D3}", numbersInFileNames.Max() + 1));
-                                        }
+                                            if (reportOutputPath.Contains("???"))
+                                            {
+                                                reportOutputPath = reportOutputPath.Replace("???", string.Format("{0:D3}", numbersInFileNames.Max() + 1));
+                                            }
 
-                                        else if (reportOutputPath.Contains("??"))
-                                        {
-                                            reportOutputPath = reportOutputPath.Replace("??", string.Format("{0:D2}", numbersInFileNames.Max() + 1));
-                                        }
+                                            else if (reportOutputPath.Contains("??"))
+                                            {
+                                                reportOutputPath = reportOutputPath.Replace("??", string.Format("{0:D2}", numbersInFileNames.Max() + 1));
+                                            }
 
-                                        else if (reportOutputPath.Contains("?"))
-                                        {
-                                            reportOutputPath = reportOutputPath.Replace("?", string.Format("{0:D1}", numbersInFileNames.Max() + 1));
+                                            else if (reportOutputPath.Contains("?"))
+                                            {
+                                                reportOutputPath = reportOutputPath.Replace("?", string.Format("{0:D1}", numbersInFileNames.Max() + 1));
+                                            }
                                         }
-                                    }
                                     break;
+
+                                    case "REPORTTEMPLATEFILE":
+
+                                        variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
+
+                                        if (File.Exists(arg.Split('=')[1]))
+                                        {
+                                            reportTemplateFile = arg.Split('=')[1];
+                                        }
+                                        break;
 
                                     case "AUTORUN":
                                         if (arg.Split('=')[1] == "1")

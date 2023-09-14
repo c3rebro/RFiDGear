@@ -24,7 +24,7 @@ namespace RFiDGear.DataAccessLayer
         private const string reportTemplateTempFileName = "temptemplate.pdf";
         private readonly string appDataPath;
         public string ReportOutputPath { get; set; }
-        public string ReportTemplatePath { get; set; }
+        public string ReportTemplateFile { get; set; }
 
         #endregion fields
 
@@ -62,7 +62,7 @@ namespace RFiDGear.DataAccessLayer
             {
                 var temp = new ObservableCollection<string>();
 
-                using (var pdfDoc = PdfDocument.Load(ReportTemplatePath))
+                using (var pdfDoc = PdfDocument.Load(ReportTemplateFile))
                 {
                     var form = pdfDoc.Form;
 
@@ -98,11 +98,11 @@ namespace RFiDGear.DataAccessLayer
             {
                 try
                 {
-                    using (var pdfDoc = PdfDocument.Load(ReportTemplatePath)) // (new PdfReader(ReportTemplatePath), new PdfWriter(ReportOutputPath)))
+                    using (var pdfDoc = PdfDocument.Load(ReportTemplateFile)) // (new PdfReader(ReportTemplateFile), new PdfWriter(ReportOutputPath)))
                     {
                         try
                         {
-                            ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
+                            ReportTemplateFile = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
 
                             var form = pdfDoc.Form;
                             pdfDoc.Info.Title = "RFiDGear Report";
@@ -137,9 +137,9 @@ namespace RFiDGear.DataAccessLayer
             {
                 try
                 {
-                    ReportTemplatePath = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
+                    ReportTemplateFile = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
 
-                    using (var pdfDoc = PdfDocument.Load(ReportTemplatePath))
+                    using (var pdfDoc = PdfDocument.Load(ReportTemplateFile))
                     {
                         try
                         {

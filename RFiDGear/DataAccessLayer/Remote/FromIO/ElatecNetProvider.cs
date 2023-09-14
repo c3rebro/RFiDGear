@@ -104,14 +104,28 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 hfTag.VersionL4
                                 );
 
-                            if (lfTag != null && lfTag?.CardType != CARD_TYPE.NOTAG)
-                            {
-                                GenericChip.Child = new GenericChipModel(lfTag.UID, (RFiDGear.DataAccessLayer.CARD_TYPE)lfTag.CardType);
-                            }
-                            else if(legicTag != null && legicTag?.CardType != CARD_TYPE.NOTAG)
-                            {
-                                GenericChip.Child = new GenericChipModel(legicTag.UID, (RFiDGear.DataAccessLayer.CARD_TYPE)legicTag.CardType);
-                            }
+                                if (lfTag != null && lfTag?.CardType != CARD_TYPE.NOTAG)
+                                {
+                                    if(GenericChip != null && GenericChip.CardType != CARD_TYPE.NOTAG)
+                                    {
+                                        GenericChip.Child = new GenericChipModel(lfTag.UID, lfTag.CardType);
+                                    }
+                                    else
+                                    {
+                                        GenericChip = new GenericChipModel(lfTag.UID, lfTag.CardType);
+                                    }
+                                }
+                                else if (legicTag != null && legicTag?.CardType != CARD_TYPE.NOTAG)
+                                {
+                                    if (GenericChip != null && GenericChip.CardType != CARD_TYPE.NOTAG)
+                                    {
+                                        GenericChip.Child = new GenericChipModel(legicTag.UID, legicTag.CardType);
+                                    }
+                                    else
+                                    {
+                                        GenericChip = new GenericChipModel(legicTag.UID, legicTag.CardType);
+                                    }
+                                }
                             //readerDevice.GetSingleChip(true);
 
                             return ERROR.NoError;

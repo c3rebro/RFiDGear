@@ -126,7 +126,7 @@ namespace RFiDGear.ViewModel
                     {
                         if (!string.IsNullOrEmpty(reportTemplatePath))
                         {
-                            reader.ReportTemplatePath = reportTemplatePath;
+                            reader.ReportTemplateFile = reportTemplatePath;
 
                             TemplateFields = new ObservableCollection<string>(reader.GetReportFields().OrderBy(x => x));
                         }
@@ -835,7 +835,7 @@ namespace RFiDGear.ViewModel
                         ReportTemplatePath = path;
                         reportReaderWriter = new ReportReaderWriter
                         {
-                            ReportTemplatePath = ReportTemplatePath
+                            ReportTemplateFile = ReportTemplatePath
                         };
 
                         TemplateFields = new ObservableCollection<string>(reportReaderWriter.GetReportFields().OrderBy(x => x));
@@ -848,7 +848,7 @@ namespace RFiDGear.ViewModel
 
                 else
                 {
-                    //ReportTemplatePath = string.Empty;
+                    //ReportTemplateFile = string.Empty;
                 }
             }
 
@@ -880,12 +880,12 @@ namespace RFiDGear.ViewModel
                     try
                     {
                         reportReaderWriter = _reportReaderWriter;
-                        if (string.IsNullOrEmpty(reportReaderWriter.ReportTemplatePath))
+                        if (string.IsNullOrEmpty(reportReaderWriter.ReportTemplateFile))
                         {
-                            reportReaderWriter.ReportTemplatePath = ReportTemplatePath;
+                            reportReaderWriter.ReportTemplateFile = ReportTemplatePath;
                         }
 
-                        if (!String.IsNullOrWhiteSpace(reportReaderWriter.ReportTemplatePath))
+                        if (!String.IsNullOrWhiteSpace(reportReaderWriter.ReportTemplateFile))
                         {
 
                             foreach (var checkpoint in Checkpoints)
