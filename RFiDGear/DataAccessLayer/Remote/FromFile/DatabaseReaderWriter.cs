@@ -42,8 +42,6 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
-                //AsyncRelayCommandLoadDB = new AsyncRelayCommand<TextReader>(LoadXML,AsyncRelayCommandOptions.AllowConcurrentExecutions);
-
                 // Combine the base folder with the specific folder....
                 appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear");
 
@@ -120,7 +118,6 @@ namespace RFiDGear.DataAccessLayer
 
                     try
                     {
-                        //var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
                         AsyncRelayCommandLoadDB.ExecuteAsync(reader);
                     }
                     catch (Exception e)
@@ -167,6 +164,7 @@ namespace RFiDGear.DataAccessLayer
                     {
                         XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
                         SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
+                        reader.Close();
                     }
                     catch (Exception e)
                     {
@@ -251,7 +249,6 @@ namespace RFiDGear.DataAccessLayer
             catch (XmlException e)
             {
                 LogWriter.CreateLogEntry(e, FacilityName);
-                Environment.Exit(0);
             }
         }
 

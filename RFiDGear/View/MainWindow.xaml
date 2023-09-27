@@ -22,7 +22,7 @@
     FontFamily="Segoe UI"
     FontWeight="Normal"
     MouseLeftButtonDown="WindowMouseLeftButtonDown"
-    SizeToContent="Manual"
+    SizeToContent="Width"
     WindowStartupLocation="CenterScreen" 
     mc:Ignorable="d">
     <Window.InputBindings>
