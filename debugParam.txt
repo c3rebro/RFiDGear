@@ -1,0 +1,1 @@
+#REPORTTARGETPATH="D:\CardCheck_data\KP-000005-5_final.pdf" REPORTTEMPLATEFILE="D:\CardCheck_data\KP-000005-5_.pdf" CUSTOMPROJECTFILE="D:\CardCheck_data\KPruefung_Vorlagen\00_RFID_Gear_Vorlage\CardCheckAssistant_FreeMem.rfPrj" $JOBNUMBER="KP-000005" $CHIPNUMBER="5" AUTORUN=1

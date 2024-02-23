@@ -1,6 +1,9 @@
 ﻿using RFiDGear.Model;
 
 using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
@@ -37,12 +40,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         {
                             if (instance == null)
                             {
-                                instance = new ElatecNetProvider(PortNumber);
+                                instance = new ElatecNetProvider();
                                 return instance;
                             }
                             else if (instance != null && !(instance is ElatecNetProvider))
                             {
-                                instance = new ElatecNetProvider(PortNumber);
+                                instance = new ElatecNetProvider();
                                 return instance;
                             }
                             else
@@ -66,18 +69,20 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         private static object syncRoot = new object();
         private static ReaderDevice instance;
 
+        public abstract bool IsConnected { get; }
         public static ReaderTypes Reader { get; set; }
         public static int PortNumber { get; set; }
 
         public MifareClassicSectorModel Sector { get; set; }
         public MifareClassicDataBlockModel DataBlock { get; set; }
 
-        public GenericChipModel GenericChip { get; set; }
+        public List<GenericChipModel> GenericChip { get; set; }
         public MifareDesfireChipModel DesfireChip { get; set; }
         public MifareClassicChipModel ClassicChip { get; set; }
 
         public ReaderTypes ReaderProvider { get; set; }
-        public string ReaderUnitName { get; set; }
+        public abstract string ReaderUnitName { get; set; }
+        public abstract string ReaderUnitVersion { get; set; }
         public byte[] MifareClassicData { get; set; }
         public bool DataBlockSuccessfullyAuth { get; set; }
         public bool SectorSuccessfullyAuth { get; set; }
@@ -90,21 +95,21 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public DESFireKeySettings DesfireAppKeySetting { get; set; }
 
         #region Common
-        public abstract ERROR Connect();
-        public abstract ERROR ReadChipPublic();
+        public abstract Task<ERROR> ConnectAsync();
+        public abstract Task<ERROR> ReadChipPublic();
 
         #endregion
 
         #region MifareClassic
         // Mifare Classic Method Definitions
-        public abstract ERROR ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey);
-        public abstract ERROR WriteMifareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer);
-        public abstract ERROR WriteMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer);
-        public abstract ERROR WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
+        public abstract Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey);
+        public abstract Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer);
+        public abstract Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer);
+        public abstract Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
                                                string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
                                                string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
                                                byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth, bool _keyToWriteUseMAD);
-        public abstract ERROR ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, 
+        public abstract Task<ERROR> ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse, 
                                                 string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB, 
                                                 bool _useMADToAuth, bool _aiToUseIsMAD);
         #endregion
@@ -115,24 +120,24 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         #endregion
 
         #region MifareDesfire
-        public abstract ERROR GetMiFareDESFireChipAppIDs(string _appMasterKey = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", DESFireKeyType _keyTypeAppMasterKey = DESFireKeyType.DF_KEY_DES);
-        public abstract ERROR CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
+        public abstract Task<ERROR> GetMiFareDESFireChipAppIDs(string _appMasterKey = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", DESFireKeyType _keyTypeAppMasterKey = DESFireKeyType.DF_KEY_DES);
+        public abstract Task<ERROR> CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
                                         int _appID, int _fileNo, int _fileSize,
                                         int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
                                         int _maxNbOfRecords = 100);
-        public abstract ERROR ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
+        public abstract Task<ERROR> ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
                                         string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                         string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                                         EncryptionMode _encMode,
                                         int _fileNo, int _appID, int _fileSize);
-        public abstract ERROR WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
+        public abstract Task<ERROR> WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
                                         string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
                                         string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                         string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                                         EncryptionMode _encMode,
                                         int _fileNo, int _appID, byte[] _data);
-        public abstract ERROR AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0);
-        public abstract ERROR GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0);
+        public abstract Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0);
+        public abstract Task<ERROR> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0);
 
         /// <summary>
         /// Creates a new Application
@@ -142,17 +147,17 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         /// <param name="_maxNbKeys">int max. number of keys</param>
         /// <param name="_appID">int application id</param>
         /// <returns>True if the Operation was successful, false otherwise</returns>
-        public abstract ERROR CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true);
+        public abstract Task<ERROR> CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true);
 
-        public abstract ERROR ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
+        public abstract Task<ERROR> ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
                                         string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget,
                                         DESFireKeySettings keySettings, int keyVersion);
-        public abstract ERROR DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0);
-        public abstract ERROR DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0);
-        public abstract ERROR FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType);
-        public abstract ERROR GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0);
-        public abstract ERROR GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0);
+        public abstract Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, uint _appID = 0);
+        public abstract Task<ERROR> DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0);
+        public abstract Task<ERROR> FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType);
+        public abstract Task<ERROR> GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0);
+        public abstract Task<ERROR> GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0);
 
         #endregion
 

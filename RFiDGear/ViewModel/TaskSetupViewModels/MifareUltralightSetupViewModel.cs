@@ -6,26 +6,29 @@
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+
 using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
-using MvvmDialogs.ViewModels;
+using MVVMDialogs.ViewModels;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
-using Log4CSharp;
+
 
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Xml.Serialization;
+
 
 namespace RFiDGear.ViewModel
 {
@@ -35,7 +38,7 @@ namespace RFiDGear.ViewModel
     public class MifareUltralightSetupViewModel : ObservableObject, IUserDialogViewModel
     {
         #region Fields
-        private static readonly string FacilityName = "RFiDGear";
+        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
 
         private MifareUltralightChipModel chipModel;
         private MifareUltralightPageModel pageModel;
@@ -123,7 +126,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(e, FacilityName);
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
             }
 
         }
@@ -410,6 +413,13 @@ namespace RFiDGear.ViewModel
         #endregion General Properties
 
         #region Commands
+
+        public IAsyncRelayCommand SaveSettings => new AsyncRelayCommand(OnNewSaveSettingsCommand);
+        private async Task OnNewSaveSettingsCommand()
+        {
+            SettingsReaderWriter settings = new SettingsReaderWriter();
+            await settings.SaveSettings();
+        }
 
         /// <summary>
         /// 

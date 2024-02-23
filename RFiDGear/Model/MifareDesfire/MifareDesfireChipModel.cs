@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System;
+using Org.BouncyCastle.Bcpg;
 
 namespace RFiDGear.Model
 {
@@ -42,17 +43,37 @@ namespace RFiDGear.Model
             CardType = cardType;
         }
 
-        public MifareDesfireChipModel(GenericChipModel genericChip)
+        public MifareDesfireChipModel(string uid, CARD_TYPE cardType, string sak, string rats)
+        {
+            UID = uid;
+            CardType = cardType;
+            SAK = sak;
+            RATS = rats;
+        }
+
+        public MifareDesfireChipModel(string uid, CARD_TYPE cardType, string sak, string rats, string versionL4)
+        {
+            UID = uid;
+            CardType = cardType;
+            SAK = sak;
+            RATS = rats;
+            VersionL4 = versionL4;
+        }
+
+        public MifareDesfireChipModel(MifareDesfireChipModel genericChip)
         {
             UID = genericChip.UID;
             CardType = genericChip.CardType;
-            RATS = genericChip.RATS;
             SAK = genericChip.SAK;
-            L4Version = genericChip.VersionL4;
-            Child = genericChip.Child;
+            RATS = genericChip.RATS;
+            VersionL4 = genericChip.VersionL4;
+            Childs = genericChip.Childs;
         }
 
-        public string L4Version { get; set; }
+        public string SAK { get; set; }
+        public string RATS { get; set; }
+        public string VersionL4 { get; set; }
+
         public uint FreeMemory { get; set; }
     }
 }

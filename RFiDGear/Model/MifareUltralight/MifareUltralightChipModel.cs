@@ -32,5 +32,11 @@ namespace RFiDGear.Model
             CardType = cardType;
             UID = uid;
         }
+
+        public MifareUltralightChipModel(GenericChipModel chip)
+        {
+            CardType = chip.CardType;
+            UID = chip.UID;
+        }
     }
 }

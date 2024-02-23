@@ -5,16 +5,18 @@ using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
-using MvvmDialogs.ViewModels;
+using MVVMDialogs.ViewModels;
 
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
 using System.Xml.Serialization;
+using System.Windows.Navigation;
 
 namespace RFiDGear.ViewModel
 {
@@ -28,7 +30,7 @@ namespace RFiDGear.ViewModel
         private readonly RFiDChipParentLayerViewModel _parent;
         private readonly CARD_TYPE _cardType;
         private readonly RelayCommand _cmdReadSectorWithCustoms;
-        private readonly RelayCommand _cmdReadSectorWithDefaults;
+        private readonly AsyncRelayCommand _cmdReadSectorWithDefaults;
         private readonly RelayCommand _cmdEditAuthAndModifySector;
         private readonly string _parentUid;
 
@@ -90,7 +92,7 @@ namespace RFiDGear.ViewModel
             _cardType = cardType;
             _parent = parent;
 
-            _cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
+            _cmdReadSectorWithDefaults = new AsyncRelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
             _cmdReadSectorWithCustoms = new RelayCommand(ReadSectorWithCustoms);
 
@@ -99,14 +101,16 @@ namespace RFiDGear.ViewModel
                 {
                     new MenuItem()
                     {
-                        Header = "Read Sector with default Keys",
-                        Command = _cmdReadSectorWithDefaults
+                        Header = "Read Sector using default Configuration",
+                        Command = _cmdReadSectorWithDefaults,
+                        IsEnabled = false
                     },
 
                     new MenuItem()
                     {
-                        Header = "Read Sector with custom Keys",
-                        Command = _cmdReadSectorWithCustoms
+                        Header = "Edit Authentication Settings and Modify Sector",
+                        Command = _cmdEditAuthAndModifySector,
+                        IsEnabled = false
                     }
                 };
             }));
@@ -133,7 +137,7 @@ namespace RFiDGear.ViewModel
             _cardType = cardType;
             _parentUid = parentUID?.UID;
 
-            _cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
+            _cmdReadSectorWithDefaults = new AsyncRelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
 
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
@@ -143,13 +147,15 @@ namespace RFiDGear.ViewModel
                     new MenuItem()
                     {
                         Header = "Read Sector using default Configuration",
-                        Command = null //_cmdReadSectorWithDefaults
+                        Command = null,
+                        Visibility = Visibility.Hidden
                     },
 
                     new MenuItem()
                     {
                         Header = "Edit Authentication Settings and Modify Sector",
-                        Command = null // _cmdEditAuthAndModifySector
+                        Command = null,
+                        Visibility = Visibility.Hidden
                     }
                 };
             }));
@@ -178,7 +184,7 @@ namespace RFiDGear.ViewModel
             _cardType = cardType;
             _parentUid = parentUID?.UID;
 
-            _cmdReadSectorWithDefaults = new RelayCommand(ReadSectorWithDefaults);
+            _cmdReadSectorWithDefaults = new AsyncRelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
 
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
@@ -188,13 +194,15 @@ namespace RFiDGear.ViewModel
                     new MenuItem()
                     {
                         Header = "Read Sector using default Configuration",
-                        Command = _cmdReadSectorWithDefaults
+                        Command = _cmdReadSectorWithDefaults,
+                        IsEnabled = false
                     },
 
                     new MenuItem()
                     {
                         Header = "Edit Authentication Settings and Modify Sector",
-                        Command = _cmdEditAuthAndModifySector
+                        Command = _cmdEditAuthAndModifySector,
+                        IsEnabled = false
                     }
                 };
             }));
@@ -226,8 +234,9 @@ namespace RFiDGear.ViewModel
 
         private List<MenuItem> ContextMenuItems;
 
-        public void ReadSectorWithDefaults()
+        public async Task ReadSectorWithDefaults()
         {
+            await Parent.ExecuteClassicQuickCheckCommand.ExecuteAsync(this);
         }
 
         public void ReadSectorWithCustoms()
@@ -290,6 +299,7 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedItem = value;
+
                 OnPropertyChanged(nameof(SelectedItem));
             }
         }
@@ -325,6 +335,15 @@ namespace RFiDGear.ViewModel
             set
             {
                 isSelected = value;
+
+                if (ContextMenuItems != null)
+                {
+                    foreach (MenuItem item in ContextMenuItems)
+                    {
+                        item.IsEnabled = value;
+                    }
+                }
+
                 OnPropertyChanged(nameof(IsSelected));
             }
         }
@@ -461,26 +480,24 @@ namespace RFiDGear.ViewModel
         {
             get
             {
-                switch (_cardType)
+                switch ((CARD_TYPE)((short)_cardType & 0xF000))
                 {
-                    case CARD_TYPE.Mifare1K:
-                    case CARD_TYPE.MifarePlus_SL1_1K:
-                    case CARD_TYPE.Mifare2K:
-                    case CARD_TYPE.MifarePlus_SL1_2K:
-                    case CARD_TYPE.Mifare4K:
-                    case CARD_TYPE.MifarePlus_SL1_4K:
+                    case CARD_TYPE.MifareClassic:
                         childNodeHeader = string.Format("Sector: [{0}]", sectorModel.SectorNumber);
                         break;
                     case CARD_TYPE.MifareUltralight:
                         childNodeHeader = string.Format("Page: {0}", pageModel.PageNumber);
                         break;
 
-                    default:
-                        if(Enum.GetName(typeof(CARD_TYPE), _cardType).ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
-                        {
-                            childNodeHeader = string.Format("AppID: {0}", appModel.appID);
-                        }
+                    case CARD_TYPE.DESFireEV0:
+                    case CARD_TYPE.DESFireEV1:
+                    case CARD_TYPE.DESFireEV2:
+                    case CARD_TYPE.DESFireEV3:
+                        childNodeHeader = string.Format("AppID: {0} (0x{1})", appModel.appID, appModel.appID.ToString("X8"));
                         break;
+
+                    default:
+                        return childNodeHeader;
                 }
                 return childNodeHeader;
             }
@@ -549,18 +566,12 @@ namespace RFiDGear.ViewModel
                     }
                     break;
 
-                case CARD_TYPE.DESFire:
+                case CARD_TYPE.DESFireEV0:
                 case CARD_TYPE.DESFireEV1:
                 case CARD_TYPE.DESFireEV2:
+                case CARD_TYPE.DESFireEV3:
                     {
                         children.Add(new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(), this));
-                    }
-                    break;
-
-                case CARD_TYPE.Unspecified: //TODO: Add Card Type "TASK_MF_Classic" for every type
-                    for (var i = 0; i <= 3; i++)
-                    {
-                        children.Add(new RFiDChipGrandChildLayerViewModel(new MifareClassicDataBlockModel(0, i), new MifareClassicSetupViewModel()));
                     }
                     break;
 

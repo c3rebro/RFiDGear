@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
 	<!--
    THANKS To: Helge Klein for this Sample!
 
@@ -176,31 +177,33 @@
 						<!-- Installation directory as a component so it can be emptied during uninstall (by default files added by someone other than Windows Installer are not removed) -->
 						<!-- Main program file -->
 						<!-- Configuration file -->
-						<!--<Component Id="uberAgent.conf_comp" Guid="7448780e-b66a-43d3-be5a-eeba38a821ef">
-																																			<File Source="$(var.ProjectDir)..\uberAgent\Config file\Standalone mode\uberAgent.conf" Id="uberAgentConf" KeyPath="yes" />
-																																			<IniFile Id="ConfigFile" Action="addLine" Directory="INSTALLDIR" Name="uberAgent.conf" Section="Receiver" Key="Servers" Value="[SERVERS]" />
-																																		</Component>-->
+						<!--
+            <Component Id="uberAgent.conf_comp" Guid="7448780e-b66a-43d3-be5a-eeba38a821ef">
+								<File Source="$(var.ProjectDir)..\uberAgent\Config file\Standalone mode\uberAgent.conf" Id="uberAgentConf" KeyPath="yes" />
+								<IniFile Id="ConfigFile" Action="addLine" Directory="INSTALLDIR" Name="uberAgent.conf" Section="Receiver" Key="Servers" Value="[SERVERS]" />
+						</Component>
+            -->
             <Component Id="BouncyCastleCryptoDll" Guid="40A4382E-00AA-479A-773F-0B45401700BB" DiskId="1">
               <File Id="BouncyCastle.Crypto.dll" Name="BouncyCastle.Crypto.dll" Source="..\RFiDGear\bin\Release\BouncyCastle.Crypto.dll" KeyPath="yes" />
             </Component>
             <Component Id="ByteArrayDll" Guid="0907B24F-F549-41D5-8222-645C550BB7E7" DiskId="1">
               <File Id="ByteArray.dll" Name="ByteArray.dll" Source="..\RFiDGear\bin\Release\ByteArray.dll" KeyPath="yes" />
             </Component>
+            <Component Id="CommunityToolkitMvvmDll" Guid="40A4382E-00AA-479A-923F-0B45401700BB" DiskId="1">
+							<File Id="CommunityToolkit.Mvvm.dll" Name="CommunityToolkit.Mvvm.dll" Source="..\RFiDGear\bin\Release\CommunityToolkit.Mvvm.dll" KeyPath="yes" />
+						</Component>
             <Component Id="ElatecNetDll" Guid="40A4332E-04AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="Elatec.NET.dll" Name="Elatec.NET.dll" Source="..\RFiDGear\bin\Release\Elatec.NET.dll" KeyPath="yes" />
             </Component>
-						<Component Id="CommunityToolkitMvvmDll" Guid="40A4382E-00AA-479A-923F-0B45401700BB" DiskId="1">
-							<File Id="CommunityToolkit.Mvvm.dll" Name="CommunityToolkit.Mvvm.dll" Source="..\RFiDGear\bin\Release\CommunityToolkit.Mvvm.dll" KeyPath="yes" />
-						</Component>
             <Component Id="GemBoxPDFDll" Guid="455F2A03-2C6B-444E-8017-1DBE01B19B24" DiskId="1">
               <File Id="GemBox.Pdf.dll" Name="GemBox.Pdf.dll" Source="..\RFiDGear\bin\Release\GemBox.Pdf.dll" KeyPath="yes" />
             </Component>
             <Component Id="IonicZipDll" Guid="DC246BF8-25A3-42BF-A2A5-CEE429219381" DiskId="1">
               <File Id="Ionic.Zip.dll" Name="Ionic.Zip.dll" Source="..\RFiDGear\bin\Release\Ionic.Zip.dll" KeyPath="yes" />
             </Component>
-            <Component Id="Log4CSharpDll" Guid="40A4711D-06AA-479A-923F-0B45401700BB" DiskId="1">
-              <File Id="Log4CSharp.dll" Name="Log4CSharp.dll" Source="..\RFiDGear\bin\Release\Log4CSharp.dll" KeyPath="yes" />
-            </Component>    
+            <Component Id="LibLogicalAccessNetCEDll" Guid="40ABB91D-06AA-479A-923F-0B45401700BB" DiskId="1">
+              <File Id="LibLogicalAccessNetCE.dll" Name="LibLogicalAccessNetCE.dll" Source="..\RFiDGear\bin\Release\LibLogicalAccessNetCE.dll" KeyPath="yes" />
+            </Component>   
             <Component Id="MicrosoftBclAsyncInterfacesDll" Guid="1186711D-06AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="Microsoft.Bcl.AsyncInterfaces.dll" Name="Microsoft.Bcl.AsyncInterfaces.dll" Source="..\RFiDGear\bin\Release\Microsoft.Bcl.AsyncInterfaces.dll" KeyPath="yes" />
             </Component>
@@ -242,6 +245,7 @@
             </Component>
             <Component Id="SystemDiagnosticsDiagnosticSourceDll" Guid="40A4FCFC-06AA-479A-923F-0B451C8700BB" DiskId="1">
               <File Id="System.Diagnostics.DiagnosticSource.dll" Name="System.Diagnostics.DiagnosticSource.dll" Source="..\RFiDGear\bin\Release\System.Diagnostics.DiagnosticSource.dll" KeyPath="yes" />
+              <util:EventSource Log="Application" Name="RFiDGear" EventMessageFile="%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\EventLogMessages.dll"/>
             </Component>
             <Component Id="SystemMemoryDll" Guid="40A4FCFC-06AA-479A-923F-0B49911700BB" DiskId="1">
               <File Id="System.Memory.dll" Name="System.Memory.dll" Source="..\RFiDGear\bin\Release\System.Memory.dll" KeyPath="yes" />
@@ -333,6 +337,7 @@
 					<RegistryValue Name="InstallLocation" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
 				</RegistryKey>
 			</Component>
+      
 			<Directory Id="ProgramMenuFolder">
 				<Directory Id="ApplicationProgramsFolder" Name="RFiDGear">
 					<Component Id="StartMenuShortcuts" Guid="D5357D5D-17BA-4E6E-AF2B-E21312A0400D">
@@ -357,7 +362,7 @@
         <ComponentRef Id="GemBoxPDFDll" />
         <ComponentRef Id="ElatecNetDll"/>
 				<ComponentRef Id="IonicZipDll" />
-        <ComponentRef Id="Log4CSharpDll" />
+        <ComponentRef Id="LibLogicalAccessNetCEDll" />
         <ComponentRef Id="MicrosoftBclAsyncInterfacesDll" />
         <ComponentRef Id="MicrosoftExtensionsDependencyInjectionAbstractionsDll" />
         <ComponentRef Id="MicrosoftExtensionsDependencyInjectionDll" />

@@ -8,14 +8,17 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using MvvmDialogs.ViewModels;
+using MVVMDialogs.ViewModels;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 
 using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Windows.Input;
+using System.Data;
+using System.Xml.Serialization;
 
 namespace RFiDGear.ViewModel
 {
@@ -42,12 +45,19 @@ namespace RFiDGear.ViewModel
                 LoadOnStart = settings.DefaultSpecification.AutoLoadProjectOnStart;
                 CheckOnStart = settings.DefaultSpecification.AutoCheckForUpdates;
                 SelectedBaudRate = settings.DefaultSpecification.LastUsedBaudRate;
-
-                //ConnectToReaderCommand.Execute(null);
             }
         }
 
         #region Commands
+        /// <summary>
+        /// 
+        /// </summary>
+        public IAsyncRelayCommand SaveSettings => new AsyncRelayCommand(OnNewSaveSettingsCommand);
+        private async Task OnNewSaveSettingsCommand()
+        {
+            SettingsReaderWriter settings = new SettingsReaderWriter();
+            await settings.SaveSettings();
+        }
 
         public ICommand ReaderSeletedCommand => new RelayCommand(ReaderSelected);
         private void ReaderSelected()
@@ -55,11 +65,12 @@ namespace RFiDGear.ViewModel
             ConnectToReaderCommand.Execute(null);
         }
 
-        public ICommand ConnectToReaderCommand => new RelayCommand(ConnectToReader);
-        private void ConnectToReader()
+        public IAsyncRelayCommand ConnectToReaderCommand => new AsyncRelayCommand(ConnectToReader);
+        private async Task ConnectToReader()
         {
-            //OnConnect?.Invoke(this);
+            await UpdateReaderStatusCommand.ExecuteAsync(true);
 
+            //OnConnect?.Invoke(this);
             switch (SelectedReader)
             {
                 /*
@@ -90,8 +101,12 @@ namespace RFiDGear.ViewModel
                             device = new ElatecNetProvider();
                         }
 
-                        device.Connect();
-                        device.ReadChipPublic();
+                        if (device != null && !device.IsConnected)
+                        {
+                            await device.ConnectAsync();
+                        }
+
+                        var t = await device.ReadChipPublic();
                     }
                     else
                     {
@@ -104,7 +119,7 @@ namespace RFiDGear.ViewModel
                     break;
             }
 
-            if (!string.IsNullOrEmpty(device?.GenericChip?.UID))
+            if (device?.GenericChip?.Count > 0)
             {
                 DefaultReader = Enum.GetName(typeof(ReaderTypes), SelectedReader);
 
@@ -112,14 +127,48 @@ namespace RFiDGear.ViewModel
                                              + '\n'
                                              + "UID: {0} "
                                              + '\n'
-                                             + "Type: {1}", 
-                                             device.GenericChip.UID, 
-                                             ResourceLoader.GetResource(string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), device.GenericChip.CardType))));
+                                             + "Type: {1}",
+                                             device.GenericChip[0].UID, 
+                                             ResourceLoader.GetResource(string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), device.GenericChip[0].CardType))));
 
             }
             else
             {
                 ReaderStatus = "no Reader / Card detected";
+            }
+
+            await UpdateReaderStatusCommand.ExecuteAsync(false);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public IRelayCommand BeginUpdateCheckCommand => new RelayCommand<bool>(BeginUpdateCheck);
+        private void BeginUpdateCheck(bool isBusy)
+        {
+            if (OnBeginUpdateCheck != null)
+            {
+                OnBeginUpdateCheck(isBusy);
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public IAsyncRelayCommand UpdateReaderStatusCommand => new AsyncRelayCommand<bool>(UpdateReaderStatus);
+        private async Task UpdateReaderStatus(bool isBusy)
+        {
+            if (OnUpdateReaderStatus != null)
+            {
+                OnUpdateReaderStatus(isBusy);
+            }
+            else
+            {
+                return;
             }
         }
 
@@ -157,6 +206,23 @@ namespace RFiDGear.ViewModel
             set
             {
                 selectedReader = value;
+
+                if (device == null)
+                {
+                    switch (selectedReader)
+                    {
+                        case ReaderTypes.Elatec:
+                            device = new ElatecNetProvider();
+                            break;
+                        case ReaderTypes.PCSC:
+                            device = null;
+                            break;
+
+                        default:
+                            device = null;
+                            break;
+                    }
+                }
             }
         }
         private ReaderTypes selectedReader;
@@ -246,15 +312,32 @@ namespace RFiDGear.ViewModel
         public bool CheckOnStart
         {
             get => checkOnStart;
-            set => checkOnStart = value;
+            set
+            {
+                checkOnStart = value;
+                BeginUpdateCheckCommand.Execute(value);
+            }
         }
         private bool checkOnStart;
 
-#region IUserDialogViewModel Implementation
+        #region IUserDialogViewModel Implementation
 
+        [XmlIgnore]
+        public Action<bool> OnBeginUpdateCheck { get; set; }
+
+        [XmlIgnore]
+        public Action<bool> OnUpdateReaderStatus { get; set; }
+
+        [XmlIgnore]
         public Action<SetupViewModel> OnOk { get; set; }
+
+        [XmlIgnore]
         public Action<SetupViewModel> OnCancel { get; set; }
+
+        [XmlIgnore]
         public Action<SetupViewModel> OnConnect { get; set; }
+
+        [XmlIgnore]
         public Action<SetupViewModel> OnCloseRequest { get; set; }
 
         public bool IsModal { get; private set; }

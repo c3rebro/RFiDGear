@@ -26,6 +26,23 @@ namespace RFiDGear.Model
             ErrorLevel = ERROR.Empty;
         }
 
+        public string CheckpointIndex { get; set; }
+
+        public int CheckpointIndexAsInt
+        {
+        get {
+                int res;
+                if (int.TryParse(CheckpointIndex, out res))
+                {
+                    return res;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+        }
+
         public ERROR ErrorLevel { get; set; }
 
         public string TaskIndex { get; set; }

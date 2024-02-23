@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
+    xmlns:dlgs="clr-namespace:MVVMDialogs.Behaviors;assembly=MVVMDialogs"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:RFiDGear.ViewModel"
@@ -321,7 +321,6 @@
                 CanUserReorderColumns="True"
                 CanUserSortColumns="True"
                 ItemsSource="{Binding ChipTasks.TaskCollection}"
-                SelectedIndex="{Binding DataGridPosition}"
                 SelectedItem="{Binding Path=DataContext.SelectedSetupViewModel, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
                 SelectionMode="Single"
                 VirtualizingPanel.IsVirtualizing="True">
@@ -432,14 +431,17 @@
                     <DataGridTemplateColumn Width="auto" Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridHeaderMainWindowTaskDescription', Source={StaticResource proxy}}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding Path=SelectedTaskDescription}" TextWrapping="Wrap" Margin="3,0,0,3">
+                                <TextBox Text="{Binding Path=SelectedTaskDescription}" TextWrapping="Wrap">
                                     <TextBox.Style>
                                         <Style TargetType="{x:Type TextBox}">
-                                            <Setter Property="HorizontalAlignment" Value="Left" />
+                                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                            <Setter Property="VerticalAlignment" Value="Stretch" />
+                                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                                            <Setter Property="Height" Value="auto" />
                                             <Setter Property="BorderBrush" Value="Transparent" />
                                             <Setter Property="MaxWidth" Value="1000" />
                                             <Setter Property="Background" Value="Transparent" />
-                                            <Setter Property="VerticalAlignment" Value="Center" />
                                         </Style>
                                     </TextBox.Style>
                                 </TextBox>
@@ -589,6 +591,61 @@
                 </StatusBarItem>
                 <StatusBarItem>
                     <TextBlock Text="{Binding ReaderStatus}" Height="auto" FontWeight="Bold" HorizontalAlignment="Left"/>
+                </StatusBarItem>
+                <StatusBarItem>
+                    <Grid>
+                        <TextBlock Text="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='statusHeaderReaderIsBusy', Source={StaticResource proxy}}" Width="auto" Height="auto" FontWeight="Bold" HorizontalAlignment="Left">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="False">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='statusHeaderReaderIsIdle', Source={StaticResource proxy}}" Width="auto" Height="auto" FontWeight="Bold" HorizontalAlignment="Left">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="True">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='statusHeaderReaderIsUnknown', Source={StaticResource proxy}}" Width="auto" Height="auto" FontWeight="Bold" HorizontalAlignment="Left">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="True">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="False">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
                 </StatusBarItem>
                 <StatusBarItem HorizontalAlignment="Right" Margin="0,0,12,0">
                     <TextBlock Text="{Binding DateTimeStatusBar, UpdateSourceTrigger=PropertyChanged}" Height="auto" FontWeight="Bold" HorizontalAlignment="Left"/>

@@ -11,7 +11,6 @@ namespace RFiDGear.Model
     {
         public GenericChipModel()
         {
-
         }
 
         public GenericChipModel(string uid, CARD_TYPE cardType)
@@ -20,29 +19,17 @@ namespace RFiDGear.Model
             CardType = cardType;
         }
 
-        public GenericChipModel(string uid, CARD_TYPE cardType, string sak, string rats)
+        public GenericChipModel(GenericChipModel chip)
         {
-            UID = uid;
-            CardType = cardType;
-            SAK = sak;
-            RATS = rats;
-        }
-
-        public GenericChipModel(string uid, CARD_TYPE cardType, string sak, string rats, string versionL4)
-        {
-            UID = uid;
-            CardType = cardType;
-            SAK = sak;
-            RATS = rats;
-            VersionL4 = versionL4;
+            this.UID = chip.UID;
+            this.CardType = chip.CardType;
         }
 
         public string UID { get; set; }
         public CARD_TYPE CardType { get; set; }
-        public string SAK { get; set; }
-        public string RATS { get; set; }
-        public string VersionL4 { get; set; }
-        public GenericChipModel Child { get; set; }
-        public GenericChipModel GrandChild  {  get; set;  }
+
+        public bool? HasChilds => Childs?.Count > 0;
+        
+        public List<GenericChipModel> Childs { get; set; }
     }
 }

@@ -1,23 +1,26 @@
 ﻿using RFiDGear;
 using RFiDGear.DataAccessLayer;
 
-using Log4CSharp;
+using Microsoft.Extensions.Logging;
 
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using Ionic.Zip;
 using RedCell.Net;
+using System.Windows.Threading;
 
 namespace RedCell.Diagnostics.Update
 {
     public class Updater : IDisposable
     {
         #region Constants
-        private static readonly string FacilityName = "RFiDGear";
+        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
 
         private static readonly string appDataPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -33,13 +36,12 @@ namespace RedCell.Diagnostics.Update
         /// The default configuration file
         /// </summary>
         public static readonly string DefaultConfigFile = "update.xml";
-
         public static readonly string WorkPath = "work";
         #endregion
 
         #region Fields
         //private readonly SettingsReaderWriter settings;
-        private Timer _timer;
+        private DispatcherTimer _timer;
         private volatile bool _updating;
         private readonly Manifest _localConfig;
         private Manifest _remoteConfig;
@@ -49,14 +51,9 @@ namespace RedCell.Diagnostics.Update
         private readonly string me;
 
         public bool AllowUpdate { get; set; }
+        public bool UpdateAvailable { get; set; }
         public bool IsUserNotified { get; set; }
         public string UpdateInfoText { get; private set; }
-
-        #endregion
-
-        #region events
-
-        public event EventHandler NewVersionAvailable;
 
         #endregion
 
@@ -79,11 +76,11 @@ namespace RedCell.Diagnostics.Update
             {
                 me = thisprocess.MainModule.FileName;
 
-                Log.Write("Loaded.");
-                Log.Write("Initializing using file '{0}'.", configFile.FullName);
+                eventLog.WriteEntry(string.Format("Loaded"), EventLogEntryType.Information);
+                eventLog.WriteEntry(string.Format("Initializing using file '{0}'.", configFile), EventLogEntryType.Information);
                 if (!configFile.Exists)
                 {
-                    Log.Write("Config file '{0}' does not exist, stopping.", configFile.Name);
+                    eventLog.WriteEntry(string.Format("Config file '{0}' does not exist, stopping.", configFile), EventLogEntryType.Warning);
                     return;
                 }
 
@@ -99,8 +96,7 @@ namespace RedCell.Diagnostics.Update
 
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
             }
         }
         #endregion
@@ -109,63 +105,80 @@ namespace RedCell.Diagnostics.Update
         /// <summary>
         /// Starts the monitoring.
         /// </summary>
-        public void StartMonitoring()
+        public async Task StartMonitoring()
         {
-            if (_localConfig != null)
+            await Task.Run(() =>
             {
-                Log.Write("Starting monitoring every {0}s.", _localConfig.CheckInterval);
-                Check(null);
+                if (_localConfig != null)
+                {
+                    eventLog.WriteEntry(string.Format("Starting monitoring every {0}s.", _localConfig.CheckInterval), EventLogEntryType.Information);
+                    Check(null, null);
 
-                _timer = new Timer(Check, null, 5000, _localConfig.CheckInterval * 1000);
-            }
+                    _timer = new DispatcherTimer
+                    {
+                        Interval = new TimeSpan(0, 0, 0, _localConfig.CheckInterval, 0)
+                    };
 
+                    _timer.Tick += Check;
+
+                    _timer.Start();
+                    _timer.IsEnabled = true;
+                }
+            }).ConfigureAwait(false);
+
+            return;
         }
 
         /// <summary>
         /// Stops the monitoring.
         /// </summary>
-        public void StopMonitoring()
+        public async Task StopMonitoring()
         {
-            Log.Write("Stopping monitoring.");
-            if (_timer == null)
+            await Task.Run(() =>
             {
-                Log.Write("Monitoring was already stopped.");
-                return;
-            }
-            _timer.Dispose();
+                eventLog.WriteEntry(string.Format("Stopping monitoring."), EventLogEntryType.Information);
+                if (_timer == null)
+                {
+                    eventLog.WriteEntry(string.Format("Monitoring was already stopped."), EventLogEntryType.Information);
+                    return;
+                }
+                _timer.Stop();
+            }).ConfigureAwait(false);
+
+            return;
         }
 
         /// <summary>
         /// Checks the specified state.
         /// </summary>
         /// <param name="state">The state.</param>
-        private void Check(object state)
+        public async void Check(object state, EventArgs args)
         {
             try
             {
                 if (AllowUpdate && !_updating)
                 {
-                    _timer.Change(5000, DefaultCheckInterval * 1000);
+                    _timer.Interval = new TimeSpan(0, 0, 0, _localConfig.CheckInterval, 0);
 
                     _updating = true;
-                    Update();
+                    await Update();
                     _updating = false;
                     IsUserNotified = false;
-                    Log.Write("Check ending.");
+                    eventLog.WriteEntry(string.Format("Check ending."), EventLogEntryType.Information);
                     return;
                 }
-                Log.Write("Check starting.");
+                eventLog.WriteEntry(string.Format("Check starting."), EventLogEntryType.Information);
 
                 if (_updating)
                 {
-                    Log.Write("Updater is already updating.");
-                    Log.Write("Check ending.");
+                    eventLog.WriteEntry(string.Format("Updater is already updating."), EventLogEntryType.Warning);
+                    eventLog.WriteEntry(string.Format("Check ending."), EventLogEntryType.Information); 
                     return;
                 }
 
                 var remoteUri = new Uri(_localConfig.RemoteConfigUri);
 
-                Log.Write("Fetching '{0}'.", remoteUri.AbsoluteUri);
+                eventLog.WriteEntry(string.Format("Fetching '{0}'.", _localConfig.RemoteConfigUri), EventLogEntryType.Information);
                 var http = new Fetch { Retries = 5, RetrySleep = 30000, Timeout = 30000 };
                 try
                 {
@@ -173,15 +186,17 @@ namespace RedCell.Diagnostics.Update
 
                     if (!http.Success)
                     {
+                        
                         try
                         {
-                            Log.Write("Fetch error: {0}", http.Response != null ? http.Response.StatusDescription : "");
+                            eventLog.WriteEntry(string.Format("Fetch error: {0}", http.Response != null ? http.Response.StatusDescription : ""), EventLogEntryType.Error);
                         }
 
                         catch
                         {
-                            Log.Write("Fetch error: Unknown http Err");
+                            eventLog.WriteEntry(string.Format("Fetch error: Unknown http Err"), EventLogEntryType.Information);
                         }
+                        
                         _remoteConfig = null;
                         return;
                     }
@@ -189,9 +204,8 @@ namespace RedCell.Diagnostics.Update
 
                 catch (Exception e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
                     _remoteConfig = null;
-
+                    UpdateAvailable = false;
                     return;
                 }
 
@@ -200,126 +214,130 @@ namespace RedCell.Diagnostics.Update
 
                 if (_remoteConfig == null)
                 {
+                    UpdateAvailable = false;
                     return;
                 }
 
                 if (_localConfig.SecurityToken != _remoteConfig.SecurityToken)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Security token mismatch."), FacilityName);
+                    UpdateAvailable = false;
                     return;
                 }
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Remote config is valid."), FacilityName);
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}, {2}", DateTime.Now, "Local version is ", _localConfig.Version), FacilityName);
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}, {2}", DateTime.Now, "Remote version is ", _remoteConfig.Version), FacilityName);
+                eventLog.WriteEntry(string.Format("Remote config is valid."), EventLogEntryType.Information);
+                eventLog.WriteEntry(string.Format("Local version is ", _localConfig.Version), EventLogEntryType.Information);
+                eventLog.WriteEntry(string.Format("Remote version is ", _remoteConfig.Version), EventLogEntryType.Information);
 
                 if (_remoteConfig.Version == _localConfig.Version)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Versions are the same. Check ending."), FacilityName);
+                    eventLog.WriteEntry(string.Format("Versions are the same. Check ending."), EventLogEntryType.Information);
+                    UpdateAvailable = false;
                     return;
                 }
                 if (_remoteConfig.Version < _localConfig.Version)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Remote version is older. That's weird. Check ending."), FacilityName);
+                    eventLog.WriteEntry(string.Format("Remote version is older. That's weird o_O. Check ending."), EventLogEntryType.Warning);
+                    UpdateAvailable = false;
                     return;
                 }
 
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Remote version is newer. Updating."), FacilityName);
-                _timer.Change(0, 1000);
+                eventLog.WriteEntry(string.Format("Remote version is newer. Updating."), EventLogEntryType.Information);
+                UpdateAvailable = true;
+                /*
+                if (_timer != null)
+                {
+                    _timer.Change(0, 1000);
+                }
+                */
 
                 if (!AllowUpdate && !IsUserNotified)
                 {
                     IsUserNotified = true;
                     UpdateInfoText = _remoteConfig.VersionInfoText;
-                    NewVersionAvailable(this, null);
                     return;
                 }
 
                 if (IsUserNotified && !AllowUpdate)
                 {
-                    StopMonitoring();
+                    await StopMonitoring();
                     return;
                 }
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(e, FacilityName);
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
             }
         }
 
         /// <summary>
         /// Updates this instance.
         /// </summary>
-        public void Update()
+        public async Task Update()
         {
+            UpdateAvailable = true;
 
-            Log.Write("Updating '{0}' files.", _remoteConfig.Payloads.Length);
-
-            // Clean up failed attempts.
-            if (Directory.Exists(Path.Combine(appDataPath, WorkPath)))
+            await Task.Run(() =>
             {
-                Log.Write("WARNING: Work directory already exists.");
-                try { Directory.Delete(Path.Combine(appDataPath, WorkPath), true); }
-                catch (IOException e)
+                // Clean up failed attempts.
+                if (Directory.Exists(Path.Combine(appDataPath, WorkPath)))
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-
-                    return;
-                }
-            }
-
-            else
-            {
-                try
-                {
-                    Directory.CreateDirectory(Path.Combine(appDataPath, WorkPath));
-                }
-                catch (Exception e)
-                {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-
-                    return;
-                }
-            }
-
-
-            // Download files in manifest.
-            foreach (var update in _remoteConfig.Payloads)
-            {
-                Log.Write("Fetching '{0}'.", update);
-                var url = _remoteConfig.BaseUri + update; //TODO: make this localizable ? e.g. + (settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/")
-                var file = Fetch.Get(url);
-                if (file == null)
-                {
-                    Log.Write("Fetch failed.");
-                    return;
-                }
-                var info = new FileInfo(Path.Combine(Path.Combine(appDataPath, WorkPath), update));
-                Directory.CreateDirectory(info.DirectoryName);
-                File.WriteAllBytes(Path.Combine(Path.Combine(appDataPath, WorkPath), update), file);
-
-                // Unzip
-                if (Regex.IsMatch(update, @"\.zip"))
-                {
-                    try
+                    //"WARNING: Work directory already exists."
+                    try { Directory.Delete(Path.Combine(appDataPath, WorkPath), true); }
+                    catch
                     {
-                        var zipfile = Path.Combine(Path.Combine(appDataPath, WorkPath), update);
-                        using (var zip = ZipFile.Read(zipfile))
-                        {
-                            zip.ExtractAll(Path.Combine(appDataPath, WorkPath), ExtractExistingFileAction.Throw);
-                        }
-
-                        File.Delete(zipfile);
-
-                        AllowUpdate = true;
-                    }
-                    catch (Exception e)
-                    {
-                        LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-
                         return;
                     }
                 }
-            }
+
+                else
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(Path.Combine(appDataPath, WorkPath));
+                    }
+                    catch
+                    {
+                        return;
+                    }
+                }
+
+
+                // Download files in manifest.
+                foreach (var update in _remoteConfig.Payloads)
+                {
+                    eventLog.WriteEntry(string.Format("Fetching '{0}'.", update), EventLogEntryType.Information); 
+                    var url = _remoteConfig.BaseUri + update; //TODO: make this localizable ? e.g. + (settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/")
+                    var file = Fetch.Get(url);
+                    if (file == null)
+                    {
+                        eventLog.WriteEntry(string.Format("Fetch failed."), EventLogEntryType.Error); 
+                        return;
+                    }
+                    var info = new FileInfo(Path.Combine(Path.Combine(appDataPath, WorkPath), update));
+                    Directory.CreateDirectory(info.DirectoryName);
+                    File.WriteAllBytes(Path.Combine(Path.Combine(appDataPath, WorkPath), update), file);
+
+                    // Unzip
+                    if (Regex.IsMatch(update, @"\.zip"))
+                    {
+                        try
+                        {
+                            var zipfile = Path.Combine(Path.Combine(appDataPath, WorkPath), update);
+                            using (var zip = ZipFile.Read(zipfile))
+                            {
+                                zip.ExtractAll(Path.Combine(appDataPath, WorkPath), ExtractExistingFileAction.Throw);
+                            }
+
+                            File.Delete(zipfile);
+
+                            AllowUpdate = true;
+                        }
+                        catch
+                        {
+                            return;
+                        }
+                    }
+                }
+            }).ConfigureAwait(false);
 
             if (IsUserNotified && AllowUpdate)
             {
@@ -342,10 +360,8 @@ namespace RedCell.Diagnostics.Update
                     Environment.Exit(0);
                 }
 
-                catch (Exception e)
+                catch
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
-
                     return;
                 }
             }

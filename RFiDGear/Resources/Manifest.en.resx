@@ -1077,7 +1077,7 @@ Needed by:
   <data name="ENUM.CARD_TYPE.MifarePlus_SL3_4K" xml:space="preserve">
     <value>Mifare Plus SL3 4K</value>
   </data>
-  <data name="ENUM.CARD_TYPE.DESFire" xml:space="preserve">
+  <data name="ENUM.CARD_TYPE.DESFireEV0" xml:space="preserve">
     <value>Mifare Desfire EV0</value>
   </data>
   <data name="ENUM.CARD_TYPE.DESFireEV1" xml:space="preserve">
@@ -1488,5 +1488,155 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="menuItemShowChangeLogHeader" xml:space="preserve">
     <value>Changelog</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifareClassic" xml:space="preserve">
+    <value>Mifare Classic (all)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifareDESFire" xml:space="preserve">
+    <value>Mifare Desfire</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifarePlus" xml:space="preserve">
+    <value>Mifare Plus (all)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifareSAM" xml:space="preserve">
+    <value>Mifare SAM (all)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFire" xml:space="preserve">
+    <value>SmartMX Desfire (all)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_Mifare_2K" xml:space="preserve">
+    <value>SmartMX MifareClassic 2K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV0_1K" xml:space="preserve">
+    <value>Mifare Desfire EV0 1K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV0_256" xml:space="preserve">
+    <value>Mifare Desfire EV0 256</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV0_2K" xml:space="preserve">
+    <value>Mifare Desfire EV0 2K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFireEV0_4K" xml:space="preserve">
+    <value>Mifare Desfire EV0 4K</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV0_1K" xml:space="preserve">
+    <value>Desfire EV0 1K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV0_256" xml:space="preserve">
+    <value>Desfire EV0 256 Bytes (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV0_2K" xml:space="preserve">
+    <value>Desfire EV0 2K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV0_4K" xml:space="preserve">
+    <value>Desfire EV0 4K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV1_1K" xml:space="preserve">
+    <value>Desfire EV1 1K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV1_256" xml:space="preserve">
+    <value>Desfire EV1 256 Bytes (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV1_2K" xml:space="preserve">
+    <value>Desfire EV1 2K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV1_4K" xml:space="preserve">
+    <value>Desfire EV1 4K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV1_8K" xml:space="preserve">
+    <value>Desfire EV1 8K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV2_16K" xml:space="preserve">
+    <value>Desfire EV2 16K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV2_1K" xml:space="preserve">
+    <value>Desfire EV2 1K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV2_2K" xml:space="preserve">
+    <value>Desfire EV2 2K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV2_32K" xml:space="preserve">
+    <value>Desfire EV2 32K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV2_4K" xml:space="preserve">
+    <value>Desfire EV2 4K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV2_8K" xml:space="preserve">
+    <value>Desfire EV2 8K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV3_16K" xml:space="preserve">
+    <value>Desfire EV3 16K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV3_1K" xml:space="preserve">
+    <value>Desfire EV3 1K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV3_2K" xml:space="preserve">
+    <value>Desfire EV3 2K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV3_32K" xml:space="preserve">
+    <value>Desfire EV3 32K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV3_4K" xml:space="preserve">
+    <value>Desfire EV3 4K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.SmartMX_DESFireEV3_8K" xml:space="preserve">
+    <value>Desfire EV3 8K (Emulated - SmartMX)</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.MifareUltralightC_EV1" xml:space="preserve">
+    <value>Mifare Ultralight C EV1</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NTAG_210" xml:space="preserve">
+    <value>NTAG 210</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NTAG_211" xml:space="preserve">
+    <value>NTAG 211</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NTAG_212" xml:space="preserve">
+    <value>NTAG 212</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NTAG_213" xml:space="preserve">
+    <value>NTAG 213</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NTAG_214" xml:space="preserve">
+    <value>NTAG 214</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NTAG_215" xml:space="preserve">
+    <value>NTAG 215</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NTAG_216" xml:space="preserve">
+    <value>NTAG 216</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NTAG_424" xml:space="preserve">
+    <value>NTAG 424</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.NTAG_426" xml:space="preserve">
+    <value>NTAG 426</value>
+  </data>
+  <data name="ENUM.CARD_TYPE.DESFire" xml:space="preserve">
+    <value>Mifare Desfire (all)</value>
+  </data>
+  <data name="dataGridColumnHeaderCommonTaskCheckpointNumber" xml:space="preserve">
+    <value>CP Nr.</value>
+  </data>
+  <data name="contextMenuItemCopy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="contextMenuItemPaste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="statusHeaderReaderIsBusy" xml:space="preserve">
+    <value>BUSY</value>
+  </data>
+  <data name="statusHeaderReaderIsIdle" xml:space="preserve">
+    <value>IDLE</value>
+  </data>
+  <data name="statusHeaderReaderIsUnknown" xml:space="preserve">
+    <value>UNKNOWN</value>
+  </data>
+  <data name="messageBoxNoReaderFoundCaption" xml:space="preserve">
+    <value>ReaderError</value>
+  </data>
+  <data name="messageBoxNoReaderFoundMessage" xml:space="preserve">
+    <value>No Reader Found</value>
   </data>
 </root>

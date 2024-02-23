@@ -1,13 +1,12 @@
-﻿using GemBox.Pdf;
-
-using Log4CSharp;
-
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Xml;
+using GemBox.Pdf;
 
 namespace RFiDGear.DataAccessLayer
 {
@@ -17,10 +16,8 @@ namespace RFiDGear.DataAccessLayer
     public class ReportReaderWriter : IDisposable
     {
         #region fields
-        private static readonly string FacilityName = "RFiDGear";
-
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
-
+        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         private const string reportTemplateTempFileName = "temptemplate.pdf";
         private readonly string appDataPath;
         public string ReportOutputPath { get; set; }
@@ -51,7 +48,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                 return;
             }
         }
@@ -78,7 +75,7 @@ namespace RFiDGear.DataAccessLayer
                     }
                     catch (Exception e)
                     {
-                        LogWriter.CreateLogEntry(e, FacilityName);
+                        eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                     }
                 }
 
@@ -87,82 +84,96 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (XmlException e)
             {
-                LogWriter.CreateLogEntry(e, FacilityName);
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                 return null;
             }
         }
 
-        public void SetReportField(string _field, string _value)
+        public async Task SetReportField(string _field, string _value)
         {
             if (!String.IsNullOrWhiteSpace(ReportOutputPath))
             {
                 try
                 {
-                    using (var pdfDoc = PdfDocument.Load(ReportTemplateFile)) // (new PdfReader(ReportTemplateFile), new PdfWriter(ReportOutputPath)))
+                    await Task.Run(() =>
                     {
-                        try
+                        using (var pdfDoc = PdfDocument.Load(ReportTemplateFile))
                         {
-                            ReportTemplateFile = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
+                            try
+                            {
+                                ReportTemplateFile = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
 
-                            var form = pdfDoc.Form;
-                            pdfDoc.Info.Title = "RFiDGear Report";
-                            pdfDoc.Info.Author = "RFiDGear";
+                                var form = pdfDoc.Form;
+                                pdfDoc.Info.Title = "RFiDGear Report";
+                                pdfDoc.Info.Author = "RFiDGear";
 
-                            pdfDoc.Form.Fields[_field].Hidden = false;
-                            pdfDoc.Form.Fields[_field].ReadOnly = false;
-                            pdfDoc.Form.Fields[_field].Value = _value;
+                                if (pdfDoc.Form.Fields.Any(x => x.Name == _field))
+                                {
+                                    pdfDoc.Form.Fields[_field].Hidden = false;
+                                    pdfDoc.Form.Fields[_field].ReadOnly = false;
+                                    pdfDoc.Form.Fields[_field].Value = _value;
+                                }
 
-                            pdfDoc.Save(ReportOutputPath);
-                            pdfDoc.Close();
+                                pdfDoc.Save(ReportOutputPath);
+                                pdfDoc.Close();
 
-                            File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
+                                File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
+                            }
+                            catch (Exception e)
+                            {
+                                eventLog.WriteEntry(string.Format(e.Message + "; SetReportField: " + _field), EventLogEntryType.Error);
+                            }
                         }
-                        catch (Exception e)
-                        {
-                            LogWriter.CreateLogEntry(e, FacilityName);
-                        }
-                    }
+                    }).ConfigureAwait(true);
+
+                    return;
                 }
                 catch (XmlException e)
                 {
-                    LogWriter.CreateLogEntry(e, FacilityName);
+                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                 }
             }
-
+            return;
         }
 
-        public void ConcatReportField(string _field, string _value)
+        public async Task ConcatReportField(string _field, string _value)
         {
             if (!String.IsNullOrWhiteSpace(ReportOutputPath))
             {
                 try
                 {
-                    ReportTemplateFile = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
-
-                    using (var pdfDoc = PdfDocument.Load(ReportTemplateFile))
+                    await Task.Run(() => 
                     {
-                        try
+                        ReportTemplateFile = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
+
+                        using (var pdfDoc = PdfDocument.Load(ReportTemplateFile))
                         {
-                            var form = pdfDoc.Form;
+                            try
+                            {
+                                var form = pdfDoc.Form;
 
-                            pdfDoc.Form.Fields[_field].Hidden = false;
-                            pdfDoc.Form.Fields[_field].ReadOnly = false;
-                            pdfDoc.Form.Fields[_field].Value = string.Format("{0}{1}", pdfDoc.Form.Fields[_field]?.Value, _value);
+                                pdfDoc.Form.Fields[_field].Hidden = false;
+                                pdfDoc.Form.Fields[_field].ReadOnly = false;
+                                pdfDoc.Form.Fields[_field].Value = string.Format("{0}{1}", pdfDoc.Form.Fields[_field]?.Value, _value);
 
-                            pdfDoc.Save(ReportOutputPath);
-                            pdfDoc.Close();
+                                pdfDoc.Save(ReportOutputPath);
+                                pdfDoc.Close();
 
-                            File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
+                                File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
+                            }
+                            catch (Exception e)
+                            {
+                                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                            }
                         }
-                        catch (Exception e)
-                        {
-                            LogWriter.CreateLogEntry(e, FacilityName);
-                        }
-                    }
+
+                        return;
+                    }).ConfigureAwait(false);
+
                 }
                 catch (XmlException e)
                 {
-                    LogWriter.CreateLogEntry(e, FacilityName);
+                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                 }
             }
 
@@ -187,7 +198,7 @@ namespace RFiDGear.DataAccessLayer
 
                     catch (XmlException e)
                     {
-                        LogWriter.CreateLogEntry(e, FacilityName);
+                        eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                     }
                 }
 

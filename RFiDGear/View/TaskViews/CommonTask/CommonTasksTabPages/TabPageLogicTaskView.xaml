@@ -243,17 +243,26 @@
                         CanUserSortColumns="False"
                         ItemsSource="{Binding Checkpoints, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                         SelectedItem="{Binding SelectedCheckpoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <DataGrid.Resources>
+                            <!-- DataGridRowHeader style -->
+                            <Style x:Key="RowHeaderStyle1" TargetType="DataGridRowHeader">
+                                <Setter Property="Height" Value="30"/>
+                                <Setter Property="UseLayoutRounding" Value="True"/>
+                                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="FontSize" Value="15" />
+                            </Style>
+                        </DataGrid.Resources>
                         <DataGrid.RowStyle>
                             <Style TargetType="{x:Type DataGridRow}">
-                                <!--<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />-->
-                                <!--<Setter Property="ToolTip" Value="{StaticResource DescriptionToolTip}" />-->
-                                <!--<Setter Property="IsSelected" Value="{Binding DataContext.IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
-                                <Setter Property="Header" Value="{Binding GrandChildNodeHeader}" />
+                                <Setter Property="Header" Value="{Binding CheckpointIndex, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
+                                <Setter Property="HeaderStyle" Value="{StaticResource ResourceKey=RowHeaderStyle1}"/>
                                 <Setter Property="MaxHeight" Value="140" />
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="HorizontalContentAlignment" Value="Left" />
                                 <Setter Property="VerticalContentAlignment" Value="Stretch" />
                             </Style>
                         </DataGrid.RowStyle>
+
                         <!--
                             {Binding Data.LocalizationResourceSet,
                             Converter={StaticResource Localization},
@@ -272,6 +281,8 @@
                                                 <Style TargetType="{x:Type ComboBox}" >
                                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                     <Setter Property="VerticalAlignment" Value="Stretch" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
                                                     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
                                                 </Style>
                                             </ComboBox.Style>
@@ -291,6 +302,8 @@
                                                 <Style TargetType="{x:Type ComboBox}" >
                                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                     <Setter Property="VerticalAlignment" Value="Stretch" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
                                                     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
                                                 </Style>
                                             </ComboBox.Style>
@@ -304,8 +317,8 @@
                                         <TextBlock FontFamily="Lucida Console" Text="{Binding Content, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                                             <TextBlock.Style>
                                                 <Style TargetType="{x:Type TextBlock}">
-                                                    <Setter Property="HorizontalAlignment" Value="Left" />
-                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                                    <Setter Property="VerticalAlignment" Value="Stretch" />
                                                 </Style>
                                             </TextBlock.Style>
                                         </TextBlock>
@@ -315,12 +328,14 @@
                             <DataGridTemplateColumn Width="auto" Header="{Binding Data.LocalizationResourceSet, ConverterParameter=dataGridColumnHeaderCommonTaskCompareValue, Converter={StaticResource Localization}, Source={StaticResource proxy}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock FontFamily="Lucida Console" Text="{Binding CompareValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                        <TextBlock 
+                                            FontFamily="Lucida Console" 
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding CompareValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                                             <TextBlock.Style>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="MaxWidth" Value="1000" />
-                                                    <Setter Property="HorizontalAlignment" Value="Left" />
-                                                    <Setter Property="VerticalAlignment" Value="Center" />
                                                 </Style>
                                             </TextBlock.Style>
                                         </TextBlock>

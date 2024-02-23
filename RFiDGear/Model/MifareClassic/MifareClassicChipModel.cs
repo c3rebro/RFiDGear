@@ -24,6 +24,13 @@ namespace RFiDGear.Model
             UID = uid;
         }
 
+        public MifareClassicChipModel(GenericChipModel chip)
+        {
+            CardType = chip.CardType;
+            UID = chip.UID;
+            Childs = chip.Childs;
+        }
+
         public uint FreeMemory { get; set; }
     }
 }

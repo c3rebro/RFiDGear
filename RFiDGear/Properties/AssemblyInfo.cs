@@ -11,9 +11,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("RFiDGear")]
 [assembly: AssemblyDescription("RFiD Encoding Frontend")]
 [assembly: AssemblyConfiguration("x86")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Messgeraetetechnik Hansen")]
 [assembly: AssemblyProduct("RFiDGear")]
-[assembly: AssemblyCopyright("Copyright 2023")]
+[assembly: AssemblyCopyright("Copyright 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 // This sets the default COM visibility of types in the assembly to invisible.
@@ -25,6 +25,6 @@ using System.Runtime.InteropServices;
 //
 // You can specify all the values or you can use the default the Revision and
 // Build Numbers by using the '*' as shown below:
-[assembly: AssemblyVersion("1.7.*")]
+[assembly: AssemblyVersion("1.8.*")]
 [assembly: Guid("a34bc413-e349-4fd1-8b90-2eb95a333436")]
 [assembly: NeutralResourcesLanguage("")]

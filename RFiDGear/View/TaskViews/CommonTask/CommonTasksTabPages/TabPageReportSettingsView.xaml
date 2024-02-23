@@ -174,18 +174,39 @@
                         AutoGenerateColumns="False"
                         Background="Transparent"
                         CanUserAddRows="False"
-                        CanUserDeleteRows="False"
-                        CanUserReorderColumns="False"
-                        CanUserSortColumns="False"
+                        CanUserDeleteRows="True"
+                        CanUserReorderColumns="True"
+                        
+                        CanUserSortColumns="True"
                         ItemsSource="{Binding Checkpoints, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                         SelectedItem="{Binding SelectedCheckpoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <DataGrid.Resources>
+                            <ContextMenu x:Key="CheckPointContextMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
+                                <ContextMenu.ItemContainerStyle>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                                    </Style>
+                                </ContextMenu.ItemContainerStyle>
+                            </ContextMenu>
+                            <!-- DataGridRowHeader style -->
+                            <Style x:Key="RowHeaderStyle1" TargetType="DataGridRowHeader">
+                                <Setter Property="Height" Value="auto"/>
+                                <Setter Property="UseLayoutRounding" Value="True"/>
+                                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="FontSize" Value="15" />
+                                <Setter Property="ContextMenu" Value="{StaticResource ResourceKey=CheckPointContextMenu}"/>
+                            </Style>
+                        </DataGrid.Resources>
                         <DataGrid.RowStyle>
                             <Style TargetType="{x:Type DataGridRow}">
-                                <!--<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />-->
-                                <!--<Setter Property="ToolTip" Value="{StaticResource DescriptionToolTip}" />-->
-                                <!--<Setter Property="IsSelected" Value="{Binding DataContext.IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
-                                <Setter Property="Header" Value="{Binding GrandChildNodeHeader}" />
+                                <Setter Property="Header" Value="{Binding CheckpointIndex, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
+                                <Setter Property="HeaderStyle" Value="{StaticResource ResourceKey=RowHeaderStyle1}"/>
                                 <Setter Property="MaxHeight" Value="140" />
+                                <Setter Property="VerticalAlignment" Value="Stretch"/>
                                 <Setter Property="HorizontalContentAlignment" Value="Left" />
                                 <Setter Property="VerticalContentAlignment" Value="Stretch" />
                             </Style>
@@ -208,6 +229,8 @@
                                                 <Style TargetType="{x:Type ComboBox}">
                                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                     <Setter Property="VerticalAlignment" Value="Stretch" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
                                                     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
                                                 </Style>
                                             </ComboBox.Style>
@@ -228,6 +251,8 @@
                                                 <Style TargetType="{x:Type ComboBox}">
                                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                     <Setter Property="VerticalAlignment" Value="Stretch" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
                                                     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
                                                 </Style>
                                             </ComboBox.Style>
@@ -248,6 +273,8 @@
                                                 <Style TargetType="{x:Type ComboBox}">
                                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                     <Setter Property="VerticalAlignment" Value="Stretch" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
                                                     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Visible"/>
                                                 </Style>
                                             </ComboBox.Style>
@@ -266,9 +293,11 @@
                                             <TextBox.Style>
                                                 <Style TargetType="{x:Type TextBox}">
                                                     <Setter Property="HorizontalAlignment" Value="Left" />
+                                                    <Setter Property="VerticalAlignment" Value="Stretch" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />                                                    
                                                     <Setter Property="BorderBrush" Value="Transparent" />
                                                     <Setter Property="MaxWidth" Value="800" />
-                                                    <Setter Property="VerticalAlignment" Value="Center" />
                                                 </Style>
                                             </TextBox.Style>
                                         </TextBox>

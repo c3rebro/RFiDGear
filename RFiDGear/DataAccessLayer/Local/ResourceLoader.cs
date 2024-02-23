@@ -1,7 +1,7 @@
 ﻿using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
-using Log4CSharp;
+using Microsoft.Extensions.Logging;
 
 using System;
 using System.Collections.ObjectModel;
@@ -10,6 +10,8 @@ using System.Resources;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Markup;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace RFiDGear.DataAccessLayer
 {
@@ -70,7 +72,7 @@ namespace RFiDGear.DataAccessLayer
 
             var settings = new SettingsReaderWriter();
             resManager = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
-            settings.ReadSettings();
+            settings.ReadSettings().GetAwaiter().GetResult();
 
             cultureInfo = (new DefaultSpecification().DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
         }
@@ -97,7 +99,7 @@ namespace RFiDGear.DataAccessLayer
     /// </summary>
     public sealed class ResourceLoader : IValueConverter, IDisposable
     {
-        private static readonly string FacilityName = "RFiDGear";
+        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         private readonly ResourceManager resManager;
 
         /// <summary>
@@ -150,7 +152,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(e, FacilityName);
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
 
                 throw new ArgumentOutOfRangeException(
                     string.Format("parameter:{0}\nvalue:{1}",
@@ -206,7 +208,7 @@ namespace RFiDGear.DataAccessLayer
             {
                 using (var settings = new SettingsReaderWriter())
                 {
-                    settings.ReadSettings();
+                    settings.ReadSettings().GetAwaiter().GetResult();
 
                     var ressource = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
                         .GetString(resName, (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en"));
@@ -217,7 +219,8 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(e, FacilityName);
+                EventLog eventLog2 = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+                eventLog2.WriteEntry(e.Message, EventLogEntryType.Error);
                 return string.Empty;
             }
         }

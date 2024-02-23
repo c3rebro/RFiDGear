@@ -3,6 +3,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 using Ionic.Zip;
-using Log4CSharp;
+
 using RFiDGear.Model;
 using RFiDGear.ViewModel;
 
@@ -23,9 +24,8 @@ namespace RFiDGear.DataAccessLayer
     public class DatabaseReaderWriter
     {
         #region fields
-        private static readonly string FacilityName = "RFiDGear";
-
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
+        private readonly EventLog eventLog = new EventLog("Application", ".", "RFiDGear");
 
         private const string chipDatabaseFileName = "chipdatabase.xml";
         private const string taskDatabaseFileNameCompressed = "chipdatabase.rfPrj";
@@ -81,7 +81,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                 return;
             }
         }
@@ -90,7 +90,7 @@ namespace RFiDGear.DataAccessLayer
         ///
         /// </summary>
         /// <returns></returns>
-        public bool ReadDatabase(string _fileName = "")
+        public async Task<bool> ReadDatabase(string _fileName = "")
         {
             var verInfo = 0;
             FileInfo file;
@@ -104,86 +104,89 @@ namespace RFiDGear.DataAccessLayer
                 file = new FileInfo(_fileName);
             }
 
-            try
+            await Task.Run(() =>
             {
-                var doc = new XmlDocument();
-
-                if (file.Extension.ToLower(CultureInfo.CurrentCulture) == ".xml")
+                try
                 {
-                    doc.Load(@_fileName);
-                    TextReader reader = new StreamReader(_fileName);
+                    var doc = new XmlDocument();
 
-                    var node = doc.SelectSingleNode("//ManifestVersion");
-                    verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
-
-                    try
+                    if (file.Extension.ToLower(CultureInfo.CurrentCulture) == ".xml")
                     {
-                        AsyncRelayCommandLoadDB.ExecuteAsync(reader);
-                    }
-                    catch (Exception e)
-                    {
-                        LogWriter.CreateLogEntry(e, FacilityName);
-                    }
+                        doc.Load(@_fileName);
+                        TextReader reader = new StreamReader(_fileName);
 
-                }
+                        var node = doc.SelectSingleNode("//ManifestVersion");
+                        verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
 
-                if (file.Extension.ToLower(CultureInfo.CurrentCulture) == ".rfprj")
-                {
-                    using (var zip1 = ZipFile.Read(string.IsNullOrWhiteSpace(_fileName) ?
-                    @Path.Combine(appDataPath, taskDatabaseFileNameCompressed) :
-                    _fileName))
-                    {
-                        if (Directory.GetFiles(appDataPath, "*.tmp").Length > 0)
+                        try
                         {
-                            foreach (var tempFile in Directory.GetFiles(appDataPath, "*.tmp"))
-                            {
-                                File.Delete(tempFile);
-                            }
+                            AsyncRelayCommandLoadDB.Execute(reader);
                         }
-                        zip1.ExtractAll(appDataPath, ExtractExistingFileAction.OverwriteSilently);
+                        catch (Exception e)
+                        {
+                            eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                        }
+
                     }
 
-                    TextReader reader = null;
+                    if (file.Extension.ToLower(CultureInfo.CurrentCulture) == ".rfprj")
+                    {
+                        using (var zip1 = ZipFile.Read(string.IsNullOrWhiteSpace(_fileName) ?
+                        @Path.Combine(appDataPath, taskDatabaseFileNameCompressed) :
+                        _fileName))
+                        {
+                            if (Directory.GetFiles(appDataPath, "*.tmp").Length > 0)
+                            {
+                                foreach (var tempFile in Directory.GetFiles(appDataPath, "*.tmp"))
+                                {
+                                    File.Delete(tempFile);
+                                }
+                            }
+                            zip1.ExtractAll(appDataPath, ExtractExistingFileAction.OverwriteSilently);
+                        }
 
-                    if (File.Exists(@Path.Combine(appDataPath, file.Name)))
-                    {
-                        doc.Load(@Path.Combine(appDataPath, file.Name));
-                        var node = doc.SelectSingleNode("//ManifestVersion");
-                        verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
-                        reader = new StreamReader(@Path.Combine(appDataPath, file.Name));
-                    } // old Variant. Needed to open old databases
-                    else if(File.Exists(@Path.Combine(appDataPath, taskDatabaseFileName)))
-                    {
-                        doc.Load(@Path.Combine(appDataPath, taskDatabaseFileName));
-                        var node = doc.SelectSingleNode("//ManifestVersion");
-                        verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
-                        reader = new StreamReader(@Path.Combine(appDataPath, taskDatabaseFileName));
-                    }
+                        TextReader reader = null;
+
+                        if (File.Exists(@Path.Combine(appDataPath, file.Name)))
+                        {
+                            doc.Load(@Path.Combine(appDataPath, file.Name));
+                            var node = doc.SelectSingleNode("//ManifestVersion");
+                            verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
+                            reader = new StreamReader(@Path.Combine(appDataPath, file.Name));
+                        } // old Variant. Needed to open old databases
+                        else if(File.Exists(@Path.Combine(appDataPath, taskDatabaseFileName)))
+                        {
+                            doc.Load(@Path.Combine(appDataPath, taskDatabaseFileName));
+                            var node = doc.SelectSingleNode("//ManifestVersion");
+                            verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
+                            reader = new StreamReader(@Path.Combine(appDataPath, taskDatabaseFileName));
+                        }
                     
-                    try
-                    {
-                        XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-                        SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
-                        reader.Close();
+                        try
+                        {
+                            XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
+                            SetupModel = (serializer.Deserialize(reader) as ChipTaskHandlerModel);
+                            reader.Close();
+                        }
+                        catch (Exception e)
+                        {
+                            eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        LogWriter.CreateLogEntry(e, FacilityName);
-                    }
-                }
 
-                if (verInfo > Convert.ToInt32(string.Format("{0}{1}{2}", Version.Major, Version.Minor, Version.Build)))
-                {
-                    LogWriter.CreateLogEntry(string.Format("{0}; {1}", DateTime.Now, string.Format("database that was tried to open is newer ({0}) than this version of rfidgear ({1})"
-                                                                                                  , verInfo, Convert.ToInt32(string.Format("{0}{1}{2}", Version.Major, Version.Minor, Version.Build)))), FacilityName);
-                    return true;
+                    if (verInfo > Convert.ToInt32(string.Format("{0}{1}{2}", Version.Major, Version.Minor, Version.Build)))
+                    {
+                        eventLog.WriteEntry(string.Format("{0}; {1}", DateTime.Now, string.Format("database that was tried to open is newer ({0}) than this version of rfidgear ({1})"
+                                                                                                      , verInfo, Convert.ToInt32(string.Format("{0}{1}{2}", Version.Major, Version.Minor, Version.Build)))), EventLogEntryType.Warning);
+                        return ;
+                    }
                 }
-            }
-            catch (Exception e)
-            {
-                LogWriter.CreateLogEntry(e, FacilityName);
-                return true;
-            }
+                catch (Exception e)
+                {
+                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                    return ;
+                }
+            }).ConfigureAwait(false);
 
             return false;
         }
@@ -210,7 +213,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (XmlException e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                 Environment.Exit(0);
             }
         }
@@ -248,39 +251,13 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (XmlException e)
             {
-                LogWriter.CreateLogEntry(e, FacilityName);
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
             }
         }
 
         public void DeleteDatabase()
         {
             File.Delete(Path.Combine(appDataPath, chipDatabaseFileName));
-        }
- 
-        private object LoadXML(TextReader reader)
-        {
-            try
-            {
-                var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-                return (serializer.Deserialize(reader) as ChipTaskHandlerModel);
-            }
-            catch (Exception e)
-            {
-                LogWriter.CreateLogEntry(e, FacilityName);
-
-                try
-                {
-                    var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
-                    return serializer.Deserialize(reader) as ObservableCollection<RFiDChipParentLayerViewModel>;
-                }
-
-                catch (Exception innerE)
-                {
-                    LogWriter.CreateLogEntry(innerE, FacilityName);
-                } 
-            }
-
-            return null;
         }
     }
 }

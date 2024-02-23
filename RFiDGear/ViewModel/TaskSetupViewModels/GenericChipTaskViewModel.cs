@@ -9,13 +9,13 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
-using MvvmDialogs.ViewModels;
+using MVVMDialogs.ViewModels;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
-using Log4CSharp;
+
 
 using System;
 using System.Collections.Generic;
@@ -26,6 +26,9 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
 using Elatec.NET;
+using System.Linq;
+using LibLogicalAccess;
+using System.Diagnostics;
 
 namespace RFiDGear.ViewModel
 {
@@ -35,9 +38,8 @@ namespace RFiDGear.ViewModel
     public class GenericChipTaskViewModel : ObservableObject, IUserDialogViewModel, IGenericTaskModel
     {
         #region fields
-        private static readonly string FacilityName = "RFiDGear";
+        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
 
-        private protected SettingsReaderWriter settings = new SettingsReaderWriter();
         private protected ReportReaderWriter reportReaderWriter;
         private protected Checkpoint checkpoint;
         private protected readonly ObservableCollection<object> _availableTasks;
@@ -94,7 +96,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(e, FacilityName);
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
             }
         }
 
@@ -307,12 +309,6 @@ namespace RFiDGear.ViewModel
         }
         private string selectedTaskDescription;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        [XmlIgnore]
-        public SettingsReaderWriter Settings => settings;
-
         #endregion General Properties
 
         #region Commands
@@ -320,234 +316,191 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public ICommand CheckChipType => new RelayCommand(OnNewCheckChipTypeCommand);
-        private void OnNewCheckChipTypeCommand()
+        public IAsyncRelayCommand SaveSettings => new AsyncRelayCommand(OnNewSaveSettingsCommand);
+        private async Task OnNewSaveSettingsCommand()
         {
-            CurrentTaskErrorLevel = ERROR.Empty;
-
-            var genericChipTask =
-                new Task(() =>
-                {
-                    using (var device = ReaderDevice.Instance)
-                    {
-                        if (device != null)
-                        {
-                            var result = ERROR.Empty;
-
-                            if (device.GenericChip.CardType == SelectedChipType)
-                            {
-                                result = ERROR.NoError;
-                            }
-                            else if (Enum.GetName(typeof(CARD_TYPE), SelectedChipType).ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
-                            {
-                                result = ERROR.IsNotTrue;
-
-                                switch (SelectedChipType)
-                                {
-                                    case CARD_TYPE.DESFire:
-                                        if (device.GenericChip.CardType == CARD_TYPE.DESFire_256 ||
-                                        device.GenericChip.CardType == CARD_TYPE.DESFire_2K ||
-                                        device.GenericChip.CardType == CARD_TYPE.DESFire_4K)
-                                        {
-                                            result = ERROR.NoError;
-                                        }
-                                        break;
-                                    case CARD_TYPE.DESFireEV1:
-                                        if (device.GenericChip.CardType == CARD_TYPE.DESFireEV1_256 ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV1_2K ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV1_4K ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV1_8K)
-                                        {
-                                            result = ERROR.NoError;
-                                        }
-                                        break;
-                                    case CARD_TYPE.DESFireEV2:
-                                        if (device.GenericChip.CardType == CARD_TYPE.DESFireEV2_2K ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV2_4K ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV2_8K ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV2_16K ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV2_32K)
-                                        {
-                                            result = ERROR.NoError;
-                                        }
-                                        break;
-                                    case CARD_TYPE.DESFireEV3:
-                                        if (device.GenericChip.CardType == CARD_TYPE.DESFireEV3_2K ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV3_4K ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV3_8K ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV3_16K ||
-                                            device.GenericChip.CardType == CARD_TYPE.DESFireEV3_32K)
-                                        {
-                                            result = ERROR.NoError;
-                                        }
-                                        break;
-
-                                    default:
-                                        result = ERROR.IsNotTrue;
-                                        break;
-                                }
-                            }
-                            else
-                            {
-                                result = ERROR.IsNotTrue;
-                            }
-
-                            CurrentTaskErrorLevel = result;
-                            return;
-                        }
-                        else
-                        {
-                            CurrentTaskErrorLevel = ERROR.NotReadyError;
-                            return;
-                        }
-                    }
-                });
-
-            if (CurrentTaskErrorLevel == ERROR.Empty)
-            {
-                CurrentTaskErrorLevel = ERROR.NotReadyError;
-
-                genericChipTask.ContinueWith((x) =>
-                {
-                    if (CurrentTaskErrorLevel == ERROR.NoError)
-                    {
-                        IsTaskCompletedSuccessfully = true;
-                    }
-                    else
-                    {
-                        IsTaskCompletedSuccessfully = false;
-                    }
-                });
-                genericChipTask.RunSynchronously();
-            }
-
-            return;
+            SettingsReaderWriter settings = new SettingsReaderWriter();
+            await settings.SaveSettings();
         }
 
         /// <summary>
         /// 
         /// </summary>
-        public ICommand CheckChipIsMultiTecChip => new RelayCommand(OnNewCheckChipIsMultiTecChipCommand);
-        private void OnNewCheckChipIsMultiTecChipCommand()
+        public IAsyncRelayCommand CheckChipType => new AsyncRelayCommand<List<GenericChipModel>>((x) => OnNewCheckChipTypeCommand(x));
+
+        private async Task<ERROR> OnNewCheckChipTypeCommand()
+        {
+            return await OnNewCheckChipTypeCommand(null);
+        }
+        private async Task<ERROR> OnNewCheckChipTypeCommand(List<GenericChipModel> chipList)
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            var genericChipTask =
-                new Task(() =>
-                {
-                    using (var device = ReaderDevice.Instance)
-                    {
-                        if (device != null)
-                        {
-                            var result = device.ReadChipPublic();
+            List<GenericChipModel> chipListToUse;
 
-                            if (result == ERROR.NoError)
-                            {
-
-                                if (device.GenericChip.Child != null)
-                                {
-                                    result = ERROR.NoError;
-                                }
-                                else
-                                {
-                                    result = ERROR.IsNotTrue;
-                                }
-
-                                CurrentTaskErrorLevel = result;
-                                return;
-
-                            }
-                        }
-                        else
-                        {
-                            CurrentTaskErrorLevel = ERROR.NotReadyError;
-                            return;
-                        }
-                    }
-                });
-
-            if (CurrentTaskErrorLevel == ERROR.Empty)
+            using (var device = ReaderDevice.Instance)
             {
-                CurrentTaskErrorLevel = ERROR.NotReadyError;
-
-                genericChipTask.ContinueWith((x) =>
+                if (device != null)
                 {
-                    if (CurrentTaskErrorLevel == ERROR.NoError)
+                    var result = ERROR.Empty;
+
+                    if (chipList != null)
                     {
-                        IsTaskCompletedSuccessfully = true;
+                        chipListToUse = chipList;
                     }
                     else
                     {
-                        IsTaskCompletedSuccessfully = false;
+                        await device.ReadChipPublic();
+                        chipListToUse = device.GenericChip;
                     }
-                });
-                genericChipTask.RunSynchronously();
+                    
+                    if (((int)SelectedChipType | 0xF000) == 0xF000) // Do NOT Check for explicit Subtype e.g desfire ev1 >2k, 4k, 8k etc.<
+                    {
+                        if (chipListToUse.Where(x => (CARD_TYPE)((int)x.CardType & 0xF000) == (CARD_TYPE)SelectedChipType).Any())
+                        {
+                            result = ERROR.NoError;
+                        }
+                        else
+                        {
+                            result = ERROR.IsNotTrue;
+                        }
+
+                    }
+                    else // Take explicit Type into account
+                    {
+                        if (chipListToUse.Where(x => x.CardType == SelectedChipType).Any())
+                        {
+                            result = ERROR.NoError;
+                        }
+                        else
+                        {
+                            result = ERROR.IsNotTrue;
+                        }
+                    }
+
+                    CurrentTaskErrorLevel = result;
+                }
+                else
+                {
+                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                }
             }
 
-            return;
+            if (CurrentTaskErrorLevel == ERROR.NoError)
+            {
+                IsTaskCompletedSuccessfully = true;
+            }
+            else
+            {
+                IsTaskCompletedSuccessfully = false;
+            }
+
+            return CurrentTaskErrorLevel;
         }
 
         /// <summary>
         /// 
         /// </summary>
-        public ICommand CheckChipUID => new RelayCommand(OnNewCheckChipUIDCommand);
-        private void OnNewCheckChipUIDCommand()
+        public IAsyncRelayCommand CheckChipIsMultiTecChip => new AsyncRelayCommand<List<GenericChipModel>>((x) => OnNewCheckChipIsMultiTecChipCommand(x));
+        private async Task<ERROR> OnNewCheckChipIsMultiTecChipCommand(List<GenericChipModel> chipList)
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            var genericChipTask =
-                new Task(() =>
-                {
-                    using (var device = ReaderDevice.Instance)
-                    {
-                        if (device != null)
-                        {
-                            var result = device.ReadChipPublic();
+            List<GenericChipModel> chipListToUse;
 
-                            if (result == ERROR.NoError)
-                            {
-
-                                if (device.GenericChip.UID.ToLower(CultureInfo.CurrentCulture) == SelectedUIDOfChip.ToLower(CultureInfo.CurrentCulture))
-                                {
-                                    result = ERROR.NoError;
-                                }
-                                else
-                                {
-                                    result = ERROR.IsNotTrue;
-                                }
-
-                                CurrentTaskErrorLevel = result;
-                                return;
-
-                            }
-                        }
-                        else
-                        {
-                            CurrentTaskErrorLevel = ERROR.NotReadyError;
-                            return;
-                        }
-                    }
-                });
-
-            if (CurrentTaskErrorLevel == ERROR.Empty)
+            using (var device = ReaderDevice.Instance)
             {
-                CurrentTaskErrorLevel = ERROR.NotReadyError;
-
-                genericChipTask.ContinueWith((x) =>
+                if (device != null)
                 {
-                    if (CurrentTaskErrorLevel == ERROR.NoError)
+                    var result = ERROR.Empty;
+
+                    if (chipList != null)
                     {
-                        IsTaskCompletedSuccessfully = true;
+                        chipListToUse = chipList.FirstOrDefault().Childs;
                     }
                     else
                     {
-                        IsTaskCompletedSuccessfully = false;
+                        result = await device.ReadChipPublic();
+                        chipListToUse = device.GenericChip;
                     }
-                });
-                genericChipTask.RunSynchronously();
+
+
+                    if (chipListToUse != null && chipListToUse.Count >= 1)
+                    {
+                        result = ERROR.NoError;
+                    }
+                    else
+                    {
+                        result = ERROR.IsNotTrue;
+                    }
+
+                    CurrentTaskErrorLevel = result;
+                }
+                else
+                {
+                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                }
             }
 
-            return;
+            if (CurrentTaskErrorLevel == ERROR.NoError)
+            {
+                IsTaskCompletedSuccessfully = true;
+            }
+            else
+            {
+                IsTaskCompletedSuccessfully = false;
+            }
+
+            return CurrentTaskErrorLevel;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ICommand CheckChipUID => new AsyncRelayCommand(OnNewCheckChipUIDCommand);
+        private async Task<ERROR> OnNewCheckChipUIDCommand()
+        {
+            CurrentTaskErrorLevel = ERROR.Empty;
+
+            using (var device = ReaderDevice.Instance)
+            {
+                if (device != null)
+                {
+                    var result = await device.ReadChipPublic();
+
+                    if (result == ERROR.NoError)
+                    {
+                        if (device.GenericChip
+                            .Where(x => x.UID.ToLower(CultureInfo.CurrentCulture) == SelectedUIDOfChip.ToLower(CultureInfo.CurrentCulture))
+                            .Any())
+                        {
+                            result = ERROR.NoError;
+                        }
+                        else
+                        {
+                            result = ERROR.IsNotTrue;
+                        }
+
+                        CurrentTaskErrorLevel = result;
+
+                    }
+                }
+                else
+                {
+                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                }
+            }
+
+            if (CurrentTaskErrorLevel == ERROR.NoError)
+            {
+                IsTaskCompletedSuccessfully = true;
+            }
+            else
+            {
+                IsTaskCompletedSuccessfully = false;
+            }
+
+            return CurrentTaskErrorLevel;
         }
         #endregion
 
@@ -570,13 +523,13 @@ namespace RFiDGear.ViewModel
 
         public event EventHandler DialogClosing;
 
-        public ICommand OKCommand => new RelayCommand(Ok);
+        public IAsyncRelayCommand OKCommand => new AsyncRelayCommand(Ok);
 
-        protected virtual void Ok()
+        protected async virtual Task Ok()
         {
             if (OnOk != null)
             {
-                OnOk(this);
+                await OnOk(this);
             }
             else
             {
@@ -613,7 +566,7 @@ namespace RFiDGear.ViewModel
         }
 
         [XmlIgnore]
-        public Action<GenericChipTaskViewModel> OnOk { get; set; }
+        public Func<GenericChipTaskViewModel, Task> OnOk { get; set; }
 
         [XmlIgnore]
         public Action<GenericChipTaskViewModel> OnCancel { get; set; }

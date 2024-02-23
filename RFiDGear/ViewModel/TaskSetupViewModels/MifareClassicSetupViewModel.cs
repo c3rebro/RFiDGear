@@ -8,18 +8,17 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MefMvvm.SharedContracts;
-using MvvmDialogs.ViewModels;
+using MVVMDialogs.ViewModels;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
-using Log4CSharp;
-
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -36,8 +35,7 @@ namespace RFiDGear.ViewModel
     public class MifareClassicSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTaskModel
     {
         #region Fields
-
-        private readonly string FacilityName = "RFiDGear";
+        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
 
         private readonly ObservableCollection<MifareClassicDataBlockAccessConditionModel> dataBlock_AccessBits = new ObservableCollection<MifareClassicDataBlockAccessConditionModel>
             (new[]
@@ -169,8 +167,6 @@ namespace RFiDGear.ViewModel
 
         private MifareClassicSectorModel sectorModel;
 
-        private readonly SettingsReaderWriter settings = new SettingsReaderWriter();
-
         private byte madGPB = 0xC1;
 
         #endregion fields
@@ -220,6 +216,8 @@ namespace RFiDGear.ViewModel
         {
             try
             {
+                SettingsReaderWriter settings = new SettingsReaderWriter();
+
                 sectorModel = new MifareClassicSectorModel(4,
                                                            AccessCondition_MifareClassicSectorTrailer.NotAllowed,
                                                            AccessCondition_MifareClassicSectorTrailer.Allowed_With_KeyA,
@@ -323,7 +321,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
             }
         }
 
@@ -840,12 +838,6 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        [XmlIgnore]
-        public SettingsReaderWriter Settings => settings;
-
-        /// <summary>
-        /// 
-        /// </summary>
         public bool DataBlockSelectionComboBoxIsEnabled => !dataBlockIsCombinedToggleButtonIsChecked;
 
         #region KeySetup
@@ -962,6 +954,8 @@ namespace RFiDGear.ViewModel
             get => classicKeyAKeyCurrent;
             set
             {
+                SettingsReaderWriter settings = new SettingsReaderWriter();
+
                 classicKeyAKeyCurrent = value.Length > 12 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(12, value.Length - 12) : value.ToUpper(CultureInfo.CurrentCulture);
 
                 IsValidClassicKeyAKeyCurrent = (CustomConverter.IsInHexFormat(classicKeyAKeyCurrent) && classicKeyAKeyCurrent.Length == 12);
@@ -1011,6 +1005,8 @@ namespace RFiDGear.ViewModel
             get => classicKeyBKeyCurrent;
             set
             {
+                SettingsReaderWriter settings = new SettingsReaderWriter();
+
                 classicKeyBKeyCurrent = value.Length > 12 ? value.ToUpper(CultureInfo.CurrentCulture).Remove(12, value.Length - 12) : value.ToUpper(CultureInfo.CurrentCulture);
 
                 IsValidClassicKeyBKeyCurrent = (CustomConverter.IsInHexFormat(classicKeyBKeyCurrent) && classicKeyBKeyCurrent.Length == 12);
@@ -1097,6 +1093,8 @@ namespace RFiDGear.ViewModel
             {
                 if (int.TryParse(value, out selectedClassicSectorCurrentAsInt))
                 {
+                    SettingsReaderWriter settings = new SettingsReaderWriter();
+
                     selectedClassicSectorCurrent = value;
 
                     if (selectedClassicSectorCurrentAsInt > 31)
@@ -1620,19 +1618,29 @@ namespace RFiDGear.ViewModel
 
         #region Commands
 
-        public ICommand CommandDelegator => new RelayCommand<TaskType_MifareClassicTask>((x) => OnNewCommandDelegatorCall(x));
-        private void OnNewCommandDelegatorCall(TaskType_MifareClassicTask classicTaskType)
+        /// <summary>
+        /// 
+        /// </summary>
+        public IAsyncRelayCommand SaveSettings => new AsyncRelayCommand(OnNewSaveSettingsCommand);
+        private async Task OnNewSaveSettingsCommand()
+        {
+            SettingsReaderWriter settings = new SettingsReaderWriter();
+            await settings.SaveSettings();
+        }
+
+        public IAsyncRelayCommand CommandDelegator => new AsyncRelayCommand<TaskType_MifareClassicTask>((x) => OnNewCommandDelegatorCall(x));
+        private async Task OnNewCommandDelegatorCall(TaskType_MifareClassicTask classicTaskType)
         {
             switch(classicTaskType)
             {
                 case TaskType_MifareClassicTask.ReadData:
-                    OnNewReadDataCommand();
+                    await OnNewReadDataCommand();
                     break;
                 case TaskType_MifareClassicTask.WriteData:
-                    OnNewWriteDataCommand();
+                    await OnNewWriteDataCommand();
                     break;
                 case TaskType_MifareClassicTask.EmptyCheck:
-                    OnNewCheckEmptyCommand();
+                    await OnNewCheckEmptyCommand();
                     break;
                 default:
                     break;
@@ -1642,317 +1650,287 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// Check if DataBlock 0, 1 and 2 contain all 0 and if Authentication with KeyA = 6xFF works
         /// </summary>
-        public ICommand CheckEmptyCommand => new RelayCommand(OnNewCheckEmptyCommand);
-        private protected void OnNewCheckEmptyCommand()
+        public ICommand CheckEmptyCommand => new AsyncRelayCommand(OnNewCheckEmptyCommand);
+        private protected async Task OnNewCheckEmptyCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            var classicTask =
-                new Task(() =>
-                {
-                    using (var device = ReaderDevice.Instance)
-                    {
-                        if (device != null)
-                        {
-                            StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
-
-                            if (device.ReadMifareClassicSingleSector(
-                                selectedClassicSectorCurrentAsInt,
-                                ClassicKeyAKeyCurrent,
-                                ClassicKeyBKeyCurrent) == ERROR.NoError)
-                            {
-                                StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
-
-                                for (var i = 0; i < device.Sector.DataBlock.Count - 1; i++)
-                                {
-                                    for(var j = 0; j < device.Sector.DataBlock[i].Data.Length; j++)
-                                    {
-                                        if(device.Sector.DataBlock[i].Data[j] == 0 && device.Sector.IsAuthenticated == true)
-                                        {
-                                            continue;
-                                        }
-                                        else
-                                        {
-                                            CurrentTaskErrorLevel = ERROR.IsNotTrue;
-                                            return;
-                                        }
-                                    }
-                                }
-
-                                CurrentTaskErrorLevel = ERROR.NoError;
-
-                            }
-
-                            else
-                            {
-                                StatusText += string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
-                                CurrentTaskErrorLevel = ERROR.AuthenticationError;
-                                return;
-                            }
-                        }
-
-                        else
-                        {
-                            CurrentTaskErrorLevel = ERROR.NotReadyError;
-                            return;
-                        }
-
-                        OnPropertyChanged(nameof(ChildNodeViewModelTemp));
-
-                        return;
-                    }
-                });
-
-            if (CurrentTaskErrorLevel == ERROR.Empty)
+            using (var device = ReaderDevice.Instance)
             {
-                classicTask.ContinueWith((x) =>
+                if (device != null)
                 {
-                    if (CurrentTaskErrorLevel == ERROR.NoError)
+                    StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                    if (await device.ReadMifareClassicSingleSector(
+                        selectedClassicSectorCurrentAsInt,
+                        ClassicKeyAKeyCurrent,
+                        ClassicKeyBKeyCurrent) == ERROR.NoError)
                     {
-                        IsTaskCompletedSuccessfully = true;
+                        StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
+
+                        for (var i = 0; i < device.Sector.DataBlock.Count - 1; i++)
+                        {
+                            for (var j = 0; j < device.Sector.DataBlock[i].Data.Length; j++)
+                            {
+                                if (device.Sector.DataBlock[i].Data[j] == 0 && device.Sector.IsAuthenticated == true)
+                                {
+                                    continue;
+                                }
+                                else
+                                {
+                                    CurrentTaskErrorLevel = ERROR.IsNotTrue;
+                                    break;
+                                }
+                            }
+                        }
+
+                        CurrentTaskErrorLevel = ERROR.NoError;
+
                     }
+
                     else
                     {
-                        IsTaskCompletedSuccessfully = false;
+                        StatusText += string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
+                        CurrentTaskErrorLevel = ERROR.AuthenticationError;
                     }
-                });
+                }
 
-                classicTask.RunSynchronously();
+                else
+                {
+                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    return;
+                }
+
+                OnPropertyChanged(nameof(ChildNodeViewModelTemp));
+
+                if (CurrentTaskErrorLevel == ERROR.NoError)
+                {
+                    IsTaskCompletedSuccessfully = true;
+                }
+                else
+                {
+                    IsTaskCompletedSuccessfully = false;
+                }
+
+                return;
             }
         }
 
         /// <summary>
         /// Read Data to Memory
         /// </summary>
-        public ICommand ReadDataCommand => new RelayCommand(OnNewReadDataCommand);
-        private protected void OnNewReadDataCommand()
+        public ICommand ReadDataCommand => new AsyncRelayCommand(OnNewReadDataCommand);
+        private protected async Task OnNewReadDataCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            var classicTask =
-                new Task(() =>
-                         {
-                             using (var device = ReaderDevice.Instance)
-                             {
-                                 if (device != null)
-                                 {
-                                     StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
-
-                                     if (!useMAD)
-                                     {
-                                         if (device.ReadMifareClassicSingleSector(
-                                             selectedClassicSectorCurrentAsInt,
-                                             ClassicKeyAKeyCurrent,
-                                             ClassicKeyBKeyCurrent) == ERROR.NoError)
-                                         {
-
-                                             childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
-                                             childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
-
-                                             StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
-
-                                             for (var i = 0; i < device.Sector.DataBlock.Count; i++)
-                                             {
-                                                 childNodeViewModelFromChip.Children[i].DataBlockNumber = i;
-                                                 childNodeViewModelTemp.Children[i].DataBlockNumber = i;
-
-                                                 childNodeViewModelFromChip.Children[i].MifareClassicDataBlock.DataBlockNumberChipBased = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == i).DataBlockNumberChipBased;
-
-                                                 if (device.Sector.DataBlock[i].IsAuthenticated)
-                                                 {
-                                                     StatusText += string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n", DateTime.Now, device.Sector.DataBlock[i].DataBlockNumberChipBased, CustomConverter.HexToString(device.Sector.DataBlock[i].Data));
-                                                     childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = device.Sector.DataBlock[i].Data;
-                                                     childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
-
-                                                     childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = device.Sector.DataBlock[i].Data;
-                                                     childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
-
-                                                     CurrentTaskErrorLevel = ERROR.NoError;
-                                                 }
-                                                 else
-                                                 {
-                                                     StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i - 1].DataBlockNumberChipBased);
-                                                 }
-                                             }
-
-                                             CurrentTaskErrorLevel = ERROR.NoError;
-
-                                         }
-
-                                         else
-                                         {
-                                             StatusText += string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
-                                             CurrentTaskErrorLevel = ERROR.AuthenticationError;
-                                             return;
-                                         }
-                                     }
-
-                                     else
-                                     {
-                                         ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
-                                         ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
-
-                                         if (device.ReadMifareClassicWithMAD(appNumberAsInt,
-                                             ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent, fileSizeAsInt,
-                                             madGPB, UseMAD, useMADAuth) == ERROR.NoError)
-                                         {
-                                             ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
-                                             ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
-
-                                             ChildNodeViewModelTemp.Children.Single().RequestRefresh();
-                                             ChildNodeViewModelFromChip.Children.Single().RequestRefresh();
-
-                                             StatusText = StatusText + string.Format("{0}: Successfully Read Data from MAD\n", DateTime.Now);
-
-                                             CurrentTaskErrorLevel = ERROR.NoError;
-                                         }
-
-                                         else
-                                         {
-                                             StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
-
-                                             CurrentTaskErrorLevel = ERROR.AuthenticationError;
-                                             return;
-                                         }
-                                     }
-
-
-                                 }
-
-                                 else
-                                 {
-                                     CurrentTaskErrorLevel = ERROR.NotReadyError;
-                                     return;
-                                 }
-
-                                 OnPropertyChanged(nameof(ChildNodeViewModelTemp));
-
-                                 return;
-                             }
-                         });
-
-            if (CurrentTaskErrorLevel == ERROR.Empty)
+            using (var device = ReaderDevice.Instance)
             {
-                classicTask.ContinueWith((x) =>
+                if (device != null)
                 {
-                    if (CurrentTaskErrorLevel == ERROR.NoError)
+                    await UpdateReaderStatusCommand.ExecuteAsync(true);
+
+                    StatusText += string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                    if (!useMAD)
                     {
-                        IsTaskCompletedSuccessfully = true;
+                        if (await device.ReadMifareClassicSingleSector(
+                            selectedClassicSectorCurrentAsInt,
+                            ClassicKeyAKeyCurrent,
+                            ClassicKeyBKeyCurrent) == ERROR.NoError)
+                        {
+
+                            childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
+                            childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
+
+                            StatusText += string.Format("{0}: Success for Sector: {1}\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
+
+                            for (var i = 0; i < device.Sector.DataBlock.Count; i++)
+                            {
+                                childNodeViewModelFromChip.Children[i].DataBlockNumber = i;
+                                childNodeViewModelTemp.Children[i].DataBlockNumber = i;
+
+                                childNodeViewModelFromChip.Children[i].MifareClassicDataBlock.DataBlockNumberChipBased = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == i).DataBlockNumberChipBased;
+
+                                if (device.Sector.DataBlock[i].IsAuthenticated)
+                                {
+                                    StatusText += string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n", DateTime.Now, device.Sector.DataBlock[i].DataBlockNumberChipBased, CustomConverter.HexToString(device.Sector.DataBlock[i].Data));
+                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = device.Sector.DataBlock[i].Data;
+                                    childNodeViewModelFromChip.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
+
+                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).MifareClassicDataBlock.Data = device.Sector.DataBlock[i].Data;
+                                    childNodeViewModelTemp.Children.First(x => x.DataBlockNumber == i).RequestRefresh();
+
+                                    CurrentTaskErrorLevel = ERROR.NoError;
+                                }
+                                else
+                                {
+                                    StatusText += string.Format("{0}: \tBut: unable to authenticate to sector: {1}, DataBlock: {2} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt, device.Sector.DataBlock[i - 1].DataBlockNumberChipBased);
+                                }
+                            }
+
+                            CurrentTaskErrorLevel = ERROR.NoError;
+
+                        }
+
+                        else
+                        {
+                            StatusText += string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
+                            CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+                            return;
+                        }
                     }
+
                     else
                     {
-                        IsTaskCompletedSuccessfully = false;
-                    }
-                });
+                        ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
+                        ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
 
-                classicTask.RunSynchronously();
+                        if (await device.ReadMifareClassicWithMAD(appNumberAsInt,
+                            ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent, ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent, fileSizeAsInt,
+                            madGPB, UseMAD, useMADAuth) == ERROR.NoError)
+                        {
+                            ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
+                            ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.Data = device.MifareClassicData;
+
+                            ChildNodeViewModelTemp.Children.Single().RequestRefresh();
+                            ChildNodeViewModelFromChip.Children.Single().RequestRefresh();
+
+                            StatusText = StatusText + string.Format("{0}: Successfully Read Data from MAD\n", DateTime.Now);
+
+                            CurrentTaskErrorLevel = ERROR.NoError;
+                        }
+
+                        else
+                        {
+                            StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
+
+                            CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+                            return;
+                        }
+                    }
+
+
+                }
+
+                else
+                {
+                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    await UpdateReaderStatusCommand.ExecuteAsync(false);
+                    return;
+                }
+
+                OnPropertyChanged(nameof(ChildNodeViewModelTemp));
             }
+
+            if (CurrentTaskErrorLevel == ERROR.NoError)
+            {
+                IsTaskCompletedSuccessfully = true;
+            }
+            else
+            {
+                IsTaskCompletedSuccessfully = false;
+            }
+
+            await UpdateReaderStatusCommand.ExecuteAsync(false);
         }
 
 
         /// <summary>
         /// 
         /// </summary>
-        public ICommand WriteDataCommand => new RelayCommand(OnNewWriteDataCommand);
-        private protected void OnNewWriteDataCommand()
+        public IAsyncRelayCommand WriteDataCommand => new AsyncRelayCommand(OnNewWriteDataCommand);
+        private protected async Task OnNewWriteDataCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            var classicTask =
-                new Task(() =>
-                         {
-                             using (var device = ReaderDevice.Instance)
-                             {
-                                 StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
-
-                                 if (!UseMAD)
-                                 {
-                                     if (device != null)
-                                     {
-                                         childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
-                                         childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
-
-                                         device.ReadChipPublic();
-
-                                         if (device.WriteMifareClassicSingleBlock(CustomConverter.GetChipBasedDataBlockNumber(selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite),
-                                                                                  ClassicKeyAKeyCurrent,
-                                                                                  ClassicKeyBKeyCurrent,
-                                                                                  childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data) == ERROR.NoError)
-                                         {
-                                             StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
-                                                                                     DateTime.Now,
-                                                                                     childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
-                                                                                     CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data));
-                                             CurrentTaskErrorLevel = ERROR.NoError;
-                                         }
-                                         else
-                                         {
-                                             StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
-                                             CurrentTaskErrorLevel = ERROR.AuthenticationError;
-                                         }
-                                     }
-                                     else
-                                     {
-                                         StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
-                                         CurrentTaskErrorLevel = ERROR.NotReadyError;
-                                     }
-                                 }
-
-                                 else
-                                 {
-                                     ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
-                                     ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
-
-                                     if (device.WriteMifareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
-                                                                          ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent,
-                                                                          ClassicKeyAKeyTarget, ClassicKeyBKeyTarget,
-                                                                          ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent,
-                                                                          ClassicMADKeyAKeyTarget, ClassicMADKeyBKeyTarget,
-                                                                          ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data,
-                                                                          madGPB, ChildNodeViewModelTemp.SectorModel.SAB, UseMadAuth, UseMAD) == ERROR.NoError)
-                                     {
-                                         StatusText = StatusText + string.Format("{0}: Wrote {1} bytes to MAD ID {2}\n", DateTime.Now,
-                                             ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data.Length,
-                                             ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.MADApp);
-
-                                         CurrentTaskErrorLevel = ERROR.NoError;
-                                     }
-
-                                     else
-                                     {
-                                         StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
-                                         CurrentTaskErrorLevel = ERROR.AuthenticationError;
-                                         return;
-                                     }
-                                 }
-                             }
-                         });
-
-            if (CurrentTaskErrorLevel == ERROR.Empty)
+            using (var device = ReaderDevice.Instance)
             {
-                classicTask.ContinueWith((x) =>
+                StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                if (!UseMAD)
                 {
-                    if (CurrentTaskErrorLevel == ERROR.NoError)
+                    if (device != null)
                     {
-                        IsTaskCompletedSuccessfully = true;
+                        await UpdateReaderStatusCommand.ExecuteAsync(true);
+
+                        childNodeViewModelFromChip.SectorNumber = selectedClassicSectorCurrentAsInt;
+                        childNodeViewModelTemp.SectorNumber = selectedClassicSectorCurrentAsInt;
+
+                        await device.ReadChipPublic();
+
+                        if (await device.WriteMifareClassicSingleBlock(CustomConverter.GetChipBasedDataBlockNumber(selectedClassicSectorCurrentAsInt, (byte)SelectedDataBlockToReadWrite),
+                                                                ClassicKeyAKeyCurrent,
+                                                                ClassicKeyBKeyCurrent,
+                                                                childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data) == ERROR.NoError)
+                        {
+                            StatusText = StatusText + string.Format("{0}: \tSuccess for Blocknumber: {1} Data: {2}\n",
+                                                                    DateTime.Now,
+                                                                    childNodeViewModelFromChip.Children[(int)SelectedDataBlockToReadWrite].DataBlockNumber,
+                                                                    CustomConverter.HexToString(childNodeViewModelTemp.Children[(int)SelectedDataBlockToReadWrite].MifareClassicDataBlock.Data));
+                            CurrentTaskErrorLevel = ERROR.NoError;
+                        }
+                        else
+                        {
+                            StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
+                            CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                        }
                     }
                     else
                     {
-                        IsTaskCompletedSuccessfully = false;
+                        StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
+                        CurrentTaskErrorLevel = ERROR.NotReadyError;
                     }
-                });
+                }
 
-                classicTask.RunSynchronously();
+                else
+                {
+                    ChildNodeViewModelFromChip.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
+                    ChildNodeViewModelTemp.Children.FirstOrDefault().MifareClassicMAD.MADApp = appNumberAsInt;
+
+                    if (await device.WriteMifareClassicWithMAD(appNumberAsInt, selectedMADSectorAsInt,
+                                                        ClassicKeyAKeyCurrent, ClassicKeyBKeyCurrent,
+                                                        ClassicKeyAKeyTarget, ClassicKeyBKeyTarget,
+                                                        ClassicMADKeyAKeyCurrent, ClassicMADKeyBKeyCurrent,
+                                                        ClassicMADKeyAKeyTarget, ClassicMADKeyBKeyTarget,
+                                                        ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data,
+                                                        madGPB, ChildNodeViewModelTemp.SectorModel.SAB, UseMadAuth, UseMAD) == ERROR.NoError)
+                    {
+                        StatusText = StatusText + string.Format("{0}: Wrote {1} bytes to MAD ID {2}\n", DateTime.Now,
+                            ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.Data.Length,
+                            ChildNodeViewModelTemp.Children.Single(x => x.MifareClassicMAD.MADApp == appNumberAsInt).MifareClassicMAD.MADApp);
+
+                        CurrentTaskErrorLevel = ERROR.NoError;
+                    }
+
+                    else
+                    {
+                        StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
+                        CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                        await UpdateReaderStatusCommand.ExecuteAsync(false);
+                        return;
+                    }
+                }
             }
 
-            return;
+            if (CurrentTaskErrorLevel == ERROR.NoError)
+            {
+                IsTaskCompletedSuccessfully = true;
+            }
+            else
+            {
+                IsTaskCompletedSuccessfully = false;
+            }
+            await UpdateReaderStatusCommand.ExecuteAsync(false);
         }
 
         /// <summary>
         /// 
         /// </summary>
-        public ICommand GetDataFromFileCommand => new RelayCommand(OnNewGetDataFromFileCommand);
-        private void OnNewGetDataFromFileCommand()
+        public IAsyncRelayCommand GetDataFromFileCommand => new AsyncRelayCommand(OnNewGetDataFromFileCommand);
+        private async Task OnNewGetDataFromFileCommand()
         {
             var dlg = new OpenFileDialogViewModel
             {
@@ -1974,7 +1952,7 @@ namespace RFiDGear.ViewModel
                 }
                 catch (Exception e)
                 {
-                    LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""), FacilityName);
+                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                 }
             }
         }
@@ -1985,6 +1963,19 @@ namespace RFiDGear.ViewModel
 
         [XmlIgnore]
         public bool IsModal { get; private set; }
+
+        public IAsyncRelayCommand UpdateReaderStatusCommand => new AsyncRelayCommand<bool>(UpdateStatus);
+        private async Task UpdateStatus(bool isBusy)
+        {
+            if (OnUpdateStatus != null)
+            {
+                OnUpdateStatus(isBusy);
+            }
+            else
+            {
+                return;
+            }
+        }
 
         public virtual void RequestClose()
         {
@@ -2001,7 +1992,6 @@ namespace RFiDGear.ViewModel
         public event EventHandler DialogClosing;
 
         public ICommand OKCommand => new RelayCommand(Ok);
-
         protected virtual void Ok()
         {
             if (OnOk != null)
@@ -2015,7 +2005,6 @@ namespace RFiDGear.ViewModel
         }
 
         public ICommand CancelCommand => new RelayCommand(Cancel);
-
         protected virtual void Cancel()
         {
             if (OnCancel != null)
@@ -2029,7 +2018,6 @@ namespace RFiDGear.ViewModel
         }
 
         public ICommand AuthCommand => new RelayCommand(Auth);
-
         protected virtual void Auth()
         {
             if (OnAuth != null)
@@ -2041,6 +2029,9 @@ namespace RFiDGear.ViewModel
                 Close();
             }
         }
+
+        [XmlIgnore]
+        public Action<bool> OnUpdateStatus { get; set; }
 
         [XmlIgnore]
         public Action<MifareClassicSetupViewModel> OnOk { get; set; }
