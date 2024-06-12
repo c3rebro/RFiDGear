@@ -79,7 +79,7 @@ namespace RFiDGear
                     }
                 }
             }
-            //Missing Visual implementation in "Run" Method of Textblock
+            //Missing Visual implementation in "InitOnFirstRun" Method of Textblock
             catch
             {
             }

@@ -1639,4 +1639,7 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="messageBoxNoReaderFoundMessage" xml:space="preserve">
     <value>No Reader Found</value>
   </data>
+  <data name="labelContentDesfireDataExplorerWriteKeyNo" xml:space="preserve">
+    <value>Write Key No.</value>
+  </data>
 </root>

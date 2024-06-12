@@ -19,7 +19,8 @@ namespace RFiDGear.DataAccessLayer
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
         private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         private const string reportTemplateTempFileName = "temptemplate.pdf";
-        private readonly string appDataPath;
+        private readonly string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear");
+        private readonly string tempReportTemplateFileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear", reportTemplateTempFileName);
         public string ReportOutputPath { get; set; }
         public string ReportTemplateFile { get; set; }
 
@@ -32,18 +33,14 @@ namespace RFiDGear.DataAccessLayer
                 // Set license key to use GemBox.Pdf in Free mode.
                 ComponentInfo.SetLicense("FREE-LIMITED-KEY");
 
-                appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-
-                appDataPath = System.IO.Path.Combine(appDataPath, "RFiDGear");
-
                 if (!Directory.Exists(appDataPath))
                 {
                     Directory.CreateDirectory(appDataPath);
                 }
 
-                if (File.Exists(System.IO.Path.Combine(appDataPath, reportTemplateTempFileName)))
+                if (File.Exists(tempReportTemplateFileName))
                 {
-                    File.Delete(System.IO.Path.Combine(appDataPath, reportTemplateTempFileName));
+                    File.Delete(tempReportTemplateFileName);
                 }
             }
             catch (Exception e)
@@ -97,12 +94,15 @@ namespace RFiDGear.DataAccessLayer
                 {
                     await Task.Run(() =>
                     {
-                        using (var pdfDoc = PdfDocument.Load(ReportTemplateFile))
+                        if (!File.Exists(tempReportTemplateFileName))
+                        {
+                            File.Copy(ReportTemplateFile, tempReportTemplateFileName, true);
+                        }
+
+                        using (var pdfDoc = PdfDocument.Load(tempReportTemplateFileName))
                         {
                             try
                             {
-                                ReportTemplateFile = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
-
                                 var form = pdfDoc.Form;
                                 pdfDoc.Info.Title = "RFiDGear Report";
                                 pdfDoc.Info.Author = "RFiDGear";
@@ -117,14 +117,14 @@ namespace RFiDGear.DataAccessLayer
                                 pdfDoc.Save(ReportOutputPath);
                                 pdfDoc.Close();
 
-                                File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
+                                File.Copy(ReportOutputPath, tempReportTemplateFileName, true);
                             }
                             catch (Exception e)
                             {
                                 eventLog.WriteEntry(string.Format(e.Message + "; SetReportField: " + _field), EventLogEntryType.Error);
                             }
                         }
-                    }).ConfigureAwait(true);
+                    });
 
                     return;
                 }

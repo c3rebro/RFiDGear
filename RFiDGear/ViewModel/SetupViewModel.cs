@@ -70,10 +70,8 @@ namespace RFiDGear.ViewModel
         {
             await UpdateReaderStatusCommand.ExecuteAsync(true);
 
-            //OnConnect?.Invoke(this);
             switch (SelectedReader)
             {
-                /*
                 case ReaderTypes.PCSC:
                     if (device != null)
                     {
@@ -83,14 +81,15 @@ namespace RFiDGear.ViewModel
                             
                             device = new LibLogicalAccessProvider(SelectedReader);
                         }
-                        device.ReadChipPublic();
                     }
                     else
                     {
                         device = new LibLogicalAccessProvider(SelectedReader);
                     }
+
+                    await device.ReadChipPublic();
                     break;
-                */
+
                 case ReaderTypes.Elatec:
                     if (device != null)
                     {
@@ -105,13 +104,13 @@ namespace RFiDGear.ViewModel
                         {
                             await device.ConnectAsync();
                         }
-
-                        var t = await device.ReadChipPublic();
                     }
                     else
                     {
                         device = new ElatecNetProvider();
                     }
+
+                    await device.ReadChipPublic();
                     break;
 
                 case ReaderTypes.None:
@@ -119,7 +118,7 @@ namespace RFiDGear.ViewModel
                     break;
             }
 
-            if (device?.GenericChip?.Count > 0)
+            if (device?.GenericChip?.UID != null)
             {
                 DefaultReader = Enum.GetName(typeof(ReaderTypes), SelectedReader);
 
@@ -128,8 +127,8 @@ namespace RFiDGear.ViewModel
                                              + "UID: {0} "
                                              + '\n'
                                              + "Type: {1}",
-                                             device.GenericChip[0].UID, 
-                                             ResourceLoader.GetResource(string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), device.GenericChip[0].CardType))));
+                                             device.GenericChip.UID, 
+                                             ResourceLoader.GetResource(string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), device.GenericChip.CardType))));
 
             }
             else

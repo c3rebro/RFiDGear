@@ -958,7 +958,6 @@ namespace RFiDGear.ViewModel
 
                         foreach (var checkpoint in Checkpoints)
                         {
-
                             var hasVariable = false;
                             var concatenate = false;
 
@@ -1438,7 +1437,7 @@ namespace RFiDGear.ViewModel
                                         {
                                             foreach (var kvArg in Args)
                                             {
-                                                if (Args[comparetemp[0]] != comparetemp[1])
+                                                if (Args.ContainsKey(comparetemp[0]) && Args[comparetemp[0]] != comparetemp[1])
                                                 {
                                                     return ERROR.NoError;
                                                 }
@@ -1496,7 +1495,7 @@ namespace RFiDGear.ViewModel
                                         {
                                             foreach (var kvArg in Args)
                                             {
-                                                if (Args[comparetemp[0]] == comparetemp[1])
+                                                if (Args.ContainsKey(comparetemp[0]) && Args[comparetemp[0]] == comparetemp[1])
                                                 {
                                                     return ERROR.NoError;
                                                 }
@@ -1585,7 +1584,7 @@ namespace RFiDGear.ViewModel
                 var p = new Process();
                 ProcessStartInfo info;
 
-                //Run Program from RFiDGear Argument 
+                //InitOnFirstRun Program from RFiDGear Argument 
                 if (ProgramToExecute.Contains("$"))
                 {
                     info = new ProcessStartInfo()

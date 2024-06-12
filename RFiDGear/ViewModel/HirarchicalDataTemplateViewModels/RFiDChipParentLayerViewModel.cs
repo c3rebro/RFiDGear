@@ -524,7 +524,7 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        private void MifareUltralightQuickCheck()
+        private async void MifareUltralightQuickCheck()
         {
             if (!isTask)
             {
@@ -535,7 +535,7 @@ namespace RFiDGear.ViewModel
                     foreach (var cnVM in Children)
                     {
 
-                        if (device.ReadMifareUltralightSinglePage(cnVM.PageNumber) == ERROR.NoError)
+                        if (await device.ReadMifareUltralightSinglePage(cnVM.PageNumber) == ERROR.NoError)
                         {
                             //var dataToShow = ByteArrayConverter.GetStringFrom(device.MifareUltralightPageData);
                             /*

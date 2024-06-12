@@ -35,12 +35,15 @@ namespace RFiDGear.Model
 
         public MifareDesfireChipModel()
         {
+            AppList = new List<MifareDesfireAppModel>();
         }
 
         public MifareDesfireChipModel(string uid, CARD_TYPE cardType)
         {
             UID = uid;
             CardType = cardType;
+
+            AppList = new List<MifareDesfireAppModel>();
         }
 
         public MifareDesfireChipModel(string uid, CARD_TYPE cardType, string sak, string rats)
@@ -49,6 +52,8 @@ namespace RFiDGear.Model
             CardType = cardType;
             SAK = sak;
             RATS = rats;
+
+            AppList = new List<MifareDesfireAppModel>();
         }
 
         public MifareDesfireChipModel(string uid, CARD_TYPE cardType, string sak, string rats, string versionL4)
@@ -58,6 +63,8 @@ namespace RFiDGear.Model
             SAK = sak;
             RATS = rats;
             VersionL4 = versionL4;
+
+            AppList = new List<MifareDesfireAppModel>();
         }
 
         public MifareDesfireChipModel(MifareDesfireChipModel genericChip)
@@ -68,6 +75,8 @@ namespace RFiDGear.Model
             RATS = genericChip.RATS;
             VersionL4 = genericChip.VersionL4;
             Childs = genericChip.Childs;
+
+            AppList = new List<MifareDesfireAppModel>();
         }
 
         public string SAK { get; set; }

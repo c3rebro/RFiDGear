@@ -186,6 +186,9 @@
             <Component Id="BouncyCastleCryptoDll" Guid="40A4382E-00AA-479A-773F-0B45401700BB" DiskId="1">
               <File Id="BouncyCastle.Crypto.dll" Name="BouncyCastle.Crypto.dll" Source="..\RFiDGear\bin\Release\BouncyCastle.Crypto.dll" KeyPath="yes" />
             </Component>
+            <Component Id="BouncyCastleCryptographyDll" Guid="40A4382E-00AA-479A-AA64-0B45401700BB" DiskId="1">
+              <File Id="BouncyCastle.Cryptography.dll" Name="BouncyCastle.Cryptography.dll" Source="..\RFiDGear\bin\Release\BouncyCastle.Cryptography.dll" KeyPath="yes" />
+            </Component>
             <Component Id="ByteArrayDll" Guid="0907B24F-F549-41D5-8222-645C550BB7E7" DiskId="1">
               <File Id="ByteArray.dll" Name="ByteArray.dll" Source="..\RFiDGear\bin\Release\ByteArray.dll" KeyPath="yes" />
             </Component>
@@ -195,15 +198,27 @@
             <Component Id="ElatecNetDll" Guid="40A4332E-04AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="Elatec.NET.dll" Name="Elatec.NET.dll" Source="..\RFiDGear\bin\Release\Elatec.NET.dll" KeyPath="yes" />
             </Component>
+            <Component Id="HarfBuzzSharpDll" Guid="40A4332E-04AA-479A-923F-0B454017846F" DiskId="1">
+              <File Id="HarfBuzzSharp.dll" Name="HarfBuzzSharp.dll" Source="..\RFiDGear\bin\Release\HarfBuzzSharp.dll" KeyPath="yes" />
+            </Component>
             <Component Id="GemBoxPDFDll" Guid="455F2A03-2C6B-444E-8017-1DBE01B19B24" DiskId="1">
               <File Id="GemBox.Pdf.dll" Name="GemBox.Pdf.dll" Source="..\RFiDGear\bin\Release\GemBox.Pdf.dll" KeyPath="yes" />
             </Component>
             <Component Id="IonicZipDll" Guid="DC246BF8-25A3-42BF-A2A5-CEE429219381" DiskId="1">
               <File Id="Ionic.Zip.dll" Name="Ionic.Zip.dll" Source="..\RFiDGear\bin\Release\Ionic.Zip.dll" KeyPath="yes" />
             </Component>
+            <Component Id="libHarfBuzzSharpDll" Guid="DC249AF8-25A3-42BF-11AC-CEE429219381" DiskId="1">
+              <File Id="libHarfBuzzSharp.dll" Name="libHarfBuzzSharp.dll" Source="..\RFiDGear\bin\Release\libHarfBuzzSharp.dll" KeyPath="yes" />
+            </Component>
+            <Component Id="LibLogicalAccessNetNative" Guid="DC246BF8-4343-42BF-A2A5-CEE429ABFE81" DiskId="1">
+              <File Id="LibLogicalAccessNet.native" Name="LibLogicalAccessNet.native" Source="..\RFiDGear\bin\Release\LibLogicalAccessNet.native" KeyPath="yes" />
+            </Component>
             <Component Id="LibLogicalAccessNetCEDll" Guid="40ABB91D-06AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="LibLogicalAccessNetCE.dll" Name="LibLogicalAccessNetCE.dll" Source="..\RFiDGear\bin\Release\LibLogicalAccessNetCE.dll" KeyPath="yes" />
-            </Component>   
+            </Component>
+            <Component Id="libSkiaSharpDll" Guid="43FBB91D-06AA-479A-923F-33DD401700BB" DiskId="1">
+              <File Id="libSkiaSharp.dll" Name="libSkiaSharp.dll" Source="..\RFiDGear\bin\Release\libSkiaSharp.dll" KeyPath="yes" />
+            </Component>
             <Component Id="MicrosoftBclAsyncInterfacesDll" Guid="1186711D-06AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="Microsoft.Bcl.AsyncInterfaces.dll" Name="Microsoft.Bcl.AsyncInterfaces.dll" Source="..\RFiDGear\bin\Release\Microsoft.Bcl.AsyncInterfaces.dll" KeyPath="yes" />
             </Component>
@@ -240,12 +255,19 @@
             <Component Id="SystemBuffersDll" Guid="40A4FCFC-06AA-479A-923F-1FBA401700BB" DiskId="1">
               <File Id="System.Buffers.dll" Name="System.Buffers.dll" Source="..\RFiDGear\bin\Release\System.Buffers.dll" KeyPath="yes" />
             </Component>
+            <Component Id="SkiaSharpDll" Guid="40A42300-06AA-479A-923F-1FBA401700BB" DiskId="1">
+              <File Id="SkiaSharp.dll" Name="SkiaSharp.dll" Source="..\RFiDGear\bin\Release\SkiaSharp.dll" KeyPath="yes" />
+            </Component>
             <Component Id="SystemComponentModelAnnotationsDll" Guid="551D382E-00AA-479A-923F-0B45401700BB" DiskId="1">
               <File Id="System.ComponentModel.Annotations.dll" Name="System.ComponentModel.Annotations.dll" Source="..\RFiDGear\bin\Release\System.ComponentModel.Annotations.dll" KeyPath="yes" />
             </Component>
             <Component Id="SystemDiagnosticsDiagnosticSourceDll" Guid="40A4FCFC-06AA-479A-923F-0B451C8700BB" DiskId="1">
               <File Id="System.Diagnostics.DiagnosticSource.dll" Name="System.Diagnostics.DiagnosticSource.dll" Source="..\RFiDGear\bin\Release\System.Diagnostics.DiagnosticSource.dll" KeyPath="yes" />
               <util:EventSource Log="Application" Name="RFiDGear" EventMessageFile="%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\EventLogMessages.dll"/>
+              <util:EventSource Log="Application" Name="CardCheckAssistant" EventMessageFile="%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\EventLogMessages.dll"/>
+            </Component>
+            <Component Id="SystemDrawingCommonDll" Guid="40A432DC-06AA-479A-BD3F-0B451C8700BB" DiskId="1">
+              <File Id="System.Drawing.Common.dll" Name="System.Drawing.Common.dll" Source="..\RFiDGear\bin\Release\System.Drawing.Common.dll" KeyPath="yes" />
             </Component>
             <Component Id="SystemMemoryDll" Guid="40A4FCFC-06AA-479A-923F-0B49911700BB" DiskId="1">
               <File Id="System.Memory.dll" Name="System.Memory.dll" Source="..\RFiDGear\bin\Release\System.Memory.dll" KeyPath="yes" />
@@ -357,12 +379,17 @@
 			<Feature Id="MainProgram" Title="!(loc.FeatureMainProgramTitle)" Description="!(loc.FeatureMainProgramDescription)" Level="1">
 
         <ComponentRef Id="BouncyCastleCryptoDll"/>
+        <ComponentRef Id="BouncyCastleCryptographyDll"/>
         <ComponentRef Id="ByteArrayDll"/>
 				<ComponentRef Id="CommunityToolkitMvvmDll" />
         <ComponentRef Id="GemBoxPDFDll" />
         <ComponentRef Id="ElatecNetDll"/>
+        <ComponentRef Id="HarfBuzzSharpDll"/>
 				<ComponentRef Id="IonicZipDll" />
-        <ComponentRef Id="LibLogicalAccessNetCEDll" />
+        <ComponentRef Id="libHarfBuzzSharpDll"/>
+        <ComponentRef Id="LibLogicalAccessNetCEDll" /> 
+        <ComponentRef Id="LibLogicalAccessNetNative" />
+        <ComponentRef Id="libSkiaSharpDll"/>
         <ComponentRef Id="MicrosoftBclAsyncInterfacesDll" />
         <ComponentRef Id="MicrosoftExtensionsDependencyInjectionAbstractionsDll" />
         <ComponentRef Id="MicrosoftExtensionsDependencyInjectionDll" />
@@ -374,9 +401,11 @@
         <ComponentRef Id="NewtonsoftJsonDll" />
         <ComponentRef Id="Pkcs11InteropDll" />
         <ComponentRef Id="PluginSystemDll" />
+        <ComponentRef Id="SkiaSharpDll"/>
         <ComponentRef Id="SystemBuffersDll" />
         <ComponentRef Id="SystemComponentModelAnnotationsDll" />
         <ComponentRef Id="SystemDiagnosticsDiagnosticSourceDll" />
+        <ComponentRef Id="SystemDrawingCommonDll"/>
         <ComponentRef Id="SystemMemoryDll" />
         <ComponentRef Id="SystemNumericsVectorsDll" />
         <ComponentRef Id="SystemRuntimeCompilerServicesUnsafeDll" />

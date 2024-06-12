@@ -24,22 +24,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         private bool _disposed;
 
-        public override string ReaderUnitName
-        {
-            get; set;
-        }
-        public override string ReaderUnitVersion
-        {
-            get; set;
-        }
-
         #region Constructor
 
         private async Task Initialize()
         {
             if (GenericChip == null)
             {
-                GenericChip = new List<GenericChipModel>();
+                GenericChip = new GenericChipModel();
             }
 
             try
@@ -73,7 +64,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         {
             if (GenericChip == null)
             {
-                GenericChip = new List<GenericChipModel>();
+                GenericChip = new GenericChipModel();
             }
         }
 
@@ -143,40 +134,53 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                     await readerDevice.SetTagTypesAsync(LFTagTypes.NOTAG, HFTagTypes.AllHFTags);
 
-                    if (!string.IsNullOrWhiteSpace(hfTag?.UID) && GenericChip.Any(x => x.UID == hfTag.UID))
+                    if (!string.IsNullOrWhiteSpace(hfTag?.UID) && GenericChip.UID == hfTag.UID)
                     {
                         return ERROR.NoError;
                     }
 
-                    if (!string.IsNullOrWhiteSpace(hfTag?.UID) && !GenericChip.Any(x => x.UID == hfTag.UID))
+                    if (!string.IsNullOrWhiteSpace(hfTag?.UID) && !(GenericChip.UID == hfTag.UID))
                     {
-                        GenericChip = new List<GenericChipModel>();
-
                         if (!string.IsNullOrWhiteSpace(hfTag?.UID))
                         {
-                            GenericChip.Add(hfTag);
-
-                            if (GenericChip[0].Childs == null)
-                            {
-                                GenericChip[0].Childs = new List<GenericChipModel>();
-                            }
+                            GenericChip = hfTag;
                         }
                     }
 
-                    if (!string.IsNullOrEmpty(lfTag?.UID))
+                    if (hfTag != null && !string.IsNullOrEmpty(lfTag?.UID))
                     {
-                        GenericChip[0].Childs.Add(lfTag);
+                        if (GenericChip.Childs == null)
+                        {
+                            GenericChip.Childs = new List<GenericChipModel>();
+                        }
+
+                        GenericChip.Childs.Add(lfTag);
                     }
 
-                    if (!string.IsNullOrEmpty(legicTag?.UID))
+                    else if (!string.IsNullOrEmpty(lfTag?.UID))
                     {
-                        GenericChip[0].Childs.Add(legicTag);
+                        GenericChip = lfTag;
+                    }
+
+                    if (hfTag != null && !string.IsNullOrEmpty(legicTag?.UID))
+                    {
+                        if (GenericChip.Childs == null)
+                        {
+                            GenericChip.Childs = new List<GenericChipModel>();
+                        }
+
+                        GenericChip.Childs.Add(legicTag);
+                    }
+
+                    else if (!string.IsNullOrEmpty(legicTag?.UID))
+                    {
+                        GenericChip = legicTag;
                     }
                 }
 
                 if (hfTag == null && lfTag == null && legicTag == null)
                 {
-                    GenericChip = new List<GenericChipModel>();
+                    GenericChip = new GenericChipModel();
                 }
 
                 return ERROR.NoError;
@@ -400,7 +404,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         #endregion
 
         #region MifareUltralight
-        public override ERROR ReadMifareUltralightSinglePage(int _pageNo)
+        public override Task<ERROR> ReadMifareUltralightSinglePage(int _pageNo)
         {
             throw new NotImplementedException();
         }

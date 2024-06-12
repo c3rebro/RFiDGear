@@ -88,8 +88,12 @@ namespace RedCell.Diagnostics.Update
 
                 _localConfig = new Manifest(data);
 #if DEBUG
-                _localConfig.Version = 0;
+                //_localConfig.Version = 0;
 #endif
+                if (_localConfig != null)
+                {
+                    Check(null, null);
+                }
                 var rootDirectory = new DirectoryInfo(Path.GetDirectoryName(me));
                 var rootFiles = rootDirectory.GetFiles("*.*", SearchOption.TopDirectoryOnly);
             }
@@ -151,11 +155,50 @@ namespace RedCell.Diagnostics.Update
         /// <summary>
         /// Checks the specified state.
         /// </summary>
-        /// <param name="state">The state.</param>
+        /// <param name="state"></param>
+        /// <param name="args">true = download Changelog only</param>
         public async void Check(object state, EventArgs args)
         {
             try
             {
+                var remoteUri = new Uri(_localConfig.RemoteConfigUri);
+
+                eventLog.WriteEntry(string.Format("Fetching '{0}'.", _localConfig.RemoteConfigUri), EventLogEntryType.Information);
+                var http = new Fetch { Retries = 5, RetrySleep = 30000, Timeout = 30000 };
+                try
+                {
+                    http.Load(remoteUri.AbsoluteUri);
+
+                    if (!http.Success)
+                    {
+
+                        try
+                        {
+                            eventLog.WriteEntry(string.Format("Fetch error: {0}", http.Response != null ? http.Response.StatusDescription : ""), EventLogEntryType.Error);
+                        }
+
+                        catch
+                        {
+                            eventLog.WriteEntry(string.Format("Fetch error: Unknown http Err"), EventLogEntryType.Information);
+                        }
+
+                        _remoteConfig = null;
+                        return;
+                    }
+                }
+
+                catch (Exception e)
+                {
+                    _remoteConfig = null;
+                    UpdateAvailable = false;
+                    return;
+                }
+
+                var data = Encoding.UTF8.GetString(http.ResponseData);
+                _remoteConfig = new Manifest(data);
+
+                UpdateInfoText = _remoteConfig.VersionInfoText;
+
                 if (AllowUpdate && !_updating)
                 {
                     _timer.Interval = new TimeSpan(0, 0, 0, _localConfig.CheckInterval, 0);
@@ -176,42 +219,6 @@ namespace RedCell.Diagnostics.Update
                     return;
                 }
 
-                var remoteUri = new Uri(_localConfig.RemoteConfigUri);
-
-                eventLog.WriteEntry(string.Format("Fetching '{0}'.", _localConfig.RemoteConfigUri), EventLogEntryType.Information);
-                var http = new Fetch { Retries = 5, RetrySleep = 30000, Timeout = 30000 };
-                try
-                {
-                    http.Load(remoteUri.AbsoluteUri);
-
-                    if (!http.Success)
-                    {
-                        
-                        try
-                        {
-                            eventLog.WriteEntry(string.Format("Fetch error: {0}", http.Response != null ? http.Response.StatusDescription : ""), EventLogEntryType.Error);
-                        }
-
-                        catch
-                        {
-                            eventLog.WriteEntry(string.Format("Fetch error: Unknown http Err"), EventLogEntryType.Information);
-                        }
-                        
-                        _remoteConfig = null;
-                        return;
-                    }
-                }
-
-                catch (Exception e)
-                {
-                    _remoteConfig = null;
-                    UpdateAvailable = false;
-                    return;
-                }
-
-                var data = Encoding.UTF8.GetString(http.ResponseData);
-                _remoteConfig = new Manifest(data);
-
                 if (_remoteConfig == null)
                 {
                     UpdateAvailable = false;
@@ -223,6 +230,7 @@ namespace RedCell.Diagnostics.Update
                     UpdateAvailable = false;
                     return;
                 }
+
                 eventLog.WriteEntry(string.Format("Remote config is valid."), EventLogEntryType.Information);
                 eventLog.WriteEntry(string.Format("Local version is ", _localConfig.Version), EventLogEntryType.Information);
                 eventLog.WriteEntry(string.Format("Remote version is ", _remoteConfig.Version), EventLogEntryType.Information);
@@ -233,6 +241,7 @@ namespace RedCell.Diagnostics.Update
                     UpdateAvailable = false;
                     return;
                 }
+
                 if (_remoteConfig.Version < _localConfig.Version)
                 {
                     eventLog.WriteEntry(string.Format("Remote version is older. That's weird o_O. Check ending."), EventLogEntryType.Warning);

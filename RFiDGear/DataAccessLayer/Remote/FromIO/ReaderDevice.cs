@@ -15,7 +15,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             {
                 switch (Reader)
                 {
-                    /*
+                    
                     case ReaderTypes.PCSC:
                         lock (syncRoot)
                         {
@@ -34,7 +34,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 return instance;
                             }
                         }
-                    */
+                    
                     case ReaderTypes.Elatec:
                         lock (syncRoot)
                         {
@@ -76,13 +76,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public MifareClassicSectorModel Sector { get; set; }
         public MifareClassicDataBlockModel DataBlock { get; set; }
 
-        public List<GenericChipModel> GenericChip { get; set; }
+        public GenericChipModel GenericChip { get; set; }
         public MifareDesfireChipModel DesfireChip { get; set; }
         public MifareClassicChipModel ClassicChip { get; set; }
 
         public ReaderTypes ReaderProvider { get; set; }
-        public abstract string ReaderUnitName { get; set; }
-        public abstract string ReaderUnitVersion { get; set; }
+        public string ReaderUnitName { get; set; }
+        public string ReaderUnitVersion { get; set; }
         public byte[] MifareClassicData { get; set; }
         public bool DataBlockSuccessfullyAuth { get; set; }
         public bool SectorSuccessfullyAuth { get; set; }
@@ -116,7 +116,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
         #region MifareUltralight
         // Mifare Ultralight Method Definitions
-        public abstract ERROR ReadMifareUltralightSinglePage(int _pageNo);
+        public abstract Task<ERROR> ReadMifareUltralightSinglePage(int _pageNo);
         #endregion
 
         #region MifareDesfire

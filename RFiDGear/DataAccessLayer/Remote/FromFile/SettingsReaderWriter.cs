@@ -24,12 +24,11 @@ namespace RFiDGear
         private readonly int _updateInterval = 900;
         private readonly string _securityToken = "D68EF3A7-E787-4CC4-B020-878BA649B4CD";
         private readonly string _payload = "update.zip";
-        private readonly string _infoText = "Version Info\n\ngoes here! \n==>";
+        private string _infoText = "Version Info\n\ngoes here! \n==>";
         private readonly string _baseUri = @"https://github.com/c3rebro/RFiDGear/releases/latest/download/";
 
 
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
-
         private readonly string appDataPath;
 
         private bool _disposed;

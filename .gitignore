@@ -29,3 +29,4 @@
 *.zip
 *.htm
 RFiDGear/RFiDGear.SDKStyle.csproj
+*.txt

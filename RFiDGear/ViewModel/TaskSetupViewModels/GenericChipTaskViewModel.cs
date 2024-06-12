@@ -326,17 +326,17 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public IAsyncRelayCommand CheckChipType => new AsyncRelayCommand<List<GenericChipModel>>((x) => OnNewCheckChipTypeCommand(x));
+        public IAsyncRelayCommand CheckChipType => new AsyncRelayCommand<GenericChipModel>((x) => OnNewCheckChipTypeCommand(x));
 
         private async Task<ERROR> OnNewCheckChipTypeCommand()
         {
             return await OnNewCheckChipTypeCommand(null);
         }
-        private async Task<ERROR> OnNewCheckChipTypeCommand(List<GenericChipModel> chipList)
+        private async Task<ERROR> OnNewCheckChipTypeCommand(GenericChipModel chipList)
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            List<GenericChipModel> chipListToUse;
+            GenericChipModel chipToUse;
 
             using (var device = ReaderDevice.Instance)
             {
@@ -346,17 +346,17 @@ namespace RFiDGear.ViewModel
 
                     if (chipList != null)
                     {
-                        chipListToUse = chipList;
+                        chipToUse = chipList;
                     }
                     else
                     {
                         await device.ReadChipPublic();
-                        chipListToUse = device.GenericChip;
+                        chipToUse = device.GenericChip;
                     }
                     
                     if (((int)SelectedChipType | 0xF000) == 0xF000) // Do NOT Check for explicit Subtype e.g desfire ev1 >2k, 4k, 8k etc.<
                     {
-                        if (chipListToUse.Where(x => (CARD_TYPE)((int)x.CardType & 0xF000) == (CARD_TYPE)SelectedChipType).Any())
+                        if ((CARD_TYPE)((int)chipToUse.CardType & 0xF000) == (CARD_TYPE)SelectedChipType)
                         {
                             result = ERROR.NoError;
                         }
@@ -368,7 +368,7 @@ namespace RFiDGear.ViewModel
                     }
                     else // Take explicit Type into account
                     {
-                        if (chipListToUse.Where(x => x.CardType == SelectedChipType).Any())
+                        if (chipToUse.CardType == SelectedChipType)
                         {
                             result = ERROR.NoError;
                         }
@@ -401,12 +401,12 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public IAsyncRelayCommand CheckChipIsMultiTecChip => new AsyncRelayCommand<List<GenericChipModel>>((x) => OnNewCheckChipIsMultiTecChipCommand(x));
-        private async Task<ERROR> OnNewCheckChipIsMultiTecChipCommand(List<GenericChipModel> chipList)
+        public IAsyncRelayCommand CheckChipIsMultiTecChip => new AsyncRelayCommand<GenericChipModel>((x) => OnNewCheckChipIsMultiTecChipCommand(x));
+        private async Task<ERROR> OnNewCheckChipIsMultiTecChipCommand(GenericChipModel chip)
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            List<GenericChipModel> chipListToUse;
+            GenericChipModel chipToUse;
 
             using (var device = ReaderDevice.Instance)
             {
@@ -414,18 +414,18 @@ namespace RFiDGear.ViewModel
                 {
                     var result = ERROR.Empty;
 
-                    if (chipList != null)
+                    if (chip != null)
                     {
-                        chipListToUse = chipList.FirstOrDefault().Childs;
+                        chipToUse = chip;
                     }
                     else
                     {
                         result = await device.ReadChipPublic();
-                        chipListToUse = device.GenericChip;
+                        chipToUse = device.GenericChip;
                     }
 
 
-                    if (chipListToUse != null && chipListToUse.Count >= 1)
+                    if (chipToUse != null && chipToUse.HasChilds == true)
                     {
                         result = ERROR.NoError;
                     }
@@ -470,9 +470,7 @@ namespace RFiDGear.ViewModel
 
                     if (result == ERROR.NoError)
                     {
-                        if (device.GenericChip
-                            .Where(x => x.UID.ToLower(CultureInfo.CurrentCulture) == SelectedUIDOfChip.ToLower(CultureInfo.CurrentCulture))
-                            .Any())
+                        if (device.GenericChip.UID.ToLower(CultureInfo.CurrentCulture) == SelectedUIDOfChip.ToLower(CultureInfo.CurrentCulture))
                         {
                             result = ERROR.NoError;
                         }

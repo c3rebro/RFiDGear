@@ -20,6 +20,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Bundle.wxs" />
+    <None Include="Copy of Bundle.wxs" />
   </ItemGroup>
   <ItemGroup>
     <WixExtension Include="WixUtilExtension">

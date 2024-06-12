@@ -75,7 +75,6 @@ namespace RFiDGear.ViewModel
         private int currentTaskIndex = 0;
         // set if task was completed; indicates greenlight to continue execution
         // if programming takes too long; quit the process
-        private bool firstRun = true;
         private bool userIsNotifiedForAvailableUpdate = false;
         private protected Mutex mutex;
 
@@ -378,7 +377,7 @@ namespace RFiDGear.ViewModel
                         IsReaderBusy = true;
                         await device.ReadChipPublic();
 
-                        GenericChip = device.GenericChip[0];
+                        GenericChip = device.GenericChip;
 
                         IsReaderBusy = false; ;
                     }
@@ -968,63 +967,67 @@ namespace RFiDGear.ViewModel
 
             using (var device = ReaderDevice.Instance)
             {
-                foreach (var item in treeViewParentNodes)
+                if(device != null)
                 {
-                    item.IsExpanded = false;
-                    item.IsSelected = false;
-                }
-
-                device?.GenericChip?.Clear();
-                var result = await device?.ReadChipPublic();
-                var wellKnownTvNodes = from nodes in treeViewParentNodes from chips in device.GenericChip where nodes.UID == chips.UID select nodes;
-
-                if (result == ERROR.NoError && !wellKnownTvNodes.Any())
-                {
-                    foreach (var gCM in device.GenericChip)
+                    foreach (var item in treeViewParentNodes)
                     {
-                        switch ((CARD_TYPE)((short)gCM.CardType & 0xF000))
-                        {
-                            case CARD_TYPE.MifareClassic:
-                                treeViewParentNodes.Add(
-                                    new RFiDChipParentLayerViewModel(
-                                        new MifareClassicChipModel(gCM as MifareClassicChipModel), Dialogs, false));
-                                break;
-
-                            case CARD_TYPE.DESFireEV0:
-                            case CARD_TYPE.DESFireEV1:
-                            case CARD_TYPE.DESFireEV2:
-                            case CARD_TYPE.DESFireEV3:
-                                treeViewParentNodes.Add(
-                                    new RFiDChipParentLayerViewModel(
-                                        new MifareDesfireChipModel(gCM as MifareDesfireChipModel), Dialogs, false));
-                                break;
-
-                            case CARD_TYPE.MifarePlus:
-                                treeViewParentNodes.Add(
-                                    new RFiDChipParentLayerViewModel(
-                                        new MifareClassicChipModel(gCM as MifareClassicChipModel), Dialogs, false));
-                                break;
-
-                            case CARD_TYPE.MifareUltralight:
-                                treeViewParentNodes.Add(
-                                    new RFiDChipParentLayerViewModel(
-                                        new MifareUltralightChipModel(gCM), Dialogs, false));
-                                break;
-
-                            default:
-                                treeViewParentNodes.Add(
-                                    new RFiDChipParentLayerViewModel(
-                                        new GenericChipModel(gCM), Dialogs, false));
-                                break;
-                        }
+                        item.IsExpanded = false;
+                        item.IsSelected = false;
                     }
-                    // fill treeview with dummy models and viewmodels
+
+                    device.GenericChip = new GenericChipModel();
+                    var result = await device.ReadChipPublic();
+                    var wellKnownTvNodes = from nodes in treeViewParentNodes where nodes.UID == device.GenericChip.UID select nodes;
+
+                    if (result == ERROR.NoError && !wellKnownTvNodes.Any())
+                    {
+                        switch ((CARD_TYPE)((short)device.GenericChip.CardType & 0xF000))
+                            {
+                                case CARD_TYPE.MifareClassic:
+                                    treeViewParentNodes.Add(
+                                        new RFiDChipParentLayerViewModel(
+                                            new MifareClassicChipModel(device.GenericChip as MifareClassicChipModel), Dialogs, false));
+                                    break;
+
+                                case CARD_TYPE.DESFireEV0:
+                                case CARD_TYPE.DESFireEV1:
+                                case CARD_TYPE.DESFireEV2:
+                                case CARD_TYPE.DESFireEV3:
+                                    treeViewParentNodes.Add(
+                                        new RFiDChipParentLayerViewModel(
+                                            new MifareDesfireChipModel(device.GenericChip as MifareDesfireChipModel), Dialogs, false));
+                                    break;
+
+                                case CARD_TYPE.MifarePlus:
+                                    treeViewParentNodes.Add(
+                                        new RFiDChipParentLayerViewModel(
+                                            new MifareClassicChipModel(device.GenericChip as MifareClassicChipModel), Dialogs, false));
+                                    break;
+
+                                case CARD_TYPE.MifareUltralight:
+                                    treeViewParentNodes.Add(
+                                        new RFiDChipParentLayerViewModel(
+                                            new MifareUltralightChipModel(device.GenericChip), Dialogs, false));
+                                    break;
+
+                                default:
+                                    if(device.GenericChip?.CardType != CARD_TYPE.NOTAG)
+                                    {
+                                        treeViewParentNodes.Add(
+                                            new RFiDChipParentLayerViewModel(
+                                                new GenericChipModel(device.GenericChip), Dialogs, false));
+                                    }
+                                    break;
+                            }
+                        // fill treeview with dummy models and viewmodels
+                    }
+                    else if (wellKnownTvNodes.Any())
+                    {
+                        //wellKnownTvNodes.FirstOrDefault().IsExpanded = true;
+                        wellKnownTvNodes.FirstOrDefault().IsSelected = true;
+                    }
                 }
-                else if (wellKnownTvNodes.Any())
-                {
-                    //wellKnownTvNodes.FirstOrDefault().IsExpanded = true;
-                    wellKnownTvNodes.FirstOrDefault().IsSelected = true;
-                }
+
             }
 
             Mouse.OverrideCursor = null;
@@ -1164,7 +1167,7 @@ namespace RFiDGear.ViewModel
             OnPropertyChanged(nameof(TreeViewParentNodes));
             OnPropertyChanged(nameof(ChipTasks));
 
-            var GenericChip = new GenericChipModel("", CARD_TYPE.NOTAG);
+            var GenericChip = ReaderDevice.Instance.GenericChip; //new GenericChipModel("", CARD_TYPE.NOTAG);
 
             currentTaskIndex = 0;
             var taskDictionary = new Dictionary<string, int>();
@@ -1194,16 +1197,23 @@ namespace RFiDGear.ViewModel
                     //reader was ready - proceed
                     if (device != null)
                     {
-                        await device.ReadChipPublic();
+                        
 
-                        if (device.GenericChip != null && device.GenericChip.Count > 0)
+                        if (device.GenericChip != null && !string.IsNullOrEmpty(device.GenericChip.UID))
                         {
-                            GenericChip = device.GenericChip[0];
-
                             if (GenericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
                             {
                                 await device.GetMiFareDESFireChipAppIDs();
+
+                                GenericChip = device.GenericChip;
                             }
+                        }
+
+                        else
+                        {
+                            await device.ReadChipPublic();
+
+                            GenericChip = device.GenericChip;
                         }
                     }
 
@@ -1659,12 +1669,17 @@ namespace RFiDGear.ViewModel
 
             try
             {
-                treeViewParentNodes.First(y => y.IsSelected).IsBeingProgrammed = null;
-                triggerReadChip.IsEnabled = (bool)triggerReadChip.Tag;
-                _runSelectedOnly = false;
+                if(treeViewParentNodes.Any(x => x.IsSelected) == true)
+                {
+                    treeViewParentNodes.First(y => y.IsSelected).IsBeingProgrammed = null;
+                    triggerReadChip.IsEnabled = (bool)triggerReadChip.Tag;
+                    _runSelectedOnly = false;
+                }
             }
 
-            catch { }
+            catch { 
+            // do nothing if no element found. this is intended on autorun, to speed up
+            }
 
 
         }
@@ -2376,195 +2391,167 @@ namespace RFiDGear.ViewModel
 
             checkUpdate = new Timer(CheckUpdate, null, 100, 5000); // ! UI-Thread !
             checkReader = new Timer(CheckReader, null, 5000, 3000); // ! UI-Thread !
+            var projectFileToUse = "";
+            await InitOnFirstRun(projectFileToUse);
 
-            await Run();
+            using (var settings = new SettingsReaderWriter())
+            {
+                if (args.Length > 1)
+                {
+                    foreach (var arg in args)
+                    {
+                        switch (arg.Split('=')[0])
+                        {
+                            case "REPORTTARGETPATH":
+
+                                variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
+
+                                if (Directory.Exists(Path.GetDirectoryName(arg.Split('=')[1])))
+                                {
+                                    reportOutputPath = arg.Split('=')[1];
+                                    var numbersInFileNames = new int[Directory.GetFiles(Path.GetDirectoryName(reportOutputPath)).Length];
+
+                                    if (reportOutputPath.Contains("?"))
+                                    {
+                                        for (var i = 0; i < numbersInFileNames.Length; i++)
+                                        {
+                                            var fileName = Directory.GetFiles(Path.GetDirectoryName(reportOutputPath))[i];
+
+                                            if (fileName.Replace(".pdf", string.Empty).ToLower().Contains(reportOutputPath.ToLower().Replace("?", string.Empty).Replace(".pdf", string.Empty)))
+                                            {
+                                                _ = int.TryParse(fileName.ToLower().Replace(
+                                                    reportOutputPath.ToLower().Replace("?", string.Empty).Replace(".pdf", string.Empty), string.Empty).Replace(".pdf", string.Empty), out var n);
+                                                numbersInFileNames[i] = n;
+                                            }
+                                        }
+                                    }
+
+                                    if (reportOutputPath.Contains("???"))
+                                    {
+                                        reportOutputPath = reportOutputPath.Replace("???", string.Format("{0:D3}", numbersInFileNames.Max() + 1));
+                                    }
+
+                                    else if (reportOutputPath.Contains("??"))
+                                    {
+                                        reportOutputPath = reportOutputPath.Replace("??", string.Format("{0:D2}", numbersInFileNames.Max() + 1));
+                                    }
+
+                                    else if (reportOutputPath.Contains("?"))
+                                    {
+                                        reportOutputPath = reportOutputPath.Replace("?", string.Format("{0:D1}", numbersInFileNames.Max() + 1));
+                                    }
+                                }
+                                break;
+
+                            case "REPORTTEMPLATEFILE":
+
+                                variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
+
+                                if (File.Exists(arg.Split('=')[1]))
+                                {
+                                    reportTemplateFile = arg.Split('=')[1];
+                                }
+                                break;
+
+                            case "AUTORUN":
+                                if (arg.Split('=')[1] == "1")
+                                {
+                                    await OnNewReadChipCommand();
+                                    await OnNewWriteToChipOnceCommand();
+                                }
+                                break;
+
+                            case "LASTUSEDPROJECTPATH":
+                                if (File.Exists(arg.Split('=')[1]))
+                                {
+                                    settings.DefaultSpecification.LastUsedProjectPath = new DirectoryInfo(arg.Split('=')[1]).FullName;
+                                    await settings.SaveSettings();
+                                }
+                                break;
+
+                            case "CUSTOMPROJECTFILE":
+
+                                if (File.Exists(arg.Split('=')[1]))
+                                {
+                                    projectFileToUse = new DirectoryInfo(arg.Split('=')[1]).FullName;
+                                }
+                                break;
+
+                            default:
+                                if (arg.Split('=')[0].Contains("$"))
+                                {
+                                    variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
+                                }
+                                break;
+                        }
+                    }
+                }
+            }  
         }
 
-        private async Task Run()
+        private async Task InitOnFirstRun(string projectFileToUse)
         {
-            if (firstRun)
+            try
             {
-                var projectFileToUse = "";
-
-                firstRun = false;
-
-                try
-                {
-                    using (var settings = new SettingsReaderWriter())
-                    {
-                        await settings.ReadSettings();
-
-                        settings.InitUpdateFile();
-
-                        if (args.Length > 1)
-                        {
-                            foreach (var arg in args)
-                            {
-                                switch (arg.Split('=')[0])
-                                {
-
-                                    case "LASTUSEDPROJECTPATH":
-                                        if (File.Exists(arg.Split('=')[1]))
-                                        {
-                                            settings.DefaultSpecification.LastUsedProjectPath = new DirectoryInfo(arg.Split('=')[1]).FullName;
-                                            await settings.SaveSettings();
-                                        }
-                                        break;
-
-                                    case "CUSTOMPROJECTFILE":
-
-                                        if (File.Exists(arg.Split('=')[1]))
-                                        {
-                                            projectFileToUse = new DirectoryInfo(arg.Split('=')[1]).FullName;
-                                        }
-                                        break;
-
-                                    default:
-                                        break;
-                                }
-                            }
-                        }
-
-                        CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
-                            ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
-                            : settings.DefaultSpecification.DefaultReaderName;
-
-                        if (int.TryParse(settings.DefaultSpecification.LastUsedComPort, out var portNumber))
-                        {
-                            ReaderDevice.PortNumber = portNumber;
-                        }
-
-                        else
-                        {
-                            ReaderDevice.PortNumber = 0;
-                        }
-
-                        culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
-
-                        var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
-
-                        var mySplash = new SplashScreenViewModel();
-
-                        if (autoLoadLastUsedDB)
-                        {
-                            Dialogs.Add(mySplash);
-                        }
-
-                        if (autoLoadLastUsedDB)
-                        {
-                            if (string.IsNullOrEmpty(projectFileToUse))
-                            {
-                                await OpenLastProjectFile();
-                            }
-                            else
-                            {
-                                await OpenLastProjectFile(projectFileToUse);
-                            }
-
-                        }
-
-
-                        Task.Run(async () =>
-                        {
-                            while (true)
-                            {
-                                await Task.Delay(300);
-                                DateTimeStatusBar = string.Format("{0}", DateTime.Now);
-                            }
-                        });
-
-                        await OnNewResetTaskStatusCommand();
-                    }
-
-                    using (var settings = new SettingsReaderWriter())
-                    {
-                        if (args.Length > 1)
-                        {
-                            foreach (var arg in args)
-                            {
-                                switch (arg.Split('=')[0])
-                                {
-                                    case "REPORTTARGETPATH":
-
-                                        variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
-
-                                        if (Directory.Exists(Path.GetDirectoryName(arg.Split('=')[1])))
-                                        {
-                                            reportOutputPath = arg.Split('=')[1];
-                                            var numbersInFileNames = new int[Directory.GetFiles(Path.GetDirectoryName(reportOutputPath)).Length];
-
-                                            if (reportOutputPath.Contains("?"))
-                                            {
-                                                for (var i = 0; i < numbersInFileNames.Length; i++)
-                                                {
-                                                    var fileName = Directory.GetFiles(Path.GetDirectoryName(reportOutputPath))[i];
-
-                                                    if (fileName.Replace(".pdf", string.Empty).ToLower().Contains(reportOutputPath.ToLower().Replace("?", string.Empty).Replace(".pdf", string.Empty)))
-                                                    {
-                                                        _ = int.TryParse(fileName.ToLower().Replace(
-                                                            reportOutputPath.ToLower().Replace("?", string.Empty).Replace(".pdf", string.Empty), string.Empty).Replace(".pdf", string.Empty), out var n);
-                                                        numbersInFileNames[i] = n;
-                                                    }
-                                                }
-                                            }
-
-                                            if (reportOutputPath.Contains("???"))
-                                            {
-                                                reportOutputPath = reportOutputPath.Replace("???", string.Format("{0:D3}", numbersInFileNames.Max() + 1));
-                                            }
-
-                                            else if (reportOutputPath.Contains("??"))
-                                            {
-                                                reportOutputPath = reportOutputPath.Replace("??", string.Format("{0:D2}", numbersInFileNames.Max() + 1));
-                                            }
-
-                                            else if (reportOutputPath.Contains("?"))
-                                            {
-                                                reportOutputPath = reportOutputPath.Replace("?", string.Format("{0:D1}", numbersInFileNames.Max() + 1));
-                                            }
-                                        }
-                                        break;
-
-                                    case "REPORTTEMPLATEFILE":
-
-                                        variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
-
-                                        if (File.Exists(arg.Split('=')[1]))
-                                        {
-                                            reportTemplateFile = arg.Split('=')[1];
-                                        }
-                                        break;
-
-                                    case "AUTORUN":
-                                        if (arg.Split('=')[1] == "1")
-                                        {
-                                            await OnNewWriteToChipOnceCommand();
-                                        }
-                                        break;
-
-                                    default:
-                                        if (arg.Split('=')[0].Contains("$"))
-                                        {
-                                            variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
-                                        }
-                                        break;
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    eventLog.WriteEntry(ex.Message, EventLogEntryType.Error);
-                }
-
                 using (var settings = new SettingsReaderWriter())
                 {
-                    if (settings.DefaultSpecification.AutoCheckForUpdates)
+                    await settings.ReadSettings();
+
+                    settings.InitUpdateFile();
+
+                    CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
+                        ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
+                        : settings.DefaultSpecification.DefaultReaderName;
+
+                    if (int.TryParse(settings.DefaultSpecification.LastUsedComPort, out var portNumber))
                     {
-                        updater?.StartMonitoring();
+                        ReaderDevice.PortNumber = portNumber;
                     }
+
+                    else
+                    {
+                        ReaderDevice.PortNumber = 0;
+                    }
+
+                    culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
+
+                    var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
+
+                    var mySplash = new SplashScreenViewModel();
+
+                    if (autoLoadLastUsedDB)
+                    {
+                        Dialogs.Add(mySplash);
+                    }
+
+                    if (autoLoadLastUsedDB)
+                    {
+                        if (string.IsNullOrEmpty(projectFileToUse))
+                        {
+                            await OpenLastProjectFile();
+                        }
+                        else
+                        {
+                            await OpenLastProjectFile(projectFileToUse);
+                        }
+
+                    }
+
+                    Task.Run(async () =>
+                    {
+                        while (true)
+                        {
+                            await Task.Delay(300);
+                            DateTimeStatusBar = string.Format("{0}", DateTime.Now);
+                        }
+                    });
+
+                    await OnNewResetTaskStatusCommand();
                 }
+            }
+            catch (Exception ex)
+            {
+                eventLog.WriteEntry(ex.Message, EventLogEntryType.Error);
             }
         }
 
