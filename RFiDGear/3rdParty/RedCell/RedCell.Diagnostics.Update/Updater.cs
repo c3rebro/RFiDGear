@@ -353,9 +353,13 @@ namespace RedCell.Diagnostics.Update
                 var p = new Process();
                 var info = new ProcessStartInfo()
                 {
+                    /*
                     FileName = "msiexec.exe",
                     Verb="runas",
-                    Arguments = string.Format("/i \"{0}\" ", Path.Combine(appDataPath, WorkPath, "Setup.msi")),
+                    Arguments = string.Format("/i \"{0}\" ", Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe")),
+                    */
+                    FileName = Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe"),
+                    Verb = "runas",
                     UseShellExecute = false
                 };
 

@@ -2384,6 +2384,8 @@ namespace RFiDGear.ViewModel
 
         private async void LoadCompleted(object sender, EventArgs e)
         {
+            var autorun = false;
+
             Application.Current.MainWindow.Activated -= new EventHandler(LoadCompleted);
 
             mw = (MainWindow)Application.Current.MainWindow;
@@ -2392,7 +2394,6 @@ namespace RFiDGear.ViewModel
             checkUpdate = new Timer(CheckUpdate, null, 100, 5000); // ! UI-Thread !
             checkReader = new Timer(CheckReader, null, 5000, 3000); // ! UI-Thread !
             var projectFileToUse = "";
-            await InitOnFirstRun(projectFileToUse);
 
             using (var settings = new SettingsReaderWriter())
             {
@@ -2456,8 +2457,7 @@ namespace RFiDGear.ViewModel
                             case "AUTORUN":
                                 if (arg.Split('=')[1] == "1")
                                 {
-                                    await OnNewReadChipCommand();
-                                    await OnNewWriteToChipOnceCommand();
+                                    autorun = true;
                                 }
                                 break;
 
@@ -2486,7 +2486,15 @@ namespace RFiDGear.ViewModel
                         }
                     }
                 }
-            }  
+            }
+
+            await InitOnFirstRun(projectFileToUse);
+
+            if (autorun)
+            {
+                await OnNewReadChipCommand();
+                await OnNewWriteToChipOnceCommand();
+            }
         }
 
         private async Task InitOnFirstRun(string projectFileToUse)
@@ -2534,7 +2542,6 @@ namespace RFiDGear.ViewModel
                         {
                             await OpenLastProjectFile(projectFileToUse);
                         }
-
                     }
 
                     Task.Run(async () =>

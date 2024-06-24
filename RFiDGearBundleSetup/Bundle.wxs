@@ -126,7 +126,7 @@
       -->
       <!--DetectCondition="(LibLogicalAccess_1_87x64 &gt; 22478847 OR LibLogicalAccess_1_87x32 &gt; 22478847)"-->
       <!--InstallCommand="/q"-->
-			<MsiPackage Id="MainPackage" SourceFile="$(var.Setup.ProjectDir)bin\Release\en-us\Setup.msi" Cache="no" Compressed="yes" Vital="yes" />
+			<MsiPackage Id="MainPackage" SourceFile="$(var.Setup.ProjectDir)bin\Release\de-de\Setup.msi" Cache="no" Compressed="yes" Vital="yes" />
 		</Chain>
 		
 		<!--
