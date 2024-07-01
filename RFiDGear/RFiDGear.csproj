@@ -94,13 +94,16 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>B4891E8EE3160D893B00DDD07424AC119A92EE88</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>6DEC2E76FAFB6366CF5FCDE1BC867396A215849E</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>RFiDGear.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <NoWin32Manifest>true</NoWin32Manifest>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManifestKeyFile>MessgeraetetechnikHansen.pfx</ManifestKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp">
@@ -288,6 +291,7 @@
   <ItemGroup>
     <None Include="3rdParty\RedCell\RedCell.Diagnostics.Update\Update.cd" />
     <None Include="app.config" />
+    <None Include="MessgeraetetechnikHansen.pfx" />
     <None Include="RFiDGear.snk" />
     <Resource Include="Resources\wait.ico" />
     <Resource Include="Resources\confirm.ico" />
