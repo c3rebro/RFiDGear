@@ -37,7 +37,7 @@ namespace RFiDGear.ViewModel
     {
         #region Fields
         private static int IterCounter = 1; //Initial Value of Counter: How often have "this" been called (+1 per "run all tasks")
-        private readonly EventLog eventLog = new EventLog(Assembly.GetEntryAssembly().GetName().Name,"localhost", Assembly.GetEntryAssembly().GetName().Name);
+        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         // The Counter could be replaced in an pdf by %n; %nn or %nnn. increased once per run all tasks: %n -> 1 on first execution
 
         private protected ReportReaderWriter reportReaderWriter;
@@ -1587,14 +1587,29 @@ namespace RFiDGear.ViewModel
                 //InitOnFirstRun Program from RFiDGear Argument 
                 if (ProgramToExecute.Contains("$"))
                 {
+                    var argArr = ProgramToExecute.Split('\"');
+
                     info = new ProcessStartInfo()
                     {
-                        FileName = Args[ProgramToExecute],
+                        FileName = argArr[1],
                         UseShellExecute =
                         ProgramToExecute.Contains("bat") ||
                         ProgramToExecute.Contains("exe") ||
                         ProgramToExecute.Contains("msi") ? false : true
                     };
+
+                    argArr = argArr.Where(arg => !string.IsNullOrWhiteSpace(arg))
+                                 .Skip(1) // Skip the first argument (position of the running executable)
+                                 .ToArray();
+
+                    var joinedArgs = string.Join(" ", argArr);
+
+                    foreach(KeyValuePair<string,string> argToReplace in Args.Where(arg => arg.Key.Contains("$")))
+                    {
+                        joinedArgs = joinedArgs.Replace(argToReplace.Key, argToReplace.Value);
+                    }
+
+                    info.Arguments = joinedArgs;
                 }
 
                 else if (ProgramToExecute.ToLower() == @"%exit")
