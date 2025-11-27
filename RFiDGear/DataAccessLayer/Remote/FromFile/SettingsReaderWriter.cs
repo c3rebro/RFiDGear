@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
@@ -33,27 +34,42 @@ namespace RFiDGear
 
         private bool _disposed;
 
+        public Task<DefaultSpecification> GetDefaultSpecificationAsync(CancellationToken cancellationToken = default)
+        {
+            return EnsureDefaultSpecificationLoadedAsync(cancellationToken);
+        }
+
+        [Obsolete("Use GetDefaultSpecificationAsync/SetDefaultSpecificationAsync for async access.")]
         public DefaultSpecification DefaultSpecification
         {
-            get
-            {
-                ReadSettings().GetAwaiter().GetResult();
-                return defaultSpecification ?? new DefaultSpecification();
-            }
+            get => EnsureDefaultSpecificationLoadedAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+            set => SetDefaultSpecificationAsync(value, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+        }
 
-            set
+        public async Task SetDefaultSpecificationAsync(DefaultSpecification specification, CancellationToken cancellationToken = default)
+        {
+            await settingsSync.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+            try
             {
-                defaultSpecification = value;
+                defaultSpecification = specification;
+
                 if (defaultSpecification != null)
                 {
-                    SaveSettings().GetAwaiter().GetResult();
+                    await SaveSettings(cancellationToken: cancellationToken).ConfigureAwait(false);
                 }
+            }
+            finally
+            {
+                settingsSync.Release();
             }
         }
 
         private DefaultSpecification defaultSpecification;
 
         #endregion fields
+
+        private readonly SemaphoreSlim settingsSync = new SemaphoreSlim(1, 1);
 
         public SettingsReaderWriter()
         {
@@ -146,17 +162,16 @@ namespace RFiDGear
         /// 
         /// </summary>
         /// <returns></returns>
-        public async Task ReadSettings()
+        public async Task ReadSettings(string _fileName = "", CancellationToken cancellationToken = default)
         {
-            await ReadSettings("").ConfigureAwait(false);
-            return;
+            await ReadSettingsInternal(_fileName, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
         ///
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> ReadSettings(string _fileName)
+        private async Task<bool> ReadSettingsInternal(string _fileName, CancellationToken cancellationToken)
         {
             TextReader reader;
             int verInfo;
@@ -174,6 +189,7 @@ namespace RFiDGear
                 {
                     await Task.Run(() =>
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         var serializer = new XmlSerializer(typeof(DefaultSpecification));
 
                         if (string.IsNullOrWhiteSpace(_fileName) && File.Exists(Path.Combine(appDataPath, _settingsFileFileName)))
@@ -199,7 +215,11 @@ namespace RFiDGear
 
                         reader.Close();
 
-                    }).ConfigureAwait(false);
+                    }, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    return true;
                 }
                 catch (Exception e)
                 {
@@ -213,15 +233,43 @@ namespace RFiDGear
             return true;
         }
 
+        private async Task<DefaultSpecification> EnsureDefaultSpecificationLoadedAsync(CancellationToken cancellationToken)
+        {
+            if (defaultSpecification != null)
+            {
+                return defaultSpecification;
+            }
+
+            await settingsSync.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                if (defaultSpecification == null)
+                {
+                    await ReadSettingsInternal(string.Empty, cancellationToken).ConfigureAwait(false);
+                }
+
+                defaultSpecification ??= new DefaultSpecification();
+            }
+            finally
+            {
+                settingsSync.Release();
+            }
+
+            return defaultSpecification;
+        }
+
         /// <summary>
         ///
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> SaveSettings(string _path = "")
+        public async Task<bool> SaveSettings(string _path = "", CancellationToken cancellationToken = default)
         {
             try
             {
                 await Task.Run(() => {
+
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (defaultSpecification == null)
                     {
@@ -236,9 +284,13 @@ namespace RFiDGear
                     serializer.Serialize(textWriter, defaultSpecification);
 
                     textWriter.Close();
-                }).ConfigureAwait(false);
+                }, cancellationToken).ConfigureAwait(false);
 
                 return true;
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
             }
             catch (XmlException e)
             {

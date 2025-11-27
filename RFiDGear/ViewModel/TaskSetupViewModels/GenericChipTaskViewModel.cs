@@ -42,7 +42,7 @@ namespace RFiDGear.ViewModel
 
         private protected ReportReaderWriter reportReaderWriter;
         private protected Checkpoint checkpoint;
-        private protected readonly ObservableCollection<object> _availableTasks;
+        private protected readonly ObservableCollection<IGenericTaskModel> _availableTasks;
 
         #endregion fields
 
@@ -61,7 +61,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         /// <param name="_selectedSetupViewModel"></param>
         /// <param name="_dialogs"></param>
-        public GenericChipTaskViewModel(object _selectedSetupViewModel, ObservableCollection<object> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
+        public GenericChipTaskViewModel(object _selectedSetupViewModel, ObservableCollection<IGenericTaskModel> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
         {
             try
             {
