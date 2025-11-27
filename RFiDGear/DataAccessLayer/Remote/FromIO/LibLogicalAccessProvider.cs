@@ -39,6 +39,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			try
 			{
 				readerProvider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), readerType));
+                var readers = readerProvider.getReaderList();
 				readerUnit = readerProvider.createReaderUnit();
 
 				GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
@@ -62,7 +63,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		{ 
 			return await Task.Run(() => 
 			{
-                if(readerUnit?.connectToReader() == true)
+                if(readerUnit?.isConnected() == true)
+                {
+                    return ERROR.NoError;
+                }
+
+                else if(readerUnit?.connectToReader() == true)
 				{
 					return ERROR.NoError;
 				}
@@ -81,12 +87,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 if (await tryInitReader())
                 {
                     card = readerUnit.getSingleChip();
-
+                    
                     if (!string.IsNullOrWhiteSpace(ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray())))
                     {
                         try
                         {
                             var uidAsString = ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray());
+                            var t = card.getCardType();
                             var chipType = (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType());
 
                             if ((chipType & CARD_TYPE.DESFire) == CARD_TYPE.DESFire)
@@ -750,7 +757,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         }
 
                         if (card.getCardType() == "DESFireEV1" ||
-                            card.getCardType() == "DESFireEV2")
+                            card.getCardType() == "DESFireEV2" ||
+                            card.getCardType() == "DESFireEV3")
                         {
 
                             var cmd = (card as DESFireChip).getDESFireCommands();
@@ -827,7 +835,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             }
 
                             if (card.getCardType() == "DESFireEV1" ||
-                                card.getCardType() == "DESFireEV2")
+                                card.getCardType() == "DESFireEV2" ||
+                                card.getCardType() == "DESFireEV3")
                             {
                                 var cmd = (card as DESFireEV1Chip).getDESFireEV1Commands();
 
@@ -892,7 +901,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 						DESFireCommands cmd;
 
 						if (card.getCardType() == "DESFireEV1" ||
-							card.getCardType() == "DESFireEV2")
+							card.getCardType() == "DESFireEV2" ||
+                            card.getCardType() == "DESFireEV3")
 						{
                             cmd = (card as DESFireChip).getDESFireCommands();
                         }
@@ -1002,7 +1012,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 {
                     if (card.getCardType() == "DESFire" ||
                         card.getCardType() == "DESFireEV1" ||
-                        card.getCardType() == "DESFireEV2")
+                        card.getCardType() == "DESFireEV2" ||
+                        card.getCardType() == "DESFireEV3")
                     {
                         try
                         {
@@ -1103,7 +1114,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 {
                     if (card.getCardType() == "DESFire" ||
                         card.getCardType() == "DESFireEV1" ||
-                        card.getCardType() == "DESFireEV2")
+                        card.getCardType() == "DESFireEV2" ||
+                        card.getCardType() == "DESFireEV3")
                     {
                         try
                         {
@@ -1113,6 +1125,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                             cmd.authenticate((byte)_writeKeyNo, aiToWrite.writeKey);
 
+                            //byte[] padded = new byte[161];
+                            //Buffer.BlockCopy(_data, 0, padded, 0, _data.Length);
+                            //_data = padded;
+
                             cmd.writeData((byte)_fileNo, 0, new ByteVector(_data), LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT);
 
                             return ERROR.NoError;
@@ -1120,13 +1136,17 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                         catch (Exception e)
                         {
-                            if (e.Message != "" && e.Message.Contains("same number already exists"))
+                            if (e.Message != "" && e.Message.ToLower().Contains("same number already exists"))
                             {
                                 return ERROR.ItemAlreadyExistError;
                             }
-                            else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+                            else if (e.Message != "" && e.Message.ToLower().Contains("status does not allow the requested command"))
                             {
                                 return ERROR.AuthenticationError;
+                            }
+                            else if (e.Message != "" && e.Message.ToLower().Contains("data requested but no more data"))
+                            {
+                                return ERROR.NoError;
                             }
                             else
                                 return ERROR.IOError;
@@ -1167,7 +1187,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                     if (card.getCardType() == "DESFire" ||
                         card.getCardType() == "DESFireEV1" ||
-                        card.getCardType() == "DESFireEV2")
+                        card.getCardType() == "DESFireEV2" ||
+                        card.getCardType() == "DESFireEV3")
                     {
                         var cmd = card.getCommands() as DESFireCommands;
                         try
@@ -1236,7 +1257,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
 
                     else if (card.getCardType() == "DESFireEV1" ||
-                            card.getCardType() == "DESFireEV2" || card.getCardType() == "GENERIC_T_CL_A")
+                            card.getCardType() == "DESFireEV2" ||
+                            card.getCardType() == "DESFireEV3" ||
+                            card.getCardType() == "GENERIC_T_CL_A")
                     {
                         cmd = (card as DESFireChip).getDESFireCommands();
                     }
@@ -1349,7 +1372,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             cmd.createApplication((uint)_appID, (LibLogicalAccess.Card.DESFireKeySettings)_keySettingsTarget, (byte)_maxNbKeys);
                         }
                         else if (card.getCardType() == "DESFireEV1" ||
-                                card.getCardType() == "DESFireEV2")
+                                card.getCardType() == "DESFireEV2" ||
+                                card.getCardType() == "DESFireEV3")
                         {
                             ev1Cmd.createApplication((uint)_appID, (LibLogicalAccess.Card.DESFireKeySettings)_keySettingsTarget, (byte)_maxNbKeys, (LibLogicalAccess.Card.DESFireKeyType)_keyTypeTargetApplication);
                         }
@@ -1410,7 +1434,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                     if (card.getCardType() == "DESFire" ||
                         card.getCardType() == "DESFireEV1" ||
-                        card.getCardType() == "DESFireEV2")
+                        card.getCardType() == "DESFireEV2" ||
+                        card.getCardType() == "DESFireEV3")
                     {
                         var cmd = card.getCommands() as DESFireCommands;
                         var ev1Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV1ISO7816Commands;
@@ -1559,7 +1584,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                     if (card.getCardType() == "DESFire" ||
                         card.getCardType() == "DESFireEV1" ||
-                        card.getCardType() == "DESFireEV2")
+                        card.getCardType() == "DESFireEV2" ||
+                        card.getCardType() == "DESFireEV3")
                     {
                         var cmd = card.getCommands() as DESFireCommands;
                         try
@@ -1628,7 +1654,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                     if (card.getCardType() == "DESFireEV1" ||
                         card.getCardType() == "DESFireEV2" ||
-                        card.getCardType() == "DESFire")
+                        card.getCardType() == "DESFire" ||
+                        card.getCardType() == "DESFireEV3")
                     {
                         try
                         {
@@ -1697,7 +1724,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                     if (card.getCardType() == "DESFire" ||
                        card.getCardType() == "DESFireEV1" ||
-                       card.getCardType() == "DESFireEV2")
+                       card.getCardType() == "DESFireEV2" ||
+                       card.getCardType() == "DESFireEV3")
                     {
                         var cmd = card.getCommands() as DESFireCommands;
                         try
@@ -1760,7 +1788,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                     if (card.getCardType() == "DESFire" ||
                        card.getCardType() == "DESFireEV1" ||
-                       card.getCardType() == "DESFireEV2")
+                       card.getCardType() == "DESFireEV2" ||
+                       card.getCardType() == "DESFireEV3")
                     {
                         var cmd = card.getCommands() as DESFireCommands;
                         try
@@ -1841,7 +1870,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                     if (card.getCardType() == "DESFire" ||
                         card.getCardType() == "DESFireEV1" ||
-                        card.getCardType() == "DESFireEV2")
+                        card.getCardType() == "DESFireEV2" ||
+                        card.getCardType() == "DESFireEV3")
                     {
                         var cmd = card.getCommands() as DESFireCommands;
                         try
@@ -1927,20 +1957,25 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			{
                 try
                 {
-                    if (readerUnit.connectToReader())
+                    if (readerUnit?.isConnected() == true)
+                    {
+                        readerUnit.connect();
+                        return true;
+                    }
+                    else if (readerUnit?.connectToReader() == true)
                     {
                         if (readerUnit.waitInsertion(Constants.MAX_WAIT_INSERTION))
                         {
-                            if (readerUnit.connect())
+                            if (readerUnit?.connect() == true)
                             {
-                                ReaderUnitName = readerUnit.getConnectedName();
+                                ReaderUnitName = ReaderUnitName ?? readerUnit.getConnectedName();
 
                                 return true;
                             }
                         }
                     }
                 }
-                catch
+                catch (Exception e)
                 {
                     return false;
                 }

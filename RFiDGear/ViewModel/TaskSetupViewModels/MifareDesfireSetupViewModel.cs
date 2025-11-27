@@ -1377,7 +1377,7 @@ namespace RFiDGear.ViewModel
                         }
                         catch
                         {
-
+                            return;
                         }
 
                     }

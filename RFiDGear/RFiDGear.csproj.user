@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <StartArguments>REPORTTARGETPATH="D:\CardCheck_data\KP-000005-5_final.pdf" REPORTTEMPLATEFILE="D:\CardCheck_data\KP-000005-5_.pdf" CUSTOMPROJECTFILE="D:\CardCheck_data\KPruefung_Vorlagen\00_RFID_Gear_Vorlage\CardCheckAssistant_FreeMemDesfireOnly.rfPrj" %24JOBNUMBER="KP-000005" %24CHIPNUMBER="5" AUTORUN=0</StartArguments>
@@ -41,5 +41,21 @@
   </PropertyGroup>
   <PropertyGroup>
     <EnableSecurityDebugging>false</EnableSecurityDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <StartWorkingDirectory>D:\CardCheck_Data</StartWorkingDirectory>
+    <StartArguments>REPORTTARGETPATH="D:\CardCheck_data\KP-000005-5_final.pdf" REPORTTEMPLATEFILE="D:\CardCheck_data\KP-000005-5_.pdf" CUSTOMPROJECTFILE="D:\CardCheck_data\KPruefung_Vorlagen\00_RFID_Gear_Vorlage\CardCheckAssistant_FreeMemDesfireOnly.rfPrj" %24JOBNUMBER="KP-000005" %24CHIPNUMBER="5" AUTORUN=0</StartArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <StartWorkingDirectory>D:\CardCheck_Data</StartWorkingDirectory>
+    <StartArguments>REPORTTARGETPATH="D:\CardCheck_data\KP-000005-5_final.pdf" REPORTTEMPLATEFILE="D:\CardCheck_data\KP-000005-5_.pdf" CUSTOMPROJECTFILE="D:\CardCheck_data\KPruefung_Vorlagen\00_RFID_Gear_Vorlage\CardCheckAssistant_FreeMem.rfPrj" %24JOBNUMBER="KP-000005" %24CHIPNUMBER="5" AUTORUN=1</StartArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug%28without args%29|x86'">
+    <StartWorkingDirectory>D:\CardCheck_Data</StartWorkingDirectory>
+    <StartArguments>REPORTTARGETPATH="D:\CardCheck_data\KP-000005-5_final.pdf" REPORTTEMPLATEFILE="D:\CardCheck_data\KP-000005-5_.pdf" CUSTOMPROJECTFILE="D:\CardCheck_data\KPruefung_Vorlagen\00_RFID_Gear_Vorlage\CardCheckAssistant_FreeMemDesfireOnly.rfPrj" %24JOBNUMBER="KP-000005" %24CHIPNUMBER="5" AUTORUN=0</StartArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug %28without default Proj.%29|x86'">
+    <StartWorkingDirectory>D:\CardCheck_Data</StartWorkingDirectory>
+    <StartArguments>REPORTTARGETPATH="D:\CardCheck_data\KP-000005-5_final.pdf" REPORTTEMPLATEFILE="D:\CardCheck_data\KP-000005-5_.pdf" CUSTOMPROJECTFILE="D:\CardCheck_data\KPruefung_Vorlagen\00_RFID_Gear_Vorlage\CardCheckAssistant_FreeMemDesfireOnly.rfPrj" %24JOBNUMBER="KP-000005" %24CHIPNUMBER="5" AUTORUN=0</StartArguments>
   </PropertyGroup>
 </Project>
