@@ -61,8 +61,10 @@ namespace RFiDGear.ViewModel
         private readonly IReaderInitializer readerInitializer;
         private readonly IUpdateChecker updateChecker;
         private readonly IPollingScheduler pollingScheduler;
-        private readonly ICommandMenuProvider commandMenuProvider;
         private readonly IMainWindowServiceFactory serviceFactory;
+        private readonly IStartupConfigurator startupConfigurator;
+        private readonly IMainWindowTimerFactory timerFactory;
+        private readonly ICommandMenuBuilder commandMenuBuilder;
 
         private protected MainWindow mw;
         private protected DatabaseReaderWriter databaseReaderWriter;
@@ -97,7 +99,9 @@ namespace RFiDGear.ViewModel
             readerInitializer = serviceFactory.CreateReaderInitializer();
             updateChecker = serviceFactory.CreateUpdateChecker();
             pollingScheduler = serviceFactory.CreatePollingScheduler();
-            commandMenuProvider = serviceFactory.CreateCommandMenuProvider();
+            timerFactory = serviceFactory.CreateMainWindowTimerFactory();
+            startupConfigurator = serviceFactory.CreateStartupConfigurator();
+            commandMenuBuilder = serviceFactory.CreateCommandMenuBuilder();
 
             IsReaderBusy = false;
 
@@ -113,43 +117,14 @@ namespace RFiDGear.ViewModel
 
             RunMutex(this, null);
 
-            bool autoLoadLastUsedDB;
             args = Environment.GetCommandLineArgs();
+            var startupConfiguration = startupConfigurator.Configure();
 
-            using (var settings = new SettingsReaderWriter())
-            {
-                var setup = readerInitializer.ApplySettings(settings);
+            CurrentReader = startupConfiguration.ReaderName;
+            culture = startupConfiguration.Culture;
 
-                CurrentReader = setup.ReaderName;
-                culture = setup.Culture;
-                autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
-            }
-
-            triggerReadChip = new DispatcherTimer
-            {
-                Interval = new TimeSpan(0, 0, 0, 2, 500)
-            };
-
-            triggerReadChip.Tick += UpdateChip;
-
-            triggerReadChip.Start();
-            triggerReadChip.IsEnabled = false;
-            triggerReadChip.Tag = triggerReadChip.IsEnabled;
-
-#if DEBUG
-            taskTimeout = new DispatcherTimer
-            {
-                Interval = new TimeSpan(0, 1, 0, 0, 0)
-            };
-#else
-            taskTimeout = new DispatcherTimer
-            {
-                Interval = new TimeSpan(0, 0, 0, 4, 0)
-            };
-#endif
-            taskTimeout.Tick += TaskTimeout;
-            taskTimeout.Start();
-            taskTimeout.IsEnabled = false;
+            triggerReadChip = timerFactory.CreateTriggerReadTimer(UpdateChip);
+            taskTimeout = timerFactory.CreateTaskTimeoutTimer(TaskTimeout);
 
             treeViewParentNodes = new ObservableCollection<RFiDChipParentLayerViewModel>();
 
@@ -161,14 +136,13 @@ namespace RFiDGear.ViewModel
             resLoader = new ResourceLoader();
 
             
-            commandMenuProvider.BuildMenus(GetAddEditCommand, WriteSelectedTaskToChipOnceCommand,
+            var commandMenus = commandMenuBuilder.BuildMenus(GetAddEditCommand, WriteSelectedTaskToChipOnceCommand,
                 DeleteSelectedTaskCommand, ResetSelectedTaskStatusCommand, WriteToChipOnceCommand,
                 ResetReportTaskDirectoryCommand, ReadChipCommand);
 
-            
-            rowContextMenuItems = commandMenuProvider.RowContextMenuItems;
-            emptySpaceContextMenuItems = commandMenuProvider.EmptySpaceContextMenuItems;
-            emptySpaceTreeViewContextMenu = commandMenuProvider.EmptyTreeViewContextMenuItems;
+            rowContextMenuItems = commandMenus.RowContextMenuItems;
+            emptySpaceContextMenuItems = commandMenus.EmptySpaceContextMenuItems;
+            emptySpaceTreeViewContextMenu = commandMenus.EmptyTreeViewContextMenuItems;
 
             Application.Current.MainWindow.Closing += new CancelEventHandler(CloseThreads);
             Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
