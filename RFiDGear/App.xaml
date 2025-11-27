@@ -12,7 +12,7 @@
     xmlns:pre="clr-namespace:MVVMDialogs.Presenters;assembly=MVVMDialogs"
     xmlns:vm="clr-namespace:RFiDGear.ViewModel"
     d1p1:Ignorable="d"
-    StartupUri="View/MainWindow.xaml">
+    Startup="OnStartup">
 
     <Application.Resources>
         <ResourceDictionary>

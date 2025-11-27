@@ -43,6 +43,8 @@ using RedCell.Diagnostics.Update;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.Model;
+using RFiDGear.Services;
+using RFiDGear.Services.Commands;
 
 namespace RFiDGear.ViewModel
 {
@@ -56,15 +58,17 @@ namespace RFiDGear.ViewModel
         private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         private readonly string[] args;
         private readonly Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
-        private readonly Updater updater;
+        private readonly IReaderInitializer readerInitializer;
+        private readonly IUpdateChecker updateChecker;
+        private readonly IPollingScheduler pollingScheduler;
+        private readonly ICommandMenuProvider commandMenuProvider;
+        private readonly IMainWindowServiceFactory serviceFactory;
 
         private protected MainWindow mw;
         private protected DatabaseReaderWriter databaseReaderWriter;
         private protected ReportReaderWriter reportReaderWriter;
         private protected DispatcherTimer triggerReadChip;
         private protected DispatcherTimer taskTimeout;
-        private protected Timer checkUpdate = null;
-        private protected Timer checkReader = null;
         private protected string reportOutputPath;
         private protected string reportTemplateFile;
         private protected ChipTaskHandlerModel taskHandler;
@@ -83,7 +87,18 @@ namespace RFiDGear.ViewModel
         #region Constructors
 
         public MainWindowViewModel()
+            : this(new MainWindowServiceFactory())
         {
+        }
+
+        public MainWindowViewModel(IMainWindowServiceFactory factory)
+        {
+            serviceFactory = factory;
+            readerInitializer = serviceFactory.CreateReaderInitializer();
+            updateChecker = serviceFactory.CreateUpdateChecker();
+            pollingScheduler = serviceFactory.CreatePollingScheduler();
+            commandMenuProvider = serviceFactory.CreateCommandMenuProvider();
+
             IsReaderBusy = false;
 
             if (!EventLog.SourceExists(Assembly.GetEntryAssembly().GetName().Name))
@@ -93,6 +108,9 @@ namespace RFiDGear.ViewModel
 
             eventLog.Source = Assembly.GetEntryAssembly().GetName().Name;
 
+            pollingScheduler.OnUpdateRequested += CheckUpdate;
+            pollingScheduler.OnReaderRequested += CheckReader;
+
             RunMutex(this, null);
 
             bool autoLoadLastUsedDB;
@@ -100,18 +118,10 @@ namespace RFiDGear.ViewModel
 
             using (var settings = new SettingsReaderWriter())
             {
-                updater = new Updater();
+                var setup = readerInitializer.ApplySettings(settings);
 
-                CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
-                    ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
-                    : settings.DefaultSpecification.DefaultReaderName;
-
-                if (!string.IsNullOrEmpty(CurrentReader))
-                {
-                    ReaderDevice.Reader = (ReaderTypes)Enum.Parse(typeof(ReaderTypes), CurrentReader);
-                }
-                culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
-
+                CurrentReader = setup.ReaderName;
+                culture = setup.Culture;
                 autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
             }
 
@@ -150,88 +160,15 @@ namespace RFiDGear.ViewModel
             databaseReaderWriter = new DatabaseReaderWriter();
             resLoader = new ResourceLoader();
 
-            rowContextMenuItems = new ObservableCollection<MenuItem>();
-            emptySpaceContextMenuItems = new ObservableCollection<MenuItem>();
-            emptySpaceTreeViewContextMenu = new ObservableCollection<MenuItem>();
+            
+            commandMenuProvider.BuildMenus(GetAddEditCommand, WriteSelectedTaskToChipOnceCommand,
+                DeleteSelectedTaskCommand, ResetSelectedTaskStatusCommand, WriteToChipOnceCommand,
+                ResetReportTaskDirectoryCommand, ReadChipCommand);
 
-            emptySpaceContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemAddNewTask"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = GetAddEditCommand
-            });
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemAddNewTask"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = GetAddEditCommand
-            });
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemAddOrEditTask"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = GetAddEditCommand
-            });
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemDeleteSelectedItem"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = new RelayCommand(() =>
-                {
-                    taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
-                })
-            });
-
-            rowContextMenuItems.Add(null);
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemExecuteSelectedItem"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = WriteSelectedTaskToChipOnceCommand
-            });
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemResetSelectedItem"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = ResetSelectedTaskStatusCommand
-            });
-
-            rowContextMenuItems.Add(null);
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemExecuteAllItems"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = WriteToChipOnceCommand
-            });
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemResetReportPath"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = ResetReportTaskDirectoryCommand
-            });
-
-            emptySpaceTreeViewContextMenu.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemReadChipPublic"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = ReadChipCommand
-            });
+            
+            rowContextMenuItems = commandMenuProvider.RowContextMenuItems;
+            emptySpaceContextMenuItems = commandMenuProvider.EmptySpaceContextMenuItems;
+            emptySpaceTreeViewContextMenu = commandMenuProvider.EmptyTreeViewContextMenuItems;
 
             Application.Current.MainWindow.Closing += new CancelEventHandler(CloseThreads);
             Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
@@ -441,6 +378,14 @@ namespace RFiDGear.ViewModel
         {
             TreeViewParentNodes.Clear();
         }
+
+        public ICommand DeleteSelectedTaskCommand => new RelayCommand(() =>
+        {
+            if (SelectedSetupViewModel != null)
+            {
+                taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
+            }
+        });
 
         /// <summary>
         /// Show Detailed Version Info
@@ -1829,7 +1774,7 @@ namespace RFiDGear.ViewModel
                         {
                             if (sender)
                             {
-                                updater?.StartMonitoring();
+                                updateChecker?.StartMonitoringAsync().GetAwaiter().GetResult();
                             }
                         },
 
@@ -2021,20 +1966,16 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand CheckUpdateCommand => new AsyncRelayCommand(OnNewCheckUpdateCommand);
         private async void CheckUpdate(object sender)
         {
-            checkUpdate.Change(Timeout.Infinite, Timeout.Infinite);
-
-            if (updater.UpdateAvailable)
+            if (updateChecker.UpdateAvailable)
             {
                 await AskForUpdateNow();
             }
-
-            checkUpdate.Change(5000, 5000);
         }
         private async Task OnNewCheckUpdateCommand()
         {
             userIsNotifiedForAvailableUpdate = false;
 
-            if (updater.UpdateAvailable)
+            if (updateChecker.UpdateAvailable)
             {
                 await AskForUpdateNow();
             }
@@ -2188,17 +2129,11 @@ namespace RFiDGear.ViewModel
                 isReaderBusy = value;
                 if (value == true)
                 {
-                    if (checkReader != null)
-                    {
-                        checkReader.Change(Timeout.Infinite, Timeout.Infinite);
-                    }
+                    pollingScheduler?.PauseReader();
                 }
                 else
                 {
-                    if (checkReader != null)
-                    {
-                        checkReader.Change(2000, 2000);
-                    }
+                    pollingScheduler?.ResumeReader();
                 }
                 OnPropertyChanged(nameof(IsReaderBusy));
             }
@@ -2223,11 +2158,11 @@ namespace RFiDGear.ViewModel
                 {
                     if (value)
                     {
-                        updater.StartMonitoring().GetAwaiter().GetResult();
+                        updateChecker.StartMonitoringAsync().GetAwaiter().GetResult();
                     }
                     else
                     {
-                        updater.StopMonitoring().GetAwaiter().GetResult();
+                        updateChecker.StopMonitoringAsync().GetAwaiter().GetResult();
                     }
 
                     settings.DefaultSpecification.AutoCheckForUpdates = value;
@@ -2332,7 +2267,7 @@ namespace RFiDGear.ViewModel
             {
                 await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
-                    Dialogs.Add(new UpdateNotifierViewModel(updater.UpdateInfoText)
+                    Dialogs.Add(new UpdateNotifierViewModel(updateChecker.UpdateInfoText)
                     {
                         Caption = updateDisabled ? "Changelog" : "Update Available",
 
@@ -2341,21 +2276,21 @@ namespace RFiDGear.ViewModel
                             if (!updateDisabled)
                             {
                                 Mouse.OverrideCursor = Cursors.AppStarting;
-                                await updater.Update();
+                                await updateChecker.ApplyUpdateAsync();
                             }
                             updateAction.Close();
                         },
 
                         OnCancel = (updateAction) =>
                         {
-                            updater.AllowUpdate = false;
+                            updateChecker.AllowUpdate = false;
                             updateAction.Close();
                             mw.Activate();
                         },
 
                         OnCloseRequest = (updateAction) =>
                         {
-                            updater.AllowUpdate = false;
+                            updateChecker.AllowUpdate = false;
                             updateAction.Close();
                             mw.Activate();
                         }
@@ -2390,9 +2325,6 @@ namespace RFiDGear.ViewModel
 
             mw = (MainWindow)Application.Current.MainWindow;
             mw.Title = string.Format("RFiDGear {0}.{1}", Version.Major, Version.Minor);
-
-            checkUpdate = new Timer(CheckUpdate, null, 100, 5000); // ! UI-Thread !
-            checkReader = new Timer(CheckReader, null, 5000, 3000); // ! UI-Thread !
             var projectFileToUse = "";
 
             using (var settings = new SettingsReaderWriter())
@@ -2507,21 +2439,9 @@ namespace RFiDGear.ViewModel
 
                     settings.InitUpdateFile();
 
-                    CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
-                        ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
-                        : settings.DefaultSpecification.DefaultReaderName;
-
-                    if (int.TryParse(settings.DefaultSpecification.LastUsedComPort, out var portNumber))
-                    {
-                        ReaderDevice.PortNumber = portNumber;
-                    }
-
-                    else
-                    {
-                        ReaderDevice.PortNumber = 0;
-                    }
-
-                    culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
+                    var setup = readerInitializer.ApplySettings(settings);
+                    CurrentReader = setup.ReaderName;
+                    culture = setup.Culture;
 
                     var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
 
@@ -2564,67 +2484,9 @@ namespace RFiDGear.ViewModel
 
         private async void CheckReader(object sender)
         {
-            checkReader.Change(Timeout.Infinite, Timeout.Infinite); // ! UI-Thread !
-
-            using (var settings = new SettingsReaderWriter())
-            {
-                if (ReaderDevice.Instance != null && IsReaderBusy != true)
-                {
-                    try
-                    {
-                        if (!ReaderDevice.Instance.IsConnected)
-                        {
-                            var result = await ReaderDevice.Instance.ConnectAsync();
-
-                            if (result == ERROR.NoError)
-                            {
-                                IsReaderBusy = false;
-                                CurrentReader = settings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.None
-                                    ? "N/A"
-                                    : settings.DefaultSpecification.DefaultReaderProvider + " " +
-                                    ReaderDevice.Instance.ReaderUnitName +
-                                    ReaderDevice.Instance.ReaderUnitVersion;
-                            }
-                            else
-                            {
-                                IsReaderBusy = null;
-                                CurrentReader = settings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.None
-                                ? "N/A"
-                                : settings.DefaultSpecification.DefaultReaderProvider.ToString();
-                            }
-                        }
-                        else 
-                        {
-                            CurrentReader = settings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.None
-                                ? "N/A"
-                                : settings.DefaultSpecification.DefaultReaderProvider + " " +
-                                ReaderDevice.Instance.ReaderUnitName +
-                                ReaderDevice.Instance.ReaderUnitVersion;
-                        }
-                    }
-                    catch
-                    {
-                        CurrentReader = settings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.None
-                            ? "N/A"
-                            : settings.DefaultSpecification.DefaultReaderProvider.ToString();
-                    }
-                }
-                else if (ReaderDevice.Instance != null && IsReaderBusy != true)
-                {
-                    IsReaderBusy = null;
-                    CurrentReader = settings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.None
-                        ? "N/A"
-                        : settings.DefaultSpecification.DefaultReaderProvider.ToString();
-                    await ReaderDevice.Instance.ConnectAsync().ConfigureAwait(false);
-                    if (ReaderDevice.Instance.IsConnected)
-                    {
-                        IsReaderBusy = false;
-                    }
-                }
-            };
-
-            checkReader.Change(2000, 2000);
-
+            var status = await readerInitializer.RefreshReaderStatusAsync(IsReaderBusy);
+            IsReaderBusy = status.IsBusy;
+            CurrentReader = status.CurrentReader;
         }
 
         private bool ContainsAny(string haystack, params string[] needles)
