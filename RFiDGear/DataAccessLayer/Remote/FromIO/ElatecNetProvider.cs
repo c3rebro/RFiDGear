@@ -758,6 +758,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     {
                         await readerDevice.MifareDesfire_DeleteApplicationAsync(_appID);
                     }
+                    else {
+                        await readerDevice.MifareDesfire_DeleteApplicationAsync(_appID);
+                    }
                 }
                 catch
                 {
@@ -958,7 +961,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                         DesfireFileSettings.FileType = (byte)fileSettings.FileType;
                         DesfireFileSettings.comSett = (byte)fileSettings.ComSett;
-                        DesfireFileSettings.dataFile.fileSize = fileSettings.DataFileSetting.FileSize;
+                        DesfireFileSettings.dataFile.fileSize = fileSettings.DataFileSetting != null ? fileSettings.DataFileSetting.FileSize : 0;
                         DesfireFileSettings.accessRights = new byte[2];
                         DesfireFileSettings.accessRights[0] |= (byte)fileSettings.accessRights.ReadKeyNo;
                         DesfireFileSettings.accessRights[0] |= (byte)(fileSettings.accessRights.WriteKeyNo << 4);
