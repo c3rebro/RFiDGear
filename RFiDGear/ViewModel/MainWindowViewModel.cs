@@ -359,12 +359,12 @@ namespace RFiDGear.ViewModel
             taskTimeout.Stop();
             taskTimeout.IsEnabled = false;
 
-            (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).IsTaskCompletedSuccessfully = false;
+            taskHandler.TaskCollection[currentTaskIndex].IsTaskCompletedSuccessfully = false;
 #else
             taskTimeout.IsEnabled = false;
             taskTimeout.Stop();
 
-            (taskHandler.TaskCollection[(int)taskTimeout.Tag] as IGenericTaskModel).IsTaskCompletedSuccessfully = false;
+            taskHandler.TaskCollection[(int)taskTimeout.Tag].IsTaskCompletedSuccessfully = false;
 
             currentTaskIndex = int.MaxValue;
 #endif
@@ -461,7 +461,7 @@ namespace RFiDGear.ViewModel
 
                                     ChipTasks.TaskCollection.Add(sender);
 
-                                    ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
+                                    ChipTasks.TaskCollection = new ObservableCollection<IGenericTaskModel>(ChipTasks.TaskCollection.OrderBy(x => x.SelectedTaskIndexAsInt));
 
                                     OnPropertyChanged(nameof(ChipTasks));
                                 }
@@ -545,7 +545,7 @@ namespace RFiDGear.ViewModel
 
                             ChipTasks.TaskCollection.Add(sender);
 
-                            ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
+                            ChipTasks.TaskCollection = new ObservableCollection<IGenericTaskModel>(ChipTasks.TaskCollection.OrderBy(x => x.SelectedTaskIndexAsInt));
 
                             OnPropertyChanged(nameof(ChipTasks));
                         }
@@ -634,7 +634,7 @@ namespace RFiDGear.ViewModel
 
                                     ChipTasks.TaskCollection.Add(sender);
 
-                                    ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
+                                    ChipTasks.TaskCollection = new ObservableCollection<IGenericTaskModel>(ChipTasks.TaskCollection.OrderBy(x => x.SelectedTaskIndexAsInt));
 
                                     OnPropertyChanged(nameof(ChipTasks));
                                 }
@@ -735,7 +735,7 @@ namespace RFiDGear.ViewModel
 
                                 ChipTasks.TaskCollection.Add(sender);
 
-                                ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
+                                ChipTasks.TaskCollection = new ObservableCollection<IGenericTaskModel>(ChipTasks.TaskCollection.OrderBy(x => x.SelectedTaskIndexAsInt));
 
                                 OnPropertyChanged(nameof(ChipTasks));
 
@@ -817,7 +817,7 @@ namespace RFiDGear.ViewModel
 
                                 ChipTasks.TaskCollection.Add(sender);
 
-                                ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
+                                ChipTasks.TaskCollection = new ObservableCollection<IGenericTaskModel>(ChipTasks.TaskCollection.OrderBy(x => x.SelectedTaskIndexAsInt));
 
                                 OnPropertyChanged(nameof(ChipTasks));
 
@@ -1039,8 +1039,11 @@ namespace RFiDGear.ViewModel
         {
             await Task.Run(() =>
             {
-                (SelectedSetupViewModel as IGenericTaskModel).IsTaskCompletedSuccessfully = null;
-                (SelectedSetupViewModel as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.Empty;
+                if (SelectedSetupViewModel is IGenericTaskModel task)
+                {
+                    task.IsTaskCompletedSuccessfully = null;
+                    task.CurrentTaskErrorLevel = ERROR.Empty;
+                }
             });
         }
 
@@ -1121,7 +1124,7 @@ namespace RFiDGear.ViewModel
             // (they could be different as because item at array position 0 can have index "100")
             foreach (var rfidTaskObject in taskHandler.TaskCollection)
             {
-                taskDictionary.Add((rfidTaskObject as IGenericTaskModel).CurrentTaskIndex, taskHandler.TaskCollection.IndexOf(rfidTaskObject));
+                taskDictionary.Add(rfidTaskObject.CurrentTaskIndex, taskHandler.TaskCollection.IndexOf(rfidTaskObject));
             }
 
 #if DEBUG
@@ -1201,22 +1204,22 @@ namespace RFiDGear.ViewModel
 
                             case CommonTaskViewModel csVM:
 
-                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
-                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
-                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
-                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).Args = variablesFromArgs;
+                                csVM.GenericChip = GenericChip;
+                                csVM.DesfireChip = device.DesfireChip;
+                                csVM.AvailableTasks = taskHandler.TaskCollection;
+                                csVM.Args = variablesFromArgs;
 
                                 switch (csVM.SelectedTaskType)
                                 {
                                     case TaskType_CommonTask.CreateReport:
                                         taskTimeout.Stop();
-                                        switch ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
+                                        switch (csVM.CurrentTaskErrorLevel)
                                         {
                                             case ERROR.NotReadyError:
                                                 break;
 
                                             case ERROR.Empty:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
+                                                csVM.CurrentTaskErrorLevel = ERROR.NotReadyError;
                                                 taskTimeout.Start();
                                                 taskTimeout.Stop();
 
@@ -1234,7 +1237,7 @@ namespace RFiDGear.ViewModel
                                                     reportTargetPathDirInfo = null;
                                                 }
 
-                                                if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                if (csVM.SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                 {
                                                     if (string.IsNullOrEmpty(reportOutputPath))
                                                     {
@@ -1264,15 +1267,15 @@ namespace RFiDGear.ViewModel
                                                         reportReaderWriter.ReportTemplateFile = reportTemplateFile;
                                                     }
 
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).WriteReportCommand.ExecuteAsync(reportReaderWriter);
+                                                    await csVM.WriteReportCommand.ExecuteAsync(reportReaderWriter);
                                                 }
 
                                                 else
                                                 {
                                                     // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                    if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                                    if (taskDictionary.TryGetValue(csVM.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                                     {
-                                                        if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                                        if (taskHandler.TaskCollection[targetTaskIndex].CurrentTaskErrorLevel == csVM.SelectedExecuteConditionErrorLevel)
                                                         {
                                                             if (string.IsNullOrEmpty(reportOutputPath))
                                                             {
@@ -1302,7 +1305,7 @@ namespace RFiDGear.ViewModel
                                                                 reportReaderWriter.ReportTemplateFile = reportTemplateFile;
                                                             }
 
-                                                            await (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).WriteReportCommand.ExecuteAsync(reportReaderWriter);
+                                                            await csVM.WriteReportCommand.ExecuteAsync(reportReaderWriter);
                                                         }
                                                         else
                                                         {
@@ -1323,31 +1326,31 @@ namespace RFiDGear.ViewModel
                                         break;
 
                                     case TaskType_CommonTask.CheckLogicCondition:
-                                        switch ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CurrentTaskErrorLevel)
+                                        switch (csVM.CurrentTaskErrorLevel)
                                         {
                                             case ERROR.NotReadyError:
                                                 taskTimeout.Start();
                                                 break;
 
                                             case ERROR.Empty:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
+                                                csVM.CurrentTaskErrorLevel = ERROR.NotReadyError;
                                                 taskTimeout.Start();
 
-                                                if ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                if (csVM.SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                 {
 
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.ExecuteAsync(taskHandler.TaskCollection);
+                                                    await csVM.CheckLogicCondition.ExecuteAsync(taskHandler.TaskCollection);
                                                 }
 
                                                 else
                                                 {
                                                     // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                    if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                                    if (taskDictionary.TryGetValue(csVM.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                                     {
-                                                        if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                                        if (taskHandler.TaskCollection[targetTaskIndex].CurrentTaskErrorLevel == csVM.SelectedExecuteConditionErrorLevel)
                                                         {
 
-                                                            await (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.ExecuteAsync(taskHandler.TaskCollection);
+                                                            await csVM.CheckLogicCondition.ExecuteAsync(taskHandler.TaskCollection);
                                                         }
                                                         else
                                                         {
@@ -1366,29 +1369,29 @@ namespace RFiDGear.ViewModel
                                         break;
 
                                     case TaskType_CommonTask.ExecuteProgram:
-                                        switch ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CurrentTaskErrorLevel)
+                                        switch (csVM.CurrentTaskErrorLevel)
                                         {
                                             case ERROR.NotReadyError:
                                                 taskTimeout.Start();
                                                 break;
 
                                             case ERROR.Empty:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
+                                                csVM.CurrentTaskErrorLevel = ERROR.NotReadyError;
                                                 taskTimeout.Start();
 
-                                                if ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                if (csVM.SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                 {
-                                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
+                                                    csVM.ExecuteProgramCommand.Execute(null);
                                                 }
 
                                                 else
                                                 {
                                                     // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                    if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                                    if (taskDictionary.TryGetValue(csVM.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                                     {
-                                                        if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                                        if (taskHandler.TaskCollection[targetTaskIndex].CurrentTaskErrorLevel == csVM.SelectedExecuteConditionErrorLevel)
                                                         {
-                                                            (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
+                                                            csVM.ExecuteProgramCommand.Execute(null);
                                                         }
                                                         else
                                                         {
@@ -1417,25 +1420,25 @@ namespace RFiDGear.ViewModel
                                 {
                                     case TaskType_GenericChipTask.ChipIsOfType:
                                         taskTimeout.Start();
-                                        switch ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
+                                        switch (csVM.CurrentTaskErrorLevel)
                                         {
                                             case ERROR.Empty:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).IsFocused = true;
+                                                csVM.IsFocused = true;
 
-                                                if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                if (csVM.SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                 {
                                                     IsReaderBusy = true;
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).CheckChipType.ExecuteAsync(device.GenericChip);
+                                                    await csVM.CheckChipType.ExecuteAsync(device.GenericChip);
                                                 }
                                                 else
                                                 {
                                                     // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                    if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                                    if (taskDictionary.TryGetValue(csVM.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                                     {
-                                                        if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                                        if (taskHandler.TaskCollection[targetTaskIndex].CurrentTaskErrorLevel == csVM.SelectedExecuteConditionErrorLevel)
                                                         {
                                                             IsReaderBusy = true;
-                                                            await (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).CheckChipType.ExecuteAsync(device.GenericChip);
+                                                            await csVM.CheckChipType.ExecuteAsync(device.GenericChip);
                                                         }
                                                         else
                                                         {
@@ -1448,7 +1451,7 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             default:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).IsFocused = false;
+                                                csVM.IsFocused = false;
                                                 currentTaskIndex++;
                                                 break;
                                         }
@@ -1456,25 +1459,25 @@ namespace RFiDGear.ViewModel
 
                                     case TaskType_GenericChipTask.ChipIsMultiChip:
                                         taskTimeout.Start();
-                                        switch ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
+                                        switch (csVM.CurrentTaskErrorLevel)
                                         {
                                             case ERROR.Empty:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).IsFocused = true;
+                                                csVM.IsFocused = true;
 
-                                                if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                                if (csVM.SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                                 {
                                                     IsReaderBusy = true;
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).CheckChipIsMultiTecChip.ExecuteAsync(device.GenericChip);
+                                                    await csVM.CheckChipIsMultiTecChip.ExecuteAsync(device.GenericChip);
                                                 }
                                                 else
                                                 {
                                                     // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                    if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                                    if (taskDictionary.TryGetValue(csVM.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                                     {
-                                                        if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                                        if (taskHandler.TaskCollection[targetTaskIndex].CurrentTaskErrorLevel == csVM.SelectedExecuteConditionErrorLevel)
                                                         {
                                                             IsReaderBusy = true;
-                                                            await (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).CheckChipIsMultiTecChip.ExecuteAsync(device.GenericChip);
+                                                            await csVM.CheckChipIsMultiTecChip.ExecuteAsync(device.GenericChip);
                                                         }
                                                         else
                                                         {
@@ -1487,7 +1490,7 @@ namespace RFiDGear.ViewModel
                                                 break;
 
                                             default:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).IsFocused = false;
+                                                csVM.IsFocused = false;
                                                 currentTaskIndex++;
                                                 break;
                                         }
@@ -1498,31 +1501,31 @@ namespace RFiDGear.ViewModel
                                 break;
 
                             case MifareClassicSetupViewModel csVM:
-                                switch ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
+                                switch (csVM.CurrentTaskErrorLevel)
                                 {
                                     case ERROR.NotReadyError:
                                         taskTimeout.Start();
                                         break;
 
                                     case ERROR.Empty:
-                                        (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
+                                        csVM.CurrentTaskErrorLevel = ERROR.NotReadyError;
                                         taskTimeout.Start();
 
-                                        if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                        if (csVM.SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                         {
                                             IsReaderBusy = true;
-                                            await (taskHandler.TaskCollection[currentTaskIndex] as MifareClassicSetupViewModel).CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
+                                            await csVM.CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
                                         }
 
                                         else
                                         {
                                             // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                            if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                            if (taskDictionary.TryGetValue(csVM.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                             {
-                                                if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                                if (taskHandler.TaskCollection[targetTaskIndex].CurrentTaskErrorLevel == csVM.SelectedExecuteConditionErrorLevel)
                                                 {
                                                     IsReaderBusy = true;
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as MifareClassicSetupViewModel).CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
+                                                    await csVM.CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
                                                 }
                                                 else
                                                 {
@@ -1543,31 +1546,31 @@ namespace RFiDGear.ViewModel
                                 break;
 
                             case MifareDesfireSetupViewModel csVM:
-                                switch ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
+                                switch (csVM.CurrentTaskErrorLevel)
                                 {
                                     case ERROR.NotReadyError:
                                         taskTimeout.Start();
                                         break;
 
                                     case ERROR.Empty:
-                                        (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
+                                        csVM.CurrentTaskErrorLevel = ERROR.NotReadyError;
                                         taskTimeout.Start();
 
-                                        if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                                        if (csVM.SelectedExecuteConditionErrorLevel == ERROR.Empty)
                                         {
                                             IsReaderBusy = true;
-                                            await (taskHandler.TaskCollection[currentTaskIndex] as MifareDesfireSetupViewModel).CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
+                                            await csVM.CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
                                         }
 
                                         else
                                         {
                                             // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                            if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                            if (taskDictionary.TryGetValue(csVM.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                             {
-                                                if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                                if (taskHandler.TaskCollection[targetTaskIndex].CurrentTaskErrorLevel == csVM.SelectedExecuteConditionErrorLevel)
                                                 {
                                                     IsReaderBusy = true;
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as MifareDesfireSetupViewModel).CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
+                                                    await csVM.CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
                                                 }
                                                 else
                                                 {
