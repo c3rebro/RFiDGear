@@ -27,7 +27,8 @@ namespace RFiDGear.ViewModel
     [XmlRootAttribute("TreeViewParentNode", IsNullable = false)]
     public class RFiDChipParentLayerViewModel : ObservableObject
     {
-        private readonly SettingsReaderWriter settings;
+        private readonly ProjectManager projectManager;
+        private readonly SettingsLoadResult settings;
 
         private static object _selectedItem;
 
@@ -54,7 +55,8 @@ namespace RFiDGear.ViewModel
         public RFiDChipParentLayerViewModel()
         {
             ID = new Random().Next();
-            settings = new SettingsReaderWriter();
+            projectManager = new ProjectManager();
+            settings = projectManager.LoadSettings();
 
             mifareClassicUidModel = new MifareClassicChipModel();
             mifareDesfireUidModel = new MifareDesfireChipModel();
@@ -67,7 +69,8 @@ namespace RFiDGear.ViewModel
         public RFiDChipParentLayerViewModel(string _text)
         {
             ID = new Random().Next();
-            settings = new SettingsReaderWriter();
+            projectManager = new ProjectManager();
+            settings = projectManager.LoadSettings();
 
             mifareClassicUidModel = new MifareClassicChipModel();
             mifareDesfireUidModel = new MifareDesfireChipModel();
@@ -89,7 +92,8 @@ namespace RFiDGear.ViewModel
             }
 
             isTask = _isTask;
-            settings = new SettingsReaderWriter();
+            projectManager = new ProjectManager();
+            settings = projectManager.LoadSettings();
             _children = new ObservableCollection<RFiDChipChildLayerViewModel>();
 
             ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
