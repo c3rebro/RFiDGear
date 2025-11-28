@@ -253,6 +253,7 @@
     </Compile>
     <Compile Include="DataAccessLayer\Local\Constants.cs" />
     <Compile Include="DataAccessLayer\Local\CustomConverter.cs" />
+    <Compile Include="DataAccessLayer\Remote\FromFile\ProjectManager.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\DatabaseReaderWriter.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\ReportReaderWriter.cs" />
     <Compile Include="DataAccessLayer\Local\ResourceLoader.cs" />
