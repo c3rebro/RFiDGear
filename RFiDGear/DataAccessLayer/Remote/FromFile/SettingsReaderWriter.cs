@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
@@ -194,6 +195,10 @@ namespace RFiDGear
                 await SaveSettingsAsync(DefaultSpecification, string.IsNullOrWhiteSpace(path) ? SettingsFilePath : path).ConfigureAwait(false);
 
                 return true;
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
             }
             catch (XmlException e)
             {

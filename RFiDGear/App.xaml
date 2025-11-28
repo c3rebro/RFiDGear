@@ -13,7 +13,7 @@
     xmlns:vm="clr-namespace:RFiDGear.ViewModel"
     xmlns:taskvm="clr-namespace:RFiDGear.ViewModel.TaskSetupViewModels"
     d1p1:Ignorable="d"
-    StartupUri="View/MainWindow.xaml">
+    Startup="OnStartup">
 
     <Application.Resources>
         <ResourceDictionary>

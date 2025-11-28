@@ -9,17 +9,11 @@ RFiDGear: Your essential gear to encode (read - modify - write) rfid tags. Suppo
 Requirements:
 
 * Microsoft Windows 7 32/64bit (or later)
-* .NET Framework 4.5.2 (or later - included)
+* .NET Framework 4.8.1 (or later - included)
 * Elatec Reader TWN4
+* LibLogicalAccess 3.3.0 (or later - included)
 
-Hint: PCSC Support was removed due to unanswered license questions
-
-~~LibLogicalAccess 1.87 (or later - included)~~
-
-~~a (tested) PCSC compatibile Reader:~~
-
-~~Omnikey 5321~~ 
-
-~~Sciel SCL3711~~
-
-~~ACR 122U~~
+a (tested) PCSC compatibile Reader:
+Omnikey 5321
+Sciel SCL3711
+ACR 122U
