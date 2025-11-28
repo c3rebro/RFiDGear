@@ -1,8 +1,8 @@
-using PluginSystem.DataAccessLayer;
 using System;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Reflection;
+using Serilog;
 
 // Template version 1.2.0.2. Code developed for framework v2.0.50727.3074
 // This code is copyright (c) 2009 Computer DJ. All rights reserved.
@@ -46,7 +46,8 @@ public sealed class MefHelper : IDisposable
         }
         catch (Exception e)
         {
-            LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+            Log.ForContext<MefHelper>()
+                .Error(e, "Failed to create initial extensions directory at {ExtensionsPath}", _ExtensionsPath);
         }
 
         _ExtensionsPath = Path.Combine(_ExtensionsPath, "Extensions");
@@ -60,7 +61,8 @@ public sealed class MefHelper : IDisposable
         }
         catch (Exception e)
         {
-            LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
+            Log.ForContext<MefHelper>()
+                .Error(e, "Failed to create extensions directory at {ExtensionsPath}", _ExtensionsPath);
         }
 
 #if (DEBUG)
