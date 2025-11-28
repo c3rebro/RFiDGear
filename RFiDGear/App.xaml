@@ -4,13 +4,14 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:d1p1="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:dialogsview="clr-namespace:MVVMDialogs.View;assembly=MVVMDialogs"
-    xmlns:dialogsvm="clr-namespace:MVVMDialogs.ViewModels;assembly=MVVMDialogs"
+    xmlns:dialogsview="clr-namespace:MVVMDialogs.View"
+    xmlns:dialogsvm="clr-namespace:MVVMDialogs.ViewModels"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mainview="clr-namespace:RFiDGear.View"
-    xmlns:mainvm="clr-namespace:MefMvvm.SharedContracts.ViewModel;assembly=PluginSystem"
-    xmlns:pre="clr-namespace:MVVMDialogs.Presenters;assembly=MVVMDialogs"
+    xmlns:mainvm="clr-namespace:MefMvvm.SharedContracts.ViewModel"
+    xmlns:pre="clr-namespace:MVVMDialogs.Presenters"
     xmlns:vm="clr-namespace:RFiDGear.ViewModel"
+    xmlns:taskvm="clr-namespace:RFiDGear.ViewModel.TaskSetupViewModels"
     d1p1:Ignorable="d"
     StartupUri="View/MainWindow.xaml">
 
@@ -22,11 +23,11 @@
             
             <dialogsview:CustomDialogBox x:Key="{x:Type dialogsvm:CustomDialogViewModel}" x:Shared="False" />
 
-            <mainview:CommonTaskView x:Key="{x:Type vm:CommonTaskViewModel}" x:Shared="False" />
-            <mainview:GenericChipTaskView x:Key="{x:Type vm:GenericChipTaskViewModel}" x:Shared="False" />
-            <mainview:MifareClassicSetupView x:Key="{x:Type vm:MifareClassicSetupViewModel}" x:Shared="False" />
-            <mainview:MifareDesfireSetupView x:Key="{x:Type vm:MifareDesfireSetupViewModel}" x:Shared="False" />
-            <mainview:MifareUltralightSetupView x:Key="{x:Type vm:MifareUltralightSetupViewModel}" x:Shared="False" />
+            <mainview:CommonTaskView x:Key="{x:Type taskvm:CommonTaskViewModel}" x:Shared="False" />
+            <mainview:GenericChipTaskView x:Key="{x:Type taskvm:GenericChipTaskViewModel}" x:Shared="False" />
+            <mainview:MifareClassicSetupView x:Key="{x:Type taskvm:MifareClassicSetupViewModel}" x:Shared="False" />
+            <mainview:MifareDesfireSetupView x:Key="{x:Type taskvm:MifareDesfireSetupViewModel}" x:Shared="False" />
+            <mainview:MifareUltralightSetupView x:Key="{x:Type taskvm:MifareUltralightSetupViewModel}" x:Shared="False" />
             <mainview:SetupView x:Key="{x:Type vm:SetupViewModel}" x:Shared="False" />
             <mainview:UpdateNotifierView x:Key="{x:Type vm:UpdateNotifierViewModel}" x:Shared="False" />
             <mainview:AboutView x:Key="{x:Type vm:AboutViewModel}" x:Shared="False" />

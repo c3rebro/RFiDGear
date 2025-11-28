@@ -6,6 +6,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>WinExe</OutputType>
+    <LangVersion>8.0</LangVersion>
     <RootNamespace>RFiDGear</RootNamespace>
     <AssemblyName>RFiDGear</AssemblyName>
     <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
@@ -77,7 +78,6 @@
     <FileAlignment>4096</FileAlignment>
     <DebugType>Full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
@@ -87,7 +87,6 @@
     <FileAlignment>4096</FileAlignment>
     <DebugType>None</DebugType>
     <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
@@ -251,8 +250,10 @@
       <SubType>Code</SubType>
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Behaviors\DialogBehavior.cs" />
     <Compile Include="DataAccessLayer\Local\Constants.cs" />
     <Compile Include="DataAccessLayer\Local\CustomConverter.cs" />
+    <Compile Include="DataAccessLayer\LogWriter.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\ProjectManager.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\DatabaseReaderWriter.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\ReportReaderWriter.cs" />
@@ -261,6 +262,8 @@
     <Compile Include="DataAccessLayer\Remote\FromIO\LibLogicalAccessProvider.cs" />
     <Compile Include="DataAccessLayer\Remote\FromIO\ReaderDevice.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\SettingsReaderWriter.cs" />
+    <Compile Include="Helpers\ByteArray.cs" />
+    <Compile Include="MefHelper.cs" />
     <Compile Include="Model\Checkpoint.cs" />
     <Compile Include="Model\ChipTaskHandlerModel.cs" />
     <Compile Include="Model\GenericTaskModel.cs" />
@@ -277,10 +280,27 @@
     <Compile Include="Model\GenericChipModel.cs" />
     <Compile Include="Model\MifareUltralight\MifareUltralightChipModel.cs" />
     <Compile Include="Model\MifareUltralight\MifareUltralightPageModel.cs" />
+    <Compile Include="Presenters\IDialogBoxPresenter.cs" />
+    <Compile Include="Presenters\MessageBoxPresenter.cs" />
+    <Compile Include="Presenters\OpenFileDialogPresenter.cs" />
+    <Compile Include="Presenters\SaveFileDialogPresenter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\WPFAssemblyInfo.cs" />
+    <Compile Include="UIExtensions\IUIExtension.cs" />
+    <Compile Include="UIExtensions\IUIExtensionDetails.cs" />
+    <Compile Include="UIExtensions\UiExtensionAttribute.cs" />
+    <Compile Include="ViewModelLocator\ExportViewModel.cs" />
+    <Compile Include="ViewModelLocator\ImportProperty.cs" />
+    <Compile Include="ViewModelLocator\IViewModelMetadata.cs" />
+    <Compile Include="ViewModelLocator\ViewModelLocator.cs" />
+    <Compile Include="ViewModel\CustomDialogViewModel.cs" />
+    <Compile Include="ViewModel\IDialogViewModel.cs" />
+    <Compile Include="ViewModel\IUserDialogViewModel.cs" />
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
     <Compile Include="ViewModel\AboutViewModel.cs" />
+    <Compile Include="ViewModel\MessageBoxViewModel.cs" />
+    <Compile Include="ViewModel\OpenFileDialogViewModel.cs" />
+    <Compile Include="ViewModel\SaveFileDialogViewModel.cs" />
     <Compile Include="ViewModel\UpdateNotifierViewModel.cs" />
     <Compile Include="ViewModel\DialogFactories\TaskDialogFactory.cs" />
     <Compile Include="Services\TaskExecution\TaskExecutionService.cs" />
@@ -295,6 +315,9 @@
     <Compile Include="ViewModel\HirarchicalDataTemplateViewModels\RFiDChipGrandChildLayerViewModel.cs" />
     <Compile Include="ViewModel\HirarchicalDataTemplateViewModels\RFiDChipGrandGrandChildLayerViewModel.cs" />
     <Compile Include="ViewModel\HirarchicalDataTemplateViewModels\RFiDChipParentLayerViewModel.cs" />
+    <Compile Include="View\CustomDialogBox.xaml.cs">
+      <DependentUpon>CustomDialogBox.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
@@ -397,6 +420,9 @@
     <Resource Include="Resources\logo.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="View\CustomDialogBox.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="View\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -462,24 +488,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ByteArray\ByteArray.csproj">
-      <Project>{bdd5df8c-6fc1-4882-8151-924820fdbc05}</Project>
-      <Name>ByteArray</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Elatec.NET\Elatec.NET.csproj">
-      <Project>{85539126-c66f-7a99-012b-6c95bfa13e9d}</Project>
-      <Name>Elatec.NET</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\MVVMDialogs\MVVMDialogs.csproj">
-      <Project>{ef56252e-257f-41d1-974b-c9015071ce7e}</Project>
-      <Name>MVVMDialogs</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\PluginSystem\PluginSystem.csproj">
-      <Project>{e99b606a-25b8-4113-9e75-5016ccfdb410}</Project>
-      <Name>PluginSystem</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Resources\splash.png" />
   </ItemGroup>
   <ItemGroup>
@@ -500,6 +508,9 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm">
       <Version>8.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Elatec.NET">
+      <Version>0.4.2</Version>
     </PackageReference>
     <PackageReference Include="GemBox.Pdf">
       <Version>17.0.1565</Version>
