@@ -1103,63 +1103,62 @@ namespace RFiDGear.ViewModel
             using (var device = ReaderDevice.Instance)
             {
                 Dialogs.Add(new SetupViewModel(device, settings)
+                {
+                    Caption = ResourceLoader.GetResource("windowCaptionReaderSetup"),
+
+                    OnOk = (sender) =>
                     {
-                        Caption = ResourceLoader.GetResource("windowCaptionReaderSetup"),
+                        currentSettings.DefaultReaderProvider = sender.SelectedReader;
+                        currentSettings.AutoLoadProjectOnStart = sender.LoadOnStart;
+                        currentSettings.LastUsedComPort = sender.ComPort;
+                        currentSettings.AutoCheckForUpdates = sender.CheckOnStart;
+                        currentSettings.LastUsedBaudRate = sender.SelectedBaudRate;
 
-                        OnOk = (sender) =>
+                        settings.DefaultSpecification = currentSettings;
+
+                        sender.SaveSettings.ExecuteAsync(null);
+
+                        CurrentReader = Enum.GetName(typeof(ReaderTypes), sender.SelectedReader);
+
+                        ReaderDevice.Reader = (ReaderTypes)Enum.Parse(typeof(ReaderTypes), CurrentReader);
+
+                        sender.Close();
+
+                        IsReaderBusy = false;
+                    },
+
+                    OnConnect = (sender) =>
+                    {
+                        IsReaderBusy = true;
+                    },
+
+                    OnUpdateReaderStatus = (sender) =>
+                    {
+                        IsReaderBusy = sender;
+                    },
+
+                    OnBeginUpdateCheck = (sender) =>
+                    {
+                        if (sender)
                         {
-                            currentSettings.DefaultReaderProvider = sender.SelectedReader;
-                            currentSettings.AutoLoadProjectOnStart = sender.LoadOnStart;
-                            currentSettings.LastUsedComPort = sender.ComPort;
-                            currentSettings.AutoCheckForUpdates = sender.CheckOnStart;
-                            currentSettings.LastUsedBaudRate = sender.SelectedBaudRate;
-
-                            settings.DefaultSpecification = currentSettings;
-
-                            sender.SaveSettings.ExecuteAsync(null);
-
-                            CurrentReader = Enum.GetName(typeof(ReaderTypes), sender.SelectedReader);
-
-                            ReaderDevice.Reader = (ReaderTypes)Enum.Parse(typeof(ReaderTypes), CurrentReader);
-
-                            sender.Close();
-
-                            IsReaderBusy = false;
-                        },
-                        
-                        OnConnect = (sender) =>
-                        {
-                            IsReaderBusy = true;
-                        },
-
-                        OnUpdateReaderStatus = (sender) =>
-                        {
-                            IsReaderBusy = sender;
-                        },
-
-                        OnBeginUpdateCheck = (sender) =>
-                        {
-                            if (sender)
-                            {
-                                updater?.StartMonitoring();
-                            }
-                        },
-
-                        OnCancel = (sender) =>
-                        {
-                            sender.Close();
-                            IsReaderBusy = false;
-                            mw.Activate();
-                        },
-
-                        OnCloseRequest = (sender) =>
-                        {
-                            sender.Close();
-                            IsReaderBusy = false;
-                            mw.Activate();
+                            updater?.StartMonitoring();
                         }
-                    });
-                }
+                    },
+
+                    OnCancel = (sender) =>
+                    {
+                        sender.Close();
+                        IsReaderBusy = false;
+                        mw.Activate();
+                    },
+
+                    OnCloseRequest = (sender) =>
+                    {
+                        sender.Close();
+                        IsReaderBusy = false;
+                        mw.Activate();
+                    }
+                });
             }
         }
 
