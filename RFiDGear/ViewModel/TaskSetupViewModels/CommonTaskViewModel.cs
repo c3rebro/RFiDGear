@@ -49,7 +49,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public ReportReaderWriter ReportReaderWriterToUse { get; set; }
 
         [XmlIgnore]
-        public ObservableCollection<IGenericTaskModel> AvailableTasks { get; set; }
+        public ObservableCollection<object> AvailableTasks { get; set; }
 
         [XmlIgnore]
         public GenericChipModel GenericChip { get; set; }
@@ -90,7 +90,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         /// <param name="_selectedSetupViewModel"></param>
         /// <param name="_dialogs"></param>
-        public CommonTaskViewModel(object _selectedSetupViewModel, ObservableCollection<IGenericTaskModel> _tasks = null, ObservableCollection<IDialogViewModel> _dialogs = null)
+        public CommonTaskViewModel(object _selectedSetupViewModel, ObservableCollection<object> _tasks = null, ObservableCollection<IDialogViewModel> _dialogs = null)
         {
             try
             {
@@ -581,7 +581,24 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 var availableTaskIndices = new ObservableCollection<string>();
                 foreach (var ssVMO in AvailableTasks)
                 {
-                    availableTaskIndices.Add(ssVMO.CurrentTaskIndex);
+                    switch (ssVMO)
+                    {
+                        case CommonTaskViewModel ssVM:
+                            availableTaskIndices.Add(ssVM.CurrentTaskIndex);
+                            break;
+                        case GenericChipTaskViewModel ssVM:
+                            availableTaskIndices.Add(ssVM.CurrentTaskIndex);
+                            break;
+                        case MifareClassicSetupViewModel ssVM:
+                            availableTaskIndices.Add(ssVM.CurrentTaskIndex);
+                            break;
+                        case MifareDesfireSetupViewModel ssVM:
+                            availableTaskIndices.Add(ssVM.CurrentTaskIndex);
+                            break;
+                        case MifareUltralightSetupViewModel ssVM:
+                            availableTaskIndices.Add(ssVM.CurrentTaskIndex);
+                            break;
+                    }
                 }
 
                 availableTaskIndices.Add(string.Empty);
@@ -926,7 +943,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 // (they could be different as because item at array position 0 can have index "100")
                 foreach (var rfidTaskObject in AvailableTasks)
                 {
-                    checkpointDictionary.Add(rfidTaskObject.CurrentTaskIndex, AvailableTasks.IndexOf(rfidTaskObject));
+                    checkpointDictionary.Add((rfidTaskObject as IGenericTaskModel).CurrentTaskIndex, AvailableTasks.IndexOf(rfidTaskObject));
                 }
 
                 try
@@ -1066,7 +1083,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             // .ConfigureAwait(false) due to fileAccess
                             if (checkpointDictionary.TryGetValue(checkpoint.TaskIndex ?? "-1", out var targetIndex))
                             {
-                                if (AvailableTasks[targetIndex].CurrentTaskErrorLevel == checkpoint.ErrorLevel)
+                                if ((AvailableTasks[targetIndex] as IGenericTaskModel).CurrentTaskErrorLevel == checkpoint.ErrorLevel)
                                 {
                                     if (concatenate)
                                     {
@@ -1132,8 +1149,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         /// 
         /// </summary>
-        public IAsyncRelayCommand CheckLogicCondition => new AsyncRelayCommand<ObservableCollection<IGenericTaskModel>>(OnNewCheckLogicConditionCommand);
-        private async Task<ERROR> OnNewCheckLogicConditionCommand(ObservableCollection<IGenericTaskModel> _tasks = null)
+        public IAsyncRelayCommand CheckLogicCondition => new AsyncRelayCommand<ObservableCollection<object>>(OnNewCheckLogicConditionCommand);
+        private async Task<ERROR> OnNewCheckLogicConditionCommand(ObservableCollection<object> _tasks = null)
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
