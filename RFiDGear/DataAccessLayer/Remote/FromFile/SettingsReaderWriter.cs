@@ -45,7 +45,13 @@ namespace RFiDGear
             this.appDataPath = appDataPath ?? throw new ArgumentNullException(nameof(appDataPath));
         }
 
-        public DefaultSpecification DefaultSpecification { get; private set; } = new DefaultSpecification();
+        private DefaultSpecification defaultSpecification = new DefaultSpecification();
+
+        public DefaultSpecification DefaultSpecification
+        {
+            get => defaultSpecification;
+            set => defaultSpecification = value ?? new DefaultSpecification();
+        }
 
         public void InitUpdateFile()
         {
