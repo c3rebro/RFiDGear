@@ -110,10 +110,7 @@ namespace RFiDGear.ViewModel
                     ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                     : settings.DefaultSpecification.DefaultReaderName;
 
-                if (!string.IsNullOrEmpty(CurrentReader))
-                {
-                    ReaderDevice.Reader = (ReaderTypes)Enum.Parse(typeof(ReaderTypes), CurrentReader);
-                }
+                ReaderDevice.Reader = settings.DefaultSpecification.DefaultReaderProvider;
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
                 autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
@@ -1109,6 +1106,9 @@ namespace RFiDGear.ViewModel
                     OnOk = (sender) =>
                     {
                         currentSettings.DefaultReaderProvider = sender.SelectedReader;
+                        currentSettings.DefaultReaderName = sender.SelectedReader == ReaderTypes.PCSC
+                            ? sender.SelectedReaderName
+                            : string.Empty;
                         currentSettings.AutoLoadProjectOnStart = sender.LoadOnStart;
                         currentSettings.LastUsedComPort = sender.ComPort;
                         currentSettings.AutoCheckForUpdates = sender.CheckOnStart;
@@ -1118,9 +1118,11 @@ namespace RFiDGear.ViewModel
 
                         sender.SaveSettings.ExecuteAsync(null);
 
-                        CurrentReader = Enum.GetName(typeof(ReaderTypes), sender.SelectedReader);
+                        CurrentReader = string.IsNullOrWhiteSpace(sender.SelectedReaderName)
+                            ? Enum.GetName(typeof(ReaderTypes), sender.SelectedReader)
+                            : sender.SelectedReaderName;
 
-                        ReaderDevice.Reader = (ReaderTypes)Enum.Parse(typeof(ReaderTypes), CurrentReader);
+                        ReaderDevice.Reader = sender.SelectedReader;
 
                         sender.Close();
 
