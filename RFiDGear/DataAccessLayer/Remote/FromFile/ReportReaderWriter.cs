@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Xml;
 using GemBox.Pdf;
+using Serilog;
 
 namespace RFiDGear.DataAccessLayer
 {
@@ -17,7 +17,7 @@ namespace RFiDGear.DataAccessLayer
     {
         #region fields
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private readonly Serilog.ILogger logger = Log.ForContext<ReportReaderWriter>();
         private readonly ProjectManager projectManager;
         public string ReportOutputPath { get; set; }
         public string ReportTemplateFile { get; set; }
@@ -42,7 +42,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to initialize report writer");
                 return;
             }
         }
@@ -69,7 +69,7 @@ namespace RFiDGear.DataAccessLayer
                     }
                     catch (Exception e)
                     {
-                        eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                        logger.Error(e, "Failed to enumerate fields from {TemplateFile}", ReportTemplateFile);
                     }
                 }
 
@@ -78,7 +78,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (XmlException e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to read report fields from {TemplateFile}", ReportTemplateFile);
                 return null;
             }
         }
@@ -139,14 +139,14 @@ namespace RFiDGear.DataAccessLayer
                         }
                         catch (Exception e)
                         {
-                            eventLog.WriteEntry(string.Format("{0}; Field: {1}", e.Message, fieldName), EventLogEntryType.Error);
+                            logger.Error(e, "Failed to apply changes to field {FieldName} in {OutputPath}", fieldName, ReportOutputPath);
                         }
                     }
                 }).ConfigureAwait(false);
             }
             catch (XmlException e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to apply report changes for field {FieldName}", fieldName);
             }
         }
 
@@ -205,7 +205,7 @@ namespace RFiDGear.DataAccessLayer
 
                     catch (XmlException e)
                     {
-                        eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                        logger.Error(e, "Failed while disposing report writer");
                     }
                 }
 

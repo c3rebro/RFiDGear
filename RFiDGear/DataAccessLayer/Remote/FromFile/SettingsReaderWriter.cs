@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -9,6 +8,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+using Serilog;
 
 namespace RFiDGear
 {
@@ -18,7 +18,7 @@ namespace RFiDGear
     public class SettingsReaderWriter : IDisposable
     {
         private readonly string appDataPath;
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private readonly Serilog.ILogger logger = Log.ForContext<SettingsReaderWriter>();
         private readonly string updateConfigFileFileName = "update.xml";
         private readonly string updateURL = @"https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml";
         private readonly int updateInterval = 900;
@@ -123,7 +123,7 @@ namespace RFiDGear
             }
             catch (Exception e) when (e is IOException || e is InvalidOperationException)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to read settings from {SettingsFilePath}", filePath);
             }
 
             return DefaultSpecification;
@@ -168,7 +168,7 @@ namespace RFiDGear
             }
             catch (XmlException e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to serialize settings to {SettingsFilePath}", path);
             }
         }
 
@@ -197,7 +197,7 @@ namespace RFiDGear
             }
             catch (XmlException e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to save settings to {SettingsFilePath}", string.IsNullOrWhiteSpace(path) ? SettingsFilePath : path);
                 return false;
             }
         }
@@ -217,7 +217,7 @@ namespace RFiDGear
                 }
                 catch (Exception e)
                 {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                    logger.Error(e, "Failed to dispose settings");
                 }
             }
 
