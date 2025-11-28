@@ -5,6 +5,7 @@ using LibLogicalAccess.Crypto;
 
 using ByteArrayHelper.Extensions;
 
+using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
 using System;
@@ -22,11 +23,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 	///
 	public class LibLogicalAccessProvider : ReaderDevice, IDisposable
 	{
-		// global (cross-class) Instances go here ->
-		private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
-		private ReaderProvider readerProvider;
-		private ReaderUnit readerUnit;
-		private Chip card;
+                // global (cross-class) Instances go here ->
+                private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+                private readonly ProjectManager projectManager = new ProjectManager();
+                private ReaderProvider readerProvider;
+                private ReaderUnit readerUnit;
+                private Chip card;
 
 
 		#region contructor
@@ -161,12 +163,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 		public override async Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
 		{
-			try
-			{
-                var settings = new SettingsReaderWriter();
+                        try
+                        {
+                await projectManager.LoadSettingsAsync();
                 Sector = new MifareClassicSectorModel();
-
-                await settings.ReadSettings();
 
                 var keyA = new MifareKey(CustomConverter.KeyFormatQuickCheck(aKey) ? aKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey));
                 var keyB = new MifareKey(CustomConverter.KeyFormatQuickCheck(bKey) ? bKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey));
@@ -503,10 +503,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		{
             try
             {
-                var settings = new SettingsReaderWriter();
                 Sector = new MifareClassicSectorModel();
-
-                await settings.ReadSettings();
+                await projectManager.LoadSettingsAsync();
 
                 var mAKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_aKeyToUse) ? _aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToUse));
                 var mBKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_bKeyToUse) ? _bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToUse));
@@ -587,10 +585,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		{
             try
             {
-                var settings = new SettingsReaderWriter();
                 Sector = new MifareClassicSectorModel();
-
-                await settings.ReadSettings();
+                await projectManager.LoadSettingsAsync();
 
                 var mAKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_aKeyToUse) ? _aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToUse));
                 var mBKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_bKeyToUse) ? _bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToUse));

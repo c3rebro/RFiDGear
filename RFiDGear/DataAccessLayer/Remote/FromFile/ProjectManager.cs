@@ -1,7 +1,10 @@
 using System;
 using System.IO;
+using System.Reflection;
+using System.Threading.Tasks;
 using System.Xml;
 using Ionic.Zip;
+using RFiDGear.Model;
 
 namespace RFiDGear.DataAccessLayer
 {
@@ -11,6 +14,7 @@ namespace RFiDGear.DataAccessLayer
         private const string TaskDatabaseFileNameCompressed = "chipdatabase.rfPrj";
         private const string TaskDatabaseFileName = "taskdatabase.xml";
         private const string ReportTemplateTempFileName = "temptemplate.pdf";
+        private const string SettingsFileName = "settings.xml";
 
         public string AppDataPath { get; }
 
@@ -21,6 +25,8 @@ namespace RFiDGear.DataAccessLayer
         public string CompressedTaskDatabasePath => Path.Combine(AppDataPath, TaskDatabaseFileNameCompressed);
 
         public string ReportTemplateTempPath => Path.Combine(AppDataPath, ReportTemplateTempFileName);
+
+        public string SettingsPath => Path.Combine(AppDataPath, SettingsFileName);
 
         public ProjectManager()
         {
@@ -102,11 +108,80 @@ namespace RFiDGear.DataAccessLayer
             RemoveTaskArtifacts();
         }
 
+        public void EnsureSettingsFileExists(string settingsPath = null)
+        {
+            EnsureAppDataDirectory();
+
+            var resolvedPath = ResolveSettingsPath(settingsPath);
+
+            if (File.Exists(resolvedPath))
+            {
+                return;
+            }
+
+            EnsureDirectoryExists(Path.GetDirectoryName(resolvedPath));
+
+            using var settingsReaderWriter = new SettingsReaderWriter(AppDataPath);
+            settingsReaderWriter.SaveSettings(new DefaultSpecification(true), resolvedPath);
+        }
+
+        public Task EnsureSettingsFileExistsAsync(string settingsPath = null)
+        {
+            return Task.Run(() => EnsureSettingsFileExists(settingsPath));
+        }
+
+        public void InitializeUpdateConfiguration(string settingsPath = null)
+        {
+            EnsureSettingsFileExists(settingsPath);
+
+            using var settingsReaderWriter = new SettingsReaderWriter(AppDataPath);
+            settingsReaderWriter.InitUpdateFile();
+        }
+
+        public SettingsLoadResult LoadSettings(string settingsPath = null, Version appVersion = null)
+        {
+            EnsureSettingsFileExists(settingsPath);
+
+            var resolvedPath = ResolveSettingsPath(settingsPath);
+            var settingsReaderWriter = new SettingsReaderWriter(AppDataPath);
+            var specification = settingsReaderWriter.ReadSettings(resolvedPath);
+
+            return CreateSettingsLoadResult(appVersion, resolvedPath, specification);
+        }
+
+        public Task<SettingsLoadResult> LoadSettingsAsync(string settingsPath = null, Version appVersion = null)
+        {
+            return Task.Run(() => LoadSettings(settingsPath, appVersion));
+        }
+
+        public Task SaveSettingsAsync(DefaultSpecification defaultSpecification, string settingsPath = null)
+        {
+            EnsureSettingsFileExists(settingsPath);
+
+            var resolvedPath = ResolveSettingsPath(settingsPath);
+            var settingsReaderWriter = new SettingsReaderWriter(AppDataPath);
+
+            return settingsReaderWriter.SaveSettingsAsync(defaultSpecification, resolvedPath);
+        }
+
         public bool ValidateManifestVersion(int manifestVersion, Version appVersion)
         {
             var currentVersion = Convert.ToInt32(string.Format("{0}{1}{2}", appVersion.Major, appVersion.Minor, appVersion.Build));
 
             return manifestVersion <= currentVersion;
+        }
+
+        private SettingsLoadResult CreateSettingsLoadResult(Version appVersion, string resolvedPath, DefaultSpecification specification)
+        {
+            var manifestVersion = GetManifestVersion(resolvedPath);
+            var versionToCompare = appVersion ?? Assembly.GetExecutingAssembly().GetName().Version;
+
+            return new SettingsLoadResult(
+                success: true,
+                manifestVersion: manifestVersion,
+                isSupportedVersion: ValidateManifestVersion(manifestVersion, versionToCompare),
+                defaultSpecification: specification,
+                settingsPath: resolvedPath);
         }
 
         private ProjectLoadResult PrepareCompressedProject(FileInfo file, Version appVersion)
@@ -207,6 +282,11 @@ namespace RFiDGear.DataAccessLayer
                 Directory.CreateDirectory(directoryPath);
             }
         }
+
+        private string ResolveSettingsPath(string settingsPath)
+        {
+            return string.IsNullOrWhiteSpace(settingsPath) ? SettingsPath : settingsPath;
+        }
     }
 
     public enum ProjectFileType
@@ -240,6 +320,33 @@ namespace RFiDGear.DataAccessLayer
         public static ProjectLoadResult Failed()
         {
             return new ProjectLoadResult(false, 0, false, TextReader.Null, ProjectFileType.Unknown);
+        }
+    }
+
+    public class SettingsLoadResult
+    {
+        public SettingsLoadResult(bool success, int manifestVersion, bool isSupportedVersion, DefaultSpecification defaultSpecification, string settingsPath)
+        {
+            Success = success;
+            ManifestVersion = manifestVersion;
+            IsSupportedVersion = isSupportedVersion;
+            DefaultSpecification = defaultSpecification;
+            SettingsPath = settingsPath;
+        }
+
+        public bool Success { get; }
+
+        public int ManifestVersion { get; }
+
+        public bool IsSupportedVersion { get; }
+
+        public DefaultSpecification DefaultSpecification { get; }
+
+        public string SettingsPath { get; }
+
+        public static SettingsLoadResult Failed()
+        {
+            return new SettingsLoadResult(false, 0, false, new DefaultSpecification(), string.Empty);
         }
     }
 }

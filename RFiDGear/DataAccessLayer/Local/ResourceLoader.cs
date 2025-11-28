@@ -70,11 +70,12 @@ namespace RFiDGear.DataAccessLayer
         {
             Type = type;
 
-            var settings = new SettingsReaderWriter();
-            resManager = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
-            settings.ReadSettings().GetAwaiter().GetResult();
+            var projectManager = new ProjectManager();
+            var settings = projectManager.LoadSettings();
 
-            cultureInfo = (new DefaultSpecification().DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
+            resManager = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
+
+            cultureInfo = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
         }
 
         /// <summary>
@@ -206,15 +207,13 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
-                using (var settings = new SettingsReaderWriter())
-                {
-                    settings.ReadSettings().GetAwaiter().GetResult();
+                var projectManager = new ProjectManager();
+                var settingsResult = projectManager.LoadSettings();
 
-                    var ressource = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
-                        .GetString(resName, (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en"));
+                var ressource = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
+                    .GetString(resName, (settingsResult.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en"));
 
-                    return ressource.Replace("%NEWLINE", "\n");
-                }
+                return ressource.Replace("%NEWLINE", "\n");
 
             }
             catch (Exception e)
