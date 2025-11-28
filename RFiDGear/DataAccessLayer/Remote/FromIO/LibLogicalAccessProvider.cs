@@ -9,6 +9,7 @@ using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Reflection;
@@ -29,7 +30,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 private readonly ProjectManager projectManager = new ProjectManager();
                 private ReaderProvider readerProvider;
                 private ReaderUnit readerUnit;
+                private string selectedReaderName;
                 private Chip card;
+                public IReadOnlyCollection<string> AvailableReaders { get; private set; } = new List<string>();
 
 
 		#region contructor
@@ -37,22 +40,21 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		{
 		}
 
-		public LibLogicalAccessProvider(ReaderTypes readerType)
-		{
-			try
-			{
-				readerProvider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), readerType));
-                var readers = readerProvider.getReaderList();
-				readerUnit = readerProvider.createReaderUnit();
-                var r = readers.Select(x => x.getConnectedName()).ToList();
+                public LibLogicalAccessProvider(ReaderTypes readerType, string readerName = null)
+                {
+                        try
+                        {
+                                selectedReaderName = readerName;
 
-				GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
-			}
-			catch (Exception e)
-			{
-				eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-			}
-		}
+                                InitializeReaderProvider(readerType);
+
+                                GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+                        }
+                        catch (Exception e)
+                        {
+                                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                        }
+                }
 
 		#endregion contructor
 
@@ -61,7 +63,65 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		/// <summary>
 		/// 
 		/// </summary>
-		public override bool IsConnected => readerUnit?.isConnected() == true;
+                public override bool IsConnected => readerUnit?.isConnected() == true;
+
+                private void InitializeReaderProvider(ReaderTypes readerType)
+                {
+                        readerProvider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), readerType));
+
+                        var readers = readerProvider.getReaderList();
+
+                        AvailableReaders = readers.Select(x => x.getName()).ToList();
+
+                        if (readerUnit == null)
+                        {
+                                readerUnit = GetReaderUnitByName(readers, selectedReaderName) ?? readers.FirstOrDefault() ?? readerProvider.createReaderUnit();
+                        }
+                        else
+                        {
+                                readerUnit = GetReaderUnitByName(readers, readerUnit.getName()) ?? readerUnit;
+                        }
+
+                        ReaderUnitName = readerUnit?.getName();
+                }
+
+                public void UpdateSelectedReader(string readerName)
+                {
+                        try
+                        {
+                                selectedReaderName = readerName;
+                                InitializeReaderProvider(ReaderTypes.PCSC);
+                        }
+                        catch (Exception e)
+                        {
+                                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                        }
+                }
+
+                public static IReadOnlyCollection<string> GetAvailableReaderNames(ReaderTypes readerType)
+                {
+                        try
+                        {
+                                var provider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), readerType));
+
+                                return provider.getReaderList().Select(r => r.getName()).ToList();
+                        }
+                        catch
+                        {
+                                return new List<string>();
+                        }
+                }
+
+                private ReaderUnit GetReaderUnitByName(ReaderList readers, string readerName)
+                {
+                        if (string.IsNullOrWhiteSpace(readerName))
+                        {
+                                return null;
+                        }
+
+                        return readers.FirstOrDefault(r => string.Equals(r.getName(), readerName, StringComparison.OrdinalIgnoreCase))
+                               ?? readers.FirstOrDefault(r => string.Equals(r.getConnectedName(), readerName, StringComparison.OrdinalIgnoreCase));
+                }
 
 		public override async Task<ERROR> ConnectAsync()
 		{ 
