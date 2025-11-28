@@ -1,7 +1,7 @@
 ﻿using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 using System;
 using System.Collections.ObjectModel;
@@ -70,11 +70,12 @@ namespace RFiDGear.DataAccessLayer
         {
             Type = type;
 
-            var settings = new SettingsReaderWriter();
-            resManager = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
-            settings.ReadSettings().GetAwaiter().GetResult();
+            var projectManager = new ProjectManager();
+            var settings = projectManager.LoadSettings();
 
-            cultureInfo = (new DefaultSpecification().DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
+            resManager = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly());
+
+            cultureInfo = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en");
         }
 
         /// <summary>
@@ -99,7 +100,7 @@ namespace RFiDGear.DataAccessLayer
     /// </summary>
     public sealed class ResourceLoader : IValueConverter, IDisposable
     {
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private readonly Serilog.ILogger logger = Log.ForContext<ResourceLoader>();
         private readonly ResourceManager resManager;
 
         /// <summary>
@@ -152,7 +153,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to convert resource {ResourceValue} with parameter {Parameter}", value, parameter);
 
                 throw new ArgumentOutOfRangeException(
                     string.Format("parameter:{0}\nvalue:{1}",
@@ -206,21 +207,18 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
-                using (var settings = new SettingsReaderWriter())
-                {
-                    settings.ReadSettings().GetAwaiter().GetResult();
+                var projectManager = new ProjectManager();
+                var settingsResult = projectManager.LoadSettings();
 
-                    var ressource = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
-                        .GetString(resName, (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en"));
+                var ressource = new ResourceManager("RFiDGear.Resources.Manifest", System.Reflection.Assembly.GetExecutingAssembly())
+                    .GetString(resName, (settingsResult.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de") : new CultureInfo("en"));
 
-                    return ressource.Replace("%NEWLINE", "\n");
-                }
+                return ressource.Replace("%NEWLINE", "\n");
 
             }
             catch (Exception e)
             {
-                EventLog eventLog2 = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
-                eventLog2.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to resolve resource {ResourceName}", resName);
                 return string.Empty;
             }
         }

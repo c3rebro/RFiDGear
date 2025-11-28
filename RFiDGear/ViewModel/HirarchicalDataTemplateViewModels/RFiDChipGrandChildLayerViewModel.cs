@@ -3,12 +3,14 @@ using CommunityToolkit.Mvvm.Input;
 using MVVMDialogs.ViewModels;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>

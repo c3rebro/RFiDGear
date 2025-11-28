@@ -6,7 +6,7 @@
  */
 
 using CommunityToolkit.Mvvm.ComponentModel;
-using RFiDGear.ViewModel;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using System;
 using System.Collections.ObjectModel;

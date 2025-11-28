@@ -33,7 +33,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
-namespace RFiDGear.ViewModel
+using MVVMDialogs.ViewModels.Interfaces;
+namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
     /// Description of MifareDesfireSetupViewModel.

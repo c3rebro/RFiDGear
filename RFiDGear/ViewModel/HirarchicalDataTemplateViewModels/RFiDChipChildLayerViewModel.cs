@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using MVVMDialogs.ViewModels;
 
@@ -18,6 +19,7 @@ using System.Windows.Input;
 using System.Xml.Serialization;
 using System.Windows.Navigation;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>

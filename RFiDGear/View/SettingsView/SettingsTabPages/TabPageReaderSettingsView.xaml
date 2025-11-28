@@ -71,6 +71,48 @@
                 Foreground="Black" />
             <Label
                 Grid.Row="2"
+                Grid.Column="0"
+                Width="198"
+                Height="auto"
+                Margin="8,7,8,3"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Left"
+                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelDetectedPcscReaders'}"
+                DataContext="{Binding}">
+                <Label.Style>
+                    <Style TargetType="Label">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsPcscReaderSelected}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Label.Style>
+            </Label>
+            <ComboBox
+                Grid.Row="2"
+                Grid.Column="1"
+                Height="auto"
+                Margin="8,7,8,3"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Top"
+                ItemsSource="{Binding AvailableReaders}"
+                SelectedItem="{Binding SelectedReaderName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                <ComboBox.Style>
+                    <Style TargetType="ComboBox">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsPcscReaderSelected}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ComboBox.Style>
+            </ComboBox>
+            <Label
+                Grid.Row="3"
                 Grid.Column="1"
                 Width="auto"
                 Height="auto"
@@ -82,7 +124,7 @@
                 DataContext="{Binding}"
                 Foreground="Black" />
             <Label
-                Grid.Row="2"
+                Grid.Row="3"
                 Grid.Column="0"
                 Width="198"
                 Height="auto"
@@ -98,6 +140,7 @@
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition />

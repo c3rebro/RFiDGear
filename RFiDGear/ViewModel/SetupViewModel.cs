@@ -19,7 +19,10 @@ using System.Collections.Generic;
 using System.Windows.Input;
 using System.Data;
 using System.Xml.Serialization;
+using System.Collections.ObjectModel;
+using System.Linq;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>
@@ -28,24 +31,29 @@ namespace RFiDGear.ViewModel
     public class SetupViewModel : ObservableObject, IUserDialogViewModel
     {
         private ReaderDevice device;
+        private readonly SettingsReaderWriter settingsReaderWriter;
 
         public SetupViewModel()
+            : this(null, new SettingsReaderWriter())
         {
         }
 
-        public SetupViewModel(ReaderDevice _device)
+        public SetupViewModel(ReaderDevice _device, SettingsReaderWriter settings)
         {
-            using (var settings = new SettingsReaderWriter())
-            {
-                device = _device;
+            settingsReaderWriter = settings ?? throw new ArgumentNullException(nameof(settings));
 
-                SelectedReader = settings.DefaultSpecification.DefaultReaderProvider;
-                DefaultReader = Enum.GetName(typeof(ReaderTypes), SelectedReader);
-                ComPort = settings.DefaultSpecification.LastUsedComPort;
-                LoadOnStart = settings.DefaultSpecification.AutoLoadProjectOnStart;
-                CheckOnStart = settings.DefaultSpecification.AutoCheckForUpdates;
-                SelectedBaudRate = settings.DefaultSpecification.LastUsedBaudRate;
-            }
+            device = _device;
+            SelectedReaderName = settingsReaderWriter.DefaultSpecification.DefaultReaderName;
+            SelectedReader = settingsReaderWriter.DefaultSpecification.DefaultReaderProvider;
+            DefaultReader = string.IsNullOrWhiteSpace(settingsReaderWriter.DefaultSpecification.DefaultReaderName)
+                ? Enum.GetName(typeof(ReaderTypes), SelectedReader)
+                : settingsReaderWriter.DefaultSpecification.DefaultReaderName;
+            ComPort = settingsReaderWriter.DefaultSpecification.LastUsedComPort;
+            LoadOnStart = settingsReaderWriter.DefaultSpecification.AutoLoadProjectOnStart;
+            CheckOnStart = settingsReaderWriter.DefaultSpecification.AutoCheckForUpdates;
+            SelectedBaudRate = settingsReaderWriter.DefaultSpecification.LastUsedBaudRate;
+
+            RefreshAvailableReaders();
         }
 
         #region Commands
@@ -55,8 +63,7 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand SaveSettings => new AsyncRelayCommand(OnNewSaveSettingsCommand);
         private async Task OnNewSaveSettingsCommand()
         {
-            SettingsReaderWriter settings = new SettingsReaderWriter();
-            await settings.SaveSettings();
+            await settingsReaderWriter.SaveSettings();
         }
 
         public ICommand ReaderSeletedCommand => new RelayCommand(ReaderSelected);
@@ -78,13 +85,17 @@ namespace RFiDGear.ViewModel
                         if (!(device is LibLogicalAccessProvider))
                         {
                             device.Dispose();
-                            
-                            device = new LibLogicalAccessProvider(SelectedReader);
+
+                            device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
+                        }
+                        else
+                        {
+                            (device as LibLogicalAccessProvider)?.UpdateSelectedReader(SelectedReaderName);
                         }
                     }
                     else
                     {
-                        device = new LibLogicalAccessProvider(SelectedReader);
+                        device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
                     }
 
                     await device.ReadChipPublic();
@@ -120,7 +131,9 @@ namespace RFiDGear.ViewModel
 
             if (device?.GenericChip?.UID != null)
             {
-                DefaultReader = Enum.GetName(typeof(ReaderTypes), SelectedReader);
+                DefaultReader = string.IsNullOrWhiteSpace(SelectedReaderName)
+                    ? Enum.GetName(typeof(ReaderTypes), SelectedReader)
+                    : SelectedReaderName;
 
                 ReaderStatus = string.Format(ResourceLoader.GetResource("labelReaderSetupReaderConnectStatus")
                                              + '\n'
@@ -214,7 +227,7 @@ namespace RFiDGear.ViewModel
                             device = new ElatecNetProvider();
                             break;
                         case ReaderTypes.PCSC:
-                            device = null;
+                            device = new LibLogicalAccessProvider();
                             break;
 
                         default:
@@ -222,9 +235,26 @@ namespace RFiDGear.ViewModel
                             break;
                     }
                 }
+
+                RefreshAvailableReaders();
+                OnPropertyChanged(nameof(SelectedReader));
+                OnPropertyChanged(nameof(IsPcscReaderSelected));
             }
         }
         private ReaderTypes selectedReader;
+
+        public ObservableCollection<string> AvailableReaders { get; } = new ObservableCollection<string>();
+
+        public string SelectedReaderName
+        {
+            get => selectedReaderName;
+            set
+            {
+                selectedReaderName = value;
+                OnPropertyChanged(nameof(SelectedReaderName));
+            }
+        }
+        private string selectedReaderName;
 
         /// <summary>
         ///
@@ -273,6 +303,8 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public string[] BaudRates => new string[] { "1200", "2400", "4800", "9600", "115000" };
 
+        public bool IsPcscReaderSelected => SelectedReader == ReaderTypes.PCSC;
+
         public string ReaderStatus
         {
             get => readerStatus;
@@ -294,6 +326,33 @@ namespace RFiDGear.ViewModel
             }
         }
         private string defaultReader;
+
+        private void RefreshAvailableReaders()
+        {
+            AvailableReaders.Clear();
+
+            if (SelectedReader != ReaderTypes.PCSC)
+            {
+                SelectedReaderName = string.Empty;
+                return;
+            }
+
+            foreach (var reader in LibLogicalAccessProvider.GetAvailableReaderNames(SelectedReader))
+            {
+                AvailableReaders.Add(reader);
+            }
+
+            if (AvailableReaders.Count == 0)
+            {
+                SelectedReaderName = string.Empty;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(SelectedReaderName) || !AvailableReaders.Contains(SelectedReaderName))
+            {
+                SelectedReaderName = AvailableReaders.First();
+            }
+        }
 
         /// <summary>
         ///
