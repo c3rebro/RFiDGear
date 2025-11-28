@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>

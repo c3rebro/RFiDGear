@@ -33,6 +33,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>

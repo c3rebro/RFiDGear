@@ -1,7 +1,8 @@
 ﻿using Microsoft.Win32;
-using MvvmDialogs.ViewModels;
+using MVVMDialogs.Presenters.Interfaces;
+using MVVMDialogs.ViewModels;
 
-namespace MvvmDialogs.Presenters
+namespace MVVMDialogs.Presenters
 {
     public class SaveFileDialogPresenter : IDialogBoxPresenter<SaveFileDialogViewModel>
     {

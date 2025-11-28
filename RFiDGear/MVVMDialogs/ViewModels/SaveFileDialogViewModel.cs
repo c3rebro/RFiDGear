@@ -1,14 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Input;
 
-namespace MvvmDialogs.ViewModels
+using CommunityToolkit.Mvvm.ComponentModel;
+
+using MVVMDialogs.ViewModels.Interfaces;
+namespace MVVMDialogs.ViewModels
 {
-    public class OpenFileDialogViewModel : IDialogViewModel
+    public class SaveFileDialogViewModel : IDialogViewModel
     {
-        public bool Multiselect { get; set; }
-        public bool ReadOnlyChecked { get; set; }
-        public bool ShowReadOnly { get; set; }
         public string FileName { get; set; }
         public string[] FileNames { get; set; }
         public string Filter { get; set; }
@@ -20,11 +21,12 @@ namespace MvvmDialogs.ViewModels
         public bool ValidateNames { get; set; }
         public bool Result { get; set; }
         public Window ParentWindow { get; set; }
+        public bool IsModal { get; set;  }
 
         public bool Show(IList<IDialogViewModel> collection)
         {
-            collection.Add(this);
-            return Result;
+            collection.Add(this);          
+            return Result;   
         }
 
         #region INotifyPropertyChanged Members

@@ -4,8 +4,9 @@ using System.Windows.Input;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MVVMDialogs.ViewModels.Interfaces;
 
-namespace MvvmDialogs.ViewModels
+namespace MVVMDialogs.ViewModels
 {
     public class CustomDialogViewModel : ObservableObject, IUserDialogViewModel
     {

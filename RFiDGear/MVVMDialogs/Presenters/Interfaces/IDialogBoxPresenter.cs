@@ -1,6 +1,6 @@
-﻿using MVVMDialogs.ViewModels;
+using MVVMDialogs.ViewModels.Interfaces;
 
-namespace MVVMDialogs.Presenters
+namespace MVVMDialogs.Presenters.Interfaces
 {
     public interface IDialogBoxPresenter<T> where T : IDialogViewModel
     {

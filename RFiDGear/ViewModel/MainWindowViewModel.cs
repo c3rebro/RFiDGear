@@ -47,6 +47,7 @@ using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.DialogFactories;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>

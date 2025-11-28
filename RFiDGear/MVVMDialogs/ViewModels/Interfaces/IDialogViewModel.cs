@@ -1,6 +1,6 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
-namespace MvvmDialogs.ViewModels
+namespace MVVMDialogs.ViewModels.Interfaces
 {
     public interface IDialogViewModel : INotifyPropertyChanged
     {

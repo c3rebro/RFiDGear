@@ -30,6 +30,7 @@ using System.Linq;
 using LibLogicalAccess;
 using System.Diagnostics;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
