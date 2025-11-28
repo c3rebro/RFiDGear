@@ -18,30 +18,27 @@ namespace RFiDGear.DataAccessLayer
         #region fields
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
         private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
-        private const string reportTemplateTempFileName = "temptemplate.pdf";
-        private readonly string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear");
-        private readonly string tempReportTemplateFileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear", reportTemplateTempFileName);
+        private readonly ProjectManager projectManager;
         public string ReportOutputPath { get; set; }
         public string ReportTemplateFile { get; set; }
 
         #endregion fields
 
         public ReportReaderWriter()
+            : this(new ProjectManager())
+        {
+        }
+
+        public ReportReaderWriter(ProjectManager projectManager)
         {
             try
             {
+                this.projectManager = projectManager ?? throw new ArgumentNullException(nameof(projectManager));
+
                 // Set license key to use GemBox.Pdf in Free mode.
                 ComponentInfo.SetLicense("FREE-LIMITED-KEY");
 
-                if (!Directory.Exists(appDataPath))
-                {
-                    Directory.CreateDirectory(appDataPath);
-                }
-
-                if (File.Exists(tempReportTemplateFileName))
-                {
-                    File.Delete(tempReportTemplateFileName);
-                }
+                CleanupTemporaryTemplate();
             }
             catch (Exception e)
             {
@@ -56,7 +53,7 @@ namespace RFiDGear.DataAccessLayer
             {
                 var temp = new ObservableCollection<string>();
 
-                using (var pdfDoc = PdfDocument.Load(ReportTemplateFile))
+                using (var pdfDoc = PdfDocument.Load(projectManager.GetReportTemplatePath(ReportTemplateFile)))
                 {
                     var form = pdfDoc.Form;
 
@@ -88,95 +85,105 @@ namespace RFiDGear.DataAccessLayer
 
         public async Task SetReportField(string _field, string _value)
         {
-            if (!String.IsNullOrWhiteSpace(ReportOutputPath))
+            await ApplyReportChanges(_field, pdfDoc =>
             {
-                try
+                var form = pdfDoc.Form;
+                pdfDoc.Info.Title = "RFiDGear Report";
+                pdfDoc.Info.Author = "RFiDGear";
+
+                if (form?.Fields.Any(x => x.Name == _field) == true)
                 {
-                    await Task.Run(() =>
-                    {
-                        if (!File.Exists(tempReportTemplateFileName))
-                        {
-                            File.Copy(ReportTemplateFile, tempReportTemplateFileName, true);
-                        }
-
-                        using (var pdfDoc = PdfDocument.Load(tempReportTemplateFileName))
-                        {
-                            try
-                            {
-                                var form = pdfDoc.Form;
-                                pdfDoc.Info.Title = "RFiDGear Report";
-                                pdfDoc.Info.Author = "RFiDGear";
-
-                                if (pdfDoc.Form.Fields.Any(x => x.Name == _field))
-                                {
-                                    pdfDoc.Form.Fields[_field].Hidden = false;
-                                    pdfDoc.Form.Fields[_field].ReadOnly = false;
-                                    pdfDoc.Form.Fields[_field].Value = _value;
-                                }
-
-                                pdfDoc.Save(ReportOutputPath);
-                                pdfDoc.Close();
-
-                                File.Copy(ReportOutputPath, tempReportTemplateFileName, true);
-                            }
-                            catch (Exception e)
-                            {
-                                eventLog.WriteEntry(string.Format(e.Message + "; SetReportField: " + _field), EventLogEntryType.Error);
-                            }
-                        }
-                    });
-
-                    return;
+                    pdfDoc.Form.Fields[_field].Hidden = false;
+                    pdfDoc.Form.Fields[_field].ReadOnly = false;
+                    pdfDoc.Form.Fields[_field].Value = _value;
                 }
-                catch (XmlException e)
-                {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                }
-            }
-            return;
+            });
         }
 
         public async Task ConcatReportField(string _field, string _value)
         {
-            if (!String.IsNullOrWhiteSpace(ReportOutputPath))
+            await ApplyReportChanges(_field, pdfDoc =>
             {
-                try
+                var form = pdfDoc.Form;
+
+                if (form?.Fields.Any(x => x.Name == _field) != true)
                 {
-                    await Task.Run(() => 
-                    {
-                        ReportTemplateFile = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
-
-                        using (var pdfDoc = PdfDocument.Load(ReportTemplateFile))
-                        {
-                            try
-                            {
-                                var form = pdfDoc.Form;
-
-                                pdfDoc.Form.Fields[_field].Hidden = false;
-                                pdfDoc.Form.Fields[_field].ReadOnly = false;
-                                pdfDoc.Form.Fields[_field].Value = string.Format("{0}{1}", pdfDoc.Form.Fields[_field]?.Value, _value);
-
-                                pdfDoc.Save(ReportOutputPath);
-                                pdfDoc.Close();
-
-                                File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
-                            }
-                            catch (Exception e)
-                            {
-                                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                            }
-                        }
-
-                        return;
-                    }).ConfigureAwait(false);
-
+                    return;
                 }
-                catch (XmlException e)
-                {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                }
+
+                pdfDoc.Form.Fields[_field].Hidden = false;
+                pdfDoc.Form.Fields[_field].ReadOnly = false;
+                pdfDoc.Form.Fields[_field].Value = string.Format("{0}{1}", pdfDoc.Form.Fields[_field]?.Value, _value);
+            });
+        }
+
+        private async Task ApplyReportChanges(string fieldName, Action<PdfDocument> applyChanges)
+        {
+            if (!HasValidReportPaths())
+            {
+                return;
             }
 
+            try
+            {
+                await Task.Run(() =>
+                {
+                    EnsureTemporaryTemplate();
+
+                    using (var pdfDoc = PdfDocument.Load(projectManager.GetTemporaryReportTemplatePath()))
+                    {
+                        try
+                        {
+                            applyChanges(pdfDoc);
+                            SaveReport(pdfDoc);
+                        }
+                        catch (Exception e)
+                        {
+                            eventLog.WriteEntry(string.Format("{0}; Field: {1}", e.Message, fieldName), EventLogEntryType.Error);
+                        }
+                    }
+                }).ConfigureAwait(false);
+            }
+            catch (XmlException e)
+            {
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+            }
+        }
+
+        private void EnsureTemporaryTemplate()
+        {
+            var tempPath = projectManager.GetTemporaryReportTemplatePath();
+
+            if (File.Exists(tempPath))
+            {
+                return;
+            }
+
+            projectManager.CopyReportTemplateToTemp(ReportTemplateFile);
+        }
+
+        private bool HasValidReportPaths()
+        {
+            return !string.IsNullOrWhiteSpace(ReportOutputPath)
+                   && !string.IsNullOrWhiteSpace(ReportTemplateFile);
+        }
+
+        private void SaveReport(PdfDocument pdfDoc)
+        {
+            pdfDoc.Save(ReportOutputPath);
+            pdfDoc.Close();
+
+            projectManager.SafeCopy(ReportOutputPath, projectManager.GetTemporaryReportTemplatePath());
+        }
+
+        private void CleanupTemporaryTemplate()
+        {
+            var tempPath = projectManager.GetTemporaryReportTemplatePath();
+
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
         }
 
         public void DeleteDatabase()

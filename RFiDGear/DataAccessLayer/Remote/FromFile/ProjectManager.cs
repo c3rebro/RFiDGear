@@ -10,6 +10,7 @@ namespace RFiDGear.DataAccessLayer
         private const string ChipDatabaseFileName = "chipdatabase.xml";
         private const string TaskDatabaseFileNameCompressed = "chipdatabase.rfPrj";
         private const string TaskDatabaseFileName = "taskdatabase.xml";
+        private const string ReportTemplateTempFileName = "temptemplate.pdf";
 
         public string AppDataPath { get; }
 
@@ -18,6 +19,8 @@ namespace RFiDGear.DataAccessLayer
         public string TaskDatabasePath => Path.Combine(AppDataPath, TaskDatabaseFileName);
 
         public string CompressedTaskDatabasePath => Path.Combine(AppDataPath, TaskDatabaseFileNameCompressed);
+
+        public string ReportTemplateTempPath => Path.Combine(AppDataPath, ReportTemplateTempFileName);
 
         public ProjectManager()
         {
@@ -51,6 +54,44 @@ namespace RFiDGear.DataAccessLayer
                 ProjectFileType.Archive => PrepareCompressedProject(file, appVersion),
                 _ => ProjectLoadResult.Failed()
             };
+        }
+
+        public string GetReportTemplatePath(string reportTemplatePath)
+        {
+            EnsureAppDataDirectory();
+
+            return reportTemplatePath;
+        }
+
+        public string GetTemporaryReportTemplatePath()
+        {
+            EnsureAppDataDirectory();
+
+            return ReportTemplateTempPath;
+        }
+
+        public void CopyReportTemplateToTemp(string reportTemplatePath)
+        {
+            SafeCopy(reportTemplatePath, GetTemporaryReportTemplatePath());
+        }
+
+        public void SafeCopy(string sourcePath, string destinationPath, bool overwrite = true)
+        {
+            EnsureAppDataDirectory();
+
+            if (string.IsNullOrWhiteSpace(sourcePath) || string.IsNullOrWhiteSpace(destinationPath))
+            {
+                return;
+            }
+
+            if (!File.Exists(sourcePath))
+            {
+                return;
+            }
+
+            EnsureDirectoryExists(Path.GetDirectoryName(destinationPath));
+
+            File.Copy(sourcePath, destinationPath, overwrite);
         }
 
         public void ResetTemporaryArtifacts()
@@ -151,6 +192,19 @@ namespace RFiDGear.DataAccessLayer
             if (!Directory.Exists(AppDataPath))
             {
                 Directory.CreateDirectory(AppDataPath);
+            }
+        }
+
+        private void EnsureDirectoryExists(string directoryPath)
+        {
+            if (string.IsNullOrWhiteSpace(directoryPath))
+            {
+                return;
+            }
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
             }
         }
     }
