@@ -43,6 +43,7 @@ using RedCell.Diagnostics.Update;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.Model;
+using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.DialogFactories;
 
 namespace RFiDGear.ViewModel
@@ -59,6 +60,7 @@ namespace RFiDGear.ViewModel
         private readonly Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
         private readonly Updater updater;
         private readonly TaskDialogFactory taskDialogFactory;
+        private readonly ITaskExecutionService taskExecutionService;
 
         private protected MainWindow mw;
         private protected DatabaseReaderWriter databaseReaderWriter;
@@ -74,7 +76,6 @@ namespace RFiDGear.ViewModel
         private protected List<MifareDesfireChipModel> mifareDesfireViewModels = new List<MifareDesfireChipModel>();
         private protected bool _runSelectedOnly;
 
-        private int currentTaskIndex = 0;
         // set if task was completed; indicates greenlight to continue execution
         // if programming takes too long; quit the process
         private bool userIsNotifiedForAvailableUpdate = false;
@@ -156,6 +157,11 @@ namespace RFiDGear.ViewModel
                 () => OnPropertyChanged(nameof(ChipTasks)),
                 () => mw?.Activate(),
                 status => IsReaderBusy = status);
+
+            var triggerReadChipAdapter = new DispatcherTimerAdapter(triggerReadChip);
+            var taskTimeoutAdapter = new DispatcherTimerAdapter(taskTimeout);
+            taskExecutionService = new TaskExecutionService(new ReaderDeviceProvider(), triggerReadChipAdapter, taskTimeoutAdapter);
+            taskExecutionService.ExecutionCompleted += TaskExecutionService_ExecutionCompleted;
 
             rowContextMenuItems = new ObservableCollection<MenuItem>();
             emptySpaceContextMenuItems = new ObservableCollection<MenuItem>();
@@ -422,22 +428,9 @@ namespace RFiDGear.ViewModel
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-		private void TaskTimeout(object sender, EventArgs e)
+        private void TaskTimeout(object sender, EventArgs e)
         {
-#if DEBUG
-            taskTimeout.Start();
-            taskTimeout.Stop();
-            taskTimeout.IsEnabled = false;
-
-            (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).IsTaskCompletedSuccessfully = false;
-#else
-            taskTimeout.IsEnabled = false;
-            taskTimeout.Stop();
-
-            (taskHandler.TaskCollection[(int)taskTimeout.Tag] as IGenericTaskModel).IsTaskCompletedSuccessfully = false;
-
-            currentTaskIndex = int.MaxValue;
-#endif
+            taskExecutionService?.HandleTaskTimeout();
         }
 
         /// <summary>
@@ -967,525 +960,43 @@ namespace RFiDGear.ViewModel
             OnPropertyChanged(nameof(TreeViewParentNodes));
             OnPropertyChanged(nameof(ChipTasks));
 
-            var GenericChip = ReaderDevice.Instance.GenericChip; //new GenericChipModel("", CARD_TYPE.NOTAG);
-
-            currentTaskIndex = 0;
-            var taskDictionary = new Dictionary<string, int>();
-
-            // create a new key,value pair of taskpositions (int) <-> taskindex (string)
-            // (they could be different as because item at array position 0 can have index "100")
-            foreach (var rfidTaskObject in taskHandler.TaskCollection)
+            var request = new TaskExecutionRequest
             {
-                taskDictionary.Add((rfidTaskObject as IGenericTaskModel).CurrentTaskIndex, taskHandler.TaskCollection.IndexOf(rfidTaskObject));
-            }
-
-#if DEBUG
-            taskTimeout.IsEnabled = false;
-#else
-            taskTimeout.IsEnabled = true;
-            taskTimeout.Start();
-#endif
-            //TODO: Optimize Execute Conditions Check aka: "SelectedExecuteCondition"
-            triggerReadChip.Tag = triggerReadChip.IsEnabled;
-            triggerReadChip.IsEnabled = false;
-
-            try
-            {
-                //try to get singleton instance
-                using (var device = ReaderDevice.Instance)
-                {
-                    //reader was ready - proceed
-                    if (device != null)
-                    {
-                        
-
-                        if (device.GenericChip != null && !string.IsNullOrEmpty(device.GenericChip.UID))
-                        {
-                            if (GenericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
-                            {
-                                await device.GetMiFareDESFireChipAppIDs();
-
-                                GenericChip = device.GenericChip;
-                            }
-                        }
-
-                        else
-                        {
-                            await device.ReadChipPublic();
-
-                            GenericChip = device.GenericChip;
-                        }
-                    }
-
-
-                    if (treeViewParentNodes.Any(x => x.IsSelected))
-                    {
-                        treeViewParentNodes.First(x => x.IsSelected).IsSelected = false;
-                    }
-
-                    //only run if theres a hfTag on the reader and its uid was previously added
-                    if (
-                        !string.IsNullOrWhiteSpace(GenericChip.UID) &&
-                        treeViewParentNodes.Any(x => x.UID == GenericChip.UID))
-                    {
-                        //select current parentnode (hfTag) on reader
-                        treeViewParentNodes.First(x => x.UID == GenericChip.UID).IsSelected = true;
-                        treeViewParentNodes.First(x => x.IsSelected).IsBeingProgrammed = true;
-                    }
-
-                    //are there tasks present to process?
-                    while (currentTaskIndex < taskHandler.TaskCollection.Count)
-                    {
-                        await Task.Delay(50);
-
-                        if (_runSelectedOnly)
-                        {
-                            currentTaskIndex = taskHandler.TaskCollection.IndexOf(SelectedSetupViewModel);
-                        }
-
-                        taskTimeout.Stop();
-                        taskTimeout.Start();
-                        taskTimeout.IsEnabled = true;
-                        taskTimeout.Tag = currentTaskIndex;
-
-                        SelectedSetupViewModel = taskHandler.TaskCollection[currentTaskIndex];
-
-                        //decide what type of task to process next. use exact array positions 
-                        switch (taskHandler.TaskCollection[currentTaskIndex])
-                        {
-
-                            case CommonTaskViewModel csVM:
-
-                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).GenericChip = GenericChip;
-                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
-                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).AvailableTasks = taskHandler.TaskCollection;
-                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).Args = variablesFromArgs;
-
-                                switch (csVM.SelectedTaskType)
-                                {
-                                    case TaskType_CommonTask.CreateReport:
-                                        taskTimeout.Stop();
-                                        switch ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
-                                        {
-                                            case ERROR.NotReadyError:
-                                                break;
-
-                                            case ERROR.Empty:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
-                                                taskTimeout.Start();
-                                                taskTimeout.Stop();
-
-                                                DirectoryInfo reportTargetPathDirInfo;
-
-                                                try
-                                                {
-                                                    var targetReportDir = variablesFromArgs["REPORTTARGETPATH"];
-                                                    var sourceTemplateFile = variablesFromArgs["REPORTTEMPLATEFILE"];
-                                                    reportTargetPathDirInfo = new DirectoryInfo(Path.GetDirectoryName(targetReportDir));
-
-                                                }
-                                                catch
-                                                {
-                                                    reportTargetPathDirInfo = null;
-                                                }
-
-                                                if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                {
-                                                    if (string.IsNullOrEmpty(reportOutputPath))
-                                                    {
-                                                        var dlg = new SaveFileDialogViewModel
-                                                        {
-                                                            Title = ResourceLoader.GetResource("windowCaptionSaveReport"),
-                                                            Filter = ResourceLoader.GetResource("filterStringSaveReport"),
-                                                            ParentWindow = this.mw,
-                                                            InitialDirectory = reportTargetPathDirInfo != null ?
-                                                            (reportTargetPathDirInfo.Exists ? reportTargetPathDirInfo.FullName : null) : null
-                                                        };
-
-                                                        if (dlg.Show(Dialogs) && dlg.FileName != null)
-                                                        {
-                                                            reportOutputPath = dlg.FileName;
-                                                        }
-                                                    }
-
-                                                    if (reportReaderWriter == null)
-                                                    {
-                                                        reportReaderWriter = new ReportReaderWriter();
-                                                    }
-
-                                                    reportReaderWriter.ReportOutputPath = reportOutputPath;
-                                                    if (!string.IsNullOrEmpty(reportTemplateFile))
-                                                    {
-                                                        reportReaderWriter.ReportTemplateFile = reportTemplateFile;
-                                                    }
-
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).WriteReportCommand.ExecuteAsync(reportReaderWriter);
-                                                }
-
-                                                else
-                                                {
-                                                    // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                    if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
-                                                    {
-                                                        if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
-                                                        {
-                                                            if (string.IsNullOrEmpty(reportOutputPath))
-                                                            {
-
-                                                                var dlg = new SaveFileDialogViewModel
-                                                                {
-                                                                    Title = ResourceLoader.GetResource("windowCaptionSaveReport"),
-                                                                    Filter = ResourceLoader.GetResource("filterStringSaveReport"),
-                                                                    InitialDirectory = reportTargetPathDirInfo != null ?
-                                                                    (reportTargetPathDirInfo.Exists ? reportTargetPathDirInfo.FullName : null) : null
-                                                                };
-
-                                                                if (dlg.Show(Dialogs) && dlg.FileName != null)
-                                                                {
-                                                                    reportOutputPath = dlg.FileName;
-                                                                }
-                                                            }
-
-                                                            if (reportReaderWriter == null)
-                                                            {
-                                                                reportReaderWriter = new ReportReaderWriter();
-                                                            }
-
-                                                            reportReaderWriter.ReportOutputPath = reportOutputPath;
-                                                            if (!string.IsNullOrEmpty(reportTemplateFile))
-                                                            {
-                                                                reportReaderWriter.ReportTemplateFile = reportTemplateFile;
-                                                            }
-
-                                                            await (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).WriteReportCommand.ExecuteAsync(reportReaderWriter);
-                                                        }
-                                                        else
-                                                        {
-                                                            currentTaskIndex++;
-                                                        }
-                                                    }
-                                                }
-
-                                                taskTimeout.Start();
-                                                break;
-
-                                            default:
-                                                currentTaskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-                                        }
-                                        break;
-
-                                    case TaskType_CommonTask.CheckLogicCondition:
-                                        switch ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CurrentTaskErrorLevel)
-                                        {
-                                            case ERROR.NotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.Empty:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
-                                                taskTimeout.Start();
-
-                                                if ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                {
-
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.ExecuteAsync(taskHandler.TaskCollection);
-                                                }
-
-                                                else
-                                                {
-                                                    // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                    if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
-                                                    {
-                                                        if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
-                                                        {
-
-                                                            await (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.ExecuteAsync(taskHandler.TaskCollection);
-                                                        }
-                                                        else
-                                                        {
-                                                            currentTaskIndex++;
-                                                        }
-                                                    }
-                                                }
-                                                break;
-
-                                            default:
-                                                currentTaskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-                                        }
-                                        break;
-
-                                    case TaskType_CommonTask.ExecuteProgram:
-                                        switch ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).CurrentTaskErrorLevel)
-                                        {
-                                            case ERROR.NotReadyError:
-                                                taskTimeout.Start();
-                                                break;
-
-                                            case ERROR.Empty:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
-                                                taskTimeout.Start();
-
-                                                if ((taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                {
-                                                    (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
-                                                }
-
-                                                else
-                                                {
-                                                    // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                    if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
-                                                    {
-                                                        if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
-                                                        {
-                                                            (taskHandler.TaskCollection[currentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
-                                                        }
-                                                        else
-                                                        {
-                                                            currentTaskIndex++;
-                                                        }
-                                                    }
-                                                }
-                                                break;
-
-                                            default:
-                                                currentTaskIndex++;
-                                                taskTimeout.Stop();
-                                                taskTimeout.Start();
-                                                break;
-                                        }
-                                        break;
-
-
-                                    default:
-                                        break;
-                                }
-                                break;
-
-                            case GenericChipTaskViewModel csVM:
-                                switch (csVM.SelectedTaskType)
-                                {
-                                    case TaskType_GenericChipTask.ChipIsOfType:
-                                        taskTimeout.Start();
-                                        switch ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
-                                        {
-                                            case ERROR.Empty:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).IsFocused = true;
-
-                                                if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                {
-                                                    IsReaderBusy = true;
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).CheckChipType.ExecuteAsync(device.GenericChip);
-                                                }
-                                                else
-                                                {
-                                                    // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                    if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
-                                                    {
-                                                        if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
-                                                        {
-                                                            IsReaderBusy = true;
-                                                            await (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).CheckChipType.ExecuteAsync(device.GenericChip);
-                                                        }
-                                                        else
-                                                        {
-                                                            currentTaskIndex++;
-                                                        }
-                                                    }
-                                                }
-
-                                                IsReaderBusy = false;
-                                                break;
-
-                                            default:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                currentTaskIndex++;
-                                                break;
-                                        }
-                                        break;
-
-                                    case TaskType_GenericChipTask.ChipIsMultiChip:
-                                        taskTimeout.Start();
-                                        switch ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
-                                        {
-                                            case ERROR.Empty:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).IsFocused = true;
-
-                                                if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                                {
-                                                    IsReaderBusy = true;
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).CheckChipIsMultiTecChip.ExecuteAsync(device.GenericChip);
-                                                }
-                                                else
-                                                {
-                                                    // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                                    if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
-                                                    {
-                                                        if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
-                                                        {
-                                                            IsReaderBusy = true;
-                                                            await (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).CheckChipIsMultiTecChip.ExecuteAsync(device.GenericChip);
-                                                        }
-                                                        else
-                                                        {
-                                                            currentTaskIndex++;
-                                                        }
-                                                    }
-                                                }
-
-                                                IsReaderBusy = false;
-                                                break;
-
-                                            default:
-                                                (taskHandler.TaskCollection[currentTaskIndex] as GenericChipTaskViewModel).IsFocused = false;
-                                                currentTaskIndex++;
-                                                break;
-                                        }
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                break;
-
-                            case MifareClassicSetupViewModel csVM:
-                                switch ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
-                                {
-                                    case ERROR.NotReadyError:
-                                        taskTimeout.Start();
-                                        break;
-
-                                    case ERROR.Empty:
-                                        (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
-                                        taskTimeout.Start();
-
-                                        if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                        {
-                                            IsReaderBusy = true;
-                                            await (taskHandler.TaskCollection[currentTaskIndex] as MifareClassicSetupViewModel).CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
-                                        }
-
-                                        else
-                                        {
-                                            // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                            if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
-                                            {
-                                                if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
-                                                {
-                                                    IsReaderBusy = true;
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as MifareClassicSetupViewModel).CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
-                                                }
-                                                else
-                                                {
-                                                    currentTaskIndex++;
-                                                }
-                                            }
-                                        }
-
-                                        IsReaderBusy = false;
-                                        break;
-
-                                    default:
-                                        currentTaskIndex++;
-                                        taskTimeout.Stop();
-                                        taskTimeout.Start();
-                                        break;
-                                }
-                                break;
-
-                            case MifareDesfireSetupViewModel csVM:
-                                switch ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
-                                {
-                                    case ERROR.NotReadyError:
-                                        taskTimeout.Start();
-                                        break;
-
-                                    case ERROR.Empty:
-                                        (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
-                                        taskTimeout.Start();
-
-                                        if ((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
-                                        {
-                                            IsReaderBusy = true;
-                                            await (taskHandler.TaskCollection[currentTaskIndex] as MifareDesfireSetupViewModel).CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
-                                        }
-
-                                        else
-                                        {
-                                            // targeted ERRORLEVEL ist not "EMPTY" so check if targeted ERRORLEVEL fits current ERRORLEVEL
-                                            if (taskDictionary.TryGetValue((taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
-                                            {
-                                                if ((taskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (taskHandler.TaskCollection[currentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
-                                                {
-                                                    IsReaderBusy = true;
-                                                    await (taskHandler.TaskCollection[currentTaskIndex] as MifareDesfireSetupViewModel).CommandDelegator.ExecuteAsync(csVM.SelectedTaskType);
-                                                }
-                                                else
-                                                {
-                                                    currentTaskIndex++;
-                                                }
-                                            }
-                                        }
-
-                                        IsReaderBusy = false;
-                                        break;
-
-                                    default:
-                                        currentTaskIndex++;
-                                        taskTimeout.Stop();
-                                        taskTimeout.Start();
-                                        break;
-                                }
-                                break;
-
-                            case MifareUltralightSetupViewModel ssVM:
-                                break;
-
-                            default:
-                                break;
-                        }
-
-                        if (_runSelectedOnly)
-                        {
-                            break;
-                        }
-
-                        OnPropertyChanged(nameof(TreeViewParentNodes));
-                    }
-                }
-                OnPropertyChanged(nameof(TreeViewParentNodes));
-
-                taskTimeout.Stop();
-
-            }
-            catch (Exception e)
-            {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-            }
-
-            try
-            {
-                if(treeViewParentNodes.Any(x => x.IsSelected) == true)
-                {
-                    treeViewParentNodes.First(y => y.IsSelected).IsBeingProgrammed = null;
-                    triggerReadChip.IsEnabled = (bool)triggerReadChip.Tag;
-                    _runSelectedOnly = false;
-                }
-            }
-
-            catch { 
-            // do nothing if no element found. this is intended on autorun, to speed up
-            }
-
-
+                TaskHandler = taskHandler,
+                TreeViewParentNodes = treeViewParentNodes,
+                VariablesFromArgs = variablesFromArgs,
+                Dialogs = Dialogs,
+                ReportReaderWriter = reportReaderWriter,
+                ReportOutputPath = reportOutputPath,
+                ReportTemplateFile = reportTemplateFile,
+                SelectedSetupViewModel = SelectedSetupViewModel,
+                RunSelectedOnly = _runSelectedOnly,
+                UpdateSelectedSetupViewModel = vm => SelectedSetupViewModel = vm,
+                UpdateReaderBusy = status => IsReaderBusy = status,
+                NotifyTreeViewChanged = () => OnPropertyChanged(nameof(TreeViewParentNodes)),
+                NotifyTasksChanged = () => OnPropertyChanged(nameof(ChipTasks)),
+                EventLog = eventLog
+            };
+
+            var result = await taskExecutionService.ExecuteOnceAsync(request);
+
+            reportReaderWriter = result.ReportReaderWriter;
+            reportOutputPath = result.ReportOutputPath;
+            reportTemplateFile = result.ReportTemplateFile;
+            _runSelectedOnly = result.RunSelectedOnly;
+            SelectedSetupViewModel = result.SelectedSetupViewModel;
+
+            Mouse.OverrideCursor = null;
         }
 
+        private void TaskExecutionService_ExecutionCompleted(object sender, TaskExecutionCompletedEventArgs e)
+        {
+            Mouse.OverrideCursor = null;
+            OnPropertyChanged(nameof(TreeViewParentNodes));
+            OnPropertyChanged(nameof(ChipTasks));
+        }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public ICommand CloseAllCommand => new RelayCommand(OnCloseAll);
         private void OnCloseAll()
