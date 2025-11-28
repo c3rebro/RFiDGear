@@ -12,6 +12,7 @@ using System;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Reflection;
+using System.Linq;
 
 namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
@@ -43,6 +44,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 				readerProvider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), readerType));
                 var readers = readerProvider.getReaderList();
 				readerUnit = readerProvider.createReaderUnit();
+                var r = readers.Select(x => x.getConnectedName()).ToList();
 
 				GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
 			}
