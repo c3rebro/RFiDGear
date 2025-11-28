@@ -460,9 +460,6 @@ slot of an available reader</value>
   <data name="labelAvailableReaders" xml:space="preserve">
     <value>Available Reader Providers</value>
   </data>
-  <data name="labelDetectedPcscReaders" xml:space="preserve">
-    <value>Detected PC/SC Readers</value>
-  </data>
   <data name="menuItemAddEditMifareClassicTaskHeader" xml:space="preserve">
     <value>Add/Edit Mifare _Classic Task</value>
   </data>

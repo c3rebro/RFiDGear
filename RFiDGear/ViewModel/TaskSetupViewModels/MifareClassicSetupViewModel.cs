@@ -8,7 +8,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MefMvvm.SharedContracts;
-
 using MVVMDialogs.ViewModels;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
@@ -28,8 +27,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
-using MVVMDialogs.ViewModels.Interfaces;
-namespace RFiDGear.ViewModel.TaskSetupViewModels
+namespace RFiDGear.ViewModel
 {
     /// <summary>
     /// Description of MifareClassicSetupViewModel.

@@ -473,9 +473,6 @@ Ein zum Lesertyp passender RFID Chip muss sich in Leserreichweite befinden.</val
   <data name="labelAvailableReaders" xml:space="preserve">
     <value>Verfügbare Kartenleseranbieter</value>
   </data>
-  <data name="labelDetectedPcscReaders" xml:space="preserve">
-    <value>Gefundene PC/SC-Lesegeräte</value>
-  </data>
   <data name="menuItemAddEditMifareClassicTaskHeader" xml:space="preserve">
     <value>Mifare _Classic Aufgabe hinzufügen/bearbeiten</value>
   </data>
