@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -13,6 +12,7 @@ using Ionic.Zip;
 
 using RFiDGear.Model;
 using RFiDGear.ViewModel;
+using Serilog;
 
 namespace RFiDGear.DataAccessLayer
 {
@@ -23,7 +23,7 @@ namespace RFiDGear.DataAccessLayer
     {
         #region fields
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
-        private readonly EventLog eventLog = new EventLog("Application", ".", "RFiDGear");
+        private readonly Serilog.ILogger logger = Log.ForContext<DatabaseReaderWriter>();
         private readonly ProjectManager projectManager;
 
         public ObservableCollection<RFiDChipParentLayerViewModel> TreeViewModel;
@@ -52,7 +52,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to initialize database reader");
                 return;
             }
         }
@@ -108,7 +108,7 @@ namespace RFiDGear.DataAccessLayer
                 }
                 catch (Exception e)
                 {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                    logger.Error(e, "Failed to process database file {DatabaseFile}", _fileName);
                     return DatabaseReadResult.Failed();
                 }
             }).ConfigureAwait(false);
@@ -131,22 +131,18 @@ namespace RFiDGear.DataAccessLayer
                 }
                 catch (Exception e)
                 {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                    logger.Error(e, "Failed to deserialize project manifest from {ManifestFile}", projectLoadResult?.Reader?.ToString());
                 }
             }
         }
 
         private void LogNewerManifest(int manifestVersion)
         {
-            eventLog.WriteEntry(
-                string.Format(
-                    "{0}; {1}",
-                    DateTime.Now,
-                    string.Format(
-                        "database that was tried to open is newer ({0}) than this version of rfidgear ({1})",
-                        manifestVersion,
-                        Convert.ToInt32(string.Format("{0}{1}{2}", Version.Major, Version.Minor, Version.Build)))),
-                EventLogEntryType.Warning);
+            logger.Warning(
+                "Database manifest version {ManifestVersion} is newer than supported version {SupportedVersion} at {Timestamp}",
+                manifestVersion,
+                Convert.ToInt32(string.Format("{0}{1}{2}", Version.Major, Version.Minor, Version.Build)),
+                DateTime.Now);
         }
 
         public void WriteDatabase(ObservableCollection<RFiDChipParentLayerViewModel> objModel, string _path)
@@ -171,7 +167,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (XmlException e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to write chip database");
                 Environment.Exit(0);
             }
         }
@@ -207,7 +203,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (XmlException e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to write task database archive");
             }
         }
 

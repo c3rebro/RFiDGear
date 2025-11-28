@@ -1,7 +1,7 @@
 ﻿using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 using System;
 using System.Collections.ObjectModel;
@@ -100,7 +100,7 @@ namespace RFiDGear.DataAccessLayer
     /// </summary>
     public sealed class ResourceLoader : IValueConverter, IDisposable
     {
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private readonly Serilog.ILogger logger = Log.ForContext<ResourceLoader>();
         private readonly ResourceManager resManager;
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to convert resource {ResourceValue} with parameter {Parameter}", value, parameter);
 
                 throw new ArgumentOutOfRangeException(
                     string.Format("parameter:{0}\nvalue:{1}",
@@ -218,8 +218,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                EventLog eventLog2 = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
-                eventLog2.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to resolve resource {ResourceName}", resName);
                 return string.Empty;
             }
         }
