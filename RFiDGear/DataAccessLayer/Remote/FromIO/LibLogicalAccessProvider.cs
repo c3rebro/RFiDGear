@@ -75,11 +75,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                         if (readerUnit == null)
                         {
-                                readerUnit = GetReaderUnitByName(readers, selectedReaderName) ?? readers.FirstOrDefault() ?? readerProvider.createReaderUnit();
+                                readerUnit = readers.Where(r => r.getName() == selectedReaderName).FirstOrDefault() ?? readerProvider.createReaderUnit();
                         }
                         else
                         {
-                                readerUnit = GetReaderUnitByName(readers, readerUnit.getName()) ?? readerUnit;
+                                readerUnit = readers.Where(r => r.getName() == readerUnit.getName()).FirstOrDefault() ?? readerUnit;
                         }
 
                         ReaderUnitName = readerUnit?.getName();
@@ -110,17 +110,6 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         {
                                 return new List<string>();
                         }
-                }
-
-                private ReaderUnit GetReaderUnitByName(ReaderList readers, string readerName)
-                {
-                        if (string.IsNullOrWhiteSpace(readerName))
-                        {
-                                return null;
-                        }
-
-                        return readers.FirstOrDefault(r => string.Equals(r.getName(), readerName, StringComparison.OrdinalIgnoreCase))
-                               ?? readers.FirstOrDefault(r => string.Equals(r.getConnectedName(), readerName, StringComparison.OrdinalIgnoreCase));
                 }
 
 		public override async Task<ERROR> ConnectAsync()
