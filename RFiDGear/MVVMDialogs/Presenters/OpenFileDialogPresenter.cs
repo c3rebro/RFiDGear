@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using MVVMDialogs.Presenters.Interfaces;
 using MVVMDialogs.ViewModels;
 
 namespace MVVMDialogs.Presenters

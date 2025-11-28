@@ -1,7 +1,8 @@
 ﻿using System.Windows;
-using MvvmDialogs.ViewModels;
+using MVVMDialogs.Presenters.Interfaces;
+using MVVMDialogs.ViewModels;
 
-namespace MvvmDialogs.Presenters
+namespace MVVMDialogs.Presenters
 {
     public class MessageBoxPresenter : IDialogBoxPresenter<MessageBoxViewModel>
     {

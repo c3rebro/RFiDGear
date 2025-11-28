@@ -19,6 +19,7 @@ using System.Xml.Serialization;
 using System.Reflection;
 using System.Threading.Tasks;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>

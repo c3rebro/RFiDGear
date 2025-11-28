@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
+using MVVMDialogs.ViewModels.Interfaces;
 
 namespace MVVMDialogs.ViewModels
 {

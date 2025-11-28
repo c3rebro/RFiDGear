@@ -7,6 +7,7 @@ using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel.DialogFactories
 {
     public class TaskDialogFactory

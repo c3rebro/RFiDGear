@@ -22,6 +22,7 @@ using System.Xml.Serialization;
 using System.Collections.ObjectModel;
 using System.Linq;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>

@@ -14,6 +14,7 @@ using RFiDGear.Model;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using RFiDGear.ViewModel;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.Services.TaskExecution
 {
     public interface IReaderDeviceProvider

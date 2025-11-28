@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace MVVMDialogs.ViewModels
+namespace MVVMDialogs.ViewModels.Interfaces
 {
     public interface IUserDialogViewModel : IDialogViewModel
     {

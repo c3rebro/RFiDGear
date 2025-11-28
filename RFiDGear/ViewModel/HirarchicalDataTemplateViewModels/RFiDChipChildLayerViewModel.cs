@@ -19,6 +19,7 @@ using System.Windows.Input;
 using System.Xml.Serialization;
 using System.Windows.Navigation;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>
