@@ -28,24 +28,25 @@ namespace RFiDGear.ViewModel
     public class SetupViewModel : ObservableObject, IUserDialogViewModel
     {
         private ReaderDevice device;
+        private readonly SettingsReaderWriter settingsReaderWriter;
 
         public SetupViewModel()
+            : this(null, new SettingsReaderWriter())
         {
         }
 
-        public SetupViewModel(ReaderDevice _device)
+        public SetupViewModel(ReaderDevice _device, SettingsReaderWriter settings)
         {
-            using (var settings = new SettingsReaderWriter())
-            {
-                device = _device;
+            settingsReaderWriter = settings ?? throw new ArgumentNullException(nameof(settings));
 
-                SelectedReader = settings.DefaultSpecification.DefaultReaderProvider;
-                DefaultReader = Enum.GetName(typeof(ReaderTypes), SelectedReader);
-                ComPort = settings.DefaultSpecification.LastUsedComPort;
-                LoadOnStart = settings.DefaultSpecification.AutoLoadProjectOnStart;
-                CheckOnStart = settings.DefaultSpecification.AutoCheckForUpdates;
-                SelectedBaudRate = settings.DefaultSpecification.LastUsedBaudRate;
-            }
+            device = _device;
+
+            SelectedReader = settingsReaderWriter.DefaultSpecification.DefaultReaderProvider;
+            DefaultReader = Enum.GetName(typeof(ReaderTypes), SelectedReader);
+            ComPort = settingsReaderWriter.DefaultSpecification.LastUsedComPort;
+            LoadOnStart = settingsReaderWriter.DefaultSpecification.AutoLoadProjectOnStart;
+            CheckOnStart = settingsReaderWriter.DefaultSpecification.AutoCheckForUpdates;
+            SelectedBaudRate = settingsReaderWriter.DefaultSpecification.LastUsedBaudRate;
         }
 
         #region Commands
@@ -55,8 +56,7 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand SaveSettings => new AsyncRelayCommand(OnNewSaveSettingsCommand);
         private async Task OnNewSaveSettingsCommand()
         {
-            SettingsReaderWriter settings = new SettingsReaderWriter();
-            await settings.SaveSettings();
+            await settingsReaderWriter.SaveSettings();
         }
 
         public ICommand ReaderSeletedCommand => new RelayCommand(ReaderSelected);
