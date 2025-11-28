@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using MVVMDialogs.ViewModels;
 

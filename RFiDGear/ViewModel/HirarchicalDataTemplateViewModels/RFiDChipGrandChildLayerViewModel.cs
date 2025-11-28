@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using MVVMDialogs.ViewModels;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

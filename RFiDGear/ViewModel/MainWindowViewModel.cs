@@ -45,6 +45,7 @@ using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.Model;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.DialogFactories;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 namespace RFiDGear.ViewModel
 {

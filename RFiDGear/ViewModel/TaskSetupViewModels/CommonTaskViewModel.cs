@@ -28,7 +28,7 @@ using System.Windows.Controls;
 using System.Xml.Serialization;
 using Org.BouncyCastle.Asn1.X509;
 
-namespace RFiDGear.ViewModel
+namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
     /// Description of ReportTaskViewModel.

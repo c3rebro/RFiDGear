@@ -12,6 +12,7 @@ using RFiDGear.DataAccessLayer;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.Model;
 using RFiDGear.ViewModel.TaskSetupViewModels;
+using RFiDGear.ViewModel;
 
 namespace RFiDGear.Services.TaskExecution
 {
@@ -61,20 +62,20 @@ namespace RFiDGear.Services.TaskExecution
 
     public class TaskExecutionRequest
     {
-        public ChipTaskHandlerModel TaskHandler { get; init; }
-        public ObservableCollection<RFiDChipParentLayerViewModel> TreeViewParentNodes { get; init; }
-        public Dictionary<string, string> VariablesFromArgs { get; init; }
-        public ObservableCollection<IDialogViewModel> Dialogs { get; init; }
+        public ChipTaskHandlerModel TaskHandler { get; set; }
+        public ObservableCollection<RFiDChipParentLayerViewModel> TreeViewParentNodes { get; set; }
+        public Dictionary<string, string> VariablesFromArgs { get; set; }
+        public ObservableCollection<IDialogViewModel> Dialogs { get; set; }
         public ReportReaderWriter ReportReaderWriter { get; set; }
         public string ReportOutputPath { get; set; }
         public string ReportTemplateFile { get; set; }
         public object SelectedSetupViewModel { get; set; }
         public bool RunSelectedOnly { get; set; }
-        public Action<object> UpdateSelectedSetupViewModel { get; init; }
-        public Action<bool> UpdateReaderBusy { get; init; }
-        public Action NotifyTreeViewChanged { get; init; }
-        public Action NotifyTasksChanged { get; init; }
-        public EventLog EventLog { get; init; }
+        public Action<object> UpdateSelectedSetupViewModel { get; set; }
+        public Action<bool> UpdateReaderBusy { get; set; }
+        public Action NotifyTreeViewChanged { get; set; }
+        public Action NotifyTasksChanged { get; set; }
+        public EventLog EventLog { get; set; }
     }
 
     public class TaskExecutionResult
