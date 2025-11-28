@@ -1093,16 +1093,16 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand NewReaderSetupDialogCommand => new AsyncRelayCommand(OnNewReaderSetupDialog);
         private async Task OnNewReaderSetupDialog()
         {
-            using (var settings = new SettingsReaderWriter())
+            var settings = new SettingsReaderWriter();
+
+            var currentSettings = settings.DefaultSpecification;
+
+            ReaderDevice.PortNumber = int.TryParse(currentSettings.LastUsedComPort, out var portNumber) ? portNumber : 0;
+            ReaderDevice.Reader = currentSettings.DefaultReaderProvider;
+
+            using (var device = ReaderDevice.Instance)
             {
-                var currentSettings = settings.DefaultSpecification;
-
-                ReaderDevice.PortNumber = int.TryParse(currentSettings.LastUsedComPort, out var portNumber) ? portNumber : 0;
-                ReaderDevice.Reader = currentSettings.DefaultReaderProvider;
-
-                using (var device = ReaderDevice.Instance)
-                {
-                    Dialogs.Add(new SetupViewModel(device)
+                Dialogs.Add(new SetupViewModel(device, settings)
                     {
                         Caption = ResourceLoader.GetResource("windowCaptionReaderSetup"),
 
@@ -1815,7 +1815,7 @@ namespace RFiDGear.ViewModel
             {
                 using (var settings = new SettingsReaderWriter())
                 {
-                    await settings.ReadSettings();
+                    await settings.ReadSettingsAsync();
 
                     settings.InitUpdateFile();
 
