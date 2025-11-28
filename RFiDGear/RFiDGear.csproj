@@ -281,6 +281,7 @@
     <Compile Include="ViewModel\MainWindowViewModel.cs" />
     <Compile Include="ViewModel\AboutViewModel.cs" />
     <Compile Include="ViewModel\UpdateNotifierViewModel.cs" />
+    <Compile Include="ViewModel\DialogFactories\TaskDialogFactory.cs" />
     <Compile Include="ViewModel\SplashScreenViewModel.cs" />
     <Compile Include="ViewModel\TaskSetupViewModels\GenericChipTaskViewModel.cs" />
     <Compile Include="ViewModel\TaskSetupViewModels\CommonTaskViewModel.cs" />

@@ -43,6 +43,7 @@ using RedCell.Diagnostics.Update;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.Model;
+using RFiDGear.ViewModel.DialogFactories;
 
 namespace RFiDGear.ViewModel
 {
@@ -57,6 +58,7 @@ namespace RFiDGear.ViewModel
         private readonly string[] args;
         private readonly Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
         private readonly Updater updater;
+        private readonly TaskDialogFactory taskDialogFactory;
 
         private protected MainWindow mw;
         private protected DatabaseReaderWriter databaseReaderWriter;
@@ -149,6 +151,11 @@ namespace RFiDGear.ViewModel
             DateTimeStatusBar = "";
             databaseReaderWriter = new DatabaseReaderWriter();
             resLoader = new ResourceLoader();
+
+            taskDialogFactory = new TaskDialogFactory(
+                () => OnPropertyChanged(nameof(ChipTasks)),
+                () => mw?.Activate(),
+                status => IsReaderBusy = status);
 
             rowContextMenuItems = new ObservableCollection<MenuItem>();
             emptySpaceContextMenuItems = new ObservableCollection<MenuItem>();
@@ -494,55 +501,7 @@ namespace RFiDGear.ViewModel
                     // only call dialog if device is ready
                     if (device != null)
                     {
-                        dialogs.Add(new GenericChipTaskViewModel(SelectedSetupViewModel, ChipTasks.TaskCollection, dialogs)
-                        {
-                            Caption = ResourceLoader.GetResource("windowCaptionAddEditGenericChipTask"),
-
-                            OnOk = async (sender) =>
-                            {
-                                if (sender.SelectedTaskType == TaskType_GenericChipTask.ChangeDefault)
-                                {
-                                    await sender.SaveSettings.ExecuteAsync(null);
-                                }
-
-                                if (sender.SelectedTaskType == TaskType_GenericChipTask.ChipIsOfType ||
-                                sender.SelectedTaskType == TaskType_GenericChipTask.CheckUID ||
-                                sender.SelectedTaskType == TaskType_GenericChipTask.ChipIsMultiChip)
-                                {
-                                    if ((ChipTasks.TaskCollection.OfType<GenericChipTaskViewModel>().Where(x => x.SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
-                                    {
-                                        ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
-                                    }
-
-                                    ChipTasks.TaskCollection.Add(sender);
-
-                                    ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
-
-                                    OnPropertyChanged(nameof(ChipTasks));
-                                }
-                                sender.Close();
-
-                                mw.Activate();
-                            },
-
-                            OnCancel = (sender) =>
-                            {
-                                sender.Close();
-
-                                mw.Activate();
-                            },
-
-                            OnAuth = (sender) =>
-                            {
-                            },
-
-                            OnCloseRequest = (sender) =>
-                            {
-                                sender.Close();
-
-                                mw.Activate();
-                            }
-                        });
+                        Dialogs.Add(taskDialogFactory.CreateGenericChipTaskDialog(SelectedSetupViewModel, ChipTasks, dialogs));
                     }
 
                     else
@@ -665,62 +624,7 @@ namespace RFiDGear.ViewModel
                     // only call dialog if device is ready
                     if (device != null)
                     {
-                        dialogs.Add(new MifareClassicSetupViewModel(SelectedSetupViewModel, dialogs)
-                        {
-                            Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareClassicTask"),
-                            IsClassicAuthInfoEnabled = true,
-
-                            OnOk = (sender) =>
-                            {
-                                if (sender.SelectedTaskType == TaskType_MifareClassicTask.ChangeDefault)
-                                {
-                                    sender.SaveSettings.ExecuteAsync(null);
-                                }
-
-                                if (sender.SelectedTaskType == TaskType_MifareClassicTask.WriteData ||
-                                    sender.SelectedTaskType == TaskType_MifareClassicTask.ReadData ||
-                                    sender.SelectedTaskType == TaskType_MifareClassicTask.EmptyCheck)
-                                {
-
-                                    if (ChipTasks.TaskCollection.OfType<MifareClassicSetupViewModel>().Where(x => (x as MifareClassicSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any())
-                                    {
-                                        ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
-                                    }
-
-                                    ChipTasks.TaskCollection.Add(sender);
-
-                                    ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
-
-                                    OnPropertyChanged(nameof(ChipTasks));
-                                }
-                                sender.Close();
-
-                                mw.Activate();
-                            },
-
-                            OnUpdateStatus = (sender) =>
-                            {
-                                IsReaderBusy = sender;
-                            },
-
-                            OnCancel = (sender) =>
-                            {
-                                sender.Close();
-
-                                mw.Activate();
-                            },
-
-                            OnAuth = (sender) =>
-                            {
-                            },
-
-                            OnCloseRequest = (sender) =>
-                            {
-                                sender.Close();
-
-                                mw.Activate();
-                            }
-                        });
+                        Dialogs.Add(taskDialogFactory.CreateClassicTaskDialog(SelectedSetupViewModel, ChipTasks, dialogs));
                     }
 
                     else
@@ -759,66 +663,7 @@ namespace RFiDGear.ViewModel
             {
                 if (device != null)
                 {
-                    Dialogs.Add(new MifareDesfireSetupViewModel(SelectedSetupViewModel, dialogs)
-                    {
-                        Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareDesfireTask"),
-
-                        OnOk = (sender) =>
-                        {
-                            if (sender.SelectedTaskType == TaskType_MifareDesfireTask.ChangeDefault)
-                            {
-                                sender.SaveSettings.ExecuteAsync(null);
-                            }
-
-                            if (sender.SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard ||
-                                sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover ||
-                                sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings ||
-                                sender.SelectedTaskType == TaskType_MifareDesfireTask.AppExistCheck ||
-                                sender.SelectedTaskType == TaskType_MifareDesfireTask.AuthenticateApplication ||
-                                sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover ||
-                                sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication ||
-                                sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateApplication ||
-                                sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteFile ||
-                                sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateFile ||
-                                sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadData ||
-                                sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData)
-                            {
-                                if (ChipTasks.TaskCollection.OfType<MifareDesfireSetupViewModel>().Any(x => (x as MifareDesfireSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt))
-                                {
-                                    ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
-                                }
-
-                                ChipTasks.TaskCollection.Add(sender);
-
-                                ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
-
-                                OnPropertyChanged(nameof(ChipTasks));
-
-                                sender.Close();
-
-                                mw.Activate();
-                            }
-                        },
-
-                        OnUpdateStatus = (sender) =>
-                        {
-                            IsReaderBusy = sender;
-                        },
-
-                        OnCancel = (sender) =>
-                        {
-                            sender.Close();
-
-                            mw.Activate();
-                        },
-
-                        OnCloseRequest = (sender) =>
-                        {
-                            sender.Close();
-
-                            mw.Activate();
-                        }
-                    });
+                    Dialogs.Add(taskDialogFactory.CreateDesfireTaskDialog(SelectedSetupViewModel, ChipTasks, dialogs));
                 }
 
                 else
@@ -850,52 +695,7 @@ namespace RFiDGear.ViewModel
             {
                 if (device != null)
                 {
-
-                    Dialogs.Add(new MifareUltralightSetupViewModel(SelectedSetupViewModel, dialogs)
-                    {
-                        Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareDesfireTask"),
-
-                        OnOk = (sender) =>
-                        {
-                            if (sender.SelectedTaskType == TaskType_MifareUltralightTask.ChangeDefault)
-                            {
-                                sender.Settings.SaveSettings();
-                            }
-
-                            if (sender.SelectedTaskType == TaskType_MifareUltralightTask.ReadData ||
-                                            sender.SelectedTaskType == TaskType_MifareUltralightTask.WriteData)
-                            {
-                                if ((ChipTasks.TaskCollection.OfType<MifareUltralightSetupViewModel>().Where(x => (x as MifareUltralightSetupViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any()))
-                                {
-                                    ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
-                                }
-
-                                ChipTasks.TaskCollection.Add(sender);
-
-                                ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
-
-                                OnPropertyChanged(nameof(ChipTasks));
-
-                                sender.Close();
-
-                                mw.Activate();
-                            }
-                        },
-
-                        OnCancel = (sender) =>
-                        {
-                            sender.Close();
-
-                            mw.Activate();
-                        },
-
-                        OnCloseRequest = (sender) =>
-                        {
-                            sender.Close();
-
-                            mw.Activate();
-                        }
-                    });
+                    Dialogs.Add(taskDialogFactory.CreateUltralightTaskDialog(SelectedSetupViewModel, ChipTasks, dialogs));
                 }
             }
 
