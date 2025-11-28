@@ -1815,7 +1815,7 @@ namespace RFiDGear.ViewModel
             {
                 using (var settings = new SettingsReaderWriter())
                 {
-                    await settings.ReadSettings();
+                    await settings.ReadSettingsAsync();
 
                     settings.InitUpdateFile();
 
