@@ -29,6 +29,8 @@ namespace RFiDGear
 
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 
+        private string SettingsFilePath => Path.Combine(appDataPath, settingsFileFileName);
+
         private bool disposed;
         private string infoText = "Version Info\n\ngoes here! \n==>";
 
@@ -43,7 +45,13 @@ namespace RFiDGear
             this.appDataPath = appDataPath ?? throw new ArgumentNullException(nameof(appDataPath));
         }
 
-        public DefaultSpecification DefaultSpecification { get; private set; } = new DefaultSpecification();
+        private DefaultSpecification defaultSpecification = new DefaultSpecification();
+
+        public DefaultSpecification DefaultSpecification
+        {
+            get => defaultSpecification;
+            set => defaultSpecification = value ?? new DefaultSpecification();
+        }
 
         public void InitUpdateFile()
         {
@@ -117,19 +125,14 @@ namespace RFiDGear
             return Task.Run(() => ReadSettings(filePath));
         }
 
-        public async Task ReadSettings()
-        {
-            await ReadSettingsAsync().ConfigureAwait(false);
-        }
-
         public DefaultSpecification ReadSettings()
         {
-            return ReadSettings(Path.Combine(appDataPath, settingsFileFileName));
+            return ReadSettings(SettingsFilePath);
         }
 
         public Task<DefaultSpecification> ReadSettingsAsync()
         {
-            return ReadSettingsAsync(Path.Combine(appDataPath, settingsFileFileName));
+            return ReadSettingsAsync(SettingsFilePath);
         }
 
         public void SaveSettings(DefaultSpecification specification, string path)
@@ -167,19 +170,19 @@ namespace RFiDGear
 
         public void SaveSettings(DefaultSpecification specification)
         {
-            SaveSettings(specification, Path.Combine(appDataPath, settingsFileFileName));
+            SaveSettings(specification, SettingsFilePath);
         }
 
         public Task SaveSettingsAsync(DefaultSpecification specification)
         {
-            return SaveSettingsAsync(specification, Path.Combine(appDataPath, settingsFileFileName));
+            return SaveSettingsAsync(specification, SettingsFilePath);
         }
 
         public async Task<bool> SaveSettings(string path = "")
         {
             try
             {
-                await SaveSettingsAsync(DefaultSpecification, string.IsNullOrWhiteSpace(path) ? Path.Combine(appDataPath, settingsFileFileName) : path).ConfigureAwait(false);
+                await SaveSettingsAsync(DefaultSpecification, string.IsNullOrWhiteSpace(path) ? SettingsFilePath : path).ConfigureAwait(false);
 
                 return true;
             }
