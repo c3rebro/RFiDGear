@@ -35,14 +35,23 @@ namespace RFiDGear
         private string infoText = "Version Info\n\ngoes here! \n==>";
 
         public SettingsReaderWriter()
-            : this(new ProjectManager().AppDataPath)
         {
-            new ProjectManager().EnsureSettingsFileExists();
+            var projectManager = new ProjectManager();
+            appDataPath = projectManager.AppDataPath;
+
+            projectManager.EnsureSettingsFileExists();
+
+            ReadSettings();
         }
 
-        public SettingsReaderWriter(string appDataPath)
+        public SettingsReaderWriter(string appDataPath, bool loadSettings = true)
         {
             this.appDataPath = appDataPath ?? throw new ArgumentNullException(nameof(appDataPath));
+
+            if (loadSettings)
+            {
+                ReadSettings();
+            }
         }
 
         private DefaultSpecification defaultSpecification = new DefaultSpecification();
