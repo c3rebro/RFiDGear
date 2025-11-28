@@ -214,7 +214,7 @@ namespace RFiDGear.ViewModel
                             device = new ElatecNetProvider();
                             break;
                         case ReaderTypes.PCSC:
-                            device = null;
+                            device = new LibLogicalAccessProvider();
                             break;
 
                         default:
