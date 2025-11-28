@@ -5,15 +5,12 @@ using LibLogicalAccess.Crypto;
 
 using ByteArrayHelper.Extensions;
 
-using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Reflection;
-using System.Linq;
 
 namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
@@ -25,14 +22,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 	///
 	public class LibLogicalAccessProvider : ReaderDevice, IDisposable
 	{
-                // global (cross-class) Instances go here ->
-                private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
-                private readonly ProjectManager projectManager = new ProjectManager();
-                private ReaderProvider readerProvider;
-                private ReaderUnit readerUnit;
-                private string selectedReaderName;
-                private Chip card;
-                public IReadOnlyCollection<string> AvailableReaders { get; private set; } = new List<string>();
+		// global (cross-class) Instances go here ->
+		private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+		private ReaderProvider readerProvider;
+		private ReaderUnit readerUnit;
+		private Chip card;
 
 
 		#region contructor
@@ -40,21 +34,21 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		{
 		}
 
-                public LibLogicalAccessProvider(ReaderTypes readerType, string readerName = null)
-                {
-                        try
-                        {
-                                selectedReaderName = readerName;
+		public LibLogicalAccessProvider(ReaderTypes readerType)
+		{
+			try
+			{
+				readerProvider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), readerType));
+                var readers = readerProvider.getReaderList();
+				readerUnit = readerProvider.createReaderUnit();
 
-                                InitializeReaderProvider(readerType);
-
-                                GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
-                        }
-                        catch (Exception e)
-                        {
-                                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                        }
-                }
+				GenericChip = new GenericChipModel("", CARD_TYPE.Unspecified);
+			}
+			catch (Exception e)
+			{
+				eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+			}
+		}
 
 		#endregion contructor
 
@@ -63,54 +57,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		/// <summary>
 		/// 
 		/// </summary>
-                public override bool IsConnected => readerUnit?.isConnected() == true;
-
-                private void InitializeReaderProvider(ReaderTypes readerType)
-                {
-                        readerProvider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), readerType));
-
-                        var readers = readerProvider.getReaderList();
-
-                        AvailableReaders = readers.Select(x => x.getName()).ToList();
-
-                        if (readerUnit == null)
-                        {
-                                readerUnit = readers.Where(r => r.getName() == selectedReaderName).FirstOrDefault() ?? readerProvider.createReaderUnit();
-                        }
-                        else
-                        {
-                                readerUnit = readers.Where(r => r.getName() == readerUnit.getName()).FirstOrDefault() ?? readerUnit;
-                        }
-
-                        ReaderUnitName = readerUnit?.getName();
-                }
-
-                public void UpdateSelectedReader(string readerName)
-                {
-                        try
-                        {
-                                selectedReaderName = readerName;
-                                InitializeReaderProvider(ReaderTypes.PCSC);
-                        }
-                        catch (Exception e)
-                        {
-                                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                        }
-                }
-
-                public static IReadOnlyCollection<string> GetAvailableReaderNames(ReaderTypes readerType)
-                {
-                        try
-                        {
-                                var provider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), readerType));
-
-                                return provider.getReaderList().Select(r => r.getName()).ToList();
-                        }
-                        catch
-                        {
-                                return new List<string>();
-                        }
-                }
+		public override bool IsConnected => readerUnit?.isConnected() == true;
 
 		public override async Task<ERROR> ConnectAsync()
 		{ 
@@ -214,10 +161,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
 		public override async Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
 		{
-                        try
-                        {
-                await projectManager.LoadSettingsAsync();
+			try
+			{
+                var settings = new SettingsReaderWriter();
                 Sector = new MifareClassicSectorModel();
+
+                await settings.ReadSettings();
 
                 var keyA = new MifareKey(CustomConverter.KeyFormatQuickCheck(aKey) ? aKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey));
                 var keyB = new MifareKey(CustomConverter.KeyFormatQuickCheck(bKey) ? bKey : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey));
@@ -554,8 +503,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		{
             try
             {
+                var settings = new SettingsReaderWriter();
                 Sector = new MifareClassicSectorModel();
-                await projectManager.LoadSettingsAsync();
+
+                await settings.ReadSettings();
 
                 var mAKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_aKeyToUse) ? _aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToUse));
                 var mBKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_bKeyToUse) ? _bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToUse));
@@ -636,8 +587,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 		{
             try
             {
+                var settings = new SettingsReaderWriter();
                 Sector = new MifareClassicSectorModel();
-                await projectManager.LoadSettingsAsync();
+
+                await settings.ReadSettings();
 
                 var mAKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_aKeyToUse) ? _aKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKeyToUse));
                 var mBKeyToUse = new MifareKey(CustomConverter.KeyFormatQuickCheck(_bKeyToUse) ? _bKeyToUse : CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKeyToUse));

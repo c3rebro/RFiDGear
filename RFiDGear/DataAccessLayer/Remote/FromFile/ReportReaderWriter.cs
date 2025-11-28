@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Xml;
 using GemBox.Pdf;
-using Serilog;
 
 namespace RFiDGear.DataAccessLayer
 {
@@ -17,32 +17,35 @@ namespace RFiDGear.DataAccessLayer
     {
         #region fields
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
-        private readonly Serilog.ILogger logger = Log.ForContext<ReportReaderWriter>();
-        private readonly ProjectManager projectManager;
+        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private const string reportTemplateTempFileName = "temptemplate.pdf";
+        private readonly string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear");
+        private readonly string tempReportTemplateFileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear", reportTemplateTempFileName);
         public string ReportOutputPath { get; set; }
         public string ReportTemplateFile { get; set; }
 
         #endregion fields
 
         public ReportReaderWriter()
-            : this(new ProjectManager())
-        {
-        }
-
-        public ReportReaderWriter(ProjectManager projectManager)
         {
             try
             {
-                this.projectManager = projectManager ?? throw new ArgumentNullException(nameof(projectManager));
-
                 // Set license key to use GemBox.Pdf in Free mode.
                 ComponentInfo.SetLicense("FREE-LIMITED-KEY");
 
-                CleanupTemporaryTemplate();
+                if (!Directory.Exists(appDataPath))
+                {
+                    Directory.CreateDirectory(appDataPath);
+                }
+
+                if (File.Exists(tempReportTemplateFileName))
+                {
+                    File.Delete(tempReportTemplateFileName);
+                }
             }
             catch (Exception e)
             {
-                logger.Error(e, "Failed to initialize report writer");
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                 return;
             }
         }
@@ -53,7 +56,7 @@ namespace RFiDGear.DataAccessLayer
             {
                 var temp = new ObservableCollection<string>();
 
-                using (var pdfDoc = PdfDocument.Load(projectManager.GetReportTemplatePath(ReportTemplateFile)))
+                using (var pdfDoc = PdfDocument.Load(ReportTemplateFile))
                 {
                     var form = pdfDoc.Form;
 
@@ -69,7 +72,7 @@ namespace RFiDGear.DataAccessLayer
                     }
                     catch (Exception e)
                     {
-                        logger.Error(e, "Failed to enumerate fields from {TemplateFile}", ReportTemplateFile);
+                        eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                     }
                 }
 
@@ -78,112 +81,102 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (XmlException e)
             {
-                logger.Error(e, "Failed to read report fields from {TemplateFile}", ReportTemplateFile);
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                 return null;
             }
         }
 
         public async Task SetReportField(string _field, string _value)
         {
-            await ApplyReportChanges(_field, pdfDoc =>
+            if (!String.IsNullOrWhiteSpace(ReportOutputPath))
             {
-                var form = pdfDoc.Form;
-                pdfDoc.Info.Title = "RFiDGear Report";
-                pdfDoc.Info.Author = "RFiDGear";
-
-                if (form?.Fields.Any(x => x.Name == _field) == true)
+                try
                 {
-                    pdfDoc.Form.Fields[_field].Hidden = false;
-                    pdfDoc.Form.Fields[_field].ReadOnly = false;
-                    pdfDoc.Form.Fields[_field].Value = _value;
+                    await Task.Run(() =>
+                    {
+                        if (!File.Exists(tempReportTemplateFileName))
+                        {
+                            File.Copy(ReportTemplateFile, tempReportTemplateFileName, true);
+                        }
+
+                        using (var pdfDoc = PdfDocument.Load(tempReportTemplateFileName))
+                        {
+                            try
+                            {
+                                var form = pdfDoc.Form;
+                                pdfDoc.Info.Title = "RFiDGear Report";
+                                pdfDoc.Info.Author = "RFiDGear";
+
+                                if (pdfDoc.Form.Fields.Any(x => x.Name == _field))
+                                {
+                                    pdfDoc.Form.Fields[_field].Hidden = false;
+                                    pdfDoc.Form.Fields[_field].ReadOnly = false;
+                                    pdfDoc.Form.Fields[_field].Value = _value;
+                                }
+
+                                pdfDoc.Save(ReportOutputPath);
+                                pdfDoc.Close();
+
+                                File.Copy(ReportOutputPath, tempReportTemplateFileName, true);
+                            }
+                            catch (Exception e)
+                            {
+                                eventLog.WriteEntry(string.Format(e.Message + "; SetReportField: " + _field), EventLogEntryType.Error);
+                            }
+                        }
+                    });
+
+                    return;
                 }
-            });
+                catch (XmlException e)
+                {
+                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                }
+            }
+            return;
         }
 
         public async Task ConcatReportField(string _field, string _value)
         {
-            await ApplyReportChanges(_field, pdfDoc =>
+            if (!String.IsNullOrWhiteSpace(ReportOutputPath))
             {
-                var form = pdfDoc.Form;
-
-                if (form?.Fields.Any(x => x.Name == _field) != true)
+                try
                 {
-                    return;
-                }
-
-                pdfDoc.Form.Fields[_field].Hidden = false;
-                pdfDoc.Form.Fields[_field].ReadOnly = false;
-                pdfDoc.Form.Fields[_field].Value = string.Format("{0}{1}", pdfDoc.Form.Fields[_field]?.Value, _value);
-            });
-        }
-
-        private async Task ApplyReportChanges(string fieldName, Action<PdfDocument> applyChanges)
-        {
-            if (!HasValidReportPaths())
-            {
-                return;
-            }
-
-            try
-            {
-                await Task.Run(() =>
-                {
-                    EnsureTemporaryTemplate();
-
-                    using (var pdfDoc = PdfDocument.Load(projectManager.GetTemporaryReportTemplatePath()))
+                    await Task.Run(() => 
                     {
-                        try
+                        ReportTemplateFile = System.IO.Path.Combine(appDataPath, reportTemplateTempFileName);
+
+                        using (var pdfDoc = PdfDocument.Load(ReportTemplateFile))
                         {
-                            applyChanges(pdfDoc);
-                            SaveReport(pdfDoc);
+                            try
+                            {
+                                var form = pdfDoc.Form;
+
+                                pdfDoc.Form.Fields[_field].Hidden = false;
+                                pdfDoc.Form.Fields[_field].ReadOnly = false;
+                                pdfDoc.Form.Fields[_field].Value = string.Format("{0}{1}", pdfDoc.Form.Fields[_field]?.Value, _value);
+
+                                pdfDoc.Save(ReportOutputPath);
+                                pdfDoc.Close();
+
+                                File.Copy(ReportOutputPath, System.IO.Path.Combine(appDataPath, reportTemplateTempFileName), true);
+                            }
+                            catch (Exception e)
+                            {
+                                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                            }
                         }
-                        catch (Exception e)
-                        {
-                            logger.Error(e, "Failed to apply changes to field {FieldName} in {OutputPath}", fieldName, ReportOutputPath);
-                        }
-                    }
-                }).ConfigureAwait(false);
-            }
-            catch (XmlException e)
-            {
-                logger.Error(e, "Failed to apply report changes for field {FieldName}", fieldName);
-            }
-        }
 
-        private void EnsureTemporaryTemplate()
-        {
-            var tempPath = projectManager.GetTemporaryReportTemplatePath();
+                        return;
+                    }).ConfigureAwait(false);
 
-            if (File.Exists(tempPath))
-            {
-                return;
+                }
+                catch (XmlException e)
+                {
+                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                }
             }
 
-            projectManager.CopyReportTemplateToTemp(ReportTemplateFile);
-        }
-
-        private bool HasValidReportPaths()
-        {
-            return !string.IsNullOrWhiteSpace(ReportOutputPath)
-                   && !string.IsNullOrWhiteSpace(ReportTemplateFile);
-        }
-
-        private void SaveReport(PdfDocument pdfDoc)
-        {
-            pdfDoc.Save(ReportOutputPath);
-            pdfDoc.Close();
-
-            projectManager.SafeCopy(ReportOutputPath, projectManager.GetTemporaryReportTemplatePath());
-        }
-
-        private void CleanupTemporaryTemplate()
-        {
-            var tempPath = projectManager.GetTemporaryReportTemplatePath();
-
-            if (File.Exists(tempPath))
-            {
-                File.Delete(tempPath);
-            }
         }
 
         public void DeleteDatabase()
@@ -205,7 +198,7 @@ namespace RFiDGear.DataAccessLayer
 
                     catch (XmlException e)
                     {
-                        logger.Error(e, "Failed while disposing report writer");
+                        eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                     }
                 }
 

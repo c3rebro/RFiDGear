@@ -30,8 +30,7 @@ using System.Linq;
 using LibLogicalAccess;
 using System.Diagnostics;
 
-using MVVMDialogs.ViewModels.Interfaces;
-namespace RFiDGear.ViewModel.TaskSetupViewModels
+namespace RFiDGear.ViewModel
 {
     /// <summary>
     /// Description of CommonTaskViewModel.

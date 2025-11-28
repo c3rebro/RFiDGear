@@ -12,7 +12,6 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Input;
 
-using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>
