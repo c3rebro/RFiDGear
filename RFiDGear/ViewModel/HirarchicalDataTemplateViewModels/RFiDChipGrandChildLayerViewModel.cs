@@ -7,17 +7,19 @@ using RFiDGear.ViewModel.TaskSetupViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
 using MVVMDialogs.ViewModels.Interfaces;
+using RFiDGear.Helpers.Selection;
 namespace RFiDGear.ViewModel
 {
     /// <summary>
     /// Description of RFiDChipGrandChildLayerViewModel.
     /// </summary>
     [XmlRootAttribute("TreeViewGrandChildNode", IsNullable = false)]
-    public class RFiDChipGrandChildLayerViewModel : ObservableObject, IUserDialogViewModel
+    public class RFiDChipGrandChildLayerViewModel : ObservableObject, IUserDialogViewModel, ITreeSelectionNode
     {
         #region Constructors
 
@@ -614,6 +616,9 @@ namespace RFiDGear.ViewModel
             }
         }
         private bool isSelected;
+
+        [XmlIgnore]
+        public IEnumerable<ITreeSelectionNode> SelectionChildren => children?.Cast<ITreeSelectionNode>() ?? Enumerable.Empty<ITreeSelectionNode>();
 
         [XmlIgnore]
         public bool? IsValidSelectedDataIndexAndLength

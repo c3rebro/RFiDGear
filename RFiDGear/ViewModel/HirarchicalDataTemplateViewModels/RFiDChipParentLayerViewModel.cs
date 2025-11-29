@@ -7,6 +7,7 @@ using MVVMDialogs.ViewModels;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+using RFiDGear.Helpers.Selection;
 
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace RFiDGear.ViewModel
     /// Description of MifareClassic1KContentViewModel.
     /// </summary>
     [XmlRootAttribute("TreeViewParentNode", IsNullable = false)]
-    public class RFiDChipParentLayerViewModel : ObservableObject
+    public class RFiDChipParentLayerViewModel : ObservableObject, ITreeSelectionNode
     {
         private readonly ProjectManager projectManager;
         private readonly SettingsLoadResult settings;
@@ -655,6 +656,9 @@ namespace RFiDGear.ViewModel
                 }
             }
         }
+
+        [XmlIgnore]
+        public IEnumerable<ITreeSelectionNode> SelectionChildren => Children?.Cast<ITreeSelectionNode>() ?? Enumerable.Empty<ITreeSelectionNode>();
 
         #endregion Selected Items
 
