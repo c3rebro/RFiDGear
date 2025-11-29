@@ -218,7 +218,7 @@ namespace RFiDGear.DataAccessLayer
             }
             catch (Exception e)
             {
-                logger.Error(e, "Failed to resolve resource {ResourceName}", resName);
+                //logger.Error(e, "Failed to resolve resource {ResourceName}", resName);
                 return string.Empty;
             }
         }

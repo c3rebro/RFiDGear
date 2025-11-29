@@ -1486,7 +1486,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     {
                         var cmd = card.getCommands() as DESFireCommands;
                         var ev1Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV1ISO7816Commands;
+                        var ev2Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV2ISO7816Commands;
+                        var ev3Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV3ISO7816Commands;
 
+                        
                         try
                         {
                             if (_appIDCurrent == 0)
@@ -1496,6 +1499,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     cmd.selectApplication((uint)_appIDCurrent);
                                     cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
                                     cmd.changeKeySettings((LibLogicalAccess.Card.DESFireKeySettings)keySettings);
+                                    cmd.selectApplication((uint)_appIDCurrent);
                                     cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
                                     cmd.changeKey((byte)_keyNumberCurrent, applicationMasterKeyTarget);
                                     return ERROR.NoError;
