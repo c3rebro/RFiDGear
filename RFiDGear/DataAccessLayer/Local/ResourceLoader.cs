@@ -216,7 +216,7 @@ namespace RFiDGear.DataAccessLayer
                 return ressource.Replace("%NEWLINE", "\n");
 
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //logger.Error(e, "Failed to resolve resource {ResourceName}", resName);
                 return string.Empty;

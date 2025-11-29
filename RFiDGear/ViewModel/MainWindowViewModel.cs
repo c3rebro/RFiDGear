@@ -516,6 +516,8 @@ namespace RFiDGear.ViewModel
             triggerReadChip.IsEnabled = timerState;
 
             OnPropertyChanged(nameof(ChipTasks));
+
+            await Task.CompletedTask;
         }
 
         /// <summary>
@@ -594,6 +596,8 @@ namespace RFiDGear.ViewModel
             triggerReadChip.IsEnabled = timerState;
 
             OnPropertyChanged(nameof(ChipTasks));
+
+            await Task.CompletedTask;
         }
 
         /// <summary>
@@ -638,6 +642,8 @@ namespace RFiDGear.ViewModel
             Mouse.OverrideCursor = null;
 
             triggerReadChip.IsEnabled = timerState;
+
+            await Task.CompletedTask;
         }
 
         /// <summary>
@@ -668,6 +674,8 @@ namespace RFiDGear.ViewModel
             Mouse.OverrideCursor = null;
 
             triggerReadChip.IsEnabled = timerState;
+
+            await Task.CompletedTask;
         }
 
         /// <summary>
