@@ -277,7 +277,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public async override Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
             string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
             string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite,
-            string _madBKeyToWrite, byte[] buffer, byte _madGPB, SectorAccessBits _sab,
+            string _madBKeyToWrite, byte[] buffer, byte _madGPB, AccessControl.SectorAccessBits _sab,
             bool _useMADToAuth, bool _keyToWriteUseMAD)
         {
             throw new NotImplementedException();
@@ -552,7 +552,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                             MaxNumberOfAppKeys = (byte)ks.NumberOfKeys;
                             EncryptionType = (DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), ks.KeyType));
-                            DesfireAppKeySetting = (DESFireKeySettings)ks.AccessRights;
+                            DesfireAppKeySetting = (AccessControl.DESFireKeySettings)ks.AccessRights;
 
                             return ERROR.NoError;
                         } // Get Settings without authentication
@@ -565,7 +565,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                 MaxNumberOfAppKeys = (byte)ks.NumberOfKeys;
                                 EncryptionType = (DESFireKeyType)Enum.Parse(typeof(DESFireKeyType), Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), ks.KeyType));
-                                DesfireAppKeySetting = (DESFireKeySettings)ks.AccessRights;
+                                DesfireAppKeySetting = (AccessControl.DESFireKeySettings)ks.AccessRights;
 
                                 return ERROR.NoError;
                             }
@@ -600,7 +600,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         /// <param name="_appID"></param>
         /// <param name="authenticateToPICCFirst"></param>
         /// <returns></returns>
-        public async override Task<ERROR> CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget,
+        public async override Task<ERROR> CreateMifareDesfireApplication(string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget,
                                         DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication,
                                         int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
         {
@@ -672,7 +672,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         /// <returns></returns>
         public async override Task<ERROR> ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
                                         string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
-                                        DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, DESFireKeySettings keySettings, int keyVersion)
+                                        DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion)
         {
             if (readerDevice.IsConnected)
             {

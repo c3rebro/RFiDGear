@@ -31,7 +31,8 @@ namespace RFiDGear.Behaviors
 
         private static void OnSelectingItemChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
         {
-            if (sender is not DataGrid grid || grid.SelectedItem == null || !grid.Columns.Any())
+            var grid = sender as DataGrid;
+            if (grid == null || grid.SelectedItem == null || !grid.Columns.Any())
             {
                 return;
             }

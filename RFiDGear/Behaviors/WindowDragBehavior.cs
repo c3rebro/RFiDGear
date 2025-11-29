@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 using Serilog;
@@ -28,7 +29,8 @@ namespace RFiDGear.Behaviors
 
         private static void OnEnableWindowDragChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
         {
-            if (sender is not Window window)
+            var window = sender as Window;
+            if (window == null)
             {
                 return;
             }
@@ -43,7 +45,8 @@ namespace RFiDGear.Behaviors
 
         private static void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is not Window window)
+            var window = sender as Window;
+            if (window == null)
             {
                 return;
             }

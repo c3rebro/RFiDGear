@@ -2130,7 +2130,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         {
                             StatusText += string.Format("{0}: Successfully Authenticated to AppID {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
-                            var keySettings = DESFireKeySettings.KS_DEFAULT;
+                            var keySettings = DESFireKeySettings.Default;
                             keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
 
                             keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;

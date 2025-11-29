@@ -33,7 +33,8 @@ namespace RFiDGear.Behaviors
 
         private static void OnClearSelectionChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
         {
-            if (sender is not TreeView treeView)
+            var treeView = sender as TreeView;
+            if (treeView == null)
             {
                 return;
             }
@@ -48,7 +49,8 @@ namespace RFiDGear.Behaviors
 
         private static void TreeViewOnPreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is not TreeView treeView)
+            var treeView = sender as TreeView;
+            if (treeView == null)
             {
                 return;
             }

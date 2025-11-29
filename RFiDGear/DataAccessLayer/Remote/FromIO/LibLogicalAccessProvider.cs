@@ -1334,7 +1334,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
                                 MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
                                 EncryptionType = (DESFireKeyType)(maxNbrOfKeys & 0xF0);
-                                DesfireAppKeySetting = (DESFireKeySettings)keySettings;
+                                DesfireAppKeySetting = (AccessControl.DESFireKeySettings)keySettings;
 
                                 return ERROR.NoError;
                             }
@@ -1355,7 +1355,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
                         MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
                         EncryptionType = (DESFireKeyType)(maxNbrOfKeys & 0xF0);
-                        DesfireAppKeySetting = (DESFireKeySettings)keySettings;
+                        DesfireAppKeySetting = (AccessControl.DESFireKeySettings)keySettings;
 
                         return ERROR.NoError;
                     }
@@ -1382,7 +1382,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         }
 
 		public override async Task<ERROR> CreateMifareDesfireApplication(
-			string _piccMasterKey, DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, 
+			string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, 
 			DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
 		{
             try
@@ -1461,7 +1461,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         public override async Task<ERROR> ChangeMifareDesfireApplicationKey(
 			string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent, 
 			string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint, 
-			DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, DESFireKeySettings keySettings, int _)
+			DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int _)
 		{
             try
             {

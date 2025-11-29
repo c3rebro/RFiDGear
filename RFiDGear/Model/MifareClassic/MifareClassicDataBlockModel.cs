@@ -1,4 +1,4 @@
-﻿using RFiDGear.DataAccessLayer;
+﻿using RFiDGear.DataAccessLayer.AccessControl;
 
 namespace RFiDGear.Model
 {
