@@ -206,8 +206,8 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Top"
                         IsEnabled="{Binding DataBlockSelectionComboBoxIsEnabled}"
-                        ItemsSource="{dal:Enumerate {x:Type dal:SectorTrailer_DataBlock}}"
-                        SelectedItem="{Binding Selected_DataBlockType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:SectorTrailer_DataBlock}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type access:SectorTrailer_DataBlock}}"
+                        SelectedItem="{Binding Selected_DataBlockType, Converter={StaticResource Localization}, ConverterParameter={x:Type access:SectorTrailer_DataBlock}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <CheckBox
                         Grid.Row="0"
                         Grid.Column="2"

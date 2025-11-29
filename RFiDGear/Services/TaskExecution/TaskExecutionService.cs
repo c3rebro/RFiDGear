@@ -390,6 +390,15 @@ namespace RFiDGear.Services.TaskExecution
             }
         }
 
+        private Task ExecuteStageWithTimeout(string stageName, Func<Task> stageAction, TimeSpan? timeout, CancellationToken cancellationToken)
+        {
+            return ExecuteStageWithTimeout<object>(stageName, async () =>
+            {
+                await stageAction();
+                return null;
+            }, timeout, cancellationToken);
+        }
+
         private async Task<ChipHydrationResult> HydrateChipAsync(ReaderDevice device, CancellationToken cancellationToken)
         {
             var genericChip = device?.GenericChip ?? new GenericChipModel();
