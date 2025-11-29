@@ -257,6 +257,12 @@
     <Compile Include="DataAccessLayer\Remote\FromIO\ReaderDevice.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\SettingsReaderWriter.cs" />
     <Compile Include="Helpers\ByteArray.cs" />
+    <Compile Include="Helpers\Selection\ITreeSelectionNode.cs" />
+    <Compile Include="Helpers\Selection\SelectionScrollHelper.cs" />
+    <Compile Include="Helpers\Selection\TreeViewSelectionHelper.cs" />
+    <Compile Include="Behaviors\DataGridSelectionBehavior.cs" />
+    <Compile Include="Behaviors\TreeViewSelectionBehavior.cs" />
+    <Compile Include="Behaviors\WindowDragBehavior.cs" />
     <Compile Include="MefHelper.cs" />
     <Compile Include="Model\Checkpoint.cs" />
     <Compile Include="Model\ChipTaskHandlerModel.cs" />
