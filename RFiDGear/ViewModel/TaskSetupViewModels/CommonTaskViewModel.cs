@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using MVVMDialogs.ViewModels;
 
 using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.Model;
 
 using System;

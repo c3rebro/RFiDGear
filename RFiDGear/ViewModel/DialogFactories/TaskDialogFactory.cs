@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MVVMDialogs.ViewModels;
 using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.Model;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 

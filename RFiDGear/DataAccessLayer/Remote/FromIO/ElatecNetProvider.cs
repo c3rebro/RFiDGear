@@ -9,7 +9,9 @@ using System.Threading.Tasks;
 using ByteArrayHelper.Extensions;
 using Elatec.NET;
 using Elatec.NET.Cards.Mifare;
+using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.Model;
+using RFiDGear.DataAccessLayer.AccessControl;
 
 namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {

@@ -5,6 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+    xmlns:access="clr-namespace:RFiDGear.DataAccessLayer.AccessControl"
+    xmlns:tasks="clr-namespace:RFiDGear.DataAccessLayer.Tasks"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:v="clr-namespace:RFiDGear.View"
@@ -125,8 +127,8 @@
                         Margin="8,7,0,0"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Top"
-                        ItemsSource="{dal:Enumerate {x:Type dal:TaskType_MifareClassicTask}}"
-                        SelectedItem="{Binding SelectedTaskType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskType_MifareClassicTask}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        ItemsSource="{dal:Enumerate {x:Type tasks:TaskType_MifareClassicTask}}"
+                        SelectedItem="{Binding SelectedTaskType, Converter={StaticResource Localization}, ConverterParameter={x:Type tasks:TaskType_MifareClassicTask}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                         TabIndex="1" />
                     <Label
                         Grid.Row="1"

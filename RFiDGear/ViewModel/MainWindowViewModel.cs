@@ -41,6 +41,7 @@ using MefMvvm.SharedContracts.ViewModel;
 using MVVMDialogs.ViewModels;
 using RedCell.Diagnostics.Update;
 using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.Model;
 using RFiDGear.Services.TaskExecution;

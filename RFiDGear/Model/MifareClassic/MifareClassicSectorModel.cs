@@ -1,4 +1,5 @@
 ﻿using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.AccessControl;
 
 using System.Collections.ObjectModel;
 using System.Linq;

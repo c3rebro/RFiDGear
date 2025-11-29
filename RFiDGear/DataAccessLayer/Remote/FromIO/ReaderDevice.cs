@@ -1,4 +1,6 @@
-﻿using RFiDGear.Model;
+﻿using RFiDGear.DataAccessLayer.AccessControl;
+using RFiDGear.DataAccessLayer.Tasks;
+using RFiDGear.Model;
 
 using System;
 using System.Collections.Generic;
