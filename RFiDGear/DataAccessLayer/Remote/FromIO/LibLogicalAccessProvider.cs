@@ -1551,7 +1551,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     catch { }
                                 }
 
-                                catch (Exception ex)
+                                catch (Exception)
                                 {
                                     try
                                     {
@@ -2028,7 +2028,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     return false;
                 }

@@ -172,7 +172,7 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         public IAsyncRelayCommand UpdateReaderStatusCommand => new AsyncRelayCommand<bool>(UpdateReaderStatus);
-        private async Task UpdateReaderStatus(bool isBusy)
+        private Task UpdateReaderStatus(bool isBusy)
         {
             if (OnUpdateReaderStatus != null)
             {
@@ -180,8 +180,10 @@ namespace RFiDGear.ViewModel
             }
             else
             {
-                return;
+                return Task.CompletedTask;
             }
+
+            return Task.CompletedTask;
         }
 
         public ICommand ApplyAndExitCommand => new RelayCommand(Ok);

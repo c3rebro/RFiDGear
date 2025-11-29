@@ -187,7 +187,7 @@ namespace RedCell.Diagnostics.Update
                     }
                 }
 
-                catch (Exception e)
+                catch (Exception)
                 {
                     _remoteConfig = null;
                     UpdateAvailable = false;
