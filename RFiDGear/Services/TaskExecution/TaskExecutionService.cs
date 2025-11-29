@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using MVVMDialogs.ViewModels;
@@ -27,7 +28,7 @@ namespace RFiDGear.Services.TaskExecution
         public ReaderDevice GetInstance() => ReaderDevice.Instance;
     }
 
-    public interface IDispatcherTimerAdapter
+    public interface IDispatcherTimerAdapter : IDisposable
     {
         bool IsEnabled { get; set; }
         object Tag { get; set; }
@@ -59,6 +60,94 @@ namespace RFiDGear.Services.TaskExecution
         public void Start() => dispatcherTimer.Start();
 
         public void Stop() => dispatcherTimer.Stop();
+
+        public void Dispose()
+        {
+            dispatcherTimer.Stop();
+        }
+    }
+
+    public class TaskExecutionTimeouts
+    {
+        public TimeSpan? DeviceDiscoveryTimeout { get; set; }
+        public TimeSpan? ChipHydrationTimeout { get; set; }
+        public TimeSpan? SelectionSyncTimeout { get; set; }
+        public TimeSpan? TaskLoopTimeout { get; set; }
+
+        public static TaskExecutionTimeouts Default => new TaskExecutionTimeouts
+        {
+            DeviceDiscoveryTimeout = null,
+            ChipHydrationTimeout = null,
+            SelectionSyncTimeout = null,
+            TaskLoopTimeout = null
+        };
+    }
+
+    public class TaskDescriptor
+    {
+        public TaskDescriptor(int index, IGenericTaskModel task, Func<CancellationToken, Task> executor = null)
+        {
+            Index = index;
+            Task = task;
+            Id = task?.CurrentTaskIndex ?? index.ToString(CultureInfo.CurrentCulture);
+            ExecuteAsync = executor;
+        }
+
+        public int Index { get; }
+        public string Id { get; }
+        public IGenericTaskModel Task { get; }
+        public Func<CancellationToken, Task> ExecuteAsync { get; }
+    }
+
+    public class DeviceDiscoveryResult
+    {
+        public DeviceDiscoveryResult(ReaderDevice device)
+        {
+            Device = device;
+        }
+
+        public ReaderDevice Device { get; }
+    }
+
+    public class ChipHydrationResult
+    {
+        public ChipHydrationResult(GenericChipModel chip)
+        {
+            Chip = chip;
+        }
+
+        public GenericChipModel Chip { get; }
+    }
+
+    public class SelectionSyncResult
+    {
+        public SelectionSyncResult(GenericChipModel hydratedChip, bool selectionChanged)
+        {
+            HydratedChip = hydratedChip;
+            SelectionChanged = selectionChanged;
+        }
+
+        public GenericChipModel HydratedChip { get; }
+        public bool SelectionChanged { get; }
+    }
+
+    public interface ITaskExecutionLogger
+    {
+        void LogInformation(string stage, object details = null);
+        void LogError(string stage, Exception exception, object details = null);
+    }
+
+    public class NullTaskExecutionLogger : ITaskExecutionLogger
+    {
+        public void LogInformation(string stage, object details = null)
+        {
+            Debug.WriteLine($"[TaskExecution] {stage}: {details}");
+        }
+
+        public void LogError(string stage, Exception exception, object details = null)
+        {
+            Debug.WriteLine($"[TaskExecution] {stage} failed: {exception} | {details}");
+        }
     }
 
     public class TaskExecutionRequest
@@ -77,6 +166,8 @@ namespace RFiDGear.Services.TaskExecution
         public Action NotifyTreeViewChanged { get; set; }
         public Action NotifyTasksChanged { get; set; }
         public EventLog EventLog { get; set; }
+        public TaskExecutionTimeouts Timeouts { get; set; } = TaskExecutionTimeouts.Default;
+        public IReadOnlyList<TaskDescriptor> TaskDescriptors { get; set; }
     }
 
     public class TaskExecutionResult
@@ -102,7 +193,7 @@ namespace RFiDGear.Services.TaskExecution
     {
         event EventHandler<TaskExecutionCompletedEventArgs> ExecutionCompleted;
         int CurrentTaskIndex { get; }
-        Task<TaskExecutionResult> ExecuteOnceAsync(TaskExecutionRequest request);
+        Task<TaskExecutionResult> ExecuteOnceAsync(TaskExecutionRequest request, CancellationToken cancellationToken = default);
         void HandleTaskTimeout();
     }
 
@@ -111,23 +202,26 @@ namespace RFiDGear.Services.TaskExecution
         private readonly IReaderDeviceProvider readerDeviceProvider;
         private readonly IDispatcherTimerAdapter triggerReadChip;
         private readonly IDispatcherTimerAdapter taskTimeout;
+        private readonly ITaskExecutionLogger logger;
         private TaskExecutionRequest activeRequest;
 
         public TaskExecutionService(
             IReaderDeviceProvider readerDeviceProvider,
             IDispatcherTimerAdapter triggerReadChip,
-            IDispatcherTimerAdapter taskTimeout)
+            IDispatcherTimerAdapter taskTimeout,
+            ITaskExecutionLogger logger = null)
         {
             this.readerDeviceProvider = readerDeviceProvider;
             this.triggerReadChip = triggerReadChip;
             this.taskTimeout = taskTimeout;
+            this.logger = logger ?? new NullTaskExecutionLogger();
         }
 
         public event EventHandler<TaskExecutionCompletedEventArgs> ExecutionCompleted;
 
         public int CurrentTaskIndex { get; private set; }
 
-        public async Task<TaskExecutionResult> ExecuteOnceAsync(TaskExecutionRequest request)
+        public async Task<TaskExecutionResult> ExecuteOnceAsync(TaskExecutionRequest request, CancellationToken cancellationToken = default)
         {
             activeRequest = request;
             CurrentTaskIndex = 0;
@@ -141,12 +235,7 @@ namespace RFiDGear.Services.TaskExecution
                 SelectedSetupViewModel = request.SelectedSetupViewModel
             };
 
-            var taskDictionary = new Dictionary<string, int>();
-
-            foreach (var rfidTaskObject in request.TaskHandler.TaskCollection)
-            {
-                taskDictionary.Add((rfidTaskObject as IGenericTaskModel).CurrentTaskIndex, request.TaskHandler.TaskCollection.IndexOf(rfidTaskObject));
-            }
+            var descriptors = BuildTaskDescriptors(request);
 
 #if DEBUG
             taskTimeout.IsEnabled = false;
@@ -157,105 +246,53 @@ namespace RFiDGear.Services.TaskExecution
             triggerReadChip.Tag = triggerReadChip.IsEnabled;
             triggerReadChip.IsEnabled = false;
 
+            using var timerScope = new TimerScope(taskTimeout);
             try
             {
-                using (var device = readerDeviceProvider.GetInstance())
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var deviceResult = await ExecuteStageWithTimeout(
+                    "DeviceDiscovery",
+                    () => Task.FromResult(new DeviceDiscoveryResult(readerDeviceProvider.GetInstance())),
+                    request.Timeouts?.DeviceDiscoveryTimeout,
+                    cancellationToken);
+
+                if (deviceResult.Device == null)
                 {
-                    var genericChip = ReaderDevice.Instance.GenericChip;
-
-                    if (device != null)
-                    {
-                        if (device.GenericChip != null && !string.IsNullOrEmpty(device.GenericChip.UID))
-                        {
-                            if (genericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
-                            {
-                                await device.GetMiFareDESFireChipAppIDs();
-                                genericChip = device.GenericChip;
-                            }
-                        }
-                        else
-                        {
-                            await device.ReadChipPublic();
-                            genericChip = device.GenericChip;
-                        }
-                    }
-
-                    if (request.TreeViewParentNodes.Any(x => x.IsSelected))
-                    {
-                        request.TreeViewParentNodes.First(x => x.IsSelected).IsSelected = false;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(genericChip.UID) && request.TreeViewParentNodes.Any(x => x.UID == genericChip.UID))
-                    {
-                        request.TreeViewParentNodes.First(x => x.UID == genericChip.UID).IsSelected = true;
-                        request.TreeViewParentNodes.First(x => x.IsSelected).IsBeingProgrammed = true;
-                    }
-
-                    while (CurrentTaskIndex < request.TaskHandler.TaskCollection.Count)
-                    {
-                        await Task.Delay(50);
-
-                        if (request.RunSelectedOnly)
-                        {
-                            CurrentTaskIndex = request.TaskHandler.TaskCollection.IndexOf(request.SelectedSetupViewModel);
-                        }
-
-                        taskTimeout.Stop();
-                        taskTimeout.Start();
-                        taskTimeout.IsEnabled = true;
-                        taskTimeout.Tag = CurrentTaskIndex;
-
-                        request.SelectedSetupViewModel = request.TaskHandler.TaskCollection[CurrentTaskIndex];
-                        request.UpdateSelectedSetupViewModel?.Invoke(request.SelectedSetupViewModel);
-
-                        switch (request.TaskHandler.TaskCollection[CurrentTaskIndex])
-                        {
-                            case CommonTaskViewModel commonTask:
-                                await HandleCommonTaskAsync(commonTask, request, result, taskDictionary, genericChip, device);
-                                break;
-                            case GenericChipTaskViewModel genericTask:
-                                await HandleGenericChipTaskAsync(genericTask, request, taskDictionary, device);
-                                break;
-                            case MifareClassicSetupViewModel classicTask:
-                                await HandleClassicTaskAsync(classicTask, request, taskDictionary);
-                                break;
-                            case MifareDesfireSetupViewModel desfireTask:
-                                await HandleDesfireTaskAsync(desfireTask, request, taskDictionary);
-                                break;
-                            case MifareUltralightSetupViewModel _:
-                                break;
-                            default:
-                                break;
-                        }
-
-                        if (request.RunSelectedOnly)
-                        {
-                            break;
-                        }
-
-                        request.NotifyTreeViewChanged?.Invoke();
-                    }
+                    throw new InvalidOperationException("No reader device available for execution.");
                 }
 
-                request.NotifyTreeViewChanged?.Invoke();
-                taskTimeout.Stop();
+                using (var device = deviceResult.Device)
+                {
+                    var hydrationResult = await ExecuteStageWithTimeout(
+                        "ChipHydration",
+                        () => HydrateChipAsync(device, cancellationToken),
+                        request.Timeouts?.ChipHydrationTimeout,
+                        cancellationToken);
+
+                    _ = await ExecuteStageWithTimeout(
+                        "SelectionSync",
+                        () => Task.FromResult(SynchronizeSelection(request, hydrationResult.Chip)),
+                        request.Timeouts?.SelectionSyncTimeout,
+                        cancellationToken);
+
+                    await ExecuteStageWithTimeout(
+                        "TaskLoop",
+                        () => RunTaskLoopAsync(request, result, descriptors, hydrationResult.Chip, device, cancellationToken),
+                        request.Timeouts?.TaskLoopTimeout,
+                        cancellationToken);
+                }
             }
             catch (Exception e)
             {
-                request.EventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.LogError("ExecuteOnceAsync", e, new { CurrentTaskIndex });
+                request.EventLog?.WriteEntry(e.ToString(), EventLogEntryType.Error);
+                throw;
             }
-
-            try
+            finally
             {
-                if (request.TreeViewParentNodes.Any(x => x.IsSelected))
-                {
-                    request.TreeViewParentNodes.First(y => y.IsSelected).IsBeingProgrammed = null;
-                    triggerReadChip.IsEnabled = (bool)triggerReadChip.Tag;
-                    result.RunSelectedOnly = false;
-                }
-            }
-            catch
-            {
+                ResetSelectionState(request, result);
+                triggerReadChip.IsEnabled = triggerReadChip.Tag is bool value && value;
             }
 
             result.SelectedSetupViewModel = request.SelectedSetupViewModel;
@@ -293,7 +330,235 @@ namespace RFiDGear.Services.TaskExecution
             }
         }
 
-        private async Task HandleCommonTaskAsync(CommonTaskViewModel commonTask, TaskExecutionRequest request, TaskExecutionResult result, Dictionary<string, int> taskDictionary, GenericChipModel genericChip, ReaderDevice device)
+        private IReadOnlyList<TaskDescriptor> BuildTaskDescriptors(TaskExecutionRequest request)
+        {
+            if (request.TaskDescriptors != null && request.TaskDescriptors.Count > 0)
+            {
+                return request.TaskDescriptors;
+            }
+
+            var descriptors = new List<TaskDescriptor>();
+
+            if (request?.TaskHandler?.TaskCollection != null)
+            {
+                for (var index = 0; index < request.TaskHandler.TaskCollection.Count; index++)
+                {
+                    var task = request.TaskHandler.TaskCollection[index] as IGenericTaskModel;
+                    descriptors.Add(new TaskDescriptor(index, task));
+                }
+            }
+
+            return descriptors;
+        }
+
+        private async Task<T> ExecuteStageWithTimeout<T>(string stageName, Func<Task<T>> stageAction, TimeSpan? timeout, CancellationToken cancellationToken)
+        {
+            logger.LogInformation(stageName + ".Start", new { CurrentTaskIndex });
+
+            using var linkedCts = timeout.HasValue && timeout.Value != Timeout.InfiniteTimeSpan
+                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+                : null;
+
+            if (linkedCts != null)
+            {
+                linkedCts.CancelAfter(timeout.Value);
+                cancellationToken = linkedCts.Token;
+            }
+
+            try
+            {
+                var stageTask = stageAction();
+
+                if (timeout.HasValue && timeout.Value != Timeout.InfiniteTimeSpan)
+                {
+                    var completedTask = await Task.WhenAny(stageTask, Task.Delay(timeout.Value, cancellationToken));
+                    if (completedTask != stageTask)
+                    {
+                        throw new TimeoutException($"Stage {stageName} exceeded timeout of {timeout.Value}.");
+                    }
+                }
+
+                var result = await stageTask;
+                logger.LogInformation(stageName + ".Success", new { CurrentTaskIndex });
+                return result;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(stageName + ".Failure", ex, new { CurrentTaskIndex });
+                throw;
+            }
+        }
+
+        private async Task<ChipHydrationResult> HydrateChipAsync(ReaderDevice device, CancellationToken cancellationToken)
+        {
+            var genericChip = device?.GenericChip ?? new GenericChipModel();
+
+            if (device != null)
+            {
+                if (device.GenericChip != null && !string.IsNullOrEmpty(device.GenericChip.UID))
+                {
+                    if (genericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
+                    {
+                        await device.GetMiFareDESFireChipAppIDs();
+                        genericChip = device.GenericChip;
+                    }
+                }
+                else
+                {
+                    await device.ReadChipPublic();
+                    genericChip = device.GenericChip;
+                }
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            return new ChipHydrationResult(genericChip);
+        }
+
+        private SelectionSyncResult SynchronizeSelection(TaskExecutionRequest request, GenericChipModel hydratedChip)
+        {
+            if (request.TreeViewParentNodes == null)
+            {
+                return new SelectionSyncResult(hydratedChip, false);
+            }
+
+            var selectionChanged = false;
+
+            if (request.TreeViewParentNodes.Any(x => x.IsSelected))
+            {
+                request.TreeViewParentNodes.First(x => x.IsSelected).IsSelected = false;
+                selectionChanged = true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(hydratedChip.UID) && request.TreeViewParentNodes.Any(x => x.UID == hydratedChip.UID))
+            {
+                request.TreeViewParentNodes.First(x => x.UID == hydratedChip.UID).IsSelected = true;
+                request.TreeViewParentNodes.First(x => x.IsSelected).IsBeingProgrammed = true;
+                selectionChanged = true;
+            }
+
+            return new SelectionSyncResult(hydratedChip, selectionChanged);
+        }
+
+        private async Task RunTaskLoopAsync(TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors, GenericChipModel genericChip, ReaderDevice device, CancellationToken cancellationToken)
+        {
+            while (descriptors != null && descriptors.Count > 0 && CurrentTaskIndex < descriptors.Count)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Task.Delay(50, cancellationToken);
+
+                if (request.RunSelectedOnly && request.TaskHandler.TaskCollection != null)
+                {
+                    CurrentTaskIndex = request.TaskHandler.TaskCollection.IndexOf(request.SelectedSetupViewModel);
+                }
+
+                taskTimeout.Stop();
+                taskTimeout.Start();
+                taskTimeout.IsEnabled = true;
+                taskTimeout.Tag = CurrentTaskIndex;
+
+                var descriptor = descriptors[CurrentTaskIndex];
+                if (request.TaskHandler?.TaskCollection != null && request.TaskHandler.TaskCollection.Count > CurrentTaskIndex)
+                {
+                    request.SelectedSetupViewModel = request.TaskHandler.TaskCollection[CurrentTaskIndex];
+                }
+                else if (descriptor.Task != null)
+                {
+                    request.SelectedSetupViewModel = descriptor.Task;
+                }
+
+                request.UpdateSelectedSetupViewModel?.Invoke(request.SelectedSetupViewModel);
+
+                if (descriptor.ExecuteAsync != null)
+                {
+                    await descriptor.ExecuteAsync(cancellationToken);
+                    if (!request.RunSelectedOnly)
+                    {
+                        CurrentTaskIndex++;
+                    }
+                }
+                else if (request.TaskHandler?.TaskCollection != null && request.TaskHandler.TaskCollection.Count > CurrentTaskIndex)
+                {
+                    switch (request.TaskHandler.TaskCollection[CurrentTaskIndex])
+                    {
+                        case CommonTaskViewModel commonTask:
+                            await HandleCommonTaskAsync(commonTask, request, result, descriptors, genericChip, device);
+                            break;
+                        case GenericChipTaskViewModel genericTask:
+                            await HandleGenericChipTaskAsync(genericTask, request, descriptors, device);
+                            break;
+                        case MifareClassicSetupViewModel classicTask:
+                            await HandleClassicTaskAsync(classicTask, request, descriptors);
+                            break;
+                        case MifareDesfireSetupViewModel desfireTask:
+                            await HandleDesfireTaskAsync(desfireTask, request, descriptors);
+                            break;
+                        case MifareUltralightSetupViewModel _:
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                if (request.RunSelectedOnly)
+                {
+                    break;
+                }
+
+                request.NotifyTreeViewChanged?.Invoke();
+            }
+
+            request.NotifyTreeViewChanged?.Invoke();
+            taskTimeout.Stop();
+        }
+
+        private void ResetSelectionState(TaskExecutionRequest request, TaskExecutionResult result)
+        {
+            try
+            {
+                if (request.TreeViewParentNodes != null && request.TreeViewParentNodes.Any(x => x.IsSelected))
+                {
+                    request.TreeViewParentNodes.First(y => y.IsSelected).IsBeingProgrammed = null;
+                    result.RunSelectedOnly = false;
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private static bool TryResolveTaskIndex(IReadOnlyList<TaskDescriptor> descriptors, string descriptorId, out int targetIndex)
+        {
+            var descriptor = descriptors?.FirstOrDefault(x => x.Id == descriptorId);
+            if (descriptor != null)
+            {
+                targetIndex = descriptor.Index;
+                return true;
+            }
+
+            targetIndex = -1;
+            return false;
+        }
+
+        private sealed class TimerScope : IDisposable
+        {
+            private readonly IDispatcherTimerAdapter timerAdapter;
+
+            public TimerScope(IDispatcherTimerAdapter timerAdapter)
+            {
+                this.timerAdapter = timerAdapter;
+            }
+
+            public void Dispose()
+            {
+                timerAdapter?.Stop();
+                if (timerAdapter != null)
+                {
+                    timerAdapter.IsEnabled = false;
+                }
+            }
+        }
+
+        private async Task HandleCommonTaskAsync(CommonTaskViewModel commonTask, TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors, GenericChipModel genericChip, ReaderDevice device)
         {
             (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).GenericChip = genericChip;
             (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).DesfireChip = device.DesfireChip;
@@ -362,7 +627,7 @@ namespace RFiDGear.Services.TaskExecution
 
                             else
                             {
-                                if (taskDictionary.TryGetValue((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                 {
                                     if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                     {
@@ -430,7 +695,7 @@ namespace RFiDGear.Services.TaskExecution
                             }
                             else
                             {
-                                if (taskDictionary.TryGetValue((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                 {
                                     if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                     {
@@ -469,7 +734,7 @@ namespace RFiDGear.Services.TaskExecution
                             }
                             else
                             {
-                                if (taskDictionary.TryGetValue((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                 {
                                     if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                     {
@@ -496,7 +761,7 @@ namespace RFiDGear.Services.TaskExecution
             }
         }
 
-        private async Task HandleGenericChipTaskAsync(GenericChipTaskViewModel genericTask, TaskExecutionRequest request, Dictionary<string, int> taskDictionary, ReaderDevice device)
+        private async Task HandleGenericChipTaskAsync(GenericChipTaskViewModel genericTask, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors, ReaderDevice device)
         {
             switch (genericTask.SelectedTaskType)
             {
@@ -514,7 +779,7 @@ namespace RFiDGear.Services.TaskExecution
                             }
                             else
                             {
-                                if (taskDictionary.TryGetValue((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                 {
                                     if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                     {
@@ -551,7 +816,7 @@ namespace RFiDGear.Services.TaskExecution
                             }
                             else
                             {
-                                if (taskDictionary.TryGetValue((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                 {
                                     if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                                     {
@@ -579,7 +844,7 @@ namespace RFiDGear.Services.TaskExecution
             }
         }
 
-        private async Task HandleClassicTaskAsync(MifareClassicSetupViewModel classicTask, TaskExecutionRequest request, Dictionary<string, int> taskDictionary)
+        private async Task HandleClassicTaskAsync(MifareClassicSetupViewModel classicTask, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors)
         {
             switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
             {
@@ -599,7 +864,7 @@ namespace RFiDGear.Services.TaskExecution
 
                     else
                     {
-                        if (taskDictionary.TryGetValue((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                        if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                         {
                             if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                             {
@@ -624,7 +889,7 @@ namespace RFiDGear.Services.TaskExecution
             }
         }
 
-        private async Task HandleDesfireTaskAsync(MifareDesfireSetupViewModel desfireTask, TaskExecutionRequest request, Dictionary<string, int> taskDictionary)
+        private async Task HandleDesfireTaskAsync(MifareDesfireSetupViewModel desfireTask, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors)
         {
             switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
             {
@@ -644,7 +909,7 @@ namespace RFiDGear.Services.TaskExecution
 
                     else
                     {
-                        if (taskDictionary.TryGetValue((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                        if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                         {
                             if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
                             {

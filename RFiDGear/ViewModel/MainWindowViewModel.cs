@@ -977,15 +977,30 @@ namespace RFiDGear.ViewModel
                 EventLog = eventLog
             };
 
-            var result = await taskExecutionService.ExecuteOnceAsync(request);
+            try
+            {
+                var result = await taskExecutionService.ExecuteOnceAsync(request, CancellationToken.None);
 
-            reportReaderWriter = result.ReportReaderWriter;
-            reportOutputPath = result.ReportOutputPath;
-            reportTemplateFile = result.ReportTemplateFile;
-            _runSelectedOnly = result.RunSelectedOnly;
-            SelectedSetupViewModel = result.SelectedSetupViewModel;
-
-            Mouse.OverrideCursor = null;
+                reportReaderWriter = result.ReportReaderWriter;
+                reportOutputPath = result.ReportOutputPath;
+                reportTemplateFile = result.ReportTemplateFile;
+                _runSelectedOnly = result.RunSelectedOnly;
+                SelectedSetupViewModel = result.SelectedSetupViewModel;
+            }
+            catch (Exception ex)
+            {
+                eventLog?.WriteEntry(ex.ToString(), EventLogEntryType.Error);
+                Dialogs.Add(new CustomDialogViewModel
+                {
+                    Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                    Message = ex.Message,
+                    OnOk = sender => sender.Close()
+                });
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
         }
 
         private void TaskExecutionService_ExecutionCompleted(object sender, TaskExecutionCompletedEventArgs e)
