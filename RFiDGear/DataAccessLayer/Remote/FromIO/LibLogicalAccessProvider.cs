@@ -6,6 +6,8 @@ using LibLogicalAccess.Crypto;
 using ByteArrayHelper.Extensions;
 
 using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.AccessControl;
+using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.Model;
 
 using System;

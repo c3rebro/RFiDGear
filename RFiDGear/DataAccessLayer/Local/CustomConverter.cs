@@ -1,4 +1,5 @@
 ﻿using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.Checksums;
 
 using System;
 using System.Globalization;
@@ -431,7 +432,7 @@ namespace RFiDGear
                 set => table = value;
             }
 
-            public byte[] GenerateTable(CRC8_POLY polynomial)
+            public byte[] GenerateTable(Crc8Polynomial polynomial)
             {
                 var csTable = new byte[256];
 
@@ -457,7 +458,7 @@ namespace RFiDGear
                 return csTable;
             }
 
-            public CRC8Calc(CRC8_POLY polynomial)
+            public CRC8Calc(Crc8Polynomial polynomial)
             {
                 table = GenerateTable(polynomial);
             }

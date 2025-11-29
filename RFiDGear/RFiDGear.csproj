@@ -246,7 +246,11 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="MVVMDialogs\Behaviors\DialogBehavior.cs" />
+    <Compile Include="DataAccessLayer\Local\AccessControl\MifareAccessControl.cs" />
+    <Compile Include="DataAccessLayer\Local\Checksums\Crc8Polynomial.cs" />
     <Compile Include="DataAccessLayer\Local\Constants.cs" />
+    <Compile Include="DataAccessLayer\Local\Tasks\ChipTaskTypes.cs" />
+    <Compile Include="DataAccessLayer\Local\Tasks\DesfireFileTypes.cs" />
     <Compile Include="DataAccessLayer\Local\CustomConverter.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\ProjectManager.cs" />
     <Compile Include="DataAccessLayer\Remote\FromFile\DatabaseReaderWriter.cs" />

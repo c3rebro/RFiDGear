@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Threading;
 using MVVMDialogs.ViewModels;
 using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.Model;
 using RFiDGear.ViewModel.TaskSetupViewModels;

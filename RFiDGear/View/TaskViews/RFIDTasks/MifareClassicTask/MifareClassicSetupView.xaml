@@ -7,6 +7,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
+    xmlns:access="clr-namespace:RFiDGear.DataAccessLayer.AccessControl"
+    xmlns:tasks="clr-namespace:RFiDGear.DataAccessLayer.Tasks"
     xmlns:v="clr-namespace:RFiDGear.View"
     Title="{Binding Caption}"
     MinWidth="900"
@@ -133,8 +135,8 @@
                         Margin="8,7,8,0"
                         VerticalAlignment="Top"
                         VerticalContentAlignment="Center"
-                        ItemsSource="{dal:Enumerate {x:Type dal:TaskType_MifareClassicTask}}"
-                        SelectedItem="{Binding SelectedTaskType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskType_MifareClassicTask}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        ItemsSource="{dal:Enumerate {x:Type tasks:TaskType_MifareClassicTask}}"
+                        SelectedItem="{Binding SelectedTaskType, Converter={StaticResource Localization}, ConverterParameter={x:Type tasks:TaskType_MifareClassicTask}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                         ScrollViewer.VerticalScrollBarVisibility="Visible"
                         TabIndex="1" />
                     <Label
