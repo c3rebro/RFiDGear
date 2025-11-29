@@ -15,6 +15,8 @@ using MVVMDialogs.ViewModels;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.AccessControl;
+using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.Model;
 using RFiDGear.ViewModel;
 
@@ -33,7 +35,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
 
-namespace RFiDGear.ViewModel
+using MVVMDialogs.ViewModels.Interfaces;
+namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
     /// Description of MifareDesfireSetupViewModel.
@@ -1722,7 +1725,7 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to Create App: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                                StatusText += string.Format("{0}: Unable to Create App: {1}\n", DateTime.Now, result.ToString());
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -1757,7 +1760,7 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to create App: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                                StatusText += string.Format("{0}: Unable to create App: {1}\n", DateTime.Now, result.ToString());
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -1837,7 +1840,7 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                                StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -1867,7 +1870,7 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                                StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -1931,7 +1934,7 @@ namespace RFiDGear.ViewModel
 
                             if (result == ERROR.NoError)
                             {
-                                FileSizeCurrent = device.MifareDESFireData.Length.ToString(CultureInfo.CurrentCulture);
+                                FileSizeCurrent = device.MifareDESFireData.Length.ToString();
 
                                 StatusText += string.Format("{0}: Successfully Read {2} Bytes Data from FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
 
@@ -1948,7 +1951,7 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to Read File with FileID: {1}: {2}", DateTime.Now, FileNumberCurrentAsInt, result.ToString(CultureInfo.CurrentCulture));
+                                StatusText += string.Format("{0}: Unable to Read File with FileID: {1}: {2}", DateTime.Now, FileNumberCurrentAsInt, result.ToString());
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -1956,7 +1959,7 @@ namespace RFiDGear.ViewModel
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to Read File: {1}", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                            StatusText += string.Format("{0}: Unable to Read File: {1}", DateTime.Now, result.ToString());
                             CurrentTaskErrorLevel = result;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
@@ -2060,7 +2063,7 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                                StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -2068,7 +2071,7 @@ namespace RFiDGear.ViewModel
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                            StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
                             CurrentTaskErrorLevel = result;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
@@ -2127,7 +2130,7 @@ namespace RFiDGear.ViewModel
                         {
                             StatusText += string.Format("{0}: Successfully Authenticated to AppID {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
-                            var keySettings = DESFireKeySettings.KS_DEFAULT;
+                            var keySettings = DESFireKeySettings.Default;
                             keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
 
                             keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
@@ -2153,7 +2156,7 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString(CultureInfo.CurrentCulture));
+                                StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString());
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -2161,7 +2164,7 @@ namespace RFiDGear.ViewModel
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString(CultureInfo.CurrentCulture));
+                            StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString());
                             CurrentTaskErrorLevel = result;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
@@ -2230,7 +2233,7 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to Remove AppID {1}: {2}\n", DateTime.Now, AppNumberNewAsInt, result.ToString(CultureInfo.CurrentCulture));
+                                StatusText += string.Format("{0}: Unable to Remove AppID {1}: {2}\n", DateTime.Now, AppNumberNewAsInt, result.ToString());
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -2255,7 +2258,7 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to deleted App: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                                StatusText += string.Format("{0}: Unable to deleted App: {1}\n", DateTime.Now, result.ToString());
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -2326,7 +2329,7 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to Remove FileID {1}: {2}\n", DateTime.Now, FileNumberCurrentAsInt, result.ToString(CultureInfo.CurrentCulture));
+                                StatusText += string.Format("{0}: Unable to Remove FileID {1}: {2}\n", DateTime.Now, FileNumberCurrentAsInt, result.ToString());
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -2350,7 +2353,7 @@ namespace RFiDGear.ViewModel
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to Remove AppID {1}: {2}\n", DateTime.Now, AppNumberNewAsInt, result.ToString(CultureInfo.CurrentCulture));
+                                StatusText += string.Format("{0}: Unable to Remove AppID {1}: {2}\n", DateTime.Now, AppNumberNewAsInt, result.ToString());
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
@@ -2432,7 +2435,7 @@ namespace RFiDGear.ViewModel
 
                                 else
                                 {
-                                    StatusText += string.Format("{0}: Unable to Format Card: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                                    StatusText += string.Format("{0}: Unable to Format Card: {1}\n", DateTime.Now, result.ToString());
                                     CurrentTaskErrorLevel = result;
                                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                                     return;
@@ -2455,7 +2458,7 @@ namespace RFiDGear.ViewModel
 
                                 else
                                 {
-                                    StatusText += string.Format("{0}: Unable to Format Card: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                                    StatusText += string.Format("{0}: Unable to Format Card: {1}\n", DateTime.Now, result.ToString());
                                     CurrentTaskErrorLevel = result;
                                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                                     return;
@@ -2464,7 +2467,7 @@ namespace RFiDGear.ViewModel
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to Format Card: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                            StatusText += string.Format("{0}: Unable to Format Card: {1}\n", DateTime.Now, result.ToString());
                             CurrentTaskErrorLevel = result;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
@@ -2537,7 +2540,7 @@ namespace RFiDGear.ViewModel
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to Authenticate: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                            StatusText += string.Format("{0}: Unable to Authenticate: {1}\n", DateTime.Now, result.ToString());
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             CurrentTaskErrorLevel = result;
                         }
@@ -2615,7 +2618,7 @@ namespace RFiDGear.ViewModel
                                 }
                                 else
                                 {
-                                    StatusText += string.Format("{0}: Unable to Change Key: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                                    StatusText += string.Format("{0}: Unable to Change Key: {1}\n", DateTime.Now, result.ToString());
                                     CurrentTaskErrorLevel = result;
                                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                                     return;
@@ -2631,7 +2634,7 @@ namespace RFiDGear.ViewModel
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: {1}: {2}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"), result.ToString(CultureInfo.CurrentCulture));
+                            StatusText += string.Format("{0}: {1}: {2}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"), result.ToString());
                             CurrentTaskErrorLevel = result;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
@@ -2691,7 +2694,7 @@ namespace RFiDGear.ViewModel
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: {1}: {2}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"), result.ToString(CultureInfo.CurrentCulture));
+                            StatusText += string.Format("{0}: {1}: {2}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"), result.ToString());
                             CurrentTaskErrorLevel = result;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
@@ -2766,7 +2769,7 @@ namespace RFiDGear.ViewModel
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to Authenticate: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                            StatusText += string.Format("{0}: Unable to Authenticate: {1}\n", DateTime.Now, result.ToString());
                             CurrentTaskErrorLevel = result;
                         }
 
@@ -2835,7 +2838,7 @@ namespace RFiDGear.ViewModel
                         // There are no Apps
                         else
                         {
-                            StatusText += string.Format("{0}: No Apps Found: {1}\n", DateTime.Now, result.ToString(CultureInfo.CurrentCulture));
+                            StatusText += string.Format("{0}: No Apps Found: {1}\n", DateTime.Now, result.ToString());
 
                             CurrentTaskErrorLevel = ERROR.IsNotTrue;
                         }

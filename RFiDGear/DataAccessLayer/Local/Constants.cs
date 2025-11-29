@@ -26,18 +26,6 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
-    /// This enum is used to indicate what kind of checksum you will be calculating.
-    /// </summary>
-    public enum CRC8_POLY
-    {
-        CRC8 = 0xd5,
-        CRC8_CCITT = 0x07,
-        CRC8_DALLAS_MAXIM = 0x31,
-        CRC8_SAE_J1850 = 0x1D,
-        CRC_8_WCDMA = 0x9b,
-    };
-
-    /// <summary>
     /// UID and Type of Cardtechnology
     /// </summary>
     public struct CARD_INFO
@@ -50,148 +38,6 @@ namespace RFiDGear.DataAccessLayer
 
         public string uid;
         public CARD_TYPE CardType;
-    }
-
-    /// <summary>
-    /// The available FileTypes for DesFire Chips 
-    /// </summary>
-    [Flags]
-    public enum FileType_MifareDesfireFileType
-    {
-        StdDataFile = 0,
-        BackupFile = 1,
-        ValueFile = 2,
-        LinearRecordFile = 3,
-        CyclicRecordFile = 4
-    }
-
-    /// <summary>
-    /// The availbale "Common Tasks"
-    /// </summary>
-    public enum TaskType_GenericChipTask
-    {
-        None,
-        ChipIsOfType,
-        ChipIsMultiChip,
-        CheckUID,
-        ChangeDefault
-    }
-
-    /// <summary>
-    /// The availbale "Report Tasks"
-    /// </summary>
-    public enum TaskType_CommonTask
-    {
-        None,
-        CreateReport,
-        CheckLogicCondition,
-        ExecuteProgram,
-        ChangeDefault
-    }
-
-    /// <summary>
-    /// The availbale "Mifare Classic Tasks"
-    /// </summary>
-    public enum TaskType_MifareClassicTask
-    {
-        None,
-        ReadData,
-        WriteData,
-        EmptyCheck,
-        ChangeDefault
-    }
-
-    /// <summary>
-    /// The availbale "Mifare Ultralight" Tasks
-    /// </summary>
-    public enum TaskType_MifareUltralightTask
-    {
-        None,
-        ReadData,
-        WriteData,
-        ChangeDefault
-    }
-
-    /// <summary>
-    /// The availbale "Mifare Desfire Tasks"
-    /// </summary>
-    public enum TaskType_MifareDesfireTask
-    {
-        None,
-        AppExistCheck,
-        ReadAppSettings,
-        PICCMasterKeyChangeover,
-        CreateApplication,
-        AuthenticateApplication,
-        ApplicationKeyChangeover,
-        CreateFile,
-        ReadData,
-        WriteData,
-        DeleteFile,
-        DeleteApplication,
-        FormatDesfireCard,
-        ChangeDefault
-
-    }
-
-    /// <summary>
-    /// Select DataBlock in Data Explorer
-    /// </summary>
-    [Flags]
-    public enum DataExplorer_DataBlock
-    {
-        Block0 = 0,
-        Block1 = 1,
-        Block2 = 2,
-        Block3 = 3
-    }
-
-    /// <summary>
-    /// Build a SectorTrailer / Select DataBlock in Sector Trailer Access Bits
-    /// </summary>
-    public enum SectorTrailer_DataBlock
-    {
-        Block0 = 0,
-        Block1 = 1,
-        Block2 = 2,
-        BlockAll = 3
-    }
-
-    /// <summary>
-    /// Build a "SectorTrailer" / Determine Access To DataBlocks
-    /// </summary>
-    [Flags]
-    public enum SectorTrailer_AccessType
-    {
-        WriteKeyB = 1,
-        ReadKeyB = 2,
-        WriteAccessBits = 4,
-        ReadAccessBits = 8,
-        WriteKeyA = 16,
-        ReadKeyA = 32
-    }
-
-    /// <summary>
-    ///
-    /// </summary>
-    [Flags]
-    public enum AccessCondition_MifareDesfireAppCreation
-    {
-        ChangeKeyUsingMK = 0,
-        ChangeKeyUsingKeyNo = 224,
-        ChangeKeyFrozen = 240
-    }
-
-    /// <summary>
-    ///
-    /// </summary>
-    public enum AccessCondition_MifareClassicSectorTrailer
-    {
-        NotApplicable,
-        NotAllowed,
-        Allowed_With_KeyA,
-        Allowed_With_KeyB,
-        Allowed_With_KeyA_Or_KeyB
     }
 
     /// <summary>
@@ -570,22 +416,6 @@ namespace RFiDGear.DataAccessLayer
         DF_KEY_AES = 128
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    [Flags]
-    public enum DESFireKeySettings
-    {
-        KS_CHANGE_KEY_WITH_MK = 0,
-        KS_ALLOW_CHANGE_MK = 1,
-        KS_FREE_LISTING_WITHOUT_MK = 2,
-        KS_FREE_CREATE_DELETE_WITHOUT_MK = 4,
-        KS_CONFIGURATION_CHANGEABLE = 8,
-        KS_DEFAULT = 11,
-        KS_CHANGE_KEY_WITH_TARGETED_KEYNO = 224,
-        KS_CHANGE_KEY_FROZEN = 240
-    }
-
     public class DESFireFileSettings
     {
         public byte[] accessRights;
@@ -609,23 +439,6 @@ namespace RFiDGear.DataAccessLayer
     public struct ValueFileSetting
     {
 
-    }
-
-    public struct AccessBits
-    {
-        public short c1;
-        public short c2;
-        public short c3;
-    }
-
-    public struct SectorAccessBits
-    {
-        public int Cx;
-
-        public AccessBits d_data_block0_access_bits;
-        public AccessBits d_data_block1_access_bits;
-        public AccessBits d_data_block2_access_bits;
-        public AccessBits d_sector_trailer_access_bits;
     }
 
     /// <summary>

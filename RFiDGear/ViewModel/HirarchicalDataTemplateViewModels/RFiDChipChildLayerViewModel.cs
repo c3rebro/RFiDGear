@@ -4,12 +4,14 @@ using CommunityToolkit.Mvvm.Input;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using MVVMDialogs.ViewModels;
 
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Globalization;
@@ -18,13 +20,15 @@ using System.Windows.Input;
 using System.Xml.Serialization;
 using System.Windows.Navigation;
 
+using MVVMDialogs.ViewModels.Interfaces;
+using RFiDGear.Helpers.Selection;
 namespace RFiDGear.ViewModel
 {
     /// <summary>
     /// Description of RFiDChipChildLayerViewModel.
     /// </summary>
     [XmlRootAttribute("TreeViewChildNode", IsNullable = false)]
-    public class RFiDChipChildLayerViewModel : ObservableObject, IUserDialogViewModel
+    public class RFiDChipChildLayerViewModel : ObservableObject, IUserDialogViewModel, ITreeSelectionNode
     {
         private readonly ResourceLoader resLoader = new ResourceLoader();
         private readonly RFiDChipParentLayerViewModel _parent;
@@ -348,6 +352,9 @@ namespace RFiDGear.ViewModel
             }
         }
         private bool isSelected;
+
+        [XmlIgnore]
+        public IEnumerable<ITreeSelectionNode> SelectionChildren => Children?.Cast<ITreeSelectionNode>() ?? Enumerable.Empty<ITreeSelectionNode>();
 
         /// <summary>
         ///

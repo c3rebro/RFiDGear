@@ -7,7 +7,7 @@
  * To change this template use Tools | Options | Coding | Edit Standard Headers.
  */
 using System;
-using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.AccessControl;
 
 namespace RFiDGear.Model
 {

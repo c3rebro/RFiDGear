@@ -6,7 +6,10 @@ using MVVMDialogs.ViewModels;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.AccessControl;
+using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.Model;
+using RFiDGear.Helpers.Selection;
 
 using System;
 using System.Collections.Generic;
@@ -19,15 +22,17 @@ using System.Xml.Serialization;
 using System.Reflection;
 using System.Threading.Tasks;
 
+using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>
     /// Description of MifareClassic1KContentViewModel.
     /// </summary>
     [XmlRootAttribute("TreeViewParentNode", IsNullable = false)]
-    public class RFiDChipParentLayerViewModel : ObservableObject
+    public class RFiDChipParentLayerViewModel : ObservableObject, ITreeSelectionNode
     {
-        private readonly SettingsReaderWriter settings;
+        private readonly ProjectManager projectManager;
+        private readonly SettingsLoadResult settings;
 
         private static object _selectedItem;
 
@@ -54,7 +59,8 @@ namespace RFiDGear.ViewModel
         public RFiDChipParentLayerViewModel()
         {
             ID = new Random().Next();
-            settings = new SettingsReaderWriter();
+            projectManager = new ProjectManager();
+            settings = projectManager.LoadSettings();
 
             mifareClassicUidModel = new MifareClassicChipModel();
             mifareDesfireUidModel = new MifareDesfireChipModel();
@@ -67,7 +73,8 @@ namespace RFiDGear.ViewModel
         public RFiDChipParentLayerViewModel(string _text)
         {
             ID = new Random().Next();
-            settings = new SettingsReaderWriter();
+            projectManager = new ProjectManager();
+            settings = projectManager.LoadSettings();
 
             mifareClassicUidModel = new MifareClassicChipModel();
             mifareDesfireUidModel = new MifareDesfireChipModel();
@@ -89,7 +96,8 @@ namespace RFiDGear.ViewModel
             }
 
             isTask = _isTask;
-            settings = new SettingsReaderWriter();
+            projectManager = new ProjectManager();
+            settings = projectManager.LoadSettings();
             _children = new ObservableCollection<RFiDChipChildLayerViewModel>();
 
             ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
@@ -650,6 +658,9 @@ namespace RFiDGear.ViewModel
                 }
             }
         }
+
+        [XmlIgnore]
+        public IEnumerable<ITreeSelectionNode> SelectionChildren => Children?.Cast<ITreeSelectionNode>() ?? Enumerable.Empty<ITreeSelectionNode>();
 
         #endregion Selected Items
 

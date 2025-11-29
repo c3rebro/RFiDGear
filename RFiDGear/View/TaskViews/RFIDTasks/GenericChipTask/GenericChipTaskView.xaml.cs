@@ -7,8 +7,6 @@
 
 using System.Windows;
 
-using System.Windows;
-
 namespace RFiDGear.View
 {
     /// <summary>

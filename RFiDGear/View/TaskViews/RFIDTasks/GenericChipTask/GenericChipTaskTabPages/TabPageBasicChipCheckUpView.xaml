@@ -28,7 +28,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch">
                     <ComboBox
-                        xmlns:dlgs="clr-namespace:MVVMDialogs.Behaviors;assembly=MVVMDialogs"
+                        xmlns:dlgs="clr-namespace:MVVMDialogs.Behaviors"
                         xmlns:local="clr-namespace:RFiDGear"
                         xmlns:system="clr-namespace:System;assembly=mscorlib"
                         xmlns:v="clr-namespace:RFiDGear.View"

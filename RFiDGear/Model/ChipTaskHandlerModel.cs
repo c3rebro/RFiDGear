@@ -6,7 +6,7 @@
  */
 
 using CommunityToolkit.Mvvm.ComponentModel;
-using RFiDGear.ViewModel;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using System;
 using System.Collections.ObjectModel;
@@ -28,12 +28,12 @@ namespace RFiDGear.Model
 
         public ChipTaskHandlerModel()
         {
-            TaskCollection = new ObservableCollection<IGenericTaskModel>();
+            TaskCollection = new ObservableCollection<object>();
             ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
         }
 
         public Type GetTaskType(int _index) { return (TaskCollection != null && TaskCollection.Count > 0) ? TaskCollection[_index].GetType() : null; }
-        public Type GetTaskType(IGenericTaskModel _object) { return (TaskCollection != null && TaskCollection.Count > 0) ? TaskCollection[TaskCollection.IndexOf(_object)].GetType() : null; }
+        public Type GetTaskType(object _object) { return (TaskCollection != null && TaskCollection.Count > 0) ? TaskCollection[TaskCollection.IndexOf(_object)].GetType() : null; }
 
         /// <summary>
         ///
@@ -43,7 +43,7 @@ namespace RFiDGear.Model
         /// <summary>
         /// Exposing all Tasks as SetupViewModel
         /// </summary>
-        public ObservableCollection<IGenericTaskModel> TaskCollection
+        public ObservableCollection<object> TaskCollection
         {
             get => taskCollection;
             set
@@ -54,6 +54,6 @@ namespace RFiDGear.Model
             }
         }
 
-        private ObservableCollection<IGenericTaskModel> taskCollection;
+        private ObservableCollection<object> taskCollection;
     }
 }

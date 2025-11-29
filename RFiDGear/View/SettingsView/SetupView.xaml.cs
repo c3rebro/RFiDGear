@@ -7,7 +7,6 @@
 
 using System.Windows;
 using System.Windows.Input;
-using System.Windows;
 
 namespace RFiDGear.View
 {

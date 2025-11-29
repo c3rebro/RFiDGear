@@ -1,126 +1,74 @@
-﻿using System;
-using System.Diagnostics;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
+using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
+using Serilog;
 
 namespace RFiDGear
 {
     /// <summary>
-    /// Description of Class1.
+    ///     Reads and writes the persisted application settings.
     /// </summary>
     public class SettingsReaderWriter : IDisposable
     {
-        #region fields
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
-        private readonly string _settingsFileFileName = "settings.xml";
-        private readonly string _updateConfigFileFileName = "update.xml";
-        private readonly string _updateURL = @"https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml";
-        private readonly int _updateInterval = 900;
-        private readonly string _securityToken = "D68EF3A7-E787-4CC4-B020-878BA649B4CD";
-        private readonly string _payload = "update.zip";
-        private string _infoText = "Version Info\n\ngoes here! \n==>";
-        private readonly string _baseUri = @"https://github.com/c3rebro/RFiDGear/releases/latest/download/";
-
+        private readonly string appDataPath;
+        private readonly Serilog.ILogger logger = Log.ForContext<SettingsReaderWriter>();
+        private readonly string updateConfigFileFileName = "update.xml";
+        private readonly string updateURL = @"https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml";
+        private readonly int updateInterval = 900;
+        private readonly string securityToken = "D68EF3A7-E787-4CC4-B020-878BA649B4CD";
+        private readonly string payload = "update.zip";
+        private readonly string baseUri = @"https://github.com/c3rebro/RFiDGear/releases/latest/download/";
+        private readonly string settingsFileFileName = "settings.xml";
 
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
-        private readonly string appDataPath;
 
-        private bool _disposed;
+        private string SettingsFilePath => Path.Combine(appDataPath, settingsFileFileName);
 
-        public Task<DefaultSpecification> GetDefaultSpecificationAsync(CancellationToken cancellationToken = default)
-        {
-            return EnsureDefaultSpecificationLoadedAsync(cancellationToken);
-        }
-
-        [Obsolete("Use GetDefaultSpecificationAsync/SetDefaultSpecificationAsync for async access.")]
-        public DefaultSpecification DefaultSpecification
-        {
-            get => EnsureDefaultSpecificationLoadedAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
-            set => SetDefaultSpecificationAsync(value, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
-        }
-
-        public async Task SetDefaultSpecificationAsync(DefaultSpecification specification, CancellationToken cancellationToken = default)
-        {
-            await settingsSync.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-            try
-            {
-                defaultSpecification = specification;
-
-                if (defaultSpecification != null)
-                {
-                    await SaveSettings(cancellationToken: cancellationToken).ConfigureAwait(false);
-                }
-            }
-            finally
-            {
-                settingsSync.Release();
-            }
-        }
-
-        private DefaultSpecification defaultSpecification;
-
-        #endregion fields
-
-        private readonly SemaphoreSlim settingsSync = new SemaphoreSlim(1, 1);
+        private bool disposed;
+        private string infoText = "Version Info\n\ngoes here! \n==>";
 
         public SettingsReaderWriter()
         {
-            try
+            var projectManager = new ProjectManager();
+            appDataPath = projectManager.AppDataPath;
+
+            projectManager.EnsureSettingsFileExists();
+
+            ReadSettings();
+        }
+
+        public SettingsReaderWriter(string appDataPath, bool loadSettings = true)
+        {
+            this.appDataPath = appDataPath ?? throw new ArgumentNullException(nameof(appDataPath));
+
+            if (loadSettings)
             {
-                appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-
-                appDataPath = Path.Combine(appDataPath, "RFiDGear");
-
-                if (!Directory.Exists(appDataPath))
-                {
-                    Directory.CreateDirectory(appDataPath);
-                }
-            }
-            catch (Exception e)
-            {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-            }
-
-            if (!File.Exists(Path.Combine(appDataPath, _settingsFileFileName)))
-            {
-                try
-                {
-                    defaultSpecification = new DefaultSpecification(true);
-
-                    var serializer = new XmlSerializer(defaultSpecification.GetType());
-
-                    var txtWriter = new StreamWriter(Path.Combine(appDataPath, _settingsFileFileName));
-
-                    serializer.Serialize(txtWriter, defaultSpecification);
-
-                    txtWriter.Close();
-                }
-                catch (Exception e)
-                {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                }
+                ReadSettings();
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
+        private DefaultSpecification defaultSpecification = new DefaultSpecification();
+
+        public DefaultSpecification DefaultSpecification
+        {
+            get => defaultSpecification;
+            set => defaultSpecification = value ?? new DefaultSpecification();
+        }
+
         public void InitUpdateFile()
         {
             XmlWriter xmlWriter;
             var xmlSettings = new XmlWriterSettings();
             xmlSettings.Encoding = new UTF8Encoding(false);
 
-            xmlWriter = XmlWriter.Create(Path.Combine(appDataPath, _updateConfigFileFileName), xmlSettings);
+            xmlWriter = XmlWriter.Create(Path.Combine(appDataPath, updateConfigFileFileName), xmlSettings);
             xmlWriter.WriteStartDocument();
             xmlWriter.WriteStartElement("Manifest");
             xmlWriter.WriteAttributeString("version", string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build));
@@ -129,7 +77,7 @@ namespace RFiDGear
             xmlWriter.Close();
 
             var doc = new XmlDocument();
-            doc.Load(Path.Combine(appDataPath, _updateConfigFileFileName));
+            doc.Load(Path.Combine(appDataPath, updateConfigFileFileName));
 
             if (doc.SelectSingleNode("//CheckInterval") == null)
             {
@@ -147,177 +95,133 @@ namespace RFiDGear
                 doc.DocumentElement.AppendChild(PayLoadElem);
                 doc.DocumentElement.AppendChild(InfoTextElem);
 
-                CheckIntervalElem.InnerText = _updateInterval.ToString(CultureInfo.CurrentCulture);
-                RemoteConfigUriElem.InnerText = _updateURL;
-                SecurityTokenElem.InnerText = _securityToken;
-                BaseUriElem.InnerText = _baseUri;
-                PayLoadElem.InnerText = _payload;
-                InfoTextElem.InnerText = _infoText;
+                CheckIntervalElem.InnerText = updateInterval.ToString(CultureInfo.CurrentCulture);
+                RemoteConfigUriElem.InnerText = updateURL;
+                SecurityTokenElem.InnerText = securityToken;
+                BaseUriElem.InnerText = baseUri;
+                PayLoadElem.InnerText = payload;
+                InfoTextElem.InnerText = infoText;
 
-                doc.Save(Path.Combine(appDataPath, _updateConfigFileFileName));
+                doc.Save(Path.Combine(appDataPath, updateConfigFileFileName));
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public async Task ReadSettings(string _fileName = "", CancellationToken cancellationToken = default)
+        public DefaultSpecification ReadSettings(string filePath)
         {
-            await ReadSettingsInternal(_fileName, cancellationToken).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
-        private async Task<bool> ReadSettingsInternal(string _fileName, CancellationToken cancellationToken)
-        {
-            TextReader reader;
-            int verInfo;
-
-            if (!string.IsNullOrWhiteSpace(_fileName) && !File.Exists(_fileName))
+            if (string.IsNullOrWhiteSpace(filePath))
             {
-                return false;
+                throw new ArgumentException("File path cannot be null or whitespace.", nameof(filePath));
             }
-
-            if (File.Exists(_fileName) || (string.IsNullOrWhiteSpace(_fileName) && File.Exists(Path.Combine(appDataPath, _settingsFileFileName))))
-            {
-                var doc = new XmlDocument();
-
-                try
-                {
-                    await Task.Run(() =>
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        var serializer = new XmlSerializer(typeof(DefaultSpecification));
-
-                        if (string.IsNullOrWhiteSpace(_fileName) && File.Exists(Path.Combine(appDataPath, _settingsFileFileName)))
-                        {
-                            doc.Load(@Path.Combine(appDataPath, _settingsFileFileName));
-
-                            var node = doc.SelectSingleNode("//ManifestVersion");
-                            verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
-
-                            reader = new StreamReader(Path.Combine(appDataPath, _settingsFileFileName));
-                        }
-                        else
-                        {
-                            doc.Load(_fileName);
-
-                            var node = doc.SelectSingleNode("//ManifestVersion");
-                            verInfo = Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
-
-                            reader = new StreamReader(_fileName);
-                        }
-
-                        defaultSpecification = (serializer.Deserialize(reader) as DefaultSpecification);
-
-                        reader.Close();
-
-                    }, cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    return true;
-                }
-                catch (Exception e)
-                {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-
-                    return true;
-                }
-
-                return false;
-            }
-            return true;
-        }
-
-        private async Task<DefaultSpecification> EnsureDefaultSpecificationLoadedAsync(CancellationToken cancellationToken)
-        {
-            if (defaultSpecification != null)
-            {
-                return defaultSpecification;
-            }
-
-            await settingsSync.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             try
             {
-                if (defaultSpecification == null)
-                {
-                    await ReadSettingsInternal(string.Empty, cancellationToken).ConfigureAwait(false);
-                }
+                var serializer = new XmlSerializer(typeof(DefaultSpecification));
 
-                defaultSpecification ??= new DefaultSpecification();
+                using var reader = new StreamReader(filePath);
+
+                DefaultSpecification = serializer.Deserialize(reader) as DefaultSpecification ?? new DefaultSpecification();
             }
-            finally
+            catch (Exception e) when (e is IOException || e is InvalidOperationException)
             {
-                settingsSync.Release();
+                logger.Error(e, "Failed to read settings from {SettingsFilePath}", filePath);
             }
 
-            return defaultSpecification;
+            return DefaultSpecification;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
-        public async Task<bool> SaveSettings(string _path = "", CancellationToken cancellationToken = default)
+        public Task<DefaultSpecification> ReadSettingsAsync(string filePath)
         {
+            return Task.Run(() => ReadSettings(filePath));
+        }
+
+        public DefaultSpecification ReadSettings()
+        {
+            return ReadSettings(SettingsFilePath);
+        }
+
+        public Task<DefaultSpecification> ReadSettingsAsync()
+        {
+            return ReadSettingsAsync(SettingsFilePath);
+        }
+
+        public void SaveSettings(DefaultSpecification specification, string path)
+        {
+            if (specification == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new ArgumentException("File path cannot be null or whitespace.", nameof(path));
+            }
+
             try
             {
-                await Task.Run(() => {
+                var serializer = new XmlSerializer(typeof(DefaultSpecification));
 
-                    cancellationToken.ThrowIfCancellationRequested();
+                using var textWriter = new StreamWriter(path, false);
 
-                    if (defaultSpecification == null)
-                    {
-                        return;
-                    }
+                serializer.Serialize(textWriter, specification);
 
-                    TextWriter textWriter;
-                    var serializer = new XmlSerializer(typeof(DefaultSpecification));
-
-                    textWriter = new StreamWriter(!string.IsNullOrEmpty(_path) ? @_path : @Path.Combine(appDataPath, _settingsFileFileName), false);
-
-                    serializer.Serialize(textWriter, defaultSpecification);
-
-                    textWriter.Close();
-                }, cancellationToken).ConfigureAwait(false);
-
-                return true;
-            }
-            catch (OperationCanceledException)
-            {
-                return false;
+                DefaultSpecification = specification;
             }
             catch (XmlException e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                logger.Error(e, "Failed to serialize settings to {SettingsFilePath}", path);
+            }
+        }
+
+        public Task SaveSettingsAsync(DefaultSpecification specification, string path)
+        {
+            return Task.Run(() => SaveSettings(specification, path));
+        }
+
+        public void SaveSettings(DefaultSpecification specification)
+        {
+            SaveSettings(specification, SettingsFilePath);
+        }
+
+        public Task SaveSettingsAsync(DefaultSpecification specification)
+        {
+            return SaveSettingsAsync(specification, SettingsFilePath);
+        }
+
+        public async Task<bool> SaveSettings(string path = "")
+        {
+            try
+            {
+                await SaveSettingsAsync(DefaultSpecification, string.IsNullOrWhiteSpace(path) ? SettingsFilePath : path).ConfigureAwait(false);
+
+                return true;
+            }
+            catch (XmlException e)
+            {
+                logger.Error(e, "Failed to save settings to {SettingsFilePath}", string.IsNullOrWhiteSpace(path) ? SettingsFilePath : path);
                 return false;
             }
         }
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!_disposed)
+            if (disposed)
             {
-                if (disposing)
-                {
-                    try
-                    {
-                        defaultSpecification = null;
-                    }
-
-                    catch (Exception e)
-                    {
-                        eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                    }
-                }
-
-                _disposed = true;
+                return;
             }
+
+            if (disposing)
+            {
+                try
+                {
+                    DefaultSpecification = null;
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e, "Failed to dispose settings");
+                }
+            }
+
+            disposed = true;
         }
 
         public void Dispose()

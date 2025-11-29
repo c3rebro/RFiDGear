@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    
+    xmlns:tasks="clr-namespace:RFiDGear.DataAccessLayer.Tasks"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Stretch"
@@ -261,8 +261,8 @@
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
-                        ItemsSource="{dal:Enumerate {x:Type dal:FileType_MifareDesfireFileType}}"
-                        SelectedItem="{Binding SelectedDesfireFileType, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:FileType_MifareDesfireFileType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        ItemsSource="{dal:Enumerate {x:Type tasks:FileType_MifareDesfireFileType}}"
+                        SelectedItem="{Binding SelectedDesfireFileType, Converter={StaticResource Localization}, ConverterParameter={x:Type tasks:FileType_MifareDesfireFileType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="145" />
                         <ColumnDefinition Width="100" />

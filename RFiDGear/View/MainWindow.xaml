@@ -5,7 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer"
-    xmlns:dlgs="clr-namespace:MVVMDialogs.Behaviors;assembly=MVVMDialogs"
+    xmlns:dlgs="clr-namespace:MVVMDialogs.Behaviors"
+    xmlns:behaviors="clr-namespace:RFiDGear.Behaviors"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:RFiDGear.ViewModel"
@@ -21,9 +22,9 @@
     DataContext="{Binding Source={StaticResource Locator}, Path=MainWin}"
     FontFamily="Segoe UI"
     FontWeight="Normal"
-    MouseLeftButtonDown="WindowMouseLeftButtonDown"
+    behaviors:WindowDragBehavior.EnableWindowDrag="True"
     SizeToContent="Width"
-    WindowStartupLocation="CenterScreen" 
+    WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <Window.InputBindings>
         <KeyBinding Key="Escape" Command="{Binding CloseApplication}" />
@@ -111,8 +112,7 @@
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                 ScrollViewer.CanContentScroll="True"
                 ItemsSource="{Binding TreeViewParentNodes}"
-                MouseLeftButtonDown="MainWindowTreeViewControlMouseButtonDown"
-                MouseRightButtonDown="MainWindowTreeViewControlMouseButtonDown">
+                behaviors:TreeViewSelectionBehavior.ClearSelectionOnEmptySpace="True">
                 <TreeView.ItemContainerStyle>
                     <!--  This Style binds a TreeViewItem to a TreeViewModelBase.  -->
                     <Style TargetType="{x:Type TreeViewItem}">
@@ -313,7 +313,7 @@
                 VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Left"
                 VerticalContentAlignment="Center"
-                local:SelectingItemAttachedProperty.SelectingItem="{Binding SelectedSetupViewModel, Mode=TwoWay}"
+                behaviors:DataGridSelectionBehavior.SelectingItem="{Binding SelectedSetupViewModel, Mode=TwoWay}"
                 AlternatingRowBackground="LightGray"
                 AutoGenerateColumns="False"
                 Background="Transparent"

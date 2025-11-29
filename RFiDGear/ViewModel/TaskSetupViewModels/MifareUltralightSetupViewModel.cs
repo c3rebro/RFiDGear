@@ -13,6 +13,8 @@ using MVVMDialogs.ViewModels;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.AccessControl;
+using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.Model;
 
 
@@ -30,7 +32,8 @@ using System.Windows.Input;
 using System.Xml.Serialization;
 
 
-namespace RFiDGear.ViewModel
+using MVVMDialogs.ViewModels.Interfaces;
+namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
     /// Description of MifareClassicSetupViewModel.

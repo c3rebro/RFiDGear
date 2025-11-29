@@ -13,6 +13,7 @@ using MVVMDialogs.ViewModels;
 
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.Model;
 
 
@@ -30,7 +31,8 @@ using System.Linq;
 using LibLogicalAccess;
 using System.Diagnostics;
 
-namespace RFiDGear.ViewModel
+using MVVMDialogs.ViewModels.Interfaces;
+namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
     /// Description of CommonTaskViewModel.
@@ -42,7 +44,7 @@ namespace RFiDGear.ViewModel
 
         private protected ReportReaderWriter reportReaderWriter;
         private protected Checkpoint checkpoint;
-        private protected readonly ObservableCollection<IGenericTaskModel> _availableTasks;
+        private protected readonly ObservableCollection<object> _availableTasks;
 
         #endregion fields
 
@@ -61,7 +63,7 @@ namespace RFiDGear.ViewModel
         /// </summary>
         /// <param name="_selectedSetupViewModel"></param>
         /// <param name="_dialogs"></param>
-        public GenericChipTaskViewModel(object _selectedSetupViewModel, ObservableCollection<IGenericTaskModel> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
+        public GenericChipTaskViewModel(object _selectedSetupViewModel, ObservableCollection<object> _tasks, ObservableCollection<IDialogViewModel> _dialogs)
         {
             try
             {
