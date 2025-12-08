@@ -6,12 +6,12 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Ionic.Zip;
 using RedCell.Net;
 using System.Windows.Threading;
 
@@ -333,10 +333,7 @@ namespace RedCell.Diagnostics.Update
                         try
                         {
                             var zipfile = Path.Combine(Path.Combine(appDataPath, WorkPath), update);
-                            using (var zip = ZipFile.Read(zipfile))
-                            {
-                                zip.ExtractAll(Path.Combine(appDataPath, WorkPath), ExtractExistingFileAction.Throw);
-                            }
+                            ZipFile.ExtractToDirectory(zipfile, Path.Combine(appDataPath, WorkPath), overwriteFiles: true);
 
                             File.Delete(zipfile);
 
