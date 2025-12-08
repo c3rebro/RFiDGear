@@ -232,17 +232,19 @@ namespace RedCell.Diagnostics.Update
                 }
 
                 eventLog.WriteEntry(string.Format("Remote config is valid."), EventLogEntryType.Information);
-                eventLog.WriteEntry(string.Format("Local version is ", _localConfig.Version), EventLogEntryType.Information);
-                eventLog.WriteEntry(string.Format("Remote version is ", _remoteConfig.Version), EventLogEntryType.Information);
+                eventLog.WriteEntry(string.Format("Local version is {0}", _localConfig.Version), EventLogEntryType.Information);
+                eventLog.WriteEntry(string.Format("Remote version is {0}", _remoteConfig.Version), EventLogEntryType.Information);
 
-                if (_remoteConfig.Version == _localConfig.Version)
+                var versionComparison = _remoteConfig.Version?.CompareTo(_localConfig.Version ?? new Version()) ?? -1;
+
+                if (versionComparison == 0)
                 {
                     eventLog.WriteEntry(string.Format("Versions are the same. Check ending."), EventLogEntryType.Information);
                     UpdateAvailable = false;
                     return;
                 }
 
-                if (_remoteConfig.Version < _localConfig.Version)
+                if (versionComparison < 0)
                 {
                     eventLog.WriteEntry(string.Format("Remote version is older. That's weird o_O. Check ending."), EventLogEntryType.Warning);
                     UpdateAvailable = false;
