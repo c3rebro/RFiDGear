@@ -1276,8 +1276,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             }
         }
 
-		public override async Task<ERROR> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
-		{
+                public override async Task<OperationResult> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, bool authenticateBeforeReading = true)
+                {
             byte maxNbrOfKeys;
             LibLogicalAccess.Card.DESFireKeySettings keySettings;
 
@@ -1288,103 +1288,70 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             try
             {
-                // Keys to use for authentication
                 DESFireAccessInfo aiToUse = new DESFireAccessInfo();
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
                 aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
                 aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
 
-                if (await tryInitReader())
+                if (!await tryInitReader())
                 {
-                    card = readerUnit.getSingleChip();
-
-                    DESFireCommands cmd;
-
-                    if (card.getCardType() == "DESFire")
-                    {
-                        cmd = card.getCommands() as DESFireCommands;
-                    }
-
-                    else if (card.getCardType() == "DESFireEV1" ||
-                            card.getCardType() == "DESFireEV2" ||
-                            card.getCardType() == "DESFireEV3" ||
-                            card.getCardType() == "GENERIC_T_CL_A")
-                    {
-                        cmd = (card as DESFireChip).getDESFireCommands();
-                    }
-                    else
-                    {
-                        cmd = card.getCommands() as DESFireCommands;
-                    }
-                    
-                    try
-                    {
-                        cmd.selectApplication((uint)_appID);
-                        DesfireChip.UID = ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray());
-
-                        try
-                        {
-                            cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterCardKey);
-                        }
-
-                        catch
-                        {
-                            try
-                            {
-                                cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
-                                MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
-                                EncryptionType = (DESFireKeyType)(maxNbrOfKeys & 0xF0);
-                                DesfireAppKeySetting = (AccessControl.DESFireKeySettings)keySettings;
-
-                                return ERROR.NoError;
-                            }
-                            catch (Exception e)
-                            {
-                                if (e.Message != "" && e.Message.Contains("same number already exists"))
-                                {
-                                    return ERROR.ProtocolConstraint;
-                                }
-                                else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
-                                {
-                                    return ERROR.AuthFailure;
-                                }
-                                else
-                                    return ERROR.TransportError;
-                            }
-                        }
-                        cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
-                        MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
-                        EncryptionType = (DESFireKeyType)(maxNbrOfKeys & 0xF0);
-                        DesfireAppKeySetting = (AccessControl.DESFireKeySettings)keySettings;
-
-                        return ERROR.NoError;
-                    }
-                    catch (Exception e)
-                    {
-                        if (e.Message != "" && e.Message.Contains("same number already exists"))
-                        {
-                            return ERROR.ProtocolConstraint;
-                        }
-                        else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
-                        {
-                            return ERROR.AuthFailure;
-                        }
-                        else
-                            return ERROR.TransportError;
-                    }
+                    return OperationResult.Failure(ERROR.TransportError, "Reader not initialized");
                 }
-                return ERROR.TransportError;
+
+                card = readerUnit.getSingleChip();
+                DESFireCommands cmd;
+
+                if (card.getCardType() == "DESFire")
+                {
+                    cmd = card.getCommands() as DESFireCommands;
+                }
+
+                else if (card.getCardType() == "DESFireEV1" ||
+                        card.getCardType() == "DESFireEV2" ||
+                        card.getCardType() == "DESFireEV3" ||
+                        card.getCardType() == "GENERIC_T_CL_A")
+                {
+                    cmd = (card as DESFireChip).getDESFireCommands();
+                }
+                else
+                {
+                    return OperationResult.Failure(ERROR.TransportError, "Unsupported card type", card.getCardType());
+                }
+
+                cmd.selectApplication((uint)_appID);
+                DesfireChip.UID = ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray());
+
+                if (authenticateBeforeReading)
+                {
+                    cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterCardKey);
+                }
+
+                cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
+                MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
+                EncryptionType = (DESFireKeyType)(maxNbrOfKeys & 0xF0);
+                DesfireAppKeySetting = (AccessControl.DESFireKeySettings)keySettings;
+
+                return OperationResult.Success();
             }
-            catch
+            catch (Exception e)
             {
-                return ERROR.TransportError;
+                if (e.Message != "" && e.Message.Contains("same number already exists"))
+                {
+                    return OperationResult.Failure(ERROR.ProtocolConstraint, "Application already exists", e.Message);
+                }
+                else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+                {
+                    return OperationResult.Failure(ERROR.AuthFailure, "Authentication required", e.Message);
+                }
+
+                return OperationResult.Failure(ERROR.TransportError, "Failed to fetch application settings", e.Message);
             }
         }
 
-		public override async Task<ERROR> CreateMifareDesfireApplication(
-			string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, 
-			DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
-		{
+                public override async Task<OperationResult> CreateMifareDesfireApplication(
+                        string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey,
+                        DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
+                {
             try
             {
                 // The excepted memory tree
@@ -1402,59 +1369,60 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
                 aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypePiccMasterKey);
 
-                if (await tryInitReader())
+                if (!await tryInitReader())
                 {
-                    card = readerUnit.getSingleChip();
-
-                    var cmd = card.getCommands() as DESFireCommands;
-                    var ev1Cmd = (card as DESFireEV1Chip).getDESFireEV1Commands();
-
-                    try
-                    {
-                        cmd.selectApplication(0);
-
-                        if (authenticateToPICCFirst)
-                            cmd.authenticate((byte)0, aiToUse.masterCardKey);
-
-                        if (card.getCardType() == "DESFire")
-                        {
-                            cmd.createApplication((uint)_appID, (LibLogicalAccess.Card.DESFireKeySettings)_keySettingsTarget, (byte)_maxNbKeys);
-                        }
-                        else if (card.getCardType() == "DESFireEV1" ||
-                                card.getCardType() == "DESFireEV2" ||
-                                card.getCardType() == "DESFireEV3")
-                        {
-                            ev1Cmd.createApplication((uint)_appID, (LibLogicalAccess.Card.DESFireKeySettings)_keySettingsTarget, (byte)_maxNbKeys, (LibLogicalAccess.Card.DESFireKeyType)_keyTypeTargetApplication);
-                        }
-                        else
-                        {
-                            return ERROR.PermissionDenied;
-                        }
-                        return ERROR.NoError;
-                    }
-                    catch (Exception e)
-                    {
-                        if (e.Message != "" && e.Message.Contains("same number already exists"))
-                        {
-                            return ERROR.ProtocolConstraint;
-                        }
-                        else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
-                        {
-                            return ERROR.AuthFailure;
-                        }
-                        else if (e.Message != "" && e.Message.Contains("Insufficient NV-Memory"))
-                        {
-                            return ERROR.ProtocolConstraint;
-                        }
-                        else
-                            return ERROR.TransportError;
-                    }
+                    return OperationResult.Failure(ERROR.TransportError, "Reader not initialized");
                 }
-                return ERROR.TransportError;
+
+                card = readerUnit.getSingleChip();
+
+                var cmd = card.getCommands() as DESFireCommands;
+                var ev1Cmd = (card as DESFireEV1Chip).getDESFireEV1Commands();
+
+                try
+                {
+                    cmd.selectApplication(0);
+
+                    if (authenticateToPICCFirst)
+                        cmd.authenticate((byte)0, aiToUse.masterCardKey);
+
+                    if (card.getCardType() == "DESFire")
+                    {
+                        cmd.createApplication((uint)_appID, (LibLogicalAccess.Card.DESFireKeySettings)_keySettingsTarget, (byte)_maxNbKeys);
+                    }
+                    else if (card.getCardType() == "DESFireEV1" ||
+                            card.getCardType() == "DESFireEV2" ||
+                            card.getCardType() == "DESFireEV3")
+                    {
+                        ev1Cmd.createApplication((uint)_appID, (LibLogicalAccess.Card.DESFireKeySettings)_keySettingsTarget, (byte)_maxNbKeys, (LibLogicalAccess.Card.DESFireKeyType)_keyTypeTargetApplication);
+                    }
+                    else
+                    {
+                        return OperationResult.Failure(ERROR.PermissionDenied, "Unsupported card type", card.getCardType());
+                    }
+                    return OperationResult.Success();
+                }
+                catch (Exception e)
+                {
+                    if (e.Message != "" && e.Message.Contains("same number already exists"))
+                    {
+                        return OperationResult.Failure(ERROR.ProtocolConstraint, "Application already exists", e.Message);
+                    }
+                    else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+                    {
+                        return OperationResult.Failure(ERROR.AuthFailure, "Authentication failed", e.Message);
+                    }
+                    else if (e.Message != "" && e.Message.Contains("Insufficient NV-Memory"))
+                    {
+                        return OperationResult.Failure(ERROR.ProtocolConstraint, "Insufficient memory", e.Message);
+                    }
+                    else
+                        return OperationResult.Failure(ERROR.TransportError, "Failed to create application", e.Message);
+                }
             }
-            catch
+            catch (Exception e)
             {
-                return ERROR.TransportError;
+                return OperationResult.Failure(ERROR.TransportError, "Unexpected failure while creating application", e.Message);
             }
         }
 
