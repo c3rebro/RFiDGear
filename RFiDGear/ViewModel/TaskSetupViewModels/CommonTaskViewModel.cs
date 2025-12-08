@@ -56,6 +56,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public GenericChipModel GenericChip { get; set; }
 
         [XmlIgnore]
+        public ObservableCollection<TaskAttemptResult> AttemptResults { get; } = new ObservableCollection<TaskAttemptResult>();
+
+        [XmlIgnore]
         public MifareDesfireChipModel DesfireChip { get; set; }
 
         [XmlIgnore]

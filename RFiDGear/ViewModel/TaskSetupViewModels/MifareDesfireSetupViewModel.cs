@@ -687,6 +687,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         [XmlIgnore]
         public ERROR CurrentTaskErrorLevel { get; set; }
 
+        [XmlIgnore]
+        public ObservableCollection<TaskAttemptResult> AttemptResults { get; } = new ObservableCollection<TaskAttemptResult>();
+
         #region Key Properties Card Master
 
         [XmlIgnore]
