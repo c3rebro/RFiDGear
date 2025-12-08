@@ -9,15 +9,15 @@ namespace RFiDGear.Services
     public class UpdateNotifier : IUpdateNotifier
     {
         private readonly IUpdaterAdapter updater;
-        private readonly ITimerFactory timerFactory;
+        private readonly ISystemTimerFactory timerFactory;
         private ITimerAdapter updateTimer;
 
         public UpdateNotifier()
-            : this(new UpdaterAdapter(), new TimerFactory())
+            : this(new UpdaterAdapter(), new SystemTimerFactory())
         {
         }
 
-        public UpdateNotifier(IUpdaterAdapter updater, ITimerFactory timerFactory)
+        public UpdateNotifier(IUpdaterAdapter updater, ISystemTimerFactory timerFactory)
         {
             this.updater = updater ?? throw new ArgumentNullException(nameof(updater));
             this.timerFactory = timerFactory ?? throw new ArgumentNullException(nameof(timerFactory));

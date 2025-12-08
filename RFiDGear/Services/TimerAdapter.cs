@@ -22,7 +22,7 @@ namespace RFiDGear.Services
         }
     }
 
-    public class TimerFactory : ITimerFactory
+    public class SystemTimerFactory : ISystemTimerFactory
     {
         public ITimerAdapter Create(TimerCallback callback, int dueTime, int period)
         {

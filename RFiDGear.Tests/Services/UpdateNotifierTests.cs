@@ -51,7 +51,7 @@ namespace RFiDGear.Tests.Services
             }
         }
 
-        private class FakeTimerFactory : ITimerFactory
+        private class FakeTimerFactory : ISystemTimerFactory
         {
             public FakeTimerAdapter Timer { get; private set; }
 

@@ -8,6 +8,9 @@ namespace RFiDGear.Services
         Commands.ICommandMenuProvider CreateCommandMenuProvider();
         Commands.ICommandMenuBuilder CreateCommandMenuBuilder();
         IStartupConfigurator CreateStartupConfigurator();
-        IMainWindowTimerFactory CreateMainWindowTimerFactory();
+        ITimerFactory CreateTimerFactory();
+        IAppStartupInitializer CreateAppStartupInitializer();
+        ITaskServiceInitializer CreateTaskServiceInitializer();
+        IMenuInitializer CreateMenuInitializer();
     }
 }

@@ -59,7 +59,7 @@ namespace RFiDGear.ViewModel
     public class MainWindowViewModel : ObservableObject
     {
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private readonly EventLog eventLog;
         private readonly string[] args;
         private readonly Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
         private readonly Updater updater;
@@ -92,28 +92,55 @@ namespace RFiDGear.ViewModel
         #region Constructors
 
         public MainWindowViewModel()
-            : this(new SettingsBootstrapper(), new UpdateNotifier(), new ContextMenuBuilder())
+            : this(
+                  new SettingsBootstrapper(),
+                  new UpdateNotifier(),
+                  new ContextMenuBuilder(),
+                  new AppStartupInitializer(),
+                  new MainWindowTimerFactory(),
+                  new TaskServiceInitializer(),
+                  new MenuInitializer())
         {
         }
 
-        public MainWindowViewModel(ISettingsBootstrapper settingsBootstrapper, IUpdateNotifier updateNotifier, IContextMenuBuilder contextMenuBuilder)
+        public MainWindowViewModel(
+            ISettingsBootstrapper settingsBootstrapper,
+            IUpdateNotifier updateNotifier,
+            IContextMenuBuilder contextMenuBuilder,
+            IAppStartupInitializer appStartupInitializer,
+            ITimerFactory timerFactory,
+            ITaskServiceInitializer taskServiceInitializer,
+            IMenuInitializer menuInitializer)
         {
             this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
             this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
             this.contextMenuBuilder = contextMenuBuilder ?? throw new ArgumentNullException(nameof(contextMenuBuilder));
+            if (appStartupInitializer == null)
+            {
+                throw new ArgumentNullException(nameof(appStartupInitializer));
+            }
+
+            if (timerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(timerFactory));
+            }
+
+            if (taskServiceInitializer == null)
+            {
+                throw new ArgumentNullException(nameof(taskServiceInitializer));
+            }
+
+            if (menuInitializer == null)
+            {
+                throw new ArgumentNullException(nameof(menuInitializer));
+            }
 
             IsReaderBusy = false;
 
-            if (!EventLog.SourceExists(Assembly.GetEntryAssembly().GetName().Name))
-            {
-                EventLog.CreateEventSource(new EventSourceCreationData(Assembly.GetEntryAssembly().GetName().Name, "Application"));
-            }
-
-            eventLog.Source = Assembly.GetEntryAssembly().GetName().Name;
-
-            RunMutex(this, null);
-
-            args = Environment.GetCommandLineArgs();
+            var startupContext = appStartupInitializer.Initialize();
+            eventLog = startupContext.EventLog;
+            mutex = startupContext.Mutex;
+            args = startupContext.Arguments;
 
             updater = new Updater();
 
@@ -123,31 +150,9 @@ namespace RFiDGear.ViewModel
             ReaderDevice.Reader = bootstrapResult.DefaultReaderProvider;
             culture = bootstrapResult.Culture;
 
-            triggerReadChip = new DispatcherTimer
-            {
-                Interval = new TimeSpan(0, 0, 0, 2, 500)
-            };
-
-            triggerReadChip.Tick += UpdateChip;
-
-            triggerReadChip.Start();
-            triggerReadChip.IsEnabled = false;
-            triggerReadChip.Tag = triggerReadChip.IsEnabled;
-
-#if DEBUG
-            taskTimeout = new DispatcherTimer
-            {
-                Interval = new TimeSpan(0, 1, 0, 0, 0)
-            };
-#else
-            taskTimeout = new DispatcherTimer
-            {
-                Interval = new TimeSpan(0, 0, 0, 4, 0)
-            };
-#endif
-            taskTimeout.Tick += TaskTimeout;
-            taskTimeout.Start();
-            taskTimeout.IsEnabled = false;
+            var timerInitialization = timerFactory.CreateTimers(UpdateChip, TaskTimeout);
+            triggerReadChip = timerInitialization.TriggerReadTimer;
+            taskTimeout = timerInitialization.TaskTimeoutTimer;
 
             treeViewParentNodes = new ObservableCollection<RFiDChipParentLayerViewModel>();
 
@@ -158,32 +163,35 @@ namespace RFiDGear.ViewModel
             databaseReaderWriter = new DatabaseReaderWriter();
             resLoader = new ResourceLoader();
 
-            taskDialogFactory = new TaskDialogFactory(
+            var taskServices = taskServiceInitializer.Initialize(
                 () => OnPropertyChanged(nameof(ChipTasks)),
                 () => mw?.Activate(),
-                status => IsReaderBusy = status);
+                status => IsReaderBusy = status,
+                TaskExecutionService_ExecutionCompleted,
+                triggerReadChip,
+                taskTimeout);
 
-            var triggerReadChipAdapter = new DispatcherTimerAdapter(triggerReadChip);
-            var taskTimeoutAdapter = new DispatcherTimerAdapter(taskTimeout);
-            taskExecutionService = new TaskExecutionService(new ReaderDeviceProvider(), triggerReadChipAdapter, taskTimeoutAdapter);
-            taskExecutionService.ExecutionCompleted += TaskExecutionService_ExecutionCompleted;
+            taskDialogFactory = taskServices.TaskDialogFactory;
+            taskExecutionService = taskServices.TaskExecutionService;
 
             var deleteSelectedCommand = new RelayCommand(() =>
             {
                 taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
             });
 
-            rowContextMenuItems = contextMenuBuilder.BuildNodeMenu(
-                GetAddEditCommand,
+            var menuInitialization = menuInitializer.Initialize(
+                contextMenuBuilder,
                 GetAddEditCommand,
                 deleteSelectedCommand,
                 WriteSelectedTaskToChipOnceCommand,
                 ResetSelectedTaskStatusCommand,
                 WriteToChipOnceCommand,
-                ResetReportTaskDirectoryCommand);
+                ResetReportTaskDirectoryCommand,
+                ReadChipCommand);
 
-            emptySpaceContextMenuItems = contextMenuBuilder.BuildEmptySpaceMenu(GetAddEditCommand);
-            emptySpaceTreeViewContextMenu = contextMenuBuilder.BuildEmptyTreeMenu(ReadChipCommand);
+            rowContextMenuItems = menuInitialization.RowContextMenuItems;
+            emptySpaceContextMenuItems = menuInitialization.EmptySpaceContextMenuItems;
+            emptySpaceTreeViewContextMenu = menuInitialization.EmptySpaceTreeViewContextMenu;
 
             Application.Current.MainWindow.Closing += new CancelEventHandler(CloseThreads);
             Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
@@ -1627,17 +1635,6 @@ namespace RFiDGear.ViewModel
             }
 
             userIsNotifiedForAvailableUpdate = true;
-        }
-
-        //Only one instance is allowed due to the singleton pattern of the reader class
-        private void RunMutex(object sender, StartupEventArgs e)
-        {
-            mutex = new Mutex(true, "App", out var isANewInstance);
-
-            if (!isANewInstance)
-            {
-                Environment.Exit(0);
-            }
         }
 
         private void CloseThreads(object sender, CancelEventArgs e)

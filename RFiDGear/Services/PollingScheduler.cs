@@ -8,11 +8,11 @@ namespace RFiDGear.Services
         private readonly ITimerAdapter readerTimer;
 
         public PollingScheduler()
-            : this(new TimerFactory())
+            : this(new SystemTimerFactory())
         {
         }
 
-        public PollingScheduler(ITimerFactory timerFactory)
+        public PollingScheduler(ISystemTimerFactory timerFactory)
         {
             updateTimer = timerFactory.Create(CheckUpdate, 100, 5000);
             readerTimer = timerFactory.Create(CheckReader, 5000, 3000);

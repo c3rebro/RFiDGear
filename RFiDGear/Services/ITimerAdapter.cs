@@ -7,7 +7,7 @@ namespace RFiDGear.Services
         void Change(int dueTime, int period);
     }
 
-    public interface ITimerFactory
+    public interface ISystemTimerFactory
     {
         ITimerAdapter Create(System.Threading.TimerCallback callback, int dueTime, int period);
     }

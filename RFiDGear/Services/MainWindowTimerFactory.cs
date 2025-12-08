@@ -3,14 +3,33 @@ using System.Windows.Threading;
 
 namespace RFiDGear.Services
 {
-    public interface IMainWindowTimerFactory
+    public interface ITimerFactory
     {
+        TimerInitializationResult CreateTimers(EventHandler triggerReadHandler, EventHandler taskTimeoutHandler);
         DispatcherTimer CreateTriggerReadTimer(EventHandler tickHandler);
         DispatcherTimer CreateTaskTimeoutTimer(EventHandler tickHandler);
     }
 
-    public class MainWindowTimerFactory : IMainWindowTimerFactory
+    public class MainWindowTimerFactory : ITimerFactory
     {
+        public TimerInitializationResult CreateTimers(EventHandler triggerReadHandler, EventHandler taskTimeoutHandler)
+        {
+            if (triggerReadHandler == null)
+            {
+                throw new ArgumentNullException(nameof(triggerReadHandler));
+            }
+
+            if (taskTimeoutHandler == null)
+            {
+                throw new ArgumentNullException(nameof(taskTimeoutHandler));
+            }
+
+            var triggerReadChip = CreateTriggerReadTimer(triggerReadHandler);
+            var taskTimeout = CreateTaskTimeoutTimer(taskTimeoutHandler);
+
+            return new TimerInitializationResult(triggerReadChip, taskTimeout);
+        }
+
         public DispatcherTimer CreateTriggerReadTimer(EventHandler tickHandler)
         {
             var triggerReadChip = new DispatcherTimer
@@ -45,5 +64,18 @@ namespace RFiDGear.Services
 
             return taskTimeout;
         }
+    }
+
+    public class TimerInitializationResult
+    {
+        public TimerInitializationResult(DispatcherTimer triggerReadTimer, DispatcherTimer taskTimeoutTimer)
+        {
+            TriggerReadTimer = triggerReadTimer ?? throw new ArgumentNullException(nameof(triggerReadTimer));
+            TaskTimeoutTimer = taskTimeoutTimer ?? throw new ArgumentNullException(nameof(taskTimeoutTimer));
+        }
+
+        public DispatcherTimer TriggerReadTimer { get; }
+
+        public DispatcherTimer TaskTimeoutTimer { get; }
     }
 }
