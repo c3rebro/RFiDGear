@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "RFiDGear": {
+      "commandName": "Project",
+      "workingDirectory": "$(ProjectDir)"
+    }
+  }
+}

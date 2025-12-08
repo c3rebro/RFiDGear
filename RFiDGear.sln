@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear", "RFiDGear\RFiDGear.csproj", "{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RFiDGear", "RFiDGear\RFiDGear.csproj", "{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.Tests", "RFiDGear.Tests\RFiDGear.Tests.csproj", "{8F1A5B6E-9A4F-4B48-8F2E-7E6E5C646D28}"
 EndProject
@@ -18,12 +18,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projektmappenelemente", "Pr
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug (without default Proj.)|Any CPU = Debug (without default Proj.)|Any CPU
-		Debug (without default Proj.)|x64 = Debug (without default Proj.)|x64
-		Debug (without default Proj.)|x86 = Debug (without default Proj.)|x86
-		Debug(without args)|Any CPU = Debug(without args)|Any CPU
-		Debug(without args)|x64 = Debug(without args)|x64
-		Debug(without args)|x86 = Debug(without args)|x86
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
@@ -32,18 +26,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug (without default Proj.)|Any CPU.ActiveCfg = Debug (without default Proj.)|Any CPU
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug (without default Proj.)|Any CPU.Build.0 = Debug (without default Proj.)|Any CPU
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug (without default Proj.)|x64.ActiveCfg = Debug (without default Proj.)|x64
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug (without default Proj.)|x64.Build.0 = Debug (without default Proj.)|x64
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug (without default Proj.)|x86.ActiveCfg = Debug (without default Proj.)|Any CPU
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug (without default Proj.)|x86.Build.0 = Debug (without default Proj.)|Any CPU
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug(without args)|Any CPU.ActiveCfg = Debug(without args)|Any CPU
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug(without args)|Any CPU.Build.0 = Debug(without args)|Any CPU
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug(without args)|x64.ActiveCfg = Debug(without args)|x64
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug(without args)|x64.Build.0 = Debug(without args)|x64
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug(without args)|x86.ActiveCfg = Debug(without args)|x86
-		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug(without args)|x86.Build.0 = Debug(without args)|x86
 		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Debug|x64.ActiveCfg = Debug|x64
@@ -56,16 +38,6 @@ Global
 		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Release|x64.Build.0 = Release|x64
 		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Release|x86.ActiveCfg = Release|Any CPU
 		{D49B605A-7B08-4B82-B4D2-7DA7D0236B13}.Release|x86.Build.0 = Release|Any CPU
-		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug (without default Proj.)|Any CPU.ActiveCfg = Debug(without args)|x86
-		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug (without default Proj.)|Any CPU.Build.0 = Debug(without args)|x86
-		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug (without default Proj.)|x64.ActiveCfg = Debug(without args)|x86
-		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug (without default Proj.)|x86.ActiveCfg = Debug(without args)|x86
-		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug (without default Proj.)|x86.Build.0 = Debug(without args)|x86
-		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug(without args)|Any CPU.ActiveCfg = Debug|x86
-		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug(without args)|Any CPU.Build.0 = Debug|x86
-		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug(without args)|x64.ActiveCfg = Debug|x86
-		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug(without args)|x86.ActiveCfg = Debug|x86
-		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug(without args)|x86.Build.0 = Debug|x86
 		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug|x64.ActiveCfg = Debug|x86
 		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Debug|x86.ActiveCfg = Debug|x86
@@ -74,16 +46,6 @@ Global
 		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Release|x64.ActiveCfg = Release|x86
 		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Release|x86.ActiveCfg = Release|x86
 		{856CA06C-0B4C-46C6-AD71-873317F1C763}.Release|x86.Build.0 = Release|x86
-		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug (without default Proj.)|Any CPU.ActiveCfg = Debug(without args)|x86
-		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug (without default Proj.)|Any CPU.Build.0 = Debug(without args)|x86
-		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug (without default Proj.)|x64.ActiveCfg = Debug(without args)|x86
-		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug (without default Proj.)|x86.ActiveCfg = Debug(without args)|x86
-		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug (without default Proj.)|x86.Build.0 = Debug(without args)|x86
-		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug(without args)|Any CPU.ActiveCfg = Debug|x86
-		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug(without args)|Any CPU.Build.0 = Debug|x86
-		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug(without args)|x64.ActiveCfg = Debug|x86
-		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug(without args)|x86.ActiveCfg = Debug|x86
-		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug(without args)|x86.Build.0 = Debug|x86
 		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug|x64.ActiveCfg = Debug|x86
 		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Debug|x86.ActiveCfg = Debug|x86
