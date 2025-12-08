@@ -33,5 +33,20 @@ namespace RFiDGear.Tests.Services
 #endif
             Assert.IsFalse(timer.IsEnabled);
         }
+
+        [TestMethod]
+        public void CreateTimers_ConfiguresBothTimers()
+        {
+            var factory = new MainWindowTimerFactory();
+
+            var timers = factory.CreateTimers((_, __) => { }, (_, __) => { });
+
+            Assert.AreEqual(new TimeSpan(0, 0, 0, 2, 500), timers.TriggerReadTimer.Interval);
+#if DEBUG
+            Assert.AreEqual(new TimeSpan(0, 1, 0, 0, 0), timers.TaskTimeoutTimer.Interval);
+#else
+            Assert.AreEqual(new TimeSpan(0, 0, 0, 4, 0), timers.TaskTimeoutTimer.Interval);
+#endif
+        }
     }
 }

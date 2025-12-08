@@ -10,7 +10,10 @@ namespace RFiDGear.Services
         private readonly Lazy<Commands.ICommandMenuProvider> commandMenuProvider;
         private readonly Lazy<Commands.ICommandMenuBuilder> commandMenuBuilder;
         private readonly Lazy<IStartupConfigurator> startupConfigurator;
-        private readonly Lazy<IMainWindowTimerFactory> timerFactory;
+        private readonly Lazy<ITimerFactory> timerFactory;
+        private readonly Lazy<IAppStartupInitializer> appStartupInitializer;
+        private readonly Lazy<ITaskServiceInitializer> taskServiceInitializer;
+        private readonly Lazy<IMenuInitializer> menuInitializer;
 
         public MainWindowServiceFactory()
         {
@@ -20,7 +23,10 @@ namespace RFiDGear.Services
             commandMenuProvider = new Lazy<Commands.ICommandMenuProvider>(() => new Commands.CommandMenuProvider());
             commandMenuBuilder = new Lazy<Commands.ICommandMenuBuilder>(() => new Commands.CommandMenuBuilder(commandMenuProvider.Value));
             startupConfigurator = new Lazy<IStartupConfigurator>(() => new StartupConfigurator(readerInitializer.Value));
-            timerFactory = new Lazy<IMainWindowTimerFactory>(() => new MainWindowTimerFactory());
+            timerFactory = new Lazy<ITimerFactory>(() => new MainWindowTimerFactory());
+            appStartupInitializer = new Lazy<IAppStartupInitializer>(() => new AppStartupInitializer());
+            taskServiceInitializer = new Lazy<ITaskServiceInitializer>(() => new TaskServiceInitializer());
+            menuInitializer = new Lazy<IMenuInitializer>(() => new MenuInitializer());
         }
 
         public IReaderInitializer CreateReaderInitializer() => readerInitializer.Value;
@@ -29,6 +35,9 @@ namespace RFiDGear.Services
         public Commands.ICommandMenuProvider CreateCommandMenuProvider() => commandMenuProvider.Value;
         public Commands.ICommandMenuBuilder CreateCommandMenuBuilder() => commandMenuBuilder.Value;
         public IStartupConfigurator CreateStartupConfigurator() => startupConfigurator.Value;
-        public IMainWindowTimerFactory CreateMainWindowTimerFactory() => timerFactory.Value;
+        public ITimerFactory CreateTimerFactory() => timerFactory.Value;
+        public IAppStartupInitializer CreateAppStartupInitializer() => appStartupInitializer.Value;
+        public ITaskServiceInitializer CreateTaskServiceInitializer() => taskServiceInitializer.Value;
+        public IMenuInitializer CreateMenuInitializer() => menuInitializer.Value;
     }
 }
