@@ -68,13 +68,16 @@ namespace RFiDGear.ViewModel
         private readonly ISettingsBootstrapper settingsBootstrapper;
         private readonly IUpdateNotifier updateNotifier;
         private readonly IContextMenuBuilder contextMenuBuilder;
+        private readonly IStartupArgumentProcessor startupArgumentProcessor;
+        private readonly IUpdateScheduler updateScheduler;
+        private readonly IReaderMonitor readerMonitor;
+        private readonly IProjectBootstrapper projectBootstrapper;
 
         private protected MainWindow mw;
         private protected DatabaseReaderWriter databaseReaderWriter;
         private protected ReportReaderWriter reportReaderWriter;
         private protected DispatcherTimer triggerReadChip;
         private protected DispatcherTimer taskTimeout;
-        private protected Timer checkReader = null;
         private protected string reportOutputPath;
         private protected string reportTemplateFile;
         private protected ChipTaskHandlerModel taskHandler;
@@ -99,7 +102,11 @@ namespace RFiDGear.ViewModel
                   new AppStartupInitializer(),
                   new MainWindowTimerFactory(),
                   new TaskServiceInitializer(),
-                  new MenuInitializer())
+                  new MenuInitializer(),
+                  new StartupArgumentProcessor(),
+                  new UpdateScheduler(),
+                  new ReaderMonitor(),
+                  new ProjectBootstrapper())
         {
         }
 
@@ -110,7 +117,11 @@ namespace RFiDGear.ViewModel
             IAppStartupInitializer appStartupInitializer,
             ITimerFactory timerFactory,
             ITaskServiceInitializer taskServiceInitializer,
-            IMenuInitializer menuInitializer)
+            IMenuInitializer menuInitializer,
+            IStartupArgumentProcessor startupArgumentProcessor,
+            IUpdateScheduler updateScheduler,
+            IReaderMonitor readerMonitor,
+            IProjectBootstrapper projectBootstrapper)
         {
             this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
             this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
@@ -173,6 +184,11 @@ namespace RFiDGear.ViewModel
 
             taskDialogFactory = taskServices.TaskDialogFactory;
             taskExecutionService = taskServices.TaskExecutionService;
+
+            this.startupArgumentProcessor = startupArgumentProcessor ?? throw new ArgumentNullException(nameof(startupArgumentProcessor));
+            this.updateScheduler = updateScheduler ?? throw new ArgumentNullException(nameof(updateScheduler));
+            this.readerMonitor = readerMonitor ?? throw new ArgumentNullException(nameof(readerMonitor));
+            this.projectBootstrapper = projectBootstrapper ?? throw new ArgumentNullException(nameof(projectBootstrapper));
 
             var deleteSelectedCommand = new RelayCommand(() =>
             {
@@ -305,7 +321,10 @@ namespace RFiDGear.ViewModel
                     ChipTasks.TaskCollection.Add(setup);
                 }
 
-                Dialogs.RemoveAt(0);
+                if (Dialogs.Any())
+                {
+                    Dialogs.RemoveAt(0);
+                }
 
                 OnPropertyChanged(nameof(ChipTasks));
             }
@@ -1459,17 +1478,11 @@ namespace RFiDGear.ViewModel
                 isReaderBusy = value;
                 if (value == true)
                 {
-                    if (checkReader != null)
-                    {
-                        checkReader.Change(Timeout.Infinite, Timeout.Infinite);
-                    }
+                    readerMonitor?.Pause();
                 }
                 else
                 {
-                    if (checkReader != null)
-                    {
-                        checkReader.Change(2000, 2000);
-                    }
+                    readerMonitor?.Resume();
                 }
                 OnPropertyChanged(nameof(IsReaderBusy));
             }
@@ -1644,187 +1657,64 @@ namespace RFiDGear.ViewModel
 
         private async void LoadCompleted(object sender, EventArgs e)
         {
-            var autorun = false;
-
             Application.Current.MainWindow.Activated -= new EventHandler(LoadCompleted);
 
             mw = (MainWindow)Application.Current.MainWindow;
             mw.Title = string.Format("RFiDGear {0}.{1}", Version.Major, Version.Minor);
 
-            updateNotifier.StartUpdateCheck(() => AskForUpdateNow());
-            checkReader = new Timer(CheckReader, null, 5000, 3000); // ! UI-Thread !
-            var projectFileToUse = "";
+            updateScheduler.Begin(() => AskForUpdateNow());
+            readerMonitor.StartMonitoring(CheckReader);
 
-            using (var settings = new SettingsReaderWriter())
+            var startupArguments = startupArgumentProcessor.Process(args);
+            ApplyStartupArguments(startupArguments);
+
+            var splashScreenType = typeof(SplashScreenViewModel);
+
+            await projectBootstrapper.BootstrapAsync(new ProjectBootstrapRequest
             {
-                if (args.Length > 1)
+                ProjectFilePath = startupArguments.ProjectFilePath,
+                Autorun = startupArguments.Autorun,
+                CreateSplashScreen = () => new SplashScreenViewModel(),
+                AddDialog = dialog => Dialogs.Add(dialog as IDialogViewModel),
+                RemoveSplash = () =>
                 {
-                    foreach (var arg in args)
+                    if (Dialogs.FirstOrDefault() != null && Dialogs.FirstOrDefault().GetType() == splashScreenType)
                     {
-                        switch (arg.Split('=')[0])
-                        {
-                            case "REPORTTARGETPATH":
-
-                                variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
-
-                                if (Directory.Exists(Path.GetDirectoryName(arg.Split('=')[1])))
-                                {
-                                    reportOutputPath = arg.Split('=')[1];
-                                    var numbersInFileNames = new int[Directory.GetFiles(Path.GetDirectoryName(reportOutputPath)).Length];
-
-                                    if (reportOutputPath.Contains("?"))
-                                    {
-                                        for (var i = 0; i < numbersInFileNames.Length; i++)
-                                        {
-                                            var fileName = Directory.GetFiles(Path.GetDirectoryName(reportOutputPath))[i];
-
-                                            if (fileName.Replace(".pdf", string.Empty).ToLower().Contains(reportOutputPath.ToLower().Replace("?", string.Empty).Replace(".pdf", string.Empty)))
-                                            {
-                                                _ = int.TryParse(fileName.ToLower().Replace(
-                                                    reportOutputPath.ToLower().Replace("?", string.Empty).Replace(".pdf", string.Empty), string.Empty).Replace(".pdf", string.Empty), out var n);
-                                                numbersInFileNames[i] = n;
-                                            }
-                                        }
-                                    }
-
-                                    if (reportOutputPath.Contains("???"))
-                                    {
-                                        reportOutputPath = reportOutputPath.Replace("???", string.Format("{0:D3}", numbersInFileNames.Max() + 1));
-                                    }
-
-                                    else if (reportOutputPath.Contains("??"))
-                                    {
-                                        reportOutputPath = reportOutputPath.Replace("??", string.Format("{0:D2}", numbersInFileNames.Max() + 1));
-                                    }
-
-                                    else if (reportOutputPath.Contains("?"))
-                                    {
-                                        reportOutputPath = reportOutputPath.Replace("?", string.Format("{0:D1}", numbersInFileNames.Max() + 1));
-                                    }
-                                }
-                                break;
-
-                            case "REPORTTEMPLATEFILE":
-
-                                variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
-
-                                if (File.Exists(arg.Split('=')[1]))
-                                {
-                                    reportTemplateFile = arg.Split('=')[1];
-                                }
-                                break;
-
-                            case "AUTORUN":
-                                if (arg.Split('=')[1] == "1")
-                                {
-                                    autorun = true;
-                                }
-                                break;
-
-                            case "LASTUSEDPROJECTPATH":
-                                if (File.Exists(arg.Split('=')[1]))
-                                {
-                                    settings.DefaultSpecification.LastUsedProjectPath = new DirectoryInfo(arg.Split('=')[1]).FullName;
-                                    await settings.SaveSettings();
-                                }
-                                break;
-
-                            case "CUSTOMPROJECTFILE":
-
-                                if (File.Exists(arg.Split('=')[1]))
-                                {
-                                    projectFileToUse = new DirectoryInfo(arg.Split('=')[1]).FullName;
-                                }
-                                break;
-
-                            default:
-                                if (arg.Split('=')[0].Contains("$"))
-                                {
-                                    variablesFromArgs.Add(arg.Split('=')[0], arg.Split('=')[1]);
-                                }
-                                break;
-                        }
+                        Dialogs.RemoveAt(0);
                     }
-                }
-            }
-
-            await InitOnFirstRun(projectFileToUse);
-
-            if (autorun)
-            {
-                await OnNewReadChipCommand();
-                await OnNewWriteToChipOnceCommand();
-            }
+                },
+                OpenProjectAsync = file => OpenLastProjectFile(file ?? string.Empty),
+                ResetTaskStatusAsync = () => OnNewResetTaskStatusCommand(),
+                ReadChipAsync = () => OnNewReadChipCommand(),
+                WriteOnceAsync = () => OnNewWriteToChipOnceCommand(),
+                UpdateDateTime = value => DateTimeStatusBar = value,
+                SetCurrentReader = value => CurrentReader = value,
+                SetReaderPort = value => ReaderDevice.PortNumber = value,
+                SetCulture = value => culture = value
+            });
         }
 
-        private async Task InitOnFirstRun(string projectFileToUse)
+        private void ApplyStartupArguments(StartupArgumentResult startupArguments)
         {
-            try
+            if (startupArguments == null)
             {
-                using (var settings = new SettingsReaderWriter())
-                {
-                    await settings.ReadSettingsAsync();
-
-                    settings.InitUpdateFile();
-
-                    CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
-                        ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
-                        : settings.DefaultSpecification.DefaultReaderName;
-
-                    if (int.TryParse(settings.DefaultSpecification.LastUsedComPort, out var portNumber))
-                    {
-                        ReaderDevice.PortNumber = portNumber;
-                    }
-
-                    else
-                    {
-                        ReaderDevice.PortNumber = 0;
-                    }
-
-                    culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
-
-                    var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
-
-                    var mySplash = new SplashScreenViewModel();
-
-                    if (autoLoadLastUsedDB)
-                    {
-                        Dialogs.Add(mySplash);
-                    }
-
-                    if (autoLoadLastUsedDB)
-                    {
-                        if (string.IsNullOrEmpty(projectFileToUse))
-                        {
-                            await OpenLastProjectFile();
-                        }
-                        else
-                        {
-                            await OpenLastProjectFile(projectFileToUse);
-                        }
-                    }
-
-                    Task.Run(async () =>
-                    {
-                        while (true)
-                        {
-                            await Task.Delay(300);
-                            DateTimeStatusBar = string.Format("{0}", DateTime.Now);
-                        }
-                    });
-
-                    await OnNewResetTaskStatusCommand();
-                }
+                return;
             }
-            catch (Exception ex)
+
+            reportOutputPath = startupArguments.ReportOutputPath ?? reportOutputPath;
+            reportTemplateFile = startupArguments.ReportTemplateFile ?? reportTemplateFile;
+
+            variablesFromArgs.Clear();
+
+            foreach (var variable in startupArguments.Variables)
             {
-                eventLog.WriteEntry(ex.Message, EventLogEntryType.Error);
+                variablesFromArgs[variable.Key] = variable.Value;
             }
         }
 
         private async void CheckReader(object sender)
         {
-            checkReader.Change(Timeout.Infinite, Timeout.Infinite); // ! UI-Thread !
+            readerMonitor?.Pause();
 
             using (var settings = new SettingsReaderWriter())
             {
@@ -1883,7 +1773,7 @@ namespace RFiDGear.ViewModel
                 }
             };
 
-            checkReader.Change(2000, 2000);
+            readerMonitor?.Resume();
 
         }
 
