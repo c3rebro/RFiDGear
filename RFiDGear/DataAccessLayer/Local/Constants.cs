@@ -341,14 +341,13 @@ namespace RFiDGear.DataAccessLayer
     {
         Empty,
         NoError,
-        AuthenticationError,
-        NotReadyError,
-        IOError,
-        ItemAlreadyExistError,
+        AuthFailure,
+        PermissionDenied,
+        ProtocolConstraint,
+        TransportError,
+        Unknown,
         IsNotTrue,
-        IsNotFalse,
-        OutOfMemory,
-        NotAllowed
+        IsNotFalse
     }
 
     /// <summary>

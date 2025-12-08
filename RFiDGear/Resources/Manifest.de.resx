@@ -868,26 +868,26 @@ Wird benötigt von:
   <data name="tabPageHeaderReportSettingsView" xml:space="preserve">
     <value>Bericht erstellen / bearbeiten</value>
   </data>
-  <data name="ENUM.ERROR.AuthenticationError" xml:space="preserve">
-    <value>Authentifizierungsfehler</value>
+  <data name="ENUM.ERROR.AuthFailure" xml:space="preserve">
+    <value>Authentifizierung fehlgeschlagen</value>
   </data>
-  <data name="ENUM.ERROR.NotReadyError" xml:space="preserve">
-    <value>Nicht Bereit</value>
+  <data name="ENUM.ERROR.PermissionDenied" xml:space="preserve">
+    <value>Zugriff verweigert</value>
   </data>
   <data name="ENUM.ERROR.Empty" xml:space="preserve">
     <value>null Error</value>
   </data>
-  <data name="ENUM.ERROR.IOError" xml:space="preserve">
-    <value>E/A Fehler</value>
-  </data>
-  <data name="ENUM.ERROR.ItemAlreadyExistError" xml:space="preserve">
-    <value>Objekt bereits vorhanden</value>
+  <data name="ENUM.ERROR.ProtocolConstraint" xml:space="preserve">
+    <value>Protokolleinschränkung</value>
   </data>
   <data name="ENUM.ERROR.NoError" xml:space="preserve">
     <value>Kein Fehler</value>
   </data>
-  <data name="ENUM.ERROR.NotAllowed" xml:space="preserve">
-    <value>Nicht erlaubt</value>
+  <data name="ENUM.ERROR.TransportError" xml:space="preserve">
+    <value>Transportfehler</value>
+  </data>
+  <data name="ENUM.ERROR.Unknown" xml:space="preserve">
+    <value>Unbekannter Fehler</value>
   </data>
   <data name="ENUM.TaskType_GenericChipTask.ChangeDefault" xml:space="preserve">
     <value>Standardwerte ändern</value>

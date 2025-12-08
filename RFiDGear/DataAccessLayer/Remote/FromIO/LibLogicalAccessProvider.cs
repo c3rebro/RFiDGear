@@ -130,7 +130,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 				
 				else
 				{
-					return ERROR.NotReadyError;
+					return ERROR.TransportError;
 				}
             });
 		}
@@ -190,11 +190,11 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         {
                             eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
 
-                            return ERROR.IOError;
+                            return ERROR.TransportError;
                         }
                     }
                     else
-                        return ERROR.NotReadyError;
+                        return ERROR.TransportError;
                 }
             }
             catch (Exception e)
@@ -204,10 +204,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                 eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
 
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
 
-            return ERROR.IOError;
+            return ERROR.TransportError;
         }
 
 		#endregion common
@@ -299,7 +299,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                         Sector.DataBlock.Add(DataBlock);
 
-                                        return ERROR.AuthenticationError;
+                                        return ERROR.AuthFailure;
                                     }
                                 }
                                 catch
@@ -309,7 +309,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                     Sector.DataBlock.Add(DataBlock);
 
-                                    return ERROR.AuthenticationError;
+                                    return ERROR.AuthFailure;
                                 }
                             }
                         }
@@ -321,12 +321,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     return ERROR.NoError;
 
                 }
-				return ERROR.NotReadyError;
+				return ERROR.TransportError;
 			}
 			catch (Exception e)
 			{
 				eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-				return ERROR.AuthenticationError;
+				return ERROR.AuthFailure;
 			}
 		}
 
@@ -369,7 +369,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                                 catch
                                 {
-                                    return ERROR.AuthenticationError;
+                                    return ERROR.AuthFailure;
                                 }
                             }
                             catch
@@ -392,7 +392,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     }
                                     catch
                                     {
-                                        return ERROR.AuthenticationError;
+                                        return ERROR.AuthFailure;
                                     }
                                 }
                                 catch
@@ -404,18 +404,18 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
                     catch
                     {
-                        return ERROR.IOError;
+                        return ERROR.TransportError;
                     }
-                    return ERROR.NotReadyError;
+                    return ERROR.TransportError;
                 }
 			}
 			catch (Exception e)
 			{
 				eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
 
-				return ERROR.IOError;
+				return ERROR.TransportError;
 			}
-			return ERROR.NotReadyError;
+			return ERROR.TransportError;
 		}
 
 		public override async Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
@@ -458,13 +458,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             }
                             catch
                             {
-                                return ERROR.AuthenticationError;
+                                return ERROR.AuthFailure;
                             }
                         }
                     }
                     catch
                     {
-                        return ERROR.AuthenticationError;
+                        return ERROR.AuthFailure;
                     }
                 }
             }
@@ -472,9 +472,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             {
                 eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
 
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
-            return ERROR.IOError;
+            return ERROR.TransportError;
         }
 
 		public async Task<ERROR> ReadMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey)
@@ -530,13 +530,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             }
                             catch
                             {
-                                return ERROR.AuthenticationError;
+                                return ERROR.AuthFailure;
                             }
                         }
                     }
                     catch
                     {
-                        return ERROR.AuthenticationError;
+                        return ERROR.AuthFailure;
                     }
                 }
             }
@@ -544,9 +544,9 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             {
                 eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
 
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
-            return ERROR.IOError;
+            return ERROR.TransportError;
         }
 
 		public override async Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
@@ -619,7 +619,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     catch (Exception e)
                     {
                         eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                        return ERROR.AuthenticationError;
+                        return ERROR.AuthFailure;
                     }
                     return ERROR.NoError;
                 }
@@ -627,7 +627,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             catch (Exception e)
             {
                 eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                return ERROR.AuthenticationError;
+                return ERROR.AuthFailure;
             }
             return ERROR.NoError;
         }
@@ -675,7 +675,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     catch (Exception e)
                     {
                         eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                        return ERROR.AuthenticationError;
+                        return ERROR.AuthFailure;
                     }
                     return ERROR.NoError;
                 }
@@ -683,7 +683,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             catch (Exception e)
             {
                 eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                return ERROR.AuthenticationError;
+                return ERROR.AuthFailure;
             }
             return ERROR.NoError;
         }
@@ -721,7 +721,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 			catch (Exception e)
 			{
 				eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-				return ERROR.IOError;
+				return ERROR.TransportError;
 			}
 		}
 
@@ -793,14 +793,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 {
                                     if (e.Message != "" && e.Message.Contains("same number already exists"))
                                     {
-                                        return ERROR.ItemAlreadyExistError;
+                                        return ERROR.ProtocolConstraint;
                                     }
                                     else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                     {
-                                        return ERROR.AuthenticationError;
+                                        return ERROR.AuthFailure;
                                     }
                                     else
-                                        return ERROR.IOError;
+                                        return ERROR.TransportError;
                                 }
                             }
                         }
@@ -848,19 +848,19 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 {
                                     if (e.Message != "" && e.Message.Contains("same number already exists"))
                                     {
-                                        return ERROR.ItemAlreadyExistError;
+                                        return ERROR.ProtocolConstraint;
                                     }
                                     else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                     {
-                                        return ERROR.AuthenticationError;
+                                        return ERROR.AuthFailure;
                                     }
                                     else
-                                        return ERROR.IOError;
+                                        return ERROR.TransportError;
                                 }
                             }
                         }
                         else
-                            return ERROR.NotReadyError;
+                            return ERROR.TransportError;
                     }
 
                     catch
@@ -891,7 +891,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                             }
                             else
-                                return ERROR.NotReadyError;
+                                return ERROR.TransportError;
                         }
 
                         catch
@@ -900,21 +900,21 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         }
                     }
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
             catch (Exception e)
             {
                 if (e.Message != "" && e.Message.Contains("same number already exists"))
                 {
-                    return ERROR.ItemAlreadyExistError;
+                    return ERROR.ProtocolConstraint;
                 }
                 else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                 {
-                    return ERROR.AuthenticationError;
+                    return ERROR.AuthFailure;
                 }
                 else
-                    return ERROR.IOError;
+                    return ERROR.TransportError;
             }
         }
 
@@ -997,25 +997,25 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     {
                         if (e.Message != "" && e.Message.Contains("same number already exists"))
                         {
-                            return ERROR.ItemAlreadyExistError;
+                            return ERROR.ProtocolConstraint;
                         }
                         else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                         {
-                            return ERROR.AuthenticationError;
+                            return ERROR.AuthFailure;
                         }
                         else if (e.Message != "" && e.Message.Contains("Insufficient NV-Memory"))
                         {
-                            return ERROR.OutOfMemory;
+                            return ERROR.ProtocolConstraint;
                         }
                         else
-                            return ERROR.IOError;
+                            return ERROR.TransportError;
                     }
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 
@@ -1090,25 +1090,25 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         {
                             if (e.Message != "" && e.Message.Contains("same number already exists"))
                             {
-                                return ERROR.ItemAlreadyExistError;
+                                return ERROR.ProtocolConstraint;
                             }
                             else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                             {
-                                return ERROR.AuthenticationError;
+                                return ERROR.AuthFailure;
                             }
                             else
-                                return ERROR.IOError;
+                                return ERROR.TransportError;
                         }
                     }
                     else
-                        return ERROR.NotReadyError;
+                        return ERROR.TransportError;
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 		
@@ -1187,29 +1187,29 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         {
                             if (e.Message != "" && e.Message.ToLower().Contains("same number already exists"))
                             {
-                                return ERROR.ItemAlreadyExistError;
+                                return ERROR.ProtocolConstraint;
                             }
                             else if (e.Message != "" && e.Message.ToLower().Contains("status does not allow the requested command"))
                             {
-                                return ERROR.AuthenticationError;
+                                return ERROR.AuthFailure;
                             }
                             else if (e.Message != "" && e.Message.ToLower().Contains("data requested but no more data"))
                             {
                                 return ERROR.NoError;
                             }
                             else
-                                return ERROR.IOError;
+                                return ERROR.TransportError;
                         }
                     }
                     else
-                        return ERROR.NotReadyError;
+                        return ERROR.TransportError;
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 		
@@ -1254,25 +1254,25 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         {
                             if (e.Message != "" && e.Message.Contains("same number already exists"))
                             {
-                                return ERROR.ItemAlreadyExistError;
+                                return ERROR.ProtocolConstraint;
                             }
                             else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                             {
-                                return ERROR.AuthenticationError;
+                                return ERROR.AuthFailure;
                             }
                             else
-                                return ERROR.IOError;
+                                return ERROR.TransportError;
                         }
                     }
 
                     else
-                        return ERROR.NotReadyError;
+                        return ERROR.TransportError;
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 
@@ -1342,14 +1342,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             {
                                 if (e.Message != "" && e.Message.Contains("same number already exists"))
                                 {
-                                    return ERROR.ItemAlreadyExistError;
+                                    return ERROR.ProtocolConstraint;
                                 }
                                 else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                 {
-                                    return ERROR.AuthenticationError;
+                                    return ERROR.AuthFailure;
                                 }
                                 else
-                                    return ERROR.IOError;
+                                    return ERROR.TransportError;
                             }
                         }
                         cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
@@ -1363,21 +1363,21 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     {
                         if (e.Message != "" && e.Message.Contains("same number already exists"))
                         {
-                            return ERROR.ItemAlreadyExistError;
+                            return ERROR.ProtocolConstraint;
                         }
                         else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                         {
-                            return ERROR.AuthenticationError;
+                            return ERROR.AuthFailure;
                         }
                         else
-                            return ERROR.IOError;
+                            return ERROR.TransportError;
                     }
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 
@@ -1428,7 +1428,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         }
                         else
                         {
-                            return ERROR.NotAllowed;
+                            return ERROR.PermissionDenied;
                         }
                         return ERROR.NoError;
                     }
@@ -1436,25 +1436,25 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     {
                         if (e.Message != "" && e.Message.Contains("same number already exists"))
                         {
-                            return ERROR.ItemAlreadyExistError;
+                            return ERROR.ProtocolConstraint;
                         }
                         else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                         {
-                            return ERROR.AuthenticationError;
+                            return ERROR.AuthFailure;
                         }
                         else if (e.Message != "" && e.Message.Contains("Insufficient NV-Memory"))
                         {
-                            return ERROR.OutOfMemory;
+                            return ERROR.ProtocolConstraint;
                         }
                         else
-                            return ERROR.IOError;
+                            return ERROR.TransportError;
                     }
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 
@@ -1518,15 +1518,15 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                     {
                                         if (e.Message != "" && e.Message.Contains("same number already exists"))
                                         {
-                                            return ERROR.ItemAlreadyExistError;
+                                            return ERROR.ProtocolConstraint;
                                         }
                                         else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                         {
-                                            return ERROR.AuthenticationError;
+                                            return ERROR.AuthFailure;
                                         }
                                         else
                                         {
-                                            return ERROR.IOError;
+                                            return ERROR.TransportError;
                                         }
                                     }
                                 }
@@ -1573,14 +1573,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                         {
                                             if (e.Message != "" && e.Message.Contains("same number already exists"))
                                             {
-                                                return ERROR.ItemAlreadyExistError;
+                                                return ERROR.ProtocolConstraint;
                                             }
                                             else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                             {
-                                                return ERROR.AuthenticationError;
+                                                return ERROR.AuthFailure;
                                             }
                                             else
-                                                return ERROR.IOError;
+                                                return ERROR.TransportError;
                                         }
                                     }
                                 }
@@ -1592,24 +1592,24 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         {
                             if (e.Message != "" && e.Message.Contains("same number already exists"))
                             {
-                                return ERROR.ItemAlreadyExistError;
+                                return ERROR.ProtocolConstraint;
                             }
                             else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                             {
-                                return ERROR.AuthenticationError;
+                                return ERROR.AuthFailure;
                             }
                             else
-                                return ERROR.IOError;
+                                return ERROR.TransportError;
                         }
                     }
                     else
-                        return ERROR.NotReadyError;
+                        return ERROR.TransportError;
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 
@@ -1663,24 +1663,24 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             {
                                 if (e.Message != "" && e.Message.Contains("same number already exists"))
                                 {
-                                    return ERROR.ItemAlreadyExistError;
+                                    return ERROR.ProtocolConstraint;
                                 }
                                 else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                 {
-                                    return ERROR.AuthenticationError;
+                                    return ERROR.AuthFailure;
                                 }
                                 else
-                                    return ERROR.IOError;
+                                    return ERROR.TransportError;
                             }
                         }
                     }
-                    return ERROR.NotReadyError;
+                    return ERROR.TransportError;
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 
@@ -1733,24 +1733,24 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         {
                             if (e.Message != "" && e.Message.Contains("same number already exists"))
                             {
-                                return ERROR.ItemAlreadyExistError;
+                                return ERROR.ProtocolConstraint;
                             }
                             else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                             {
-                                return ERROR.AuthenticationError;
+                                return ERROR.AuthFailure;
                             }
                             else
-                                return ERROR.IOError;
+                                return ERROR.TransportError;
                         }
                     }
                     else
-                        return ERROR.NotReadyError;
+                        return ERROR.TransportError;
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             } 
 		}
 
@@ -1794,24 +1794,24 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         {
                             if (e.Message != "" && e.Message.Contains("same number already exists"))
                             {
-                                return ERROR.ItemAlreadyExistError;
+                                return ERROR.ProtocolConstraint;
                             }
                             else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                             {
-                                return ERROR.AuthenticationError;
+                                return ERROR.AuthFailure;
                             }
                             else
-                                return ERROR.IOError;
+                                return ERROR.TransportError;
                         }
                     }
                     else
-                        return ERROR.NotReadyError;
+                        return ERROR.TransportError;
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 
@@ -1864,14 +1864,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 {
                                     if (e.Message != "" && e.Message.Contains("same number already exists"))
                                     {
-                                        return ERROR.ItemAlreadyExistError;
+                                        return ERROR.ProtocolConstraint;
                                     }
                                     else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                     {
-                                        return ERROR.AuthenticationError;
+                                        return ERROR.AuthFailure;
                                     }
                                     else
-                                        return ERROR.IOError;
+                                        return ERROR.TransportError;
                                 }
                             }
 
@@ -1884,24 +1884,24 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         {
                             if (e.Message != "" && e.Message.Contains("same number already exists"))
                             {
-                                return ERROR.ItemAlreadyExistError;
+                                return ERROR.ProtocolConstraint;
                             }
                             else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                             {
-                                return ERROR.AuthenticationError;
+                                return ERROR.AuthFailure;
                             }
                             else
-                                return ERROR.IOError;
+                                return ERROR.TransportError;
                         }
                     }
                     else
-                        return ERROR.NotReadyError;
+                        return ERROR.TransportError;
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }    
 		}
 
@@ -1952,14 +1952,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 {
                                     if (e.Message != "" && e.Message.Contains("same number already exists"))
                                     {
-                                        return ERROR.ItemAlreadyExistError;
+                                        return ERROR.ProtocolConstraint;
                                     }
                                     else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                                     {
-                                        return ERROR.AuthenticationError;
+                                        return ERROR.AuthFailure;
                                     }
                                     else
-                                        return ERROR.IOError;
+                                        return ERROR.TransportError;
                                 }
                             }
                             
@@ -1977,24 +1977,24 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         {
                             if (e.Message != "" && e.Message.Contains("same number already exists"))
                             {
-                                return ERROR.ItemAlreadyExistError;
+                                return ERROR.ProtocolConstraint;
                             }
                             else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                             {
-                                return ERROR.AuthenticationError;
+                                return ERROR.AuthFailure;
                             }
                             else
-                                return ERROR.IOError;
+                                return ERROR.TransportError;
                         }
                     }
                     else
-                        return ERROR.NotReadyError;
+                        return ERROR.TransportError;
                 }
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
             catch
             {
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 

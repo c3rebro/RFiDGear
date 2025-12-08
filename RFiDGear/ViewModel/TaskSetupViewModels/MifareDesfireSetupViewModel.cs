@@ -1770,7 +1770,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                     return;
                 }
@@ -1880,7 +1880,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                     return;
                 }
@@ -1968,7 +1968,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                     return;
                 }
@@ -2080,7 +2080,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                     return;
                 }
@@ -2173,7 +2173,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                     return;
                 }
@@ -2268,7 +2268,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                     return;
                 }
@@ -2363,7 +2363,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                     return;
                 }
@@ -2476,7 +2476,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                     return;
                 }
@@ -2627,7 +2627,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             else
                             {
                                 StatusText += string.Format("{0}: Key Error: Wrong Format\n", DateTime.Now);
-                                CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                                CurrentTaskErrorLevel = ERROR.AuthFailure;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
                             }
@@ -2643,7 +2643,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                     return;
                 }
@@ -2828,11 +2828,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         }
 
                         // Ooops: Iam not allowed to get the info or Key "DesfireAppKeyCurrent" with "SelectedDesfireAppKeyEncryptionTypeCurrent" is incorrect
-                        else if (IsValidAppNumberCurrent != false && result == ERROR.AuthenticationError)
+                        else if (IsValidAppNumberCurrent != false && result == ERROR.AuthFailure)
                         {
                             StatusText += string.Format("{0}: Failed. Directory Listing is not allowed and PICC MK is Incorrect.\n", DateTime.Now);
 
-                            CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                            CurrentTaskErrorLevel = ERROR.AuthFailure;
                         }
 
                         // There are no Apps

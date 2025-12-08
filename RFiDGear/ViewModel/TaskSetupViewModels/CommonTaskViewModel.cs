@@ -1119,7 +1119,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 catch (Exception e)
                 {
-                    CurrentTaskErrorLevel = ERROR.IOError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     IsTaskCompletedSuccessfully = false;
                     OnPropertyChanged(nameof(TemplateFields));
 

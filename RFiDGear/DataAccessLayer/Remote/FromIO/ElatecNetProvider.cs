@@ -191,7 +191,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             {
                 eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
 
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 
@@ -207,7 +207,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             if (readerDevice == null)
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
             if (readerDevice != null && !readerDevice.IsConnected)
@@ -226,7 +226,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 }
             }
 
-            return ERROR.NotReadyError;
+            return ERROR.TransportError;
         }
 
         #endregion
@@ -255,7 +255,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         }
                         catch
                         {
-                            return ERROR.AuthenticationError;
+                            return ERROR.AuthFailure;
                         }
                     }
                 } // Login  
@@ -378,13 +378,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                 }
                                 catch
                                 {
-                                    return ERROR.AuthenticationError;
+                                    return ERROR.AuthFailure;
                                 }
                             } // write Data
                         }
                         catch
                         {
-                            return ERROR.IOError; // IO ElatecError
+                            return ERROR.TransportError; // IO ElatecError
                         }
                     }
 
@@ -393,13 +393,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         return ERROR.NoError; //NO ElatecError
                     }
 
-                    return ERROR.AuthenticationError; // Auth ElatecError
+                    return ERROR.AuthFailure; // Auth ElatecError
                 });
             }
 
             else
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
         }
 
@@ -460,7 +460,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
                     catch
                     {
-                        return ERROR.AuthenticationError;
+                        return ERROR.AuthFailure;
                     }
 
                     return ERROR.NoError;
@@ -469,7 +469,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             else
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
         }
@@ -508,13 +508,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 }
                 catch
                 {
-                    return ERROR.AuthenticationError;
+                    return ERROR.AuthFailure;
                 }
             }
 
             else
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
         }
@@ -571,20 +571,20 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             }
                             catch
                             {
-                                return ERROR.AuthenticationError;
+                                return ERROR.AuthFailure;
                             }
                         } // needs Auth
                     }
                     catch
                     {
-                        return ERROR.AuthenticationError;
+                        return ERROR.AuthFailure;
                     }
                 });
             }
 
             else
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
         }
@@ -642,14 +642,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     } // auth first ?
                     catch
                     {
-                        return ERROR.AuthenticationError;
+                        return ERROR.AuthFailure;
                     }
                 }
             }
 
             else
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
 
@@ -719,13 +719,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 }
                 catch
                 {
-                    return ERROR.AuthenticationError;
+                    return ERROR.AuthFailure;
                 }
             }
 
             else
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
 
@@ -750,7 +750,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
                     catch
                     {
-                        return ERROR.NotReadyError;
+                        return ERROR.TransportError;
                     }
                 }
 
@@ -766,14 +766,14 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 }
                 catch
                 {
-                    return ERROR.AuthenticationError;
+                    return ERROR.AuthFailure;
                 }
                 return ERROR.NoError;
             }
 
             else
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
         }
@@ -799,12 +799,12 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
                     else
                     {
-                        return ERROR.AuthenticationError;
+                        return ERROR.AuthFailure;
                     }
                 }
             }
             */
-            return ERROR.NotReadyError;
+            return ERROR.TransportError;
         }
 
         /// <summary>
@@ -827,7 +827,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
                     catch
                     {
-                        return ERROR.NotReadyError;
+                        return ERROR.TransportError;
                     }
                 }
 
@@ -839,13 +839,13 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
                     else
                     {
-                        return ERROR.AuthenticationError;
+                        return ERROR.AuthFailure;
                     }
                 }
 
                 catch
                 {
-                    return ERROR.AuthenticationError;
+                    return ERROR.AuthFailure;
                 }
 
                 return ERROR.NoError;
@@ -853,7 +853,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             else
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
 
@@ -902,7 +902,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 }
                 catch
                 {
-                    return ERROR.NotReadyError;
+                    return ERROR.TransportError;
                 }
 
                 return ERROR.NoError;
@@ -910,7 +910,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             else
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
         }
@@ -974,18 +974,18 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
                     else
                     {
-                        return ERROR.AuthenticationError;
+                        return ERROR.AuthFailure;
                     }
                 }
                 catch
                 {
-                    return ERROR.NotReadyError;
+                    return ERROR.TransportError;
                 }
             }
 
             else
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
 
@@ -1042,7 +1042,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                                 catch
                                 {
-                                    return ERROR.AuthenticationError;
+                                    return ERROR.AuthFailure;
                                 }
 
                                 break;
@@ -1052,7 +1052,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 catch (Exception e)
                 {
                     eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                    return ERROR.IOError;
+                    return ERROR.TransportError;
                 }
 
                 return ERROR.NoError;
@@ -1060,7 +1060,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             else
             {
-                return ERROR.NotReadyError;
+                return ERROR.TransportError;
             }
 
 
@@ -1103,22 +1103,22 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         }
                         else
                         {
-                            return ERROR.AuthenticationError;
+                            return ERROR.AuthFailure;
                         }
                     }
                     else
                     {
-                        return ERROR.AuthenticationError;
+                        return ERROR.AuthFailure;
                     }
                 }
                 */
-                return ERROR.AuthenticationError;
+                return ERROR.AuthFailure;
 
             }
             catch (Exception e)
             {
                 eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
-                return ERROR.IOError;
+                return ERROR.TransportError;
             }
         }
 
