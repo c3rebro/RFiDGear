@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace RFiDGear.Services
+namespace RFiDGear.Services.Interfaces
 {
     public interface IStartupArgumentProcessor
     {

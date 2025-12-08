@@ -1,7 +1,7 @@
 using System;
 using System.Windows.Threading;
 
-namespace RFiDGear.Services
+namespace RFiDGear.Services.Factories
 {
     public interface ITimerFactory
     {

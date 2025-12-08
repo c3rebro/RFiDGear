@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.Dynamic;
 using System.Linq;
+using RFiDGear.ViewModelLocator.Interfaces;
 
 
 namespace MefMvvm.SharedContracts.ViewModel

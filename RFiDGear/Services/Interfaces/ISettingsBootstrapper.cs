@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
-namespace RFiDGear.Services
+namespace RFiDGear.Services.Interfaces
 {
     /// <summary>
     /// Provides an abstraction for reading and persisting application settings

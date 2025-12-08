@@ -12,7 +12,7 @@ using System.Windows.Input;
 using System.Xml.Serialization;
 
 using MVVMDialogs.ViewModels.Interfaces;
-using RFiDGear.Helpers.Selection;
+using RFiDGear.Helpers.Selection.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>

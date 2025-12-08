@@ -1,4 +1,6 @@
-namespace RFiDGear.Services
+using RFiDGear.Services.Factories;
+
+namespace RFiDGear.Services.Interfaces
 {
     public interface IMainWindowServiceFactory
     {

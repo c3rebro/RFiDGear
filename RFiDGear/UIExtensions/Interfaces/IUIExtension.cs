@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.Composition;
 
-namespace MefMvvm.SharedContracts
+namespace RFiDGear.UIExtensions.Interfaces
 {
 
     public interface IUIExtension

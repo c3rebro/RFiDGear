@@ -1,6 +1,7 @@
 using System;
+using RFiDGear.Services.Interfaces;
 
-namespace RFiDGear.Services
+namespace RFiDGear.Services.Factories
 {
     public class MainWindowServiceFactory : IMainWindowServiceFactory
     {

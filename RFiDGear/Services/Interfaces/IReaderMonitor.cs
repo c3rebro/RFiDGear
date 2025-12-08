@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 
-namespace RFiDGear.Services
+namespace RFiDGear.Services.Interfaces
 {
     public interface IReaderMonitor : IDisposable
     {

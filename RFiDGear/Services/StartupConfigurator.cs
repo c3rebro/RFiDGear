@@ -1,5 +1,6 @@
 using System;
 using RFiDGear.Model;
+using RFiDGear.Services.Interfaces;
 
 namespace RFiDGear.Services
 {

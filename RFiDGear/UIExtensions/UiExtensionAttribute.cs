@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using RFiDGear.UIExtensions.Interfaces;
 
 namespace MefMvvm.SharedContracts
 {

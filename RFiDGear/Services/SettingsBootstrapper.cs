@@ -5,6 +5,7 @@ using RFiDGear.DataAccessLayer;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear;
 using RFiDGear.Model;
+using RFiDGear.Services.Interfaces;
 
 namespace RFiDGear.Services
 {

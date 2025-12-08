@@ -9,7 +9,6 @@ using RFiDGear.DataAccessLayer;
 using RFiDGear.DataAccessLayer.AccessControl;
 using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.Model;
-using RFiDGear.Helpers.Selection;
 
 using System;
 using System.Collections.Generic;
@@ -23,6 +22,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 
 using MVVMDialogs.ViewModels.Interfaces;
+using RFiDGear.Helpers.Selection.Interfaces;
 namespace RFiDGear.ViewModel
 {
     /// <summary>

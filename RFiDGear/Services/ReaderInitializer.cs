@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.Model;
+using RFiDGear.Services.Interfaces;
 
 namespace RFiDGear.Services
 {

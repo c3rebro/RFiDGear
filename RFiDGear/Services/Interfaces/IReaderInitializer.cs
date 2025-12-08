@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
-namespace RFiDGear.Services
+namespace RFiDGear.Services.Interfaces
 {
     public interface IReaderInitializer
     {

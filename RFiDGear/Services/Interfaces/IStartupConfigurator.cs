@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace RFiDGear.Services
+namespace RFiDGear.Services.Interfaces
 {
     public interface IStartupConfigurator
     {

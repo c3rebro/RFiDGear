@@ -6,8 +6,6 @@
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-
-using MefMvvm.SharedContracts;
 using MefMvvm.SharedContracts.ViewModel;
 using MVVMDialogs.ViewModels;
 
@@ -33,6 +31,7 @@ using System.Xml.Serialization;
 
 
 using MVVMDialogs.ViewModels.Interfaces;
+using RFiDGear.UIExtensions.Interfaces;
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>

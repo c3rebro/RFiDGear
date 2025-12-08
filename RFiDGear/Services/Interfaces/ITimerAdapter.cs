@@ -1,6 +1,6 @@
 using System;
 
-namespace RFiDGear.Services
+namespace RFiDGear.Services.Interfaces
 {
     public interface ITimerAdapter : IDisposable
     {

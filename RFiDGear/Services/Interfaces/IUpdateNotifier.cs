@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace RFiDGear.Services
+namespace RFiDGear.Services.Interfaces
 {
     /// <summary>
     /// Schedules update checks and informs listeners when an update is available.

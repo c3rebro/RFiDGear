@@ -6,7 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 using RFiDGear.Helpers.Selection;
-
+using RFiDGear.Helpers.Selection.Interfaces;
 using Serilog;
 
 namespace RFiDGear.Behaviors

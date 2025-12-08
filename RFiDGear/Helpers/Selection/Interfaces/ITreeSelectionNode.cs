@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace RFiDGear.Helpers.Selection
+namespace RFiDGear.Helpers.Selection.Interfaces
 {
     /// <summary>
     /// Represents a selectable tree node for TreeView operations.

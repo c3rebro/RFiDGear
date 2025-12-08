@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace RFiDGear.Services
+namespace RFiDGear.Services.Interfaces
 {
     /// <summary>
     /// Creates context menus for the main window tree interactions.

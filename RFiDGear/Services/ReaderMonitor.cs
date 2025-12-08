@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using RFiDGear.Services.Interfaces;
 
 namespace RFiDGear.Services
 {
