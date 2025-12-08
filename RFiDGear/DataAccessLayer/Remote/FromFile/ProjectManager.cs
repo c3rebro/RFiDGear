@@ -1,9 +1,9 @@
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Xml;
-using Ionic.Zip;
 using RFiDGear.Model;
 
 namespace RFiDGear.DataAccessLayer
@@ -235,10 +235,7 @@ namespace RFiDGear.DataAccessLayer
 
         private void ExtractArchive(string archivePath)
         {
-            using (var zip = ZipFile.Read(archivePath))
-            {
-                zip.ExtractAll(AppDataPath, ExtractExistingFileAction.OverwriteSilently);
-            }
+            ZipFile.ExtractToDirectory(archivePath, AppDataPath, overwriteFiles: true);
         }
 
         private void CleanTemporaryFiles()

@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
-using Ionic.Zip;
+using System.IO.Compression;
 
 using RFiDGear.Model;
 using RFiDGear.ViewModel;
@@ -176,8 +176,6 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
-                var zip = new ZipFile();
-
                 TextWriter writer;
                 var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
 
@@ -194,11 +192,22 @@ namespace RFiDGear.DataAccessLayer
                     writer.Close();
                 }
 
-                zip.AddFile(projectManager.TaskDatabasePath, "");
-
-                zip.Save(string.IsNullOrWhiteSpace(_path) ?
+                var archivePath = string.IsNullOrWhiteSpace(_path) ?
                     projectManager.CompressedTaskDatabasePath :
-                    @_path);
+                    @_path;
+
+                if (File.Exists(archivePath))
+                {
+                    File.Delete(archivePath);
+                }
+
+                using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+                {
+                    archive.CreateEntryFromFile(
+                        projectManager.TaskDatabasePath,
+                        Path.GetFileName(projectManager.TaskDatabasePath),
+                        CompressionLevel.Optimal);
+                }
 
             }
             catch (XmlException e)

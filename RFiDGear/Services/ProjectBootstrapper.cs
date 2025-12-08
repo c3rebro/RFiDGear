@@ -21,7 +21,7 @@ namespace RFiDGear.Services
             {
                 using (var settings = new SettingsReaderWriter())
                 {
-                    await settings.ReadSettingsAsync().ConfigureAwait(false);
+                    await settings.ReadSettingsAsync();
 
                     settings.InitUpdateFile();
 
@@ -51,7 +51,7 @@ namespace RFiDGear.Services
 
                     if (autoLoadLastUsedDB && request.OpenProjectAsync != null)
                     {
-                        await request.OpenProjectAsync(request.ProjectFilePath).ConfigureAwait(false);
+                        await request.OpenProjectAsync(request.ProjectFilePath);
                         request.RemoveSplash?.Invoke();
                     }
 
@@ -66,13 +66,13 @@ namespace RFiDGear.Services
 
                     if (request.ResetTaskStatusAsync != null)
                     {
-                        await request.ResetTaskStatusAsync().ConfigureAwait(false);
+                        await request.ResetTaskStatusAsync();
                     }
 
                     if (request.Autorun && request.ReadChipAsync != null && request.WriteOnceAsync != null)
                     {
-                        await request.ReadChipAsync().ConfigureAwait(false);
-                        await request.WriteOnceAsync().ConfigureAwait(false);
+                        await request.ReadChipAsync();
+                        await request.WriteOnceAsync();
                     }
                 }
             }
