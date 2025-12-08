@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json;
 using System.Windows.Threading;
 using MVVMDialogs.ViewModels;
 using RFiDGear.DataAccessLayer;
@@ -142,12 +143,31 @@ namespace RFiDGear.Services.TaskExecution
     {
         public void LogInformation(string stage, object details = null)
         {
-            Debug.WriteLine($"[TaskExecution] {stage}: {details}");
+            Debug.WriteLine(Serialize(stage, "Information", details));
         }
 
         public void LogError(string stage, Exception exception, object details = null)
         {
-            Debug.WriteLine($"[TaskExecution] {stage} failed: {exception} | {details}");
+            Debug.WriteLine(Serialize(stage, "Error", details, exception));
+        }
+
+        private static string Serialize(string stage, string level, object details, Exception exception = null)
+        {
+            var payload = new
+            {
+                Stage = stage,
+                Level = level,
+                Exception = exception == null ? null : new
+                {
+                    exception.Message,
+                    ExceptionType = exception.GetType().Name,
+                    exception.StackTrace
+                },
+                Details = details,
+                Timestamp = DateTimeOffset.UtcNow
+            };
+
+            return JsonSerializer.Serialize(payload);
         }
     }
 
@@ -380,12 +400,19 @@ namespace RFiDGear.Services.TaskExecution
                 }
 
                 var result = await stageTask;
-                logger.LogInformation(stageName + ".Success", new { CurrentTaskIndex });
+                logger.LogInformation(stageName + ".Success", new { Stage = stageName, CurrentTaskIndex, Timestamp = DateTimeOffset.UtcNow });
                 return result;
             }
             catch (Exception ex)
             {
-                logger.LogError(stageName + ".Failure", ex, new { CurrentTaskIndex });
+                logger.LogError(stageName + ".Failure", ex, new
+                {
+                    Stage = stageName,
+                    CurrentTaskIndex,
+                    ExceptionType = ex.GetType().Name,
+                    ex.Message,
+                    Timestamp = DateTimeOffset.UtcNow
+                });
                 throw;
             }
         }
@@ -523,16 +550,11 @@ namespace RFiDGear.Services.TaskExecution
 
         private void ResetSelectionState(TaskExecutionRequest request, TaskExecutionResult result)
         {
-            try
+            var selectedNode = request.TreeViewParentNodes?.FirstOrDefault(y => y.IsSelected);
+            if (selectedNode != null)
             {
-                if (request.TreeViewParentNodes != null && request.TreeViewParentNodes.Any(x => x.IsSelected))
-                {
-                    request.TreeViewParentNodes.First(y => y.IsSelected).IsBeingProgrammed = null;
-                    result.RunSelectedOnly = false;
-                }
-            }
-            catch
-            {
+                selectedNode.IsBeingProgrammed = null;
+                result.RunSelectedOnly = false;
             }
         }
 
@@ -589,17 +611,16 @@ namespace RFiDGear.Services.TaskExecution
                             taskTimeout.Start();
                             taskTimeout.Stop();
 
-                            DirectoryInfo reportTargetPathDirInfo;
+                            DirectoryInfo reportTargetPathDirInfo = null;
 
-                            try
+                            if (request.VariablesFromArgs != null &&
+                                request.VariablesFromArgs.TryGetValue("REPORTTARGETPATH", out var targetReportDir))
                             {
-                                var targetReportDir = request.VariablesFromArgs["REPORTTARGETPATH"];
-                                var sourceTemplateFile = request.VariablesFromArgs["REPORTTEMPLATEFILE"];
-                                reportTargetPathDirInfo = new DirectoryInfo(Path.GetDirectoryName(targetReportDir));
-                            }
-                            catch
-                            {
-                                reportTargetPathDirInfo = null;
+                                var directoryName = Path.GetDirectoryName(targetReportDir);
+                                if (!string.IsNullOrEmpty(directoryName))
+                                {
+                                    reportTargetPathDirInfo = new DirectoryInfo(directoryName);
+                                }
                             }
 
                             if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)

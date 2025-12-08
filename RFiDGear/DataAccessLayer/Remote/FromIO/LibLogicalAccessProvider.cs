@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Reflection;
 using System.Linq;
+using System.Globalization;
 
 namespace RFiDGear.DataAccessLayer.Remote.FromIO
 {
@@ -1295,7 +1296,17 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                 if (!await tryInitReader())
                 {
-                    return OperationResult.Failure(ERROR.TransportError, "Reader not initialized");
+                    return OperationResult.Failure(
+                        ERROR.TransportError,
+                        "Reader not initialized",
+                        operation: nameof(GetMifareDesfireAppSettings),
+                        wasAuthenticated: false,
+                        metadata: new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "AuthenticateBeforeReading", authenticateBeforeReading.ToString(CultureInfo.CurrentCulture) },
+                            { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                        });
                 }
 
                 card = readerUnit.getSingleChip();
@@ -1315,7 +1326,17 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 }
                 else
                 {
-                    return OperationResult.Failure(ERROR.TransportError, "Unsupported card type", card.getCardType());
+                    return OperationResult.Failure(
+                        ERROR.TransportError,
+                        "Unsupported card type",
+                        card.getCardType(),
+                        nameof(GetMifareDesfireAppSettings),
+                        authenticateBeforeReading,
+                        new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "CardType", card.getCardType() }
+                        });
                 }
 
                 cmd.selectApplication((uint)_appID);
@@ -1331,20 +1352,100 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 EncryptionType = (DESFireKeyType)(maxNbrOfKeys & 0xF0);
                 DesfireAppKeySetting = (AccessControl.DESFireKeySettings)keySettings;
 
-                return OperationResult.Success();
+                var metadata = new Dictionary<string, string>
+                {
+                    { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                    { "AuthenticateBeforeReading", authenticateBeforeReading.ToString(CultureInfo.CurrentCulture) },
+                    { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                };
+
+                return OperationResult.Success(
+                    operation: nameof(GetMifareDesfireAppSettings),
+                    wasAuthenticated: authenticateBeforeReading,
+                    metadata: metadata);
+            }
+            catch (TimeoutException e)
+            {
+                return OperationResult.Failure(
+                    ERROR.TransportError,
+                    "Fetching application settings timed out",
+                    e.Message,
+                    nameof(GetMifareDesfireAppSettings),
+                    authenticateBeforeReading,
+                    new Dictionary<string, string>
+                    {
+                        { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                        { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                    });
+            }
+            catch (InvalidOperationException e)
+            {
+                return OperationResult.Failure(
+                    ERROR.ProtocolConstraint,
+                    "Invalid operation while fetching application settings",
+                    e.Message,
+                    nameof(GetMifareDesfireAppSettings),
+                    authenticateBeforeReading,
+                    new Dictionary<string, string>
+                    {
+                        { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                        { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                    });
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                return OperationResult.Failure(
+                    ERROR.PermissionDenied,
+                    "Authentication required or denied",
+                    e.Message,
+                    nameof(GetMifareDesfireAppSettings),
+                    authenticateBeforeReading,
+                    new Dictionary<string, string>
+                    {
+                        { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                        { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                    });
             }
             catch (Exception e)
             {
                 if (e.Message != "" && e.Message.Contains("same number already exists"))
                 {
-                    return OperationResult.Failure(ERROR.ProtocolConstraint, "Application already exists", e.Message);
+                    return OperationResult.Failure(
+                        ERROR.ProtocolConstraint,
+                        "Application already exists",
+                        e.Message,
+                        nameof(GetMifareDesfireAppSettings),
+                        authenticateBeforeReading,
+                        new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) }
+                        });
                 }
                 else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                 {
-                    return OperationResult.Failure(ERROR.AuthFailure, "Authentication required", e.Message);
+                    return OperationResult.Failure(
+                        ERROR.AuthFailure,
+                        "Authentication required",
+                        e.Message,
+                        nameof(GetMifareDesfireAppSettings),
+                        authenticateBeforeReading,
+                        new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) }
+                        });
                 }
 
-                return OperationResult.Failure(ERROR.TransportError, "Failed to fetch application settings", e.Message);
+                return OperationResult.Failure(
+                    ERROR.TransportError,
+                    "Failed to fetch application settings",
+                    e.Message,
+                    nameof(GetMifareDesfireAppSettings),
+                    authenticateBeforeReading,
+                    new Dictionary<string, string>
+                    {
+                        { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                        { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                    });
             }
         }
 
@@ -1371,7 +1472,16 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
                 if (!await tryInitReader())
                 {
-                    return OperationResult.Failure(ERROR.TransportError, "Reader not initialized");
+                    return OperationResult.Failure(
+                        ERROR.TransportError,
+                        "Reader not initialized",
+                        operation: nameof(CreateMifareDesfireApplication),
+                        wasAuthenticated: authenticateToPICCFirst,
+                        metadata: new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "AuthenticateToPICCFirst", authenticateToPICCFirst.ToString(CultureInfo.CurrentCulture) }
+                        });
                 }
 
                 card = readerUnit.getSingleChip();
@@ -1398,31 +1508,122 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     }
                     else
                     {
-                        return OperationResult.Failure(ERROR.PermissionDenied, "Unsupported card type", card.getCardType());
+                        return OperationResult.Failure(
+                            ERROR.PermissionDenied,
+                            "Unsupported card type",
+                            card.getCardType(),
+                            nameof(CreateMifareDesfireApplication),
+                            authenticateToPICCFirst,
+                            new Dictionary<string, string>
+                            {
+                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                                { "CardType", card.getCardType() }
+                            });
                     }
-                    return OperationResult.Success();
+                    return OperationResult.Success(
+                        operation: nameof(CreateMifareDesfireApplication),
+                        wasAuthenticated: authenticateToPICCFirst,
+                        metadata: new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
+                        });
+                }
+                catch (TimeoutException e)
+                {
+                    return OperationResult.Failure(
+                        ERROR.TransportError,
+                        "Creating application timed out",
+                        e.Message,
+                        nameof(CreateMifareDesfireApplication),
+                        authenticateToPICCFirst,
+                        new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
+                        });
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    return OperationResult.Failure(
+                        ERROR.PermissionDenied,
+                        "Authentication failed while creating application",
+                        e.Message,
+                        nameof(CreateMifareDesfireApplication),
+                        authenticateToPICCFirst,
+                        new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
+                        });
                 }
                 catch (Exception e)
                 {
                     if (e.Message != "" && e.Message.Contains("same number already exists"))
                     {
-                        return OperationResult.Failure(ERROR.ProtocolConstraint, "Application already exists", e.Message);
+                        return OperationResult.Failure(
+                            ERROR.ProtocolConstraint,
+                            "Application already exists",
+                            e.Message,
+                            nameof(CreateMifareDesfireApplication),
+                            authenticateToPICCFirst,
+                            new Dictionary<string, string>
+                            {
+                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) }
+                            });
                     }
                     else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
                     {
-                        return OperationResult.Failure(ERROR.AuthFailure, "Authentication failed", e.Message);
+                        return OperationResult.Failure(
+                            ERROR.AuthFailure,
+                            "Authentication failed",
+                            e.Message,
+                            nameof(CreateMifareDesfireApplication),
+                            authenticateToPICCFirst,
+                            new Dictionary<string, string>
+                            {
+                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) }
+                            });
                     }
                     else if (e.Message != "" && e.Message.Contains("Insufficient NV-Memory"))
                     {
-                        return OperationResult.Failure(ERROR.ProtocolConstraint, "Insufficient memory", e.Message);
+                        return OperationResult.Failure(
+                            ERROR.ProtocolConstraint,
+                            "Insufficient memory",
+                            e.Message,
+                            nameof(CreateMifareDesfireApplication),
+                            authenticateToPICCFirst,
+                            new Dictionary<string, string>
+                            {
+                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) }
+                            });
                     }
                     else
-                        return OperationResult.Failure(ERROR.TransportError, "Failed to create application", e.Message);
+                        return OperationResult.Failure(
+                            ERROR.TransportError,
+                            "Failed to create application",
+                            e.Message,
+                            nameof(CreateMifareDesfireApplication),
+                            authenticateToPICCFirst,
+                            new Dictionary<string, string>
+                            {
+                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                                { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
+                            });
                 }
             }
             catch (Exception e)
             {
-                return OperationResult.Failure(ERROR.TransportError, "Unexpected failure while creating application", e.Message);
+                return OperationResult.Failure(
+                    ERROR.TransportError,
+                    "Unexpected failure while creating application",
+                    e.Message,
+                    nameof(CreateMifareDesfireApplication),
+                    authenticateToPICCFirst,
+                    new Dictionary<string, string>
+                    {
+                        { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) }
+                    });
             }
         }
 
