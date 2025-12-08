@@ -444,7 +444,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 }
                                 else
                                 {
-                                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                                    CurrentTaskErrorLevel = ERROR.TransportError;
                                     return;
                                 }
 
@@ -493,7 +493,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             if (CurrentTaskErrorLevel == ERROR.Empty)
             {
-                CurrentTaskErrorLevel = ERROR.NotReadyError;
+                CurrentTaskErrorLevel = ERROR.TransportError;
 
                 classicTask.ContinueWith((x) =>
                                          {

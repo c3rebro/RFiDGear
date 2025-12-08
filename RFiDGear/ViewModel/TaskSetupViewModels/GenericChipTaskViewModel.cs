@@ -384,7 +384,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                 }
             }
 
@@ -440,7 +440,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                 }
             }
 
@@ -487,7 +487,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                 }
             }
 

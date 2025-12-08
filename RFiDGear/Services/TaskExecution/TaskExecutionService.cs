@@ -581,11 +581,11 @@ namespace RFiDGear.Services.TaskExecution
                     taskTimeout.Stop();
                     switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
                     {
-                        case ERROR.NotReadyError:
+                        case ERROR.TransportError:
                             break;
 
                         case ERROR.Empty:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
+                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.TransportError;
                             taskTimeout.Start();
                             taskTimeout.Stop();
 
@@ -691,12 +691,12 @@ namespace RFiDGear.Services.TaskExecution
                 case TaskType_CommonTask.CheckLogicCondition:
                     switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).CurrentTaskErrorLevel)
                     {
-                        case ERROR.NotReadyError:
+                        case ERROR.TransportError:
                             taskTimeout.Start();
                             break;
 
                         case ERROR.Empty:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
+                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.TransportError;
                             taskTimeout.Start();
 
                             if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
@@ -730,12 +730,12 @@ namespace RFiDGear.Services.TaskExecution
                 case TaskType_CommonTask.ExecuteProgram:
                     switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).CurrentTaskErrorLevel)
                     {
-                        case ERROR.NotReadyError:
+                        case ERROR.TransportError:
                             taskTimeout.Start();
                             break;
 
                         case ERROR.Empty:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
+                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.TransportError;
                             taskTimeout.Start();
 
                             if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
@@ -858,12 +858,12 @@ namespace RFiDGear.Services.TaskExecution
         {
             switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
             {
-                case ERROR.NotReadyError:
+                case ERROR.TransportError:
                     taskTimeout.Start();
                     break;
 
                 case ERROR.Empty:
-                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.TransportError;
                     taskTimeout.Start();
 
                     if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
@@ -903,12 +903,12 @@ namespace RFiDGear.Services.TaskExecution
         {
             switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
             {
-                case ERROR.NotReadyError:
+                case ERROR.TransportError:
                     taskTimeout.Start();
                     break;
 
                 case ERROR.Empty:
-                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.TransportError;
                     taskTimeout.Start();
 
                     if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)

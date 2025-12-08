@@ -861,26 +861,26 @@ Needed by:
   <data name="tabPageHeaderReportSettingsView" xml:space="preserve">
     <value>Create / Edit Report</value>
   </data>
-  <data name="ENUM.ERROR.AuthenticationError" xml:space="preserve">
-    <value>Authentication Error</value>
+  <data name="ENUM.ERROR.AuthFailure" xml:space="preserve">
+    <value>Authentication Failed</value>
   </data>
-  <data name="ENUM.ERROR.NotReadyError" xml:space="preserve">
-    <value>Not Ready Error</value>
+  <data name="ENUM.ERROR.PermissionDenied" xml:space="preserve">
+    <value>Permission Denied</value>
   </data>
   <data name="ENUM.ERROR.Empty" xml:space="preserve">
     <value>null Error</value>
   </data>
-  <data name="ENUM.ERROR.IOError" xml:space="preserve">
-    <value>IO Error</value>
-  </data>
-  <data name="ENUM.ERROR.ItemAlreadyExistError" xml:space="preserve">
-    <value>Item Already Exist Error</value>
+  <data name="ENUM.ERROR.ProtocolConstraint" xml:space="preserve">
+    <value>Protocol Constraint</value>
   </data>
   <data name="ENUM.ERROR.NoError" xml:space="preserve">
     <value>No Error</value>
   </data>
-  <data name="ENUM.ERROR.NotAllowed" xml:space="preserve">
-    <value>Not Allowed</value>
+  <data name="ENUM.ERROR.TransportError" xml:space="preserve">
+    <value>Transport Error</value>
+  </data>
+  <data name="ENUM.ERROR.Unknown" xml:space="preserve">
+    <value>Unknown Error</value>
   </data>
   <data name="ENUM.TaskType_GenericChipTask.ChangeDefault" xml:space="preserve">
     <value>Change Default Values</value>

@@ -1695,13 +1695,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     else
                     {
                         StatusText += string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
-                        CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                        CurrentTaskErrorLevel = ERROR.AuthFailure;
                     }
                 }
 
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     return;
                 }
 
@@ -1780,7 +1780,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         else
                         {
                             StatusText += string.Format("{0}: Unable to Authenticate to Sector: {1} using specified Keys\n", DateTime.Now, selectedClassicSectorCurrentAsInt);
-                            CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                            CurrentTaskErrorLevel = ERROR.AuthFailure;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
                         }
@@ -1810,7 +1810,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         {
                             StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
 
-                            CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                            CurrentTaskErrorLevel = ERROR.AuthFailure;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
                         }
@@ -1821,7 +1821,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 else
                 {
-                    CurrentTaskErrorLevel = ERROR.NotReadyError;
+                    CurrentTaskErrorLevel = ERROR.TransportError;
                     await UpdateReaderStatusCommand.ExecuteAsync(false);
                     return;
                 }
@@ -1879,13 +1879,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         else
                         {
                             StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
-                            CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                            CurrentTaskErrorLevel = ERROR.AuthFailure;
                         }
                     }
                     else
                     {
                         StatusText = StatusText + string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxUnableToAuthenticate"));
-                        CurrentTaskErrorLevel = ERROR.NotReadyError;
+                        CurrentTaskErrorLevel = ERROR.TransportError;
                     }
                 }
 
@@ -1912,7 +1912,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     else
                     {
                         StatusText = StatusText + string.Format("{0}: Unable to Authenticate to MAD Sector using specified MAD Key(s)\n", DateTime.Now);
-                        CurrentTaskErrorLevel = ERROR.AuthenticationError;
+                        CurrentTaskErrorLevel = ERROR.AuthFailure;
                         await UpdateReaderStatusCommand.ExecuteAsync(false);
                         return;
                     }
