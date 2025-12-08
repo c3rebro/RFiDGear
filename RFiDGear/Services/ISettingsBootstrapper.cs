@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Threading.Tasks;
+using RFiDGear.DataAccessLayer;
 using RFiDGear.Model;
 
 namespace RFiDGear.Services

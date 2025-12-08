@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Threading.Tasks;
 using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.Model;
 
 namespace RFiDGear.Services

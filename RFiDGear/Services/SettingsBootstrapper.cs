@@ -1,6 +1,8 @@
 using System;
 using System.Globalization;
 using System.Threading.Tasks;
+using RFiDGear.DataAccessLayer;
+using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear;
 using RFiDGear.Model;
 

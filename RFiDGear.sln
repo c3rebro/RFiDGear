@@ -16,8 +16,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projektmappenelemente", "Pr
 		debugParam.txt = debugParam.txt
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Elatec.NET", "..\Elatec.NET\Elatec.NET.csproj", "{85539126-C66F-7A99-012B-6C95BFA13E9D}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug (without default Proj.)|Any CPU = Debug (without default Proj.)|Any CPU
@@ -94,30 +92,6 @@ Global
 		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Release|x64.ActiveCfg = Release|x86
 		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Release|x86.ActiveCfg = Release|x86
 		{5A7DF993-C696-4958-B7C9-9396122DFF21}.Release|x86.Build.0 = Release|x86
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug (without default Proj.)|Any CPU.ActiveCfg = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug (without default Proj.)|Any CPU.Build.0 = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug (without default Proj.)|x64.ActiveCfg = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug (without default Proj.)|x64.Build.0 = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug (without default Proj.)|x86.ActiveCfg = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug (without default Proj.)|x86.Build.0 = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug(without args)|Any CPU.ActiveCfg = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug(without args)|Any CPU.Build.0 = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug(without args)|x64.ActiveCfg = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug(without args)|x64.Build.0 = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug(without args)|x86.ActiveCfg = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug(without args)|x86.Build.0 = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug|x64.Build.0 = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Debug|x86.Build.0 = Debug|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Release|x64.ActiveCfg = Release|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Release|x64.Build.0 = Release|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Release|x86.ActiveCfg = Release|Any CPU
-		{85539126-C66F-7A99-012B-6C95BFA13E9D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

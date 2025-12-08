@@ -818,7 +818,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             else
             {
-                return OperationResult.Failure(ERROR.TransportError, "Reader not connected");
+                return ERROR.TransportError;
             }
 
 
