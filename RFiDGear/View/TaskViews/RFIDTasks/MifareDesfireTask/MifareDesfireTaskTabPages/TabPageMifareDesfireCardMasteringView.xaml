@@ -14,9 +14,10 @@
     <UserControl.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
         <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
-			<ContextMenu.ItemContainerStyle>
-				<Style TargetType="MenuItem">
+                        <ContextMenu.ItemContainerStyle>
+                                <Style TargetType="MenuItem">
 					<Setter
 						Property="HorizontalContentAlignment"
 						Value="Left" />
@@ -298,6 +299,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Command="{Binding FormatDesfireCardCommand}"
+                        Visibility="{Binding IsFormatTaskSelected, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireCardMasteringFormatButton'}" />
                     <ComboBox
                         Grid.Row="2"

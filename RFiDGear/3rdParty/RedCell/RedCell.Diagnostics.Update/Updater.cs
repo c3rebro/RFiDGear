@@ -6,12 +6,12 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Ionic.Zip;
 using RedCell.Net;
 using System.Windows.Threading;
 
@@ -232,17 +232,19 @@ namespace RedCell.Diagnostics.Update
                 }
 
                 eventLog.WriteEntry(string.Format("Remote config is valid."), EventLogEntryType.Information);
-                eventLog.WriteEntry(string.Format("Local version is ", _localConfig.Version), EventLogEntryType.Information);
-                eventLog.WriteEntry(string.Format("Remote version is ", _remoteConfig.Version), EventLogEntryType.Information);
+                eventLog.WriteEntry(string.Format("Local version is {0}", _localConfig.Version), EventLogEntryType.Information);
+                eventLog.WriteEntry(string.Format("Remote version is {0}", _remoteConfig.Version), EventLogEntryType.Information);
 
-                if (_remoteConfig.Version == _localConfig.Version)
+                var versionComparison = _remoteConfig.Version?.CompareTo(_localConfig.Version ?? new Version()) ?? -1;
+
+                if (versionComparison == 0)
                 {
                     eventLog.WriteEntry(string.Format("Versions are the same. Check ending."), EventLogEntryType.Information);
                     UpdateAvailable = false;
                     return;
                 }
 
-                if (_remoteConfig.Version < _localConfig.Version)
+                if (versionComparison < 0)
                 {
                     eventLog.WriteEntry(string.Format("Remote version is older. That's weird o_O. Check ending."), EventLogEntryType.Warning);
                     UpdateAvailable = false;
@@ -331,10 +333,7 @@ namespace RedCell.Diagnostics.Update
                         try
                         {
                             var zipfile = Path.Combine(Path.Combine(appDataPath, WorkPath), update);
-                            using (var zip = ZipFile.Read(zipfile))
-                            {
-                                zip.ExtractAll(Path.Combine(appDataPath, WorkPath), ExtractExistingFileAction.Throw);
-                            }
+                            ZipFile.ExtractToDirectory(zipfile, Path.Combine(appDataPath, WorkPath), overwriteFiles: true);
 
                             File.Delete(zipfile);
 

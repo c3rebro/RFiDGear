@@ -581,9 +581,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         break;
                 }
                 OnPropertyChanged(nameof(SelectedTaskType));
+                OnPropertyChanged(nameof(IsFormatTaskSelected));
             }
         }
         private TaskType_MifareDesfireTask selectedAccessBitsTaskType;
+
+        [XmlIgnore]
+        public bool IsFormatTaskSelected => SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard;
 
         /// <summary>
         ///
