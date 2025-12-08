@@ -527,7 +527,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         /// <param name="_keyNumberCurrent"></param>
         /// <param name="_appID"></param>
         /// <returns></returns>
-        public async override Task<ERROR> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
+        public async override Task<OperationResult> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID, bool authenticateBeforeReading = true)
         {
             if (readerDevice.IsConnected)
             {
@@ -546,45 +546,35 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                     {
                         await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
 
-                        try
+                        if (authenticateBeforeReading)
                         {
-                            var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
+                            await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)), 1);
+                        }
 
-                            MaxNumberOfAppKeys = (byte)ks.NumberOfKeys;
-                            EncryptionType = (DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), ks.KeyType));
-                            DesfireAppKeySetting = (AccessControl.DESFireKeySettings)ks.AccessRights;
+                        var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
 
-                            return ERROR.NoError;
-                        } // Get Settings without authentication
-                        catch
-                        {
-                            try
-                            {
-                                await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)), 1);
-                                var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
+                        MaxNumberOfAppKeys = (byte)ks.NumberOfKeys;
+                        EncryptionType = (DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), ks.KeyType));
+                        DesfireAppKeySetting = (AccessControl.DESFireKeySettings)ks.AccessRights;
 
-                                MaxNumberOfAppKeys = (byte)ks.NumberOfKeys;
-                                EncryptionType = (DESFireKeyType)Enum.Parse(typeof(DESFireKeyType), Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), ks.KeyType));
-                                DesfireAppKeySetting = (AccessControl.DESFireKeySettings)ks.AccessRights;
-
-                                return ERROR.NoError;
-                            }
-                            catch
-                            {
-                                return ERROR.AuthFailure;
-                            }
-                        } // needs Auth
+                        return OperationResult.Success();
                     }
-                    catch
+                    catch (Exception e)
                     {
-                        return ERROR.AuthFailure;
+                        var code = ERROR.TransportError;
+                        if (e.Message.Contains("AUTH") || e.Message.Contains("auth", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            code = ERROR.AuthFailure;
+                        }
+
+                        return OperationResult.Failure(code, "Failed to read application settings", e.Message);
                     }
                 });
             }
 
             else
             {
-                return ERROR.TransportError;
+                return OperationResult.Failure(ERROR.TransportError, "Reader not connected");
             }
 
         }
@@ -600,7 +590,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
         /// <param name="_appID"></param>
         /// <param name="authenticateToPICCFirst"></param>
         /// <returns></returns>
-        public async override Task<ERROR> CreateMifareDesfireApplication(string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget,
+        public async override Task<OperationResult> CreateMifareDesfireApplication(string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget,
                                         DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication,
                                         int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
         {
@@ -619,37 +609,28 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                 {
                     await readerDevice.MifareDesfire_SelectApplicationAsync(0);
 
+                    if (authenticateToPICCFirst)
+                    {
+                        await readerDevice.MifareDesfire_AuthenticateAsync(_piccMasterKey, 0, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypePiccMasterKey)), 1);
+                    }
+
                     await readerDevice.MifareDesfire_CreateApplicationAsync(
                                                 (Elatec.NET.Cards.Mifare.DESFireAppAccessRights)_keySettingsTarget,
                                                 (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTargetApplication)),
                                                 _maxNbKeys,
                                                 _appID);
-                    return ERROR.NoError;
-                } // free create ?
-                catch
+                    return OperationResult.Success();
+                }
+                catch (Exception e)
                 {
-                    try
-                    {
-                        await readerDevice.MifareDesfire_AuthenticateAsync(_piccMasterKey, 0, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypePiccMasterKey)), 1);
-
-                        await readerDevice.MifareDesfire_CreateApplicationAsync(
-                                                (Elatec.NET.Cards.Mifare.DESFireAppAccessRights)_keySettingsTarget,
-                                                (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTargetApplication)),
-                                                _maxNbKeys,
-                                                _appID);
-
-                        return ERROR.NoError;
-                    } // auth first ?
-                    catch
-                    {
-                        return ERROR.AuthFailure;
-                    }
+                    var code = e.Message.Contains("AUTH", StringComparison.InvariantCultureIgnoreCase) ? ERROR.AuthFailure : ERROR.TransportError;
+                    return OperationResult.Failure(code, "Failed to create application", e.Message);
                 }
             }
 
             else
             {
-                return ERROR.TransportError;
+                return OperationResult.Failure(ERROR.TransportError, "Reader not connected");
             }
 
 
@@ -725,7 +706,7 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
 
             else
             {
-                return ERROR.TransportError;
+                return OperationResult.Failure(ERROR.TransportError, "Reader not connected");
             }
 
 

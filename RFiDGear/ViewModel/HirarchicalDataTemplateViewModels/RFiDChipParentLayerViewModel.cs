@@ -394,7 +394,7 @@ namespace RFiDGear.ViewModel
                 {
                     Mouse.OverrideCursor = Cursors.AppStarting;
 
-                    await device.GetMifareDesfireAppSettings(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].Key, settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].EncryptionType);
+                    _ = await device.GetMifareDesfireAppSettings(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].Key, settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings[0].EncryptionType);
 
                     uint[] appIDs = null;
 
@@ -439,9 +439,10 @@ namespace RFiDGear.ViewModel
 
                                 Children.Add(new RFiDChipChildLayerViewModel(new MifareDesfireAppModel(appID), this, CardType, dialogs));
 
-                                if (await device.GetMifareDesfireAppSettings(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key,
+                                var appSettingsResult = await device.GetMifareDesfireAppSettings(settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key,
                                                                        settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType,
-                                                                       0, (int)appID) == ERROR.NoError)
+                                                                       0, (int)appID);
+                                if (appSettingsResult.Code == ERROR.NoError)
                                 {
                                     Children.First(x => x.AppID == appID).Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Available Keys: {0}", device.MaxNumberOfAppKeys)));
                                     Children.First(x => x.AppID == appID).Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("App Encryption Type: {0}", Enum.GetName(typeof(DESFireKeyType), (device.EncryptionType)))));
@@ -510,9 +511,13 @@ namespace RFiDGear.ViewModel
                         Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel("PICC SECURED, MasterKey Unknown"));
                     }
 
-                    if (await device.GetMifareDesfireAppSettings("00000000000000000000000000000000", DESFireKeyType.DF_KEY_AES, 0, 0) == ERROR.NoError ||
-                        await device.GetMifareDesfireAppSettings("00000000000000000000000000000000", DESFireKeyType.DF_KEY_3K3DES, 0, 0) == ERROR.NoError ||
-                        await device.GetMifareDesfireAppSettings("00000000000000000000000000000000", DESFireKeyType.DF_KEY_DES, 0, 0) == ERROR.NoError)
+                    var aesCheck = await device.GetMifareDesfireAppSettings("00000000000000000000000000000000", DESFireKeyType.DF_KEY_AES, 0, 0);
+                    var tdesCheck = await device.GetMifareDesfireAppSettings("00000000000000000000000000000000", DESFireKeyType.DF_KEY_3K3DES, 0, 0);
+                    var desCheck = await device.GetMifareDesfireAppSettings("00000000000000000000000000000000", DESFireKeyType.DF_KEY_DES, 0, 0);
+
+                    if (aesCheck.Code == ERROR.NoError ||
+                        tdesCheck.Code == ERROR.NoError ||
+                        desCheck.Code == ERROR.NoError)
                     {
                         Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Allow Change PICC MK: {0}", (device.DesfireAppKeySetting & (DESFireKeySettings)0x01) == (DESFireKeySettings)0x01 ? "yes" : "no")));
                         Children.First(x => x.AppID == 0).Children.Add(new RFiDChipGrandChildLayerViewModel(string.Format("Allow Listing without PICC MK: {0}", (device.DesfireAppKeySetting & (DESFireKeySettings)0x02) == (DESFireKeySettings)0x02 ? "yes" : "no")));
