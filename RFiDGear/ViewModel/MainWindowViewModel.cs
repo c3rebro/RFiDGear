@@ -44,6 +44,7 @@ using RFiDGear.DataAccessLayer;
 using RFiDGear.DataAccessLayer.Tasks;
 using RFiDGear.DataAccessLayer.Remote.FromIO;
 using RFiDGear.Model;
+using RFiDGear.Services;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.DialogFactories;
 using RFiDGear.ViewModel.TaskSetupViewModels;
@@ -64,13 +65,15 @@ namespace RFiDGear.ViewModel
         private readonly Updater updater;
         private readonly TaskDialogFactory taskDialogFactory;
         private readonly ITaskExecutionService taskExecutionService;
+        private readonly ISettingsBootstrapper settingsBootstrapper;
+        private readonly IUpdateNotifier updateNotifier;
+        private readonly IContextMenuBuilder contextMenuBuilder;
 
         private protected MainWindow mw;
         private protected DatabaseReaderWriter databaseReaderWriter;
         private protected ReportReaderWriter reportReaderWriter;
         private protected DispatcherTimer triggerReadChip;
         private protected DispatcherTimer taskTimeout;
-        private protected Timer checkUpdate = null;
         private protected Timer checkReader = null;
         private protected string reportOutputPath;
         private protected string reportTemplateFile;
@@ -89,7 +92,16 @@ namespace RFiDGear.ViewModel
         #region Constructors
 
         public MainWindowViewModel()
+            : this(new SettingsBootstrapper(), new UpdateNotifier(), new ContextMenuBuilder())
         {
+        }
+
+        public MainWindowViewModel(ISettingsBootstrapper settingsBootstrapper, IUpdateNotifier updateNotifier, IContextMenuBuilder contextMenuBuilder)
+        {
+            this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
+            this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
+            this.contextMenuBuilder = contextMenuBuilder ?? throw new ArgumentNullException(nameof(contextMenuBuilder));
+
             IsReaderBusy = false;
 
             if (!EventLog.SourceExists(Assembly.GetEntryAssembly().GetName().Name))
@@ -101,22 +113,15 @@ namespace RFiDGear.ViewModel
 
             RunMutex(this, null);
 
-            bool autoLoadLastUsedDB;
             args = Environment.GetCommandLineArgs();
 
-            using (var settings = new SettingsReaderWriter())
-            {
-                updater = new Updater();
+            updater = new Updater();
 
-                CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
-                    ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
-                    : settings.DefaultSpecification.DefaultReaderName;
+            var bootstrapResult = settingsBootstrapper.LoadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
-                ReaderDevice.Reader = settings.DefaultSpecification.DefaultReaderProvider;
-                culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
-
-                autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
-            }
+            CurrentReader = bootstrapResult.CurrentReaderName;
+            ReaderDevice.Reader = bootstrapResult.DefaultReaderProvider;
+            culture = bootstrapResult.Culture;
 
             triggerReadChip = new DispatcherTimer
             {
@@ -163,88 +168,22 @@ namespace RFiDGear.ViewModel
             taskExecutionService = new TaskExecutionService(new ReaderDeviceProvider(), triggerReadChipAdapter, taskTimeoutAdapter);
             taskExecutionService.ExecutionCompleted += TaskExecutionService_ExecutionCompleted;
 
-            rowContextMenuItems = new ObservableCollection<MenuItem>();
-            emptySpaceContextMenuItems = new ObservableCollection<MenuItem>();
-            emptySpaceTreeViewContextMenu = new ObservableCollection<MenuItem>();
-
-            emptySpaceContextMenuItems.Add(new MenuItem()
+            var deleteSelectedCommand = new RelayCommand(() =>
             {
-                Header = ResourceLoader.GetResource("contextMenuItemAddNewTask"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = GetAddEditCommand
+                taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
             });
 
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemAddNewTask"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = GetAddEditCommand
-            });
+            rowContextMenuItems = contextMenuBuilder.BuildNodeMenu(
+                GetAddEditCommand,
+                GetAddEditCommand,
+                deleteSelectedCommand,
+                WriteSelectedTaskToChipOnceCommand,
+                ResetSelectedTaskStatusCommand,
+                WriteToChipOnceCommand,
+                ResetReportTaskDirectoryCommand);
 
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemAddOrEditTask"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = GetAddEditCommand
-            });
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemDeleteSelectedItem"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = new RelayCommand(() =>
-                {
-                    taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
-                })
-            });
-
-            rowContextMenuItems.Add(null);
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemExecuteSelectedItem"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = WriteSelectedTaskToChipOnceCommand
-            });
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemResetSelectedItem"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = ResetSelectedTaskStatusCommand
-            });
-
-            rowContextMenuItems.Add(null);
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemExecuteAllItems"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = WriteToChipOnceCommand
-            });
-
-            rowContextMenuItems.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemResetReportPath"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = ResetReportTaskDirectoryCommand
-            });
-
-            emptySpaceTreeViewContextMenu.Add(new MenuItem()
-            {
-                Header = ResourceLoader.GetResource("contextMenuItemReadChipPublic"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = ReadChipCommand
-            });
+            emptySpaceContextMenuItems = contextMenuBuilder.BuildEmptySpaceMenu(GetAddEditCommand);
+            emptySpaceTreeViewContextMenu = contextMenuBuilder.BuildEmptyTreeMenu(ReadChipCommand);
 
             Application.Current.MainWindow.Closing += new CancelEventHandler(CloseThreads);
             Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
@@ -1354,28 +1293,14 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public IAsyncRelayCommand CheckUpdateCommand => new AsyncRelayCommand(OnNewCheckUpdateCommand);
-        private async void CheckUpdate(object sender)
-        {
-            checkUpdate.Change(Timeout.Infinite, Timeout.Infinite);
-
-            if (updater.UpdateAvailable)
-            {
-                await AskForUpdateNow();
-            }
-
-            checkUpdate.Change(5000, 5000);
-        }
         private async Task OnNewCheckUpdateCommand()
         {
             userIsNotifiedForAvailableUpdate = false;
 
-            if (updater.UpdateAvailable)
-            {
-                await AskForUpdateNow();
-            }
+            await updateNotifier.TriggerUpdateCheckAsync(() => AskForUpdateNow());
         }
 
         /// <summary>
@@ -1729,7 +1654,7 @@ namespace RFiDGear.ViewModel
             mw = (MainWindow)Application.Current.MainWindow;
             mw.Title = string.Format("RFiDGear {0}.{1}", Version.Major, Version.Minor);
 
-            checkUpdate = new Timer(CheckUpdate, null, 100, 5000); // ! UI-Thread !
+            updateNotifier.StartUpdateCheck(() => AskForUpdateNow());
             checkReader = new Timer(CheckReader, null, 5000, 3000); // ! UI-Thread !
             var projectFileToUse = "";
 
