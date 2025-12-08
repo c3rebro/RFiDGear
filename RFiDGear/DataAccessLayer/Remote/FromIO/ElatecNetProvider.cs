@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -557,7 +558,44 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                         EncryptionType = (DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), ks.KeyType));
                         DesfireAppKeySetting = (AccessControl.DESFireKeySettings)ks.AccessRights;
 
-                        return OperationResult.Success();
+                        var metadata = new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                        };
+
+                        return OperationResult.Success(
+                            operation: nameof(GetMifareDesfireAppSettings),
+                            wasAuthenticated: authenticateBeforeReading,
+                            metadata: metadata);
+                    }
+                    catch (TimeoutException e)
+                    {
+                        return OperationResult.Failure(
+                            ERROR.TransportError,
+                            "Reading application settings timed out",
+                            e.Message,
+                            nameof(GetMifareDesfireAppSettings),
+                            authenticateBeforeReading,
+                            new Dictionary<string, string>
+                            {
+                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                                { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                            });
+                    }
+                    catch (UnauthorizedAccessException e)
+                    {
+                        return OperationResult.Failure(
+                            ERROR.PermissionDenied,
+                            "Reader denied access while fetching application settings",
+                            e.Message,
+                            nameof(GetMifareDesfireAppSettings),
+                            authenticateBeforeReading,
+                            new Dictionary<string, string>
+                            {
+                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                                { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                            });
                     }
                     catch (Exception e)
                     {
@@ -567,14 +605,32 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                             code = ERROR.AuthFailure;
                         }
 
-                        return OperationResult.Failure(code, "Failed to read application settings", e.Message);
+                        return OperationResult.Failure(
+                            code,
+                            "Failed to read application settings",
+                            e.Message,
+                            nameof(GetMifareDesfireAppSettings),
+                            authenticateBeforeReading,
+                            new Dictionary<string, string>
+                            {
+                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                                { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                            });
                     }
                 });
             }
 
             else
             {
-                return OperationResult.Failure(ERROR.TransportError, "Reader not connected");
+                return OperationResult.Failure(
+                    ERROR.TransportError,
+                    "Reader not connected",
+                    operation: nameof(GetMifareDesfireAppSettings),
+                    metadata: new Dictionary<string, string>
+                    {
+                        { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                        { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                    });
             }
 
         }
@@ -619,18 +675,74 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
                                                 (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeTargetApplication)),
                                                 _maxNbKeys,
                                                 _appID);
-                    return OperationResult.Success();
+                    var metadata = new Dictionary<string, string>
+                    {
+                        { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                        { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) },
+                        { "AuthenticateToPICCFirst", authenticateToPICCFirst.ToString(CultureInfo.CurrentCulture) }
+                    };
+
+                    return OperationResult.Success(
+                        operation: nameof(CreateMifareDesfireApplication),
+                        wasAuthenticated: authenticateToPICCFirst,
+                        metadata: metadata);
+                }
+                catch (TimeoutException e)
+                {
+                    return OperationResult.Failure(
+                        ERROR.TransportError,
+                        "Creating application timed out",
+                        e.Message,
+                        nameof(CreateMifareDesfireApplication),
+                        authenticateToPICCFirst,
+                        new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
+                        });
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    return OperationResult.Failure(
+                        ERROR.PermissionDenied,
+                        "Reader denied access while creating application",
+                        e.Message,
+                        nameof(CreateMifareDesfireApplication),
+                        authenticateToPICCFirst,
+                        new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
+                        });
                 }
                 catch (Exception e)
                 {
                     var code = e.Message.Contains("AUTH", StringComparison.InvariantCultureIgnoreCase) ? ERROR.AuthFailure : ERROR.TransportError;
-                    return OperationResult.Failure(code, "Failed to create application", e.Message);
+                    return OperationResult.Failure(
+                        code,
+                        "Failed to create application",
+                        e.Message,
+                        nameof(CreateMifareDesfireApplication),
+                        authenticateToPICCFirst,
+                        new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
+                        });
                 }
             }
 
             else
             {
-                return OperationResult.Failure(ERROR.TransportError, "Reader not connected");
+                return OperationResult.Failure(
+                    ERROR.TransportError,
+                    "Reader not connected",
+                    operation: nameof(CreateMifareDesfireApplication),
+                    metadata: new Dictionary<string, string>
+                    {
+                        { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                        { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
+                    });
             }
 
 
