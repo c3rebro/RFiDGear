@@ -1,5 +1,6 @@
-﻿using RFiDGear.DataAccessLayer;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using RFiDGear.DataAccessLayer;
 
 namespace RFiDGear.Model
 {
@@ -37,5 +38,10 @@ namespace RFiDGear.Model
         /// The Index of the Current Task as Integer
         /// </summary>
         int SelectedTaskIndexAsInt { get; }
+
+        /// <summary>
+        /// Captures the per-attempt execution results for later review and retries.
+        /// </summary>
+        ObservableCollection<TaskAttemptResult> AttemptResults { get; }
     }
 }

@@ -110,6 +110,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public ObservableCollection<IDialogViewModel> Dialogs => dialogs;
         private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
 
+        [XmlIgnore]
+        public ObservableCollection<TaskAttemptResult> AttemptResults { get; } = new ObservableCollection<TaskAttemptResult>();
+
         #endregion Dialogs
 
         #region Visual Properties
