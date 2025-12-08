@@ -33,7 +33,7 @@ namespace RedCell.Diagnostics.Update
         /// Gets the version.
         /// </summary>
         /// <value>The version.</value>
-        public int Version { get; set; }
+        public Version Version { get; set; }
 
         /// <summary>
         /// Gets the check interval.
@@ -106,7 +106,13 @@ namespace RedCell.Diagnostics.Update
                 }
 
                 // Set properties.
-                Version = int.Parse(xml.Root.Attribute("version").Value.Replace(".", string.Empty));
+                if (!Version.TryParse(xml.Root.Attribute("version")?.Value, out var manifestVersion))
+                {
+                    Log.Write("Manifest version could not be parsed, stopping.");
+                    return;
+                }
+
+                Version = manifestVersion;
                 CheckInterval = int.Parse(xml.Root.Element("CheckInterval").Value);
                 SecurityToken = xml.Root.Element("SecurityToken").Value;
                 RemoteConfigUri = xml.Root.Element("RemoteConfigUri").Value;
