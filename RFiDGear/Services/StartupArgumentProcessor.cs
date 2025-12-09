@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using RFiDGear;
+using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Services.Interfaces;
 
 namespace RFiDGear.Services

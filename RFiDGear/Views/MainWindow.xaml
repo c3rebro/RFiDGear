@@ -5,8 +5,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
-    xmlns:dlgs="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors"
-    xmlns:behaviors="clr-namespace:RFiDGear.UI.Behaviors"
+    xmlns:dlgs="clr-namespace:RFiDGear.UI.MVVMDialogs.ViewModels"
+    xmlns:behaviors="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors"
+    xmlns:uiBehaviors="clr-namespace:RFiDGear.UI.Behaviors"
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:RFiDGear.ViewModel"
@@ -18,11 +19,11 @@
     MinHeight="500"
     ResizeMode="CanResizeWithGrip"
     HorizontalContentAlignment="Left"
-    dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
+    behaviors:DialogBehavior.DialogViewModels="{Binding Dialogs}"
     DataContext="{Binding Source={StaticResource Locator}, Path=MainWin}"
     FontFamily="Segoe UI"
     FontWeight="Normal"
-    behaviors:WindowDragBehavior.EnableWindowDrag="True"
+    uiBehaviors:WindowDragBehavior.EnableWindowDrag="True"
     SizeToContent="Width"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
@@ -112,7 +113,7 @@
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                 ScrollViewer.CanContentScroll="True"
                 ItemsSource="{Binding TreeViewParentNodes}"
-                behaviors:TreeViewSelectionBehavior.ClearSelectionOnEmptySpace="True">
+                uiBehaviors:TreeViewSelectionBehavior.ClearSelectionOnEmptySpace="True">
                 <TreeView.ItemContainerStyle>
                     <!--  This Style binds a TreeViewItem to a TreeViewModelBase.  -->
                     <Style TargetType="{x:Type TreeViewItem}">
@@ -313,7 +314,7 @@
                 VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Left"
                 VerticalContentAlignment="Center"
-                behaviors:DataGridSelectionBehavior.SelectingItem="{Binding SelectedSetupViewModel, Mode=TwoWay}"
+                uiBehaviors:DataGridSelectionBehavior.SelectingItem="{Binding SelectedSetupViewModel, Mode=TwoWay}"
                 AlternatingRowBackground="LightGray"
                 AutoGenerateColumns="False"
                 Background="Transparent"

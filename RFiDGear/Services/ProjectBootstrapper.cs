@@ -5,6 +5,7 @@ using RFiDGear;
 using RFiDGear.Models;
 using RFiDGear.Services.Interfaces;
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.FileAccess;
 
 namespace RFiDGear.Services
 {
