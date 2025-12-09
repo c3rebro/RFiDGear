@@ -1,6 +1,5 @@
 /docs
 /packages
-/PluginSystem/bin
 /.vs
 /RFiDGear/bin
 /RFiDGear/obj
@@ -9,15 +8,6 @@
 /RFiDGearBundleSetup
 /Setup/bin
 /Setup/obj
-/key.pub
-/key
-/idFile.hex
-/database.xml
-/accessFile_neu.hex
-/UpgradeLog2.htm
-/UpgradeLog.htm
-/taskdatabase.xml
-/setup example.wxs
 *.pdf
 *.xml
 *.zip
