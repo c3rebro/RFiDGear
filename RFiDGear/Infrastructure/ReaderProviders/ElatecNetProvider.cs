@@ -18,7 +18,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
     public class ElatecNetProvider : ReaderDevice, IDisposable
     {
         private TWN4ReaderDevice readerDevice;
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private readonly byte DESFIRE_AUTHMODE_COMPATIBLE = 0;
+
+        private readonly EventLog eventLog
+            = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
 
         private GenericChipModel hfTag;
         private GenericChipModel lfTag;
@@ -503,7 +506,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         _applicationMasterKey,
                         (byte)_keyNumber,
                         (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)),
-                        1);
+                        DESFIRE_AUTHMODE_COMPATIBLE);
                     return ERROR.NoError;
                 }
                 catch
@@ -781,7 +784,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 {
                     await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appIDCurrent);
 
-                    await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKeyCurrent, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeCurrent)), 1);
+                    await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKeyCurrent, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeCurrent)), DESFIRE_AUTHMODE_COMPATIBLE);
+
+                    await readerDevice.MifareDesfire_ChangeKeyAsync(
+    _applicationMasterKeyCurrent,
+    _applicationMasterKeyTarget,
+    (byte)keyVersion,
+    _keyNumberCurrent == 0 ? (byte)keySettings : (byte)((byte)keySettings | 0xE0),
+    (byte)_keyNumberTarget,
+    1,
+    (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeTarget)));
 
                     if (_applicationMasterKeyCurrent == _applicationMasterKeyTarget)
                     {
