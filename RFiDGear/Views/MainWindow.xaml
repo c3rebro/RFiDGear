@@ -325,6 +325,7 @@
                 ItemsSource="{Binding ChipTasks.TaskCollection}"
                 SelectedItem="{Binding Path=DataContext.SelectedSetupViewModel, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
                 SelectionMode="Single"
+                uiBehaviors:DataGridDragDropBehavior.EnableRowDragDrop="True"
                 VirtualizingPanel.IsVirtualizing="True">
                 <DataGrid.ContextMenu>
                     <ContextMenu ItemsSource="{Binding EmptySpaceContextMenu}" />
