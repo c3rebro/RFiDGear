@@ -39,6 +39,7 @@
     <Compile Include="Services\CommandMenuBuilderTests.cs" />
     <Compile Include="Services\MainWindowTimerFactoryTests.cs" />
     <Compile Include="Services\PollingSchedulerTests.cs" />
+    <Compile Include="Helpers\ByteArrayTests.cs" />
     <Compile Include="Services\StartupConfiguratorTests.cs" />
     <Compile Include="Services\UpdateCheckerTests.cs" />
   </ItemGroup>
