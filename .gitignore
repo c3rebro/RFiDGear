@@ -1,13 +1,7 @@
-/VCNEditor
-/18-01_SMARTINTEGO-VCN_DEVKIT
 /docs
 /packages
 /PluginSystem/bin
 /.vs
-/MVVMDialogs/bin
-/MVVMDialogs/obj
-/PluginSystem/obj
-/RFiDGear/3rdParty/RedCell/RedCell.Diagnostics.Update/Update.cd
 /RFiDGear/bin
 /RFiDGear/obj
 /RFiDGear/Mifare_4k_1_57.jpg
@@ -28,6 +22,4 @@
 *.xml
 *.zip
 *.htm
-RFiDGear/RFiDGear.SDKStyle.csproj
 *.txt
-/RFiDGear.Tests
