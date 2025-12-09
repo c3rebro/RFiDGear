@@ -3,7 +3,7 @@
     x:Class="RFiDGear.View.TabPageBasicChipCheckUpView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer">
+    xmlns:dal="clr-namespace:RFiDGear.Infrastructure">
     <UserControl.Resources>
         <dal:ResourceLoader x:Key="Localization" />
     </UserControl.Resources>
@@ -28,7 +28,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch">
                     <ComboBox
-                        xmlns:dlgs="clr-namespace:MVVMDialogs.Behaviors"
+                        xmlns:dlgs="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors"
                         xmlns:local="clr-namespace:RFiDGear"
                         xmlns:system="clr-namespace:System;assembly=mscorlib"
                         xmlns:v="clr-namespace:RFiDGear.View"

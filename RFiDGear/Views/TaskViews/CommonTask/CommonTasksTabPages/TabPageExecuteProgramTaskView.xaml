@@ -3,7 +3,7 @@
     x:Class="RFiDGear.View.TabPageExecuteProgramTaskView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:dal="clr-namespace:RFiDGear.DataAccessLayer">
+    xmlns:dal="clr-namespace:RFiDGear.Infrastructure">
     <UserControl.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />

@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace MVVMDialogs.View
+namespace RFiDGear.UI.MVVMDialogs.View
 {
     /// <summary>
     /// Interaction logic for CustomDialogBox.xaml
