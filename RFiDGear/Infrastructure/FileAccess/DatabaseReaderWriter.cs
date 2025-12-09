@@ -176,25 +176,32 @@ namespace RFiDGear.Infrastructure.FileAccess
         {
             try
             {
-                TextWriter writer;
                 var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
 
-                if (!string.IsNullOrEmpty(_path))
+                var extension = string.IsNullOrWhiteSpace(_path)
+                    ? string.Empty
+                    : Path.GetExtension(_path);
+                var saveAsXml = extension.Equals(".xml", StringComparison.OrdinalIgnoreCase);
+
+                var xmlOutputPath = saveAsXml && !string.IsNullOrWhiteSpace(_path)
+                    ? _path
+                    : projectManager.TaskDatabasePath;
+
+                using (var writer = new StreamWriter(xmlOutputPath, false, new UTF8Encoding(false)))
                 {
-                    writer = new StreamWriter(projectManager.TaskDatabasePath);
                     serializer.Serialize(writer, objModel);
-                    writer.Close();
-                }
-                else
-                {
-                    writer = new StreamWriter(projectManager.TaskDatabasePath, false, new UTF8Encoding(false));
-                    serializer.Serialize(writer, objModel);
-                    writer.Close();
                 }
 
-                var archivePath = string.IsNullOrWhiteSpace(_path) ?
-                    projectManager.CompressedTaskDatabasePath :
-                    @_path;
+                if (saveAsXml)
+                {
+                    return;
+                }
+
+                var archivePath = string.IsNullOrWhiteSpace(_path)
+                    ? projectManager.CompressedTaskDatabasePath
+                    : string.IsNullOrWhiteSpace(extension)
+                        ? string.Concat(_path, ".rfPrj")
+                        : _path;
 
                 if (File.Exists(archivePath))
                 {
@@ -204,7 +211,7 @@ namespace RFiDGear.Infrastructure.FileAccess
                 using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
                 {
                     archive.CreateEntryFromFile(
-                        projectManager.TaskDatabasePath,
+                        xmlOutputPath,
                         Path.GetFileName(projectManager.TaskDatabasePath),
                         CompressionLevel.Optimal);
                 }
