@@ -2841,16 +2841,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// 
         /// </summary>
         public IAsyncRelayCommand UpdateReaderStatusCommand => new AsyncRelayCommand<bool>(UpdateStatus);
-        private async Task UpdateStatus(bool isBusy)
+        private Task UpdateStatus(bool isBusy)
         {
             if (OnUpdateStatus != null)
             {
                 OnUpdateStatus(isBusy);
             }
-            else
-            {
-                return;
-            }
+
+            return Task.CompletedTask;
         }
 
         [XmlIgnore]

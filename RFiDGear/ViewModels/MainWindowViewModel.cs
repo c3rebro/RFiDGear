@@ -258,18 +258,18 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         public IAsyncRelayCommand GetAddEditCommand => new AsyncRelayCommand(OnNewGetAddEditCommand);
-        private async Task OnNewGetAddEditCommand()
+        private Task OnNewGetAddEditCommand()
         {
             switch (selectedSetupViewModel)
             {
                 case CommonTaskViewModel _:
-                    await OnNewNewCreateReportTaskCommand();
+                    OnNewNewCreateReportTaskCommand();
                     break;
                 case GenericChipTaskViewModel _:
-                    await OnNewCreateGenericChipTaskCommand();
+                    OnNewCreateGenericChipTaskCommand();
                     break;
                 case MifareClassicSetupViewModel _:
-                    await OnNewCreateClassicTaskCommand();
+                    OnNewCreateClassicTaskCommand();
                     break;
                 case MifareDesfireSetupViewModel _:
                     OnNewCreateDesfireTaskCommand();
@@ -278,6 +278,8 @@ namespace RFiDGear.ViewModel
                     OnNewCreateUltralightTaskCommand();
                     break;
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -455,7 +457,7 @@ namespace RFiDGear.ViewModel
         /// Create a new "Common" Task of Type "Report Creator"
         /// </summary>
         public IAsyncRelayCommand CreateGenericChipTaskCommand => new AsyncRelayCommand(OnNewCreateGenericChipTaskCommand);
-        private async Task OnNewCreateGenericChipTaskCommand()
+        private Task OnNewCreateGenericChipTaskCommand()
         {
 
             var timerState = triggerReadChip.IsEnabled;
@@ -492,14 +494,14 @@ namespace RFiDGear.ViewModel
 
             OnPropertyChanged(nameof(ChipTasks));
 
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// Create a new "Common" Task of Type "Report Creator"
         /// </summary>
         public IAsyncRelayCommand CreateGenericTaskCommand => new AsyncRelayCommand(OnNewNewCreateReportTaskCommand);
-        private async Task OnNewNewCreateReportTaskCommand()
+        private Task OnNewNewCreateReportTaskCommand()
         {
 
 
@@ -572,14 +574,14 @@ namespace RFiDGear.ViewModel
 
             OnPropertyChanged(nameof(ChipTasks));
 
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// Creates a new Task of Type Mifare Classic Card
         /// </summary>
         public IAsyncRelayCommand CreateClassicTaskCommand => new AsyncRelayCommand(OnNewCreateClassicTaskCommand);
-        private async Task OnNewCreateClassicTaskCommand()
+        private Task OnNewCreateClassicTaskCommand()
         {
 
 
@@ -618,14 +620,14 @@ namespace RFiDGear.ViewModel
 
             triggerReadChip.IsEnabled = timerState;
 
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// 
         /// </summary>
         public IAsyncRelayCommand CreateDesfireTaskCommand => new AsyncRelayCommand(OnNewCreateDesfireTaskCommand);
-        private async Task OnNewCreateDesfireTaskCommand()
+        private Task OnNewCreateDesfireTaskCommand()
         {
             var timerState = triggerReadChip.IsEnabled;
 
@@ -650,14 +652,14 @@ namespace RFiDGear.ViewModel
 
             triggerReadChip.IsEnabled = timerState;
 
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// 
         /// </summary>
-        public ICommand CreateUltralightTaskCommand => new RelayCommand(OnNewCreateUltralightTaskCommand);
-        private void OnNewCreateUltralightTaskCommand()
+        public ICommand CreateUltralightTaskCommand => new AsyncRelayCommand(OnNewCreateUltralightTaskCommand);
+        private Task OnNewCreateUltralightTaskCommand()
         {
 
 
@@ -678,6 +680,8 @@ namespace RFiDGear.ViewModel
             Mouse.OverrideCursor = null;
 
             triggerReadChip.IsEnabled = timerState;
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -834,32 +838,30 @@ namespace RFiDGear.ViewModel
         /// Reset all Reporttasks directory information
         /// </summary>
         public IAsyncRelayCommand ResetReportTaskDirectoryCommand => new AsyncRelayCommand(OnNewResetReportTaskDirectoryCommand);
-        private async Task OnNewResetReportTaskDirectoryCommand()
+        private Task OnNewResetReportTaskDirectoryCommand()
         {
-            await Task.Run(async () =>
+            try
             {
-                try
+                foreach (var chipTask in taskHandler.TaskCollection)
                 {
-                    foreach (var chipTask in taskHandler.TaskCollection)
+                    switch (chipTask)
                     {
-                        switch (chipTask)
-                        {
-                            case CommonTaskViewModel ssVM:
-                                ssVM.IsTaskCompletedSuccessfully = null;
-                                reportOutputPath = null;
-                                reportReaderWriter.ReportOutputPath = null;
-                                reportReaderWriter.ReportTemplateFile = null;
-                                ssVM.CurrentTaskErrorLevel = ERROR.Empty;
-                                break;
-                        }
+                        case CommonTaskViewModel ssVM:
+                            ssVM.IsTaskCompletedSuccessfully = null;
+                            reportOutputPath = null;
+                            reportReaderWriter.ReportOutputPath = null;
+                            reportReaderWriter.ReportTemplateFile = null;
+                            ssVM.CurrentTaskErrorLevel = ERROR.Empty;
+                            break;
                     }
                 }
-                catch (Exception e)
-                {
-                    eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
-                }
-            });
+            }
+            catch (Exception e)
+            {
+                eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
+            }
 
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -1088,7 +1090,7 @@ namespace RFiDGear.ViewModel
         /// 
         /// </summary>
         public IAsyncRelayCommand NewReaderSetupDialogCommand => new AsyncRelayCommand(OnNewReaderSetupDialog);
-        private async Task OnNewReaderSetupDialog()
+        private Task OnNewReaderSetupDialog()
         {
             var settings = new SettingsReaderWriter();
 
@@ -1162,6 +1164,8 @@ namespace RFiDGear.ViewModel
                     }
                 });
             }
+
+            return Task.CompletedTask;
         }
 
         private void MainWindowViewModel_ReaderStatusChanged(object sender, EventArgs e) => throw new NotImplementedException();
@@ -1233,12 +1237,14 @@ namespace RFiDGear.ViewModel
         /// Expose Command to Save ProjectFile Menu Item
         /// </summary>
         public IAsyncRelayCommand SaveTaskDialogCommand => new AsyncRelayCommand(OnNewSaveTaskDialogCommand);
-        private async Task OnNewSaveTaskDialogCommand()
+        private Task OnNewSaveTaskDialogCommand()
         {
             using (var settings = new SettingsReaderWriter())
             {
                 databaseReaderWriter.WriteDatabase(ChipTasks, settings.DefaultSpecification.LastUsedProjectPath);
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -1291,7 +1297,7 @@ namespace RFiDGear.ViewModel
         /// Expose Command to Save Menu Item
         /// </summary>
         public IAsyncRelayCommand SaveChipDialogCommand => new AsyncRelayCommand(OnNewSaveChipDialogCommand);
-        private async Task OnNewSaveChipDialogCommand()
+        private Task OnNewSaveChipDialogCommand()
         {
             var dlg = new SaveFileDialogViewModel
             {
@@ -1303,6 +1309,8 @@ namespace RFiDGear.ViewModel
             {
                 databaseReaderWriter.WriteDatabase(TreeViewParentNodes, dlg.FileName);
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>

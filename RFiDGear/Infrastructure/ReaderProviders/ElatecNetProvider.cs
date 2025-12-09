@@ -274,7 +274,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return await ReadWriteAccessOnClassicSector(sectorNumber, aKey, bKey, buffer);
         }
 
-        public async override Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
+        public override Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
             string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
             string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite,
             string _madBKeyToWrite, byte[] buffer, byte _madGPB, AccessControl.SectorAccessBits _sab,
@@ -283,7 +283,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             throw new NotImplementedException();
         }
 
-        public async override Task<ERROR> ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse,
+        public override Task<ERROR> ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse,
             string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB,
             bool _useMADToAuth, bool _aiToUseIsMAD)
         {
@@ -1215,7 +1215,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        public async override Task<ERROR> WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
+        public override Task<ERROR> WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
                                         string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
                                         string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                         string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,

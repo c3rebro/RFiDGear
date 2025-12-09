@@ -1937,7 +1937,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// 
         /// </summary>
         public IAsyncRelayCommand GetDataFromFileCommand => new AsyncRelayCommand(OnNewGetDataFromFileCommand);
-        private async Task OnNewGetDataFromFileCommand()
+        private Task OnNewGetDataFromFileCommand()
         {
             var dlg = new OpenFileDialogViewModel
             {
@@ -1962,6 +1962,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                 }
             }
+            return Task.CompletedTask;
         }
 
         #endregion Commands
@@ -1972,16 +1973,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public bool IsModal { get; private set; }
 
         public IAsyncRelayCommand UpdateReaderStatusCommand => new AsyncRelayCommand<bool>(UpdateStatus);
-        private async Task UpdateStatus(bool isBusy)
+        private Task UpdateStatus(bool isBusy)
         {
             if (OnUpdateStatus != null)
             {
                 OnUpdateStatus(isBusy);
             }
-            else
-            {
-                return;
-            }
+
+            return Task.CompletedTask;
         }
 
         public virtual void RequestClose()

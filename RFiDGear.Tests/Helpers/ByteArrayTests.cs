@@ -1,12 +1,11 @@
 using ByteArrayHelper;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace RFiDGear.Tests.Helpers
 {
-    [TestClass]
     public class ByteArrayTests
     {
-        [TestMethod]
+        [Fact]
         public void Constructor_DefensivelyCopiesInput()
         {
             byte[] source = { 0x01, 0x02 };
@@ -14,11 +13,11 @@ namespace RFiDGear.Tests.Helpers
             var byteArray = new ByteArray(source);
             source[0] = 0xFF;
 
-            Assert.AreNotSame(source, byteArray.Data);
-            Assert.AreEqual(0x01, byteArray.Data[0]);
+            Assert.NotSame(source, byteArray.Data);
+            Assert.Equal(0x01, byteArray.Data[0]);
         }
 
-        [TestMethod]
+        [Fact]
         public void Or_LittleEndianAppliesFromStart()
         {
             var target = new ByteArray(new byte[] { 0x00, 0x10, 0x20 });
@@ -26,11 +25,11 @@ namespace RFiDGear.Tests.Helpers
 
             target.Or(source, isLittleEndian: true);
 
-            CollectionAssert.AreEqual(new byte[] { 0x01, 0x12, 0x20 }, target.Data);
-            CollectionAssert.AreEqual(new byte[] { 0x01, 0x02 }, source);
+            Assert.Equal(new byte[] { 0x01, 0x12, 0x20 }, target.Data);
+            Assert.Equal(new byte[] { 0x01, 0x02 }, source);
         }
 
-        [TestMethod]
+        [Fact]
         public void Or_BigEndianAppliesFromEnd()
         {
             var target = new ByteArray(new byte[] { 0x00, 0x10, 0x20 });
@@ -38,8 +37,8 @@ namespace RFiDGear.Tests.Helpers
 
             target.Or(source, isLittleEndian: false);
 
-            CollectionAssert.AreEqual(new byte[] { 0x00, 0x11, 0x22 }, target.Data);
-            CollectionAssert.AreEqual(new byte[] { 0x01, 0x02 }, source);
+            Assert.Equal(new byte[] { 0x00, 0x11, 0x22 }, target.Data);
+            Assert.Equal(new byte[] { 0x01, 0x02 }, source);
         }
     }
 }

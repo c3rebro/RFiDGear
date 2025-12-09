@@ -840,9 +840,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         [XmlIgnore]
         public IAsyncRelayCommand CopySelectedCheckpoint => new AsyncRelayCommand(OnNewCopyCheckpointCommand);
-        private async Task OnNewCopyCheckpointCommand()
+        private Task OnNewCopyCheckpointCommand()
         {
             previouslySelectedCheckpoint = SelectedCheckpoint;
+
+            return Task.CompletedTask;
         }
 
         [XmlIgnore]
@@ -1581,7 +1583,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// 
         /// </summary>
         public IAsyncRelayCommand ExecuteProgramCommand => new AsyncRelayCommand(OnNewExecuteProgramCommand);
-        private async Task OnNewExecuteProgramCommand()
+        private Task OnNewExecuteProgramCommand()
         {
             try
             {
@@ -1690,6 +1692,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 IsTaskCompletedSuccessfully = false;
                 eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -1701,7 +1705,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             await OnNewAddEditCheckpointCommand(SelectedCheckpoint);
         }
 
-        private async Task OnNewAddEditCheckpointCommand(Checkpoint cpTarget)
+        private Task OnNewAddEditCheckpointCommand(Checkpoint cpTarget)
         {
             try
             {
@@ -1764,7 +1768,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
             }
 
-            return;
+            return Task.CompletedTask;
         }
 
         /// <summary>
