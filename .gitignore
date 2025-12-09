@@ -23,3 +23,5 @@
 *.zip
 *.htm
 *.txt
+/RFiDGear.Tests/obj
+/RFiDGear.Tests/bin
