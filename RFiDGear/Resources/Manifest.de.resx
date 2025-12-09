@@ -449,13 +449,13 @@ ein Kartenlesegerät auswählen</value>
     <value>Alle A_ufgaben einmalig ausführen</value>
   </data>
   <data name="menuItemOpenProject" xml:space="preserve">
-    <value>Projektdatei _öffnen...</value>
+    <value>Projekt _öffnen...</value>
   </data>
   <data name="menuItemSaveTaskAs" xml:space="preserve">
     <value>_Projekt Speichern unter...</value>
   </data>
   <data name="menuItemSaveChip" xml:space="preserve">
-    <value>_Chipliste Speichern unter...</value>
+    <value>_Chipliste exportieren</value>
   </data>
   <data name="menuItemReadChipPublic" xml:space="preserve">
     <value>_RFiD Chip einlesen</value>
@@ -523,7 +523,7 @@ Soll die Aktualisierung jetzt herunter geladen und installiert werden?</value>
     <value>_Programmierung</value>
   </data>
   <data name="menuItemCreateTaskHeader" xml:space="preserve">
-    <value>_RFiD Aufgaben</value>
+    <value>_Aufgabe erstellen / bearbeiten</value>
   </data>
   <data name="menuItemMifareHeader" xml:space="preserve">
     <value>Mifare Aufgabe</value>

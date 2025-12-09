@@ -786,15 +786,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKeyCurrent, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeCurrent)), DESFIRE_AUTHMODE_COMPATIBLE);
 
-                    await readerDevice.MifareDesfire_ChangeKeyAsync(
-    _applicationMasterKeyCurrent,
-    _applicationMasterKeyTarget,
-    (byte)keyVersion,
-    _keyNumberCurrent == 0 ? (byte)keySettings : (byte)((byte)keySettings | 0xE0),
-    (byte)_keyNumberTarget,
-    1,
-    (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeTarget)));
-
                     if (_applicationMasterKeyCurrent == _applicationMasterKeyTarget)
                     {
                         await readerDevice.MifareDesfire_ChangeKeySettingsAsync(

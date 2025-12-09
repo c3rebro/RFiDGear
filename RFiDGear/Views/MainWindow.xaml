@@ -52,14 +52,7 @@
             Command="{Binding ExecuteQuickCheckCommand}"
             Modifiers="Control" />
     </Window.InputBindings>
-    <!--
-        WindowStyle="None"
-        ResizeMode="CanResizeWithGrip"
-        AllowsTransparency="True"
-        BorderThickness="1"
-        BorderBrush="Black"
-        Opacity="0.98"
-    -->
+
     <Window.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
@@ -121,10 +114,6 @@
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                         <Setter Property="IsSelected" Value="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                         <Setter Property="FontWeight" Value="Normal" />
-                        <!--<Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />-->
-                        <!--<Setter
-							Property="IsSelected"
-							Value="{Binding DataContext.IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
                         <Style.Triggers>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter Property="FontWeight" Value="Bold" />
@@ -491,8 +480,8 @@
                     VerticalAlignment="Top"
                     VerticalContentAlignment="Center"
                     Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemEditHeader'}">
-                    <MenuItem Command="{Binding CreateGenericTaskCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemCreateGenericTaskHeader'}" />
                     <MenuItem Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemCreateTaskHeader'}">
+                        <MenuItem Command="{Binding CreateGenericTaskCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemCreateGenericTaskHeader'}" />
                         <MenuItem Command="{Binding CreateGenericChipTaskCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemCreateGenericChipTaskHeader'}" />
                         <MenuItem Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemMifareHeader'}">
                             <MenuItem Command="{Binding CreateClassicTaskCommand}" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemAddEditMifareClassicTaskHeader'}" />

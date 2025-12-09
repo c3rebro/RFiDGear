@@ -508,7 +508,7 @@ Use a csv file to acuire default keys for authentication</value>
     <value>_Programming</value>
   </data>
   <data name="menuItemCreateTaskHeader" xml:space="preserve">
-    <value>R_FiD Tasks</value>
+    <value>Add / Edit Task(s)</value>
   </data>
   <data name="menuItemMifareHeader" xml:space="preserve">
     <value>Mifare</value>
