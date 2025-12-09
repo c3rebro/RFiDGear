@@ -173,7 +173,7 @@ namespace RedCell.Diagnostics.Update
 
                         try
                         {
-                            eventLog.WriteEntry(string.Format("Fetch error: {0}", http.Response != null ? http.Response.StatusDescription : ""), EventLogEntryType.Error);
+                            eventLog.WriteEntry(string.Format("Fetch error: {0}", http.Response != null ? http.Response.ReasonPhrase : ""), EventLogEntryType.Error);
                         }
 
                         catch

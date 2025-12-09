@@ -1,6 +1,6 @@
 ﻿using System;
-using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 
 namespace RedCell.Net
@@ -15,7 +15,7 @@ namespace RedCell.Net
         /// <summary>
         /// Gets the response.
         /// </summary>
-        public HttpWebResponse Response { get; private set; }
+        public HttpResponseMessage Response { get; private set; }
 
         /// <summary>
         /// Gets the response data.
@@ -35,41 +35,34 @@ namespace RedCell.Net
         {
             try
             {
-                var req = HttpWebRequest.Create(url) as HttpWebRequest;
-                req.AllowAutoRedirect = false;
-
-                Response = req.GetResponse() as HttpWebResponse;
-                switch (Response.StatusCode)
+                using (var handler = new HttpClientHandler { AllowAutoRedirect = false })
+                using (var client = new HttpClient(handler))
+                using (var request = new HttpRequestMessage(HttpMethod.Get, url))
                 {
-                    case HttpStatusCode.Found:
-                        // This is a redirect to an error page, so ignore.
-                        Console.WriteLine("Found (302), ignoring ");
-                        break;
+                    Response = client.SendAsync(request).GetAwaiter().GetResult();
+                    switch (Response.StatusCode)
+                    {
+                        case HttpStatusCode.Found:
+                            // This is a redirect to an error page, so ignore.
+                            Console.WriteLine("Found (302), ignoring ");
+                            break;
 
-                    case HttpStatusCode.OK:
-                        // This is a valid page.
-                        using (var sr = Response.GetResponseStream())
-                        using (var ms = new MemoryStream())
-                        {
-                            for (int b; (b = sr.ReadByte()) != -1;)
-                            {
-                                ms.WriteByte((byte)b);
-                            }
+                        case HttpStatusCode.OK:
+                            // This is a valid page.
+                            ResponseData = Response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+                            break;
 
-                            ResponseData = ms.ToArray();
-                        }
-                        break;
-
-                    default:
-                        // This is unexpected.
-                        Console.WriteLine(Response.StatusCode);
-                        break;
+                        default:
+                            // This is unexpected.
+                            Console.WriteLine(Response.StatusCode);
+                            break;
+                    }
                 }
             }
-            catch (WebException ex)
+            catch (HttpRequestException ex)
             {
                 Console.WriteLine(":Exception " + ex.Message);
-                Response = ex.Response as HttpWebResponse;
+                Response = null;
             }
         }
 
@@ -91,7 +84,8 @@ namespace RedCell.Net
         /// <returns></returns>
         public string GetString()
         {
-            var encoder = string.IsNullOrEmpty(Response.ContentEncoding) ? Encoding.UTF8 : Encoding.GetEncoding(Response.ContentEncoding);
+            var charSet = Response?.Content?.Headers?.ContentType?.CharSet;
+            var encoder = string.IsNullOrEmpty(charSet) ? Encoding.UTF8 : Encoding.GetEncoding(charSet);
             if (ResponseData == null)
             {
                 return string.Empty;
