@@ -8,6 +8,7 @@
 using RFiDGear.Infrastructure;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Xml.Serialization;
 
@@ -29,53 +30,29 @@ namespace RFiDGear.Models
         {
             ManifestVersion = string.Format("{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
 
-            _defaultReaderName = "";
-            _defaultReaderProvider = ReaderTypes.None;
-            _defaultLanguage = "english";
-            defaultAutoPerformTasksEnabled = false;
-            autoCheckForUpdates = true;
-            _autoLoadProjectOnStart = false;
-            _lastUsedProjectPath = "";
-            LastUsedComPort = "USB";
-            LastUsedBaudRate = "9600";
+            var runtimeDefaults = DefaultSpecificationRuntimeDefaults.Current;
 
-            mifareClassicDefaultSecuritySettings = new List<MifareClassicDefaultKeys>
-            {
-                new MifareClassicDefaultKeys(0, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(1, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(2, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(3, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(4, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(5, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(6, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(7, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(8, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(9, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(10, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(11, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(12, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(13, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(14, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF"),
-                new MifareClassicDefaultKeys(15, "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF")
-            };
+            _defaultReaderName = runtimeDefaults.DefaultReaderName;
+            _defaultReaderProvider = runtimeDefaults.DefaultReaderProvider;
+            _defaultLanguage = runtimeDefaults.DefaultLanguage;
+            defaultAutoPerformTasksEnabled = runtimeDefaults.DefaultAutoPerformTasksEnabled;
+            autoCheckForUpdates = runtimeDefaults.AutoCheckForUpdates;
+            _autoLoadProjectOnStart = runtimeDefaults.AutoLoadProjectOnStart;
+            _lastUsedProjectPath = runtimeDefaults.LastUsedProjectPath;
+            LastUsedComPort = runtimeDefaults.LastUsedComPort;
+            LastUsedBaudRate = runtimeDefaults.LastUsedBaudRate;
 
-            mifareDesfireDefaultSecuritySettings = new List<MifareDesfireDefaultKeys>
-            {
-                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000"),
-                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey, DESFireKeyType.DF_KEY_DES, "00000000000000000000000000000000"),
-                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000"),
-                new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000")
-            };
+            mifareClassicDefaultSecuritySettings = runtimeDefaults.MifareClassicDefaultSecuritySettings
+                .Select(key => new MifareClassicDefaultKeys(key.KeyNumber, key.AccessBits))
+                .ToList();
 
-            _classicCardDefaultSectorTrailer = "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF";
+            mifareDesfireDefaultSecuritySettings = runtimeDefaults.MifareDesfireDefaultSecuritySettings
+                .Select(key => new MifareDesfireDefaultKeys(key.KeyType, key.EncryptionType, key.Key))
+                .ToList();
 
-            _classicCardDefaultQuickCheckKeys = new List<string>{
-                "FFFFFFFFFFFF","A1B2C3D4E5F6","1A2B3C4D5E6F",
-                "000000000000","C75680590F31","010203040506",
-                "A0B0C0D0E0F0","A1B1C1D1E1F1","987654321ABC",
-                "A0A1A2A3A4A5","B0B1B2B3B4B5","4D3A99C351DD",
-                "1A982C7E459A","D3F7D3F7D3F7","AABBCCDDEEFF",
-                "0CBFD39CE01E"};
+            _classicCardDefaultSectorTrailer = runtimeDefaults.ClassicCardDefaultSectorTrailer;
+
+            _classicCardDefaultQuickCheckKeys = runtimeDefaults.ClassicCardDefaultQuickCheckKeys.ToList();
         }
 
         #region properties

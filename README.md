@@ -17,3 +17,7 @@ a (tested) PCSC compatibile Reader:
 Omnikey 5321
 Sciel SCL3711
 ACR 122U
+
+### Configuring runtime defaults
+
+RFiDGear writes a `runtime-defaults.json` file to `%LocalAppData%\RFiDGear` the first time it starts. You can edit this file with any text editor to control the initial values used for reader selection, language, auto-update behavior, and the default MIFARE keys that seed new `settings.xml` files—no code changes or recompilation required.
