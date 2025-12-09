@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using RFiDGear.DataAccessLayer;
+using RFiDGear.Infrastructure;
 using RFiDGear.Services.Interfaces;
 
 namespace RFiDGear.Services

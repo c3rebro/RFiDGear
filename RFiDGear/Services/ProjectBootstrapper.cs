@@ -1,10 +1,10 @@
 using System;
 using System.Globalization;
 using System.Threading.Tasks;
-using RFiDGear.DataAccessLayer;
 using RFiDGear;
-using RFiDGear.Model;
+using RFiDGear.Models;
 using RFiDGear.Services.Interfaces;
+using RFiDGear.Infrastructure;
 
 namespace RFiDGear.Services
 {

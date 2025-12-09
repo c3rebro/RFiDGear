@@ -34,21 +34,12 @@
   <ItemGroup>
     <Compile Include="LicenseAgreementDlg_HK.wxs" />
     <Compile Include="Product.wxs" />
+    <Compile Include="setup example.wxs" />
     <Compile Include="WixUI_HK.wxs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Product_de-de.wxl" />
     <EmbeddedResource Include="Product_en-us.wxl" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\RFiDGear\RFiDGear.csproj">
-      <Name>RFiDGear</Name>
-      <Project>{d49b605a-7b08-4b82-b4d2-7da7d0236b13}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <WixExtension Include="WixUtilExtension">

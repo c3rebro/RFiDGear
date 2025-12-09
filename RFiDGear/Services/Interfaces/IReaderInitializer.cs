@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Threading.Tasks;
-using RFiDGear.DataAccessLayer;
-using RFiDGear.Model;
+
+using RFiDGear.Infrastructure.FileAccess;
 
 namespace RFiDGear.Services.Interfaces
 {

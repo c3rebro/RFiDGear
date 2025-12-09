@@ -9,15 +9,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Windows.Threading;
-using MVVMDialogs.ViewModels;
-using RFiDGear.DataAccessLayer;
-using RFiDGear.DataAccessLayer.Tasks;
-using RFiDGear.DataAccessLayer.Remote.FromIO;
-using RFiDGear.Model;
+
+using RFiDGear.Models;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using RFiDGear.ViewModel;
+using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.Tasks;
+using RFiDGear.Infrastructure.ReaderProviders;
+using RFiDGear.Infrastructure.FileAccess;
+using RFiDGear.UI.MVVMDialogs.ViewModels;
+using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 
-using MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.Services.TaskExecution
 {
     public interface IReaderDeviceProvider

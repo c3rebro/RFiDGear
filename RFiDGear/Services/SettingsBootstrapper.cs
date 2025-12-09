@@ -1,11 +1,11 @@
 using System;
 using System.Globalization;
 using System.Threading.Tasks;
-using RFiDGear.DataAccessLayer;
-using RFiDGear.DataAccessLayer.Remote.FromIO;
-using RFiDGear;
-using RFiDGear.Model;
+using RFiDGear.Models;
 using RFiDGear.Services.Interfaces;
+using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.ReaderProviders;
+using RFiDGear.Infrastructure.FileAccess;
 
 namespace RFiDGear.Services
 {

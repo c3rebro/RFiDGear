@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using RFiDGear.DataAccessLayer;
+using RFiDGear.Infrastructure;
 
 namespace RFiDGear.Services.Commands
 {

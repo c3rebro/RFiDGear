@@ -1,5 +1,4 @@
 ﻿using RFiDGear;
-using RFiDGear.DataAccessLayer;
 
 using Microsoft.Extensions.Logging;
 

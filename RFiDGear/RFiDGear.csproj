@@ -122,7 +122,7 @@
     <Resource Include="Resources\splash.png" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Model\MifarePlus\" />
+    <Folder Include="Models\MifarePlus\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Arguments.txt" />
