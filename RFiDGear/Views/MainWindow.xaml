@@ -23,6 +23,7 @@
     DataContext="{Binding Source={StaticResource Locator}, Path=MainWin}"
     FontFamily="Segoe UI"
     FontWeight="Normal"
+    Loaded="OnLoaded"
     uiBehaviors:WindowDragBehavior.EnableWindowDrag="True"
     SizeToContent="Width"
     WindowStartupLocation="CenterScreen"
