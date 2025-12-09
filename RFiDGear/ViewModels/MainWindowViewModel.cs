@@ -221,6 +221,11 @@ namespace RFiDGear.ViewModel
             {
                 mainWindow.Closing += new CancelEventHandler(CloseThreads);
                 mainWindow.Activated += new EventHandler(LoadCompleted);
+
+                if (mainWindow.IsActive)
+                {
+                    LoadCompleted(mainWindow, EventArgs.Empty);
+                }
             }
         }
 

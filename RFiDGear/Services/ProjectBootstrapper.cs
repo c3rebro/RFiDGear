@@ -6,11 +6,14 @@ using RFiDGear.Models;
 using RFiDGear.Services.Interfaces;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.FileAccess;
+using Serilog;
 
 namespace RFiDGear.Services
 {
     public class ProjectBootstrapper : IProjectBootstrapper
     {
+        private static readonly ILogger Logger = Log.ForContext<ProjectBootstrapper>();
+
         public async Task BootstrapAsync(ProjectBootstrapRequest request)
         {
             if (request == null)
@@ -79,7 +82,7 @@ namespace RFiDGear.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceError(ex.Message);
+                Logger.Error(ex, "Bootstrap failed");
             }
         }
     }
