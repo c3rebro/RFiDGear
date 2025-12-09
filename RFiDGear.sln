@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.Tests", "RFiDGear.Tests\RFiDGear.Tests.csproj", "{8F1A5B6E-9A4F-4B48-8F2E-7E6E5C646D28}"
-EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Setup", "Setup\Setup.wixproj", "{856CA06C-0B4C-46C6-AD71-873317F1C763}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "RFiDGearBundleSetup", "RFiDGearBundleSetup\RFiDGearBundleSetup.wixproj", "{5A7DF993-C696-4958-B7C9-9396122DFF21}"
