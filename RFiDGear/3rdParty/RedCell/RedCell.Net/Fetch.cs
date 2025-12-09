@@ -1,8 +1,9 @@
 ﻿using System;
-using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RedCell.Net
 {
@@ -36,7 +37,7 @@ namespace RedCell.Net
         /// <summary>
         /// Gets the response.
         /// </summary>
-        public HttpWebResponse Response { get; private set; }
+        public HttpResponseMessage Response { get; private set; }
 
         /// <summary>
         ///
@@ -87,56 +88,56 @@ namespace RedCell.Net
             {
                 try
                 {
-                    var req = HttpWebRequest.Create(url) as HttpWebRequest;
-                    req.AllowAutoRedirect = true;
-                    ServicePointManager.ServerCertificateValidationCallback = (a, b, c, d) => true;
-                    if (Credential != null)
+                    using (var handler = new HttpClientHandler())
                     {
-                        req.Credentials = Credential;
-                    }
+                        handler.AllowAutoRedirect = true;
+                        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                        if (Credential != null)
+                        {
+                            handler.Credentials = Credential;
+                        }
 
-                    req.Headers = Headers;
-                    req.Timeout = Timeout;
-
-                    Response = req.GetResponse() as HttpWebResponse;
-                    switch (Response.StatusCode)
-                    {
-                        case HttpStatusCode.Found:
-                            // This is a redirect to an error page, so ignore.
-                            Console.WriteLine("Found (302), ignoring ");
-                            break;
-
-                        case HttpStatusCode.OK:
-                            // This is a valid page.
-                            using (var sr = Response.GetResponseStream())
-                            using (var ms = new MemoryStream())
+                        using (var client = new HttpClient(handler) { Timeout = TimeSpan.FromMilliseconds(Timeout) })
+                        using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+                        {
+                            foreach (var key in Headers.AllKeys)
                             {
-                                for (int b; (b = sr.ReadByte()) != -1;)
-                                {
-                                    ms.WriteByte((byte)b);
-                                }
-
-                                ResponseData = ms.ToArray();
+                                request.Headers.TryAddWithoutValidation(key, Headers[key]);
                             }
-                            break;
 
-                        default:
-                            // This is unexpected.
-                            Console.WriteLine(Response.StatusCode);
+                            Response = client.SendAsync(request).GetAwaiter().GetResult();
+                            switch (Response.StatusCode)
+                            {
+                                case HttpStatusCode.Found:
+                                    // This is a redirect to an error page, so ignore.
+                                    Console.WriteLine("Found (302), ignoring ");
+                                    break;
+
+                                case HttpStatusCode.OK:
+                                    // This is a valid page.
+                                    ResponseData = Response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+                                    break;
+
+                                default:
+                                    // This is unexpected.
+                                    Console.WriteLine(Response.StatusCode);
+                                    break;
+                            }
+                            Success = true;
                             break;
+                        }
                     }
-                    Success = true;
-                    break;
                 }
-                catch (WebException ex)
+                catch (TaskCanceledException)
+                {
+                    Response = null;
+                    Thread.Sleep(RetrySleep);
+                    continue;
+                }
+                catch (HttpRequestException ex)
                 {
                     Console.WriteLine(":Exception " + ex.Message);
-                    Response = ex.Response as HttpWebResponse;
-                    if (ex.Status == WebExceptionStatus.Timeout)
-                    {
-                        Thread.Sleep(RetrySleep);
-                        continue;
-                    }
+                    Response = null;
                     break;
                 }
             }
@@ -160,7 +161,8 @@ namespace RedCell.Net
         /// <returns></returns>
         public string GetString()
         {
-            var encoder = string.IsNullOrEmpty(Response.ContentEncoding) ? Encoding.UTF8 : Encoding.GetEncoding(Response.ContentEncoding);
+            var charSet = Response?.Content?.Headers?.ContentType?.CharSet;
+            var encoder = string.IsNullOrEmpty(charSet) ? Encoding.UTF8 : Encoding.GetEncoding(charSet);
             if (ResponseData == null)
             {
                 return string.Empty;
