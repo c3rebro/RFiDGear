@@ -92,6 +92,8 @@ namespace RFiDGear.UI.Behaviors
             {
                 var data = new DataObject(row.Item.GetType(), row.Item);
                 DragDrop.DoDragDrop(grid, data, DragDropEffects.Move);
+                grid.SetValue(DragStartPointProperty, null);
+                e.Handled = true;
             }
         }
 

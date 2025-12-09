@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using Serilog;
 
 namespace RFiDGear.UI.Behaviors
@@ -50,6 +51,11 @@ namespace RFiDGear.UI.Behaviors
                 return;
             }
 
+            if (ShouldIgnoreWindowDrag(e.OriginalSource as DependencyObject))
+            {
+                return;
+            }
+
             try
             {
                 window.DragMove();
@@ -58,6 +64,16 @@ namespace RFiDGear.UI.Behaviors
             {
                 Logger.Warning(ex, "Window drag move failed but was ignored to keep UI responsive");
             }
+        }
+
+        private static bool ShouldIgnoreWindowDrag(DependencyObject source)
+        {
+            if (source == null)
+            {
+                return false;
+            }
+
+            return source.FindVisualParent<DataGrid>() != null;
         }
     }
 }
