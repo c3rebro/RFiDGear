@@ -19,6 +19,7 @@ using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
+using Serilog;
 
 namespace RFiDGear.Services.TaskExecution
 {
@@ -143,14 +144,16 @@ namespace RFiDGear.Services.TaskExecution
 
     public class NullTaskExecutionLogger : ITaskExecutionLogger
     {
+        private readonly ILogger logger = Log.ForContext<NullTaskExecutionLogger>();
+
         public void LogInformation(string stage, object details = null)
         {
-            Debug.WriteLine(Serialize(stage, "Information", details));
+            logger.Information("{SerializedTaskLog}", Serialize(stage, "Information", details));
         }
 
         public void LogError(string stage, Exception exception, object details = null)
         {
-            Debug.WriteLine(Serialize(stage, "Error", details, exception));
+            logger.Error(exception, "{SerializedTaskLog}", Serialize(stage, "Error", details, exception));
         }
 
         private static string Serialize(string stage, string level, object details, Exception exception = null)
