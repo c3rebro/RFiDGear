@@ -7,30 +7,6 @@
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
-    <Reference Include="WindowsBase" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Services\CommandMenuBuilderTests.cs" />
-    <Compile Include="Services\MainWindowTimerFactoryTests.cs" />
-    <Compile Include="Services\PollingSchedulerTests.cs" />
-    <Compile Include="Helpers\ByteArrayTests.cs" />
-    <Compile Include="Services\StartupConfiguratorTests.cs" />
-    <Compile Include="Services\UpdateCheckerTests.cs" />
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.8.1" />
