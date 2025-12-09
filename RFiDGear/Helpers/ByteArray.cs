@@ -32,22 +32,23 @@ namespace ByteArrayHelper
 
         public ByteArray(byte[] _data)
         {
-            Data = new byte[_data.Length];
-            Data = _data;
+            Data = _data != null ? (byte[])_data.Clone() : Array.Empty<byte>();
         }
 
         public ByteArray Or(byte[] source, bool isLittleEndian = true)
         {
 
-            byte[] localCopy = new byte[Data.Length];
-
             if (!isLittleEndian) // or-ing from right to left
             {
-
+                int targetIndex = Data.Length - 1;
+                for (int sourceIndex = source.Length - 1; sourceIndex >= 0 && targetIndex >= 0; sourceIndex--, targetIndex--)
+                {
+                    Data[targetIndex] |= source[sourceIndex];
+                }
             }
             else // the other way around
             {
-                for (int i = 0; i < localCopy.Length; i++)
+                for (int i = 0; i < Data.Length; i++)
                 {
                     if (source.Length > i)
                     {
