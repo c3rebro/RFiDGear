@@ -63,12 +63,14 @@ namespace RFiDGear.ViewModel
     public class MainWindowViewModel : ObservableObject
     {
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
-        private readonly EventLog eventLog;
+#nullable enable
+        private readonly EventLog? eventLog;
+#nullable disable
         private readonly string[] args;
         private readonly Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
         private readonly Updater updater;
-        private readonly TaskDialogFactory taskDialogFactory;
-        private readonly ITaskExecutionService taskExecutionService;
+        private TaskDialogFactory taskDialogFactory;
+        private ITaskExecutionService taskExecutionService;
         private readonly ISettingsBootstrapper settingsBootstrapper;
         private readonly IUpdateNotifier updateNotifier;
         private readonly IContextMenuBuilder contextMenuBuilder;
@@ -76,6 +78,9 @@ namespace RFiDGear.ViewModel
         private readonly IUpdateScheduler updateScheduler;
         private readonly IReaderMonitor readerMonitor;
         private readonly IProjectBootstrapper projectBootstrapper;
+        private readonly ITimerFactory timerFactory;
+        private readonly ITaskServiceInitializer taskServiceInitializer;
+        private readonly IMenuInitializer menuInitializer;
 
         private protected MainWindow mw;
         private protected DatabaseReaderWriter databaseReaderWriter;
@@ -93,6 +98,7 @@ namespace RFiDGear.ViewModel
         // if programming takes too long; quit the process
         private bool userIsNotifiedForAvailableUpdate = false;
         private protected Mutex mutex;
+        private Task initializationTask;
 
         // one reader, one instance - only
 
@@ -130,24 +136,17 @@ namespace RFiDGear.ViewModel
             this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
             this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
             this.contextMenuBuilder = contextMenuBuilder ?? throw new ArgumentNullException(nameof(contextMenuBuilder));
+            this.timerFactory = timerFactory ?? throw new ArgumentNullException(nameof(timerFactory));
+            this.taskServiceInitializer = taskServiceInitializer ?? throw new ArgumentNullException(nameof(taskServiceInitializer));
+            this.menuInitializer = menuInitializer ?? throw new ArgumentNullException(nameof(menuInitializer));
+            this.startupArgumentProcessor = startupArgumentProcessor ?? throw new ArgumentNullException(nameof(startupArgumentProcessor));
+            this.updateScheduler = updateScheduler ?? throw new ArgumentNullException(nameof(updateScheduler));
+            this.readerMonitor = readerMonitor ?? throw new ArgumentNullException(nameof(readerMonitor));
+            this.projectBootstrapper = projectBootstrapper ?? throw new ArgumentNullException(nameof(projectBootstrapper));
+
             if (appStartupInitializer == null)
             {
                 throw new ArgumentNullException(nameof(appStartupInitializer));
-            }
-
-            if (timerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(timerFactory));
-            }
-
-            if (taskServiceInitializer == null)
-            {
-                throw new ArgumentNullException(nameof(taskServiceInitializer));
-            }
-
-            if (menuInitializer == null)
-            {
-                throw new ArgumentNullException(nameof(menuInitializer));
             }
 
             IsReaderBusy = false;
@@ -158,8 +157,17 @@ namespace RFiDGear.ViewModel
             args = startupContext.Arguments;
 
             updater = new Updater();
+        }
 
-            var bootstrapResult = settingsBootstrapper.LoadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        public Task InitializeAsync()
+        {
+            initializationTask ??= InitializeInternalAsync();
+            return initializationTask;
+        }
+
+        private async Task InitializeInternalAsync()
+        {
+            var bootstrapResult = await settingsBootstrapper.LoadAsync();
 
             CurrentReader = bootstrapResult.CurrentReaderName;
             ReaderDevice.Reader = bootstrapResult.DefaultReaderProvider;
@@ -169,9 +177,9 @@ namespace RFiDGear.ViewModel
             triggerReadChip = timerInitialization.TriggerReadTimer;
             taskTimeout = timerInitialization.TaskTimeoutTimer;
 
-            treeViewParentNodes = new ObservableCollection<RFiDChipParentLayerViewModel>();
+            TreeViewParentNodes = new ObservableCollection<RFiDChipParentLayerViewModel>();
 
-            taskHandler = new ChipTaskHandlerModel();
+            ChipTasks = new ChipTaskHandlerModel();
 
             ReaderStatus = "";
             DateTimeStatusBar = "";
@@ -188,11 +196,6 @@ namespace RFiDGear.ViewModel
 
             taskDialogFactory = taskServices.TaskDialogFactory;
             taskExecutionService = taskServices.TaskExecutionService;
-
-            this.startupArgumentProcessor = startupArgumentProcessor ?? throw new ArgumentNullException(nameof(startupArgumentProcessor));
-            this.updateScheduler = updateScheduler ?? throw new ArgumentNullException(nameof(updateScheduler));
-            this.readerMonitor = readerMonitor ?? throw new ArgumentNullException(nameof(readerMonitor));
-            this.projectBootstrapper = projectBootstrapper ?? throw new ArgumentNullException(nameof(projectBootstrapper));
 
             var deleteSelectedCommand = new RelayCommand(() =>
             {
@@ -213,10 +216,12 @@ namespace RFiDGear.ViewModel
             emptySpaceContextMenuItems = menuInitialization.EmptySpaceContextMenuItems;
             emptySpaceTreeViewContextMenu = menuInitialization.EmptySpaceTreeViewContextMenu;
 
-            Application.Current.MainWindow.Closing += new CancelEventHandler(CloseThreads);
-            Application.Current.MainWindow.Activated += new EventHandler(LoadCompleted);
-
-            //reminder: any dialog boxes added in the constructor won't appear until DialogBehavior.DialogViewModels gets bound to the Dialogs collection.
+            var mainWindow = Application.Current?.MainWindow;
+            if (mainWindow != null)
+            {
+                mainWindow.Closing += new CancelEventHandler(CloseThreads);
+                mainWindow.Activated += new EventHandler(LoadCompleted);
+            }
         }
 
         #endregion Constructors
@@ -387,7 +392,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
             }
 
             Mouse.OverrideCursor = null;
@@ -475,7 +480,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
 
                 dialogs.Clear();
 
@@ -554,7 +559,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
 
                 dialogs.Clear();
 
@@ -602,7 +607,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
 
                 dialogs.Clear();
 
@@ -851,7 +856,7 @@ namespace RFiDGear.ViewModel
                 }
                 catch (Exception e)
                 {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                    eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
                 }
             });
 
@@ -1352,18 +1357,18 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public ObservableCollection<MenuItem> EmptySpaceTreeViewContextMenu => emptySpaceTreeViewContextMenu;
 
-        private readonly ObservableCollection<MenuItem> emptySpaceTreeViewContextMenu;
+        private ObservableCollection<MenuItem> emptySpaceTreeViewContextMenu;
         /// <summary>
         /// expose contextmenu on row click
         /// </summary>
         public ObservableCollection<MenuItem> RowContextMenu => rowContextMenuItems;
-        private readonly ObservableCollection<MenuItem> rowContextMenuItems;
+        private ObservableCollection<MenuItem> rowContextMenuItems;
 
         /// <summary>
         /// expose contextmenu on empty space click
         /// </summary>
         public ObservableCollection<MenuItem> EmptySpaceContextMenu => emptySpaceContextMenuItems;
-        private readonly ObservableCollection<MenuItem> emptySpaceContextMenuItems;
+        private ObservableCollection<MenuItem> emptySpaceContextMenuItems;
 
 
         /// <summary>
@@ -1413,12 +1418,12 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public bool IsWriteToAllChipAutoChecked => triggerReadChip.IsEnabled;
+        public bool IsWriteToAllChipAutoChecked => triggerReadChip?.IsEnabled ?? false;
 
         /// <summary>
         /// 
         /// </summary>
-        public bool IsWriteSelectedToChipAutoChecked => triggerReadChip.IsEnabled;
+        public bool IsWriteSelectedToChipAutoChecked => triggerReadChip?.IsEnabled ?? false;
         private bool isWriteSelectedToChipAutoCheckedTemp;
 
         /// <summary>

@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 
+#nullable enable
+
 namespace RFiDGear.Services
 {
     public interface IAppStartupInitializer
@@ -14,12 +16,12 @@ namespace RFiDGear.Services
     {
         public AppStartupContext(EventLog eventLog, Mutex mutex, string[] arguments)
         {
-            EventLog = eventLog ?? throw new ArgumentNullException(nameof(eventLog));
+            EventLog = eventLog;
             Mutex = mutex ?? throw new ArgumentNullException(nameof(mutex));
             Arguments = arguments ?? Array.Empty<string>();
         }
 
-        public EventLog EventLog { get; }
+        public EventLog? EventLog { get; }
 
         public Mutex Mutex { get; }
 
