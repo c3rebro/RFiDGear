@@ -1277,8 +1277,8 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             }
         }
 
-                public override async Task<OperationResult> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, bool authenticateBeforeReading = true)
-                {
+        public override async Task<OperationResult> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, bool authenticateBeforeReading = true)
+        {
             byte maxNbrOfKeys;
             LibLogicalAccess.Card.DESFireKeySettings keySettings;
 
@@ -1449,10 +1449,10 @@ namespace RFiDGear.DataAccessLayer.Remote.FromIO
             }
         }
 
-                public override async Task<OperationResult> CreateMifareDesfireApplication(
-                        string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey,
-                        DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
-                {
+        public override async Task<OperationResult> CreateMifareDesfireApplication(
+                string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey,
+                DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
+        {
             try
             {
                 // The excepted memory tree
