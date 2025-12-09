@@ -1418,12 +1418,12 @@ namespace RFiDGear.ViewModel
         /// <summary>
         /// 
         /// </summary>
-        public bool IsWriteToAllChipAutoChecked => triggerReadChip.IsEnabled;
+        public bool IsWriteToAllChipAutoChecked => triggerReadChip?.IsEnabled ?? false;
 
         /// <summary>
         /// 
         /// </summary>
-        public bool IsWriteSelectedToChipAutoChecked => triggerReadChip.IsEnabled;
+        public bool IsWriteSelectedToChipAutoChecked => triggerReadChip?.IsEnabled ?? false;
         private bool isWriteSelectedToChipAutoCheckedTemp;
 
         /// <summary>
