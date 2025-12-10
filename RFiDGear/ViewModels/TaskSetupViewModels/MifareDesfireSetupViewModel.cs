@@ -183,13 +183,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     IsValidFileNumberCurrent = null;
                     IsValidFileSizeCurrent = null;
 
-                    IsDesfireFileAuthoringTabEnabled = false;
-                    IsDataExplorerEditTabEnabled = false;
-                    IsDesfirePICCAuthoringTabEnabled = false;
-                    IsDesfireAuthenticationTabEnabled = false;
-                    IsDesfireAppAuthenticationTabEnabled = false;
-                    IsDesfireAppAuthoringTabEnabled = false;
-                    IsDesfireAppCreationTabEnabled = false;
+                    SetTabAvailability(false, false, false, false, false, false, false);
                 }
 
                 HasPlugins = items != null && items.Any();
@@ -397,30 +391,99 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public bool IsDesfireAppAuthoringTabEnabled
         {
             get => isDesfireAppAuthoringTabEnabled;
-            set
-            {
-                isDesfireAppAuthoringTabEnabled = value;
-                OnPropertyChanged(nameof(IsDesfireAppAuthoringTabEnabled));
-            }
+            set => SetProperty(ref isDesfireAppAuthoringTabEnabled, value);
         }
         private bool isDesfireAppAuthoringTabEnabled;
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public bool IsDesfireAppCreationTabEnabled
         {
             get => isDesfireAppCreationTabEnabled;
-            set
-            {
-                isDesfireAppCreationTabEnabled = value;
-                OnPropertyChanged(nameof(IsDesfireAppCreationTabEnabled));
-            }
+            set => SetProperty(ref isDesfireAppCreationTabEnabled, value);
         }
         private bool isDesfireAppCreationTabEnabled;
 
         /// <summary>
-        /// 
+        /// Updates the enabled state of the DESFire authoring and authentication tabs in one place to reduce duplication.
+        /// </summary>
+        /// <param name="fileAuthoring">Flag indicating whether file authoring UI is enabled.</param>
+        /// <param name="dataExplorerEdit">Flag indicating whether the data explorer editing UI is enabled.</param>
+        /// <param name="desfirePiccAuthoring">Flag indicating whether PICC authoring UI is enabled.</param>
+        /// <param name="desfireAuthentication">Flag indicating whether DESFire authentication UI is enabled.</param>
+        /// <param name="desfireAppAuthentication">Flag indicating whether DESFire application authentication UI is enabled.</param>
+        /// <param name="desfireAppAuthoring">Flag indicating whether DESFire application authoring UI is enabled.</param>
+        /// <param name="desfireAppCreation">Flag indicating whether DESFire application creation UI is enabled.</param>
+        private void SetTabAvailability(
+            bool fileAuthoring,
+            bool dataExplorerEdit,
+            bool desfirePiccAuthoring,
+            bool desfireAuthentication,
+            bool desfireAppAuthentication,
+            bool desfireAppAuthoring,
+            bool desfireAppCreation)
+        {
+            IsDesfireFileAuthoringTabEnabled = fileAuthoring;
+            IsDataExplorerEditTabEnabled = dataExplorerEdit;
+            IsDesfirePICCAuthoringTabEnabled = desfirePiccAuthoring;
+            IsDesfireAuthenticationTabEnabled = desfireAuthentication;
+            IsDesfireAppAuthenticationTabEnabled = desfireAppAuthentication;
+            IsDesfireAppAuthoringTabEnabled = desfireAppAuthoring;
+            IsDesfireAppCreationTabEnabled = desfireAppCreation;
+        }
+
+        /// <summary>
+        /// Updates the status text and error level for a failed operation and refreshes the reader status.
+        /// </summary>
+        /// <param name="errorResult">The error result to assign to <see cref="CurrentTaskErrorLevel"/>.</param>
+        /// <param name="messageFormat">The format string appended to <see cref="StatusText"/>.</param>
+        /// <param name="args">Arguments used to format the status message.</param>
+        private async Task SetErrorStatusAsync(ERROR errorResult, string messageFormat, params object[] args)
+        {
+            StatusText += string.Format(messageFormat, args);
+            CurrentTaskErrorLevel = errorResult;
+            await UpdateReaderStatusCommand.ExecuteAsync(false);
+        }
+
+        /// <summary>
+        /// Updates the status text and error level for an operation and refreshes the reader status.
+        /// </summary>
+        /// <param name="operationResult">Result of the operation.</param>
+        /// <param name="successFormat">Status message to append when the operation succeeds.</param>
+        /// <param name="successArgs">Arguments for the success status message.</param>
+        /// <param name="errorFormat">Status message to append when the operation fails.</param>
+        /// <param name="errorArgs">Arguments for the error status message.</param>
+        private async Task<bool> SetOperationResultAsync(
+            ERROR operationResult,
+            string successFormat,
+            object[] successArgs,
+            string errorFormat,
+            object[] errorArgs)
+        {
+            if (operationResult == ERROR.NoError)
+            {
+                StatusText += string.Format(successFormat, successArgs);
+                CurrentTaskErrorLevel = operationResult;
+                await UpdateReaderStatusCommand.ExecuteAsync(false);
+                return true;
+            }
+
+            await SetErrorStatusAsync(operationResult, errorFormat, errorArgs);
+            return false;
+        }
+
+        /// <summary>
+        /// Finalizes a task by updating success state and reader status.
+        /// </summary>
+        private async Task FinalizeTaskAsync()
+        {
+            IsTaskCompletedSuccessfully = CurrentTaskErrorLevel == ERROR.NoError;
+            await UpdateReaderStatusCommand.ExecuteAsync(false);
+        }
+
+        /// <summary>
+        ///
         /// </summary>
         public SettingsReaderWriter Settings => settings;
 
@@ -437,143 +500,59 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 switch (value)
                 {
                     case TaskType_MifareDesfireTask.None:
-                        IsDesfireFileAuthoringTabEnabled = false;
-                        IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
-                        IsDesfireAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthoringTabEnabled = false;
-                        IsDesfireAppCreationTabEnabled = false;
+                        SetTabAvailability(false, false, false, false, false, false, false);
                         break;
 
                     case TaskType_MifareDesfireTask.ReadAppSettings:
-                        IsDesfireFileAuthoringTabEnabled = false;
-                        IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = true;
-                        IsDesfireAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthoringTabEnabled = false;
-                        IsDesfireAppCreationTabEnabled = false;
+                        SetTabAvailability(false, false, true, false, false, false, false);
                         break;
 
                     case TaskType_MifareDesfireTask.AppExistCheck:
-                        IsDesfireFileAuthoringTabEnabled = false;
-                        IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
-                        IsDesfireAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthoringTabEnabled = true;
-                        IsDesfireAppCreationTabEnabled = true;
+                        SetTabAvailability(false, false, false, false, false, true, true);
                         break;
 
                     case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
-                        IsDesfireFileAuthoringTabEnabled = false;
-                        IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
-                        IsDesfireAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = true;
-                        IsDesfireAppCreationTabEnabled = true;
+                        SetTabAvailability(false, false, false, false, true, true, true);
                         break;
 
                     case TaskType_MifareDesfireTask.ChangeDefault:
-                        IsDesfireFileAuthoringTabEnabled = true;
-                        IsDataExplorerEditTabEnabled = true;
-                        IsDesfirePICCAuthoringTabEnabled = true;
-                        IsDesfireAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = true;
-                        IsDesfireAppCreationTabEnabled = true;
+                        SetTabAvailability(true, true, true, true, true, true, true);
                         break;
 
                     case TaskType_MifareDesfireTask.CreateApplication:
-                        IsDesfireFileAuthoringTabEnabled = false;
-                        IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = true;
-                        IsDesfireAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthoringTabEnabled = false;
-                        IsDesfireAppCreationTabEnabled = true;
+                        SetTabAvailability(false, false, true, true, false, false, true);
                         break;
 
                     case TaskType_MifareDesfireTask.AuthenticateApplication:
-                        IsDesfireFileAuthoringTabEnabled = false;
-                        IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
-                        IsDesfireAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = true;
-                        IsDesfireAppCreationTabEnabled = false;
+                        SetTabAvailability(false, false, false, true, true, true, false);
                         break;
 
                     case TaskType_MifareDesfireTask.CreateFile:
-                        IsDesfireFileAuthoringTabEnabled = true;
-                        IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
-                        IsDesfireAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = true;
-                        IsDesfireAppCreationTabEnabled = false;
+                        SetTabAvailability(true, false, false, false, true, true, false);
                         break;
 
                     case TaskType_MifareDesfireTask.DeleteApplication:
-                        IsDesfireFileAuthoringTabEnabled = false;
-                        IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = true;
-                        IsDesfireAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthoringTabEnabled = false;
-                        IsDesfireAppCreationTabEnabled = true;
+                        SetTabAvailability(false, false, true, true, false, false, true);
                         break;
 
                     case TaskType_MifareDesfireTask.DeleteFile:
-                        IsDesfireFileAuthoringTabEnabled = true;
-                        IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = false;
-                        IsDesfireAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = true;
-                        IsDesfireAppCreationTabEnabled = false;
+                        SetTabAvailability(true, false, false, false, true, true, false);
                         break;
 
                     case TaskType_MifareDesfireTask.FormatDesfireCard:
-                        IsDesfireFileAuthoringTabEnabled = false;
-                        IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = true;
-                        IsDesfireAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthoringTabEnabled = false;
-                        IsDesfireAppCreationTabEnabled = false;
+                        SetTabAvailability(false, false, true, true, false, false, false);
                         break;
 
                     case TaskType_MifareDesfireTask.PICCMasterKeyChangeover:
-                        IsDesfireFileAuthoringTabEnabled = false;
-                        IsDataExplorerEditTabEnabled = false;
-                        IsDesfirePICCAuthoringTabEnabled = true;
-                        IsDesfireAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthoringTabEnabled = false;
-                        IsDesfireAppCreationTabEnabled = false;
+                        SetTabAvailability(false, false, true, true, false, false, false);
                         break;
 
                     case TaskType_MifareDesfireTask.ReadData:
-                        IsDesfireFileAuthoringTabEnabled = true;
-                        IsDataExplorerEditTabEnabled = true;
-                        IsDesfirePICCAuthoringTabEnabled = false;
-                        IsDesfireAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = true;
-                        IsDesfireAppCreationTabEnabled = false;
+                        SetTabAvailability(true, true, false, false, true, true, false);
                         break;
 
                     case TaskType_MifareDesfireTask.WriteData:
-                        IsDesfireFileAuthoringTabEnabled = true;
-                        IsDataExplorerEditTabEnabled = true;
-                        IsDesfirePICCAuthoringTabEnabled = false;
-                        IsDesfireAuthenticationTabEnabled = false;
-                        IsDesfireAppAuthenticationTabEnabled = true;
-                        IsDesfireAppAuthoringTabEnabled = true;
-                        IsDesfireAppCreationTabEnabled = false;
+                        SetTabAvailability(true, true, false, false, true, true, false);
                         break;
                 }
                 OnPropertyChanged(nameof(SelectedTaskType));
@@ -1750,16 +1729,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+            await FinalizeTaskAsync();
             return;
         }
 
@@ -1860,16 +1830,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+            await FinalizeTaskAsync();
             return;
         }
 
@@ -1925,17 +1886,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to Read File with FileID: {1}: {2}", DateTime.Now, FileNumberCurrentAsInt, result.ToString());
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
+                                await SetErrorStatusAsync(result, "{0}: Unable to Read File with FileID: {1}: {2}", DateTime.Now, FileNumberCurrentAsInt, result.ToString());
                                 return;
                             }
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to Read File: {1}", DateTime.Now, result.ToString());
-                            CurrentTaskErrorLevel = result;
-                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+                            await SetErrorStatusAsync(result, "{0}: Unable to Read File: {1}", DateTime.Now, result.ToString());
                             return;
                         }
                     }
@@ -1948,16 +1905,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+            await FinalizeTaskAsync();
             return;
         }
 
@@ -2037,17 +1985,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             }
                             else
                             {
-                                StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
+                                await SetErrorStatusAsync(result, "{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
                                 return;
                             }
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
-                            CurrentTaskErrorLevel = result;
-                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+                            await SetErrorStatusAsync(result, "{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
                             return;
                         }
                     }
@@ -2060,16 +2004,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+            await FinalizeTaskAsync();
             return;
         }
 
@@ -2121,26 +2056,25 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                                                          SelectedDesfireAppKeyEncryptionTypeTarget,
                                                                          AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings, keyVersionCurrentAsInt);
 
-                            if (result == ERROR.NoError)
+                            if (await SetOperationResultAsync(
+                                    result,
+                                    "{0}: Successfully Changed Key {1} of AppID {2}\n",
+                                    new object[] { DateTime.Now, selectedDesfireAppKeyNumberTargetAsInt, AppNumberTargetAsInt },
+                                    "{0}: Unable to Change Key {1} of AppID {2}: {3}\n",
+                                    new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString() }))
                             {
-                                StatusText += string.Format("{0}: Successfully Changed Key {1} of AppID {2}\n", DateTime.Now, selectedDesfireAppKeyNumberTargetAsInt, AppNumberTargetAsInt);
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
                             }
-                            else
-                            {
-                                StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString());
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
+                            return;
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to Change Key {1} of AppID {2}: {3}\n", DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString());
-                            CurrentTaskErrorLevel = result;
-                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+                            await SetOperationResultAsync(
+                                result,
+                                "{0}: Successfully Changed Key {1} of AppID {2}\n",
+                                new object[] { DateTime.Now, selectedDesfireAppKeyNumberTargetAsInt, AppNumberTargetAsInt },
+                                "{0}: Unable to Change Key {1} of AppID {2}: {3}\n",
+                                new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString() });
                             return;
                         }
                     }
@@ -2153,16 +2087,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+            await FinalizeTaskAsync();
             return;
         }
 
@@ -2198,20 +2123,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                 (uint)AppNumberNewAsInt);
 
-                            if (result == ERROR.NoError)
+                            if (await SetOperationResultAsync(
+                                    result,
+                                    "{0}: Successfully Deleted AppID {1}\n",
+                                    new object[] { DateTime.Now, AppNumberNewAsInt },
+                                    "{0}: Unable to Remove AppID {1}: {2}\n",
+                                    new object[] { DateTime.Now, AppNumberNewAsInt, result.ToString() }))
                             {
-                                StatusText += string.Format("{0}: Successfully Deleted AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
                             }
-                            else
-                            {
-                                StatusText += string.Format("{0}: Unable to Remove AppID {1}: {2}\n", DateTime.Now, AppNumberNewAsInt, result.ToString());
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
+                            return;
                         }
 
                         else
@@ -2223,20 +2144,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                 (uint)AppNumberNewAsInt);
 
-                            if (result == ERROR.NoError)
+                            if (await SetOperationResultAsync(
+                                    result,
+                                    "{0}: Successfully deleted AppID {1}\n",
+                                    new object[] { DateTime.Now, AppNumberNewAsInt },
+                                    "{0}: Unable to deleted App: {1}\n",
+                                    new object[] { DateTime.Now, result.ToString() }))
                             {
-                                StatusText += string.Format("{0}: Successfully deleted AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
                             }
-                            else
-                            {
-                                StatusText += string.Format("{0}: Unable to deleted App: {1}\n", DateTime.Now, result.ToString());
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
+                            return;
                         }
                     }
                 }
@@ -2248,16 +2165,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+            await FinalizeTaskAsync();
             return;
         }
 
@@ -2294,20 +2202,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 SelectedDesfireAppKeyEncryptionTypeCurrent,
                                 AppNumberCurrentAsInt, FileNumberCurrentAsInt);
 
-                            if (result == ERROR.NoError)
+                            if (await SetOperationResultAsync(
+                                    result,
+                                    "{0}: Successfully Deleted File {1}\n",
+                                    new object[] { DateTime.Now, FileNumberCurrentAsInt },
+                                    "{0}: Unable to Remove FileID {1}: {2}\n",
+                                    new object[] { DateTime.Now, FileNumberCurrentAsInt, result.ToString() }))
                             {
-                                StatusText += string.Format("{0}: Successfully Deleted File {1}\n", DateTime.Now, FileNumberCurrentAsInt);
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
                             }
-                            else
-                            {
-                                StatusText += string.Format("{0}: Unable to Remove FileID {1}: {2}\n", DateTime.Now, FileNumberCurrentAsInt, result.ToString());
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
+                            return;
                         }
                         else
                         {
@@ -2318,20 +2222,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 SelectedDesfireAppKeyEncryptionTypeCurrent,
                                 AppNumberNewAsInt, FileNumberCurrentAsInt);
 
-                            if (result == ERROR.NoError)
+                            if (await SetOperationResultAsync(
+                                    result,
+                                    "{0}: Successfully Deleted File {1}\n",
+                                    new object[] { DateTime.Now, FileNumberCurrentAsInt },
+                                    "{0}: Unable to Remove AppID {1}: {2}\n",
+                                    new object[] { DateTime.Now, AppNumberNewAsInt, result.ToString() }))
                             {
-                                StatusText += string.Format("{0}: Successfully Deleted File {1}\n", DateTime.Now, FileNumberCurrentAsInt);
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
                             }
-                            else
-                            {
-                                StatusText += string.Format("{0}: Unable to Remove AppID {1}: {2}\n", DateTime.Now, AppNumberNewAsInt, result.ToString());
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
+                            return;
                         }
                     }
                 }
@@ -2343,16 +2243,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+            await FinalizeTaskAsync();
             return;
         }
 
@@ -2399,21 +2290,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                                 result = await device.FormatDesfireCard(DesfireMasterKeyCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent);
 
-                                if (result == ERROR.NoError)
+                                if (await SetOperationResultAsync(
+                                        result,
+                                        "{0}: Successfully Formatted Card\n",
+                                        new object[] { DateTime.Now },
+                                        "{0}: Unable to Format Card: {1}\n",
+                                        new object[] { DateTime.Now, result.ToString() }))
                                 {
-                                    StatusText += string.Format("{0}: Successfully Formatted Card\n", DateTime.Now);
-                                    CurrentTaskErrorLevel = result;
-                                    await UpdateReaderStatusCommand.ExecuteAsync(false);
                                     return;
                                 }
-
-                                else
-                                {
-                                    StatusText += string.Format("{0}: Unable to Format Card: {1}\n", DateTime.Now, result.ToString());
-                                    CurrentTaskErrorLevel = result;
-                                    await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                    return;
-                                }
+                                return;
                             }
 
                             else
@@ -2422,21 +2308,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                                 result = await device.FormatDesfireCard(DesfireMasterKeyCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent);
 
-                                if (result == ERROR.NoError)
+                                if (await SetOperationResultAsync(
+                                        result,
+                                        "{0}: Successfully Formatted Card\n",
+                                        new object[] { DateTime.Now },
+                                        "{0}: Unable to Format Card: {1}\n",
+                                        new object[] { DateTime.Now, result.ToString() }))
                                 {
-                                    StatusText += string.Format("{0}: Successfully Formatted Card\n", DateTime.Now);
-                                    CurrentTaskErrorLevel = result;
-                                    await UpdateReaderStatusCommand.ExecuteAsync(false);
                                     return;
                                 }
-
-                                else
-                                {
-                                    StatusText += string.Format("{0}: Unable to Format Card: {1}\n", DateTime.Now, result.ToString());
-                                    CurrentTaskErrorLevel = result;
-                                    await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                    return;
-                                }
+                                return;
                             }
                         }
                         else
@@ -2456,16 +2337,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+            await FinalizeTaskAsync();
             return;
         }
 
@@ -2523,16 +2395,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+            await FinalizeTaskAsync();
             return;
         }
 
@@ -2623,16 +2486,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+            await FinalizeTaskAsync();
             return;
         }
 
@@ -2678,16 +2532,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+            await FinalizeTaskAsync();
             return;
 
         }
@@ -2751,15 +2596,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
+            await FinalizeTaskAsync();
             return;
         }
 
@@ -2821,15 +2658,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
 
-            if (CurrentTaskErrorLevel == ERROR.NoError)
-            {
-                IsTaskCompletedSuccessfully = true;
-            }
-            else
-            {
-                IsTaskCompletedSuccessfully = false;
-            }
-
+            await FinalizeTaskAsync();
             return CurrentTaskErrorLevel;
         }
 
