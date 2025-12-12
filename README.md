@@ -1,4 +1,4 @@
-![](docs/resources/logoRG.png) 
+![](docs/assets/img/logoRG.png) 
 
 # RFiDGear - Mifare encoding tool.
 
