@@ -1,23 +1,8 @@
-﻿/* This is RFiDGear's Main Window Class
- * 
- * RFiDGear has a Set of objects in an ObservableCollection.
- * 
- * These objects has the Interface IGenericTask and can have a Type of:
- * - DesfireSetupViewModel
- * - ClassicSetupViewModel
- * - UltralightSetupViewModel
- * - PlusSetupViewModel
- * - CommonTaskSetupViewModel
- * - GenericChipSetupViewModel (i.e. check uid, check chiptype)
- * 
- * Each *SetupViewModel has one of the Following Properties:
- * 
- * - Dialogs: Showing Dialogs to the User. Inherited from MainWindow MVVMDialogs
- * - TaskError: Is "Empty" by default. A Task can only be Executed when its ErrorLevel is Empty
- * - RelayCommands: The "Tasks" that are needed to be done. The RelayCommands can be Executed by its ViewModel and a "Button" or by its 
- *   corresponding "Execute" Method when called as a Task.
- * - 
- */
+﻿/// <summary>
+/// Main application view model that orchestrates startup, UI binding, reader monitoring,
+/// and task execution lifecycles. Instances are exported via MEF under the name
+/// <c>"MainWin"</c> so XAML bindings can resolve this view model from the shared locator.
+/// </summary>
 
 using System;
 using System.Collections.Generic;
@@ -159,12 +144,21 @@ namespace RFiDGear.ViewModel
             updater = new Updater();
         }
 
+        /// <summary>
+        /// Starts asynchronous initialization, ensuring the sequence only runs once per
+        /// application lifetime even if invoked multiple times by the view layer.
+        /// </summary>
+        /// <returns>A task that completes when startup dependencies and timers are ready.</returns>
         public Task InitializeAsync()
         {
             initializationTask ??= InitializeInternalAsync();
             return initializationTask;
         }
 
+        /// <summary>
+        /// Performs the full startup sequence: loads persisted settings, configures reader
+        /// timers, initializes task services, and wires UI collections for data binding.
+        /// </summary>
         private async Task InitializeInternalAsync()
         {
             var bootstrapResult = await settingsBootstrapper.LoadAsync();
