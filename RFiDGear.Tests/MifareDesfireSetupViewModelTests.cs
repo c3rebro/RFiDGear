@@ -34,9 +34,10 @@ namespace RFiDGear.Tests
             bool desfireAppAuthoring,
             bool desfireAppCreation)
         {
-            var viewModel = new MifareDesfireSetupViewModel();
-
-            viewModel.SelectedTaskType = taskType;
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = taskType
+            };
 
             Assert.Equal(fileAuthoring, viewModel.IsDesfireFileAuthoringTabEnabled);
             Assert.Equal(dataExplorerEdit, viewModel.IsDataExplorerEditTabEnabled);

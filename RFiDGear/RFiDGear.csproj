@@ -36,6 +36,9 @@
     <TargetZone>LocalIntranet</TargetZone>
     <GenerateManifests>false</GenerateManifests>
     <GenerateClickOnceManifests>false</GenerateClickOnceManifests>
+    
+    <UseRidGraph>true</UseRidGraph>
+    
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
     <FileVersion>2.0.0</FileVersion>
     <AssemblyVersion>2.0.0</AssemblyVersion>

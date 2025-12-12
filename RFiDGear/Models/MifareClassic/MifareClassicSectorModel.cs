@@ -427,7 +427,7 @@ namespace RFiDGear.Models
             _ = new byte[255];
 
             var sectorTrailer = st.Split(new[] { ',', ';' });
-            if (sectorTrailer.Count() != 3 ||
+            if (sectorTrailer.Length != 3 ||
                 !(CustomConverter.IsInHexFormat(sectorTrailer[1]) && sectorTrailer[1].Length == 8) ||
                 !(CustomConverter.IsInHexFormat(sectorTrailer[0]) && sectorTrailer[0].Length == 12) ||
                 !(CustomConverter.IsInHexFormat(sectorTrailer[2]) && sectorTrailer[2].Length == 12))

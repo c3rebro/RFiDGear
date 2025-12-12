@@ -76,8 +76,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 chipModel = new MifareUltralightChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.MifareUltralight);
 
-                pageModel = new MifareUltralightPageModel(new byte[4], 0);
-                pageModel.PageNumber = selectedUltralightPageCurrentAsInt;
+                pageModel = new MifareUltralightPageModel(new byte[4], 0)
+                {
+                    PageNumber = selectedUltralightPageCurrentAsInt
+                };
 
                 childNodeViewModelFromChip = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);
                 childNodeViewModelTemp = new RFiDChipChildLayerViewModel(pageModel, null, CARD_TYPE.MifareUltralight, null, true);

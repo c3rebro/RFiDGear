@@ -896,7 +896,7 @@ namespace RFiDGear.ViewModel
 
                         for (var i = 0; i < _children.Count; i++)
                         {
-                            for (var j = 0; j < _children[i].Children.Count(); j++)
+                            for (var j = 0; j < _children[i].Children.Count; j++)
                             {
                                 _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
                             }
@@ -917,7 +917,7 @@ namespace RFiDGear.ViewModel
 
                         for (var i = 0; i < _children.Count; i++)
                         {
-                            for (var j = 0; j < _children[i].Children.Count(); j++)
+                            for (var j = 0; j < _children[i].Children.Count; j++)
                             {
                                 _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
                             }
@@ -937,7 +937,7 @@ namespace RFiDGear.ViewModel
 
                         for (var i = 0; i < _children.Count; i++)
                         {
-                            for (var j = 0; j < _children[i].Children.Count(); j++)
+                            for (var j = 0; j < _children[i].Children.Count; j++)
                             {
                                 _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberChipBased = CustomConverter.GetChipBasedDataBlockNumber(i, _children[i].Children[j].MifareClassicDataBlock.DataBlockNumberSectorBased);
                             }

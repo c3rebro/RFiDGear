@@ -32,7 +32,7 @@ namespace RFiDGear.Services
     {
         public AppStartupContext Initialize()
         {
-            var assemblyName = Assembly.GetEntryAssembly().GetName().Name;
+            var assemblyName = Assembly.GetEntryAssembly()?.GetName().Name ?? "RFiDGear";
 
             if (!EventLog.SourceExists(assemblyName))
             {

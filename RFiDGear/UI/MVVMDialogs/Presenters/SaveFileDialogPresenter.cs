@@ -8,14 +8,15 @@ namespace RFiDGear.UI.MVVMDialogs.Presenters
     {
         public void Show(SaveFileDialogViewModel vm)
         {
-            var dlg = new SaveFileDialog();
-
-            dlg.FileName = vm.FileName;
-            dlg.Filter = vm.Filter;
-            dlg.InitialDirectory = vm.InitialDirectory;
-            dlg.RestoreDirectory = vm.RestoreDirectory;
-            dlg.Title = vm.Title;
-            dlg.ValidateNames = vm.ValidateNames;
+            var dlg = new SaveFileDialog
+            {
+                FileName = vm.FileName,
+                Filter = vm.Filter,
+                InitialDirectory = vm.InitialDirectory,
+                RestoreDirectory = vm.RestoreDirectory,
+                Title = vm.Title,
+                ValidateNames = vm.ValidateNames
+            };
 
             var result = dlg.ShowDialog(vm.ParentWindow);
             vm.Result = result != null && result.Value;

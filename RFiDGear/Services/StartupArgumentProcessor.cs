@@ -61,7 +61,7 @@ namespace RFiDGear.Services
                         break;
 
                     default:
-                        if (key.Contains("$"))
+                        if (key.Contains('$'))
                         {
                             result.Variables[key] = value;
                         }
@@ -107,7 +107,7 @@ namespace RFiDGear.Services
                 return path.Replace("??", string.Format("{0:D2}", maxNumber + 1));
             }
 
-            if (path.Contains("?"))
+            if (path.Contains('?'))
             {
                 return path.Replace("?", string.Format("{0:D1}", maxNumber + 1));
             }

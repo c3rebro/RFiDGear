@@ -64,8 +64,10 @@ namespace RFiDGear.Infrastructure.FileAccess
         public void InitUpdateFile()
         {
             XmlWriter xmlWriter;
-            var xmlSettings = new XmlWriterSettings();
-            xmlSettings.Encoding = new UTF8Encoding(false);
+            var xmlSettings = new XmlWriterSettings
+            {
+                Encoding = new UTF8Encoding(false)
+            };
 
             xmlWriter = XmlWriter.Create(Path.Combine(appDataPath, updateConfigFileFileName), xmlSettings);
             xmlWriter.WriteStartDocument();

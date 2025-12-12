@@ -33,10 +33,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         private async Task Initialize()
         {
-            if (GenericChip == null)
-            {
-                GenericChip = new GenericChipModel();
-            }
+            GenericChip ??= new GenericChipModel();
 
             try
             {
@@ -67,10 +64,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         public ElatecNetProvider()
         {
-            if (GenericChip == null)
-            {
-                GenericChip = new GenericChipModel();
-            }
+            GenericChip ??= new GenericChipModel();
         }
 
         #endregion
@@ -431,10 +425,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 {
                     uint[] appArr;
 
-                    if (DesfireChip == null)
-                    {
-                        DesfireChip = new MifareDesfireChipModel();
-                    }
+                    DesfireChip ??= new MifareDesfireChipModel();
 
                     DesfireChip.AppList = new List<MifareDesfireAppModel>();
 
@@ -1055,10 +1046,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     if (fileSettings != null)
                     {
-                        DesfireFileSettings = new DESFireFileSettings();
-
-                        DesfireFileSettings.FileType = (byte)fileSettings.FileType;
-                        DesfireFileSettings.comSett = fileSettings.ComSett;
+                        DesfireFileSettings = new DESFireFileSettings
+                        {
+                            FileType = (byte)fileSettings.FileType,
+                            comSett = fileSettings.ComSett
+                        };
                         DesfireFileSettings.dataFile.fileSize = fileSettings.DataFileSetting != null ? fileSettings.DataFileSetting.FileSize : 0;
                         DesfireFileSettings.accessRights = new byte[2];
                         DesfireFileSettings.accessRights[0] |= fileSettings.accessRights.ReadKeyNo;
@@ -1186,29 +1178,26 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             try
             {
-                /*
-                if (readerDevice.DesfireSelectApplication((uint)_appID))
-                {
-                    if (readerDevice.DesfireAuthenticate(_appReadKey, (byte)_readKeyNo, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyTypeAppReadKey)), 1))
-                    {
-                        MifareDESFireData = readerDevice.DesfireReadData((byte)_fileNo, _fileSize, (byte)_encMode);
 
-                        if (MifareDESFireData != null)
-                        {
-                            return ERROR.NoError;
-                        }
-                        else
-                        {
-                            return ERROR.AuthFailure;
-                        }
+                await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
+
+                if (await AuthToMifareDesfireApplication(_appMasterKey, _keyTypeAppMasterKey, 0, _appID) == ERROR.NoError)
+                {
+                    //MifareDESFireData = readerDevice.DesfireReadData((byte)_fileNo, _fileSize, (byte)_encMode);
+
+                    if (MifareDESFireData != null)
+                    {
+                        return ERROR.NoError;
                     }
                     else
                     {
                         return ERROR.AuthFailure;
                     }
                 }
-                */
-                return ERROR.AuthFailure;
+                else
+                {
+                    return ERROR.AuthFailure;
+                }
 
             }
             catch (Exception e)

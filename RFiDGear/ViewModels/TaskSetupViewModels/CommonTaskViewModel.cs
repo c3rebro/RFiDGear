@@ -1073,7 +1073,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             }
 
                             // the "dollar" indicates an external variable that should be replaced
-                            if (temporaryContent.Contains("$"))
+                            if (temporaryContent.Contains('$'))
                             {
                                 foreach (var kvArg in Args)
                                 {
@@ -1217,7 +1217,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             foreach (var cp in Checkpoints)
                             {
-                                for (var i = 0; i < Checkpoints.Count(); i++)
+                                for (var i = 0; i < Checkpoints.Count; i++)
                                 {
                                     if (cp.ErrorLevel == Checkpoints[i].ErrorLevel)
                                     {
@@ -1237,7 +1237,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             foreach (var cp in Checkpoints)
                             {
-                                for (var i = 0; i < Checkpoints.Count(); i++)
+                                for (var i = 0; i < Checkpoints.Count; i++)
                                 {
                                     if (cp.ErrorLevel == Checkpoints[i].ErrorLevel)
                                     {
@@ -1380,7 +1380,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                             case "%COUNTAPPS":
                                                 uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
 
-                                                if (DesfireChip?.AppIDs.Count() >= compareValueAsUInt)
+                                                if (DesfireChip?.AppIDs.Length >= compareValueAsUInt)
                                                 {
                                                     CurrentTaskErrorLevel = ERROR.NoError;
                                                     break;
@@ -1439,7 +1439,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                     if (comparetemp.Length == 2)
                                     {
                                         // the "dollar" indicates an external variable that should be replaced
-                                        if (comparetemp[0].Contains("$"))
+                                        if (comparetemp[0].Contains('$'))
                                         {
                                             foreach (var kvArg in Args)
                                             {
@@ -1473,7 +1473,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                             case "%COUNTAPPS":
                                                 uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
 
-                                                if (DesfireChip?.AppIDs.Count() >= compareValueAsUInt)
+                                                if (DesfireChip?.AppIDs.Length >= compareValueAsUInt)
                                                 {
                                                     CurrentTaskErrorLevel = ERROR.NoError;
                                                     break;
@@ -1497,7 +1497,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                     if (comparetemp.Length == 2)
                                     {
                                         // the "dollar" indicates an external variable that should be replaced
-                                        if (comparetemp[0].Contains("$"))
+                                        if (comparetemp[0].Contains('$'))
                                         {
                                             foreach (var kvArg in Args)
                                             {
@@ -1531,7 +1531,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                             case "%COUNTAPPS":
                                                 uint.TryParse(new string(comparetemp[1].Where(c => Char.IsDigit(c)).ToArray()), out compareValueAsUInt);
 
-                                                if (DesfireChip?.AppIDs.Count() >= compareValueAsUInt)
+                                                if (DesfireChip?.AppIDs.Length >= compareValueAsUInt)
                                                 {
                                                     CurrentTaskErrorLevel = ERROR.NoError;
                                                     break;
@@ -1591,7 +1591,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 ProcessStartInfo info;
 
                 //InitOnFirstRun Program from RFiDGear Argument 
-                if (ProgramToExecute.Contains("$"))
+                if (ProgramToExecute.Contains('$'))
                 {
                     var argArr = ProgramToExecute.Split('\"');
 
@@ -1610,7 +1610,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     var joinedArgs = string.Join(" ", argArr);
 
-                    foreach(KeyValuePair<string,string> argToReplace in Args.Where(arg => arg.Key.Contains("$")))
+                    foreach(KeyValuePair<string,string> argToReplace in Args.Where(arg => arg.Key.Contains('$')))
                     {
                         joinedArgs = joinedArgs.Replace(argToReplace.Key, argToReplace.Value);
                     }

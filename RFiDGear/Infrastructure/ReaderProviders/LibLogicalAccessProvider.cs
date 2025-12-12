@@ -740,9 +740,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 }
 
                 // The excepted memory tree
-                DESFireLocation location = new DESFireLocation();
-                // File communication requires encryption
-                location.securityLevel = (LibLogicalAccess.Card.EncryptionMode)EncryptionMode.CM_ENCRYPT;
+                DESFireLocation location = new DESFireLocation
+                {
+                    // File communication requires encryption
+                    securityLevel = (LibLogicalAccess.Card.EncryptionMode)EncryptionMode.CM_ENCRYPT
+                };
 
                 // Keys to use for authentication
                 DESFireAccessInfo aiToUse = new DESFireAccessInfo();
@@ -1029,13 +1031,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 // The excepted memory tree
-                DESFireLocation location = new DESFireLocation();
-                // The Application ID to use
-                location.aid = (uint)_appID;
-                // File 0 into this application
-                location.file = (byte)_fileNo;
-                // File communication requires encryption
-                location.securityLevel = (LibLogicalAccess.Card.EncryptionMode)_encMode;
+                DESFireLocation location = new DESFireLocation
+                {
+                    // The Application ID to use
+                    aid = (uint)_appID,
+                    // File 0 into this application
+                    file = (byte)_fileNo,
+                    // File communication requires encryption
+                    securityLevel = (LibLogicalAccess.Card.EncryptionMode)_encMode
+                };
 
                 // Keys to use for authentication
 
@@ -1123,13 +1127,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 // The excepted memory tree
-                DESFireLocation location = new DESFireLocation();
-                // The Application ID to use
-                location.aid = (uint)_appID;
-                // File 0 into this application
-                location.file = (byte)_fileNo;
-                // File communication requires encryption
-                location.securityLevel = (LibLogicalAccess.Card.EncryptionMode)_encMode;
+                DESFireLocation location = new DESFireLocation
+                {
+                    // The Application ID to use
+                    aid = (uint)_appID,
+                    // File 0 into this application
+                    file = (byte)_fileNo,
+                    // File communication requires encryption
+                    securityLevel = (LibLogicalAccess.Card.EncryptionMode)_encMode
+                };
 
                 // Keys to use for authentication
 
@@ -1220,9 +1226,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 // The excepted memory tree
-                DESFireLocation location = new DESFireLocation();
-                // The Application ID to use
-                location.aid = (uint)_appID;
+                DESFireLocation location = new DESFireLocation
+                {
+                    // The Application ID to use
+                    aid = (uint)_appID
+                };
                 // File communication requires encryption
 
                 // Keys to use for authentication
@@ -1456,12 +1464,14 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 // The excepted memory tree
-                DESFireLocation location = new DESFireLocation();
-                // The Application ID to use
-                location.aid = (uint)_appID;
+                DESFireLocation location = new DESFireLocation
+                {
+                    // The Application ID to use
+                    aid = (uint)_appID,
 
-                // File communication requires encryption
-                location.securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT;
+                    // File communication requires encryption
+                    securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT
+                };
 
                 // IDESFireEV1Commands cmd;
                 // Keys to use for authentication
@@ -1787,11 +1797,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 // The excepted memory tree
-                DESFireLocation location = new DESFireLocation();
-                // The Application ID to use
-                location.aid = _appID;
-                // File communication requires encryption
-                location.securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT;
+                DESFireLocation location = new DESFireLocation
+                {
+                    // The Application ID to use
+                    aid = _appID,
+                    // File communication requires encryption
+                    securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT
+                };
 
                 // IDESFireEV1Commands cmd;
                 // Keys to use for authentication
@@ -1858,11 +1870,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 // The excepted memory tree
-                DESFireLocation location = new DESFireLocation();
-                // The Application ID to use
-                location.aid = (uint)_appID;
-                // File communication requires encryption
-                location.securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT;
+                DESFireLocation location = new DESFireLocation
+                {
+                    // The Application ID to use
+                    aid = (uint)_appID,
+                    // File communication requires encryption
+                    securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT
+                };
 
                 // Keys to use for authentication
                 DESFireAccessInfo aiToUse = new DESFireAccessInfo();
@@ -1928,11 +1942,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 // The excepted memory tree
-                DESFireLocation location = new DESFireLocation();
-                // The Application ID to use
-                location.aid = 0;
-                // File communication requires encryption
-                location.securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT;
+                DESFireLocation location = new DESFireLocation
+                {
+                    // The Application ID to use
+                    aid = 0,
+                    // File communication requires encryption
+                    securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT
+                };
 
                 // Keys to use for authentication
                 DESFireAccessInfo aiToUse = new DESFireAccessInfo();
@@ -1989,11 +2005,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 // The excepted memory tree
-                DESFireLocation location = new DESFireLocation();
-                // The Application ID to use
-                location.aid = (uint)_appID;
-                // File communication requires encryption
-                location.securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT;
+                DESFireLocation location = new DESFireLocation
+                {
+                    // The Application ID to use
+                    aid = (uint)_appID,
+                    // File communication requires encryption
+                    securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT
+                };
 
                 //IDESFireEV1Commands cmd;
                 // Keys to use for authentication
@@ -2108,12 +2126,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 try
                                 {
                                     fsFromChip = cmd.getFileSettings((byte)_fileNo);
-                                    DesfireFileSettings = new DESFireFileSettings();
-
-                                    DesfireFileSettings.accessRights = fsFromChip.accessRights;
-                                    DesfireFileSettings.comSett = fsFromChip.comSett;
-                                    //dataFile = fs.getDataFile(),
-                                    DesfireFileSettings.FileType = fsFromChip.fileType;
+                                    DesfireFileSettings = new DESFireFileSettings
+                                    {
+                                        accessRights = fsFromChip.accessRights,
+                                        comSett = fsFromChip.comSett,
+                                        //dataFile = fs.getDataFile(),
+                                        FileType = fsFromChip.fileType
+                                    };
 
                                     return ERROR.NoError;
                                 }
@@ -2133,12 +2152,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             }
 
                             fsFromChip = cmd.getFileSettings((byte)_fileNo);
-                            DesfireFileSettings = new DESFireFileSettings();
-
-                            DesfireFileSettings.accessRights = fsFromChip.accessRights;
-                            DesfireFileSettings.comSett = fsFromChip.comSett;
-                            //dataFile = fs.getDataFile(),
-                            DesfireFileSettings.FileType = fsFromChip.fileType;
+                            DesfireFileSettings = new DESFireFileSettings
+                            {
+                                accessRights = fsFromChip.accessRights,
+                                comSett = fsFromChip.comSett,
+                                //dataFile = fs.getDataFile(),
+                                FileType = fsFromChip.fileType
+                            };
 
                             return ERROR.NoError;
                         }
