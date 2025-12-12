@@ -1,7 +1,6 @@
-![](https://messgeraetetechnik-hansen.de/rfidgear/logoRG.png) 
+![](docs/resources/logoRG.png) 
 
-# RFiDGear
-**Your essential gear to encode (read - modify - write) rfid tags.**
+# RFiDGear - Mifare encoding tool.
 
 Support for batch processing.
 
@@ -9,7 +8,7 @@ Support for batch processing.
 
 ![](https://messgeraetetechnik-hansen.de/rfidgear/mainWnd.jpg) 
 
-### [Info](https://https://c3rebro.github.io/rfidgear) | [Download](https://github.com/c3rebro/RFiDGear/releases) | [Report Bugs](https://github.com/c3rebro/RFiDGear/issues)
+### [Info](https://c3rebro.github.io/RFiDGear/) | [Download](https://github.com/c3rebro/RFiDGear/releases) | [Report Bugs](https://github.com/c3rebro/RFiDGear/issues)
 
 Requirements:
 
