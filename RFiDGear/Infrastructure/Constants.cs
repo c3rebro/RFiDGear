@@ -1,9 +1,13 @@
-﻿/*
- * Codex TODO: Create a new head section here what the file contains. Mifare specific content should be moved first.
+/*
+ * Shared constants and generic types used across the RFiDGear infrastructure layer.
+ *
+ * This file now focuses on cross-technology primitives such as card classification,
+ * error codes, and reader selection flags. MIFARE-specific types have been extracted
+ * into <see cref="MifareConstants"/> to keep the generic definitions tidy.
+ *
  * Created by SharpDevelop.
  * Date: 12.10.2017
  * Time: 11:21
- *
  */
 
 using System;
@@ -400,145 +404,4 @@ namespace RFiDGear.Infrastructure
         PCSC
     };
 
-    /// <summary>
-    /// Codex TODO: This is not a generic enum but a mifare desfire specific one
-    /// </summary>
-    public enum KeyType_MifareDesFireKeyType
-    {
-        DefaultDesfireCardCardMasterKey,
-        DefaultDesfireCardApplicationMasterKey,
-        DefaultDesfireCardReadKey,
-        DefaultDesfireCardWriteKey
-    }
-
-    /// <summary>
-    /// Codex TODO: This is not a generic enum but a mifare desfire specific one
-    /// </summary>
-    [Flags]
-    public enum DESFireKeyType
-    {
-        DF_KEY_DES = 0,
-        DF_KEY_3K3DES = 64,
-        DF_KEY_AES = 128
-    }
-
-    /// <summary>
-    /// Codex TODO: This is not a generic enum but a mifare desfire specific one
-    /// </summary>
-    public class DESFireFileSettings
-    {
-        public byte[] accessRights;
-        public byte FileType;
-        public byte comSett; // Encrypted, Plain...
-        public DataFileSetting dataFile;
-        public RecordFileSetting recordFile;
-        public ValueFileSetting valueFile;
-    }
-
-    /// <summary>
-    /// Codex TODO: This is not a generic enum but a mifare desfire specific one
-    /// </summary>
-    public struct DataFileSetting
-    {
-        public uint fileSize;
-    }
-
-    /// <summary>
-    /// Codex TODO: This is not a generic enum but a mifare desfire specific one. RFU
-    /// </summary>
-    public struct RecordFileSetting
-    {
-
-    }
-
-    /// <summary>
-    /// Codex TODO: This is not a generic enum but a mifare desfire specific one. RFU
-    /// </summary>
-    public struct ValueFileSetting
-    {
-
-    }
-
-    /// <summary>
-    /// Codex TODO: This is not a generic enum but a mifare desfire specific one
-    /// </summary>
-    [Flags]
-    public enum TaskAccessRights
-    {
-        AR_KEY0 = 0,
-        AR_KEY1 = 1,
-        AR_KEY2 = 2,
-        AR_KEY3 = 3,
-        AR_KEY4 = 4,
-        AR_KEY5 = 5,
-        AR_KEY6 = 6,
-        AR_KEY7 = 7,
-        AR_KEY8 = 8,
-        AR_KEY9 = 9,
-        AR_KEY10 = 10,
-        AR_KEY11 = 11,
-        AR_KEY12 = 12,
-        AR_KEY13 = 13,
-        AR_FREE = 14,
-        AR_NEVER = 15
-    }
-
-    /// <summary>
-    /// Codex TODO: This is not a generic enum but a mifare desfire specific one. This defines what could be done with a file on desfire and what key to use for it. Ex: readAccess = AR_Key1 means 'use key 1 to read that file'
-    /// </summary>
-    public struct DESFireAccessRights
-    {
-        public TaskAccessRights readAccess;
-        public TaskAccessRights writeAccess;
-        public TaskAccessRights changeAccess;
-        public TaskAccessRights readAndWriteAccess;
-    }
-
-    /// <summary>
-    /// Codex TODO: This is not a generic enum but a mifare desfire specific one. it defined the so called Com Mode on how to talk to the desfire file. note: reading writing files has to be taken encrypted always
-    /// </summary>
-    [Flags]
-    public enum EncryptionMode
-    {
-        CM_PLAIN = 0,
-        CM_MAC = 1,
-        CM_ENCRYPT = 3,
-        CM_UNKNOWN = 255
-    }
-
-    /// <summary>
-    /// Codex TODO: This is not a generic enum but a mifare desfire specific one. A default key could be defind in the settings file for testing if the card could be written to
-    /// </summary>
-    public struct MifareDesfireDefaultKeys
-    {
-        public MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType _keyType, DESFireKeyType _encryptionType, string _key)
-        {
-            KeyType = _keyType;
-            EncryptionType = _encryptionType;
-            Key = _key;
-        }
-
-        public KeyType_MifareDesFireKeyType KeyType;
-        public DESFireKeyType EncryptionType;
-
-        public string Key;
-    }
-
-    /// <summary>
-    /// Codex TODO: This is not a generic enum but a mifare classic specific one. 
-    /// </summary>
-    public struct MifareClassicDefaultKeys
-    {
-        public MifareClassicDefaultKeys(int _keyNumber, string _accessBits)
-        {
-            KeyNumber = _keyNumber;
-            accessBits = _accessBits;
-        }
-
-        private string accessBits;
-
-        public int KeyNumber;
-        public string AccessBits { get { return accessBits; } set { accessBits = value; } }
-    }
 }
-

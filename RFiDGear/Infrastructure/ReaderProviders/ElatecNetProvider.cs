@@ -803,7 +803,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <summary>
-        /// codex TODO: this method was copied from the method 'ChangeMifareDesfireApplicationKey'. the goal was to seperate key changes and keySetting changes. the previous implementation violated SRP coding style. but the UI does not reflect that yet: there is only one desfire task type 'OnNewChangeAppKeyCommand'. But no 'OnNewChangeAppKeySettingsCommand' and no matching ressource entry. also editing the keysettings need prior authentication with a key that does not exist in the UI. previously, the tab 'TabPageMifareDesfireApplicationMasteringView' was used to provide the keys needed. but that would mean to mix up multiple UI tabs while using SRP in code.
+        /// Handles DESFire application key setting updates. This method intentionally separates key changes and key-setting
+        /// changes to follow single-responsibility principles.
         /// </summary>
         /// <param name="_applicationMasterKeyCurrent"></param>
         /// <param name="_keyNumberCurrent"></param>
@@ -852,7 +853,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     else
                     {
-                        //Codex TODO: Surface that ERROR to the user and to the log: The Key must be equal in ChangeMifareDesfireApplicationKeySettings
+                        const string mismatchMessage = "Changing DESFire application key settings requires identical current and target master keys.";
+                        eventLog.WriteEntry(mismatchMessage, EventLogEntryType.Error);
+                        return ERROR.ProtocolConstraint;
                     }
 
                     return ERROR.NoError;
