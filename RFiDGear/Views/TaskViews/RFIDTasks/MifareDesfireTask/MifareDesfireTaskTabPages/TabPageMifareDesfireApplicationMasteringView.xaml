@@ -66,6 +66,15 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}" />
+                    <Label
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Margin="8,0,8,8"
+                        VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireAppSetupKeySettings'}" />
                     <TextBox
                         Grid.Row="1"
                         Grid.Column="1"
@@ -93,6 +102,69 @@
                             </Style>
                         </TextBox.Resources>
                     </TextBox>
+                    <StackPanel
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Margin="8,0,8,8"
+                        VerticalAlignment="Top"
+                        HorizontalAlignment="Left">
+                        <CheckBox
+                            Margin="0,0,0,4"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowChange'}"
+                            IsChecked="{Binding IsAllowChangeMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowChangeMK'}" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <CheckBox
+                            Margin="0,0,0,4"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowListing'}"
+                            IsChecked="{Binding IsAllowListingWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowListing'}" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <CheckBox
+                            Margin="0,0,0,4"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowCreateDelete'}"
+                            IsChecked="{Binding IsAllowCreateDelWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowCreateDelete'}" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <CheckBox
+                            Margin="0,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowConfigChange'}"
+                            IsChecked="{Binding IsAllowConfigChangableChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                            <ToggleButton.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxConfigChangeable'}" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </ToggleButton.ToolTip>
+                        </CheckBox>
+                    </StackPanel>
                     <Label
                         Grid.Row="0"
                         Grid.Column="0"

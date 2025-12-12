@@ -512,7 +512,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         break;
 
                     case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
-                        SetTabAvailability(false, false, false, false, true, true, true);
+                        SetTabAvailability(false, false, false, false, true, true, false);
                         break;
 
                     case TaskType_MifareDesfireTask.ChangeDefault:
@@ -2015,6 +2015,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private async Task OnNewChangeAppKeyCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
+
+            IsDesfireAppCreationTabEnabled = false;
 
             using (var device = ReaderDevice.Instance)
             {

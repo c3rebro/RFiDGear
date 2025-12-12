@@ -23,6 +23,7 @@ namespace RFiDGear.Tests
         [Theory]
         [InlineData(TaskType_MifareDesfireTask.ChangeDefault, true, true, true, true, true, true, true)]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false, true, false, false, false, false)]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, false, false, false, false, true, true, false)]
         [InlineData(TaskType_MifareDesfireTask.AuthenticateApplication, false, false, false, true, true, true, false)]
         public void SelectedTaskType_SetsExpectedTabAvailability(
             TaskType_MifareDesfireTask taskType,
