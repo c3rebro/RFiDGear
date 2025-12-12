@@ -7,13 +7,31 @@ using System.Threading;
 
 namespace RFiDGear.Services
 {
+    /// <summary>
+    /// Defines the startup contract for initializing application-wide resources before
+    /// the main window is shown.
+    /// </summary>
     public interface IAppStartupInitializer
     {
+        /// <summary>
+        /// Creates the shared startup context, including the Windows event log handle,
+        /// single-instance mutex, and parsed command-line arguments.
+        /// </summary>
+        /// <returns>An initialized <see cref="AppStartupContext"/>.</returns>
         AppStartupContext Initialize();
     }
 
+    /// <summary>
+    /// Holds process-wide objects produced during application startup.
+    /// </summary>
     public class AppStartupContext
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AppStartupContext"/> class.
+        /// </summary>
+        /// <param name="eventLog">Event log used for application-level tracing.</param>
+        /// <param name="mutex">Mutex ensuring the app runs as a single instance.</param>
+        /// <param name="arguments">Command-line arguments supplied to the process.</param>
         public AppStartupContext(EventLog eventLog, Mutex mutex, string[] arguments)
         {
             EventLog = eventLog;
@@ -28,8 +46,14 @@ namespace RFiDGear.Services
         public string[] Arguments { get; }
     }
 
+    /// <summary>
+    /// Default initializer that sets up the Windows event log source, enforces a
+    /// single running instance, and captures command-line arguments for downstream
+    /// services.
+    /// </summary>
     public class AppStartupInitializer : IAppStartupInitializer
     {
+        /// <inheritdoc />
         public AppStartupContext Initialize()
         {
             var assemblyName = Assembly.GetEntryAssembly()?.GetName().Name ?? "RFiDGear";
