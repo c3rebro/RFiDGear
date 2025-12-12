@@ -1,4 +1,6 @@
-﻿using RFiDGear.Infrastructure.AccessControl;
+﻿using Elatec.NET.Cards.Mifare;
+using LibLogicalAccess;
+using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Models;
 
@@ -94,7 +96,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public byte MaxNumberOfAppKeys { get; set; }
         public DESFireKeyType EncryptionType { get; set; }
         public DESFireFileSettings DesfireFileSettings { get; set; }
-        public DESFireKeySettings DesfireAppKeySetting { get; set; }
+        public AccessControl.DESFireKeySettings DesfireAppKeySetting { get; set; }
 
         #region Common
         public abstract Task<ERROR> ConnectAsync();
@@ -110,7 +112,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public abstract Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
                                                string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
                                                string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
-                                               byte[] buffer, byte _madGPB, SectorAccessBits _sab, bool _useMADToAuth, bool _keyToWriteUseMAD);
+                                               byte[] buffer, byte _madGPB, AccessControl.SectorAccessBits _sab, bool _useMADToAuth, bool _keyToWriteUseMAD);
         public abstract Task<ERROR> ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse, string _bKeyToUse,
                                                 string _madAKeyToUse, string _madBKeyToUse, int _length, byte _madGPB,
                                                 bool _useMADToAuth, bool _aiToUseIsMAD);
@@ -149,12 +151,32 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <param name="_maxNbKeys">int max. number of keys</param>
         /// <param name="_appID">int application id</param>
         /// <returns>True if the Operation was successful, false otherwise</returns>
-        public abstract Task<OperationResult> CreateMifareDesfireApplication(string _piccMasterKey, DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true);
+        public abstract Task<OperationResult> CreateMifareDesfireApplication(string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true);
 
         public abstract Task<ERROR> ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
                                         string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget,
-                                        DESFireKeySettings keySettings, int keyVersion);
+                                        AccessControl.DESFireKeySettings keySettings, int keyVersion);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_applicationMasterKeyCurrent"></param>
+        /// <param name="_keyNumberCurrent"></param>
+        /// <param name="_keyTypeCurrent"></param>
+        /// <param name="_applicationMasterKeyTarget"></param>
+        /// <param name="_keyNumberTarget"></param>
+        /// <param name="selectedDesfireAppKeyVersionTargetAsIntint"></param>
+        /// <param name="_keyTypeTarget"></param>
+        /// <param name="_appIDCurrent"></param>
+        /// <param name="_appIDTarget"></param>
+        /// <param name="keySettings"></param>
+        /// <param name="keyVersion"></param>
+        /// <returns></returns>
+        public abstract Task<ERROR> ChangeMifareDesfireApplicationKeySettings(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
+                                        string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+                                        DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion);
+
         public abstract Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, uint _appID = 0);
         public abstract Task<ERROR> DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0);
         public abstract Task<ERROR> FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType);

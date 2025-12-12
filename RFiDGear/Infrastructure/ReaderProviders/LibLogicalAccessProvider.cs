@@ -1792,6 +1792,161 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        public override async Task<ERROR> ChangeMifareDesfireApplicationKeySettings(
+    string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
+    string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+    DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int _)
+        {
+            try
+            {
+                DESFireKey masterApplicationKey = new DESFireKey();
+                masterApplicationKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent);
+                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
+                masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
+
+                DESFireKey applicationMasterKeyTarget = new DESFireKey();
+                applicationMasterKeyTarget.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeTarget);
+                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
+                applicationMasterKeyTarget.fromString(CustomConverter.DesfireKeyToCheck);
+
+                readerUnit.disconnectFromReader();
+
+                if (await tryInitReader())
+                {
+                    card = readerUnit.getSingleChip();
+
+                    if (card.getCardType() == "DESFire" ||
+                        card.getCardType() == "DESFireEV1" ||
+                        card.getCardType() == "DESFireEV2" ||
+                        card.getCardType() == "DESFireEV3")
+                    {
+                        var cmd = card.getCommands() as DESFireCommands;
+                        var ev1Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV1ISO7816Commands;
+                        var ev2Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV2ISO7816Commands;
+                        var ev3Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV3ISO7816Commands;
+
+
+                        try
+                        {
+                            if (_appIDCurrent == 0)
+                            {
+                                try
+                                {
+                                    cmd.selectApplication((uint)_appIDCurrent);
+                                    cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+                                    cmd.changeKeySettings((LibLogicalAccess.Card.DESFireKeySettings)keySettings);
+                                    cmd.selectApplication((uint)_appIDCurrent);
+                                    cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+                                    cmd.changeKey((byte)_keyNumberCurrent, applicationMasterKeyTarget);
+                                    return ERROR.NoError;
+                                }
+
+                                catch
+                                {
+                                    try
+                                    {
+                                        cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+                                        cmd.changeKey((byte)_keyNumberCurrent, applicationMasterKeyTarget);
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        if (e.Message != "" && e.Message.Contains("same number already exists"))
+                                        {
+                                            return ERROR.ProtocolConstraint;
+                                        }
+                                        else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+                                        {
+                                            return ERROR.AuthFailure;
+                                        }
+                                        else
+                                        {
+                                            return ERROR.TransportError;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+
+                                applicationMasterKeyTarget.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent);
+
+                                cmd.selectApplication((uint)_appIDCurrent);
+
+                                try
+                                {
+                                    cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+                                    cmd.changeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+                                    cmd.authenticate((byte)_keyNumberCurrent, applicationMasterKeyTarget);
+
+                                    try
+                                    {
+                                        cmd.changeKeySettings((LibLogicalAccess.Card.DESFireKeySettings)keySettings);
+                                    }
+                                    catch { }
+                                }
+
+                                catch (Exception)
+                                {
+                                    try
+                                    {
+                                        cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+                                        cmd.changeKeySettings((LibLogicalAccess.Card.DESFireKeySettings)keySettings);
+                                        cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+                                        cmd.changeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+                                        return ERROR.NoError;
+                                    }
+
+                                    catch
+                                    {
+                                        try
+                                        {
+                                            cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+                                            cmd.changeKey((byte)_keyNumberTarget, applicationMasterKeyTarget);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            if (e.Message != "" && e.Message.Contains("same number already exists"))
+                                            {
+                                                return ERROR.ProtocolConstraint;
+                                            }
+                                            else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+                                            {
+                                                return ERROR.AuthFailure;
+                                            }
+                                            else
+                                                return ERROR.TransportError;
+                                        }
+                                    }
+                                }
+                            }
+
+                            return ERROR.NoError;
+                        }
+                        catch (Exception e)
+                        {
+                            if (e.Message != "" && e.Message.Contains("same number already exists"))
+                            {
+                                return ERROR.ProtocolConstraint;
+                            }
+                            else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+                            {
+                                return ERROR.AuthFailure;
+                            }
+                            else
+                                return ERROR.TransportError;
+                        }
+                    }
+                    else
+                        return ERROR.TransportError;
+                }
+                return ERROR.TransportError;
+            }
+            catch
+            {
+                return ERROR.TransportError;
+            }
+        }
+
         public override async Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, uint _appID = 0)
         {
             try

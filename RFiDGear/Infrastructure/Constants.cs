@@ -1,4 +1,5 @@
 ﻿/*
+ * Codex TODO: Create a new head section here what the file contains. Mifare specific content should be moved first.
  * Created by SharpDevelop.
  * Date: 12.10.2017
  * Time: 11:21
@@ -378,7 +379,7 @@ namespace RFiDGear.Infrastructure
     };
 
     /// <summary>
-    /// Key Formatting Errors
+    /// Generic: Key Formatting Errors
     /// </summary>
     public enum KEY_ERROR
     {
@@ -399,6 +400,9 @@ namespace RFiDGear.Infrastructure
         PCSC
     };
 
+    /// <summary>
+    /// Codex TODO: This is not a generic enum but a mifare desfire specific one
+    /// </summary>
     public enum KeyType_MifareDesFireKeyType
     {
         DefaultDesfireCardCardMasterKey,
@@ -407,6 +411,9 @@ namespace RFiDGear.Infrastructure
         DefaultDesfireCardWriteKey
     }
 
+    /// <summary>
+    /// Codex TODO: This is not a generic enum but a mifare desfire specific one
+    /// </summary>
     [Flags]
     public enum DESFireKeyType
     {
@@ -415,33 +422,45 @@ namespace RFiDGear.Infrastructure
         DF_KEY_AES = 128
     }
 
+    /// <summary>
+    /// Codex TODO: This is not a generic enum but a mifare desfire specific one
+    /// </summary>
     public class DESFireFileSettings
     {
         public byte[] accessRights;
         public byte FileType;
-        public byte comSett;
+        public byte comSett; // Encrypted, Plain...
         public DataFileSetting dataFile;
         public RecordFileSetting recordFile;
         public ValueFileSetting valueFile;
     }
 
+    /// <summary>
+    /// Codex TODO: This is not a generic enum but a mifare desfire specific one
+    /// </summary>
     public struct DataFileSetting
     {
         public uint fileSize;
     }
 
+    /// <summary>
+    /// Codex TODO: This is not a generic enum but a mifare desfire specific one. RFU
+    /// </summary>
     public struct RecordFileSetting
     {
 
     }
 
+    /// <summary>
+    /// Codex TODO: This is not a generic enum but a mifare desfire specific one. RFU
+    /// </summary>
     public struct ValueFileSetting
     {
 
     }
 
     /// <summary>
-    /// 
+    /// Codex TODO: This is not a generic enum but a mifare desfire specific one
     /// </summary>
     [Flags]
     public enum TaskAccessRights
@@ -465,7 +484,7 @@ namespace RFiDGear.Infrastructure
     }
 
     /// <summary>
-    /// 
+    /// Codex TODO: This is not a generic enum but a mifare desfire specific one. This defines what could be done with a file on desfire and what key to use for it. Ex: readAccess = AR_Key1 means 'use key 1 to read that file'
     /// </summary>
     public struct DESFireAccessRights
     {
@@ -476,7 +495,7 @@ namespace RFiDGear.Infrastructure
     }
 
     /// <summary>
-    /// 
+    /// Codex TODO: This is not a generic enum but a mifare desfire specific one. it defined the so called Com Mode on how to talk to the desfire file. note: reading writing files has to be taken encrypted always
     /// </summary>
     [Flags]
     public enum EncryptionMode
@@ -488,7 +507,7 @@ namespace RFiDGear.Infrastructure
     }
 
     /// <summary>
-    /// 
+    /// Codex TODO: This is not a generic enum but a mifare desfire specific one. A default key could be defind in the settings file for testing if the card could be written to
     /// </summary>
     public struct MifareDesfireDefaultKeys
     {
@@ -506,7 +525,7 @@ namespace RFiDGear.Infrastructure
     }
 
     /// <summary>
-    /// 
+    /// Codex TODO: This is not a generic enum but a mifare classic specific one. 
     /// </summary>
     public struct MifareClassicDefaultKeys
     {

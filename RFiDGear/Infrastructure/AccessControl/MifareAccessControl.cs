@@ -64,6 +64,7 @@ namespace RFiDGear.Infrastructure.AccessControl
     }
 
     /// <summary>
+    /// Codex TODO: While the term 'Mifare' in MifareAccessControl.cs is correct it represents Mifare Desfire and Mifare Classic and more. Constants.cs however contains elements with the same origin. This split-up of related elements should be avoided if they belong to each other.
     /// DESFire key settings as defined by the NXP datasheet. These values are sent directly
     /// as configuration bytes during application creation or key updates.
     /// </summary>

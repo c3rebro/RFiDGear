@@ -777,29 +777,14 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKeyCurrent, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeCurrent)), DESFIRE_AUTHMODE_COMPATIBLE);
 
-                    if (_applicationMasterKeyCurrent == _applicationMasterKeyTarget)
-                    {
-                        await readerDevice.MifareDesfire_ChangeKeySettingsAsync(
-                            (DESFireAppAccessRights)keySettings,
-                            0,
-                            (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(
-                                typeof(Elatec.NET.Cards.Mifare.DESFireKeyType),
-                                Enum.GetName(typeof(DESFireKeyType), _keyTypeTarget)
-                                )
-                            );
-                    }
-
-                    else
-                    {
-                        await readerDevice.MifareDesfire_ChangeKeyAsync(
-                            _applicationMasterKeyCurrent,
-                            _applicationMasterKeyTarget,
-                            (byte)keyVersion,
-                            _keyNumberCurrent == 0 ? (byte)keySettings : (byte)((byte)keySettings | 0xE0),
-                            (byte)_keyNumberTarget,
-                            1,
-                            (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeTarget)));
-                    }
+                    await readerDevice.MifareDesfire_ChangeKeyAsync(
+                        _applicationMasterKeyCurrent,
+                        _applicationMasterKeyTarget,
+                        (byte)keyVersion,
+                        _keyNumberCurrent == 0 ? (byte)keySettings : (byte)((byte)keySettings | 0xE0),
+                        (byte)_keyNumberTarget,
+                        1,
+                        (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeTarget)));
 
                     return ERROR.NoError;
                 }
@@ -815,6 +800,73 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
 
 
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="_applicationMasterKeyCurrent"></param>
+        /// <param name="_keyNumberCurrent"></param>
+        /// <param name="_keyTypeCurrent"></param>
+        /// <param name="_applicationMasterKeyTarget"></param>
+        /// <param name="_keyNumberTarget"></param>
+        /// <param name="selectedDesfireAppKeyVersionTargetAsIntint"></param>
+        /// <param name="_keyTypeTarget"></param>
+        /// <param name="_appIDCurrent"></param>
+        /// <param name="_appIDTarget"></param>
+        /// <param name="keySettings"></param>
+        /// <param name="keyVersion"></param>
+        /// <returns></returns>
+        public async override Task<ERROR> ChangeMifareDesfireApplicationKeySettings(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
+                                        string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+                                        DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion)
+        {
+            if (readerDevice.IsConnected)
+            {
+                if (readerDevice.IsTWN4LegicReader)
+                {
+                    try
+                    {
+                        await readerDevice.SearchTagAsync();
+                    }
+                    catch { }
+                }
+
+                try
+                {
+                    await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appIDCurrent);
+
+                    await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKeyCurrent, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeCurrent)), DESFIRE_AUTHMODE_COMPATIBLE);
+
+                    if (_applicationMasterKeyCurrent == _applicationMasterKeyTarget)
+                    {
+                        await readerDevice.MifareDesfire_ChangeKeySettingsAsync(
+                            (DESFireAppAccessRights)keySettings,
+                            0,
+                            (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(
+                                typeof(Elatec.NET.Cards.Mifare.DESFireKeyType),
+                                Enum.GetName(typeof(DESFireKeyType), _keyTypeTarget)
+                                )
+                            );
+                    }
+
+                    else
+                    {
+                        //Codex TODO: Surface that ERROR to the user and to the log: The Key must be equal in ChangeMifareDesfireApplicationKeySettings
+                    }
+
+                    return ERROR.NoError;
+                }
+                catch
+                {
+                    return ERROR.AuthFailure;
+                }
+            }
+
+            else
+            {
+                return ERROR.TransportError;
+            }
         }
 
         /// <summary>

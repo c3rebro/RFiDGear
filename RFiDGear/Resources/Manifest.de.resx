@@ -272,10 +272,10 @@ ein Kartenlesegerät auswählen</value>
     <value>Standardwerte ändern</value>
   </data>
   <data name="ENUM.DESFireKeyType.DF_KEY_DES" xml:space="preserve">
-    <value>DES</value>
+    <value>3DES</value>
   </data>
   <data name="ENUM.DESFireKeyType.DF_KEY_3K3DES" xml:space="preserve">
-    <value>3DES</value>
+    <value>3K3DES</value>
   </data>
   <data name="ENUM.DESFireKeyType.DF_KEY_AES" xml:space="preserve">
     <value>AES</value>

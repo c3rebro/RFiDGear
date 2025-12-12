@@ -233,10 +233,10 @@ slot of an available reader</value>
     <value>AES</value>
   </data>
   <data name="ENUM.DESFireKeyType.DF_KEY_DES" xml:space="preserve">
-    <value>DES</value>
+    <value>3DES</value>
   </data>
   <data name="ENUM.DESFireKeyType.DF_KEY_3K3DES" xml:space="preserve">
-    <value>3DES</value>
+    <value>3K3DES</value>
   </data>
   <data name="ENUM.TaskType_MifareClassicTask.None" xml:space="preserve">
     <value>None</value>
