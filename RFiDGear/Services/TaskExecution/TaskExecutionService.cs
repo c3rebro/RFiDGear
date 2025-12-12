@@ -23,16 +23,25 @@ using Serilog;
 
 namespace RFiDGear.Services.TaskExecution
 {
+    /// <summary>
+    /// Provides the application with a reader device instance.
+    /// </summary>
     public interface IReaderDeviceProvider
     {
         ReaderDevice GetInstance();
     }
 
+    /// <summary>
+    /// Supplies the singleton <see cref="ReaderDevice"/> to execution flows.
+    /// </summary>
     public class ReaderDeviceProvider : IReaderDeviceProvider
     {
         public ReaderDevice GetInstance() => ReaderDevice.Instance;
     }
 
+    /// <summary>
+    /// Adapter abstraction around <see cref="DispatcherTimer"/> used by the task executor.
+    /// </summary>
     public interface IDispatcherTimerAdapter : IDisposable
     {
         bool IsEnabled { get; set; }
@@ -41,6 +50,9 @@ namespace RFiDGear.Services.TaskExecution
         void Stop();
     }
 
+    /// <summary>
+    /// Wraps a <see cref="DispatcherTimer"/> to simplify testing and lifetime control.
+    /// </summary>
     public class DispatcherTimerAdapter : IDispatcherTimerAdapter
     {
         private readonly DispatcherTimer dispatcherTimer;
@@ -72,6 +84,9 @@ namespace RFiDGear.Services.TaskExecution
         }
     }
 
+    /// <summary>
+    /// Aggregates timeout settings for each stage of task execution.
+    /// </summary>
     public class TaskExecutionTimeouts
     {
         public TimeSpan? DeviceDiscoveryTimeout { get; set; }
@@ -88,6 +103,9 @@ namespace RFiDGear.Services.TaskExecution
         };
     }
 
+    /// <summary>
+    /// Describes a single executable task and its identifier.
+    /// </summary>
     public class TaskDescriptor
     {
         public TaskDescriptor(int index, IGenericTaskModel task, Func<CancellationToken, Task> executor = null)
@@ -104,6 +122,9 @@ namespace RFiDGear.Services.TaskExecution
         public Func<CancellationToken, Task> ExecuteAsync { get; }
     }
 
+    /// <summary>
+    /// Captures the result of locating a reader device.
+    /// </summary>
     public class DeviceDiscoveryResult
     {
         public DeviceDiscoveryResult(ReaderDevice device)
@@ -114,6 +135,9 @@ namespace RFiDGear.Services.TaskExecution
         public ReaderDevice Device { get; }
     }
 
+    /// <summary>
+    /// Holds the hydrated chip model produced during execution.
+    /// </summary>
     public class ChipHydrationResult
     {
         public ChipHydrationResult(GenericChipModel chip)
@@ -124,6 +148,9 @@ namespace RFiDGear.Services.TaskExecution
         public GenericChipModel Chip { get; }
     }
 
+    /// <summary>
+    /// Represents the outcome of synchronizing the hydrated chip with UI selection.
+    /// </summary>
     public class SelectionSyncResult
     {
         public SelectionSyncResult(GenericChipModel hydratedChip, bool selectionChanged)
@@ -136,12 +163,18 @@ namespace RFiDGear.Services.TaskExecution
         public bool SelectionChanged { get; }
     }
 
+    /// <summary>
+    /// Defines structured logging hooks for task execution stages.
+    /// </summary>
     public interface ITaskExecutionLogger
     {
         void LogInformation(string stage, object details = null);
         void LogError(string stage, Exception exception, object details = null);
     }
 
+    /// <summary>
+    /// Serilog-backed logger used when no external task execution logger is provided.
+    /// </summary>
     public class NullTaskExecutionLogger : ITaskExecutionLogger
     {
         private readonly ILogger logger = Log.ForContext<NullTaskExecutionLogger>();
@@ -176,6 +209,9 @@ namespace RFiDGear.Services.TaskExecution
         }
     }
 
+    /// <summary>
+    /// Encapsulates the inputs and callbacks required for a single task execution pass.
+    /// </summary>
     public class TaskExecutionRequest
     {
         public ChipTaskHandlerModel TaskHandler { get; set; }
@@ -199,6 +235,9 @@ namespace RFiDGear.Services.TaskExecution
         public Action<IGenericTaskModel, IDictionary<string, string>> ConfigureTaskStrategy { get; set; }
     }
 
+    /// <summary>
+    /// Summarizes the state that should be preserved when execution completes.
+    /// </summary>
     public class TaskExecutionResult
     {
         public ReportReaderWriter ReportReaderWriter { get; set; }
@@ -208,6 +247,9 @@ namespace RFiDGear.Services.TaskExecution
         public bool RunSelectedOnly { get; set; }
     }
 
+    /// <summary>
+    /// Event arguments emitted when the task execution pipeline ends.
+    /// </summary>
     public class TaskExecutionCompletedEventArgs : EventArgs
     {
         public TaskExecutionCompletedEventArgs(TaskExecutionResult result)
@@ -218,14 +260,28 @@ namespace RFiDGear.Services.TaskExecution
         public TaskExecutionResult Result { get; }
     }
 
+    /// <summary>
+    /// Coordinates the sequence of discovery, hydration, synchronization, and task execution.
+    /// </summary>
     public interface ITaskExecutionService
     {
         event EventHandler<TaskExecutionCompletedEventArgs> ExecutionCompleted;
         int CurrentTaskIndex { get; }
+
+        /// <summary>
+        /// Runs the full task pipeline once using the supplied request context.
+        /// </summary>
         Task<TaskExecutionResult> ExecuteOnceAsync(TaskExecutionRequest request, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Handles timer-driven timeouts by marking the active task as failed.
+        /// </summary>
         void HandleTaskTimeout();
     }
 
+    /// <summary>
+    /// Default implementation of <see cref="ITaskExecutionService"/> that bridges readers, hydration, and task loops.
+    /// </summary>
     public class TaskExecutionService : ITaskExecutionService
     {
         private readonly IReaderDeviceProvider readerDeviceProvider;
@@ -256,6 +312,7 @@ namespace RFiDGear.Services.TaskExecution
 
         public int CurrentTaskIndex { get; private set; }
 
+        /// <inheritdoc />
         public async Task<TaskExecutionResult> ExecuteOnceAsync(TaskExecutionRequest request, CancellationToken cancellationToken = default)
         {
             activeRequest = request;
@@ -335,6 +392,7 @@ namespace RFiDGear.Services.TaskExecution
             return result;
         }
 
+        /// <inheritdoc />
         public void HandleTaskTimeout()
         {
 #if DEBUG
