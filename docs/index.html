@@ -1,111 +1,79 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta http-equiv=Content-Type content="text/html; charset=iso-8859-1">
-
-<title>RFIDGear</title>
-
-<link rel=Stylesheet type="text/css" media=all href="style.css">
-
-<style type="text/css">
-.auto-style2 {
-	font-size: xx-large;
-}
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFiDGear</title>
+    <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
 </head>
-
 <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">RFiDGear</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#description">Description</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#supported-hardware">Supported Hardware</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#recent-updates">Recent Updates</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#screenshots">Screenshots</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#download">Download</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-<div id=container>
+    <div class="container mt-4">
+        <div id="description" class="mb-5">
+            <h2>Description</h2>
+            <p>RFiDGear is a RFID / NFC frontend for Microsoft Windows 7/8/8.1/ and Windows 10 to Read / Modify / Write RFiD / NFC Tags. It’s written in C# using the MVVM Pattern. Up to now, it’s in the developing process. Check out this Page later to get the first beta release.</p>
+        </div>
 
-<div id=header>
+        <div id="supported-hardware" class="mb-5">
+            <h2>Supported Readers and Chips</h2>
+            <p>Because the application uses the LibLogicalAccess Library from ISLog, various Readers are Supported. Each Reader Device is encapsulated within a List of “Providers”. Each Provider may Contain Various Manufacturers.</p>
+            <p>A List of Providers is shown below. The most Common Provider might be the “PCSC” Reader Provider. For Development, only the Omnikey 5x21 were available as well as the SCL3711. Therefore, other readers may, or may not work.</p>
+            <p>The following chips are supported. Data Contents of Chips without a cross in the “Storage Card Service” Column is not Supported by the Library. Only reading the UID is supported.</p>
+        </div>
 
-<h1 style="height: 51px" class="auto-style2">EventMessenger</h1>
+        <div id="recent-updates" class="mb-5">
+            <h2>Recent Updates</h2>
+            <p>No Update available yet.</p>
+        </div>
 
-</div>
+        <div id="screenshots" class="mb-5">
+            <h2>Screenshots</h2>
+            <p>Some Impressions:</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <img src="assets/img/mainWnd.jpg" class="img-fluid" alt="Main window with loaded project">
+                    <p class="text-center">Fig. 1: Main window with loaded project</p>
+                </div>
+                <div class="col-md-6">
+                    <img src="assets/img/mainWndColorized.png" class="img-fluid" alt="Main window with explanations">
+                    <p class="text-center">Fig. 2: Main window with explanations and read chip</p>
+                </div>
+            </div>
+        </div>
 
-<div id=menu style="width: 181px">
+        <div id="download" class="mb-5">
+            <h2>Download Software</h2>
+            <p>See the "Release" Tab</p>
+        </div>
+    </div>
 
-<h3><span style='font-family:Arial'>Content:</span></h3>
-
-<ul>
-<li> <a href="#_Description"><span class=hyperlink1><strong>Description</strong></span></a></li>
-<li> <a href=menustructuremindmap.html><span class=hyperlink1><strong>RFiDGear Menue Structure</strong></span></a></li>
-<li> <a href="#_Supported_Readers,_Manufacturers_an"><span class=hyperlink1>
-<strong>Supported Hardware</strong></span></a></li>
-<li> <a href="#_Rescent_Updates"><span class=hyperlink1><strong>Rescent Updates</strong></span></a></li>
-<li> <a href="#_Screenshots"><span class=hyperlink1><strong>Screenshots</strong></span></a></li>
-<li> <a href="#_Download_Software"><span class=hyperlink1><strong>Download</strong></span></a></li>
-</ul>
-
-</div>
-
-<div id=content>
-
-<h2><a name="_Description"></a>Description</h2>
-
-<p>RFiDGear is a RFID / NFC frontend for 
-Microsoft Windows 7/8/8.1/ and Windows 10 to Read / Modify / Write RFiD / NFC Tags.
-It&#8217;s written in C# using the MVVM Pattern. Up to now, it&#8217;s in the developing process. 
-Check out this Page later to get the first beta release.</p>
-
-<p>&nbsp;</p>
-
-<h2><a name="_Supported_Readers,_Manufacturers_an"></a>Supported Readers and Chips</h2>
-
-<p>Because the application uses the
-LibLogicalAccess Library from ISLog, various Readers are Supported. Each Reader
-Device is encapsulated within a List of &#8220;Providers&#8221;. Each Provider
-may Contain Various Manufacturers.</p>
-
-<p>&nbsp;</p>
-
-<p >A List of Providers is shown below.
-The most Common Provider might be the &#8220;PCSC&#8221; Reader Provider. For
-Development, only the Omnikey 5x21 were available as well as the SCL3711.
-Therefore, other readers may, or may not work.</p>
-
-<p>&nbsp;<span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>The
-following chips are supported. Data Contents of Chips without a cross in the
-&#8220;Storage Card Service&#8221; Column is not Supported by the Library. Only
-reading the UID is supported.</span></p>
-
-<p class=MsoNormal><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></p>
-
-<h2><span style='font-size:11.5pt;font-family:
-Arial'>Rescent Updates</span></h2>
-
-<p><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>No Update
-available yet. </span></p>
-
-<p><span lang=EN-GB>&nbsp;</span></p>
-
-<h2><a name="_Screenshots"></a><span lang=EN-GB style='font-size:11.5pt;
-font-family:Arial'>Screenshots</span></h2>
-
-<p><span lang=EN-GB>Some Impressions:</span></p>
-
-<p><span lang=EN-GB>&nbsp;</span></p>
-
-<p><span lang=EN-GB>&nbsp;</span></p>
-
-<p><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></p>
-
-<p><span lang=EN-GB>&nbsp;</span></p>
-
-<h2><a name="_Download_Software"></a><span lang=EN-GB style='font-size:11.5pt;
-font-family:Arial'>Download Software</span></h2>
-
-<p>See the &quot;Release&quot; Tab&nbsp;</p>
-
-<p><span lang=EN-GB style='font-size:9.5pt;font-family:Arial'>&nbsp;</span></p>
-
-</div>
-
-</div>
-
+    <script src="assets/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
