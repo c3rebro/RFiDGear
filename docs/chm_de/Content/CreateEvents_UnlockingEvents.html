@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta content="de" http-equiv="Content-Language" />
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+<title>Event Messenger - Create Unlocking Event</title>
+</head>
+
+<body>
+
+<h1>Ereignisse anlegen - Transpondernutzungsereignis</h1>
+<p>
+<img alt="createEventUnlockingEventMainWindow" src="img2.jpg" />&nbsp;</p>
+<p>Um auf die Verwendung eines Transponders an einer vernetzten Schlie&szlig;ung 
+reagieren zu k&ouml;nnen, muss der EventMessenger die Bezeichnungen und Seriennummern 
+der betroffenen Transponder und Schlie&szlig;ungen kennen.<br />
+<br />
+Es wird immer transponderweise gepr&uuml;ft.<br />
+<br />
+Das bedeutet, das Sie immer eine Person bzw. einen Transponder anlegen und eine 
+oder mehrere dazugeh&ouml;rige T&uuml;r(en) bzw. eine oder mehrere dazugeh&ouml;rige 
+Schlie&szlig;ung(en).<br />
+<br />
+<br />
+Bitte verfahren Sie wie folgt: </p>
+<ol>
+	<li>&nbsp;Legen Sie zuerst immer die Schlie&szlig;ung(en) an.<ol>
+		<li>Setzen Sie den Haken "T&uuml;rbezeichnung und/oder Seriennummer 
+		ber&uuml;cksichtigen" wenn nicht pauschal auf alle Schlie&szlig;ungen der 
+		Schlie&szlig;anlage reagiert werden soll.</li>
+		<li>Vergeben Sie einen T&uuml;rnamen und/oder eine Seriennummer f&uuml;r jede T&uuml;r 
+		auf die reagiert werden soll.<br />
+		<br />
+		HINWEISE:<br />
+		- Gro&szlig;- und Kleinschreibung wird nicht unterschieden.<br />
+		- Es wird immer nur auf das Vorhandensein der eingegebenen Daten in den 
+		von der <em>LSM.Basic.Online </em>&uuml;bermittelten Daten gepr&uuml;ft.<br />
+		<br />
+		Beispiel:<br />
+		Wenn Sie als T&uuml;rbezeichnung "Eingang" eingeben und die Seriennummer leer 
+		lassen, wird bei jeder der folgenden von der <em>LSM.Basic.Online</em> an den EventMessenger 
+		&uuml;bermittelten T&uuml;rbezeichnungen eine positive Übereinstimmung erkannt:<br />
+		<br />
+		Eingang Nord; Haupteingang; Eingangsbereich</li>
+		<li>Klicken Sie auf "Hinzuf&uuml;gen" um die Schlie&szlig;ung anzulegen.</li>
+	</ol>
+	</li>
+	<li>Definieren Sie nun den Transponder der das zu erfassende Ereignis 
+	ausl&ouml;st. Gehen Sie bei der Definition des Namens des Transponderbesitzers 
+	bzw. der Transponderseriennummer analog zur Definition der Schlie&szlig;ungen 
+	(Punkt 1.2) vor.<br />
+	<br />
+	Beachten Sie bitte, das Sie auch mehrere Transponder gleichzeitig prüfen 
+	können, indem Sie die Transpondernamen direkt in das Feld eintragen.<br />
+	<br />
+	Beispiel:<br />
+	Wenn Sie Herrn Schmid und Frau M&uuml;ller erfassen möchten, tragen Sie als 
+	Transpondernamen "Schmid; M&uuml;ller" ein. Bitte vergessen Sie nicht, auch die 
+	Seriennummern der Transponder mit anzugeben, da es bei vorhandensein 
+	mehrerer Personen mit dem Namen "Schmid" oder "M&uuml;ller" ansonsten zu 
+	falsch-positiven &Uuml;bereinstimmungen kommen kann.</li>
+	<li>W&auml;hlen Sie unter "Ereignis" aus, ob nur bei verweigerten, gestatteten 
+	oder beiden Zutrittsversuchen eine Reaktion erfolgen soll.</li>
+	<li>Mit einem Klick auf "Speichern und Beenden" wird das Ereignis angelegt.</li>
+</ol>
+
+<p><img alt="" height="32" src="276px-Ambox_warning_pn.svg.png" width="40" /> 
+Bitte Beachten Sie, das dieses Ereignis nur für G2 Schließungen ab einem 
+Firmwarestand größer oder gleich 2.3.10 verfügbar ist.</p>
+
+</body>
+
+</html>

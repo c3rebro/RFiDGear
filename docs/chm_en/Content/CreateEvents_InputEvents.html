@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta content="de" http-equiv="Content-Language" />
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+<title>Event Messenger - Create Input Event</title>
+</head>
+
+<body>
+
+<h1>Create Events - Input Events</h1>
+<p>
+<img alt="" src="img12.jpg" />&nbsp;</p>
+<p>In order to trigger an input event, the EventMessenger software needs the 
+number of the input, the edge type (e.g. rising edge: from logical "0" to 
+logical "1") and the address information from the "locknode" or "routernode with 
+io functionality" device 
+that has fired the input event.<br />
+<br />
+Please follow the steps below to create such setup:</p>
+<ol>
+	<li>Please start by selecting the Input that should be watched at.</li>
+	<li>Define the type of state whose changing will be triggered (also known as 
+	"edge detection"). <br /></li>
+	<li>Type the address of the regarded device in hexadecimal format.<ol>
+		<li>Supportet devices are:<ol>
+			<li>WN.LN.C.IO</li>
+			<li>WN.LN.R.IO</li>		
+			<li>WNM.LN.C.IO</li>
+			<li>WNM.LN.R.IO</li>
+			<li>WNM.RN.ER.IO</li>
+			<li>WNM.RN.R.IO</li>
+		</ol>
+		<li>You can use the WaveNetManager Software that was shipped with your 
+		LSM.Basic.Online Software to determine the address as follows:<br />
+		<br />
+		<img alt="" src="img18.jpg" /></li>
+	</ol>
+	<li>Click on "OK" to finish the Input Event Configuration.</li>
+</ol>
+
+</body>
+
+</html>

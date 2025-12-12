@@ -1,0 +1,33 @@
+[OPTIONS]
+Compatibility=1.1 or later
+Compiled file=rfidgear_de.chm
+Contents file=Table of Contents.hhc
+Default topic=Content\welcome.html
+Display compile progress=No
+Index file=rfidgear_de.hhk
+Language=0x407 Deutsch (Deutschland)
+Title=RFiDGear
+
+
+[FILES]
+Content\CreateEvents_DoorMonitoringEvents.html
+Content\CreateEvents_InputEvents.html
+Content\CreateEvents_MainWindow.html
+Content\CreateEvents_UnlockingEvents.html
+Content\CreateEvents_Welcome.html
+Content\CreateResponse_MainWindow_Welcome.html
+Content\CreateResponses_AddSchedule.html
+Content\CreateResponses_EMailResponse.html
+Content\CreateResponses_KMTronicResponse.html
+Content\CreateResponses_MainWindow.html
+Content\CreateResponses_TelegramResponse.html
+Content\CreateResponses_TelegramResponseAddBot.html
+Content\CreateResponses_TelegramResponseCreateBot.html
+Content\mainWindow_DebugConsole.html
+Content\mainWindow_Help.html
+Content\mainWindow_OpenAndSave.html
+Content\mainWindow_Options.html
+Content\welcome.html
+
+[INFOTYPES]
+
