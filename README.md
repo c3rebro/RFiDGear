@@ -5,7 +5,6 @@
 Support for batch processing.
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/ac98d255ca38466bb5803f9e2e4a11ae)](https://www.codacy.com/app/c3rebro/rfidgear)
-
 ![](https://messgeraetetechnik-hansen.de/rfidgear/mainWnd.jpg) 
 
 ### [Info](https://c3rebro.github.io/RFiDGear/) | [Download](https://github.com/c3rebro/RFiDGear/releases) | [Report Bugs](https://github.com/c3rebro/RFiDGear/issues)
