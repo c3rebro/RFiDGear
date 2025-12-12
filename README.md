@@ -16,7 +16,8 @@ Requirements:
 * Elatec Reader TWN4
 * LibLogicalAccess 3.6.0 (or later - included)
 
-a (tested) PCSC compatibile Reader:
+In case of PCSC Provider: a PCSC compatibile Reader:
+(Examples - others are reported to work)
 Omnikey 5321
 Sciel SCL3711
 ACR 122U
