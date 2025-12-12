@@ -39,6 +39,19 @@
         <div id="description" class="mb-5">
             <h2>Description</h2>
             <p>RFiDGear is a RFID / NFC frontend for Microsoft Windows 7/8/8.1/ and Windows 10 to Read / Modify / Write RFiD / NFC Tags. It’s written in C# using the MVVM Pattern. Up to now, it’s in the developing process. Check out this Page later to get the first beta release.</p>
+            <p>The localized German help highlights that tasks are the core unit of work. Each task carries an execution index, a user-defined label, and an internally stored error code. Tasks can optionally depend on the result of an earlier task before running, and they may be executed individually, in batches, or automatically when a new chip is detected.</p>
+            <p>Available task types span device-independent helpers (PDF form filling and if/then logic), chip-generic checks (UID and chip-type validation), and rich MIFARE operations. MIFARE Classic tasks cover reading, writing, and checking whether a sector is unused. DESFire support includes application existence checks; PICC-level operations such as master key changes and formatting; application creation, key changes, deletion, and authentication; and file creation, writes, reads, and deletions.</p>
+        </div>
+
+        <div id="system-requirements" class="mb-5">
+            <h2>System Requirements</h2>
+            <p>The German CHM documentation lists the following prerequisites:</p>
+            <ul>
+                <li>A PC that meets the Windows 7 (32/64-bit) minimum specifications</li>
+                <li>Microsoft Windows 7 or newer</li>
+                <li>At least one PC/SC-compatible encoder (tested examples include HID/Omnikey 5x21 devices, Sciel SCL3711, and ACR 122U)</li>
+                <li>The bundled LibLogicalAccess provider stack</li>
+            </ul>
         </div>
 
         <div id="supported-hardware" class="mb-5">
@@ -51,6 +64,18 @@
         <div id="recent-updates" class="mb-5">
             <h2>Recent Updates</h2>
             <p>No Update available yet.</p>
+        </div>
+
+        <div id="usage" class="mb-5">
+            <h2>Main Window Quick Start</h2>
+            <p>The help topics describe keyboard shortcuts and behaviors for the main window menus:</p>
+            <ul>
+                <li><strong>Open project</strong> (<kbd>Alt</kbd> + <kbd>D</kbd>, <kbd>P</kbd>): restore a previously saved project.</li>
+                <li><strong>Save</strong> (<kbd>Alt</kbd> + <kbd>D</kbd>, <kbd>S</kbd>): persist current tasks as the default database that can load automatically.</li>
+                <li><strong>Save as…</strong> (<kbd>Alt</kbd> + <kbd>D</kbd>, <kbd>U</kbd>): store multiple projects under different paths.</li>
+                <li><strong>Language</strong> (<kbd>Alt</kbd> + <kbd>O</kbd>, <kbd>L</kbd>): switch the UI language (restart required).</li>
+                <li><strong>Load last project on startup</strong> (<kbd>Alt</kbd> + <kbd>O</kbd>, <kbd>P</kbd>): automatically reopen the default project saved via the file menu.</li>
+            </ul>
         </div>
 
         <div id="screenshots" class="mb-5">
