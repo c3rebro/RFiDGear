@@ -1,6 +1,6 @@
 ![](docs/assets/img/logoRG.png) 
 
-# RFiDGear - Mifare encoding tool.
+# RFiDGear - .net 8 Mifare encoding tool.
 
 Support for batch processing.
 
@@ -12,15 +12,15 @@ Support for batch processing.
 
 Requirements:
 
-* Microsoft Windows 7 32/64bit (or later)
+* minimum Microsoft Windows 7 32/64bit (or later)
 * Elatec Reader TWN4
 * LibLogicalAccess 3.6.0 (or later - included)
 
 In case of PCSC Provider: a PCSC compatibile Reader:
 (Examples - others are reported to work)
-Omnikey 5321
-Sciel SCL3711
-ACR 122U
+* Omnikey 5321
+* Sciel SCL3711
+* ACR 122U
 
 ## Codebase overview
 
