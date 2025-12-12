@@ -8,7 +8,7 @@ Support for batch processing.
 
 ![](https://messgeraetetechnik-hansen.de/rfidgear/mainWnd.jpg) 
 
-### [Info](https://https://c3rebro.github.io/rfidgear) | [Download](https://github.com/c3rebro/RFiDGear/releases) | [Report Bugs](https://github.com/c3rebro/RFiDGear/issues)
+### [Info](https://c3rebro.github.io/rfidgear) | [Download](https://github.com/c3rebro/RFiDGear/releases) | [Report Bugs](https://github.com/c3rebro/RFiDGear/issues)
 
 Requirements:
 
