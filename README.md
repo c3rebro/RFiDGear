@@ -21,18 +21,6 @@ In case of PCSC Provider: a PCSC compatibile Reader:
 * Sciel SCL3711
 * ACR 122U
 
-## Codebase overview
-
-RFiDGear is a WPF desktop app structured around the MVVM pattern. Application resources in `App.xaml` register view-model-to-view mappings for dialogs and chip setup screens so XAML can instantiate the correct views dynamically, while Serilog logging is configured in `App.xaml.cs` to capture unhandled exceptions to rolling log files.
-
-Managed Extensibility Framework (MEF) composition is used to discover view models. The `ViewModelLocator` exposes exports tagged as `"ViewModel"` as dynamic properties for XAML bindings, caching the composed instances to avoid repeated resolution.
-
-Startup flows are coordinated by `AppStartupInitializer`, which establishes a single-instance mutex, prepares the Windows event log source, and captures command-line arguments in an `AppStartupContext` that seeds initialization in the main window view model.
-
-`MainWindowViewModel` orchestrates settings bootstrapping, update notifications, context menu construction, reader monitoring, and project initialization. During `InitializeAsync`, it loads persisted defaults, configures timers for chip reads and task timeouts, and wires task execution callbacks that keep UI bindings in sync with reader state and task progress.
-
-Task execution flows live in `Services/TaskExecution/TaskExecutionService.cs`. Adapters around `DispatcherTimer` manage device discovery, chip hydration, selection synchronization, and the task loop, while structured Serilog logging (via `NullTaskExecutionLogger`) captures JSON details for each stage.
-
 ## System requirements
 
 The original German help includes a concise hardware and OS checklist:
