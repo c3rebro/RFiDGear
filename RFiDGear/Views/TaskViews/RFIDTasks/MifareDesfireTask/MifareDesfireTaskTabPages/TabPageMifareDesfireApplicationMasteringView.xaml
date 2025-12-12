@@ -112,7 +112,7 @@
                             Margin="0,0,0,4"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowChange'}"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowChangeMK'}"
                             IsChecked="{Binding IsAllowChangeMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                             <CheckBox.ToolTip>
                                 <ToolTip>
@@ -174,24 +174,6 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Content="App ID" />
-                    <Label
-                        Grid.Row="3"
-                        Grid.Column="0"
-                        Margin="8,0,8,8"
-                        VerticalAlignment="Stretch"
-                        HorizontalAlignment="Stretch"
-                        VerticalContentAlignment="Center"
-                        HorizontalContentAlignment="Left"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireKeyNumber'}" />
-                    <ComboBox
-                        Grid.Row="3"
-                        Grid.Column="1"
-                        Margin="8,0,8,8"
-                        Height="26"
-                        VerticalAlignment="Stretch"
-                        HorizontalAlignment="Stretch"
-                        ItemsSource="{Binding MifareDesfireKeys}"
-                        SelectedItem="{Binding SelectedDesfireAppKeyNumberTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <TextBox
                         Grid.Row="0"
                         Grid.Column="1"

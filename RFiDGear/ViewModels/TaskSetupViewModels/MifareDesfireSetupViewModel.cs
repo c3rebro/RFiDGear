@@ -158,7 +158,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     AppNumberCurrent = "0";
                     AppNumberTarget = "0";
 
-                    SelectedDesfireAppKeyNumberTarget = "1";
                     SelectedDesfireAppMaxNumberOfKeys = "1";
 
                     IsValidDesfireMasterKeyCurrent = null;
@@ -1086,24 +1085,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
         private DESFireKeyType selectedDesfireAppKeyEncryptionTypeTarget;
-
-        /// <summary>
-        ///
-        /// </summary>
-        public string SelectedDesfireAppKeyNumberTarget
-        {
-            get => selectedDesfireAppKeyNumberTarget;
-            set
-            {
-                if (int.TryParse(value, out selectedDesfireAppKeyNumberTargetAsInt))
-                {
-                    selectedDesfireAppKeyNumberTarget = value;
-                }
-                OnPropertyChanged(nameof(SelectedDesfireAppKeyNumberTarget));
-            }
-        }
-        private string selectedDesfireAppKeyNumberTarget;
-        private int selectedDesfireAppKeyNumberTargetAsInt;
 
         /// <summary>
         ///
@@ -2053,7 +2034,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                                                          selectedDesfireAppKeyNumberCurrentAsInt,
                                                                          SelectedDesfireAppKeyEncryptionTypeCurrent,
                                                                          DesfireAppKeyTarget,
-                                                                         selectedDesfireAppKeyNumberTargetAsInt,
                                                                          selectedDesfireAppKeyVersionTargetAsInt,
                                                                          SelectedDesfireAppKeyEncryptionTypeTarget,
                                                                          AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings, keyVersionCurrentAsInt);
@@ -2061,7 +2041,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             if (await SetOperationResultAsync(
                                     result,
                                     "{0}: Successfully Changed Key {1} of AppID {2}\n",
-                                    new object[] { DateTime.Now, selectedDesfireAppKeyNumberTargetAsInt, AppNumberTargetAsInt },
+                                    new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt },
                                     "{0}: Unable to Change Key {1} of AppID {2}: {3}\n",
                                     new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString() }))
                             {
@@ -2074,7 +2054,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             await SetOperationResultAsync(
                                 result,
                                 "{0}: Successfully Changed Key {1} of AppID {2}\n",
-                                new object[] { DateTime.Now, selectedDesfireAppKeyNumberTargetAsInt, AppNumberTargetAsInt },
+                                new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt },
                                 "{0}: Unable to Change Key {1} of AppID {2}: {3}\n",
                                 new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString() });
                             return;

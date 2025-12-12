@@ -35,10 +35,7 @@
     <ManifestKeyFile></ManifestKeyFile>
     <TargetZone>LocalIntranet</TargetZone>
     <GenerateManifests>false</GenerateManifests>
-    <GenerateClickOnceManifests>false</GenerateClickOnceManifests>
-    
-    <UseRidGraph>true</UseRidGraph>
-    
+    <GenerateClickOnceManifests>false</GenerateClickOnceManifests>    
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
     <FileVersion>2.0.0</FileVersion>
     <AssemblyVersion>2.0.0</AssemblyVersion>
@@ -76,7 +73,9 @@
     <FileAlignment>4096</FileAlignment>
     <DebugType>None</DebugType>
   </PropertyGroup>
-
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <UseRidGraph>true</UseRidGraph>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>

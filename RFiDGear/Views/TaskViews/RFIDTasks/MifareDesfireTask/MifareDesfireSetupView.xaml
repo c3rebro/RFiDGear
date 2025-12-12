@@ -276,13 +276,6 @@
                             ToolTip="Plugin's"
                             ToolTipService.ShowDuration="60000" />
                     </TabItem.Header>
-                    <!--
-                        <TabItem.Style>
-                            <Style>
-                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                            </Style>
-                        </TabItem.Style> 
-                    -->
                     <Grid>
                         <ComboBox
                             Grid.Row="0"
