@@ -14,9 +14,10 @@
     <UserControl.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
         <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
-			<ContextMenu.ItemContainerStyle>
-				<Style TargetType="MenuItem">
+                        <ContextMenu.ItemContainerStyle>
+                                <Style TargetType="MenuItem">
 					<Setter
 						Property="HorizontalContentAlignment"
 						Value="Left" />
@@ -65,6 +66,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
+                        Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}" />
                     <Label
                         Grid.Row="2"
@@ -74,6 +76,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
+                        Visibility="{Binding ShowAppKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireAppSetupKeySettings'}" />
                     <TextBox
                         Grid.Row="1"
@@ -84,6 +87,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
+                        Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
                         Text="{Binding DesfireAppKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
@@ -107,7 +111,8 @@
                         Grid.Column="1"
                         Margin="8,0,8,8"
                         VerticalAlignment="Top"
-                        HorizontalAlignment="Left">
+                        HorizontalAlignment="Left"
+                        Visibility="{Binding ShowAppKeySettingsInputs, Converter={StaticResource BoolToVisConv}}">
                         <CheckBox
                             Margin="0,0,0,4"
                             HorizontalAlignment="Left"

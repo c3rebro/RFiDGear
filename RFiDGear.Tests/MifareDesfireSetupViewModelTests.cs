@@ -48,5 +48,23 @@ namespace RFiDGear.Tests
             Assert.Equal(desfireAppAuthoring, viewModel.IsDesfireAppAuthoringTabEnabled);
             Assert.Equal(desfireAppCreation, viewModel.IsDesfireAppCreationTabEnabled);
         }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, true, false)]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover, false, true)]
+        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, true, true)]
+        public void SelectedTaskType_TogglesKeyInputVisibility(
+            TaskType_MifareDesfireTask taskType,
+            bool showTarget,
+            bool showSettings)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = taskType
+            };
+
+            Assert.Equal(showTarget, viewModel.ShowAppKeyTargetInputs);
+            Assert.Equal(showSettings, viewModel.ShowAppKeySettingsInputs);
+        }
     }
 }
