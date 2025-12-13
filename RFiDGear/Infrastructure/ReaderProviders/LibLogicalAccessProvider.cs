@@ -1705,6 +1705,21 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <summary>
+        /// Updates DESFire application key settings without modifying any key material. Authentication always uses key slot 0
+        /// of the currently selected PICC or application.
+        /// </summary>
+        /// <param name="_applicationMasterKeyCurrent">Master key used to authenticate against key slot 0.</param>
+        /// <param name="_keyNumberCurrent">Ignored; settings changes authenticate with key 0.</param>
+        /// <param name="_keyTypeCurrent">Cryptographic type of the current master key.</param>
+        /// <param name="_applicationMasterKeyTarget">Not used because settings updates do not require target key material.</param>
+        /// <param name="selectedDesfireAppKeyVersionTargetAsIntint">Unused placeholder to preserve the signature.</param>
+        /// <param name="_keyTypeTarget">Not used; key type remains unchanged for settings updates.</param>
+        /// <param name="_appIDCurrent">The application identifier to select (0 for PICC scope).</param>
+        /// <param name="_appIDTarget">Unused placeholder for signature compatibility.</param>
+        /// <param name="keySettings">Desired key settings to apply.</param>
+        /// <param name="_">Unused placeholder for key version.</param>
+        /// <returns>The status of the settings update.</returns>
         public override async Task<ERROR> ChangeMifareDesfireApplicationKeySettings(
     string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
     string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
@@ -1716,11 +1731,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 masterApplicationKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent);
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
                 masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
-
-                DESFireKey applicationMasterKeyTarget = new DESFireKey();
-                applicationMasterKeyTarget.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeTarget);
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
-                applicationMasterKeyTarget.fromString(CustomConverter.DesfireKeyToCheck);
 
                 readerUnit.disconnectFromReader();
 
@@ -1741,7 +1751,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         try
                         {
                             cmd.selectApplication((uint)_appIDCurrent);
-                            cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
+                            cmd.authenticate(0, masterApplicationKey);
                             cmd.changeKeySettings((LibLogicalAccess.Card.DESFireKeySettings)keySettings);
 
                             return ERROR.NoError;
