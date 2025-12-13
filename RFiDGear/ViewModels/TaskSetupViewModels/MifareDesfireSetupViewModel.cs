@@ -481,6 +481,40 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             await UpdateReaderStatusCommand.ExecuteAsync(false);
         }
 
+        private DESFireKeySettings GetGeneralDesfireKeyFlags()
+        {
+            var keySettings = DESFireKeySettings.ChangeKeyWithMasterKey;
+
+            keySettings |= IsAllowChangeMKChecked ? DESFireKeySettings.AllowChangeMasterKey : 0;
+            keySettings |= IsAllowListingWithoutMKChecked ? DESFireKeySettings.AllowFreeListingWithoutMasterKey : 0;
+            keySettings |= IsAllowCreateDelWithoutMKChecked ? DESFireKeySettings.AllowFreeCreateDeleteWithoutMasterKey : 0;
+            keySettings |= IsAllowConfigChangableChecked ? DESFireKeySettings.ConfigurationChangeable : 0;
+
+            return keySettings;
+        }
+
+        private DESFireKeySettings GetChangeKeyModeForApplication(int appId)
+        {
+            var changeKeyMode = appId == 0
+                ? DESFireKeySettings.ChangeKeyWithMasterKey
+                : (DESFireKeySettings)((DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp & DESFireKeySettings.ChangeKeyMask);
+
+            AccessConditionValidation.EnsureValid(changeKeyMode);
+
+            return changeKeyMode;
+        }
+
+        private DESFireKeySettings BuildSelectedKeySettings(int appId)
+        {
+            var keySettings = GetGeneralDesfireKeyFlags();
+            keySettings &= ~DESFireKeySettings.ChangeKeyMask;
+            keySettings |= GetChangeKeyModeForApplication(appId);
+
+            AccessConditionValidation.EnsureValid(keySettings);
+
+            return keySettings;
+        }
+
         /// <summary>
         ///
         /// </summary>
@@ -1610,6 +1644,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     await OnNewChangeAppKeyCommand();
                     break;
 
+                case TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover:
+                    await OnNewChangeAppKeySettingsCommand();
+                    break;
+
                 case TaskType_MifareDesfireTask.AuthenticateApplication:
                     await OnNewAuthenticateToCardApplicationCommand();
                     break;
@@ -2042,13 +2080,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         {
                             StatusText += string.Format("{0}: Successfully Authenticated to AppID {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
-                            var keySettings = DESFireKeySettings.Default;
-                            keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
-
-                            keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
-                            keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
-                            keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
-                            keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
+                            var keySettings = GetChangeKeyModeForApplication(AppNumberCurrentAsInt);
 
                             result = await device.ChangeMifareDesfireApplicationKey(DesfireAppKeyCurrent,
                                                                          selectedDesfireAppKeyNumberCurrentAsInt,
@@ -2079,6 +2111,101 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString() });
                             return;
                         }
+                    }
+                }
+                else
+                {
+                    CurrentTaskErrorLevel = ERROR.TransportError;
+                    await UpdateReaderStatusCommand.ExecuteAsync(false);
+                    return;
+                }
+            }
+
+            await FinalizeTaskAsync();
+            return;
+        }
+
+        /// <summary>
+        /// Authenticates with the selected PICC or application master key and updates the DESFire key settings.
+        /// For PICC (AID 0) the change-key bits are forced to 0x00; applications honour the UI-selected
+        /// change-key mode (0x00/0xE0/0xF0) while general flags are derived from the existing checkboxes.
+        /// </summary>
+        public IAsyncRelayCommand ChangeAppKeySettingsCommand => new AsyncRelayCommand(OnNewChangeAppKeySettingsCommand);
+        private async Task OnNewChangeAppKeySettingsCommand()
+        {
+            CurrentTaskErrorLevel = ERROR.Empty;
+
+            using (var device = ReaderDevice.Instance)
+            {
+                if (device != null)
+                {
+                    await UpdateReaderStatusCommand.ExecuteAsync(true);
+
+                    StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                    var appId = AppNumberCurrentAsInt;
+                    var authKey = appId == 0 ? DesfireMasterKeyCurrent : DesfireAppKeyCurrent;
+                    var authKeyType = appId == 0 ? SelectedDesfireMasterKeyEncryptionTypeCurrent : SelectedDesfireAppKeyEncryptionTypeCurrent;
+                    var authKeyNumber = appId == 0 ? 0 : selectedDesfireAppKeyNumberCurrentAsInt;
+
+                    try
+                    {
+                        var keySettings = BuildSelectedKeySettings(appId);
+
+                        if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(authKey) == KEY_ERROR.NO_ERROR)
+                        {
+                            var result = await device.AuthToMifareDesfireApplication(
+                                authKey,
+                                authKeyType,
+                                authKeyNumber,
+                                appId);
+
+                            if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
+                            {
+                                StatusText += string.Format("{0}: Successfully Authenticated to AppID {1}\n", DateTime.Now, appId);
+
+                                var updateResult = await device.ChangeMifareDesfireApplicationKeySettings(
+                                    authKey,
+                                    authKeyNumber,
+                                    authKeyType,
+                                    authKey,
+                                    keyVersionCurrentAsInt,
+                                    authKeyType,
+                                    appId,
+                                    appId,
+                                    keySettings,
+                                    keyVersionCurrentAsInt);
+
+                                if (await SetOperationResultAsync(
+                                        updateResult,
+                                        "{0}: Successfully Updated Key Settings of AppID {1}\n",
+                                        new object[] { DateTime.Now, appId },
+                                        "{0}: Unable to Update Key Settings of AppID {1}: {2}\n",
+                                        new object[] { DateTime.Now, appId, updateResult.ToString() }))
+                                {
+                                    return;
+                                }
+
+                                return;
+                            }
+                            else
+                            {
+                                await SetOperationResultAsync(
+                                    result,
+                                    "{0}: Successfully Updated Key Settings of AppID {1}\n",
+                                    new object[] { DateTime.Now, appId },
+                                    "{0}: Unable to Update Key Settings of AppID {1}: {2}\n",
+                                    new object[] { DateTime.Now, appId, result.ToString() });
+                                return;
+                            }
+                        }
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        StatusText += string.Format("{0}: {1}\n", DateTime.Now, ex.Message);
+                        CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
+                        await UpdateReaderStatusCommand.ExecuteAsync(false);
+                        return;
                     }
                 }
                 else

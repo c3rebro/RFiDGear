@@ -1,5 +1,7 @@
+using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.ViewModel.TaskSetupViewModels;
+using System.Reflection;
 using Xunit;
 
 namespace RFiDGear.Tests
@@ -24,6 +26,7 @@ namespace RFiDGear.Tests
         [InlineData(TaskType_MifareDesfireTask.ChangeDefault, true, true, true, true, true, true, true)]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false, true, false, false, false, false)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, false, false, false, false, true, true, false)]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover, false, false, false, false, true, true, false)]
         [InlineData(TaskType_MifareDesfireTask.AuthenticateApplication, false, false, false, true, true, true, false)]
         public void SelectedTaskType_SetsExpectedTabAvailability(
             TaskType_MifareDesfireTask taskType,

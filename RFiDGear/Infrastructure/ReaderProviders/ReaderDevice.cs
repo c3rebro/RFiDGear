@@ -159,20 +159,21 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                         AccessControl.DESFireKeySettings keySettings, int keyVersion);
 
         /// <summary>
-        /// 
+        /// Updates DESFire key settings without changing key material. Implementations must authenticate with key slot 0 of
+        /// the selected PICC or application before applying <paramref name="keySettings"/>.
         /// </summary>
-        /// <param name="_applicationMasterKeyCurrent"></param>
-        /// <param name="_keyNumberCurrent"></param>
-        /// <param name="_keyTypeCurrent"></param>
-        /// <param name="_applicationMasterKeyTarget"></param>
-        /// <param name="_keyNumberTarget"></param>
-        /// <param name="selectedDesfireAppKeyVersionTargetAsIntint"></param>
-        /// <param name="_keyTypeTarget"></param>
-        /// <param name="_appIDCurrent"></param>
-        /// <param name="_appIDTarget"></param>
-        /// <param name="keySettings"></param>
-        /// <param name="keyVersion"></param>
-        /// <returns></returns>
+        /// <param name="_applicationMasterKeyCurrent">Master key used to authenticate against slot 0.</param>
+        /// <param name="_keyNumberCurrent">Ignored for settings updates; slot 0 is always used.</param>
+        /// <param name="_keyTypeCurrent">Cryptographic type of the current master key.</param>
+        /// <param name="_applicationMasterKeyTarget">Not required because settings updates do not change keys.</param>
+        /// <param name="_keyNumberTarget">Unused placeholder for compatibility.</param>
+        /// <param name="selectedDesfireAppKeyVersionTargetAsIntint">Unused placeholder for compatibility.</param>
+        /// <param name="_keyTypeTarget">Desired key type metadata to submit alongside the settings byte.</param>
+        /// <param name="_appIDCurrent">Application identifier to select (0 targets the PICC level).</param>
+        /// <param name="_appIDTarget">Unused placeholder for compatibility.</param>
+        /// <param name="keySettings">Key settings byte to apply.</param>
+        /// <param name="keyVersion">Unused placeholder for compatibility.</param>
+        /// <returns>Status of the key settings update.</returns>
         public abstract Task<ERROR> ChangeMifareDesfireApplicationKeySettings(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
                                         string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion);
