@@ -594,12 +594,28 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 OnPropertyChanged(nameof(SelectedTaskType));
                 OnPropertyChanged(nameof(IsFormatTaskSelected));
+                OnPropertyChanged(nameof(ShowAppKeyTargetInputs));
+                OnPropertyChanged(nameof(ShowAppKeySettingsInputs));
             }
         }
         private TaskType_MifareDesfireTask selectedAccessBitsTaskType;
 
         [XmlIgnore]
         public bool IsFormatTaskSelected => SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard;
+
+        /// <summary>
+        /// Gets a value indicating whether UI elements for providing a target application key should be shown.
+        /// The target key is unnecessary when changing only the application key settings.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowAppKeyTargetInputs => SelectedTaskType != TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover;
+
+        /// <summary>
+        /// Gets a value indicating whether UI elements for configuring application key settings should be shown.
+        /// The settings check boxes are unnecessary when only changing the application key material.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowAppKeySettingsInputs => SelectedTaskType != TaskType_MifareDesfireTask.ApplicationKeyChangeover;
 
         /// <summary>
         ///

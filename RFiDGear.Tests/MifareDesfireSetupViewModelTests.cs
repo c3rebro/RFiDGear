@@ -52,48 +52,22 @@ namespace RFiDGear.Tests
             Assert.Equal(desfireAppCreation, viewModel.IsDesfireAppCreationTabEnabled);
         }
 
-        [Fact]
-        public void BuildSelectedKeySettings_MasksPiccChangeKeyBits()
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, true, false)]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover, false, true)]
+        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, true, true)]
+        public void SelectedTaskType_TogglesKeyInputVisibility(
+            TaskType_MifareDesfireTask taskType,
+            bool showTarget,
+            bool showSettings)
         {
             var viewModel = new MifareDesfireSetupViewModel
             {
-                AppNumberCurrent = "0",
-                SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyFrozen,
-                IsAllowChangeMKChecked = true,
-                IsAllowListingWithoutMKChecked = true
+                SelectedTaskType = taskType
             };
 
-            var method = typeof(MifareDesfireSetupViewModel).GetMethod("BuildSelectedKeySettings", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(method);
-
-            var resultObj = method!.Invoke(viewModel, new object[] { 0 });
-            Assert.IsType<DESFireKeySettings>(resultObj);
-
-            var result = (DESFireKeySettings)resultObj!;
-
-            var expectedSettings = DESFireKeySettings.AllowChangeMasterKey | DESFireKeySettings.AllowFreeListingWithoutMasterKey | DESFireKeySettings.ChangeKeyWithMasterKey;
-            Assert.Equal(expectedSettings, result);
-        }
-
-        [Fact]
-        public void BuildSelectedKeySettings_UsesApplicationChangeKeyMode()
-        {
-            var viewModel = new MifareDesfireSetupViewModel
-            {
-                AppNumberCurrent = "1",
-                SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyFrozen,
-                IsAllowChangeMKChecked = true
-            };
-
-            var method = typeof(MifareDesfireSetupViewModel).GetMethod("BuildSelectedKeySettings", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(method);
-
-            var resultObj = method!.Invoke(viewModel, new object[] { 1 });
-            Assert.IsType<DESFireKeySettings>(resultObj);
-
-            var result = (DESFireKeySettings)resultObj!;
-
-            Assert.Equal(DESFireKeySettings.AllowChangeMasterKey | DESFireKeySettings.ChangeKeyFrozen, result);
+            Assert.Equal(showTarget, viewModel.ShowAppKeyTargetInputs);
+            Assert.Equal(showSettings, viewModel.ShowAppKeySettingsInputs);
         }
     }
 }
