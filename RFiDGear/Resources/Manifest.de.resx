@@ -785,6 +785,9 @@ Wird benötigt von:
   <data name="buttonContentMifareDesfireKeyChangeChangeKey" xml:space="preserve">
     <value>Schlüssel ändern</value>
   </data>
+  <data name="buttonContentMifareDesfireKeyChangeUpdateKeySettings" xml:space="preserve">
+    <value>Schlüsseleinstellungen aktualisieren</value>
+  </data>
   <data name="groupBoxHeaderMifareDesfireAppCreation" xml:space="preserve">
     <value>Mifare DESFire Applikation - Anlegen / Bearbeiten</value>
   </data>
@@ -802,6 +805,9 @@ Wird benötigt von:
   </data>
   <data name="labelMifareDesfireAppSetupKeySettings" xml:space="preserve">
     <value>Schlüsseleinstellungen</value>
+  </data>
+  <data name="labelMifareDesfireChangeKeyMode" xml:space="preserve">
+    <value>Key-Änderungsmodus</value>
   </data>
   <data name="textBoxPleaseEnterTaskDescription" xml:space="preserve">
     <value>Beschreibung hier eingeben...</value>
