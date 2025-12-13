@@ -769,6 +769,9 @@ Needed by:
   <data name="buttonContentMifareDesfireKeyChangeChangeKey" xml:space="preserve">
     <value>Change Key</value>
   </data>
+  <data name="buttonContentMifareDesfireKeyChangeUpdateKeySettings" xml:space="preserve">
+    <value>Update Key Settings</value>
+  </data>
   <data name="groupBoxHeaderMifareDesfireAppCreation" xml:space="preserve">
     <value>Mifare DESFire Application Setup</value>
   </data>
@@ -786,6 +789,9 @@ Needed by:
   </data>
   <data name="labelMifareDesfireAppSetupKeySettings" xml:space="preserve">
     <value>Key Settings</value>
+  </data>
+  <data name="labelMifareDesfireChangeKeyMode" xml:space="preserve">
+    <value>Change-Key Mode</value>
   </data>
   <data name="textBoxPleaseEnterTaskDescription" xml:space="preserve">
     <value>Enter Task Description...</value>

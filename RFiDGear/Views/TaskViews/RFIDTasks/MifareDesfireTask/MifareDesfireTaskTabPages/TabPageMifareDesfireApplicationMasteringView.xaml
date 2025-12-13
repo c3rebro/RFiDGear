@@ -7,6 +7,7 @@
     xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
     
     xmlns:local="clr-namespace:RFiDGear"
+    xmlns:access="clr-namespace:RFiDGear.Infrastructure.AccessControl"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Stretch"
     VerticalAlignment="Stretch"
@@ -47,7 +48,7 @@
                 Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireAppSettingsTarget'}">
                 <Grid>
                     <Button
-                        Grid.Row="5"
+                        Grid.Row="6"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
                         Height="26"
@@ -166,6 +167,35 @@
                         </CheckBox>
                     </StackPanel>
                     <Label
+                        Grid.Row="3"
+                        Grid.Column="0"
+                        Margin="8,0,8,8"
+                        VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireChangeKeyMode'}" />
+                    <ComboBox
+                        Grid.Row="3"
+                        Grid.Column="1"
+                        Margin="8,0,8,8"
+                        Height="26"
+                        VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        ItemsSource="{dal:Enumerate {x:Type access:AccessCondition_MifareDesfireAppCreation}}"
+                        SelectedItem="{Binding SelectedDesfireAppKeySettingsCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type access:AccessCondition_MifareDesfireAppCreation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                    <Button
+                        Grid.Row="5"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Height="26"
+                        Padding="5,2"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
+                        Command="{Binding ChangeAppKeySettingsCommand}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeUpdateKeySettings'}" />
+                    <Label
                         Grid.Row="0"
                         Grid.Column="0"
                         Margin="8,8,8,8"
@@ -207,6 +237,7 @@
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="*" />
+                        <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
