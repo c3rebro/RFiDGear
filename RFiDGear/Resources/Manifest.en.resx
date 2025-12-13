@@ -1147,7 +1147,7 @@ Needed by:
     <value>Targeted Task Index</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.ReadAppSettings" xml:space="preserve">
-    <value>Read App Configuration</value>
+    <value>Check: App Config Equals</value>
   </data>
   <data name="ENUM.ERROR.OutOfMemory" xml:space="preserve">
     <value>Out Of Memory Error</value>
@@ -1210,7 +1210,7 @@ Needed by:
     <value>Check: App Existance</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.AuthenticateApplication" xml:space="preserve">
-    <value>Authenticate to App</value>
+    <value>Check: App Key</value>
   </data>
   <data name="labelLogicFuncTaskCompareWithValue" xml:space="preserve">
     <value>Comparer Value</value>
@@ -1644,5 +1644,8 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="labelContentDesfireDataExplorerWriteKeyNo" xml:space="preserve">
     <value>Write Key No.</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover" xml:space="preserve">
+    <value>Change App Key Settings</value>
   </data>
 </root>

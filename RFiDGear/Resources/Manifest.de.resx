@@ -293,7 +293,7 @@ ein Kartenlesegerät auswählen</value>
     <value>Datei erstellen</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.DeleteApplication" xml:space="preserve">
-    <value>Applikation löschen</value>
+    <value>App löschen</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.None" xml:space="preserve">
     <value>k/A</value>
@@ -302,7 +302,7 @@ ein Kartenlesegerät auswählen</value>
     <value>Daten lesen</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.CreateApplication" xml:space="preserve">
-    <value>Applikation erstellen</value>
+    <value>App erstellen</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.FormatDesfireCard" xml:space="preserve">
     <value>Karte Formatieren</value>
@@ -311,7 +311,7 @@ ein Kartenlesegerät auswählen</value>
     <value>PICC Master Key ändern</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.ApplicationKeyChangeover" xml:space="preserve">
-    <value>Applikationsschlüssel ändern</value>
+    <value>App Key ändern</value>
   </data>
   <data name="ENUM.FileType_MifareDesfireFileType.StdDataFile" xml:space="preserve">
     <value>Standard Data File</value>
@@ -1154,7 +1154,7 @@ Wird benötigt von:
     <value>Ziel Aufgabennummer</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.ReadAppSettings" xml:space="preserve">
-    <value>App Konfiguration lesen</value>
+    <value>Prüfung: App Konfig</value>
   </data>
   <data name="ENUM.ERROR.OutOfMemory" xml:space="preserve">
     <value>Nicht genügend Speicher</value>
@@ -1217,7 +1217,7 @@ Wird benötigt von:
     <value>Prüfung: App Existenz</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.AuthenticateApplication" xml:space="preserve">
-    <value>Authentifiziere an App</value>
+    <value>Prüfung: App-Key</value>
   </data>
   <data name="toolTipTabItemDataExplorer" xml:space="preserve">
     <value>Purpose:
@@ -1663,5 +1663,11 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="messageBoxNoReaderFoundMessage" xml:space="preserve">
     <value>Es konnte kein Leser gefunden werden</value>
+  </data>
+  <data name="ENUM.MifareDesfireTaskType.ApplicationKeySettingsChangeover" xml:space="preserve">
+    <value>ApplicationKeySettingsChangeover</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover" xml:space="preserve">
+    <value>App Key-Settings ändern</value>
   </data>
 </root>

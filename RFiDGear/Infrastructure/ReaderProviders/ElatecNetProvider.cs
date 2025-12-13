@@ -757,7 +757,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <param name="keyVersion"></param>
         /// <returns></returns>
         public async override Task<ERROR> ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-                                        string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+                                        string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion)
         {
             if (readerDevice.IsConnected)
@@ -782,7 +782,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         _applicationMasterKeyTarget,
                         (byte)keyVersion,
                         _keyNumberCurrent == 0 ? (byte)keySettings : (byte)((byte)keySettings | 0xE0),
-                        (byte)_keyNumberTarget,
+                        (byte)_keyNumberCurrent,
                         1,
                         (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeTarget)));
 
@@ -819,7 +819,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <param name="keyVersion"></param>
         /// <returns></returns>
         public async override Task<ERROR> ChangeMifareDesfireApplicationKeySettings(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-                                        string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+                                        string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion)
         {
             if (readerDevice.IsConnected)

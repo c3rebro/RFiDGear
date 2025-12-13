@@ -58,18 +58,19 @@ namespace RFiDGear.Infrastructure.Tasks
     public enum TaskType_MifareDesfireTask
     {
         None,
-        AppExistCheck,
-        ReadAppSettings,
-        AuthenticateApplication,
-        ApplicationKeyChangeover,
-        ChangeDefault,
-        CreateApplication,
-        CreateFile,
-        DeleteApplication,
-        DeleteFile,
         FormatDesfireCard,
         PICCMasterKeyChangeover,
+        CreateApplication,
+        DeleteApplication,
+        ApplicationKeyChangeover,
+        ApplicationKeySettingsChangeover,
+        CreateFile,
+        DeleteFile,
         ReadData,
-        WriteData
+        WriteData,
+        AppExistCheck,
+        AuthenticateApplication,
+        ReadAppSettings,
+        ChangeDefault
     }
 }

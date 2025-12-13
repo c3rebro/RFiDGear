@@ -154,7 +154,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public abstract Task<OperationResult> CreateMifareDesfireApplication(string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true);
 
         public abstract Task<ERROR> ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-                                        string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+                                        string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget,
                                         AccessControl.DESFireKeySettings keySettings, int keyVersion);
 
@@ -174,7 +174,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <param name="keyVersion"></param>
         /// <returns></returns>
         public abstract Task<ERROR> ChangeMifareDesfireApplicationKeySettings(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-                                        string _applicationMasterKeyTarget, int _keyNumberTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+                                        string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion);
 
         public abstract Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, uint _appID = 0);

@@ -2425,7 +2425,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                     SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                     DesfireMasterKeyTarget,
                                     0,
-                                    0,
                                     SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings, keyVersionCurrentAsInt);
 
                                 if (result == ERROR.NoError)
