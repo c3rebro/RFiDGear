@@ -12,7 +12,9 @@
     xmlns:v="clr-namespace:RFiDGear.View"
     Title="{Binding Caption}"
     MinWidth="900"
+    Width="1200"
     MinHeight="700"
+    Height="700"
     ResizeMode="CanResizeWithGrip"
     SizeToContent="Manual"
     mc:Ignorable="d">

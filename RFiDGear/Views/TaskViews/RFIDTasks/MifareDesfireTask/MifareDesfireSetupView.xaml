@@ -11,7 +11,7 @@
     xmlns:v="clr-namespace:RFiDGear.View"
     Title="{Binding Caption}"
     MinWidth="900"
-    Width="900"
+    Width="1000"
     MinHeight="700"
     Height="700"
     MouseLeftButtonDown="WindowMouseLeftButtonDown"

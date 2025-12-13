@@ -12,7 +12,10 @@
     
     xmlns:v="clr-namespace:RFiDGear.View"
     Title="{Binding Caption}"
-    Width="800"
+    MinWidth="900"
+    Width="1000"
+    MinHeight="700"
+    Height="700"
     dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
     ResizeMode="CanResizeWithGrip"
     SizeToContent="Manual"

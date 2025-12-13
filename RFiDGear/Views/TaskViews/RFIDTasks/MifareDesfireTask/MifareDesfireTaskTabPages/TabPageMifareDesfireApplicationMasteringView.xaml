@@ -48,42 +48,21 @@
                 VerticalAlignment="Stretch"
                 Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireAppSettingsTarget'}">
                 <Grid>
-                    <Button
-                        Grid.Row="6"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="2"
-                        Height="26"
-                        Padding="5,2"
-                        Margin="8,7,8,8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Bottom"
-                        Command="{Binding ChangeAppKeyCommand}"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeChangeKey'}" />
                     <Label
-                        Grid.Row="1"
+                        Grid.Row="0"
                         Grid.Column="0"
-                        Margin="8,0,8,8"
+                        Margin="8,8,8,8"
                         VerticalAlignment="Stretch"
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}" />
-                    <Label
-                        Grid.Row="2"
-                        Grid.Column="0"
-                        Margin="8,0,8,8"
-                        VerticalAlignment="Stretch"
-                        HorizontalAlignment="Stretch"
-                        VerticalContentAlignment="Center"
-                        HorizontalContentAlignment="Left"
-                        Visibility="{Binding ShowAppKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireAppSetupKeySettings'}" />
                     <TextBox
-                        Grid.Row="1"
+                        Grid.Row="0"
                         Grid.Column="1"
                         Height="26"
-                        Margin="8,0,8,8"
+                        Margin="8,8,8,8"
                         VerticalAlignment="Stretch"
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
@@ -107,88 +86,119 @@
                             </Style>
                         </TextBox.Resources>
                     </TextBox>
-                    <StackPanel
+
+                    <GroupBox
                         Grid.Row="2"
-                        Grid.Column="1"
-                        Margin="8,0,8,8"
-                        VerticalAlignment="Top"
-                        HorizontalAlignment="Left"
-                        Visibility="{Binding ShowAppKeySettingsInputs, Converter={StaticResource BoolToVisConv}}">
-                        <CheckBox
-                            Margin="0,0,0,4"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowChangeMK'}"
-                            IsChecked="{Binding IsAllowChangeMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                            <CheckBox.ToolTip>
-                                <ToolTip>
-                                    <StackPanel>
-                                        <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowChangeMK'}" />
-                                    </StackPanel>
-                                </ToolTip>
-                            </CheckBox.ToolTip>
-                        </CheckBox>
-                        <CheckBox
-                            Margin="0,0,0,4"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowListing'}"
-                            IsChecked="{Binding IsAllowListingWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                            <CheckBox.ToolTip>
-                                <ToolTip>
-                                    <StackPanel>
-                                        <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowListing'}" />
-                                    </StackPanel>
-                                </ToolTip>
-                            </CheckBox.ToolTip>
-                        </CheckBox>
-                        <CheckBox
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Margin="8,8,8,8"
+                        VerticalAlignment="Stretch"
+                        Visibility="{Binding ShowAppKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
+                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireAppSettingsTarget'}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Label
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Margin="8,8,8,8"
+                                VerticalAlignment="Stretch"
+                                HorizontalAlignment="Stretch"
+                                VerticalContentAlignment="Center"
+                                HorizontalContentAlignment="Left"
+                                Visibility="{Binding ShowAppKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireAppSetupKeySettings'}" />
+                            <StackPanel
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Margin="8,0,8,8"
+                                VerticalAlignment="Top"
+                                HorizontalAlignment="Left">
+                                <CheckBox
+                                    Margin="0,8,0,4"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowChangeMK'}"
+                                    IsChecked="{Binding IsAllowChangeMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                    <CheckBox.ToolTip>
+                                        <ToolTip>
+                                            <StackPanel>
+                                                <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowChangeMK'}" />
+                                            </StackPanel>
+                                        </ToolTip>
+                                    </CheckBox.ToolTip>
+                                </CheckBox>
+                                <CheckBox
+                                    Margin="0,0,0,4"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowListing'}"
+                                    IsChecked="{Binding IsAllowListingWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                                    <CheckBox.ToolTip>
+                                        <ToolTip>
+                                            <StackPanel>
+                                                <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowListing'}" />
+                                            </StackPanel>
+                                        </ToolTip>
+                                    </CheckBox.ToolTip>
+                                </CheckBox>
+                                <CheckBox
                             Margin="0,0,0,4"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowCreateDelete'}"
                             IsChecked="{Binding IsAllowCreateDelWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                            <CheckBox.ToolTip>
-                                <ToolTip>
-                                    <StackPanel>
-                                        <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowCreateDelete'}" />
-                                    </StackPanel>
-                                </ToolTip>
-                            </CheckBox.ToolTip>
-                        </CheckBox>
-                        <CheckBox
+                                    <CheckBox.ToolTip>
+                                        <ToolTip>
+                                            <StackPanel>
+                                                <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxAllowCreateDelete'}" />
+                                            </StackPanel>
+                                        </ToolTip>
+                                    </CheckBox.ToolTip>
+                                </CheckBox>
+                                <CheckBox
                             Margin="0,0,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowConfigChange'}"
                             IsChecked="{Binding IsAllowConfigChangableChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                            <ToggleButton.ToolTip>
-                                <ToolTip>
-                                    <StackPanel>
-                                        <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxConfigChangeable'}" />
-                                    </StackPanel>
-                                </ToolTip>
-                            </ToggleButton.ToolTip>
-                        </CheckBox>
-                    </StackPanel>
-                    <Label
-                        Grid.Row="3"
-                        Grid.Column="0"
-                        Margin="8,0,8,8"
-                        VerticalAlignment="Stretch"
-                        HorizontalAlignment="Stretch"
-                        VerticalContentAlignment="Center"
-                        HorizontalContentAlignment="Left"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireChangeKeyMode'}" />
-                    <ComboBox
-                        Grid.Row="3"
-                        Grid.Column="1"
-                        Margin="8,0,8,8"
-                        Height="26"
-                        VerticalAlignment="Stretch"
-                        HorizontalAlignment="Stretch"
-                        ItemsSource="{dal:Enumerate {x:Type access:AccessCondition_MifareDesfireAppCreation}}"
-                        SelectedItem="{Binding SelectedDesfireAppKeySettingsCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type access:AccessCondition_MifareDesfireAppCreation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                                    <ToggleButton.ToolTip>
+                                        <ToolTip>
+                                            <StackPanel>
+                                                <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxConfigChangeable'}" />
+                                            </StackPanel>
+                                        </ToolTip>
+                                    </ToggleButton.ToolTip>
+                                </CheckBox>
+                            </StackPanel>
+
+                            <Label
+                     Grid.Row="1"
+                     Grid.Column="0"
+                     Margin="8,8,8,8"
+                     VerticalAlignment="Stretch"
+                     HorizontalAlignment="Stretch"
+                     VerticalContentAlignment="Center"
+                     HorizontalContentAlignment="Left"
+                     Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireChangeKeyMode'}" />
+                            <ComboBox
+                     Grid.Row="1"
+                     Grid.Column="1"
+                     Margin="8,0,8,8"
+                     Height="26"
+                     VerticalAlignment="Stretch"
+                     HorizontalAlignment="Stretch"
+                     ItemsSource="{dal:Enumerate {x:Type access:AccessCondition_MifareDesfireAppCreation}}"
+                     SelectedItem="{Binding SelectedDesfireAppKeySettingsCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type access:AccessCondition_MifareDesfireAppCreation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        </Grid>
+                    </GroupBox>
+
                     <Button
                         Grid.Row="5"
                         Grid.Column="0"
@@ -199,43 +209,20 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Command="{Binding ChangeAppKeySettingsCommand}"
+                        Visibility="{Binding ShowAppKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeUpdateKeySettings'}" />
-                    <Label
-                        Grid.Row="0"
+                    <Button
+                        Grid.Row="6"
                         Grid.Column="0"
-                        Margin="8,8,8,8"
-                        VerticalAlignment="Stretch"
-                        HorizontalAlignment="Stretch"
-                        VerticalContentAlignment="Center"
-                        HorizontalContentAlignment="Left"
-                        Content="App ID" />
-                    <TextBox
-                        Grid.Row="0"
-                        Grid.Column="1"
-                        Margin="8,8,8,8"
+                        Grid.ColumnSpan="2"
                         Height="26"
-                        VerticalAlignment="Stretch"
+                        Padding="5,2"
+                        Margin="8,7,8,8"
                         HorizontalAlignment="Stretch"
-                        VerticalContentAlignment="Center"
-                        HorizontalContentAlignment="Left"
-                        Text="{Binding AppNumberTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <TextBox.Resources>
-                            <Style TargetType="TextBox">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidAppNumberTarget}" Value="True">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="Background" Value="White" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidAppNumberTarget}" Value="False">
-                                        <Setter Property="Foreground" Value="Black" />
-                                        <Setter Property="Background" Value="Red" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
+                        VerticalAlignment="Bottom"
+                        Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
+                        Command="{Binding ChangeAppKeyCommand}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeChangeKey'}" />
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />

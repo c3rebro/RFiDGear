@@ -688,16 +688,16 @@ Beispiel: 0; 0.0; A1</value>
     <value>Abbrechen</value>
   </data>
   <data name="labelAllowChangeMK" xml:space="preserve">
-    <value>PICC / App MasterKey änderbar</value>
+    <value>PICC/App-MasterKey änderbar</value>
   </data>
   <data name="labelAllowConfigChange" xml:space="preserve">
     <value>Konfiguration ist änderbar</value>
   </data>
   <data name="labelAllowCreateDelete" xml:space="preserve">
-    <value>Apps / Dateien ohne PICC / App MasterKey anlegbar</value>
+    <value>App/File ohne MasterKey anlegbar</value>
   </data>
   <data name="labelAllowListing" xml:space="preserve">
-    <value>Verzeichnis ohne PICC / App MasterKey einsehbar</value>
+    <value>Verzeichnis ohne MasterKey einsehbar</value>
   </data>
   <data name="tabPageHeaderApplicationKeySetup" xml:space="preserve">
     <value>App Schlüssel Einstellungen</value>
