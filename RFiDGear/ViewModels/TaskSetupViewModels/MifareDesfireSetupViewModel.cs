@@ -2159,7 +2159,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     var oldKeyForTargetSlot = ShowAppKeyOldInputs ? DesfireAppKeyCurrentOld : DesfireAppKeyCurrent;
                     var oldKeyForChangeKey = authKeyValue;
                     var keyNumberForChange = AppNumberCurrentAsInt == 0 ? 0 : selectedDesfireAppKeyNumberCurrentAsInt;
-                    var numberOfKeys = AppNumberCurrentAsInt == 0 ? 1 : Math.Max(1, (int)device.MaxNumberOfAppKeys);
+                    var numberOfKeys = AppNumberCurrentAsInt == 0 ? 1 : 15;
 
                     var isAuthKeyValid = CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(authKeyValue) == KEY_ERROR.NO_ERROR;
                     var isOldKeyValid = !ShowAppKeyOldInputs || CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(oldKeyForTargetSlot) == KEY_ERROR.NO_ERROR;
