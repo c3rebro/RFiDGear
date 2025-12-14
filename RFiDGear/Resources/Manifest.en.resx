@@ -1654,4 +1654,7 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="ENUM.TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover" xml:space="preserve">
     <value>Change App Key Settings</value>
   </data>
+  <data name="labelContentMifareDesfireOldAppKey" xml:space="preserve">
+    <value>Old App Key</value>
+  </data>
 </root>

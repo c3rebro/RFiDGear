@@ -60,6 +60,7 @@ namespace RFiDGear.Infrastructure.Tasks
         None,
         FormatDesfireCard,
         PICCMasterKeyChangeover,
+        PICCMasterKeySettingsChangeover,
         CreateApplication,
         DeleteApplication,
         ApplicationKeyChangeover,
