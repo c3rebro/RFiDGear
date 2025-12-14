@@ -41,6 +41,9 @@
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup>
+    <!-- Running heat in-proc can crash VS when the task bitness differs from MSBuild (see https://github.com/wixtoolset/issues/issues/6699). -->
+    <HeatRunAsSeparateProcess Condition=" '$(HeatRunAsSeparateProcess)' == '' ">true</HeatRunAsSeparateProcess>
+    <WixToolPath Condition=" '$(WixToolPath)' == '' and Exists('$(ProgramFiles(x86))\\WiX Toolset v3.14\\bin\\') ">$(ProgramFiles(x86))\WiX Toolset v3.14\bin\</WixToolPath>
     <RFiDGearReleaseX86Dir>$(ProjectDir)..\RFiDGear\bin\x86\Release</RFiDGearReleaseX86Dir>
     <RFiDGearReleaseX64Dir>$(ProjectDir)..\RFiDGear\bin\x64\Release</RFiDGearReleaseX64Dir>
     <RFiDGearProjectDir>$(ProjectDir)..\RFiDGear\</RFiDGearProjectDir>
@@ -101,6 +104,7 @@
     </PropertyGroup>
     <MakeDir Directories="$(HarvestOutputDir)" />
     <HeatDirectory
+      ToolPath="$(WixToolPath)"
       AutogenerateGuids="true"
       ComponentGroupName="RFiDGear.ReleaseFiles.x86"
       Directory="$(RFiDGearReleaseX86Dir)"
@@ -108,9 +112,11 @@
       GenerateGuidsNow="true"
       OutputFile="$(HarvestOutputDir)RFiDGear.Release.x86.wxs"
       PreprocessorVariable="var.RFiDGearReleaseX86Dir"
+      RunAsSeparateProcess="$(HeatRunAsSeparateProcess)"
       SuppressRootDirectory="true"
       Condition="Exists('$(RFiDGearReleaseX86Dir)')" />
     <HeatDirectory
+      ToolPath="$(WixToolPath)"
       AutogenerateGuids="true"
       ComponentGroupName="RFiDGear.ReleaseFiles.x64"
       Directory="$(RFiDGearReleaseX64Dir)"
@@ -118,6 +124,7 @@
       GenerateGuidsNow="true"
       OutputFile="$(HarvestOutputDir)RFiDGear.Release.x64.wxs"
       PreprocessorVariable="var.RFiDGearReleaseX64Dir"
+      RunAsSeparateProcess="$(HeatRunAsSeparateProcess)"
       SuppressRootDirectory="true"
       Condition="Exists('$(RFiDGearReleaseX64Dir)')" />
     <ItemGroup>
