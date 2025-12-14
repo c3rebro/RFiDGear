@@ -177,18 +177,20 @@
                                     </ToggleButton.ToolTip>
                                 </CheckBox>
                             </StackPanel>
+                        </Grid>
+                    </GroupBox>
 
-                            <Label
-                     Grid.Row="1"
+                    <Label
+                     Grid.Row="3"
                      Grid.Column="0"
-                     Margin="8,8,8,8"
+                     Margin="8,0,8,8"
                      VerticalAlignment="Stretch"
                      HorizontalAlignment="Stretch"
                      VerticalContentAlignment="Center"
                      HorizontalContentAlignment="Left"
                      Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireChangeKeyMode'}" />
-                            <ComboBox
-                     Grid.Row="1"
+                    <ComboBox
+                     Grid.Row="3"
                      Grid.Column="1"
                      Margin="8,0,8,8"
                      Height="26"
@@ -196,9 +198,7 @@
                      HorizontalAlignment="Stretch"
                      ItemsSource="{dal:Enumerate {x:Type access:AccessCondition_MifareDesfireAppCreation}}"
                      SelectedItem="{Binding SelectedDesfireAppKeySettingsCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type access:AccessCondition_MifareDesfireAppCreation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
-                        </Grid>
-                    </GroupBox>
-
+                    
                     <Button
                         Grid.Row="5"
                         Grid.Column="0"
