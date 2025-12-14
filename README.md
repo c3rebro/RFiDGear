@@ -12,12 +12,14 @@ Support for batch processing.
 Requirements:
 
 * minimum Microsoft Windows 7 32/64bit (or later)
-* Elatec Reader TWN4
-* LibLogicalAccess 3.6.0 (or later - included)
+* Elatec Reader TWN4 Multi or
+* Elatec Reader TWN4 Legic 45 or
+* PC/SC compatible Reader
 
 In case of PCSC Provider: a PCSC compatibile Reader:
 (Examples - others are reported to work)
 * Omnikey 5321
+* Omnikey 5422
 * Sciel SCL3711
 * ACR 122U
 
