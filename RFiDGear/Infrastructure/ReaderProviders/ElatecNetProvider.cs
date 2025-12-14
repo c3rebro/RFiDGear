@@ -761,7 +761,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <param name="keyVersion">Key version used by the reader when writing the new key.</param>
         /// <returns><see cref="ERROR.NoError"/> on success; otherwise an error indicating why the key change failed.</returns>
         public async override Task<ERROR> ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-                                        string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+                                        string _oldKeyForChangeKey, string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion)
         {
             if (readerDevice.IsConnected)
@@ -795,7 +795,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         : (byte)keySettings;
 
                     await readerDevice.MifareDesfire_ChangeKeyAsync(
-                        _applicationMasterKeyCurrent,
+                        _oldKeyForChangeKey,
                         _applicationMasterKeyTarget,
                         (byte)keyVersion,
                         keySettingsByte,

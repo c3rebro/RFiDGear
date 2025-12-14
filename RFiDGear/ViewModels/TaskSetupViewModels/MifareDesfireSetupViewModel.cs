@@ -2148,12 +2148,26 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
+                    var changeKeyMode = GetChangeKeyModeForApplication(AppNumberCurrentAsInt);
+                    var authKeyNo = AppNumberCurrentAsInt == 0
+                        ? 0
+                        : changeKeyMode == DESFireKeySettings.ChangeKeyWithMasterKey
+                            ? 0
+                            : selectedDesfireAppKeyNumberCurrentAsInt;
+
+                    var authKeyValue = DesfireAppKeyCurrent;
+                    var oldKeyForChangeKey = ShowAppKeyOldInputs ? DesfireAppKeyCurrentOld : authKeyValue;
+                    var keyNumberForChange = AppNumberCurrentAsInt == 0 ? 0 : selectedDesfireAppKeyNumberCurrentAsInt;
+
+                    var isAuthKeyValid = CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(authKeyValue) == KEY_ERROR.NO_ERROR;
+                    var isOldKeyValid = !ShowAppKeyOldInputs || CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(oldKeyForChangeKey) == KEY_ERROR.NO_ERROR;
+
+                    if (isAuthKeyValid && isOldKeyValid)
                     {
                         var result = await device.AuthToMifareDesfireApplication(
-                                DesfireAppKeyCurrent,
+                                authKeyValue,
                                 SelectedDesfireAppKeyEncryptionTypeCurrent,
-                                selectedDesfireAppKeyNumberCurrentAsInt,
+                                authKeyNo,
                                 AppNumberCurrentAsInt);
 
                         if (IsValidAppNumberCurrent != false &&
@@ -2165,9 +2179,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             var keySettings = GetChangeKeyModeForApplication(AppNumberCurrentAsInt);
 
-                            result = await device.ChangeMifareDesfireApplicationKey(DesfireAppKeyCurrent,
-                                                                         selectedDesfireAppKeyNumberCurrentAsInt,
+                            result = await device.ChangeMifareDesfireApplicationKey(authKeyValue,
+                                                                         keyNumberForChange,
                                                                          SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                                                         oldKeyForChangeKey,
                                                                          DesfireAppKeyTarget,
                                                                          selectedDesfireAppKeyVersionTargetAsInt,
                                                                          SelectedDesfireAppKeyEncryptionTypeTarget,
@@ -2653,6 +2668,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                     DesfireMasterKeyCurrent,
                                     0,
                                     SelectedDesfireMasterKeyEncryptionTypeCurrent,
+                                    DesfireMasterKeyCurrent,
                                     DesfireMasterKeyTarget,
                                     0,
                                     SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings, keyVersionCurrentAsInt);
