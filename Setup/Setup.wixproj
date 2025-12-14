@@ -44,8 +44,11 @@
     <!-- Running heat in-proc can crash VS when the task bitness differs from MSBuild (see https://github.com/wixtoolset/issues/issues/6699). -->
     <HeatRunAsSeparateProcess Condition=" '$(HeatRunAsSeparateProcess)' == '' ">true</HeatRunAsSeparateProcess>
     <WixToolPath Condition=" '$(WixToolPath)' == '' and Exists('$(ProgramFiles(x86))\\WiX Toolset v3.14\\bin\\') ">$(ProgramFiles(x86))\WiX Toolset v3.14\bin\</WixToolPath>
-    <RFiDGearReleaseX86Dir>$(ProjectDir)..\RFiDGear\bin\x86\Release</RFiDGearReleaseX86Dir>
-    <RFiDGearReleaseX64Dir>$(ProjectDir)..\RFiDGear\bin\x64\Release</RFiDGearReleaseX64Dir>
+    <RFiDGearTargetFramework Condition=" '$(RFiDGearTargetFramework)' == '' ">net8.0-windows</RFiDGearTargetFramework>
+    <RFiDGearReleaseX86Dir Condition=" '$(RFiDGearReleaseX86Dir)' == '' ">$(ProjectDir)..\RFiDGear\bin\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseX86Dir>
+    <RFiDGearReleaseX86Dir Condition=" Exists('$(ProjectDir)..\RFiDGear\bin\x86\Release\$(RFiDGearTargetFramework)') ">$(ProjectDir)..\RFiDGear\bin\x86\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseX86Dir>
+    <RFiDGearReleaseX64Dir Condition=" '$(RFiDGearReleaseX64Dir)' == '' ">$(ProjectDir)..\RFiDGear\bin\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseX64Dir>
+    <RFiDGearReleaseX64Dir Condition=" Exists('$(ProjectDir)..\RFiDGear\bin\x64\Release\$(RFiDGearTargetFramework)') ">$(ProjectDir)..\RFiDGear\bin\x64\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseX64Dir>
     <RFiDGearProjectDir>$(ProjectDir)..\RFiDGear\</RFiDGearProjectDir>
     <RFiDGearProjectName>RFiDGear</RFiDGearProjectName>
     <DefineConstants>$(DefineConstants);RFiDGearReleaseX86Dir=$(RFiDGearReleaseX86Dir);RFiDGearReleaseX64Dir=$(RFiDGearReleaseX64Dir);RFiDGear.ProjectDir=$(RFiDGearProjectDir);RFiDGear.ProjectName=$(RFiDGearProjectName)</DefineConstants>
@@ -53,7 +56,6 @@
   <ItemGroup>
     <Compile Include="LicenseAgreementDlg_HK.wxs" />
     <Compile Include="Product.wxs" />
-    <Compile Include="setup example.wxs" />
     <Compile Include="WixUI_HK.wxs" />
   </ItemGroup>
   <ItemGroup>
@@ -103,30 +105,8 @@
       <HarvestOutputDir>$(IntermediateOutputPath)harvest\</HarvestOutputDir>
     </PropertyGroup>
     <MakeDir Directories="$(HarvestOutputDir)" />
-    <HeatDirectory
-      ToolPath="$(WixToolPath)"
-      AutogenerateGuids="true"
-      ComponentGroupName="RFiDGear.ReleaseFiles.x86"
-      Directory="$(RFiDGearReleaseX86Dir)"
-      DirectoryRefId="INSTALLDIR"
-      GenerateGuidsNow="true"
-      OutputFile="$(HarvestOutputDir)RFiDGear.Release.x86.wxs"
-      PreprocessorVariable="var.RFiDGearReleaseX86Dir"
-      RunAsSeparateProcess="$(HeatRunAsSeparateProcess)"
-      SuppressRootDirectory="true"
-      Condition="Exists('$(RFiDGearReleaseX86Dir)')" />
-    <HeatDirectory
-      ToolPath="$(WixToolPath)"
-      AutogenerateGuids="true"
-      ComponentGroupName="RFiDGear.ReleaseFiles.x64"
-      Directory="$(RFiDGearReleaseX64Dir)"
-      DirectoryRefId="INSTALLDIR"
-      GenerateGuidsNow="true"
-      OutputFile="$(HarvestOutputDir)RFiDGear.Release.x64.wxs"
-      PreprocessorVariable="var.RFiDGearReleaseX64Dir"
-      RunAsSeparateProcess="$(HeatRunAsSeparateProcess)"
-      SuppressRootDirectory="true"
-      Condition="Exists('$(RFiDGearReleaseX64Dir)')" />
+    <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.ReleaseFiles.x86" Directory="$(RFiDGearReleaseX86Dir)" DirectoryRefId="INSTALLDIR" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Release.x86.wxs" PreprocessorVariable="var.RFiDGearReleaseX86Dir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressRootDirectory="true" Condition="Exists('$(RFiDGearReleaseX86Dir)')" />
+    <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.ReleaseFiles.x64" Directory="$(RFiDGearReleaseX64Dir)" DirectoryRefId="INSTALLDIR" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Release.x64.wxs" PreprocessorVariable="var.RFiDGearReleaseX64Dir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressRootDirectory="true" Condition="Exists('$(RFiDGearReleaseX64Dir)')" />
     <ItemGroup>
       <Compile Include="$(HarvestOutputDir)RFiDGear.Release.x86.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Release.x86.wxs')" />
       <Compile Include="$(HarvestOutputDir)RFiDGear.Release.x64.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Release.x64.wxs')" />
