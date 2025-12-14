@@ -154,9 +154,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public abstract Task<OperationResult> CreateMifareDesfireApplication(string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true);
 
         public abstract Task<ERROR> ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-                                        string _oldKeyForChangeKey, string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+                                        string _oldKeyForChangeKey, string _oldKeyForTargetSlot, string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget,
-                                        AccessControl.DESFireKeySettings keySettings, int keyVersion);
+                                        AccessControl.DESFireKeySettings keySettings, int keyVersion, int numberOfKeys = 0);
 
         /// <summary>
         /// Updates DESFire key settings without changing key material. Implementations must authenticate with key slot 0 of

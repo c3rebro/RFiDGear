@@ -2156,11 +2156,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             : selectedDesfireAppKeyNumberCurrentAsInt;
 
                     var authKeyValue = DesfireAppKeyCurrent;
-                    var oldKeyForChangeKey = ShowAppKeyOldInputs ? DesfireAppKeyCurrentOld : authKeyValue;
+                    var oldKeyForTargetSlot = ShowAppKeyOldInputs ? DesfireAppKeyCurrentOld : DesfireAppKeyCurrent;
+                    var oldKeyForChangeKey = authKeyValue;
                     var keyNumberForChange = AppNumberCurrentAsInt == 0 ? 0 : selectedDesfireAppKeyNumberCurrentAsInt;
+                    var numberOfKeys = AppNumberCurrentAsInt == 0 ? 1 : Math.Max(1, (int)device.MaxNumberOfAppKeys);
 
                     var isAuthKeyValid = CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(authKeyValue) == KEY_ERROR.NO_ERROR;
-                    var isOldKeyValid = !ShowAppKeyOldInputs || CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(oldKeyForChangeKey) == KEY_ERROR.NO_ERROR;
+                    var isOldKeyValid = !ShowAppKeyOldInputs || CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(oldKeyForTargetSlot) == KEY_ERROR.NO_ERROR;
 
                     if (isAuthKeyValid && isOldKeyValid)
                     {
@@ -2182,11 +2184,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             result = await device.ChangeMifareDesfireApplicationKey(authKeyValue,
                                                                          keyNumberForChange,
                                                                          SelectedDesfireAppKeyEncryptionTypeCurrent,
-                                                                         oldKeyForChangeKey,
+                                                                        oldKeyForChangeKey,
+                                                                         oldKeyForTargetSlot,
                                                                          DesfireAppKeyTarget,
                                                                          selectedDesfireAppKeyVersionTargetAsInt,
                                                                          SelectedDesfireAppKeyEncryptionTypeTarget,
-                                                                         AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings, keyVersionCurrentAsInt);
+                                                                         AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings, keyVersionCurrentAsInt, numberOfKeys);
 
                             if (await SetOperationResultAsync(
                                     result,
@@ -2669,9 +2672,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                     0,
                                     SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                     DesfireMasterKeyCurrent,
+                                    DesfireMasterKeyCurrent,
                                     DesfireMasterKeyTarget,
                                     0,
-                                    SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings, keyVersionCurrentAsInt);
+                                    SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings, keyVersionCurrentAsInt, 1);
 
                                 if (result == ERROR.NoError)
                                 {
