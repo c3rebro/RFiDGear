@@ -140,6 +140,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     SelectedDesfireAppKeyEncryptionTypeCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType;
                     SelectedDesfireAppKeyNumberCurrent = "0";
 
+                    DesfireAppKeyCurrentOld = DesfireAppKeyCurrent;
+
                     DesfireAppKeyTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).Key;
                     SelectedDesfireAppKeyEncryptionTypeTarget = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey).EncryptionType;
 
@@ -164,6 +166,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     IsValidDesfireMasterKeyTarget = null;
 
                     IsValidDesfireAppKeyCurrent = null;
+                    IsValidDesfireAppKeyCurrentOld = null;
                     IsValidDesfireAppKeyTarget = null;
 
                     IsValidAppNumberCurrent = null;
@@ -515,6 +518,17 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             return keySettings;
         }
 
+        private void UpdateOldAppKeyDefaults()
+        {
+            if (ShowAppKeyOldInputs)
+            {
+                return;
+            }
+
+            DesfireAppKeyCurrentOld = DesfireAppKeyCurrent ?? string.Empty;
+            IsValidDesfireAppKeyCurrentOld = IsValidDesfireAppKeyCurrent;
+        }
+
         /// <summary>
         ///
         /// </summary>
@@ -596,6 +610,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(IsFormatTaskSelected));
                 OnPropertyChanged(nameof(ShowAppKeyTargetInputs));
                 OnPropertyChanged(nameof(ShowAppKeySettingsInputs));
+                OnPropertyChanged(nameof(ShowAppKeyOldInputs));
+
+                UpdateOldAppKeyDefaults();
             }
         }
         private TaskType_MifareDesfireTask selectedAccessBitsTaskType;
@@ -616,6 +633,24 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         [XmlIgnore]
         public bool ShowAppKeySettingsInputs => SelectedTaskType != TaskType_MifareDesfireTask.ApplicationKeyChangeover;
+
+        /// <summary>
+        /// Gets a value indicating whether UI elements for supplying the previous application key should be shown.
+        /// These inputs are only needed when changing a non-PICC key using master-key mode (MK) for authentication.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowAppKeyOldInputs
+        {
+            get
+            {
+                var changeKeyMode = GetChangeKeyModeForApplication(AppNumberCurrentAsInt);
+
+                return changeKeyMode == DESFireKeySettings.ChangeKeyWithMasterKey
+                       && SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover
+                       && AppNumberCurrentAsInt != 0
+                       && selectedDesfireAppKeyNumberCurrentAsInt != 0;
+            }
+        }
 
         /// <summary>
         ///
@@ -901,6 +936,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 selectedDesfireAppKeySettingsTarget = value;
                 OnPropertyChanged(nameof(SelectedDesfireAppKeySettingsCreateNewApp));
+                OnPropertyChanged(nameof(ShowAppKeyOldInputs));
+
+                UpdateOldAppKeyDefaults();
             }
         }
         private AccessCondition_MifareDesfireAppCreation selectedDesfireAppKeySettingsTarget;
@@ -1036,6 +1074,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     selectedDesfireAppKeyNumberCurrent = value;
                 }
                 OnPropertyChanged(nameof(SelectedDesfireAppKeyNumberCurrent));
+                OnPropertyChanged(nameof(ShowAppKeyOldInputs));
+
+                UpdateOldAppKeyDefaults();
             }
         }
         private string selectedDesfireAppKeyNumberCurrent;
@@ -1059,6 +1100,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 IsValidDesfireAppKeyCurrent = (CustomConverter.IsInHexFormat(desfireAppKeyCurrent) && desfireAppKeyCurrent.Length == 32);
                 OnPropertyChanged(nameof(DesfireAppKeyCurrent));
+
+                UpdateOldAppKeyDefaults();
             }
         }
         private string desfireAppKeyCurrent;
@@ -1079,6 +1122,43 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private bool? isValidDesfireAppKeyCurrent;
 
         /// <summary>
+        /// Provides the previous value of the application key when using master-key (MK) change mode for non-PICC keys.
+        /// </summary>
+        public string DesfireAppKeyCurrentOld
+        {
+            get => desfireAppKeyCurrentOld;
+            set
+            {
+                try
+                {
+                    desfireAppKeyCurrentOld = value.Length > 32 ? value.ToUpper().Remove(32) : value;
+                }
+                catch
+                {
+                    desfireAppKeyCurrentOld = value.ToUpper();
+                }
+                IsValidDesfireAppKeyCurrentOld = (CustomConverter.IsInHexFormat(desfireAppKeyCurrentOld) && desfireAppKeyCurrentOld.Length == 32);
+                OnPropertyChanged(nameof(DesfireAppKeyCurrentOld));
+            }
+        }
+        private string desfireAppKeyCurrentOld;
+
+        /// <summary>
+        /// Indicates whether the previously configured application key adheres to the expected hex format and length.
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidDesfireAppKeyCurrentOld
+        {
+            get => isValidDesfireAppKeyCurrentOld;
+            set
+            {
+                isValidDesfireAppKeyCurrentOld = value;
+                OnPropertyChanged(nameof(IsValidDesfireAppKeyCurrentOld));
+            }
+        }
+        private bool? isValidDesfireAppKeyCurrentOld;
+
+        /// <summary>
         ///
         /// </summary>
         public string AppNumberCurrent
@@ -1096,6 +1176,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 IsValidAppNumberCurrent = (int.TryParse(value, out appNumberCurrentAsInt) && appNumberCurrentAsInt <= (int)0xFFFFFF);
                 OnPropertyChanged(nameof(AppNumberCurrent));
+                OnPropertyChanged(nameof(ShowAppKeyOldInputs));
+
+                UpdateOldAppKeyDefaults();
             }
         }
         private string appNumberCurrent;
