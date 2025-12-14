@@ -14,9 +14,18 @@
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>Debug</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>Debug</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug(without args)|x86' ">
     <DefineConstants>Debug</DefineConstants>
@@ -30,6 +39,16 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug(without args)|Any CPU' ">
     <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Running heat in-proc can crash VS when the task bitness differs from MSBuild (see https://github.com/wixtoolset/issues/issues/6699). -->
+    <HeatRunAsSeparateProcess Condition=" '$(HeatRunAsSeparateProcess)' == '' ">true</HeatRunAsSeparateProcess>
+    <WixToolPath Condition=" '$(WixToolPath)' == '' and Exists('$(ProgramFiles(x86))\\WiX Toolset v3.14\\bin\\') ">$(ProgramFiles(x86))\WiX Toolset v3.14\bin\</WixToolPath>
+    <RFiDGearReleaseX86Dir>$(ProjectDir)..\RFiDGear\bin\x86\Release</RFiDGearReleaseX86Dir>
+    <RFiDGearReleaseX64Dir>$(ProjectDir)..\RFiDGear\bin\x64\Release</RFiDGearReleaseX64Dir>
+    <RFiDGearProjectDir>$(ProjectDir)..\RFiDGear\</RFiDGearProjectDir>
+    <RFiDGearProjectName>RFiDGear</RFiDGearProjectName>
+    <DefineConstants>$(DefineConstants);RFiDGearReleaseX86Dir=$(RFiDGearReleaseX86Dir);RFiDGearReleaseX64Dir=$(RFiDGearReleaseX64Dir);RFiDGear.ProjectDir=$(RFiDGearProjectDir);RFiDGear.ProjectName=$(RFiDGearProjectName)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="LicenseAgreementDlg_HK.wxs" />
@@ -64,12 +83,53 @@
   <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">
     <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
   </Target>
+  <Target Name="ValidateReleaseOutputs" BeforeTargets="HarvestReleaseOutputs">
+    <PropertyGroup>
+      <RequiredReleaseDir Condition=" '$(Platform)' == 'x64' ">$(RFiDGearReleaseX64Dir)</RequiredReleaseDir>
+      <RequiredReleaseDir Condition=" '$(Platform)' != 'x64' ">$(RFiDGearReleaseX86Dir)</RequiredReleaseDir>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(RequiredReleaseDir)')" Text="Release output directory '$(RequiredReleaseDir)' not found. Build the RFiDGear project for the $(Platform) Release configuration before packaging." />
+  </Target>
   <!--
-	To modify your build process, add your task inside one of the targets below and uncomment it.
-	Other similar extension points exist, see Wix.targets.
-	<Target Name="BeforeBuild">
-	</Target>
-	<Target Name="AfterBuild">
-	</Target>
-	-->
+        To modify your build process, add your task inside one of the targets below and uncomment it.
+        Other similar extension points exist, see Wix.targets.
+        <Target Name="BeforeBuild">
+        </Target>
+        <Target Name="AfterBuild">
+        </Target>
+        -->
+  <Target Name="HarvestReleaseOutputs" BeforeTargets="BeforeBuild">
+    <PropertyGroup>
+      <HarvestOutputDir>$(IntermediateOutputPath)harvest\</HarvestOutputDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(HarvestOutputDir)" />
+    <HeatDirectory
+      ToolPath="$(WixToolPath)"
+      AutogenerateGuids="true"
+      ComponentGroupName="RFiDGear.ReleaseFiles.x86"
+      Directory="$(RFiDGearReleaseX86Dir)"
+      DirectoryRefId="INSTALLDIR"
+      GenerateGuidsNow="true"
+      OutputFile="$(HarvestOutputDir)RFiDGear.Release.x86.wxs"
+      PreprocessorVariable="var.RFiDGearReleaseX86Dir"
+      RunAsSeparateProcess="$(HeatRunAsSeparateProcess)"
+      SuppressRootDirectory="true"
+      Condition="Exists('$(RFiDGearReleaseX86Dir)')" />
+    <HeatDirectory
+      ToolPath="$(WixToolPath)"
+      AutogenerateGuids="true"
+      ComponentGroupName="RFiDGear.ReleaseFiles.x64"
+      Directory="$(RFiDGearReleaseX64Dir)"
+      DirectoryRefId="INSTALLDIR"
+      GenerateGuidsNow="true"
+      OutputFile="$(HarvestOutputDir)RFiDGear.Release.x64.wxs"
+      PreprocessorVariable="var.RFiDGearReleaseX64Dir"
+      RunAsSeparateProcess="$(HeatRunAsSeparateProcess)"
+      SuppressRootDirectory="true"
+      Condition="Exists('$(RFiDGearReleaseX64Dir)')" />
+    <ItemGroup>
+      <Compile Include="$(HarvestOutputDir)RFiDGear.Release.x86.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Release.x86.wxs')" />
+      <Compile Include="$(HarvestOutputDir)RFiDGear.Release.x64.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Release.x64.wxs')" />
+    </ItemGroup>
+  </Target>
 </Project>
