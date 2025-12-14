@@ -1657,4 +1657,7 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="labelContentMifareDesfireOldAppKey" xml:space="preserve">
     <value>Old App Key</value>
   </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover" xml:space="preserve">
+    <value>Change PICC Master Key Settings</value>
+  </data>
 </root>
