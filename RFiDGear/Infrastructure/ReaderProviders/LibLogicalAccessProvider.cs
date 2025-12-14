@@ -1639,8 +1639,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         public override async Task<ERROR> ChangeMifareDesfireApplicationKey(
             string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-            string _oldKeyForChangeKey, string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
-            DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int _)
+            string _oldKeyForChangeKey, string _oldKeyForTargetSlot, string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+            DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int _, int numberOfKeys = 0)
         {
             try
             {
@@ -1649,10 +1649,21 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
                 masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
 
+                var targetSlotOldKey = new DESFireKey();
+                targetSlotOldKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeTarget);
+                var oldKeyMaterial = string.IsNullOrWhiteSpace(_oldKeyForTargetSlot) ? _oldKeyForChangeKey : _oldKeyForTargetSlot;
+                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(oldKeyMaterial);
+                targetSlotOldKey.fromString(CustomConverter.DesfireKeyToCheck);
+
                 DESFireKey applicationMasterKeyTarget = new DESFireKey();
                 applicationMasterKeyTarget.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeTarget);
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
                 applicationMasterKeyTarget.fromString(CustomConverter.DesfireKeyToCheck);
+
+                var resolvedKeyCount = numberOfKeys > 0
+                    ? numberOfKeys
+                    : _appIDCurrent == 0 ? 1 : Math.Max(1, (int)MaxNumberOfAppKeys);
+                _ = resolvedKeyCount;
 
                 readerUnit.disconnectFromReader();
 

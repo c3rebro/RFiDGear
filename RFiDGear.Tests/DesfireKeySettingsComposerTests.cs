@@ -42,16 +42,19 @@ namespace RFiDGear.Tests
                 currentKeyNumber: 2,
                 DESFireKeyType.DF_KEY_DES,
                 "33",
+                "44",
                 "22",
                 targetKeyVersion: 5,
                 DESFireKeyType.DF_KEY_AES,
                 appIdCurrent: 7,
                 appIdTarget: 9,
                 settings,
-                keyVersion: 1);
+                keyVersion: 1,
+                numberOfKeys: 4);
 
             Assert.Equal(2, provider.LastAuthKeyNumber);
             Assert.Equal(2, provider.LastChangeKeyNumber);
+            Assert.Equal(4, provider.LastNumberOfKeys);
             Assert.Equal((DESFireKeySettings)DesfireKeySettingsComposer.BuildSettingsByte(settings, applyToPicc: false), provider.LastSettings);
         }
 
@@ -86,6 +89,8 @@ namespace RFiDGear.Tests
 
         public int LastChangeKeyNumber { get; private set; }
 
+        public int LastNumberOfKeys { get; private set; }
+
         public DESFireKeySettings LastSettings { get; private set; }
 
         public Task<ERROR> AuthenticateAsync(string applicationMasterKey, DESFireKeyType keyType, int keyNumber, int appId)
@@ -94,10 +99,11 @@ namespace RFiDGear.Tests
             return Task.FromResult(ERROR.NoError);
         }
 
-        public Task<ERROR> ChangeMifareDesfireApplicationKey(string applicationMasterKeyCurrent, int keyNumberCurrent, DESFireKeyType keyTypeCurrent, string oldKeyForChangeKey, string applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint, DESFireKeyType keyTypeTarget, int appIdCurrent, int appIdTarget, DESFireKeySettings keySettings, int keyVersion)
+        public Task<ERROR> ChangeMifareDesfireApplicationKey(string applicationMasterKeyCurrent, int keyNumberCurrent, DESFireKeyType keyTypeCurrent, string oldKeyForChangeKey, string oldKeyForTargetSlot, string applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint, DESFireKeyType keyTypeTarget, int appIdCurrent, int appIdTarget, DESFireKeySettings keySettings, int keyVersion, int numberOfKeys = 0)
         {
             LastSettings = keySettings;
             LastChangeKeyNumber = keyNumberCurrent;
+            LastNumberOfKeys = numberOfKeys;
             return Task.FromResult(ERROR.NoError);
         }
 

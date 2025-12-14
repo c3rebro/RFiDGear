@@ -40,8 +40,8 @@ namespace RFiDGear.Infrastructure.AccessControl
         /// Changes a DESFire application key.
         /// </summary>
         Task<ERROR> ChangeMifareDesfireApplicationKey(string applicationMasterKeyCurrent, int keyNumberCurrent, DESFireKeyType keyTypeCurrent,
-            string oldKeyForChangeKey, string applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
-            DESFireKeyType keyTypeTarget, int appIdCurrent, int appIdTarget, DESFireKeySettings keySettings, int keyVersion);
+            string oldKeyForChangeKey, string oldKeyForTargetSlot, string applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+            DESFireKeyType keyTypeTarget, int appIdCurrent, int appIdTarget, DESFireKeySettings keySettings, int keyVersion, int numberOfKeys = 0);
 
         /// <summary>
         /// Updates the key settings associated with a DESFire application.
@@ -77,13 +77,15 @@ namespace RFiDGear.Infrastructure.AccessControl
             int currentKeyNumber,
             DESFireKeyType currentKeyType,
             string oldKeyForChangeKey,
+            string oldKeyForTargetSlot,
             string targetKey,
             int targetKeyVersion,
             DESFireKeyType targetKeyType,
             int appIdCurrent,
             int appIdTarget,
             DESFireKeySettings selectedSettings,
-            int keyVersion)
+            int keyVersion,
+            int numberOfKeys)
         {
             var settingsByte = DesfireKeySettingsComposer.BuildSettingsByte(selectedSettings, appIdCurrent == 0);
             var normalizedSettings = (DESFireKeySettings)settingsByte;
@@ -99,13 +101,15 @@ namespace RFiDGear.Infrastructure.AccessControl
                 currentKeyNumber,
                 currentKeyType,
                 oldKeyForChangeKey,
+                oldKeyForTargetSlot,
                 targetKey,
                 targetKeyVersion,
                 targetKeyType,
                 appIdCurrent,
                 appIdTarget,
                 normalizedSettings,
-                keyVersion).ConfigureAwait(false);
+                keyVersion,
+                numberOfKeys).ConfigureAwait(false);
         }
 
         /// <summary>

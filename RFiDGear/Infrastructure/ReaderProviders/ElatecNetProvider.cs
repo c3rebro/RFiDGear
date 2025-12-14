@@ -751,6 +751,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <param name="_applicationMasterKeyCurrent">The current value of the key required for authentication (master or targeted).</param>
         /// <param name="_keyNumberCurrent">The key number to change; also used for authentication when the change-key policy is self-key.</param>
         /// <param name="_keyTypeCurrent">The cipher suite of the authentication key.</param>
+        /// <param name="_oldKeyForTargetSlot">The existing value of the key slot being replaced; used to perform the change-key operation.</param>
         /// <param name="_applicationMasterKeyTarget">The new key value to write.</param>
         /// <param name="_keyNumberTarget">(Unused) Reserved for compatibility with other providers.</param>
         /// <param name="selectedDesfireAppKeyVersionTargetAsIntint">The version byte to attach to the target key.</param>
@@ -759,10 +760,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <param name="_appIDTarget">(Unused) Reserved for compatibility with other providers.</param>
         /// <param name="keySettings">Raw key-settings byte representing the card's change-key policy and permissions.</param>
         /// <param name="keyVersion">Key version used by the reader when writing the new key.</param>
+        /// <param name="numberOfKeys">Expected number of keys within the targeted scope (1 for PICC, configured value for applications).</param>
         /// <returns><see cref="ERROR.NoError"/> on success; otherwise an error indicating why the key change failed.</returns>
         public async override Task<ERROR> ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-                                        string _oldKeyForChangeKey, string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
-                                        DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion)
+                                        string _oldKeyForChangeKey, string _oldKeyForTargetSlot, string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+                                        DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion, int numberOfKeys = 0)
         {
             if (readerDevice.IsConnected)
             {
@@ -794,13 +796,21 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         ? (byte)((byte)keySettings & 0x0F)
                         : (byte)keySettings;
 
+                    var resolvedKeyCount = numberOfKeys > 0
+                        ? numberOfKeys
+                        : _appIDCurrent == 0 ? 1 : Math.Max(1, (int)MaxNumberOfAppKeys);
+
+                    var keyForTargetSlot = string.IsNullOrWhiteSpace(_oldKeyForTargetSlot)
+                        ? _oldKeyForChangeKey
+                        : _oldKeyForTargetSlot;
+
                     await readerDevice.MifareDesfire_ChangeKeyAsync(
-                        _oldKeyForChangeKey,
+                        keyForTargetSlot,
                         _applicationMasterKeyTarget,
                         (byte)keyVersion,
                         keySettingsByte,
                         (byte)_keyNumberCurrent,
-                        1,
+                        (uint)resolvedKeyCount,
                         (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeTarget)));
 
                     return ERROR.NoError;
