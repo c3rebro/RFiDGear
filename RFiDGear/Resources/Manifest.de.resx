@@ -1679,6 +1679,9 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="labelContentMifareDesfireOldAppKey" xml:space="preserve">
     <value>aktueller Schlüssel</value>
   </data>
+  <data name="toolTipMifareDesfireOldAppKey" xml:space="preserve">
+    <value>Geben Sie den bisherigen Anwendungsschlüssel an, wenn im Master-Key-Modus ein nicht-PICC-Schlüssel geändert wird.</value>
+  </data>
   <data name="ENUM.TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover" xml:space="preserve">
     <value>PICC Master Key Settings ändern</value>
   </data>

@@ -338,6 +338,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
+                        Visibility="{Binding ShowAppKeyOldInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireOldAppKey'}" />
                     <TextBox
                         Grid.Row="2"
@@ -348,7 +349,15 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
+                        Visibility="{Binding ShowAppKeyOldInputs, Converter={StaticResource BoolToVisConv}}"
                         Text="{Binding DesfireAppKeyCurrentOld, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
+                        <TextBox.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipMifareDesfireOldAppKey'}" />
+                                </StackPanel>
+                            </ToolTip>
+                        </TextBox.ToolTip>
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
                                 <Style.Triggers>
