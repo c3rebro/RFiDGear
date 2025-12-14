@@ -40,7 +40,7 @@ namespace RFiDGear.Infrastructure.AccessControl
         /// Changes a DESFire application key.
         /// </summary>
         Task<ERROR> ChangeMifareDesfireApplicationKey(string applicationMasterKeyCurrent, int keyNumberCurrent, DESFireKeyType keyTypeCurrent,
-            string applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+            string oldKeyForChangeKey, string applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
             DESFireKeyType keyTypeTarget, int appIdCurrent, int appIdTarget, DESFireKeySettings keySettings, int keyVersion);
 
         /// <summary>
@@ -76,6 +76,7 @@ namespace RFiDGear.Infrastructure.AccessControl
             string currentKey,
             int currentKeyNumber,
             DESFireKeyType currentKeyType,
+            string oldKeyForChangeKey,
             string targetKey,
             int targetKeyVersion,
             DESFireKeyType targetKeyType,
@@ -97,6 +98,7 @@ namespace RFiDGear.Infrastructure.AccessControl
                 currentKey,
                 currentKeyNumber,
                 currentKeyType,
+                oldKeyForChangeKey,
                 targetKey,
                 targetKeyVersion,
                 targetKeyType,

@@ -41,6 +41,7 @@ namespace RFiDGear.Tests
                 "11",
                 currentKeyNumber: 2,
                 DESFireKeyType.DF_KEY_DES,
+                "33",
                 "22",
                 targetKeyVersion: 5,
                 DESFireKeyType.DF_KEY_AES,
@@ -93,7 +94,7 @@ namespace RFiDGear.Tests
             return Task.FromResult(ERROR.NoError);
         }
 
-        public Task<ERROR> ChangeMifareDesfireApplicationKey(string applicationMasterKeyCurrent, int keyNumberCurrent, DESFireKeyType keyTypeCurrent, string applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint, DESFireKeyType keyTypeTarget, int appIdCurrent, int appIdTarget, DESFireKeySettings keySettings, int keyVersion)
+        public Task<ERROR> ChangeMifareDesfireApplicationKey(string applicationMasterKeyCurrent, int keyNumberCurrent, DESFireKeyType keyTypeCurrent, string oldKeyForChangeKey, string applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint, DESFireKeyType keyTypeTarget, int appIdCurrent, int appIdTarget, DESFireKeySettings keySettings, int keyVersion)
         {
             LastSettings = keySettings;
             LastChangeKeyNumber = keyNumberCurrent;

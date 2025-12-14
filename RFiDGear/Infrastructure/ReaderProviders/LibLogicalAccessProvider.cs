@@ -1639,7 +1639,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         public override async Task<ERROR> ChangeMifareDesfireApplicationKey(
             string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-            string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
+            string _oldKeyForChangeKey, string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
             DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int _)
         {
             try
