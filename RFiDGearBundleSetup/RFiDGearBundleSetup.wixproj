@@ -76,12 +76,6 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Setup\Setup.wixproj">
-      <Project>{856ca06c-0b4c-46c6-ad71-873317f1c763}</Project>
-      <Name>Setup</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="rtftheme.xml" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />

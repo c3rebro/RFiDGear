@@ -1,19 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-	<!--
-   THANKS To: Helge Klein for this Sample!
-
-   Unattended setup: The following variables can be set:
-   -  INSTALLDIR: Full path to the installation directory
-   -->
 	
 	<!--
+     Unattended setup: The following variables can be set:
+   -  INSTALLDIR: Full path to the installation directory
+   
       ====================================================================================
       Defines & Variables
    -->
-	
-	<?define VersionNumber="!(bind.FileVersion.RFiDGear.exe)" ?>
+
+  <?define VersionNumber="$(var.RFiDGearVersion)" ?>
 	
 	<!--
    Upgrade code HAS to be the same for all updates.
@@ -22,7 +19,7 @@
 	<?define UpgradeCode="a34bc413-e349-4fd1-8b90-2eb95a333436" ?>
 	
 	<!-- The URL for add/remove programs -->
-	<?define InfoURL="http://rfidgear.hyperstack.de" ?>
+	<?define InfoURL="https://c3rebro.github.io/RFiDGear/" ?>
 	<?define RFIDGear_ProgramDataDir = "CommonAppDataFolder" ?>
 	
         <!-- x64-only variables -->
@@ -151,70 +148,71 @@
 		<!-- We do not have more than one medium (Floppy, CD, ...). Everything in one file. -->
 		<Media Id="1" Cabinet="data.cab" EmbedCab="yes" />
 		<!-- Outermost folder (kind of virtual). Fixed entry. -->
-		<Directory Id="TARGETDIR" Name="SourceDir">
-			<!-- We start building our directory structure here -->
-			<!-- "ProgramFilesFolder" is a variable containing the absolute path. -->
-			<!-- For a list of folder variables, see: http://msdn.microsoft.com/en-us/library/aa372057%28VS.85%29.aspx -->
-			<Directory Id="$(var.PlatformProgramFilesFolder)" Name="root">
-				<!-- All folders from here on are relative to their parent. -->
-				<Directory Id="ProgramFilesHK" Name="!(loc.ManufacturerName)">
-					<!-- INSTALLDIR is a property name. We need it later for the UI (to be able to change the install dir. -->
-					<Directory Id="INSTALLDIR" Name="!(loc.ApplicationName)">
-					</Directory>
-				</Directory>
-			</Directory>
-			<Directory Id="$(var.RFIDGear_ProgramDataDir)" Name="plugins">
-				<!-- All folders from here on are relative to their parent. -->
-				<Directory Id="RFiDGearProgramDataFolder" Name="!(loc.ApplicationName)">
-					<Directory Id="RFiDGearExtensionsFolder" Name="Extensions">
-						<Directory Id="RFiDGearExtionsVCNEditor" Name="VCNEditor">
-							<Component Id="ByteArrayExtDll" Guid="0907B20F-F549-4005-89A2-645C550BB7E7" DiskId="1">
-								<File Id="ByteArrayExt.dll" Name="ByteArrayExt.dll" Source="..\..\VCNEditor\bin\Release\ByteArray.dll" KeyPath="yes" />
-							</Component>
-							<Component Id="VCNEditorDll" Guid="DF58305F-6D10-49D0-865E-F0DC41224925" DiskId="1">
-								<File Id="VCNEditor.dll" Name="VCNEditor.dll" Source="..\..\VCNEditor\bin\Release\VCNEditor.dll" KeyPath="yes" />
-							</Component>
-							<Component Id="CommunityToolkitMvvmExtDll" Guid="3F4A8963-C15E-449B-B701-CC7A680CAB6E" DiskId="1">
-								<File Id="CommunityToolkitExt.Mvvm.dll" Name="CommunityToolkit.Mvvm.dll" Source="..\..\VCNEditor\bin\Release\CommunityToolkit.Mvvm.dll" KeyPath="yes" />
-							</Component>
-							<Component Id="MVVMDialogsExtDll" Guid="5118101C-03AA-4014-A620-513D2E581042" DiskId="1">
-								<File Id="MVVMDialogsExt.dll" Name="MVVMDialogs.dll" Source="..\..\VCNEditor\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
-							</Component>
-							<Component Id="PluginSystemExtDll" Guid="AF8C7A46-7867-47C5-9D02-533D7808B48F" DiskId="1">
-								<File Id="PluginSystemExt.dll" Name="PluginSystem.dll" Source="..\..\VCNEditor\bin\Release\PluginSystem.dll" KeyPath="yes" />
-							</Component>
-							<Directory Id="de_DE" Name="de-DE">
-								<Component Id="VCNEditorresourcesDll" Guid="7748ED31-8581-46D7-9D72-49631DF34E8C" DiskId="1">
-									<File Id="VCNEditor.resources.dll" Name="VCNEditor.resources.dll" Source="..\..\VCNEditor\bin\Release\de-DE\VCNEditor.resources.dll" KeyPath="yes" />
-								</Component>
-							</Directory>
-							<Directory Id="en_US" Name="en-US">
-								<Component Id="En_USVCNEditorresourcesDll" Guid="6FE862FD-7B7D-4F77-BC0F-6884B5A68235" DiskId="1">
-									<File Id="en_US.VCNEditor.resources.dll" Name="VCNEditor.resources.dll" Source="..\..\VCNEditor\bin\Release\en-US\VCNEditor.resources.dll" KeyPath="yes" />
-								</Component>
-							</Directory>
-						</Directory>
-				</Directory>
-			</Directory>
-			<!-- Registry entries -->
-			<Component Id="RegValInstallLocation_comp" Guid="7448780e-b66a-43d3-be5a-eeba38a821ee">
-				<!-- Do NOT use the application's default registry key here, because THIS key will be removed on uninstall
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <!-- We start building our directory structure here -->
+      <!-- "ProgramFilesFolder" is a variable containing the absolute path. -->
+      <!-- For a list of folder variables, see: http://msdn.microsoft.com/en-us/library/aa372057%28VS.85%29.aspx -->
+      <Directory Id="$(var.PlatformProgramFilesFolder)" Name="root">
+        <!-- All folders from here on are relative to their parent. -->
+        <Directory Id="ProgramFilesHK" Name="!(loc.ManufacturerName)">
+          <!-- INSTALLDIR is a property name. We need it later for the UI (to be able to change the install dir. -->
+          <Directory Id="INSTALLDIR" Name="!(loc.ApplicationName)">
+          </Directory>
+        </Directory>
+      </Directory>
+      <Directory Id="$(var.RFIDGear_ProgramDataDir)" Name="plugins">
+        <!-- All folders from here on are relative to their parent. -->
+        <Directory Id="RFiDGearProgramDataFolder" Name="!(loc.ApplicationName)">
+          <Directory Id="RFiDGearExtensionsFolder" Name="Extensions">
+            <Directory Id="RFiDGearExtionsVCNEditor" Name="VCNEditor">
+              <Component Id="ByteArrayExtDll" Guid="0907B20F-F549-4005-89A2-645C550BB7E7" DiskId="1">
+                <File Id="ByteArrayExt.dll" Name="ByteArrayExt.dll" Source="..\..\VCNEditor\bin\Release\ByteArray.dll" KeyPath="yes" />
+              </Component>
+              <Component Id="VCNEditorDll" Guid="DF58305F-6D10-49D0-865E-F0DC41224925" DiskId="1">
+                <File Id="VCNEditor.dll" Name="VCNEditor.dll" Source="..\..\VCNEditor\bin\Release\VCNEditor.dll" KeyPath="yes" />
+              </Component>
+              <Component Id="CommunityToolkitMvvmExtDll" Guid="3F4A8963-C15E-449B-B701-CC7A680CAB6E" DiskId="1">
+                <File Id="CommunityToolkitExt.Mvvm.dll" Name="CommunityToolkit.Mvvm.dll" Source="..\..\VCNEditor\bin\Release\CommunityToolkit.Mvvm.dll" KeyPath="yes" />
+              </Component>
+              <Component Id="MVVMDialogsExtDll" Guid="5118101C-03AA-4014-A620-513D2E581042" DiskId="1">
+                <File Id="MVVMDialogsExt.dll" Name="MVVMDialogs.dll" Source="..\..\VCNEditor\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
+              </Component>
+              <Component Id="PluginSystemExtDll" Guid="AF8C7A46-7867-47C5-9D02-533D7808B48F" DiskId="1">
+                <File Id="PluginSystemExt.dll" Name="PluginSystem.dll" Source="..\..\VCNEditor\bin\Release\PluginSystem.dll" KeyPath="yes" />
+              </Component>
+              <Directory Id="de_DE" Name="de-DE">
+                <Component Id="VCNEditorresourcesDll" Guid="7748ED31-8581-46D7-9D72-49631DF34E8C" DiskId="1">
+                  <File Id="VCNEditor.resources.dll" Name="VCNEditor.resources.dll" Source="..\..\VCNEditor\bin\Release\de-DE\VCNEditor.resources.dll" KeyPath="yes" />
+                </Component>
+              </Directory>
+              <Directory Id="en_US" Name="en-US">
+                <Component Id="En_USVCNEditorresourcesDll" Guid="6FE862FD-7B7D-4F77-BC0F-6884B5A68235" DiskId="1">
+                  <File Id="en_US.VCNEditor.resources.dll" Name="VCNEditor.resources.dll" Source="..\..\VCNEditor\bin\Release\en-US\VCNEditor.resources.dll" KeyPath="yes" />
+                </Component>
+              </Directory>
+            </Directory>
+          </Directory>
+        </Directory>
+        <!-- Registry entries -->
+        <Component Id="RegValInstallLocation_comp" Guid="7448780e-b66a-43d3-be5a-eeba38a821ee">
+          <!-- Do NOT use the application's default registry key here, because THIS key will be removed on uninstall
 
                 (important when installing a newer version, because that is uninstall followed by install) -->
-				<RegistryKey Root="HKLM" Key="Software\!(loc.ManufacturerName)\InstalledProducts\!(loc.ApplicationName)">
-					<RegistryValue Name="InstallLocation" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
-				</RegistryKey>
-			</Component>
+          <RegistryKey Root="HKLM" Key="Software\!(loc.ManufacturerName)\InstalledProducts\!(loc.ApplicationName)">
+            <RegistryValue Name="InstallLocation" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
+          </RegistryKey>
+        </Component>
 
-			<Directory Id="ProgramMenuFolder">
-				<Directory Id="ApplicationProgramsFolder" Name="RFiDGear">
-					<Component Id="StartMenuShortcuts" Guid="D5357D5D-17BA-4E6E-AF2B-E21312A0400D">
-						<RemoveFolder Id="ProgramMenuDir" On="uninstall" />
-						<RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="" />
-					</Component>
-				</Directory>
-			</Directory>
-		</Directory>
+        <Directory Id="ProgramMenuFolder">
+          <Directory Id="ApplicationProgramsFolder" Name="RFiDGear">
+            <Component Id="StartMenuShortcuts" Guid="D5357D5D-17BA-4E6E-AF2B-E21312A0400D">
+              <RemoveFolder Id="ProgramMenuDir" On="uninstall" />
+              <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="" />
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
 		<!-- Features define which parts of the application can be installed in a custom installation -->
 		<Feature Id="Complete" Title="!(loc.ApplicationName)" Description="!(loc.FeatureCompleteDescription)" Display="expand" Level="1" ConfigurableDirectory="INSTALLDIR">
 			<!-- A feature block for the main (GUI) program and all its dependencies -->
@@ -246,3 +244,8 @@
 		<Icon Id="StartMenuIcon.exe" SourceFile="$(var.RFiDGearExeSourcePath)" />
 	</Product>
 </Wix>
+
+<!--
+   THANKS To: Helge Klein for the original Sample!
+
+   -->

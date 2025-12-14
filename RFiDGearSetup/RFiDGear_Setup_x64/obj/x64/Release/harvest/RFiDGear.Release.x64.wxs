@@ -10,22 +10,22 @@
     <Fragment>
         <ComponentGroup Id="RFiDGear.ReleaseFiles.x64">
             <Component Id="cmp68D767AEEE842A722AECA2C65D34BE2E" Directory="INSTALLDIR" Guid="*">
-                <File Id="filCC34B59260E76EC7532DD3E23A541355" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\BouncyCastle.Crypto.dll" />
+                <File Id="filCC34B59260E76EC7532DD3E23A541355" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\BouncyCastle.Crypto.dll" />
             </Component>
             <Component Id="cmpCBEA014CBDE48790EFE6E51B50449D69" Directory="INSTALLDIR" Guid="*">
-                <File Id="filEB357278F6A9A25D8406C57985FDD5B2" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\BouncyCastle.Cryptography.dll" />
+                <File Id="filEB357278F6A9A25D8406C57985FDD5B2" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\BouncyCastle.Cryptography.dll" />
             </Component>
             <Component Id="cmp340B50658A89F15A3AE0CB22D4DD33B4" Directory="INSTALLDIR" Guid="*">
-                <File Id="filC25C3E375C6E9ADA0DAE079BBDCDAFFD" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\CommunityToolkit.Mvvm.dll" />
+                <File Id="filC25C3E375C6E9ADA0DAE079BBDCDAFFD" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\CommunityToolkit.Mvvm.dll" />
             </Component>
             <Component Id="cmp6024C8F868A81963E6D004FFC5284599" Directory="INSTALLDIR" Guid="*">
-                <File Id="filF7BA16DCD1C86646A0FD418CC96EBE57" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Elatec.NET.dll" />
+                <File Id="filF7BA16DCD1C86646A0FD418CC96EBE57" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Elatec.NET.dll" />
             </Component>
             <Component Id="cmp84BF1C3F26E20668B023D5F11D4A4D79" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil13CD8F533167FFDC8394AB31D9EBCF5D" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\GemBox.Pdf.dll" />
+                <File Id="fil13CD8F533167FFDC8394AB31D9EBCF5D" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\GemBox.Pdf.dll" />
             </Component>
             <Component Id="cmpEFFA95E918F9DE6C8A80A31176443F79" Directory="INSTALLDIR" Guid="*">
-                <File Id="filEF1029618CA548B891105CAB81C6B01F" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\HarfBuzzSharp.dll" />
+                <File Id="filEF1029618CA548B891105CAB81C6B01F" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\HarfBuzzSharp.dll" />
             </Component>
             <Component Id="cmp6BF6CA362724FE29868BB401805974F4" Directory="INSTALLDIR" Guid="*">
                 <Class Id="{03C46B47-A712-37A3-8801-86AB9BA3D18D}" Context="InprocServer32" Description="LibLogicalAccess.Reader.OK5553ReaderCardAdapter" ThreadingModel="both" ForeignServer="mscoree.dll">
@@ -1036,7 +1036,7 @@
                 <Class Id="{FEED6A40-1ECE-3D97-A0C5-410095DAB5C1}" Context="InprocServer32" Description="LibLogicalAccess.Card.YubikeyCalculateResponse" ThreadingModel="both" ForeignServer="mscoree.dll">
                     <ProgId Id="LibLogicalAccess.Card.YubikeyCalculateResponse" Description="LibLogicalAccess.Card.YubikeyCalculateResponse" />
                 </Class>
-                <File Id="filED967ED202B48D908056D64CE19C7BDF" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\LibLogicalAccessNetCE.dll" />
+                <File Id="filED967ED202B48D908056D64CE19C7BDF" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\LibLogicalAccessNetCE.dll" />
                 <ProgId Id="Record" />
                 <RegistryValue Root="HKCR" Key="CLSID\{03C46B47-A712-37A3-8801-86AB9BA3D18D}\Implemented Categories\{62C8FE65-4EBB-45e7-B440-6E39B2CDBF29}" Value="" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="CLSID\{03C46B47-A712-37A3-8801-86AB9BA3D18D}\InprocServer32\3.6.0.0" Name="Class" Value="LibLogicalAccess.Reader.OK5553ReaderCardAdapter" Type="string" Action="write" />
@@ -4380,31 +4380,31 @@
                 <RegistryValue Root="HKCR" Key="Record\{FCD66AF7-58C9-356B-AEE7-D024E4F87DE0}\3.6.0.0" Name="CodeBase" Value="file:///[#filED967ED202B48D908056D64CE19C7BDF]" Type="string" Action="write" />
             </Component>
             <Component Id="cmp0D9A10D690127C0AC268C669E46E66D0" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil43161AE75FFE9B147B3E96990703538E" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Microsoft.Bcl.AsyncInterfaces.dll" />
+                <File Id="fil43161AE75FFE9B147B3E96990703538E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Microsoft.Bcl.AsyncInterfaces.dll" />
             </Component>
             <Component Id="cmpBED9022C9CD94A23E72B0D422CCAEEC6" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil2108D83F82D55B49D8103E27D77BDFDE" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Microsoft.Extensions.DependencyInjection.Abstractions.dll" />
+                <File Id="fil2108D83F82D55B49D8103E27D77BDFDE" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Microsoft.Extensions.DependencyInjection.Abstractions.dll" />
             </Component>
             <Component Id="cmpFD639A9D3D4D6AA604F5EB7FB334C830" Directory="INSTALLDIR" Guid="*">
-                <File Id="filA516C15B7E61996C7D263C0A42814C3F" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Microsoft.Extensions.DependencyInjection.dll" />
+                <File Id="filA516C15B7E61996C7D263C0A42814C3F" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Microsoft.Extensions.DependencyInjection.dll" />
             </Component>
             <Component Id="cmp8F9F07106E7690B5033E560CD36972AD" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil99C4D92E14C510B2E3005545A5A0D96A" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Microsoft.Extensions.Logging.Abstractions.dll" />
+                <File Id="fil99C4D92E14C510B2E3005545A5A0D96A" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Microsoft.Extensions.Logging.Abstractions.dll" />
             </Component>
             <Component Id="cmp34E43ECA5CE677CB8884066B2CD69B18" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil82512A983DDE71FBAF4D091C6B51EF72" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Microsoft.Extensions.Logging.dll" />
+                <File Id="fil82512A983DDE71FBAF4D091C6B51EF72" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Microsoft.Extensions.Logging.dll" />
             </Component>
             <Component Id="cmp4608CA2FC66F221E808AF3FD03F56DEA" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil29944CE24D2F4CE317941BCDFA8B5FE3" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Microsoft.Extensions.Options.dll" />
+                <File Id="fil29944CE24D2F4CE317941BCDFA8B5FE3" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Microsoft.Extensions.Options.dll" />
             </Component>
             <Component Id="cmpA57E038D78392C02DC9072B9436713ED" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil101327A254DDD17E94E9880E128F3819" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Microsoft.Extensions.Primitives.dll" />
+                <File Id="fil101327A254DDD17E94E9880E128F3819" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Microsoft.Extensions.Primitives.dll" />
             </Component>
             <Component Id="cmpAA801C084F6074A3F380F86C71142C44" Directory="INSTALLDIR" Guid="*">
-                <File Id="filD7BF4BDC6E57D15C664FD37713919D21" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Microsoft.Win32.SystemEvents.dll" />
+                <File Id="filD7BF4BDC6E57D15C664FD37713919D21" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Microsoft.Win32.SystemEvents.dll" />
             </Component>
             <Component Id="cmp1874AB219070404EED322213C6A1A49E" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil05FF769999D602AD4FA6A489C44ED290" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Newtonsoft.Json.dll" />
+                <File Id="fil05FF769999D602AD4FA6A489C44ED290" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Newtonsoft.Json.dll" />
             </Component>
             <Component Id="cmp793BE4A78E9D0F76441D8CDD0582B8DE" Directory="INSTALLDIR" Guid="*">
                 <Class Id="{0464FF44-E1CA-3E4E-8C27-20A94FBE3A57}" Context="InprocServer32" Description="Net.Pkcs11Interop.HighLevelAPI81.Factories.MechanismParamsFactory" ThreadingModel="both" ForeignServer="mscoree.dll">
@@ -4551,7 +4551,7 @@
                 <Class Id="{FF5E0D5A-3F9E-3524-BA6D-7F144129F146}" Context="InprocServer32" Description="Net.Pkcs11Interop.HighLevelAPI.Factories.SlotFactory" ThreadingModel="both" ForeignServer="mscoree.dll">
                     <ProgId Id="Net.Pkcs11Interop.HighLevelAPI.Factories.SlotFactory" Description="Net.Pkcs11Interop.HighLevelAPI.Factories.SlotFactory" />
                 </Class>
-                <File Id="filE447FF7900BE1E21619B8D443A6FF486" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Pkcs11Interop.dll" />
+                <File Id="filE447FF7900BE1E21619B8D443A6FF486" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Pkcs11Interop.dll" />
                 <ProgId Id="Record" />
                 <RegistryValue Root="HKCR" Key="CLSID\{0464FF44-E1CA-3E4E-8C27-20A94FBE3A57}\Implemented Categories\{62C8FE65-4EBB-45e7-B440-6E39B2CDBF29}" Value="" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="CLSID\{0464FF44-E1CA-3E4E-8C27-20A94FBE3A57}\InprocServer32\5.1.1.0" Name="Class" Value="Net.Pkcs11Interop.HighLevelAPI81.Factories.MechanismParamsFactory" Type="string" Action="write" />
@@ -6103,46 +6103,46 @@
                 <RegistryValue Root="HKCR" Key="Record\{FF8D6D12-04BD-3B38-BE9C-937F4F1DA857}\5.1.1.0" Name="CodeBase" Value="file:///[#filE447FF7900BE1E21619B8D443A6FF486]" Type="string" Action="write" />
             </Component>
             <Component Id="cmp30EA6709C825C194FC16582233F8040F" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil381DA89B5B1BA8C11892547A8CBDA70C" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\RFiDGear.deps.json" />
+                <File Id="fil381DA89B5B1BA8C11892547A8CBDA70C" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\RFiDGear.deps.json" />
             </Component>
             <Component Id="cmp40F362E500EC74C0AF144B7D8E180D4A" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil88C6589B9B7E5212992F050BEFFC2BAF" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\RFiDGear.dll" />
+                <File Id="fil88C6589B9B7E5212992F050BEFFC2BAF" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\RFiDGear.dll" />
             </Component>
             <Component Id="cmp26355BD3227ABA2E988746F03C407174" Directory="INSTALLDIR" Guid="*">
-                <File Id="filEF107AB7AE03FFD850DBDA0FCF592A52" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\RFiDGear.exe" />
+                <File Id="filEF107AB7AE03FFD850DBDA0FCF592A52" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\RFiDGear.exe" />
             </Component>
             <Component Id="cmpED248308811A54D404190FC589F7E5D6" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil58171BCF7F40182838CF1DF85CB13D57" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\RFiDGear.runtimeconfig.json" />
+                <File Id="fil58171BCF7F40182838CF1DF85CB13D57" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\RFiDGear.runtimeconfig.json" />
             </Component>
             <Component Id="cmp8CC470C61F3BBBAA47BB49923A27CC79" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil53A2D25ACF85F8FF0B7366F41890C01E" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Serilog.dll" />
+                <File Id="fil53A2D25ACF85F8FF0B7366F41890C01E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Serilog.dll" />
             </Component>
             <Component Id="cmp737CC2CAAC7E797B623A5067AD38E371" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil8018980022F37CE40D3CB69F440B69AB" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\Serilog.Sinks.File.dll" />
+                <File Id="fil8018980022F37CE40D3CB69F440B69AB" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Serilog.Sinks.File.dll" />
             </Component>
             <Component Id="cmpFE32C4FE6DDD80D90FE4246D8DA70BCB" Directory="INSTALLDIR" Guid="*">
-                <File Id="filB646F077063F4EB033725EA0E5499818" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\SkiaSharp.dll" />
+                <File Id="filB646F077063F4EB033725EA0E5499818" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\SkiaSharp.dll" />
             </Component>
             <Component Id="cmp11DEC91A717EB706D29DB33CC70CF81B" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil0463E847AEC16F27367111F9AE1EFDBA" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\System.ComponentModel.Composition.dll" />
+                <File Id="fil0463E847AEC16F27367111F9AE1EFDBA" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\System.ComponentModel.Composition.dll" />
             </Component>
             <Component Id="cmpAACF5E53E756313D8E5E9BB13B6046E4" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil90434715D998053EA6394C3DF56A0E2E" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\System.Diagnostics.DiagnosticSource.dll" />
+                <File Id="fil90434715D998053EA6394C3DF56A0E2E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\System.Diagnostics.DiagnosticSource.dll" />
             </Component>
             <Component Id="cmp03637CBBBBBBDE7AD30868DD3BE68B72" Directory="INSTALLDIR" Guid="*">
-                <File Id="filAA085C60B5E18E998DD62FB27E2F7F5F" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\System.Drawing.Common.dll" />
+                <File Id="filAA085C60B5E18E998DD62FB27E2F7F5F" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\System.Drawing.Common.dll" />
             </Component>
             <Component Id="cmp8B1C08153FE1CF9230D5F6DA8C312ABC" Directory="INSTALLDIR" Guid="*">
-                <File Id="filC00AD451D8BBEC506C1073A56725F6E8" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\System.IO.Ports.dll" />
+                <File Id="filC00AD451D8BBEC506C1073A56725F6E8" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\System.IO.Ports.dll" />
             </Component>
             <Component Id="cmp99FC581356B8C13E9EC11052B3DE3ECF" Directory="INSTALLDIR" Guid="*">
-                <File Id="filD967695EEF5C0BBF21ABAF32EDCEF6CE" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\System.Private.Windows.Core.dll" />
+                <File Id="filD967695EEF5C0BBF21ABAF32EDCEF6CE" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\System.Private.Windows.Core.dll" />
             </Component>
             <Component Id="cmp3AC225F683BCF1A2303F6861CDF22A91" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil56C1BF9008C87716BE3B671CCBE13623" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\System.Private.Windows.GdiPlus.dll" />
+                <File Id="fil56C1BF9008C87716BE3B671CCBE13623" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\System.Private.Windows.GdiPlus.dll" />
             </Component>
             <Component Id="cmpA7CF91E6738C510B6691846E66FFCBF1" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil0E39906AB98C26B09F0F2268434EDD39" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\System.Runtime.WindowsRuntime.dll" />
+                <File Id="fil0E39906AB98C26B09F0F2268434EDD39" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\System.Runtime.WindowsRuntime.dll" />
                 <RegistryValue Root="HKCR" Key="Record\{596BAECF-AF64-3433-9ABB-CA6B200DEA74}\4.0.0.0" Name="Class" Value="Windows.Foundation.Rect" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="Record\{596BAECF-AF64-3433-9ABB-CA6B200DEA74}\4.0.0.0" Name="Assembly" Value="System.Runtime.WindowsRuntime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="Record\{596BAECF-AF64-3433-9ABB-CA6B200DEA74}\4.0.0.0" Name="RuntimeVersion" Value="v4.0.30319" Type="string" Action="write" />
@@ -6161,7 +6161,7 @@
                 <RegistryValue Root="HKCR" Key="Record\{AA00661B-9DF1-3E99-BD30-A62F2D281E05}\4.0.0.0" Name="CodeBase" Value="file:///C:/WINDOWS/Microsoft.Net/assembly/GAC_MSIL/System.Runtime.WindowsRuntime/v4.0_4.0.0.0__b77a5c561934e089/System.Runtime.WindowsRuntime.dll" Type="string" Action="write" />
             </Component>
             <Component Id="cmp77242802A52139A66D56DF73693D9C60" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil4D5BD7C08C27B91644AC1B13C40175A6" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\System.Runtime.WindowsRuntime.UI.Xaml.dll" />
+                <File Id="fil4D5BD7C08C27B91644AC1B13C40175A6" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\System.Runtime.WindowsRuntime.UI.Xaml.dll" />
                 <RegistryValue Root="HKCR" Key="Record\{21BFE6C2-70DE-3413-B311-26150BBFA8D2}\4.0.0.0" Name="Class" Value="Windows.UI.Xaml.Media.Animation.RepeatBehaviorType" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="Record\{21BFE6C2-70DE-3413-B311-26150BBFA8D2}\4.0.0.0" Name="Assembly" Value="System.Runtime.WindowsRuntime.UI.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="Record\{21BFE6C2-70DE-3413-B311-26150BBFA8D2}\4.0.0.0" Name="RuntimeVersion" Value="v4.0.30319" Type="string" Action="write" />
@@ -6212,43 +6212,43 @@
                 <RegistryValue Root="HKCR" Key="Record\{ED42B858-41BC-34A9-BE70-CC635A87EFC4}\4.0.0.0" Name="CodeBase" Value="file:///C:/WINDOWS/Microsoft.Net/assembly/GAC_MSIL/System.Runtime.WindowsRuntime.UI.Xaml/v4.0_4.0.0.0__b77a5c561934e089/System.Runtime.WindowsRuntime.UI.Xaml.dll" Type="string" Action="write" />
             </Component>
             <Component Id="cmp4319EC462B18102DC4E623C30FB70612" Directory="dirF7A62AAB979B938D6BCEC1392A589DA5" Guid="*">
-                <File Id="fil63E8C0594EAE387754FC3C7BC5C9D3D6" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\de\RFiDGear.resources.dll" />
+                <File Id="fil63E8C0594EAE387754FC3C7BC5C9D3D6" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\de\RFiDGear.resources.dll" />
             </Component>
             <Component Id="cmp345024BC246F4DE40211E95B7D95D4D7" Directory="dir2CBB433BA8C644B4FD625D8C33C94275" Guid="*">
-                <File Id="filBF3FC73E465E444564EA3B093F2F9FDA" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\en\RFiDGear.resources.dll" />
+                <File Id="filBF3FC73E465E444564EA3B093F2F9FDA" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\en\RFiDGear.resources.dll" />
             </Component>
             <Component Id="cmpB1B67E6F065FDDB54672F5FA49BFF1FB" Directory="dir527F319E54DE3BA7E208C1B49922E370" Guid="*">
-                <File Id="filB5A8D57F9EBD064294600FE3414E985D" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\linux-arm\native\libSystem.IO.Ports.Native.so" />
+                <File Id="filB5A8D57F9EBD064294600FE3414E985D" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\linux-arm\native\libSystem.IO.Ports.Native.so" />
             </Component>
             <Component Id="cmp39307C311C633082A4005D1439EF972C" Directory="dir38FADD28616AA30248688F1C3391711B" Guid="*">
-                <File Id="fil3400EB2F8253EBA5BBBE5F3398C6FE30" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\linux-arm64\native\libSystem.IO.Ports.Native.so" />
+                <File Id="fil3400EB2F8253EBA5BBBE5F3398C6FE30" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\linux-arm64\native\libSystem.IO.Ports.Native.so" />
             </Component>
             <Component Id="cmp5E064D44752016E6C7C0346B90C68E2F" Directory="dirA6B4FBEF7E59C2A1E3B19BDCDC5B7C10" Guid="*">
-                <File Id="fil5F4D6F41B8BE51B12FBE2DED397D9B16" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\linux-x64\native\libSystem.IO.Ports.Native.so" />
+                <File Id="fil5F4D6F41B8BE51B12FBE2DED397D9B16" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\linux-x64\native\libSystem.IO.Ports.Native.so" />
             </Component>
             <Component Id="cmpCAFD464FEC4B9782B0346683E0937988" Directory="dirFD6B85B17B96B5D9455DD2D04A215107" Guid="*">
-                <File Id="filFFA6CC5B9FF15CAB41F8565FE96EAAA7" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\osx\native\libHarfBuzzSharp.dylib" />
+                <File Id="filFFA6CC5B9FF15CAB41F8565FE96EAAA7" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\osx\native\libHarfBuzzSharp.dylib" />
             </Component>
             <Component Id="cmpD58A0C2995943C95F9150DA2D540AC43" Directory="dirFD6B85B17B96B5D9455DD2D04A215107" Guid="*">
-                <File Id="filEAD25F0208D81699705F7EF4866EE7BB" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\osx\native\libSkiaSharp.dylib" />
+                <File Id="filEAD25F0208D81699705F7EF4866EE7BB" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\osx\native\libSkiaSharp.dylib" />
             </Component>
             <Component Id="cmp6A6EFE79A15D5B796E6F11CEB905B567" Directory="dir9BE56D918C569DC8AC961A41A18109CA" Guid="*">
-                <File Id="filE8C17A39778EE04A9FE382EE72B45F32" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\osx-arm64\native\libSystem.IO.Ports.Native.dylib" />
+                <File Id="filE8C17A39778EE04A9FE382EE72B45F32" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\osx-arm64\native\libSystem.IO.Ports.Native.dylib" />
             </Component>
             <Component Id="cmp886C77F8E6D1EBE23CB6D885D7A192FC" Directory="dirBAAEF0AE5E1529C739674F4A11EDA905" Guid="*">
-                <File Id="fil3D617860AB2B4795FF749E3620EFCB98" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\osx-x64\native\libSystem.IO.Ports.Native.dylib" />
+                <File Id="fil3D617860AB2B4795FF749E3620EFCB98" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\osx-x64\native\libSystem.IO.Ports.Native.dylib" />
             </Component>
             <Component Id="cmp57AB19FF37D6D9C1C5C9001A7EAB172D" Directory="dir9C00C23CD73E79407FDA92427C4DB79D" Guid="*">
-                <File Id="fil339AED98469F37A16EEB1204A2A1BC4E" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\unix\lib\net8.0\System.IO.Ports.dll" />
+                <File Id="fil339AED98469F37A16EEB1204A2A1BC4E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\unix\lib\net8.0\System.IO.Ports.dll" />
             </Component>
             <Component Id="cmp2F41BA3335386F02C3BAEAA671C818DF" Directory="dirC0451B6893AFC9F180555B61B491E18A" Guid="*">
-                <File Id="fil9D6B04F3038F5E1B4666F72382C21EC7" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win\lib\net8.0\Microsoft.Win32.SystemEvents.dll" />
+                <File Id="fil9D6B04F3038F5E1B4666F72382C21EC7" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win\lib\net8.0\Microsoft.Win32.SystemEvents.dll" />
             </Component>
             <Component Id="cmp149C5A123D1458A06B23AFDD95E3D483" Directory="dirC0451B6893AFC9F180555B61B491E18A" Guid="*">
-                <File Id="filC88EAABADF2BFEC98F1F203A5FC3B146" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win\lib\net8.0\System.IO.Ports.dll" />
+                <File Id="filC88EAABADF2BFEC98F1F203A5FC3B146" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win\lib\net8.0\System.IO.Ports.dll" />
             </Component>
             <Component Id="cmpE92DEF968F868D17CF615BAF2B14E99B" Directory="dir3B1C93648EC247824476983EA333E860" Guid="*">
-                <File Id="fil9573E5E53372D1A62A78E54DDE252737" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win\lib\netcoreapp3.0\System.Runtime.WindowsRuntime.dll" />
+                <File Id="fil9573E5E53372D1A62A78E54DDE252737" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win\lib\netcoreapp3.0\System.Runtime.WindowsRuntime.dll" />
                 <RegistryValue Root="HKCR" Key="Record\{596BAECF-AF64-3433-9ABB-CA6B200DEA74}\4.0.0.0" Name="Class" Value="Windows.Foundation.Rect" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="Record\{596BAECF-AF64-3433-9ABB-CA6B200DEA74}\4.0.0.0" Name="Assembly" Value="System.Runtime.WindowsRuntime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="Record\{596BAECF-AF64-3433-9ABB-CA6B200DEA74}\4.0.0.0" Name="RuntimeVersion" Value="v4.0.30319" Type="string" Action="write" />
@@ -6267,7 +6267,7 @@
                 <RegistryValue Root="HKCR" Key="Record\{AA00661B-9DF1-3E99-BD30-A62F2D281E05}\4.0.0.0" Name="CodeBase" Value="file:///C:/WINDOWS/Microsoft.Net/assembly/GAC_MSIL/System.Runtime.WindowsRuntime/v4.0_4.0.0.0__b77a5c561934e089/System.Runtime.WindowsRuntime.dll" Type="string" Action="write" />
             </Component>
             <Component Id="cmp0D1F2722699695BF48870312D95863C6" Directory="dir3B1C93648EC247824476983EA333E860" Guid="*">
-                <File Id="filA5B6EAB4C4D47DD126AE729BA0275E95" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win\lib\netcoreapp3.0\System.Runtime.WindowsRuntime.UI.Xaml.dll" />
+                <File Id="filA5B6EAB4C4D47DD126AE729BA0275E95" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win\lib\netcoreapp3.0\System.Runtime.WindowsRuntime.UI.Xaml.dll" />
                 <RegistryValue Root="HKCR" Key="Record\{21BFE6C2-70DE-3413-B311-26150BBFA8D2}\4.0.0.0" Name="Class" Value="Windows.UI.Xaml.Media.Animation.RepeatBehaviorType" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="Record\{21BFE6C2-70DE-3413-B311-26150BBFA8D2}\4.0.0.0" Name="Assembly" Value="System.Runtime.WindowsRuntime.UI.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="Record\{21BFE6C2-70DE-3413-B311-26150BBFA8D2}\4.0.0.0" Name="RuntimeVersion" Value="v4.0.30319" Type="string" Action="write" />
@@ -6318,292 +6318,292 @@
                 <RegistryValue Root="HKCR" Key="Record\{ED42B858-41BC-34A9-BE70-CC635A87EFC4}\4.0.0.0" Name="CodeBase" Value="file:///C:/WINDOWS/Microsoft.Net/assembly/GAC_MSIL/System.Runtime.WindowsRuntime.UI.Xaml/v4.0_4.0.0.0__b77a5c561934e089/System.Runtime.WindowsRuntime.UI.Xaml.dll" Type="string" Action="write" />
             </Component>
             <Component Id="cmp041BB37019ED21C313B47447A397D40F" Directory="dir8DE1CAE5F6B03F7A6BAE17D4E78639BA" Guid="*">
-                <File Id="fil67790FFC25F95A025AFF8224AB3796B5" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win-arm64\native\libHarfBuzzSharp.dll" />
+                <File Id="fil67790FFC25F95A025AFF8224AB3796B5" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win-arm64\native\libHarfBuzzSharp.dll" />
             </Component>
             <Component Id="cmp78F62D8198BF5104A08B04F927BDF4D0" Directory="dir8DE1CAE5F6B03F7A6BAE17D4E78639BA" Guid="*">
-                <File Id="fil269CBADF4820416912F095DEF512376E" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win-arm64\native\libSkiaSharp.dll" />
+                <File Id="fil269CBADF4820416912F095DEF512376E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win-arm64\native\libSkiaSharp.dll" />
             </Component>
             <Component Id="cmpFFAECB763F3212CE0692203F70667444" Directory="dir2ED89DAEE76564AD33DB582F055A5274" Guid="*">
-                <File Id="fil3411C4CB196FC3815156A7BDC0034854" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win-x64\native\libHarfBuzzSharp.dll" />
+                <File Id="fil3411C4CB196FC3815156A7BDC0034854" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win-x64\native\libHarfBuzzSharp.dll" />
             </Component>
             <Component Id="cmpCFBD1519D90E7BAAD4C5F065B89D7142" Directory="dir2ED89DAEE76564AD33DB582F055A5274" Guid="*">
-                <File Id="fil3260895A4D65A1E3F5220473616E3370" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win-x64\native\libSkiaSharp.dll" />
+                <File Id="fil3260895A4D65A1E3F5220473616E3370" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win-x64\native\libSkiaSharp.dll" />
             </Component>
             <Component Id="cmpFD493BD1A725765CD166F00B1B003EED" Directory="dir141099046F4229F01C3B534ABFD3E870" Guid="*">
-                <File Id="fil9C430FD572D92139C70BC67C4618F1A7" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win-x86\native\libHarfBuzzSharp.dll" />
+                <File Id="fil9C430FD572D92139C70BC67C4618F1A7" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win-x86\native\libHarfBuzzSharp.dll" />
             </Component>
             <Component Id="cmp5CA8F4B0D9556352840682E2B9C6008A" Directory="dir141099046F4229F01C3B534ABFD3E870" Guid="*">
-                <File Id="filC9951DF617446EB0FB407B78BB2FEBC7" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win-x86\native\libSkiaSharp.dll" />
+                <File Id="filC9951DF617446EB0FB407B78BB2FEBC7" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win-x86\native\libSkiaSharp.dll" />
             </Component>
             <Component Id="cmpE6F07B7CE90A5C7BDCBDA4D1A379ABEF" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil06D183A1298A877638F98E51EF1AA49A" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\cppkcs11.dll" />
+                <File Id="fil06D183A1298A877638F98E51EF1AA49A" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\cppkcs11.dll" />
             </Component>
             <Component Id="cmp4EF0C1203213DAAA9C36EA596A9A6714" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil227588C1BB547A2723A5522F7F8AEA2E" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\cps3cards.dll" />
+                <File Id="fil227588C1BB547A2723A5522F7F8AEA2E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\cps3cards.dll" />
             </Component>
             <Component Id="cmp7B42904D5DCE65F1905001F08FB76AB5" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil5C97902BF24012986FFFBB8FA971D782" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\deisterreaders.dll" />
+                <File Id="fil5C97902BF24012986FFFBB8FA971D782" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\deisterreaders.dll" />
             </Component>
             <Component Id="cmp629972C0F66C7A94095D8F5A0E00826F" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil9A8EDC421C14DD750A62AA7C3DC9AB8A" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\desfirecards.dll" />
+                <File Id="fil9A8EDC421C14DD750A62AA7C3DC9AB8A" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\desfirecards.dll" />
             </Component>
             <Component Id="cmpE49EEB8FC21F1E4753A13A8D4250FEFB" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filF775A50AB8D31D0D840A38E1AAD98A10" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\elatecreaders.dll" />
+                <File Id="filF775A50AB8D31D0D840A38E1AAD98A10" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\elatecreaders.dll" />
             </Component>
             <Component Id="cmp983AA8624C813A9E55B49F4D7ED6C81F" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filFD6B47BD29C5EAF710AF089FC024453E" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\em4102cards.dll" />
+                <File Id="filFD6B47BD29C5EAF710AF089FC024453E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\em4102cards.dll" />
             </Component>
             <Component Id="cmpF93F33072C6BC3E3B2C2007CF9D43C7E" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil27C2FE707330B8852D28BAE424700CBF" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\em4135cards.dll" />
+                <File Id="fil27C2FE707330B8852D28BAE424700CBF" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\em4135cards.dll" />
             </Component>
             <Component Id="cmp32252064488647424473980907444AD0" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil4502E849CFC1E297E4FFD62B0411FE44" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\epasscards.dll" />
+                <File Id="fil4502E849CFC1E297E4FFD62B0411FE44" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\epasscards.dll" />
             </Component>
             <Component Id="cmpE995146C50C8D4F1D9D9F9509A11C358" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filC2924953B48C767FCB81A9DEC6AD1887" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\felicacards.dll" />
+                <File Id="filC2924953B48C767FCB81A9DEC6AD1887" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\felicacards.dll" />
             </Component>
             <Component Id="cmpB25868052885CB5C9A6FB8C5FDA188E7" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filF8D961C7CAC5B6618E9A933C57E74CFE" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\generictagcards.dll" />
+                <File Id="filF8D961C7CAC5B6618E9A933C57E74CFE" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\generictagcards.dll" />
             </Component>
             <Component Id="cmpCC075989631EBDA28D0856B1F8A2E9FC" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil85E3D0FCF7082488C3A7CDF5DB5D39A5" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\gunneboreaders.dll" />
+                <File Id="fil85E3D0FCF7082488C3A7CDF5DB5D39A5" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\gunneboreaders.dll" />
             </Component>
             <Component Id="cmp4ABB8ECAE53D30B0CA8961BB2A7D7624" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filD3C8E871CC9383DDA5478E0E2C24D0A9" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\icode1cards.dll" />
+                <File Id="filD3C8E871CC9383DDA5478E0E2C24D0A9" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\icode1cards.dll" />
             </Component>
             <Component Id="cmpD9A15F6F9DDAA9FC31745EB57B4795CA" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filD69896BB0659317DE8E2CF259980BDBD" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\icode2cards.dll" />
+                <File Id="filD69896BB0659317DE8E2CF259980BDBD" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\icode2cards.dll" />
             </Component>
             <Component Id="cmpB9B8C295426B626DB0169F36A2400B41" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil11BEB18CC8754C452E71FF0A0F4F306A" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\indalacards.dll" />
+                <File Id="fil11BEB18CC8754C452E71FF0A0F4F306A" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\indalacards.dll" />
             </Component>
             <Component Id="cmp5C6425BB1E04BC913C5A88948E4CBBE0" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil4E99A932D641806BF7CC98EEA94CBC5F" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\infineonmydcards.dll" />
+                <File Id="fil4E99A932D641806BF7CC98EEA94CBC5F" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\infineonmydcards.dll" />
             </Component>
             <Component Id="cmp19C4EA5EA539699E3D58B4EDEDC6E421" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil9573E6A05E041934B2B2682AC178EF07" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\islogkbdhooklib64.dll" />
+                <File Id="fil9573E6A05E041934B2B2682AC178EF07" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\islogkbdhooklib64.dll" />
             </Component>
             <Component Id="cmpE26314DDA3E7C5BF74DDD445A0817792" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil9EB94CA61D3EBD6E486CFD496BEF1885" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\iso15693cards.dll" />
+                <File Id="fil9EB94CA61D3EBD6E486CFD496BEF1885" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\iso15693cards.dll" />
             </Component>
             <Component Id="cmp89C8791614A9E62F7A127C1DA0BD9303" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filC17CF055EFE7F0F8CE700BC23B0E29E3" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\iso7816cards.dll" />
+                <File Id="filC17CF055EFE7F0F8CE700BC23B0E29E3" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\iso7816cards.dll" />
             </Component>
             <Component Id="cmp3EADC74878A9E76A762214C135123943" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filA7F117C768A2F182074A9D93E191E02F" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\iso7816readers.dll" />
+                <File Id="filA7F117C768A2F182074A9D93E191E02F" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\iso7816readers.dll" />
             </Component>
             <Component Id="cmp43EA3460C83C52567DAABA8D4279EC3C" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filE9A34F42BD5EC7F8E791C6B7658653D5" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\keyboardreaders.dll" />
+                <File Id="filE9A34F42BD5EC7F8E791C6B7658653D5" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\keyboardreaders.dll" />
             </Component>
             <Component Id="cmp98F4540A31AF32B91316589D19C51778" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil0E5E027FF98C01985CF713FD2557CC91" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\legicprimecards.dll" />
+                <File Id="fil0E5E027FF98C01985CF713FD2557CC91" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\legicprimecards.dll" />
             </Component>
             <Component Id="cmp4A8A889E3B3C5DB58E116FAECA94A0AA" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil59D79DE0BA3A10A6BD154CD159C4BF43" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\libcrypto-3-x64.dll" />
+                <File Id="fil59D79DE0BA3A10A6BD154CD159C4BF43" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\libcrypto-3-x64.dll" />
             </Component>
             <Component Id="cmp581531DF7D8C8B2E12AE54285BA64503" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil87C5EAC6FE454360C94E52A83F8852FF" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\LibLogicalAccessNet.native.dll" />
+                <File Id="fil87C5EAC6FE454360C94E52A83F8852FF" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\LibLogicalAccessNet.native.dll" />
             </Component>
             <Component Id="cmpD951D3A3A17F88777D92701D76E9E4F8" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filB6B302D764F6854821A670A329C26732" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\libssl-3-x64.dll" />
+                <File Id="filB6B302D764F6854821A670A329C26732" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\libssl-3-x64.dll" />
             </Component>
             <Component Id="cmp8C02A44EB45C3ADF65671A41E8E3728D" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil2D13C3E8E3EA1F417702CE0ED4E8E513" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\llacommon.dll" />
+                <File Id="fil2D13C3E8E3EA1F417702CE0ED4E8E513" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\llacommon.dll" />
             </Component>
             <Component Id="cmp7A11A82A8A96E5E8B61BDF68F984EC34" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filF0B5C44C657197A92DF38144C19A624E" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\logicalaccess-cryptolib.dll" />
+                <File Id="filF0B5C44C657197A92DF38144C19A624E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\logicalaccess-cryptolib.dll" />
             </Component>
             <Component Id="cmpE7F7291B117B4D5FCCE7B426363591C8" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil688DB736090EDC0E56EFDD73977834A7" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\logicalaccess.dll" />
+                <File Id="fil688DB736090EDC0E56EFDD73977834A7" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\logicalaccess.dll" />
             </Component>
             <Component Id="cmpC5534AA50152C23CBB7BCC2890C1971F" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil64A583E604A9402C17FD0D36FBB852D6" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\mifarecards.dll" />
+                <File Id="fil64A583E604A9402C17FD0D36FBB852D6" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\mifarecards.dll" />
             </Component>
             <Component Id="cmp47092B3A614427DC70E13CF364CD1D28" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filCF407EA21813728FB12151E747B7862C" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\mifarepluscards.dll" />
+                <File Id="filCF407EA21813728FB12151E747B7862C" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\mifarepluscards.dll" />
             </Component>
             <Component Id="cmp95AD8F45C9DEAF749F5E19A7A49708C3" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil99C1682D0C3C326F71F0983E126ACCFD" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\mifareultralightcards.dll" />
+                <File Id="fil99C1682D0C3C326F71F0983E126ACCFD" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\mifareultralightcards.dll" />
             </Component>
             <Component Id="cmp05A5D9C2BE0A569BA645F6881C4030C5" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil87429FB450A7679E9F2E73BDF7ECF728" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\ok5553readers.dll" />
+                <File Id="fil87429FB450A7679E9F2E73BDF7ECF728" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\ok5553readers.dll" />
             </Component>
             <Component Id="cmpF3891E8B5F937D009613F03491832BE2" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filBF7CF80B5BC59D2F7EA5793E1941A047" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\osdpreaders.dll" />
+                <File Id="filBF7CF80B5BC59D2F7EA5793E1941A047" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\osdpreaders.dll" />
             </Component>
             <Component Id="cmp15BD7B4958A0A89101B643A3D92ADF1E" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil182BC1ECD3D52C328ED622F8EB19FF6B" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\pcscreaders.dll" />
+                <File Id="fil182BC1ECD3D52C328ED622F8EB19FF6B" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\pcscreaders.dll" />
             </Component>
             <Component Id="cmp0A8A2F8A192047BF44749C11936A8651" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filBC706E9C329E198C91E8DBE2211F46DC" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\pkcscryptounified.dll" />
+                <File Id="filBC706E9C329E198C91E8DBE2211F46DC" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\pkcscryptounified.dll" />
             </Component>
             <Component Id="cmp83927BF710BC19DDC6F11FA6AEFA39CB" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filF6C389529AF328348A1C96768FF88E01" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\proxcards.dll" />
+                <File Id="filF6C389529AF328348A1C96768FF88E01" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\proxcards.dll" />
             </Component>
             <Component Id="cmp46DD17DCF22344E9BE221B03F621EFD2" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil3309E2BB5BD59482B422C27684B81EB9" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\proxlitecards.dll" />
+                <File Id="fil3309E2BB5BD59482B422C27684B81EB9" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\proxlitecards.dll" />
             </Component>
             <Component Id="cmp36FFB688F541D91065A3359C6BEFB46C" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil1F158E50D6B9CF9BD5FC751E00A79F3B" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\samavcards.dll" />
+                <File Id="fil1F158E50D6B9CF9BD5FC751E00A79F3B" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\samavcards.dll" />
             </Component>
             <Component Id="cmp9E2F8CD73D2DE8A74376C33D9CF2E0B7" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filB7448DE86EEC49BD6ED9970C04C89AE4" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\seoscards.dll" />
+                <File Id="filB7448DE86EEC49BD6ED9970C04C89AE4" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\seoscards.dll" />
             </Component>
             <Component Id="cmp967851DCB552D82861D5EA78462BCB63" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil0C1B1C0E0015FAF6E2452D34AB84650F" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\smartframecards.dll" />
+                <File Id="fil0C1B1C0E0015FAF6E2452D34AB84650F" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\smartframecards.dll" />
             </Component>
             <Component Id="cmpF7E6E96A98C3F7C30FD55B7000A00FC1" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filC5E0B5401501A5F5C3388D36EE76F9E0" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\stidstrreaders.dll" />
+                <File Id="filC5E0B5401501A5F5C3388D36EE76F9E0" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\stidstrreaders.dll" />
             </Component>
             <Component Id="cmp9D690D6D571D72BBD7EAA0BAF47B1B49" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil407F2ED0ADBFCD7A2828E73925AD2654" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\stmlri512cards.dll" />
+                <File Id="fil407F2ED0ADBFCD7A2828E73925AD2654" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\stmlri512cards.dll" />
             </Component>
             <Component Id="cmp34D44F5258A6BCB03C456242C7ACE75A" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil124ACCEDC5F3615A52EE1E68EF0CD31A" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\tagitcards.dll" />
+                <File Id="fil124ACCEDC5F3615A52EE1E68EF0CD31A" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\tagitcards.dll" />
             </Component>
             <Component Id="cmp3A04094087B50D603267E0F5F16D2435" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filB81B9405325CE6EC762EDF6ED9291E8F" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\topazcards.dll" />
+                <File Id="filB81B9405325CE6EC762EDF6ED9291E8F" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\topazcards.dll" />
             </Component>
             <Component Id="cmpEBD6A01B6DC384DA492B22948B342B63" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="fil3C8770BECABCA1162F8CC1B97F27C2E4" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\twiccards.dll" />
+                <File Id="fil3C8770BECABCA1162F8CC1B97F27C2E4" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\twiccards.dll" />
             </Component>
             <Component Id="cmp67DA5F0B7CB16C476378ABBAC1282C0F" Directory="dirA5E3D9671B2B4B24B0AE89231371CAB2" Guid="*">
-                <File Id="filF120ACCE18EBA5F5ED1B79B6BA00C9E9" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x64\native\yubikeycards.dll" />
+                <File Id="filF120ACCE18EBA5F5ED1B79B6BA00C9E9" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x64\native\yubikeycards.dll" />
             </Component>
             <Component Id="cmp5B955CD14F707C12CD6CF52DA759AD8B" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="filD519CE0F957E08CD89D30DA1565A3594" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\cppkcs11.dll" />
+                <File Id="filD519CE0F957E08CD89D30DA1565A3594" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\cppkcs11.dll" />
             </Component>
             <Component Id="cmpBD1186BF30F0D5EB498E091A46337D56" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="filC440856818DD0EA59E62D24A3997ADAA" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\cps3cards.dll" />
+                <File Id="filC440856818DD0EA59E62D24A3997ADAA" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\cps3cards.dll" />
             </Component>
             <Component Id="cmp8B1D02C86DF0B74D2820871901897B5B" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil332B9411807F1B1B34D3B8087FB36663" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\deisterreaders.dll" />
+                <File Id="fil332B9411807F1B1B34D3B8087FB36663" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\deisterreaders.dll" />
             </Component>
             <Component Id="cmp8768DF0D52CCB6A72342F43EB04FBA1D" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil6FA38E1F9D8B409B62441608945B320F" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\desfirecards.dll" />
+                <File Id="fil6FA38E1F9D8B409B62441608945B320F" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\desfirecards.dll" />
             </Component>
             <Component Id="cmpA45E4FB1472F3AEBA5A16F83A0F7C52D" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="filDA8E5187CE72508827AA4FD270010E08" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\elatecreaders.dll" />
+                <File Id="filDA8E5187CE72508827AA4FD270010E08" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\elatecreaders.dll" />
             </Component>
             <Component Id="cmp509A80E4931542093E5E2195E8BA58BD" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="filC51B754DCD0A0184BB6C013E722AA7CD" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\em4102cards.dll" />
+                <File Id="filC51B754DCD0A0184BB6C013E722AA7CD" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\em4102cards.dll" />
             </Component>
             <Component Id="cmp7D275D496F969FC34FA9B18166691E3B" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil1A24DE99DED16EE264155F24606DF4B7" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\em4135cards.dll" />
+                <File Id="fil1A24DE99DED16EE264155F24606DF4B7" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\em4135cards.dll" />
             </Component>
             <Component Id="cmpE699AA08D552CE6FBF8AF0745E32D1B3" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil992470F261C470DC7427BE48AFD586F1" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\epasscards.dll" />
+                <File Id="fil992470F261C470DC7427BE48AFD586F1" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\epasscards.dll" />
             </Component>
             <Component Id="cmp277BD53B0007037E91731CF7F9E2539B" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil033077C45E0396C2A2A02C250D7F3F12" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\felicacards.dll" />
+                <File Id="fil033077C45E0396C2A2A02C250D7F3F12" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\felicacards.dll" />
             </Component>
             <Component Id="cmp67D9A089030EDF4C3EF906982CE02B8E" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil809EA5B0A1C27E69B7426709B56CE39E" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\generictagcards.dll" />
+                <File Id="fil809EA5B0A1C27E69B7426709B56CE39E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\generictagcards.dll" />
             </Component>
             <Component Id="cmp28A96FB66CCED2A4DF77CA58B856024C" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="filE4740C15B51A8CF711CAC09A2892D025" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\gunneboreaders.dll" />
+                <File Id="filE4740C15B51A8CF711CAC09A2892D025" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\gunneboreaders.dll" />
             </Component>
             <Component Id="cmpD04402203887D77644D1CDA5C7CC8FE9" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil8F24A211DB30CA61E8B703856CC9F846" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\icode1cards.dll" />
+                <File Id="fil8F24A211DB30CA61E8B703856CC9F846" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\icode1cards.dll" />
             </Component>
             <Component Id="cmpC21DBA3D9C69A993331D93C4BC1F1341" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil29BD695416722EC2C91F4E319C88814F" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\icode2cards.dll" />
+                <File Id="fil29BD695416722EC2C91F4E319C88814F" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\icode2cards.dll" />
             </Component>
             <Component Id="cmp8B8BCDD956BFAB917088A58018CCC0F6" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil526DFB13D79BAF9DBC474900E26114AF" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\indalacards.dll" />
+                <File Id="fil526DFB13D79BAF9DBC474900E26114AF" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\indalacards.dll" />
             </Component>
             <Component Id="cmp33109D20BF7AF7A409ADDE5C37558BEF" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="filE9E0051473EE7BA9E058767530A8C324" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\infineonmydcards.dll" />
+                <File Id="filE9E0051473EE7BA9E058767530A8C324" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\infineonmydcards.dll" />
             </Component>
             <Component Id="cmpBF2F483CD625D3DCF71263485B447A28" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil9FE434EA1F109B328A2C24570BC41591" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\islogkbdhooklib32.dll" />
+                <File Id="fil9FE434EA1F109B328A2C24570BC41591" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\islogkbdhooklib32.dll" />
             </Component>
             <Component Id="cmpE0E51466629D70EF6B3E5D76A424A0D9" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil64874BF10723C367F2802F5931EFDC21" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\iso15693cards.dll" />
+                <File Id="fil64874BF10723C367F2802F5931EFDC21" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\iso15693cards.dll" />
             </Component>
             <Component Id="cmpE4037A535E0FBD78F7114E628EC9956A" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil8810EEB99AF470BB5706585E5E5670EC" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\iso7816cards.dll" />
+                <File Id="fil8810EEB99AF470BB5706585E5E5670EC" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\iso7816cards.dll" />
             </Component>
             <Component Id="cmp9BC0A15ABE0621272F9006E6041A4354" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil89DCBADD9C006B75238E5F685B9D6D3D" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\iso7816readers.dll" />
+                <File Id="fil89DCBADD9C006B75238E5F685B9D6D3D" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\iso7816readers.dll" />
             </Component>
             <Component Id="cmpFEAE3D352E6BA23575403701B4C164AE" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil6F8D842DB2E8EAD73C268E22F1528459" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\keyboardreaders.dll" />
+                <File Id="fil6F8D842DB2E8EAD73C268E22F1528459" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\keyboardreaders.dll" />
             </Component>
             <Component Id="cmp058D3F7197D3A0A125BE2E03D37CD00D" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="filAC883785951CB9723EFFC659BE78DB42" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\legicprimecards.dll" />
+                <File Id="filAC883785951CB9723EFFC659BE78DB42" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\legicprimecards.dll" />
             </Component>
             <Component Id="cmpB4FB0A0235722513B7CC6515F092C15A" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil619AE8B178ADAC8222519346939E316A" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\libcrypto-3.dll" />
+                <File Id="fil619AE8B178ADAC8222519346939E316A" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\libcrypto-3.dll" />
             </Component>
             <Component Id="cmpFB4991CB39C7C3A04EEA92EFE8A7BEDF" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil76376419EE3A039D1BE5D0D9A8CDA40F" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\LibLogicalAccessNet.native.dll" />
+                <File Id="fil76376419EE3A039D1BE5D0D9A8CDA40F" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\LibLogicalAccessNet.native.dll" />
             </Component>
             <Component Id="cmp27A2D4C6B92210FEF36E245BC271C6E7" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil8E798DB82CB38C678FF5EC83427A0AA5" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\libssl-3.dll" />
+                <File Id="fil8E798DB82CB38C678FF5EC83427A0AA5" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\libssl-3.dll" />
             </Component>
             <Component Id="cmpF34F8A220155BDAA6C2B4682508ED07F" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil99F552EBD789122D7C0C2C1CFA4018BA" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\llacommon.dll" />
+                <File Id="fil99F552EBD789122D7C0C2C1CFA4018BA" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\llacommon.dll" />
             </Component>
             <Component Id="cmpDE722354AB8F5AC3BC4F7B2DED46AA51" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil3B500A84F90E0D26974734422BD26EE1" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\logicalaccess-cryptolib.dll" />
+                <File Id="fil3B500A84F90E0D26974734422BD26EE1" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\logicalaccess-cryptolib.dll" />
             </Component>
             <Component Id="cmpEAB907B2754D2F3F2FE6B6443F813247" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil9C4737AC87B758DC8601FBECA3115776" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\logicalaccess.dll" />
+                <File Id="fil9C4737AC87B758DC8601FBECA3115776" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\logicalaccess.dll" />
             </Component>
             <Component Id="cmp57E87B9CC2B90ED8FA8B85AECAD4430B" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil0EA17E3585AB28B04BBFEECBBD4B03D2" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\mifarecards.dll" />
+                <File Id="fil0EA17E3585AB28B04BBFEECBBD4B03D2" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\mifarecards.dll" />
             </Component>
             <Component Id="cmpA575DF16B02941A4111E2EA9172DDC4B" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="filF7B00A2F0D5A51A4C964F08902ACCAC1" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\mifarepluscards.dll" />
+                <File Id="filF7B00A2F0D5A51A4C964F08902ACCAC1" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\mifarepluscards.dll" />
             </Component>
             <Component Id="cmp719C680E36B1955ECF3D4D591FFBB20A" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil31027618299B819A9B7602E6BC5C80E4" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\mifareultralightcards.dll" />
+                <File Id="fil31027618299B819A9B7602E6BC5C80E4" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\mifareultralightcards.dll" />
             </Component>
             <Component Id="cmpD19607AB28185209425D8E0F8802975F" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil08A98F90034B12B550C70A5AD545168E" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\ok5553readers.dll" />
+                <File Id="fil08A98F90034B12B550C70A5AD545168E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\ok5553readers.dll" />
             </Component>
             <Component Id="cmp8C56BBC3AF236E47AD5C131C807AA736" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil22B600854D3CE2DA904C7CA8C8EA0E8B" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\osdpreaders.dll" />
+                <File Id="fil22B600854D3CE2DA904C7CA8C8EA0E8B" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\osdpreaders.dll" />
             </Component>
             <Component Id="cmp9EB71A28B155B1F96AAA7146922F1DBD" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil1D8D6661CBEBFFCC31142347E59B05E9" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\pcscreaders.dll" />
+                <File Id="fil1D8D6661CBEBFFCC31142347E59B05E9" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\pcscreaders.dll" />
             </Component>
             <Component Id="cmp2B25FD1F3A3D609291005B54B6A7A25D" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="filDC36535C0BB8AEE3E80586C4056E88AD" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\pkcscryptounified.dll" />
+                <File Id="filDC36535C0BB8AEE3E80586C4056E88AD" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\pkcscryptounified.dll" />
             </Component>
             <Component Id="cmp1E0093BE472E2837310D040C1415E88C" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil25A863FA49A07116C4789F888FC4748C" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\proxcards.dll" />
+                <File Id="fil25A863FA49A07116C4789F888FC4748C" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\proxcards.dll" />
             </Component>
             <Component Id="cmp72B54B7A7D6DCABF8381A7658712D191" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil4E07A19A3BD7B3F4E523F4DDBDBA371E" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\proxlitecards.dll" />
+                <File Id="fil4E07A19A3BD7B3F4E523F4DDBDBA371E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\proxlitecards.dll" />
             </Component>
             <Component Id="cmpE508500DF12C2ECFA33FE6758327ADB1" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil8890E0D8307B47A964F58ABE92F8D7C9" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\samavcards.dll" />
+                <File Id="fil8890E0D8307B47A964F58ABE92F8D7C9" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\samavcards.dll" />
             </Component>
             <Component Id="cmp8458205F5B86BDB38082520920EDDB81" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil577D766B20DB9EAED1CAFCF70FAFF5C1" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\seoscards.dll" />
+                <File Id="fil577D766B20DB9EAED1CAFCF70FAFF5C1" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\seoscards.dll" />
             </Component>
             <Component Id="cmp54525C46F0518E5037825F4C5AF38116" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="filD6FC3542F3747AC48DCBD51622C5684F" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\smartframecards.dll" />
+                <File Id="filD6FC3542F3747AC48DCBD51622C5684F" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\smartframecards.dll" />
             </Component>
             <Component Id="cmp4B054CA49C62F6A7F1EF24FB9F8F7010" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="filACD993AAF437385C4CFCB0F66EDB6BEB" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\stidstrreaders.dll" />
+                <File Id="filACD993AAF437385C4CFCB0F66EDB6BEB" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\stidstrreaders.dll" />
             </Component>
             <Component Id="cmp62804E3F837DC7F416CBD1DF99C9EB66" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil39E7BD077567A7C760430B32115304D2" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\stmlri512cards.dll" />
+                <File Id="fil39E7BD077567A7C760430B32115304D2" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\stmlri512cards.dll" />
             </Component>
             <Component Id="cmp4D9E0600915205DAB79A82C34F7BD87C" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil2F3A1D38FFB47A23DE125A1479EEBB90" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\tagitcards.dll" />
+                <File Id="fil2F3A1D38FFB47A23DE125A1479EEBB90" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\tagitcards.dll" />
             </Component>
             <Component Id="cmp6D63FE05BE014A0578B57393FB76E73E" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil3738741A05F68359CBB7DA3457288B53" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\topazcards.dll" />
+                <File Id="fil3738741A05F68359CBB7DA3457288B53" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\topazcards.dll" />
             </Component>
             <Component Id="cmp1FC264C876EB5D5B456926C9AF9815D7" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil298543EB4BD68A80ABA19848D1DB980D" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\twiccards.dll" />
+                <File Id="fil298543EB4BD68A80ABA19848D1DB980D" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\twiccards.dll" />
             </Component>
             <Component Id="cmpF3D2FE5B39B40C23EED12DD5867C5A3C" Directory="dir98D080FF113CA0088C090775C22A7A93" Guid="*">
-                <File Id="fil1EF2E380643AE72C5DC35B4DC3DA6D18" KeyPath="yes" Source="$(var.RFiDGearReleaseX64Dir)\runtimes\win10-x86\native\yubikeycards.dll" />
+                <File Id="fil1EF2E380643AE72C5DC35B4DC3DA6D18" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\runtimes\win10-x86\native\yubikeycards.dll" />
             </Component>
         </ComponentGroup>
     </Fragment>
