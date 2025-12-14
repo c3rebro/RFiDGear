@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" InitialTargets="EnsureWixToolsetInstalled" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <ProductVersion>3.10</ProductVersion>
+    <ProjectGuid>856ca06c-0b4c-46c6-ad71-873317f1c763</ProjectGuid>
+    <SchemaVersion>2.0</SchemaVersion>
+    <OutputName>RFiDGear_Setup_x64</OutputName>
+    <OutputType>Package</OutputType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>Debug</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Running heat in-proc can crash VS when the task bitness differs from MSBuild (see https://github.com/wixtoolset/issues/issues/6699). -->
+    <HeatRunAsSeparateProcess Condition=" '$(HeatRunAsSeparateProcess)' == '' ">true</HeatRunAsSeparateProcess>
+    <WixToolPath Condition=" '$(WixToolPath)' == '' and Exists('$(ProgramFiles(x86))\\WiX Toolset v3.14\\bin\\') ">$(ProgramFiles(x86))\WiX Toolset v3.14\bin\</WixToolPath>
+    <RFiDGearTargetFramework Condition=" '$(RFiDGearTargetFramework)' == '' ">net8.0-windows</RFiDGearTargetFramework>
+    <RFiDGearReleaseDir Condition=" '$(RFiDGearReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear\bin\x64\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseDir>
+    <RFiDGearProjectDir>$(ProjectDir)..\..\RFiDGear\</RFiDGearProjectDir>
+    <RFiDGearProjectName>RFiDGear</RFiDGearProjectName>
+    <DefineConstants>$(DefineConstants);RFiDGearReleaseDir=$(RFiDGearReleaseDir);RFiDGear.ProjectDir=$(RFiDGearProjectDir);RFiDGear.ProjectName=$(RFiDGearProjectName)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="LicenseAgreementDlg_HK.wxs" />
+    <Compile Include="Product.wxs" />
+    <Compile Include="setup example.wxs" />
+    <Compile Include="WixUI_HK.wxs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Product_de-de.wxl" />
+    <EmbeddedResource Include="Product_en-us.wxl" />
+  </ItemGroup>
+  <ItemGroup>
+    <WixExtension Include="WixUtilExtension">
+      <HintPath>$(WixExtDir)\WixUtilExtension.dll</HintPath>
+      <Name>WixUtilExtension</Name>
+    </WixExtension>
+    <WixExtension Include="WixUIExtension">
+      <HintPath>$(WixExtDir)\WixUIExtension.dll</HintPath>
+      <Name>WixUIExtension</Name>
+    </WixExtension>
+    <WixExtension Include="WixNetFxExtension">
+      <HintPath>$(WixExtDir)\WixNetFxExtension.dll</HintPath>
+      <Name>WixNetFxExtension</Name>
+    </WixExtension>
+    <WixExtension Include="WixBalExtension">
+      <HintPath>$(WixExtDir)\WixBalExtension.dll</HintPath>
+      <Name>WixBalExtension</Name>
+    </WixExtension>
+  </ItemGroup>
+  <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
+  <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">
+    <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
+  </Target>
+  <Target Name="ValidateReleaseOutputs" BeforeTargets="HarvestReleaseOutputs">
+    <Error Condition="!Exists('$(RFiDGearReleaseDir)')" Text="Release output directory '$(RFiDGearReleaseDir)' not found. Build the RFiDGear project for the x64 Release configuration before packaging." />
+  </Target>
+  <!--
+        To modify your build process, add your task inside one of the targets below and uncomment it.
+        Other similar extension points exist, see Wix.targets.
+        <Target Name="BeforeBuild">
+        </Target>
+        <Target Name="AfterBuild">
+        </Target>
+        -->
+  <Target Name="HarvestReleaseOutputs" BeforeTargets="BeforeBuild">
+    <PropertyGroup>
+      <HarvestOutputDir>$(IntermediateOutputPath)harvest\</HarvestOutputDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(HarvestOutputDir)" />
+    <HeatDirectory
+      ToolPath="$(WixToolPath)"
+      AutogenerateGuids="true"
+      ComponentGroupName="RFiDGear.ReleaseFiles.x64"
+      Directory="$(RFiDGearReleaseDir)"
+      DirectoryRefId="INSTALLDIR"
+      GenerateGuidsNow="true"
+      OutputFile="$(HarvestOutputDir)RFiDGear.Release.x64.wxs"
+      PreprocessorVariable="var.RFiDGearReleaseDir"
+      RunAsSeparateProcess="$(HeatRunAsSeparateProcess)"
+      SuppressSpecificWarnings="5150;5151"
+      SuppressRootDirectory="true"
+      Condition="Exists('$(RFiDGearReleaseDir)')" />
+    <ItemGroup>
+      <Compile Include="$(HarvestOutputDir)RFiDGear.Release.x64.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Release.x64.wxs')" />
+    </ItemGroup>
+  </Target>
+</Project>
