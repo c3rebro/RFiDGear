@@ -6,8 +6,9 @@
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>856ca06c-0b4c-46c6-ad71-873317f1c763</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>Setup</OutputName>
+    <OutputName>RFiDGear_Setup_x64</OutputName>
     <OutputType>Package</OutputType>
+    <Name>RFiDGear_Setup_x64</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
@@ -45,9 +46,9 @@
     <HeatRunAsSeparateProcess Condition=" '$(HeatRunAsSeparateProcess)' == '' ">true</HeatRunAsSeparateProcess>
     <WixToolPath Condition=" '$(WixToolPath)' == '' and Exists('$(ProgramFiles(x86))\\WiX Toolset v3.14\\bin\\') ">$(ProgramFiles(x86))\WiX Toolset v3.14\bin\</WixToolPath>
     <RFiDGearTargetFramework Condition=" '$(RFiDGearTargetFramework)' == '' ">net8.0-windows</RFiDGearTargetFramework>
-    <RFiDGearReleaseX86Dir Condition=" '$(RFiDGearReleaseX86Dir)' == '' ">$(ProjectDir)..\RFiDGear\bin\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseX86Dir>
+    <RFiDGearReleaseX86Dir Condition=" '$(RFiDGearReleaseX86Dir)' == '' ">$(ProjectDir)..\RFiDGear\bin\x86\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseX86Dir>
     <RFiDGearReleaseX86Dir Condition=" Exists('$(ProjectDir)..\RFiDGear\bin\x86\Release\$(RFiDGearTargetFramework)') ">$(ProjectDir)..\RFiDGear\bin\x86\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseX86Dir>
-    <RFiDGearReleaseX64Dir Condition=" '$(RFiDGearReleaseX64Dir)' == '' ">$(ProjectDir)..\RFiDGear\bin\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseX64Dir>
+    <RFiDGearReleaseX64Dir Condition=" '$(RFiDGearReleaseX64Dir)' == '' ">$(ProjectDir)..\RFiDGear\bin\x64\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseX64Dir>
     <RFiDGearReleaseX64Dir Condition=" Exists('$(ProjectDir)..\RFiDGear\bin\x64\Release\$(RFiDGearTargetFramework)') ">$(ProjectDir)..\RFiDGear\bin\x64\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseX64Dir>
     <RFiDGearProjectDir>$(ProjectDir)..\RFiDGear\</RFiDGearProjectDir>
     <RFiDGearProjectName>RFiDGear</RFiDGearProjectName>
