@@ -73,9 +73,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             MifareDesfireKeys = CustomConverter.GenerateStringSequence(0, 16).ToArray();
             MifareDesfireKeyCount = CustomConverter.GenerateStringSequence(1, 16).ToArray();
-            KeyVersions = CustomConverter.GenerateStringSequence(0, 16).ToArray();
-
-            KeyVersionCurrent = "0";
+            KeyVersionCurrent = "00";
+            KeyVersionTarget = "00";
+            SelectedDesfireAppKeyVersionTarget = "00";
 
             isAllowChangeMKChecked = true;
             isAllowConfigChangableChecked = true;
@@ -102,8 +102,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 MifareDesfireKeys = CustomConverter.GenerateStringSequence(0, 16).ToArray();
                 MifareDesfireKeyCount = CustomConverter.GenerateStringSequence(1, 16).ToArray();
-                KeyVersions = CustomConverter.GenerateStringSequence(0, 16).ToArray();
-
+                KeyVersionCurrent = "00";
+                KeyVersionTarget = "00";
+                SelectedDesfireAppKeyVersionTarget = "00";
                 isAllowChangeMKChecked = true;
                 isAllowConfigChangableChecked = true;
                 isAllowListingWithoutMKChecked = true;
@@ -152,7 +153,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     DesfireWriteKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey).Key;
                     SelectedDesfireWriteKeyNumber = "1";
 
-                    KeyVersionCurrent = "0";
+                    KeyVersionCurrent = "00";
+                    KeyVersionTarget = "00";
+                    SelectedDesfireAppKeyVersionTarget = "00";
 
                     accessRights = new DESFireAccessRights();
 
@@ -764,24 +767,91 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         [XmlIgnore]
         public string[] MifareDesfireKeyCount { get; set; }
 
+        /// <summary>
+        ///
+        /// </summary>
         [XmlIgnore]
-        public string[] KeyVersions { get; set; }
+        public bool? IsValidKeyVersionCurrent
+        {
+            get => isValidKeyVersionCurrent;
+            private set
+            {
+                isValidKeyVersionCurrent = value;
+                OnPropertyChanged(nameof(IsValidKeyVersionCurrent));
+            }
+        }
+        private bool? isValidKeyVersionCurrent;
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public string KeyVersionCurrent
         {
             get => keyVersionCurrent;
             set
             {
-                keyVersionCurrent = value;
-                keyVersionCurrentAsInt = int.Parse(keyVersionCurrent);
+                keyVersionCurrent = value?.ToUpperInvariant();
+
+                if (byte.TryParse(keyVersionCurrent, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var parsedVersion))
+                {
+                    keyVersionCurrentAsInt = parsedVersion;
+                    keyVersionCurrent = parsedVersion.ToString("X2", CultureInfo.InvariantCulture);
+                    IsValidKeyVersionCurrent = true;
+                }
+                else
+                {
+                    keyVersionCurrentAsInt = 0;
+                    IsValidKeyVersionCurrent = false;
+                }
+
                 OnPropertyChanged(nameof(KeyVersionCurrent));
             }
         }
         private string keyVersionCurrent;
         private int keyVersionCurrentAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string KeyVersionTarget
+        {
+            get => keyVersionTarget;
+            set
+            {
+                keyVersionTarget = value?.ToUpperInvariant();
+
+                if (byte.TryParse(keyVersionTarget, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var parsedVersion))
+                {
+                    keyVersionTargetAsInt = parsedVersion;
+                    keyVersionTarget = parsedVersion.ToString("X2", CultureInfo.InvariantCulture);
+                    IsValidKeyVersionTarget = true;
+                }
+                else
+                {
+                    keyVersionTargetAsInt = 0;
+                    IsValidKeyVersionTarget = false;
+                }
+
+                OnPropertyChanged(nameof(KeyVersionTarget));
+            }
+        }
+        private string keyVersionTarget;
+        private int keyVersionTargetAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidKeyVersionTarget
+        {
+            get => isValidKeyVersionTarget;
+            set
+            {
+                isValidKeyVersionTarget = value;
+                OnPropertyChanged(nameof(IsValidKeyVersionTarget));
+            }
+        }
+        private bool? isValidKeyVersionTarget;
 
         /// <summary>
         /// 
@@ -1228,21 +1298,42 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         public string SelectedDesfireAppKeyVersionTarget
         {
-            get
-            {
-                return selectedDesfireAppKeyVersionTarget;
-            }
+            get => selectedDesfireAppKeyVersionTarget;
             set
             {
-                if (int.TryParse(value, out selectedDesfireAppKeyVersionTargetAsInt))
+                selectedDesfireAppKeyVersionTarget = value?.ToUpperInvariant();
+
+                if (byte.TryParse(selectedDesfireAppKeyVersionTarget, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var parsedVersion))
                 {
-                    selectedDesfireAppKeyVersionTarget = value;
+                    selectedDesfireAppKeyVersionTargetAsInt = parsedVersion;
+                    selectedDesfireAppKeyVersionTarget = parsedVersion.ToString("X2", CultureInfo.InvariantCulture);
+                    IsValidDesfireAppKeyVersionTarget = true;
+                }
+                else
+                {
+                    selectedDesfireAppKeyVersionTargetAsInt = 0;
+                    IsValidDesfireAppKeyVersionTarget = false;
                 }
                 OnPropertyChanged(nameof(SelectedDesfireAppKeyVersionTarget));
             }
         }
         private string selectedDesfireAppKeyVersionTarget;
         private int selectedDesfireAppKeyVersionTargetAsInt;
+
+        /// <summary>
+        ///
+        /// </summary>
+        [XmlIgnore]
+        public bool? IsValidDesfireAppKeyVersionTarget
+        {
+            get => isValidDesfireAppKeyVersionTarget;
+            set
+            {
+                isValidDesfireAppKeyVersionTarget = value;
+                OnPropertyChanged(nameof(IsValidDesfireAppKeyVersionTarget));
+            }
+        }
+        private bool? isValidDesfireAppKeyVersionTarget;
 
         /// <summary>
         ///
@@ -2175,21 +2266,23 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         if (IsValidAppNumberCurrent != false &&
                             IsValidAppNumberTarget != false &&
                             IsValidDesfireAppKeyTarget != false &&
+                            IsValidDesfireAppKeyVersionTarget != false &&
                             result == ERROR.NoError)
                         {
                             StatusText += string.Format("{0}: Successfully Authenticated to AppID {1}\n", DateTime.Now, AppNumberCurrentAsInt);
+                            await TryUpdateKeyVersionAsync(device, keyNumberForChange);
 
                             var keySettings = GetChangeKeyModeForApplication(AppNumberCurrentAsInt);
 
                             result = await device.ChangeMifareDesfireApplicationKey(authKeyValue,
                                                                          keyNumberForChange,
                                                                          SelectedDesfireAppKeyEncryptionTypeCurrent,
-                                                                        oldKeyForChangeKey,
+                                                                         oldKeyForChangeKey,
                                                                          oldKeyForTargetSlot,
                                                                          DesfireAppKeyTarget,
                                                                          selectedDesfireAppKeyVersionTargetAsInt,
                                                                          SelectedDesfireAppKeyEncryptionTypeTarget,
-                                                                         AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings, keyVersionCurrentAsInt, numberOfKeys);
+                                                                         AppNumberCurrentAsInt, AppNumberTargetAsInt, keySettings, selectedDesfireAppKeyVersionTargetAsInt, numberOfKeys);
 
                             if (await SetOperationResultAsync(
                                     result,
@@ -2261,21 +2354,22 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 authKeyNumber,
                                 appId);
 
-                            if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
+                            if (IsValidAppNumberCurrent != false && IsValidDesfireAppKeyVersionTarget != false && result == ERROR.NoError)
                             {
                                 StatusText += string.Format("{0}: Successfully Authenticated to AppID {1}\n", DateTime.Now, appId);
+                                await TryUpdateKeyVersionAsync(device, authKeyNumber);
 
                                 var updateResult = await device.ChangeMifareDesfireApplicationKeySettings(
                                     authKey,
                                     authKeyNumber,
                                     authKeyType,
                                     authKey,
-                                    keyVersionCurrentAsInt,
+                                    selectedDesfireAppKeyVersionTargetAsInt,
                                     authKeyType,
                                     appId,
                                     appId,
                                     keySettings,
-                                    keyVersionCurrentAsInt);
+                                    selectedDesfireAppKeyVersionTargetAsInt);
 
                                 if (await SetOperationResultAsync(
                                         updateResult,
@@ -2610,6 +2704,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                         if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
                         {
+                            await TryUpdateKeyVersionAsync(device, selectedDesfireAppKeyNumberCurrentAsInt);
                             StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             CurrentTaskErrorLevel = result;
@@ -2662,10 +2757,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                         if (result == ERROR.NoError)
                         {
+                            await TryUpdateKeyVersionAsync(device, 0);
                             StatusText += string.Format("{0}: Successfully Authenticated to App 0\n", DateTime.Now);
 
                             if (IsValidDesfireMasterKeyCurrent != false &&
-                                IsValidDesfireMasterKeyTarget != false)
+                                IsValidDesfireMasterKeyTarget != false &&
+                                IsValidKeyVersionTarget != false)
                             {
                                 result = await device.ChangeMifareDesfireApplicationKey(
                                     DesfireMasterKeyCurrent,
@@ -2675,7 +2772,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                     DesfireMasterKeyCurrent,
                                     DesfireMasterKeyTarget,
                                     0,
-                                    SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings, keyVersionCurrentAsInt, 1);
+                                    SelectedDesfireMasterKeyEncryptionTypeTarget, 0, 0, keySettings, keyVersionTargetAsInt, 1);
 
                                 if (result == ERROR.NoError)
                                 {
@@ -2746,6 +2843,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                         if (result == ERROR.NoError)
                         {
+                            await TryUpdateKeyVersionAsync(device, 0);
                             StatusText += string.Format("{0}: Successfully Authenticated to App 0\n", DateTime.Now);
                             CurrentTaskErrorLevel = result;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
@@ -2771,6 +2869,24 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         #endregion Commands
 
         #region Methods
+
+        /// <summary>
+        /// Query the active reader for the current key version and update the bound property.
+        /// </summary>
+        /// <param name="device">The reader device to query.</param>
+        /// <param name="keyNumber">The key slot number whose version should be read.</param>
+        private async Task TryUpdateKeyVersionAsync(ReaderDevice device, int keyNumber)
+        {
+            try
+            {
+                var keyVersion = await device.MifareDesfire_GetKeyVersionAsync((byte)keyNumber);
+                KeyVersionCurrent = keyVersion.ToString("X2", CultureInfo.InvariantCulture);
+            }
+            catch (Exception e)
+            {
+                StatusText += string.Format("{0}: Unable to read key version: {1}\n", DateTime.Now, e.Message);
+            }
+        }
 
         /// <summary>
         ///
