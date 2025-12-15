@@ -619,6 +619,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowAppKeySettingsInputs));
                 OnPropertyChanged(nameof(ShowPiccMasterKeyTargetInputs));
                 OnPropertyChanged(nameof(ShowPiccMasterKeySettingsInputs));
+                OnPropertyChanged(nameof(ShowPiccMasterKeyAuthoringSection));
+                OnPropertyChanged(nameof(ShowCreateApplicationInputs));
+                OnPropertyChanged(nameof(ShowDeleteApplicationInputs));
                 OnPropertyChanged(nameof(ShowAppKeyOldInputs));
 
                 UpdateOldAppKeyDefaults();
@@ -656,6 +659,27 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         [XmlIgnore]
         public bool ShowPiccMasterKeySettingsInputs => SelectedTaskType != TaskType_MifareDesfireTask.PICCMasterKeyChangeover;
+
+        /// <summary>
+        /// Gets a value indicating whether PICC master key authoring inputs should be shown.
+        /// The PICC controls are unnecessary when creating or deleting applications.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowPiccMasterKeyAuthoringSection => SelectedTaskType != TaskType_MifareDesfireTask.FormatDesfireCard
+                                                         && SelectedTaskType != TaskType_MifareDesfireTask.CreateApplication
+                                                         && SelectedTaskType != TaskType_MifareDesfireTask.DeleteApplication;
+
+        /// <summary>
+        /// Gets a value indicating whether application creation inputs should be shown.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowCreateApplicationInputs => SelectedTaskType == TaskType_MifareDesfireTask.CreateApplication;
+
+        /// <summary>
+        /// Gets a value indicating whether application deletion inputs should be shown.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowDeleteApplicationInputs => SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication;
 
         /// <summary>
         /// Gets a value indicating whether UI elements for supplying the previous application key should be shown.

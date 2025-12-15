@@ -14,6 +14,7 @@
     <UserControl.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
         <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 			<ContextMenu.ItemContainerStyle>
 				<Style TargetType="MenuItem">
@@ -58,6 +59,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
+                        Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
                     <ComboBox
                         Grid.Row="1"
@@ -70,6 +72,7 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
+                        Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         SelectedItem="{Binding SelectedDesfireAppKeyEncryptionTypeCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
                     <Label
                         Grid.Row="2"
@@ -78,6 +81,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
+                        Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="Max Keys"
                         RenderTransformOrigin="0.5,0.5" />
                     <ComboBox
@@ -91,6 +95,7 @@
                         HorizontalContentAlignment="Left"
                         ScrollViewer.VerticalScrollBarVisibility="Auto"
                         ItemsSource="{Binding MifareDesfireKeyCount}"
+                        Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         SelectedItem="{Binding SelectedDesfireAppMaxNumberOfKeys, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="3"
@@ -100,6 +105,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
+                        Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireAppSetupKeySettings'}" />
                     <ComboBox
                         Grid.Row="3"
@@ -111,6 +117,7 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         ItemsSource="{dal:Enumerate {x:Type access:AccessCondition_MifareDesfireAppCreation}}"
+                        Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         SelectedItem="{Binding SelectedDesfireAppKeySettingsCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type access:AccessCondition_MifareDesfireAppCreation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
                     <CheckBox
                         Grid.Row="0"
@@ -119,6 +126,7 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowChangeMK'}"
+                        Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         IsChecked="{Binding IsAllowChangeMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <CheckBox.ToolTip>
                             <ToolTip>
@@ -135,6 +143,7 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowListing'}"
+                        Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         IsChecked="{Binding IsAllowListingWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
 
                         <CheckBox.ToolTip>
@@ -152,6 +161,7 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowCreateDelete'}"
+                        Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         IsChecked="{Binding IsAllowCreateDelWithoutMKChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <CheckBox.ToolTip>
                             <ToolTip>
@@ -168,6 +178,7 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAllowConfigChange'}"
+                        Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         IsChecked="{Binding IsAllowConfigChangableChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <ToggleButton.ToolTip>
                             <ToolTip>
@@ -185,6 +196,7 @@
                         Margin="10,3,10,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
+                        Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         Command="{Binding CreateAppCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireAppCreationCreateApp'}" />
                     <Button
@@ -195,6 +207,7 @@
                         Padding="5,2"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
+                        Visibility="{Binding ShowDeleteApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         Command="{Binding DeleteSignleCardApplicationCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireAppCreationDeleteApp'}" />
                     <TextBox

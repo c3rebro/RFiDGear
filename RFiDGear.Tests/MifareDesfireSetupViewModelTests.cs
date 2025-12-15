@@ -69,5 +69,25 @@ namespace RFiDGear.Tests
             Assert.Equal(showTarget, viewModel.ShowAppKeyTargetInputs);
             Assert.Equal(showSettings, viewModel.ShowAppKeySettingsInputs);
         }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.CreateApplication, false, true, false)]
+        [InlineData(TaskType_MifareDesfireTask.DeleteApplication, false, false, true)]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover, true, false, false)]
+        public void SelectedTaskType_TogglesPiccAndAppCreationVisibility(
+            TaskType_MifareDesfireTask taskType,
+            bool showPiccSection,
+            bool showCreateInputs,
+            bool showDeleteInputs)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = taskType
+            };
+
+            Assert.Equal(showPiccSection, viewModel.ShowPiccMasterKeyAuthoringSection);
+            Assert.Equal(showCreateInputs, viewModel.ShowCreateApplicationInputs);
+            Assert.Equal(showDeleteInputs, viewModel.ShowDeleteApplicationInputs);
+        }
     }
 }
