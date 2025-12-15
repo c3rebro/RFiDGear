@@ -367,13 +367,14 @@
                         Command="{Binding FormatDesfireCardCommand}"
                         Visibility="{Binding IsFormatTaskSelected, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireCardMasteringFormatButton'}" />
-                    <TextBlock
+                    <TextBox
                         Grid.Row="2"
                         Grid.Column="1"
                         Margin="8,0,8,8"
+                        IsReadOnly="True"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Center"
-                        Text="{Binding KeyVersionCurrent}" />
+                        Text="{Binding KeyVersionCurrent}"/>
                     <Label
                         Grid.Row="2"
                         Grid.Column="0"

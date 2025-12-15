@@ -1,5 +1,4 @@
 ﻿using Elatec.NET.Cards.Mifare;
-using Elatec.NET.Exceptions;
 using LibLogicalAccess;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;

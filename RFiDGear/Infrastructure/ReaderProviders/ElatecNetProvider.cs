@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using ByteArrayHelper.Extensions;
 using Elatec.NET;
 using Elatec.NET.Cards.Mifare;
-using Elatec.NET.Exceptions;
 using RFiDGear.Models;
 using RFiDGear.Infrastructure.Tasks;
 
