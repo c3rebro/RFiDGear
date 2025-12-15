@@ -406,7 +406,7 @@
                     <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
-                        Grid.ColumnSpan="3"
+                        Grid.ColumnSpan="4"
                         Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
@@ -469,7 +469,7 @@
                     <TextBox
                         Grid.Row="2"
                         Grid.Column="1"
-                        Grid.ColumnSpan="3"
+                        Grid.ColumnSpan="4"
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
@@ -532,7 +532,8 @@
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentDesfireDataExplorerWriteKeyNo'}" />
                     <ComboBox
                         Grid.Row="1"
-                        Grid.Column="3"                        
+                        Grid.Column="3"
+                        Grid.ColumnSpan="2"
                         Margin="8,0,8,8"
                         Height="26"
                         HorizontalAlignment="Stretch"
@@ -542,6 +543,7 @@
                     <ComboBox
                         Grid.Row="3"
                         Grid.Column="3"
+                        Grid.ColumnSpan="2"
                         Margin="8,0,8,8"
                         Height="26"
                         HorizontalAlignment="Stretch"
@@ -578,6 +580,7 @@
                     <TextBox
                         Grid.Row="4"
                         Grid.Column="3"
+                        Grid.ColumnSpan="2"
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
@@ -595,10 +598,10 @@
                         Command="{Binding GetDataFromFileCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileSetupOpenDataFile'}" />
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="120" />
-                        <ColumnDefinition Width="120" />
-                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>

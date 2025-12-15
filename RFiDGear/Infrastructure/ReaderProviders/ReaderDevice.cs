@@ -94,6 +94,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public byte[] FileIDList { get; set; }
         public byte[] MifareUltralightPageData { get; set; }
         public byte MaxNumberOfAppKeys { get; set; }
+        public byte KeyVersion { get; set; }
         public DESFireKeyType EncryptionType { get; set; }
         public DESFireFileSettings DesfireFileSettings { get; set; }
         public AccessControl.DESFireKeySettings DesfireAppKeySetting { get; set; }

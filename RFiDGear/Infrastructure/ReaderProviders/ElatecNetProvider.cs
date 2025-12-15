@@ -542,7 +542,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                         if (authenticateBeforeReading)
                         {
-                            await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), 1);
+                            await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), DESFIRE_AUTHMODE_COMPATIBLE);
                         }
 
                         var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
@@ -1085,7 +1085,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     try
                     {
-                        await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), 1);
+                        await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), DESFIRE_AUTHMODE_COMPATIBLE);
                     } // try to auth first.
                     catch
                     {

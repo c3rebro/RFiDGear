@@ -45,8 +45,9 @@
                 IsEnabled="{Binding IsDesfireFileAuthoringTabEnabled}">
                 <Grid>
                     <Button
-                        Grid.Row="4"
-                        Grid.Column="5"
+                        Grid.Row="7"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="6"
                         Margin="8,0,8,8"
                         Height="26"
                         Padding="5,2"
@@ -57,8 +58,9 @@
                         Command="{Binding DeleteFileCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileMasteringDeleteFile'}" Grid.RowSpan="2" />
                     <Button
-                        Grid.Row="3"
-                        Grid.Column="5"    
+                        Grid.Row="6"
+                        Grid.Column="0"   
+                        Grid.ColumnSpan="6"
                         Height="26"
                         Padding="5,2"
                         Margin="8,0,8,8"
@@ -79,7 +81,7 @@
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireFileNumber'}" />
                     <Label
                         Grid.Row="0"
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
@@ -88,7 +90,7 @@
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireFileSize'}" />
                     <TextBox
                         Grid.Row="0"
-                        Grid.Column="3"
+                        Grid.Column="4"
                         Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
@@ -149,7 +151,7 @@
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
                     <Label
                         Grid.Row="3"
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
@@ -176,7 +178,7 @@
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentReadAndWrite'}" />
                     <Label
                         Grid.Row="4"
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
@@ -195,7 +197,7 @@
                         SelectedItem="{Binding SelectedDesfireFileAccessRightReadWrite, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="0"
-                        Grid.Column="4"
+                        Grid.Column="5"
                         Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
@@ -206,7 +208,7 @@
                         x:Name="changeCB"
                         Grid.Row="4"
                         Height="26"
-                        Grid.Column="3"
+                        Grid.Column="4"
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
@@ -215,7 +217,7 @@
                     <ComboBox
                         x:Name="writeCB"
                         Grid.Row="3"
-                        Grid.Column="3"
+                        Grid.Column="4"
                         Margin="8,0,8,8"
                         Height="26"
                         HorizontalAlignment="Stretch"
@@ -236,7 +238,6 @@
                         x:Name="encModeCB"
                         Grid.Row="2"
                         Grid.Column="1"
-                        Grid.ColumnSpan="3"
                         Margin="8,0,8,8"
                         Height="26"
                         HorizontalAlignment="Stretch"
@@ -256,7 +257,6 @@
                         x:Name="encModeCB_Copy"
                         Grid.Row="1"
                         Grid.Column="1"
-                        Grid.ColumnSpan="3"
                         Height="26"
                         Margin="8,0,8,8"
                         HorizontalAlignment="Stretch"
@@ -264,12 +264,12 @@
                         ItemsSource="{dal:Enumerate {x:Type tasks:FileType_MifareDesfireFileType}}"
                         SelectedItem="{Binding SelectedDesfireFileType, Converter={StaticResource Localization}, ConverterParameter={x:Type tasks:FileType_MifareDesfireFileType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="145" />
-                        <ColumnDefinition Width="100" />
-                        <ColumnDefinition Width="145" />
-                        <ColumnDefinition Width="100" />
-                        <ColumnDefinition Width="80"  />
-                        <ColumnDefinition  />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width=".3*" />
+                        <ColumnDefinition Width=".1*" />
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width=".3*" />
+                        <ColumnDefinition Width="auto"  />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -277,9 +277,9 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="1*" />
                     </Grid.RowDefinitions>
                 </Grid>
             </GroupBox>
