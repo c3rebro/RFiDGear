@@ -87,6 +87,43 @@
                         </TextBox.Resources>
                     </TextBox>
 
+                    <Label
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        Margin="8,0,8,8"
+                        VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter=labelContentMifareDesfireKeyVersion}" />
+                    <TextBox
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Height="26"
+                        Margin="8,0,8,8"
+                        VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
+                        Text="{Binding SelectedDesfireAppKeyVersionTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                        <TextBox.Resources>
+                            <Style TargetType="TextBox">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsValidDesfireAppKeyVersionTarget}" Value="True">
+                                        <Setter Property="Foreground" Value="Green" />
+                                        <Setter Property="Background" Value="White" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsValidDesfireAppKeyVersionTarget}" Value="False">
+                                        <Setter Property="Foreground" Value="Black" />
+                                        <Setter Property="Background" Value="Red" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Resources>
+                    </TextBox>
+
                     <GroupBox
                         Grid.Row="2"
                         Grid.Column="0"
@@ -412,8 +449,24 @@
                         HorizontalAlignment="Stretch"
                         ItemsSource="{Binding MifareDesfireKeys}"
                         SelectedItem="{Binding SelectedDesfireAppKeyNumberCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                    <Label
+                        Grid.Row="5"
+                        Grid.Column="0"
+                        Margin="8,0,8,8"
+                        VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter=labelContentMifareDesfireKeyVersion}" />
+                    <TextBlock
+                        Grid.Row="5"
+                        Grid.Column="1"
+                        Margin="8,0,8,8"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Stretch"
+                        Text="{Binding KeyVersionCurrent}" />
                     <Button
-                        Grid.Row="6"
+                        Grid.Row="7"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
                         Margin="8,7,8,8"
@@ -424,6 +477,7 @@
                         Command="{Binding AuthenticateToCardApplicationCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeAuthenticate'}" />
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
                         <RowDefinition Height="auto" />
