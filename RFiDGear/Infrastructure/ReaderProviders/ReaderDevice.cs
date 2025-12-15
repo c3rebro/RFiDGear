@@ -1,4 +1,5 @@
 ﻿using Elatec.NET.Cards.Mifare;
+using Elatec.NET.Exceptions;
 using LibLogicalAccess;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
@@ -184,6 +185,14 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public abstract Task<ERROR> FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType);
         public abstract Task<ERROR> GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0);
         public abstract Task<ERROR> GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0);
+
+        /// <summary>
+        /// Get the key version of a DESFire key.
+        /// </summary>
+        /// <param name="keyNo">Key number</param>
+        /// <returns>Key version</returns>
+        /// <exception cref="ReaderException"></exception>
+        public abstract Task<byte> MifareDesfire_GetKeyVersionAsync(byte keyNo);
 
         #endregion
 

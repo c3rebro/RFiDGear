@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using ByteArrayHelper.Extensions;
 using Elatec.NET;
 using Elatec.NET.Cards.Mifare;
+using Elatec.NET.Exceptions;
 using RFiDGear.Models;
 using RFiDGear.Infrastructure.Tasks;
 
@@ -411,8 +412,29 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         #region MifareDesfire
 
+        /// <inheritdoc />
+        public async override Task<byte> MifareDesfire_GetKeyVersionAsync(byte keyNo)
+        {
+            if (readerDevice == null || !readerDevice.IsConnected)
+            {
+                throw new ReaderException("Reader not connected");
+            }
+
+            try
+            {
+                var keyVersion = await readerDevice.MifareDesfire_GetKeyVersionAsync(keyNo);
+                KeyVersion = keyVersion;
+                return keyVersion;
+            }
+            catch (Exception e)
+            {
+                eventLog.WriteEntry($"Unable to read DESFire key version: {e.Message}", EventLogEntryType.Error);
+                throw;
+            }
+        }
+
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="_appMasterKey"></param>
         /// <param name="_keyTypeAppMasterKey"></param>

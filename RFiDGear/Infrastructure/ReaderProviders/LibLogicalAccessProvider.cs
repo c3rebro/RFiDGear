@@ -2190,6 +2190,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        public override Task<byte> MifareDesfire_GetKeyVersionAsync(byte keyNo)
+        {
+            throw new NotSupportedException("Retrieving key versions is not supported for LibLogicalAccessProvider.");
+        }
+
         #endregion mifare desfire
 
         #region mifare plus
