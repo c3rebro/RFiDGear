@@ -48,6 +48,16 @@
                 VerticalAlignment="Stretch"
                 Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxheaderMifareDesfireCardMasterSettingTarget'}"
                 IsEnabled="{Binding IsDesfirePICCAuthoringTabEnabled}">
+                <GroupBox.Style>
+                    <Style TargetType="GroupBox">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFormatTaskSelected}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </GroupBox.Style>
                 <Grid>
                     <Label
                         Grid.Row="0"
@@ -250,7 +260,18 @@
                 VerticalAlignment="Stretch"
                 Background="#FFD9D9DB"
                 ResizeBehavior="PreviousAndNext"
-                ResizeDirection="Auto" />
+                ResizeDirection="Auto">
+                <GridSplitter.Style>
+                    <Style TargetType="GridSplitter">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFormatTaskSelected}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </GridSplitter.Style>
+            </GridSplitter>
             <GroupBox
                 Grid.Row="0"
                 Grid.Column="0"
@@ -259,6 +280,16 @@
                 VerticalAlignment="Stretch"
                 Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireCardMasterSettingCurrent'}"
                 IsEnabled="{Binding IsDesfireAuthenticationTabEnabled}">
+                <GroupBox.Style>
+                    <Style TargetType="GroupBox">
+                        <Setter Property="Grid.ColumnSpan" Value="1" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFormatTaskSelected}" Value="True">
+                                <Setter Property="Grid.ColumnSpan" Value="3" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </GroupBox.Style>
                 <Grid>
                     <Label
                         Grid.Row="0"
