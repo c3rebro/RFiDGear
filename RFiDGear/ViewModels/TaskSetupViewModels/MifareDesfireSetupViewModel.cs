@@ -601,6 +601,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         SetTabAvailability(false, false, true, true, false, false, false);
                         break;
 
+                    case TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover:
+                        SetTabAvailability(false, false, true, true, false, false, false);
+                        break;
+
                     case TaskType_MifareDesfireTask.ReadData:
                         SetTabAvailability(true, true, false, false, true, true, false);
                         break;
@@ -613,6 +617,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(IsFormatTaskSelected));
                 OnPropertyChanged(nameof(ShowAppKeyTargetInputs));
                 OnPropertyChanged(nameof(ShowAppKeySettingsInputs));
+                OnPropertyChanged(nameof(ShowPiccMasterKeyTargetInputs));
+                OnPropertyChanged(nameof(ShowPiccMasterKeySettingsInputs));
                 OnPropertyChanged(nameof(ShowAppKeyOldInputs));
 
                 UpdateOldAppKeyDefaults();
@@ -636,6 +642,20 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         [XmlIgnore]
         public bool ShowAppKeySettingsInputs => SelectedTaskType != TaskType_MifareDesfireTask.ApplicationKeyChangeover;
+
+        /// <summary>
+        /// Gets a value indicating whether UI elements for providing a target PICC master key should be shown.
+        /// The target key is unnecessary when changing only the PICC master key settings.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowPiccMasterKeyTargetInputs => SelectedTaskType != TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover;
+
+        /// <summary>
+        /// Gets a value indicating whether UI elements for configuring PICC master key settings should be shown.
+        /// Settings controls are unnecessary when only changing the PICC master key material.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowPiccMasterKeySettingsInputs => SelectedTaskType != TaskType_MifareDesfireTask.PICCMasterKeyChangeover;
 
         /// <summary>
         /// Gets a value indicating whether UI elements for supplying the previous application key should be shown.
@@ -1848,6 +1868,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 case TaskType_MifareDesfireTask.PICCMasterKeyChangeover:
                     await OnNewChangeMasterCardKeyCommand();
+                    break;
+
+                case TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover:
+                    await OnNewChangeAppKeySettingsCommand();
                     break;
 
                 case TaskType_MifareDesfireTask.ReadAppSettings:
