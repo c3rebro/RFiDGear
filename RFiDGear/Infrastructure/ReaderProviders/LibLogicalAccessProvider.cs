@@ -114,25 +114,23 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        public override async Task<ERROR> ConnectAsync()
+        /// <summary>
+        /// Connects to the configured reader unit when not already connected.
+        /// </summary>
+        /// <returns>The normalized error code representing the connection outcome.</returns>
+        public override Task<ERROR> ConnectAsync()
         {
-            return await Task.Run(() =>
+            if (readerUnit?.isConnected() == true)
             {
-                if (readerUnit?.isConnected() == true)
-                {
-                    return ERROR.NoError;
-                }
+                return Task.FromResult(ERROR.NoError);
+            }
 
-                else if (readerUnit?.connectToReader() == true)
-                {
-                    return ERROR.NoError;
-                }
+            if (readerUnit?.connectToReader() == true)
+            {
+                return Task.FromResult(ERROR.NoError);
+            }
 
-                else
-                {
-                    return ERROR.TransportError;
-                }
-            });
+            return Task.FromResult(ERROR.TransportError);
         }
 
         public override async Task<ERROR> ReadChipPublic()

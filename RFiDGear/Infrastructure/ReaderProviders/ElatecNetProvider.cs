@@ -231,35 +231,39 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         #region MifareClassic
 
+        /// <summary>
+        /// Writes a single MIFARE Classic block after authenticating with the supplied keys.
+        /// </summary>
+        /// <param name="_blockNumber">The chip-based block number to write.</param>
+        /// <param name="_aKey">The primary key for authentication.</param>
+        /// <param name="_bKey">The fallback key for authentication.</param>
+        /// <param name="buffer">The 16-byte payload to write.</param>
+        /// <returns>The normalized error code that describes the outcome.</returns>
         public async override Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
         {
-            return await Task.Run(async () =>
+            try
+            {
+                await readerDevice.MifareClassic_LoginAsync(_aKey, 0, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
+            }
+            catch
             {
                 try
                 {
-                    await readerDevice.MifareClassic_LoginAsync(_aKey, 0, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
+                    await readerDevice.MifareClassic_LoginAsync(_bKey, 1, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
                 }
                 catch
                 {
                     try
                     {
-                        await readerDevice.MifareClassic_LoginAsync(_bKey, 1, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
+                        await readerDevice.MifareClassic_WriteBlockAsync(buffer, (byte)_blockNumber);
                     }
                     catch
                     {
-                        try
-                        {
-                            await readerDevice.MifareClassic_WriteBlockAsync(buffer, (byte)_blockNumber);
-                        }
-                        catch
-                        {
-                            return ERROR.AuthFailure;
-                        }
+                        return ERROR.AuthFailure;
                     }
-                } // Login  
-                return ERROR.NoError;
-            });
-
+                }
+            } // Login  
+            return ERROR.NoError;
         }
 
         public async override Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
@@ -290,115 +294,109 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         private async Task<ERROR> ReadWriteAccessOnClassicSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
         {
-            if (readerDevice.IsConnected)
+            if (!readerDevice.IsConnected)
             {
-                return await Task.Run(async () =>
+                return ERROR.TransportError;
+            }
+
+            if (readerDevice.IsTWN4LegicReader)
+            {
+                try
                 {
-                    if (readerDevice.IsTWN4LegicReader)
+                    await readerDevice.SearchTagAsync();
+                }
+                catch { }
+            }
+
+            Sector = new MifareClassicSectorModel();
+
+            var elatecSpecificSectorNumber = sectorNumber > 31 ? (sectorNumber - 32) * 4 + 32 : sectorNumber; // elatec uses special sectornumbers
+
+            for (byte k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
+            {
+                DataBlock = new MifareClassicDataBlockModel(
+                    (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
+                    k);
+
+                try
+                {
+                    var isAuth = false;
+
+                    try
                     {
-                        try
-                        {
-                            await readerDevice.SearchTagAsync();
-                        }
-                        catch { }
+                        await readerDevice.MifareClassic_LoginAsync(aKey, 0, (byte)elatecSpecificSectorNumber);
+                        isAuth = true;
+                    }
+                    catch
+                    {
+                        isAuth = false;
                     }
 
-                    Sector = new MifareClassicSectorModel();
-
-                    var elatecSpecificSectorNumber = sectorNumber > 31 ? (sectorNumber - 32) * 4 + 32 : sectorNumber; // elatec uses special sectornumbers
-
-                    for (byte k = 0; k < (sectorNumber > 31 ? 16 : 4); k++) // if sector > 31 is 16 blocks each sector i.e. mifare 4k else its 1k or 2k with 4 blocks each sector
+                    if (buffer == null || buffer.Length != 16 && isAuth) // Read Mode
                     {
-                        DataBlock = new MifareClassicDataBlockModel(
-                            (byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k),
-                            k);
-
                         try
                         {
-                            var isAuth = false;
+                            var data = await readerDevice.MifareClassic_ReadBlockAsync((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k));
 
+                            if (data.Length > 1)
+                            {
+                                DataBlock.Data = data;
+                                DataBlock.IsAuthenticated = true;
+                                Sector.IsAuthenticated = isAuth;
+                                Sector.DataBlock.Add(DataBlock);
+                            }
+                        }
+                        catch // No Read Access Allowed, try bKey
+                        {
                             try
                             {
-                                await readerDevice.MifareClassic_LoginAsync(aKey, 0, (byte)elatecSpecificSectorNumber);
+                                await readerDevice.MifareClassic_LoginAsync(bKey, 1, (byte)elatecSpecificSectorNumber);
                                 isAuth = true;
+
+                                var data = await readerDevice.MifareClassic_ReadBlockAsync((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k));
+
+                                if (data.Length > 1)
+                                {
+                                    DataBlock.Data = data;
+                                    DataBlock.IsAuthenticated = true;
+                                    Sector.IsAuthenticated = isAuth;
+                                    Sector.DataBlock.Add(DataBlock);
+                                }
                             }
                             catch
                             {
                                 isAuth = false;
+                                Sector.IsAuthenticated = false;
+                                DataBlock.IsAuthenticated = false; // finally failed to read data
                             }
+                        }
+                    } // read Data
 
-                            if (buffer == null || buffer.Length != 16 && isAuth) // Read Mode
-                            {
-                                try
-                                {
-                                    var data = await readerDevice.MifareClassic_ReadBlockAsync((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k));
-
-                                    if (data.Length > 1)
-                                    {
-                                        DataBlock.Data = data;
-                                        DataBlock.IsAuthenticated = true;
-                                        Sector.IsAuthenticated = isAuth;
-                                        Sector.DataBlock.Add(DataBlock);
-                                    }
-                                }
-                                catch // No Read Access Allowed, try bKey
-                                {
-                                    try
-                                    {
-                                        await readerDevice.MifareClassic_LoginAsync(bKey, 1, (byte)elatecSpecificSectorNumber);
-                                        isAuth = true;
-
-                                        var data = await readerDevice.MifareClassic_ReadBlockAsync((byte)CustomConverter.GetChipBasedDataBlockNumber(sectorNumber, k));
-
-                                        if (data.Length > 1)
-                                        {
-                                            DataBlock.Data = data;
-                                            DataBlock.IsAuthenticated = true;
-                                            Sector.IsAuthenticated = isAuth;
-                                            Sector.DataBlock.Add(DataBlock);
-                                        }
-                                    }
-                                    catch
-                                    {
-                                        isAuth = false;
-                                        Sector.IsAuthenticated = false;
-                                        DataBlock.IsAuthenticated = false; // finally failed to read data
-                                    }
-                                }
-                            } // read Data
-
-                            else if (buffer != null && buffer.Length == 16)
-                            {
-                                try
-                                {
-                                    await readerDevice.MifareClassic_WriteBlockAsync(buffer, k);
-                                    return ERROR.NoError;
-                                }
-                                catch
-                                {
-                                    return ERROR.AuthFailure;
-                                }
-                            } // write Data
+                    else if (buffer != null && buffer.Length == 16)
+                    {
+                        try
+                        {
+                            await readerDevice.MifareClassic_WriteBlockAsync(buffer, k);
+                            return ERROR.NoError;
                         }
                         catch
                         {
-                            return ERROR.TransportError; // IO ElatecError
+                            return ERROR.AuthFailure;
                         }
-                    }
-
-                    if (Sector.IsAuthenticated)
-                    {
-                        return ERROR.NoError; //NO ElatecError
-                    }
-
-                    return ERROR.AuthFailure; // Auth ElatecError
-                });
+                    } // write Data
+                }
+                catch
+                {
+                    return ERROR.TransportError; // IO ElatecError
+                }
             }
 
-            else
+            if (Sector.IsAuthenticated)
             {
-                return ERROR.TransportError;
+                return ERROR.NoError; //NO ElatecError
             }
+
+            return ERROR.AuthFailure; // Auth ElatecError
         }
 
         #endregion
@@ -443,44 +441,41 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             if (readerDevice.IsConnected)
             {
-                return await Task.Run(async () =>
+                uint[] appArr;
+
+                DesfireChip ??= new MifareDesfireChipModel();
+
+                DesfireChip.AppList = new List<MifareDesfireAppModel>();
+
+                try
                 {
-                    uint[] appArr;
+                    await readerDevice.SearchTagAsync();
+                    await readerDevice.MifareDesfire_SelectApplicationAsync(0);
+                    DesfireChip.FreeMemory = await readerDevice.MifareDesfire_GetFreeMemoryAsync();
+                }
+                catch
+                {
+                    DesfireChip.FreeMemory = 0;
+                }
 
-                    DesfireChip ??= new MifareDesfireChipModel();
+                try
+                {
+                    appArr = await readerDevice.MifareDesfire_GetAppIDsAsync();
 
-                    DesfireChip.AppList = new List<MifareDesfireAppModel>();
-
-                    try
+                    if (appArr != null)
                     {
-                        await readerDevice.SearchTagAsync();
-                        await readerDevice.MifareDesfire_SelectApplicationAsync(0);
-                        DesfireChip.FreeMemory = await readerDevice.MifareDesfire_GetFreeMemoryAsync();
-                    }
-                    catch
-                    {
-                        DesfireChip.FreeMemory = 0;
-                    }
-
-                    try
-                    {
-                        appArr = await readerDevice.MifareDesfire_GetAppIDsAsync();
-
-                        if (appArr != null)
+                        foreach (var appid in appArr)
                         {
-                            foreach (var appid in appArr)
-                            {
-                                DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
-                            }
+                            DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
                         }
                     }
-                    catch
-                    {
-                        return ERROR.AuthFailure;
-                    }
+                }
+                catch
+                {
+                    return ERROR.AuthFailure;
+                }
 
-                    return ERROR.NoError;
-                });
+                return ERROR.NoError;
             }
 
             else
@@ -547,92 +542,89 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             if (readerDevice.IsConnected)
             {
-                return await Task.Run(async () =>
+                if (readerDevice.IsTWN4LegicReader)
                 {
-                    if (readerDevice.IsTWN4LegicReader)
-                    {
-                        try
-                        {
-                            await readerDevice.SearchTagAsync();
-                        }
-                        catch { }
-                    }
-
                     try
                     {
-                        await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
+                        await readerDevice.SearchTagAsync();
+                    }
+                    catch { }
+                }
 
-                        if (authenticateBeforeReading)
-                        {
-                            await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), DESFIRE_AUTHMODE_EV1);
-                        }
+                try
+                {
+                    await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
 
-                        var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
+                    if (authenticateBeforeReading)
+                    {
+                        await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), DESFIRE_AUTHMODE_EV1);
+                    }
 
-                        MaxNumberOfAppKeys = (byte)ks.NumberOfKeys;
-                        EncryptionType = (DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), ks.KeyType));
-                        DesfireAppKeySetting = (AccessControl.DESFireKeySettings)ks.AccessRights;
+                    var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
 
-                        var metadata = new Dictionary<string, string>
+                    MaxNumberOfAppKeys = (byte)ks.NumberOfKeys;
+                    EncryptionType = (DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), ks.KeyType));
+                    DesfireAppKeySetting = (AccessControl.DESFireKeySettings)ks.AccessRights;
+
+                    var metadata = new Dictionary<string, string>
+                    {
+                        { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                        { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                    };
+
+                    return OperationResult.Success(
+                        operation: nameof(GetMifareDesfireAppSettings),
+                        wasAuthenticated: authenticateBeforeReading,
+                        metadata: metadata);
+                }
+                catch (TimeoutException e)
+                {
+                    return OperationResult.Failure(
+                        ERROR.TransportError,
+                        "Reading application settings timed out",
+                        e.Message,
+                        nameof(GetMifareDesfireAppSettings),
+                        authenticateBeforeReading,
+                        new Dictionary<string, string>
                         {
                             { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
                             { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
-                        };
-
-                        return OperationResult.Success(
-                            operation: nameof(GetMifareDesfireAppSettings),
-                            wasAuthenticated: authenticateBeforeReading,
-                            metadata: metadata);
-                    }
-                    catch (TimeoutException e)
-                    {
-                        return OperationResult.Failure(
-                            ERROR.TransportError,
-                            "Reading application settings timed out",
-                            e.Message,
-                            nameof(GetMifareDesfireAppSettings),
-                            authenticateBeforeReading,
-                            new Dictionary<string, string>
-                            {
-                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
-                                { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
-                            });
-                    }
-                    catch (UnauthorizedAccessException e)
-                    {
-                        return OperationResult.Failure(
-                            ERROR.PermissionDenied,
-                            "Reader denied access while fetching application settings",
-                            e.Message,
-                            nameof(GetMifareDesfireAppSettings),
-                            authenticateBeforeReading,
-                            new Dictionary<string, string>
-                            {
-                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
-                                { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
-                            });
-                    }
-                    catch (Exception e)
-                    {
-                        var code = ERROR.TransportError;
-                        if (e.Message.Contains("AUTH") || e.Message.Contains("auth", StringComparison.InvariantCultureIgnoreCase))
+                        });
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    return OperationResult.Failure(
+                        ERROR.PermissionDenied,
+                        "Reader denied access while fetching application settings",
+                        e.Message,
+                        nameof(GetMifareDesfireAppSettings),
+                        authenticateBeforeReading,
+                        new Dictionary<string, string>
                         {
-                            code = ERROR.AuthFailure;
-                        }
-
-                        return OperationResult.Failure(
-                            code,
-                            "Failed to read application settings",
-                            e.Message,
-                            nameof(GetMifareDesfireAppSettings),
-                            authenticateBeforeReading,
-                            new Dictionary<string, string>
-                            {
-                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
-                                { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
-                            });
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                        });
+                }
+                catch (Exception e)
+                {
+                    var code = ERROR.TransportError;
+                    if (e.Message.Contains("AUTH") || e.Message.Contains("auth", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        code = ERROR.AuthFailure;
                     }
-                });
+
+                    return OperationResult.Failure(
+                        code,
+                        "Failed to read application settings",
+                        e.Message,
+                        nameof(GetMifareDesfireAppSettings),
+                        authenticateBeforeReading,
+                        new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                        });
+                }
             }
 
             else
