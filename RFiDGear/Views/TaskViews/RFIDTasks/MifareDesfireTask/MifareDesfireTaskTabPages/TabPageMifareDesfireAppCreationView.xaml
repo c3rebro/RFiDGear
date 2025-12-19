@@ -213,6 +213,7 @@
                     <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
+                        Grid.ColumnSpan="1"
                         Height="26"
                         Margin="8,8,8,8"
                         VerticalAlignment="Stretch"

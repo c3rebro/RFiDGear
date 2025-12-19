@@ -13,7 +13,7 @@
     MinWidth="900"
     Width="1000"
     MinHeight="700"
-    Height="700"
+    Height="750"
     MouseLeftButtonDown="WindowMouseLeftButtonDown"
     dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
     ResizeMode="CanResizeWithGrip"

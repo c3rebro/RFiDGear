@@ -9,9 +9,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using ByteArrayHelper.Extensions;
 using Elatec.NET;
-using Elatec.NET.Cards.Mifare;
 using RFiDGear.Models;
 using RFiDGear.Infrastructure.Tasks;
+using Elatec.NET.Cards.Mifare;
 
 namespace RFiDGear.Infrastructure.ReaderProviders
 {
@@ -19,6 +19,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
     {
         private TWN4ReaderDevice readerDevice;
         private readonly byte DESFIRE_AUTHMODE_COMPATIBLE = 0;
+        private readonly byte DESFIRE_AUTHMODE_EV1 = 1;
 
         private readonly EventLog eventLog
             = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
@@ -518,7 +519,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         _applicationMasterKey,
                         (byte)_keyNumber,
                         (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)),
-                        DESFIRE_AUTHMODE_COMPATIBLE);
+                        DESFIRE_AUTHMODE_EV1);
                     return ERROR.NoError;
                 }
                 catch
@@ -563,7 +564,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                         if (authenticateBeforeReading)
                         {
-                            await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), DESFIRE_AUTHMODE_COMPATIBLE);
+                            await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), DESFIRE_AUTHMODE_EV1);
                         }
 
                         var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
@@ -811,7 +812,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         _applicationMasterKeyCurrent,
                         authKeyNumber,
                         (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeCurrent)),
-                        DESFIRE_AUTHMODE_COMPATIBLE);
+                        DESFIRE_AUTHMODE_EV1);
 
                     var keySettingsByte = _appIDCurrent == 0
                         ? (byte)((byte)keySettings & 0x0F)
@@ -885,7 +886,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 {
                     await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appIDCurrent);
 
-                    await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKeyCurrent, 0, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeCurrent)), DESFIRE_AUTHMODE_COMPATIBLE);
+                    await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKeyCurrent, 0, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeCurrent)), DESFIRE_AUTHMODE_EV1);
 
                     byte? cardKeyCount = null;
                     DESFireKeyType? cardKeyType = null;
@@ -1106,7 +1107,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     try
                     {
-                        await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), DESFIRE_AUTHMODE_COMPATIBLE);
+                        await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), DESFIRE_AUTHMODE_EV1);
                     } // try to auth first.
                     catch
                     {

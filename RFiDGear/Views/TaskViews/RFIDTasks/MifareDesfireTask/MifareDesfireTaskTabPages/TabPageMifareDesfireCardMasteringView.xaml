@@ -337,7 +337,7 @@
                         </TextBox.Resources>
                     </TextBox>
                     <Button
-                        Grid.Row="4"
+                        Grid.Row="5"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
                         Height="26"
@@ -366,7 +366,7 @@
                         ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
                         SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Button
-                        Grid.Row="3"
+                        Grid.Row="4"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
                         Height="26"

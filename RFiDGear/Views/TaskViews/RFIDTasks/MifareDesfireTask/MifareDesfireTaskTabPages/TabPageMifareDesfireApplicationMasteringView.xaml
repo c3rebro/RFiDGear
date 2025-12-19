@@ -5,7 +5,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
-    
     xmlns:local="clr-namespace:RFiDGear"
     xmlns:access="clr-namespace:RFiDGear.Infrastructure.AccessControl"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -86,16 +85,6 @@
                             </Style>
                         </TextBox.Resources>
                     </TextBox>
-
-                    <Label
-                        Grid.Row="1"
-                        Grid.Column="0"
-                        Margin="8,0,8,8"
-                        VerticalAlignment="Stretch"
-                        HorizontalAlignment="Stretch"
-                        VerticalContentAlignment="Center"
-                        HorizontalContentAlignment="Left"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter=labelContentMifareDesfireKeyVersion}" />
                     <TextBox
                         Grid.Row="1"
                         Grid.Column="1"
@@ -123,7 +112,6 @@
                             </Style>
                         </TextBox.Resources>
                     </TextBox>
-
                     <GroupBox
                         Grid.Row="2"
                         Grid.Column="0"
@@ -216,7 +204,15 @@
                             </StackPanel>
                         </Grid>
                     </GroupBox>
-
+                    <Label
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        Margin="8,0,8,8"
+                        VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter=labelContentMifareDesfireKeyVersion}" />
                     <Label
                      Grid.Row="3"
                      Grid.Column="0"
@@ -458,12 +454,13 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter=labelContentMifareDesfireKeyVersion}" />
-                    <TextBlock
+                    <TextBox
                         Grid.Row="5"
                         Grid.Column="1"
                         Margin="8,0,8,8"
                         VerticalAlignment="Center"
                         HorizontalAlignment="Stretch"
+                        IsReadOnly="True"
                         Text="{Binding KeyVersionCurrent}" />
                     <Button
                         Grid.Row="7"
