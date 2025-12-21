@@ -231,25 +231,18 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         #region MifareClassic
 
-        /// <summary>
-        /// Writes a single MIFARE Classic block after authenticating with the supplied keys. It checks both A and B keys for authentication.
-        /// </summary>
-        /// <param name="_blockNumber">The chip-based block number to write.</param>
-        /// <param name="_aKey">The primary key for authentication.</param>
-        /// <param name="_bKey">The fallback key for authentication.</param>
-        /// <param name="buffer">The 16-byte payload to write.</param>
-        /// <returns>The normalized error code that describes the outcome.</returns>
-        public async override Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
+        /// <inheritdoc />
+        public async override Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string aKey, string bKey, byte[] buffer)
         {
             try
             {
-                await readerDevice.MifareClassic_LoginAsync(_aKey, 0, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
+                await readerDevice.MifareClassic_LoginAsync(aKey, 0, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
             }
             catch
             {
                 try
                 {
-                    await readerDevice.MifareClassic_LoginAsync(_bKey, 1, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
+                    await readerDevice.MifareClassic_LoginAsync(bKey, 1, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
                 }
                 catch
                 {
@@ -266,26 +259,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return ERROR.NoError;
         }
 
-        /// <summary>
-        /// Reads a single MIFARE Classic sector after authenticating with the supplied keys. It checks both A and B keys for authentication.
-        /// </summary>
-        /// <param name="sectorNumber">The sector number to read. Note: Every sector above sec32 (mifare 4k) is 4times bigger than the lower sectors. They expect the sectornumber also to be timed by 4. So the sectornumber 33 is (33 – 32) * 4 + 32 = 36 dec. Sector 38 is (38 – 32) * 4 + 32 = 56 dec and so on.</param>
-        /// <param name="_aKey">The primary key for authentication.</param>
-        /// <param name="_bKey">The fallback key for authentication.</param>
-        /// <returns>The normalized error code that describes the outcome.</returns>
+        /// <inheritdoc />
         public async override Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
         {
             return await ReadWriteAccessOnClassicSector(sectorNumber, aKey, bKey, null);
         }
 
-        /// <summary>
-        /// Writes a single MIFARE Classic sector after authenticating with the supplied keys. It checks both A and B keys for authentication.
-        /// </summary>
-        /// <param name="sectorNumber">The sector number to read. Note: Every sector above sec32 (mifare 4k) is 4times bigger than the lower sectors. They expect the sectornumber also to be timed by 4. So the sectornumber 33 is (33 – 32) * 4 + 32 = 36 dec. Sector 38 is (38 – 32) * 4 + 32 = 56 dec and so on.</param>
-        /// <param name="_aKey">The primary key for authentication.</param>
-        /// <param name="_bKey">The fallback key for authentication.</param>
-        /// <param name="buffer"></param>
-        /// <returns>The normalized error code that describes the outcome.</returns>
+        /// <inheritdoc />
         public async override Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
         {
             return await ReadWriteAccessOnClassicSector(sectorNumber, aKey, bKey, buffer);
@@ -455,12 +435,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_appMasterKey"></param>
-        /// <param name="_keyTypeAppMasterKey"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public async override Task<ERROR> GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
         {
             if (readerDevice.IsConnected)
@@ -666,17 +641,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_piccMasterKey"></param>
-        /// <param name="_keySettingsTarget"></param>
-        /// <param name="_keyTypePiccMasterKey"></param>
-        /// <param name="_keyTypeTargetApplication"></param>
-        /// <param name="_maxNbKeys"></param>
-        /// <param name="_appID"></param>
-        /// <param name="authenticateToPICCFirst"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public async override Task<OperationResult> CreateMifareDesfireApplication(string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget,
                                         DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication,
                                         int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
@@ -1229,23 +1194,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_appMasterKey"></param>
-        /// <param name="_keyTypeAppMasterKey"></param>
-        /// <param name="_fileType"></param>
-        /// <param name="_accessRights"></param>
-        /// <param name="_encMode"></param>
-        /// <param name="_appID"></param>
-        /// <param name="_fileNo"></param>
-        /// <param name="_fileSize"></param>
-        /// <param name="_minValue"></param>
-        /// <param name="_maxValue"></param>
-        /// <param name="_initValue"></param>
-        /// <param name="_isValueLimited"></param>
-        /// <param name="_maxNbOfRecords"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public async override Task<ERROR> CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
                                      int _appID, int _fileNo, int _fileSize,
                                      int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
