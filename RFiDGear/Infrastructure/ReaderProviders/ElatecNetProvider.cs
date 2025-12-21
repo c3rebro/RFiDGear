@@ -232,7 +232,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         #region MifareClassic
 
         /// <summary>
-        /// Writes a single MIFARE Classic block after authenticating with the supplied keys.
+        /// Writes a single MIFARE Classic block after authenticating with the supplied keys. It checks both A and B keys for authentication.
         /// </summary>
         /// <param name="_blockNumber">The chip-based block number to write.</param>
         /// <param name="_aKey">The primary key for authentication.</param>
@@ -266,15 +266,31 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return ERROR.NoError;
         }
 
+        /// <summary>
+        /// Reads a single MIFARE Classic sector after authenticating with the supplied keys. It checks both A and B keys for authentication.
+        /// </summary>
+        /// <param name="sectorNumber">The sector number to read. Note: Every sector above sec32 (mifare 4k) is 4times bigger than the lower sectors. They expect the sectornumber also to be timed by 4. So the sectornumber 33 is (33 – 32) * 4 + 32 = 36 dec. Sector 38 is (38 – 32) * 4 + 32 = 56 dec and so on.</param>
+        /// <param name="_aKey">The primary key for authentication.</param>
+        /// <param name="_bKey">The fallback key for authentication.</param>
+        /// <returns>The normalized error code that describes the outcome.</returns>
         public async override Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
         {
             return await ReadWriteAccessOnClassicSector(sectorNumber, aKey, bKey, null);
         }
 
+        /// <summary>
+        /// Writes a single MIFARE Classic sector after authenticating with the supplied keys. It checks both A and B keys for authentication.
+        /// </summary>
+        /// <param name="sectorNumber">The sector number to read. Note: Every sector above sec32 (mifare 4k) is 4times bigger than the lower sectors. They expect the sectornumber also to be timed by 4. So the sectornumber 33 is (33 – 32) * 4 + 32 = 36 dec. Sector 38 is (38 – 32) * 4 + 32 = 56 dec and so on.</param>
+        /// <param name="_aKey">The primary key for authentication.</param>
+        /// <param name="_bKey">The fallback key for authentication.</param>
+        /// <param name="buffer"></param>
+        /// <returns>The normalized error code that describes the outcome.</returns>
         public async override Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
         {
             return await ReadWriteAccessOnClassicSector(sectorNumber, aKey, bKey, buffer);
         }
+
 
         public override Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
             string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
@@ -292,6 +308,14 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sectorNumber"></param>
+        /// <param name="aKey"></param>
+        /// <param name="bKey"></param>
+        /// <param name="buffer"></param>
+        /// <returns></returns>
         private async Task<ERROR> ReadWriteAccessOnClassicSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
         {
             if (!readerDevice.IsConnected)
@@ -432,11 +456,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <summary>
-        ///
+        /// 
         /// </summary>
         /// <param name="_appMasterKey"></param>
         /// <param name="_keyTypeAppMasterKey"></param>
-        /// <returns>ElatecError Level</returns>
+        /// <returns></returns>
         public async override Task<ERROR> GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
         {
             if (readerDevice.IsConnected)

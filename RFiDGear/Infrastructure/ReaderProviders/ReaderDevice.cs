@@ -125,7 +125,32 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         #endregion
 
         #region MifareDesfire
+
+        /// <summary>
+        /// Try to read the AppIds on a Mifare Desfire Chip. Try with and without authentication. If authentication fails, an empty list is returned.
+        /// </summary>
+        /// <param name="_appMasterKey"></param>
+        /// <param name="_keyTypeAppMasterKey"></param>
+        /// <returns cref="ERROR">Result of the Operation</returns>
         public abstract Task<ERROR> GetMiFareDESFireChipAppIDs(string _appMasterKey = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", DESFireKeyType _keyTypeAppMasterKey = DESFireKeyType.DF_KEY_DES);
+
+        /// <summary>
+        /// Creates a Mifare Desfire File inside an Application
+        /// </summary>
+        /// <param name="_appMasterKey">The key 0 (App Master Key) of the Application</param>
+        /// <param name="_keyTypeAppMasterKey" cref="DESFireKeyType">The AppMasterKeyType (_appID != 0, keyNo = 0), used to authenticate (byte): 3DES, 3K3DES, AES</param>
+        /// <param name="_fileType" cref="DESFireFileType">The Type of the File to be created</param>
+        /// <param name="_accessRights" cref="DESFireAccessRights">Determines what key to use for read, write, change operations to the file</param>
+        /// <param name="_encMode" cref="EncryptionMode">The Communication Mode (commSet) to use. File communication need encryption. CM_PLAIN, CM_MAC, CM_ENCRYPT, CM_UNKNOWN</param>
+        /// <param name="_appID">The Application that needs to be selected, to create the file</param>
+        /// <param name="_fileNo" cref="FileType_MifareDesfireFileType.StdDataFile">The File Number to be created inside the Application</param>
+        /// <param name="_fileSize" cref="FileType_MifareDesfireFileType.StdDataFile">The Size of the File to be created</param>
+        /// <param name="_minValue">Lower Limit of a RecordFileType</param>
+        /// <param name="_maxValue">Upper Limit of a RecordFileType</param>
+        /// <param name="_initValue">Initial Value of a RecordFile Type</param>
+        /// <param name="_isValueLimited"></param>
+        /// <param name="_maxNbOfRecords"></param>
+        /// <returns cref="DesfireChip">Result of the Operation and a cref="DesfireChip.AppList.Count() == 0 or DesfireChip.AppList.Count()>0" </returns>
         public abstract Task<ERROR> CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
                                         int _appID, int _fileNo, int _fileSize,
                                         int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
@@ -145,15 +170,35 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public abstract Task<OperationResult> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, bool authenticateBeforeReading = true);
 
         /// <summary>
-        /// Creates a new Application
+        /// Creates a new Application, authenticating to the PICC first and trying to create the application anyway if authentication fails
         /// </summary>
-        /// <param name="_keySettingsTarget">byte: KS_CHANGE_KEY_WITH_MK = 0, KS_ALLOW_CHANGE_MK = 1, KS_FREE_LISTING_WITHOUT_MK = 2, KS_FREE_CREATE_DELETE_WITHOUT_MK = 4, KS_CONFIGURATION_CHANGEABLE = 8, KS_DEFAULT = 11, KS_CHANGE_KEY_WITH_TARGETED_KEYNO = 224, KS_CHANGE_KEY_FROZEN = 240</param>
-        /// <param name="_keyTypeTargetApplication">byte: 0 = 3DES, 1 = 3K3DES, 2 = AES</param>
-        /// <param name="_maxNbKeys">int max. number of keys</param>
-        /// <param name="_appID">int application id</param>
-        /// <returns>True if the Operation was successful, false otherwise</returns>
+        /// <param name="_piccMasterKey">The 16 byte PICC MasterKey, used to authenticate</param>
+        /// <param name="_keySettingsTarget" cref="DESFireKeySettings">byte: KS_CHANGE_KEY_WITH_MK = 0, KS_ALLOW_CHANGE_MK = 1, KS_FREE_LISTING_WITHOUT_MK = 2, KS_FREE_CREATE_DELETE_WITHOUT_MK = 4, KS_CONFIGURATION_CHANGEABLE = 8, KS_DEFAULT = 11, KS_CHANGE_KEY_WITH_TARGETED_KEYNO = 224, KS_CHANGE_KEY_FROZEN = 240</param>
+        /// <param name="_keyTypePiccMasterKey" cref="DESFireKeyType">The PICC MasterKeyType, used to authenticate (byte): 3DES, 3K3DES, AES</param>
+        /// <param name="_keyTypeTargetApplication" cref="DESFireKeyType">The targeted App Key Type (byte): 0 = 3DES, 64 = 3K3DES, 128 = AES</param>
+        /// <param name="_maxNbKeys">Number of Keys created in the Application (int)</param>
+        /// <param name="_appID">Application ID for the new App</param>
+        /// <param name="authenticateToPICCFirst">Should authentication be omitted or performed?</param>
+        /// <returns></returns>
         public abstract Task<OperationResult> CreateMifareDesfireApplication(string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true);
 
+        /// <summary>
+        /// Changes a DESFire application key
+        /// </summary>
+        /// <param name="_applicationMasterKeyCurrent"></param>
+        /// <param name="_keyNumberCurrent"></param>
+        /// <param name="_keyTypeCurrent"></param>
+        /// <param name="_oldKeyForChangeKey"></param>
+        /// <param name="_oldKeyForTargetSlot"></param>
+        /// <param name="_applicationMasterKeyTarget"></param>
+        /// <param name="selectedDesfireAppKeyVersionTargetAsIntint"></param>
+        /// <param name="_keyTypeTarget"></param>
+        /// <param name="_appIDCurrent"></param>
+        /// <param name="_appIDTarget"></param>
+        /// <param name="keySettings"></param>
+        /// <param name="keyVersion"></param>
+        /// <param name="numberOfKeys"></param>
+        /// <returns></returns>
         public abstract Task<ERROR> ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
                                         string _oldKeyForChangeKey, string _oldKeyForTargetSlot, string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
                                         DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget,
@@ -181,6 +226,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         public abstract Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, uint _appID = 0);
         public abstract Task<ERROR> DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0);
+
+        /// <summary>
+        /// Authenticates to and formats a Desfire Card
+        /// </summary>
+        /// <param name="_applicationMasterKey">The PICC MasterKey</param>
+        /// <param name="_keyType">The PICC MasterKey Type (byte): 3DES, 3K3DES, AES</param>
+        /// <returns></returns>
         public abstract Task<ERROR> FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType);
         public abstract Task<ERROR> GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0);
         public abstract Task<ERROR> GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0);
@@ -189,7 +241,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// Get the key version of a DESFire key.
         /// </summary>
         /// <param name="keyNo">Key number</param>
-        /// <returns>Key version</returns>
+        /// <returns>Key version (byte)</returns>
         /// <exception cref="ReaderException"></exception>
         public abstract Task<byte> MifareDesfire_GetKeyVersionAsync(byte keyNo);
 
