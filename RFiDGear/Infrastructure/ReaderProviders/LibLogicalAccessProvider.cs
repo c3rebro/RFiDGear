@@ -212,6 +212,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         #region mifare classic
 
+        /// <inheritdoc />
         public override async Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
         {
             try
@@ -329,12 +330,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        public override async Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer)
+        /// <inheritdoc />
+        public override async Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
         {
             try
             {
-                var keyA = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey));
-                var keyB = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey));
+                var keyA = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey));
+                var keyB = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey));
 
                 int blockCount = 0;
 
@@ -417,12 +419,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return ERROR.TransportError;
         }
 
-        public override async Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer)
+        /// <inheritdoc />
+        public override async Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string aKey, string bKey, byte[] buffer)
         {
             try
             {
-                var keyA = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_aKey));
-                var keyB = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(_bKey));
+                var keyA = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(aKey));
+                var keyB = new MifareKey(CustomConverter.FormatMifareClassicKeyWithSpacesEachByte(bKey));
 
                 if (await tryInitReader())
                 {
@@ -729,6 +732,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         #region mifare desfire
 
 
+        /// <inheritdoc />
         public override async Task<ERROR> GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
         {
             try
@@ -920,6 +924,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
                                              int _appID, int _fileNo, int _fileSize,
                                              int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
@@ -1456,6 +1461,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override async Task<OperationResult> CreateMifareDesfireApplication(
                 string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey,
                 DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)

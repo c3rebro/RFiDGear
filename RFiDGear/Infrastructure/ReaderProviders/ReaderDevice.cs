@@ -107,9 +107,40 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         #region MifareClassic
         // Mifare Classic Method Definitions
+        /// <summary>
+        /// Reads a single MIFARE Classic sector after authenticating with the supplied keys. It checks both A and B keys for authentication.
+        /// </summary>
+        /// <param name="sectorNumber">
+        /// The sector number to read. Note: Every sector above sec32 (MIFARE 4K) is 4 times bigger than the lower sectors. They expect the
+        /// sector number to be multiplied by 4. So sector 33 is (33 - 32) * 4 + 32 = 36 dec, sector 38 is (38 - 32) * 4 + 32 = 56 dec, and so on.
+        /// </param>
+        /// <param name="aKey">The primary key for authentication.</param>
+        /// <param name="bKey">The fallback key for authentication.</param>
+        /// <returns>The normalized error code that describes the outcome.</returns>
         public abstract Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey);
-        public abstract Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string _aKey, string _bKey, byte[] buffer);
-        public abstract Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey, byte[] buffer);
+
+        /// <summary>
+        /// Writes a single MIFARE Classic sector after authenticating with the supplied keys. It checks both A and B keys for authentication.
+        /// </summary>
+        /// <param name="sectorNumber">
+        /// The sector number to write. Note: Every sector above sec32 (MIFARE 4K) is 4 times bigger than the lower sectors. They expect the
+        /// sector number to be multiplied by 4. So sector 33 is (33 - 32) * 4 + 32 = 36 dec, sector 38 is (38 - 32) * 4 + 32 = 56 dec, and so on.
+        /// </param>
+        /// <param name="aKey">The primary key for authentication.</param>
+        /// <param name="bKey">The fallback key for authentication.</param>
+        /// <param name="buffer">The payload to write.</param>
+        /// <returns>The normalized error code that describes the outcome.</returns>
+        public abstract Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer);
+
+        /// <summary>
+        /// Writes a single MIFARE Classic block after authenticating with the supplied keys. It checks both A and B keys for authentication.
+        /// </summary>
+        /// <param name="_blockNumber">The chip-based block number to write.</param>
+        /// <param name="aKey">The primary key for authentication.</param>
+        /// <param name="bKey">The fallback key for authentication.</param>
+        /// <param name="buffer">The 16-byte payload to write.</param>
+        /// <returns>The normalized error code that describes the outcome.</returns>
+        public abstract Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string aKey, string bKey, byte[] buffer);
         public abstract Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
                                                string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
                                                string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
@@ -127,30 +158,30 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         #region MifareDesfire
 
         /// <summary>
-        /// Try to read the AppIds on a Mifare Desfire Chip. Try with and without authentication. If authentication fails, an empty list is returned.
+        /// Try to read the AppIds on a MIFARE DESFire chip. Try with and without authentication. If authentication fails, an empty list is returned.
         /// </summary>
-        /// <param name="_appMasterKey"></param>
-        /// <param name="_keyTypeAppMasterKey"></param>
-        /// <returns cref="ERROR">Result of the Operation</returns>
+        /// <param name="_appMasterKey">The PICC master key to try when authentication is required.</param>
+        /// <param name="_keyTypeAppMasterKey">The key type for the PICC master key.</param>
+        /// <returns cref="ERROR">Result of the operation.</returns>
         public abstract Task<ERROR> GetMiFareDESFireChipAppIDs(string _appMasterKey = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", DESFireKeyType _keyTypeAppMasterKey = DESFireKeyType.DF_KEY_DES);
 
         /// <summary>
-        /// Creates a Mifare Desfire File inside an Application
+        /// Creates a MIFARE DESFire file inside an application.
         /// </summary>
-        /// <param name="_appMasterKey">The key 0 (App Master Key) of the Application</param>
-        /// <param name="_keyTypeAppMasterKey" cref="DESFireKeyType">The AppMasterKeyType (_appID != 0, keyNo = 0), used to authenticate (byte): 3DES, 3K3DES, AES</param>
-        /// <param name="_fileType" cref="DESFireFileType">The Type of the File to be created</param>
-        /// <param name="_accessRights" cref="DESFireAccessRights">Determines what key to use for read, write, change operations to the file</param>
-        /// <param name="_encMode" cref="EncryptionMode">The Communication Mode (commSet) to use. File communication need encryption. CM_PLAIN, CM_MAC, CM_ENCRYPT, CM_UNKNOWN</param>
-        /// <param name="_appID">The Application that needs to be selected, to create the file</param>
-        /// <param name="_fileNo" cref="FileType_MifareDesfireFileType.StdDataFile">The File Number to be created inside the Application</param>
-        /// <param name="_fileSize" cref="FileType_MifareDesfireFileType.StdDataFile">The Size of the File to be created</param>
-        /// <param name="_minValue">Lower Limit of a RecordFileType</param>
-        /// <param name="_maxValue">Upper Limit of a RecordFileType</param>
-        /// <param name="_initValue">Initial Value of a RecordFile Type</param>
-        /// <param name="_isValueLimited"></param>
-        /// <param name="_maxNbOfRecords"></param>
-        /// <returns cref="DesfireChip">Result of the Operation and a cref="DesfireChip.AppList.Count() == 0 or DesfireChip.AppList.Count()>0" </returns>
+        /// <param name="_appMasterKey">The key 0 (app master key) of the application.</param>
+        /// <param name="_keyTypeAppMasterKey">The app master key type (_appID != 0, keyNo = 0), used to authenticate: 3DES, 3K3DES, AES.</param>
+        /// <param name="_fileType">The type of file to create.</param>
+        /// <param name="_accessRights">Determines what key to use for read, write, and change operations.</param>
+        /// <param name="_encMode">The communication mode (commSet) to use. File communication needs encryption: CM_PLAIN, CM_MAC, CM_ENCRYPT, CM_UNKNOWN.</param>
+        /// <param name="_appID">The application that needs to be selected to create the file.</param>
+        /// <param name="_fileNo">The file number to be created inside the application.</param>
+        /// <param name="_fileSize">The size of the file to be created.</param>
+        /// <param name="_minValue">Lower limit of a record file type.</param>
+        /// <param name="_maxValue">Upper limit of a record file type.</param>
+        /// <param name="_initValue">Initial value of a record file type.</param>
+        /// <param name="_isValueLimited">Whether the value file enforces limits.</param>
+        /// <param name="_maxNbOfRecords">Maximum number of records for record-based file types.</param>
+        /// <returns cref="ERROR">Result of the operation.</returns>
         public abstract Task<ERROR> CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
                                         int _appID, int _fileNo, int _fileSize,
                                         int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
@@ -170,16 +201,20 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public abstract Task<OperationResult> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, bool authenticateBeforeReading = true);
 
         /// <summary>
-        /// Creates a new Application, authenticating to the PICC first and trying to create the application anyway if authentication fails
+        /// Creates a new application, authenticating to the PICC first and trying to create the application anyway if authentication fails.
         /// </summary>
-        /// <param name="_piccMasterKey">The 16 byte PICC MasterKey, used to authenticate</param>
-        /// <param name="_keySettingsTarget" cref="DESFireKeySettings">byte: KS_CHANGE_KEY_WITH_MK = 0, KS_ALLOW_CHANGE_MK = 1, KS_FREE_LISTING_WITHOUT_MK = 2, KS_FREE_CREATE_DELETE_WITHOUT_MK = 4, KS_CONFIGURATION_CHANGEABLE = 8, KS_DEFAULT = 11, KS_CHANGE_KEY_WITH_TARGETED_KEYNO = 224, KS_CHANGE_KEY_FROZEN = 240</param>
-        /// <param name="_keyTypePiccMasterKey" cref="DESFireKeyType">The PICC MasterKeyType, used to authenticate (byte): 3DES, 3K3DES, AES</param>
-        /// <param name="_keyTypeTargetApplication" cref="DESFireKeyType">The targeted App Key Type (byte): 0 = 3DES, 64 = 3K3DES, 128 = AES</param>
-        /// <param name="_maxNbKeys">Number of Keys created in the Application (int)</param>
-        /// <param name="_appID">Application ID for the new App</param>
+        /// <param name="_piccMasterKey">The 16 byte PICC master key, used to authenticate.</param>
+        /// <param name="_keySettingsTarget">
+        /// Key settings byte: KS_CHANGE_KEY_WITH_MK = 0, KS_ALLOW_CHANGE_MK = 1, KS_FREE_LISTING_WITHOUT_MK = 2,
+        /// KS_FREE_CREATE_DELETE_WITHOUT_MK = 4, KS_CONFIGURATION_CHANGEABLE = 8, KS_DEFAULT = 11,
+        /// KS_CHANGE_KEY_WITH_TARGETED_KEYNO = 224, KS_CHANGE_KEY_FROZEN = 240.
+        /// </param>
+        /// <param name="_keyTypePiccMasterKey">The PICC master key type used to authenticate: 3DES, 3K3DES, AES.</param>
+        /// <param name="_keyTypeTargetApplication">The targeted app key type: 0 = 3DES, 64 = 3K3DES, 128 = AES.</param>
+        /// <param name="_maxNbKeys">Number of keys created in the application.</param>
+        /// <param name="_appID">Application ID for the new app.</param>
         /// <param name="authenticateToPICCFirst">Should authentication be omitted or performed?</param>
-        /// <returns></returns>
+        /// <returns>The operation result, including metadata about authentication and app creation.</returns>
         public abstract Task<OperationResult> CreateMifareDesfireApplication(string _piccMasterKey, AccessControl.DESFireKeySettings _keySettingsTarget, DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true);
 
         /// <summary>
