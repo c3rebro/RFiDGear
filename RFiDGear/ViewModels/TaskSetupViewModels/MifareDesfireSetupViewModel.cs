@@ -637,28 +637,28 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// The target key is unnecessary when changing only the application key settings.
         /// </summary>
         [XmlIgnore]
-        public bool ShowAppKeyTargetInputs => SelectedTaskType != TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover;
+        public bool ShowAppKeyTargetInputs => SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover;
 
         /// <summary>
         /// Gets a value indicating whether UI elements for configuring application key settings should be shown.
         /// The settings check boxes are unnecessary when only changing the application key material.
         /// </summary>
         [XmlIgnore]
-        public bool ShowAppKeySettingsInputs => SelectedTaskType != TaskType_MifareDesfireTask.ApplicationKeyChangeover;
+        public bool ShowAppKeySettingsInputs => SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover;
 
         /// <summary>
         /// Gets a value indicating whether UI elements for providing a target PICC master key should be shown.
         /// The target key is unnecessary when changing only the PICC master key settings.
         /// </summary>
         [XmlIgnore]
-        public bool ShowPiccMasterKeyTargetInputs => SelectedTaskType != TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover;
+        public bool ShowPiccMasterKeyTargetInputs => SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover;
 
         /// <summary>
         /// Gets a value indicating whether UI elements for configuring PICC master key settings should be shown.
         /// Settings controls are unnecessary when only changing the PICC master key material.
         /// </summary>
         [XmlIgnore]
-        public bool ShowPiccMasterKeySettingsInputs => SelectedTaskType != TaskType_MifareDesfireTask.PICCMasterKeyChangeover;
+        public bool ShowPiccMasterKeySettingsInputs => SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover;
 
         /// <summary>
         /// Gets a value indicating whether PICC master key authoring inputs should be shown.

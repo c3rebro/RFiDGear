@@ -55,7 +55,10 @@ namespace RFiDGear.Tests
         [Theory]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, true, false)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover, false, true)]
-        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, true, true)]
+        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, false, false)]
+        [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false)]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover, false, false)]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover, false, false)]
         public void SelectedTaskType_TogglesKeyInputVisibility(
             TaskType_MifareDesfireTask taskType,
             bool showTarget,
@@ -68,6 +71,26 @@ namespace RFiDGear.Tests
 
             Assert.Equal(showTarget, viewModel.ShowAppKeyTargetInputs);
             Assert.Equal(showSettings, viewModel.ShowAppKeySettingsInputs);
+        }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover, true, false)]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover, false, true)]
+        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, false, false)]
+        [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false)]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, false, false)]
+        public void SelectedTaskType_TogglesPiccMasterKeyInputVisibility(
+            TaskType_MifareDesfireTask taskType,
+            bool showTarget,
+            bool showSettings)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = taskType
+            };
+
+            Assert.Equal(showTarget, viewModel.ShowPiccMasterKeyTargetInputs);
+            Assert.Equal(showSettings, viewModel.ShowPiccMasterKeySettingsInputs);
         }
 
         [Theory]
