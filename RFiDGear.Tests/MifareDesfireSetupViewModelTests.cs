@@ -167,5 +167,49 @@ namespace RFiDGear.Tests
             Assert.Contains("Warning", line);
             Assert.Contains("ChangeKeyFrozen", line);
         }
+
+        [Theory]
+        [InlineData("0", "0", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK, false)]
+        [InlineData("0", "1", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK, false)]
+        [InlineData("1", "0", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK, false)]
+        [InlineData("1", "1", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK, true)]
+        [InlineData("0", "0", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo, false)]
+        [InlineData("0", "1", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo, false)]
+        [InlineData("1", "0", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo, false)]
+        [InlineData("1", "1", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo, false)]
+        public void ShowAppKeyOldInputs_ReflectsAppIdKeyAndPolicy(
+            string appId,
+            string keyNumber,
+            AccessCondition_MifareDesfireAppCreation changeKeyPolicy,
+            bool expected)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = TaskType_MifareDesfireTask.ApplicationKeyChangeover,
+                AppNumberCurrent = appId,
+                SelectedDesfireAppKeyNumberCurrent = keyNumber,
+                SelectedDesfireAppKeySettingsCreateNewApp = changeKeyPolicy
+            };
+
+            Assert.Equal(expected, viewModel.ShowAppKeyOldInputs);
+        }
+
+        [Theory]
+        [InlineData(0, DESFireKeySettings.ChangeKeyWithMasterKey, 5, 0)]
+        [InlineData(1, DESFireKeySettings.ChangeKeyWithMasterKey, 5, 0)]
+        [InlineData(1, DESFireKeySettings.ChangeKeyWithTargetedKeyNumber, 5, 5)]
+        public void GetAuthKeyNumberForChangeAppKey_MatchesPolicy(
+            int appId,
+            DESFireKeySettings changeKeyMode,
+            int appKeyNumber,
+            int expectedAuthKeyNumber)
+        {
+            var authKeyNumber = MifareDesfireSetupViewModel.GetAuthKeyNumberForChangeAppKey(
+                appId,
+                changeKeyMode,
+                appKeyNumber);
+
+            Assert.Equal(expectedAuthKeyNumber, authKeyNumber);
+        }
     }
 }
