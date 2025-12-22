@@ -1,7 +1,7 @@
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.ViewModel.TaskSetupViewModels;
-using System.Reflection;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace RFiDGear.Tests
@@ -111,6 +111,23 @@ namespace RFiDGear.Tests
             Assert.Equal(showPiccSection, viewModel.ShowPiccMasterKeyAuthoringSection);
             Assert.Equal(showCreateInputs, viewModel.ShowCreateApplicationInputs);
             Assert.Equal(showDeleteInputs, viewModel.ShowDeleteApplicationInputs);
+        }
+
+        [Theory]
+        [InlineData("0")]
+        [InlineData("-1")]
+        public async Task ChangeAppKeyCommand_WhenAppIdNotPositive_SetsStatusAndStops(string appNumber)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                AppNumberCurrent = appNumber,
+                IsDesfireAppCreationTabEnabled = true
+            };
+
+            await viewModel.ChangeAppKeyCommand.ExecuteAsync(null);
+
+            Assert.True(viewModel.IsDesfireAppCreationTabEnabled);
+            Assert.Contains("PICC master key tab", viewModel.StatusText);
         }
     }
 }
