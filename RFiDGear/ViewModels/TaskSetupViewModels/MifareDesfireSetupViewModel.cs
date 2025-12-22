@@ -510,6 +510,61 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             return changeKeyMode;
         }
 
+        /// <summary>
+        /// Builds the authentication status line for app-key changes.
+        /// </summary>
+        /// <param name="timestamp">Timestamp used for status output.</param>
+        /// <param name="appId">Current application identifier.</param>
+        /// <param name="appKeyNumber">Selected application key number.</param>
+        /// <param name="selectedSettings">Selected key settings.</param>
+        /// <param name="authKeyNo">Computed authentication key number.</param>
+        internal static string BuildChangeAppKeyAuthStatusLine(
+            DateTime timestamp,
+            int appId,
+            int appKeyNumber,
+            DESFireKeySettings selectedSettings,
+            int authKeyNo)
+        {
+            return string.Format(
+                "{0}: AppID {1}, KeyNo {2}, Settings {3}, AuthKeyNo {4}\n",
+                timestamp,
+                appId,
+                appKeyNumber,
+                selectedSettings,
+                authKeyNo);
+        }
+
+        /// <summary>
+        /// Builds a warning line for frozen change-key policies.
+        /// </summary>
+        /// <param name="timestamp">Timestamp used for status output.</param>
+        internal static string BuildChangeKeyFrozenWarningLine(DateTime timestamp)
+        {
+            return string.Format(
+                "{0}: Warning: Change key policy is frozen (ChangeKeyFrozen).\n",
+                timestamp);
+        }
+
+        /// <summary>
+        /// Appends authentication diagnostic status lines for change-app-key operations.
+        /// </summary>
+        /// <param name="authKeyNo">Authentication key number used for the app.</param>
+        /// <param name="changeKeyMode">Selected change-key policy for the app.</param>
+        private void AppendChangeAppKeyAuthStatusLines(int authKeyNo, DESFireKeySettings changeKeyMode)
+        {
+            StatusText += BuildChangeAppKeyAuthStatusLine(
+                DateTime.Now,
+                AppNumberCurrentAsInt,
+                selectedDesfireAppKeyNumberCurrentAsInt,
+                SelectedDesfireAppKeySettingsCreateNewApp,
+                authKeyNo);
+
+            if (changeKeyMode == DESFireKeySettings.ChangeKeyFrozen)
+            {
+                StatusText += BuildChangeKeyFrozenWarningLine(DateTime.Now);
+            }
+        }
+
         private DESFireKeySettings BuildSelectedKeySettings(int appId)
         {
             var keySettings = GetGeneralDesfireKeyFlags();
@@ -2317,6 +2372,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (isAuthKeyValid && isOldKeyValid)
                     {
+                        AppendChangeAppKeyAuthStatusLines(authKeyNo, changeKeyMode);
+
                         var result = await device.AuthToMifareDesfireApplication(
                                 authKeyValue,
                                 SelectedDesfireAppKeyEncryptionTypeCurrent,
