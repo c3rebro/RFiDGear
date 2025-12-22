@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
     <NoStdLib>False</NoStdLib>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <ReferencePath>C:\Program Files\Microsoft SDKs\Windows\v8.1A\bin\</ReferencePath>

@@ -479,6 +479,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return ERROR.TransportError;
         }
 
+        /// <inheritdoc />
         public async Task<ERROR> ReadMifareClassicSingleBlock(int _blockNumber, string _aKey, string _bKey)
         {
             try
@@ -551,6 +552,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return ERROR.TransportError;
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> WriteMifareClassicWithMAD(int _madApplicationID, int _madStartSector,
             string _aKeyToUse, string _bKeyToUse, string _aKeyToWrite, string _bKeyToWrite,
             string _madAKeyToUse, string _madBKeyToUse, string _madAKeyToWrite, string _madBKeyToWrite,
@@ -634,6 +636,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return ERROR.NoError;
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> ReadMifareClassicWithMAD(int madApplicationID, string _aKeyToUse,
             string _bKeyToUse, string _madAKeyToUse, string _madBKeyToUse, int _length,
             byte _madGPB, bool _useMADToAuth = true, bool _aiToUseIsMAD = false)
@@ -1026,6 +1029,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
                                                string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                                string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
@@ -1121,6 +1125,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
                                                 string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
                                                 string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
@@ -1224,6 +1229,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey,
                                                 DESFireKeyType _keyType, int _keyNumber, int _appID = 0)
         {
@@ -1289,6 +1295,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override async Task<OperationResult> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, bool authenticateBeforeReading = true)
         {
             byte maxNbrOfKeys;
@@ -1642,79 +1649,82 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        /// inheritdoc/>
-        public override async Task<ERROR> ChangeMifareDesfireApplicationKey(
-            string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-            string _oldKeyForChangeKey, string _oldKeyForTargetSlot, string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
-            DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int _, int numberOfKeys = 0)
+        /// <inheritdoc />
+        public override async Task<ERROR> ChangeMifareDesfireKeyAsync(
+            uint appId,
+            byte targetKeyNo,
+            DESFireKeyType targetKeyType,
+            string currentTargetKeyHex,
+            string newTargetKeyHex,
+            byte newTargetKeyVersion,   // not used by LibLogicalAccess changeKey; kept for API symmetry
+            string masterKeyHex,
+            DESFireKeyType masterKeyType,
+            AccessControl.DESFireKeySettings keySettings)
         {
             try
             {
-                DESFireKey masterApplicationKey = new DESFireKey();
-                masterApplicationKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent);
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
-                masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
+                var resolved = DesfireKeyChangeInputs.Resolve(
+                    appId,
+                    targetKeyNo,
+                    targetKeyType,
+                    currentTargetKeyHex,
+                    newTargetKeyHex,
+                    newTargetKeyVersion,
+                    masterKeyHex,
+                    masterKeyType,
+                    keySettings);
 
-                var targetSlotOldKey = new DESFireKey();
-                targetSlotOldKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeTarget);
-                var oldKeyMaterial = string.IsNullOrWhiteSpace(_oldKeyForTargetSlot) ? _oldKeyForChangeKey : _oldKeyForTargetSlot;
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(oldKeyMaterial);
-                targetSlotOldKey.fromString(CustomConverter.DesfireKeyToCheck);
+                // Build authentication key (either master key or target key depending on policy).
+                var authKey = new DESFireKey();
+                authKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)resolved.AuthKeyType);
+                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(resolved.AuthKeyHex);
+                authKey.fromString(CustomConverter.DesfireKeyToCheck);
 
-                DESFireKey applicationMasterKeyTarget = new DESFireKey();
-                applicationMasterKeyTarget.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeTarget);
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyTarget);
-                applicationMasterKeyTarget.fromString(CustomConverter.DesfireKeyToCheck);
+                // Build new key to be written.
+                var newKey = new DESFireKey();
+                newKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)resolved.TargetKeyType);
+                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(resolved.NewTargetKeyHex);
+                newKey.fromString(CustomConverter.DesfireKeyToCheck);
 
-                var resolvedKeyCount = numberOfKeys > 0
-                    ? numberOfKeys
-                    : _appIDCurrent == 0 ? 1 : Math.Max(1, (int)MaxNumberOfAppKeys);
-                _ = resolvedKeyCount;
-
+                // Ensure a clean reader state before reconnecting.
                 readerUnit.disconnectFromReader();
 
-                if (await tryInitReader())
+                if (!await tryInitReader())
+                    return ERROR.TransportError;
+
+                card = readerUnit.getSingleChip();
+                if (card == null)
+                    return ERROR.TransportError;
+
+                var ct = card.getCardType();
+                if (ct != "DESFire" && ct != "DESFireEV1" && ct != "DESFireEV2" && ct != "DESFireEV3")
+                    return ERROR.TransportError;
+
+                var cmd = card.getCommands() as DESFireCommands;
+                if (cmd == null)
+                    return ERROR.TransportError;
+
+                try
                 {
-                    card = readerUnit.getSingleChip();
+                    // Scope selection: appId==0 selects PICC; appId>0 selects that application.
+                    cmd.selectApplication(resolved.AppId);
 
-                    if (card.getCardType() == "DESFire" ||
-                        card.getCardType() == "DESFireEV1" ||
-                        card.getCardType() == "DESFireEV2" ||
-                        card.getCardType() == "DESFireEV3")
-                    {
-                        var cmd = card.getCommands() as DESFireCommands;
-                        var ev1Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV1ISO7816Commands;
-                        var ev2Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV2ISO7816Commands;
-                        var ev3Cmd = (card as DESFireEV1Chip).getCommands() as DESFireEV3ISO7816Commands;
+                    // Authenticate with required key number (master key or target key).
+                    cmd.authenticate(resolved.AuthKeyNo, authKey);
 
-                        try
-                        {
-                            cmd.selectApplication((uint)_appIDCurrent);
-                            cmd.authenticate((byte)_keyNumberCurrent, masterApplicationKey);
-                            cmd.changeKey((byte)_keyNumberCurrent, applicationMasterKeyTarget);
-                            return ERROR.NoError;
-                        }
+                    // Change the requested key number to the new value.
+                    cmd.changeKey(resolved.TargetKeyNo, newKey);
 
-                        catch (Exception e)
-                        {
-                            if (e.Message != "" && e.Message.Contains("same number already exists"))
-                            {
-                                return ERROR.ProtocolConstraint;
-                            }
-                            else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
-                            {
-                                return ERROR.AuthFailure;
-                            }
-                            else
-                            {
-                                return ERROR.TransportError;
-                            }
-                        }
-                    }
-                    else
-                        return ERROR.TransportError;
+                    return ERROR.NoError;
                 }
-                return ERROR.TransportError;
+                catch (Exception e)
+                {
+                    // Keep your current mapping style but more focused.
+                    if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("status does not allow the requested command"))
+                        return ERROR.AuthFailure;
+
+                    return ERROR.TransportError;
+                }
             }
             catch
             {
@@ -1722,10 +1732,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        /// inheritdoc/>
-        public override async Task<ERROR> ChangeMifareDesfireApplicationKeySettings(
-            string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent, string _applicationMasterKeyTarget, 
-            int selectedDesfireAppKeyVersionTargetAsIntint, DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int _)
+        /// <inheritdoc/>
+        public override async Task<ERROR> ChangeMifareDesfireApplicationKeySettings(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
+            int _appIDCurrent, AccessControl.DESFireKeySettings keySettings)
         {
             try
             {
@@ -1786,6 +1795,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, uint _appID = 0)
         {
             try
@@ -1859,6 +1869,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID = 0, int _fileID = 0)
         {
             try
@@ -1931,6 +1942,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType)
         {
             try
@@ -1994,6 +2006,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0)
         {
             try
@@ -2086,6 +2099,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override async Task<ERROR> GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0)
         {
             try
@@ -2181,6 +2195,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
         public override Task<byte> MifareDesfire_GetKeyVersionAsync(byte keyNo)
         {
             throw new NotSupportedException("Retrieving key versions is not supported for LibLogicalAccessProvider.");

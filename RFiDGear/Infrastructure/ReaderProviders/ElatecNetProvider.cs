@@ -484,14 +484,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_applicationMasterKey"></param>
-        /// <param name="_keyType"></param>
-        /// <param name="_keyNumber"></param>
-        /// <param name="_appID"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public async override Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
             if (readerDevice.IsConnected)
@@ -529,14 +522,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_applicationMasterKey"></param>
-        /// <param name="_keyType"></param>
-        /// <param name="_keyNumberCurrent"></param>
-        /// <param name="_appID"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public async override Task<OperationResult> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID, bool authenticateBeforeReading = true)
         {
             if (readerDevice.IsConnected)
@@ -744,113 +730,110 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         }
 
-        /// <summary>
-        /// Changes a MIFARE DESFire application key without altering the supplied key settings. The
-        /// caller controls which key is updated via <paramref name="_keyNumberCurrent"/> and provides
-        /// both the current and target key values. Authentication respects the change-key policy encoded
-        /// in <paramref name="keySettings"/>: master-key changes authenticate with key 0, while
-        /// self-key changes authenticate with the targeted key number.
-        /// </summary>
-        /// <param name="_applicationMasterKeyCurrent">The current value of the key required for authentication (master or targeted).</param>
-        /// <param name="_keyNumberCurrent">The key number to change; also used for authentication when the change-key policy is self-key.</param>
-        /// <param name="_keyTypeCurrent">The cipher suite of the authentication key.</param>
-        /// <param name="_oldKeyForTargetSlot">The existing value of the key slot being replaced; used to perform the change-key operation.</param>
-        /// <param name="_applicationMasterKeyTarget">The new key value to write.</param>
-        /// <param name="_keyNumberTarget">(Unused) Reserved for compatibility with other providers.</param>
-        /// <param name="selectedDesfireAppKeyVersionTargetAsIntint">The version byte to attach to the target key.</param>
-        /// <param name="_keyTypeTarget">The cipher suite for the target key.</param>
-        /// <param name="_appIDCurrent">Application identifier that hosts the key to change (0 for PICC).</param>
-        /// <param name="_appIDTarget">(Unused) Reserved for compatibility with other providers.</param>
-        /// <param name="keySettings">Raw key-settings byte representing the card's change-key policy and permissions.</param>
-        /// <param name="keyVersion">Key version used by the reader when writing the new key.</param>
-        /// <param name="numberOfKeys">Expected number of keys within the targeted scope (1 for PICC, configured value for applications).</param>
-        /// <returns><see cref="ERROR.NoError"/> on success; otherwise an error indicating why the key change failed.</returns>
-        public async override Task<ERROR> ChangeMifareDesfireApplicationKey(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-                                        string _oldKeyForChangeKey, string _oldKeyForTargetSlot, string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
-                                        DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion, int numberOfKeys = 0)
+        /// <inheritdoc />
+        public override async Task<ERROR> ChangeMifareDesfireKeyAsync(
+            uint appId,
+            byte targetKeyNo,
+            DESFireKeyType targetKeyType,
+            string currentTargetKeyHex,
+            string newTargetKeyHex,
+            byte newTargetKeyVersion,
+            string masterKeyHex,
+            DESFireKeyType masterKeyType,
+            AccessControl.DESFireKeySettings keySettings)
         {
-            if (readerDevice.IsConnected)
+            if (!readerDevice.IsConnected)
+                return ERROR.TransportError;
+
+            // Some TWN4 LEGIC-capable devices require a tag inventory kick before certain operations.
+            if (readerDevice.IsTWN4LegicReader)
             {
-                if (readerDevice.IsTWN4LegicReader)
-                {
-                    try
-                    {
-                        await readerDevice.SearchTagAsync();
-                    }
-                    catch { }
-                }
+                try { await readerDevice.SearchTagAsync(); }
+                catch { /* ignore; best-effort workaround */ }
+            }
+
+            try
+            {
+                var resolved = DesfireKeyChangeInputs.Resolve(
+                    appId,
+                    targetKeyNo,
+                    targetKeyType,
+                    currentTargetKeyHex,
+                    newTargetKeyHex,
+                    newTargetKeyVersion,
+                    masterKeyHex,
+                    masterKeyType,
+                    keySettings);
+
+                // Scope selection: appId==0 selects PICC; appId>0 selects that application.
+                await readerDevice.MifareDesfire_SelectApplicationAsync(resolved.AppId);
+
+                // Authenticate according to the change-key policy (key 0 or target key).
+                await readerDevice.MifareDesfire_AuthenticateAsync(
+                    resolved.AuthKeyHex,
+                    resolved.AuthKeyNo,
+                    (byte)ToElatecKeyType(resolved.AuthKeyType),
+                    DESFIRE_AUTHMODE_EV1);
+
+                // Some reader APIs require key count/key type context to issue ChangeKey.
+                // Prefer reading live values; fall back to configured or conservative defaults.
+                byte keyCount;
+                DESFireKeyType keyTypeForContext = resolved.TargetKeyType;
 
                 try
                 {
-                    await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appIDCurrent);
+                    var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
+                    keyCount = (byte)ks.NumberOfKeys;
 
-                    var changeKeyMode = keySettings & AccessControl.DESFireKeySettings.ChangeKeyMask;
-                    var authKeyNumber = changeKeyMode == AccessControl.DESFireKeySettings.ChangeKeyWithTargetedKeyNumber
-                        ? (byte)_keyNumberCurrent
-                        : (byte)0;
+                    // Optional: keep provider state synced if other operations depend on it.
+                    MaxNumberOfAppKeys = keyCount;
 
-                    await readerDevice.MifareDesfire_AuthenticateAsync(
-                        _applicationMasterKeyCurrent,
-                        authKeyNumber,
-                        (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeCurrent)),
-                        DESFIRE_AUTHMODE_EV1);
-
-                    var keySettingsByte = _appIDCurrent == 0
-                        ? (byte)((byte)keySettings & 0x0F)
-                        : (byte)keySettings;
-
-                    var resolvedKeyCount = numberOfKeys > 0
-                        ? numberOfKeys
-                        : _appIDCurrent == 0 ? 1 : Math.Max(1, (int)MaxNumberOfAppKeys);
-
-                    var keyForTargetSlot = string.IsNullOrWhiteSpace(_oldKeyForTargetSlot)
-                        ? _oldKeyForChangeKey
-                        : _oldKeyForTargetSlot;
-
-                    await readerDevice.MifareDesfire_ChangeKeyAsync(
-                        keyForTargetSlot,
-                        _applicationMasterKeyTarget,
-                        (byte)keyVersion,
-                        keySettingsByte,
-                        (byte)_keyNumberCurrent,
-                        (uint)resolvedKeyCount,
-                        (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeTarget)));
-
-                    return ERROR.NoError;
+                    // Try map the returned key type to your enum by name; if it fails, keep the requested targetKeyType.
+                    if (Enum.TryParse<DESFireKeyType>(ks.KeyType.ToString(), out var parsed))
+                        keyTypeForContext = parsed;
                 }
                 catch
                 {
-                    return ERROR.AuthFailure;
+                    // PICC level is always 1 "master key slot" in your existing logic.
+                    // For applications, prefer MaxNumberOfAppKeys if set, otherwise use 15 as a conservative default.
+                    keyCount = resolved.AppId == 0
+                        ? (byte)1
+                        : (MaxNumberOfAppKeys > 0 ? MaxNumberOfAppKeys : (byte)15);
                 }
-            }
 
-            else
+                await readerDevice.MifareDesfire_ChangeKeyAsync(
+                    resolved.OldTargetKeyHex,
+                    resolved.NewTargetKeyHex,
+                    resolved.NewTargetKeyVersion,
+                    resolved.KeySettingsByteOnWire,
+                    resolved.TargetKeyNo,
+                    (uint)keyCount,
+                    ToElatecKeyType(keyTypeForContext));
+
+                return ERROR.NoError;
+            }
+            catch
             {
-                return ERROR.TransportError;
+                // You may want a richer mapping (auth vs transport vs protocol) later.
+                return ERROR.AuthFailure;
             }
 
+            /// <summary>
+            /// Converts your local DESFireKeyType enum to the Elatec wrapper enum.
+            /// Uses name-based parsing to avoid brittle numeric casts when enum values differ.
+            /// </summary>
+            static Elatec.NET.Cards.Mifare.DESFireKeyType ToElatecKeyType(DESFireKeyType t)
+            {
+                if (Enum.TryParse<Elatec.NET.Cards.Mifare.DESFireKeyType>(t.ToString(), out var mapped))
+                    return mapped;
 
+                throw new ArgumentOutOfRangeException(nameof(t), $"No Elatec key type mapping for {t}.");
+            }
         }
 
-        /// <summary>
-        /// Handles DESFire application key setting updates. Authentication always targets key number 0 of the
-        /// selected PICC or application, and only the key-settings byte is updated; key material remains unchanged.
-        /// </summary>
-        /// <param name="_applicationMasterKeyCurrent">The master key used to authenticate against key slot 0.</param>
-        /// <param name="_keyNumberCurrent">Ignored for settings updates; key slot 0 is always used.</param>
-        /// <param name="_keyTypeCurrent">The cryptographic type of the current master key.</param>
-        /// <param name="_applicationMasterKeyTarget">Unused; target key material is not required for settings changes.</param>
-        /// <param name="_keyNumberTarget">Unused; settings changes never switch key slots.</param>
-        /// <param name="selectedDesfireAppKeyVersionTargetAsIntint">Unused for settings changes.</param>
-        /// <param name="_keyTypeTarget">The intended key type for the updated settings payload.</param>
-        /// <param name="_appIDCurrent">The application identifier to select (0 for PICC level changes).</param>
-        /// <param name="_appIDTarget">Unused placeholder for signature compatibility.</param>
-        /// <param name="keySettings">The desired key settings to apply.</param>
-        /// <param name="keyVersion">Unused for settings changes.</param>
-        /// <returns>The result of the settings update.</returns>
+        /// <inheritdoc />
         public async override Task<ERROR> ChangeMifareDesfireApplicationKeySettings(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
-                                        string _applicationMasterKeyTarget, int selectedDesfireAppKeyVersionTargetAsIntint,
-                                        DESFireKeyType _keyTypeTarget, int _appIDCurrent, int _appIDTarget, AccessControl.DESFireKeySettings keySettings, int keyVersion)
+           int _appIDCurrent, AccessControl.DESFireKeySettings keySettings)
         {
             if (readerDevice.IsConnected)
             {
@@ -889,9 +872,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     }
 
                     var configuredKeyType = EncryptionType;
-                    if (configuredKeyType == default && _keyTypeTarget != default)
+                    if (configuredKeyType == default && _keyTypeCurrent != default)
                     {
-                        configuredKeyType = _keyTypeTarget;
+                        configuredKeyType = _keyTypeCurrent;
                     }
 
                     var resolvedSettings = DesfireKeySettingsResolver.Resolve(
@@ -932,13 +915,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_applicationMasterKey"></param>
-        /// <param name="_keyTypePiccMasterKey"></param>
-        /// <param name="_appID"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public async override Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyTypePiccMasterKey, uint _appID)
         {
             if (readerDevice.IsConnected)
@@ -980,43 +957,48 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_applicationMasterKey"></param>
-        /// <param name="_keyType"></param>
-        /// <param name="_appID"></param>
-        /// <param name="_fileID"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public async override Task<ERROR> DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID, int _fileID)
         {
-            /*
-            if (readerDevice.DesfireSelectApplication((uint)_appID))
+            if (readerDevice.IsConnected)
             {
-                if (readerDevice.DesfireAuthenticate(_applicationMasterKey, 0x00, (byte)(int)Enum.Parse(typeof(Elatec.NET.DESFireKeyType), Enum.GetName(typeof(RFiDGear.DataAccessLayer.DESFireKeyType), _keyType)), 1))
+                if (readerDevice.IsTWN4LegicReader)
                 {
-                    if (readerDevice.DesfireDeleteFile((byte)_fileID))
+                    try
                     {
-                        return ERROR.NoError;
+                        await readerDevice.SearchTagAsync();
+                    }
+                    catch
+                    {
+                        return ERROR.TransportError;
+                    }
+                }
+
+                try
+                {
+                    if (await AuthToMifareDesfireApplication(_applicationMasterKey, _keyType, 0, _appID) == ERROR.NoError)
+                    {
+                        await readerDevice.MifareDesfire_DeleteFileAsync((byte)_fileID);
                     }
                     else
                     {
                         return ERROR.AuthFailure;
                     }
                 }
+                catch
+                {
+                    return ERROR.AuthFailure;
+                }
+                return ERROR.NoError;
             }
-            */
-            return ERROR.TransportError;
+
+            else
+            {
+                return ERROR.TransportError;
+            }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_applicationMasterKey"></param>
-        /// <param name="_keyType"></param>
-        /// <param name="_appID"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
+        /// <inheritdoc />
         public async override Task<ERROR> FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType)
         {
             if (readerDevice.IsConnected)
@@ -1061,14 +1043,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_applicationMasterKey"></param>
-        /// <param name="_keyType"></param>
-        /// <param name="_keyNumberCurrent"></param>
-        /// <param name="_appID"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public async override Task<ERROR> GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
         {
             if (readerDevice.IsConnected)
@@ -1117,15 +1092,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_applicationMasterKey"></param>
-        /// <param name="_keyType"></param>
-        /// <param name="_keyNumberCurrent"></param>
-        /// <param name="_appID"></param>
-        /// <param name="_fileNo"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public async override Task<ERROR> GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID, int _fileNo)
         {
             if (readerDevice.IsConnected)
@@ -1253,22 +1220,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="_appMasterKey"></param>
-        /// <param name="_keyTypeAppMasterKey"></param>
-        /// <param name="_appReadKey"></param>
-        /// <param name="_keyTypeAppReadKey"></param>
-        /// <param name="_readKeyNo"></param>
-        /// <param name="_appWriteKey"></param>
-        /// <param name="_keyTypeAppWriteKey"></param>
-        /// <param name="_writeKeyNo"></param>
-        /// <param name="_encMode"></param>
-        /// <param name="_fileNo"></param>
-        /// <param name="_appID"></param>
-        /// <param name="_fileSize"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public async override Task<ERROR> ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
                                        string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                        string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
