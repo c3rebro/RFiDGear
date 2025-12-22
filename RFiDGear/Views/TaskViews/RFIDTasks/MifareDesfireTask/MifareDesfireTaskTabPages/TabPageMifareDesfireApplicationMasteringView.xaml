@@ -254,6 +254,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
+                        IsEnabled="{Binding IsAppKeyChangeEnabled}"
                         Command="{Binding ChangeAppKeyCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeChangeKey'}" />
                     <Grid.RowDefinitions>

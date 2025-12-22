@@ -1290,6 +1290,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 IsValidAppNumberCurrent = (int.TryParse(value, out appNumberCurrentAsInt) && appNumberCurrentAsInt <= (int)0xFFFFFF);
                 OnPropertyChanged(nameof(AppNumberCurrent));
+                OnPropertyChanged(nameof(IsAppKeyChangeEnabled));
                 OnPropertyChanged(nameof(ShowAppKeyOldInputs));
 
                 UpdateOldAppKeyDefaults();
@@ -1318,6 +1319,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
         private bool? isValidAppNumberCurrent;
+
+        /// <summary>
+        /// Gets a value indicating whether changing an application key is allowed for the current application ID.
+        /// </summary>
+        [XmlIgnore]
+        public bool IsAppKeyChangeEnabled => AppNumberCurrentAsInt > 0;
 
         #endregion Key Properties App Master Current
 
@@ -2277,6 +2284,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
+            if (ShouldBlockAppKeyChange())
+            {
+                return;
+            }
+
             IsDesfireAppCreationTabEnabled = false;
 
             using (var device = ReaderDevice.Instance)
@@ -2361,6 +2373,23 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             await FinalizeTaskAsync();
             return;
+        }
+
+        /// <summary>
+        /// Sets a status reminder if the PICC master key should be used instead of an application key.
+        /// </summary>
+        /// <returns>True when the change-app-key command should be blocked.</returns>
+        private bool ShouldBlockAppKeyChange()
+        {
+            if (AppNumberCurrentAsInt > 0)
+            {
+                return false;
+            }
+
+            StatusText = string.Format(
+                "{0}: Select the PICC master key tab to change the PICC master key (App ID 0).\n",
+                DateTime.Now);
+            return true;
         }
 
         /// <summary>
