@@ -129,5 +129,13 @@ namespace RFiDGear.Tests
             Assert.True(viewModel.IsDesfireAppCreationTabEnabled);
             Assert.Contains("PICC master key tab", viewModel.StatusText);
         }
+
+        [Fact]
+        public void GetPiccMasterKeyChangeSettings_UsesMinimalChangeKeyWithMasterKey()
+        {
+            var settings = MifareDesfireSetupViewModel.GetPiccMasterKeyChangeSettings();
+
+            Assert.Equal(DESFireKeySettings.ChangeKeyWithMasterKey, settings);
+        }
     }
 }
