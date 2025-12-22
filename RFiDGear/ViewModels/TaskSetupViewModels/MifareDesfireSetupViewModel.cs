@@ -2793,7 +2793,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        ///
+        /// Changes the PICC master key using the provided target key and version.
         /// </summary>
         public IAsyncRelayCommand ChangeMasterCardKeyCommand => new AsyncRelayCommand(OnNewChangeMasterCardKeyCommand);
         private async Task OnNewChangeMasterCardKeyCommand()
@@ -2810,13 +2810,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireMasterKeyCurrent) == KEY_ERROR.NO_ERROR)
                     {
-                        DESFireKeySettings keySettings;
-                        keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
-
-                        keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
-                        keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
-                        keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
-                        keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
+                        var keySettings = GetPiccMasterKeyChangeSettings();
 
                         var result = await device.AuthToMifareDesfireApplication(
                             CustomConverter.DesfireKeyToCheck,
@@ -2883,6 +2877,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             await FinalizeTaskAsync();
             return;
         }
+
+        /// <summary>
+        /// Returns the minimal key settings used when changing the PICC master key.
+        /// </summary>
+        internal static DESFireKeySettings GetPiccMasterKeyChangeSettings() => DESFireKeySettings.ChangeKeyWithMasterKey;
 
         /// <summary>
         ///
