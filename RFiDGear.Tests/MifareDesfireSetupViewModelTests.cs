@@ -1,6 +1,7 @@
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.ViewModel.TaskSetupViewModels;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -136,6 +137,35 @@ namespace RFiDGear.Tests
             var settings = MifareDesfireSetupViewModel.GetPiccMasterKeyChangeSettings();
 
             Assert.Equal(DESFireKeySettings.ChangeKeyWithMasterKey, settings);
+        }
+
+        [Fact]
+        public void BuildChangeAppKeyAuthStatusLine_IncludesSelectedValues()
+        {
+            var timestamp = new DateTime(2024, 2, 3, 4, 5, 6);
+
+            var line = MifareDesfireSetupViewModel.BuildChangeAppKeyAuthStatusLine(
+                timestamp,
+                appId: 1,
+                appKeyNumber: 2,
+                selectedSettings: DESFireKeySettings.ChangeKeyFrozen,
+                authKeyNo: 3);
+
+            Assert.Contains("AppID 1", line);
+            Assert.Contains("KeyNo 2", line);
+            Assert.Contains("Settings ChangeKeyFrozen", line);
+            Assert.Contains("AuthKeyNo 3", line);
+        }
+
+        [Fact]
+        public void BuildChangeKeyFrozenWarningLine_IndicatesFrozenPolicy()
+        {
+            var timestamp = new DateTime(2024, 2, 3, 4, 5, 6);
+
+            var line = MifareDesfireSetupViewModel.BuildChangeKeyFrozenWarningLine(timestamp);
+
+            Assert.Contains("Warning", line);
+            Assert.Contains("ChangeKeyFrozen", line);
         }
     }
 }
