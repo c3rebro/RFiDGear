@@ -784,6 +784,12 @@ Needed by:
   <data name="labelContentMifareDesfireAppKey" xml:space="preserve">
     <value>Application Key</value>
   </data>
+  <data name="toolTipMifareDesfireAppKeyPolicy" xml:space="preserve">
+    <value>Policy=MK → enter key 0 (master key) value. Policy=KeyNo → enter key N value.</value>
+  </data>
+  <data name="toolTipMifareDesfireCurrentAppKey" xml:space="preserve">
+    <value>Current application key value used for authentication.</value>
+  </data>
   <data name="labelContentMifareDesfireKeyNumber" xml:space="preserve">
     <value>Key Number</value>
   </data>
@@ -1658,7 +1664,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Old App Key</value>
   </data>
   <data name="toolTipMifareDesfireOldAppKey" xml:space="preserve">
-    <value>Enter the previous value of the selected application key when master-key mode is used to change non-PICC keys.</value>
+    <value>Required when authenticating with master key while changing a non-master key slot.</value>
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover" xml:space="preserve">
     <value>Change PICC Master Key Settings</value>
