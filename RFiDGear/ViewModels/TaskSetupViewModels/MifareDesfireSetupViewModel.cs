@@ -535,6 +535,22 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
+        /// Determines the authentication key number for change-app-key operations.
+        /// </summary>
+        /// <param name="appId">Current application identifier.</param>
+        /// <param name="changeKeyMode">Selected change-key policy for the app.</param>
+        /// <param name="appKeyNumber">Selected application key number.</param>
+        internal static int GetAuthKeyNumberForChangeAppKey(int appId, DESFireKeySettings changeKeyMode, int appKeyNumber)
+        {
+            if (appId == 0)
+            {
+                return 0;
+            }
+
+            return changeKeyMode == DESFireKeySettings.ChangeKeyWithMasterKey ? 0 : appKeyNumber;
+        }
+
+        /// <summary>
         /// Builds a warning line for frozen change-key policies.
         /// </summary>
         /// <param name="timestamp">Timestamp used for status output.</param>
@@ -2355,11 +2371,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
                     var changeKeyMode = GetChangeKeyModeForApplication(AppNumberCurrentAsInt);
-                    var authKeyNo = AppNumberCurrentAsInt == 0
-                        ? 0
-                        : changeKeyMode == DESFireKeySettings.ChangeKeyWithMasterKey
-                            ? 0
-                            : selectedDesfireAppKeyNumberCurrentAsInt;
+                    var authKeyNo = GetAuthKeyNumberForChangeAppKey(
+                        AppNumberCurrentAsInt,
+                        changeKeyMode,
+                        selectedDesfireAppKeyNumberCurrentAsInt);
 
                     var authKeyValue = DesfireAppKeyCurrent;
                     var oldKeyForTargetSlot = ShowAppKeyOldInputs ? DesfireAppKeyCurrentOld : DesfireAppKeyCurrent;
