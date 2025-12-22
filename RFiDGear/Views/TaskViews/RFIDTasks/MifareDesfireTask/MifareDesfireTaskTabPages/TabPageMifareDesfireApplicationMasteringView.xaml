@@ -56,7 +56,15 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}">
+                        <Label.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipMifareDesfireAppKeyPolicy'}" />
+                                </StackPanel>
+                            </ToolTip>
+                        </Label.ToolTip>
+                    </Label>
                     <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
@@ -68,6 +76,13 @@
                         HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
                         Text="{Binding DesfireAppKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                        <TextBox.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipMifareDesfireAppKeyPolicy'}" />
+                                </StackPanel>
+                            </ToolTip>
+                        </TextBox.ToolTip>
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
                                 <Style.Triggers>
@@ -336,7 +351,15 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}">
+                        <Label.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipMifareDesfireCurrentAppKey'}" />
+                                </StackPanel>
+                            </ToolTip>
+                        </Label.ToolTip>
+                    </Label>
                     <TextBox
                         Grid.Row="1"
                         Grid.Column="1"
@@ -347,6 +370,13 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Text="{Binding DesfireAppKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                        <TextBox.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock TextWrapping="Wrap" FontWeight="Normal" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipMifareDesfireCurrentAppKey'}" />
+                                </StackPanel>
+                            </ToolTip>
+                        </TextBox.ToolTip>
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
                                 <Style.Triggers>
