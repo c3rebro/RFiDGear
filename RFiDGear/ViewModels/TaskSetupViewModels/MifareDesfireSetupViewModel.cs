@@ -572,7 +572,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 DateTime.Now,
                 AppNumberCurrentAsInt,
                 selectedDesfireAppKeyNumberCurrentAsInt,
-                SelectedDesfireAppKeySettingsCreateNewApp,
+                (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp,
                 authKeyNo);
 
             if (changeKeyMode == DESFireKeySettings.ChangeKeyFrozen)
