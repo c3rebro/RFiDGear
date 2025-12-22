@@ -2270,7 +2270,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        ///
+        /// Changes the selected DESFire application key with the provided new key value and version. Only when the APP ID is > 0.
         /// </summary>
         public IAsyncRelayCommand ChangeAppKeyCommand => new AsyncRelayCommand(OnNewChangeAppKeyCommand);
         private async Task OnNewChangeAppKeyCommand()
@@ -2322,13 +2322,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             var keySettings = GetChangeKeyModeForApplication(AppNumberCurrentAsInt);
 
-                            result = await device.ChangeMifareDesfireApplicationKey(authKeyValue,
-                                                                         keyNumberForChange,
-                                                                         SelectedDesfireAppKeyEncryptionTypeCurrent,
+                            result = await device.ChangeMifareDesfireKeyAsync((uint)AppNumberCurrentAsInt, (byte)keyNumberForChange, SelectedDesfireAppKeyEncryptionTypeCurrent, authKeyValue,
                                                                          oldKeyForChangeKey,
-                                                                         oldKeyForTargetSlot,
-                                                                         DesfireAppKeyTarget,
-                                                                         AppNumberCurrentAsInt, keySettings, selectedDesfireAppKeyVersionTargetAsInt);
+                                                                         (byte)keyVersionTargetAsInt,
+                                                                         DesfireAppKeyTarget, selectedDesfireAppKeyEncryptionTypeTarget,
+                                                                         keySettings);
 
                             if (await SetOperationResultAsync(
                                     result,
@@ -2805,15 +2803,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 IsValidDesfireMasterKeyTarget != false &&
                                 IsValidKeyVersionTarget != false)
                             {
-                                result = await device.ChangeMifareDesfireKeyAsync(
-                                    DesfireMasterKeyCurrent,
-                                    0,
-                                    SelectedDesfireMasterKeyEncryptionTypeCurrent,
-                                    DesfireMasterKeyCurrent,
-                                    DesfireMasterKeyCurrent,
+                                result = await device.ChangeMifareDesfireKeyAsync(0,0,SelectedDesfireMasterKeyEncryptionTypeTarget,
+                                    null,
                                     DesfireMasterKeyTarget,
-                                    0,
-                                    keySettings, selectedDesfireAppKeyVersionTargetAsInt);
+                                    (byte)keyVersionTargetAsInt,
+                                    DesfireMasterKeyCurrent,
+                                    SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                    keySettings);
 
                                 if (result == ERROR.NoError)
                                 {

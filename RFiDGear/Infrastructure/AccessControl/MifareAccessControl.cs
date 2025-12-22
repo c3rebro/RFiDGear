@@ -53,7 +53,7 @@ namespace RFiDGear.Infrastructure.AccessControl
     }
 
     /// <summary>
-    /// Access rules for DESFire application creation.
+    /// Access rules for DESFire application creation or authentication.
     /// </summary>
     [Flags]
     public enum AccessCondition_MifareDesfireAppCreation : byte
