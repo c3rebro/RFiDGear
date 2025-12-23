@@ -38,5 +38,21 @@ namespace RFiDGear.Tests
 
             Assert.Equal(DESFireKeyType.DF_KEY_AES, result);
         }
+
+        [Fact]
+        public void ResolveDesfireKeyType_UsesProviderNameWhenKnown()
+        {
+            var result = ElatecNetProvider.ResolveDesfireKeyType("DF_KEY_AES", DESFireKeyType.DF_KEY_DES);
+
+            Assert.Equal(DESFireKeyType.DF_KEY_AES, result);
+        }
+
+        [Fact]
+        public void ResolveDesfireKeyType_FallsBackWhenUnknown()
+        {
+            var result = ElatecNetProvider.ResolveDesfireKeyType("UnknownKeyType", DESFireKeyType.DF_KEY_3K3DES);
+
+            Assert.Equal(DESFireKeyType.DF_KEY_3K3DES, result);
+        }
     }
 }

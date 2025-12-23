@@ -548,7 +548,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
 
                     MaxNumberOfAppKeys = (byte)ks.NumberOfKeys;
-                    EncryptionType = (DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), ks.KeyType));
+                    EncryptionType = ResolveDesfireKeyType(ks.KeyType.ToString(), _keyType);
                     DesfireAppKeySetting = (AccessControl.DESFireKeySettings)ks.AccessRights;
 
                     var metadata = new Dictionary<string, string>
@@ -848,6 +848,22 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             return detectedKeyType ?? targetKeyType;
         }
 
+        /// <summary>
+        /// Maps a provider-reported key type name to the local DESFire key type enum.
+        /// </summary>
+        /// <param name="providerKeyTypeName">Name reported by the provider for the key type.</param>
+        /// <param name="fallback">Fallback when the name is not recognized.</param>
+        /// <returns>The resolved DESFire key type.</returns>
+        internal static DESFireKeyType ResolveDesfireKeyType(string providerKeyTypeName, DESFireKeyType fallback)
+        {
+            if (Enum.TryParse<DESFireKeyType>(providerKeyTypeName, out var parsed))
+            {
+                return parsed;
+            }
+
+            return fallback;
+        }
+
         /// <inheritdoc />
         public async override Task<ERROR> ChangeMifareDesfireApplicationKeySettings(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
            int _appIDCurrent, AccessControl.DESFireKeySettings keySettings)
@@ -878,9 +894,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         cardKeyCount = (byte)desfireSettings.NumberOfKeys;
                         MaxNumberOfAppKeys = cardKeyCount.Value;
 
-                        cardKeyType = (DESFireKeyType)Enum.Parse(
-                            typeof(DESFireKeyType),
-                            Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), desfireSettings.KeyType));
+                        cardKeyType = ResolveDesfireKeyType(desfireSettings.KeyType.ToString(), _keyTypeCurrent);
                         EncryptionType = cardKeyType.Value;
                     }
                     catch (Exception e)
