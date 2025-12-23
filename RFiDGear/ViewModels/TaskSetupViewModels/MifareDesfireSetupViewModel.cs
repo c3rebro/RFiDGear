@@ -907,7 +907,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 keyVersionCurrent = value?.ToUpperInvariant();
 
-                if (byte.TryParse(keyVersionCurrent, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var parsedVersion))
+                if (TryParseDesfireByteValue(keyVersionCurrent, out var parsedVersion))
                 {
                     keyVersionCurrentAsInt = parsedVersion;
                     keyVersionCurrent = parsedVersion.ToString("X2", CultureInfo.InvariantCulture);
@@ -1190,13 +1190,39 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             var isHex = trimmed.StartsWith("0x", StringComparison.OrdinalIgnoreCase);
             var candidate = isHex ? trimmed.Substring(2) : trimmed;
 
-            if (int.TryParse(candidate, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out appId))
+            if (isHex && int.TryParse(candidate, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out appId))
             {
                 return appId <= (int)0xFFFFFF;
             }
 
             return int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out appId)
                    && appId <= (int)0xFFFFFF;
+        }
+
+        /// <summary>
+        /// Parses a byte value from decimal or hexadecimal input.
+        /// </summary>
+        /// <param name="value">The user input to parse.</param>
+        /// <param name="parsed">The parsed byte value.</param>
+        /// <returns><c>true</c> when the input yields a valid byte.</returns>
+        private static bool TryParseDesfireByteValue(string value, out byte parsed)
+        {
+            parsed = 0;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var trimmed = value.Trim();
+            var isHex = trimmed.StartsWith("0x", StringComparison.OrdinalIgnoreCase);
+            var candidate = isHex ? trimmed.Substring(2) : trimmed;
+
+            if (isHex && byte.TryParse(candidate, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out parsed))
+            {
+                return true;
+            }
+
+            return byte.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed);
         }
 
         /// <summary>
@@ -1386,7 +1412,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 {
                     appNumberCurrent = value.ToUpper();
                 }
-                IsValidAppNumberCurrent = (int.TryParse(value, out appNumberCurrentAsInt) && appNumberCurrentAsInt <= (int)0xFFFFFF);
+                IsValidAppNumberCurrent = TryParseDesfireAppId(value, out appNumberCurrentAsInt);
                 OnPropertyChanged(nameof(AppNumberCurrent));
                 OnPropertyChanged(nameof(IsAppKeyChangeEnabled));
                 OnPropertyChanged(nameof(ShowAppKeyOldInputs));
@@ -1452,7 +1478,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 selectedDesfireAppKeyVersionTarget = value?.ToUpperInvariant();
 
-                if (byte.TryParse(selectedDesfireAppKeyVersionTarget, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var parsedVersion))
+                if (TryParseDesfireByteValue(selectedDesfireAppKeyVersionTarget, out var parsedVersion))
                 {
                     selectedDesfireAppKeyVersionTargetAsInt = parsedVersion;
                     selectedDesfireAppKeyVersionTarget = parsedVersion.ToString("X2", CultureInfo.InvariantCulture);
@@ -1669,7 +1695,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 fileNumberCurrent = value;
-                IsValidFileNumberCurrent = (int.TryParse(value, out fileNumberCurrentAsInt) && fileNumberCurrentAsInt <= (int)0xFFFF);
+                IsValidFileNumberCurrent = TryParseDesfireByteValue(value, out var parsedFileNumber);
+                fileNumberCurrentAsInt = parsedFileNumber;
                 OnPropertyChanged(nameof(FileNumberCurrent));
             }
         }
