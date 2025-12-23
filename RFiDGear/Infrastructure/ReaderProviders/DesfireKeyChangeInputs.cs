@@ -35,6 +35,10 @@ internal static class DesfireKeyChangeInputs
     /// <para>
     /// It also normalizes hex strings to a spaced format (<c>"00 11 22"</c>) for downstream libraries that expect it.
     /// </para>
+    /// <para>
+    /// When changing the PICC master key (AppID 0, KeyNo 0), a missing <paramref name="currentTargetKeyHex"/> is
+    /// treated as the current master key value provided in <paramref name="masterKeyHex"/>.
+    /// </para>
     /// </remarks>
     /// <param name="appId">Application identifier (0 = PICC, &gt;0 = application).</param>
     /// <param name="targetKeyNo">Target key number to change.</param>
@@ -62,12 +66,14 @@ internal static class DesfireKeyChangeInputs
         DESFireKeyType masterKeyType,
         AccessControl.DESFireKeySettings keySettings)
     {
+        if (string.IsNullOrWhiteSpace(masterKeyHex))
+            throw new ArgumentException("Master key must be provided.", nameof(masterKeyHex));
+        if (string.IsNullOrWhiteSpace(currentTargetKeyHex) && appId == 0 && targetKeyNo == 0)
+            currentTargetKeyHex = masterKeyHex;
         if (string.IsNullOrWhiteSpace(currentTargetKeyHex))
             throw new ArgumentException("Current target key must be provided (old key value).", nameof(currentTargetKeyHex));
         if (string.IsNullOrWhiteSpace(newTargetKeyHex))
             throw new ArgumentException("New target key must be provided.", nameof(newTargetKeyHex));
-        if (string.IsNullOrWhiteSpace(masterKeyHex))
-            throw new ArgumentException("Master key must be provided.", nameof(masterKeyHex));
 
         var changeKeyMode = keySettings & AccessControl.DESFireKeySettings.ChangeKeyMask;
         var authKeyNo = changeKeyMode == AccessControl.DESFireKeySettings.ChangeKeyWithTargetedKeyNumber

@@ -2898,12 +2898,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 IsValidDesfireMasterKeyTarget != false &&
                                 IsValidKeyVersionTarget != false)
                             {
-                                result = await device.ChangeMifareDesfireKeyAsync(0,0,SelectedDesfireMasterKeyEncryptionTypeTarget,
-                                    null,
+                                result = await device.ChangeMifareDesfireKeyAsync(
+                                    0,
+                                    0,
+                                    SelectedDesfireMasterKeyEncryptionTypeTarget,
+                                    DesfireMasterKeyCurrent,
                                     DesfireMasterKeyTarget,
                                     (byte)keyVersionTargetAsInt,
                                     DesfireMasterKeyCurrent,
-                                    SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                    SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                     keySettings);
 
                                 if (result == ERROR.NoError)
