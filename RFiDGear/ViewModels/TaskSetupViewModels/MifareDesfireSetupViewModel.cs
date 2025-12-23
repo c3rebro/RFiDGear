@@ -487,6 +487,57 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             await UpdateReaderStatusCommand.ExecuteAsync(false);
         }
 
+        /// <summary>
+        /// Encapsulates the resolved inputs for an application key change call.
+        /// </summary>
+        /// <param name="AppId">Target application identifier.</param>
+        /// <param name="TargetKeyNo">Target key slot number.</param>
+        /// <param name="TargetKeyType">Cryptographic type of the new key.</param>
+        /// <param name="CurrentTargetKeyHex">Current key value for the target slot.</param>
+        /// <param name="NewTargetKeyHex">New key value for the target slot.</param>
+        /// <param name="NewTargetKeyVersion">Version byte for the new key.</param>
+        /// <param name="MasterKeyHex">Authentication key value (key 0 when policy requires it).</param>
+        /// <param name="MasterKeyType">Cryptographic type of the authentication key.</param>
+        /// <param name="KeySettings">Key settings bits used to drive authentication policy.</param>
+        internal sealed record AppKeyChangePayload(
+            uint AppId,
+            byte TargetKeyNo,
+            DESFireKeyType TargetKeyType,
+            string CurrentTargetKeyHex,
+            string NewTargetKeyHex,
+            byte NewTargetKeyVersion,
+            string MasterKeyHex,
+            DESFireKeyType MasterKeyType,
+            DESFireKeySettings KeySettings);
+
+        /// <summary>
+        /// Builds the input payload for changing an application key.
+        /// </summary>
+        /// <param name="appId">Target application identifier.</param>
+        /// <param name="keyNumberForChange">Target key slot number.</param>
+        /// <param name="authKeyHex">Authentication key value (master key or targeted key).</param>
+        /// <param name="oldKeyForTargetSlot">Current key value for the target slot.</param>
+        /// <param name="keySettings">Key settings bits used to drive authentication policy.</param>
+        /// <returns>Resolved change-key payload for provider calls.</returns>
+        internal AppKeyChangePayload BuildAppKeyChangePayload(
+            int appId,
+            int keyNumberForChange,
+            string authKeyHex,
+            string oldKeyForTargetSlot,
+            DESFireKeySettings keySettings)
+        {
+            return new AppKeyChangePayload(
+                (uint)appId,
+                (byte)keyNumberForChange,
+                SelectedDesfireAppKeyEncryptionTypeTarget,
+                oldKeyForTargetSlot,
+                DesfireAppKeyTarget,
+                (byte)selectedDesfireAppKeyVersionTargetAsInt,
+                authKeyHex,
+                SelectedDesfireAppKeyEncryptionTypeCurrent,
+                keySettings);
+        }
+
         private DESFireKeySettings GetGeneralDesfireKeyFlags()
         {
             var keySettings = DESFireKeySettings.ChangeKeyWithMasterKey;
@@ -907,7 +958,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 keyVersionCurrent = value?.ToUpperInvariant();
 
-                if (byte.TryParse(keyVersionCurrent, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var parsedVersion))
+                if (TryParseDesfireByteValue(keyVersionCurrent, out var parsedVersion))
                 {
                     keyVersionCurrentAsInt = parsedVersion;
                     keyVersionCurrent = parsedVersion.ToString("X2", CultureInfo.InvariantCulture);
@@ -1144,7 +1195,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 {
                     appNumberNew = value.ToUpper();
                 }
-                IsValidAppNumberNew = (int.TryParse(value, out appNumberNewAsInt) && appNumberNewAsInt <= (int)0xFFFFFF);
+                IsValidAppNumberNew = TryParseDesfireAppId(value, out appNumberNewAsInt);
                 OnPropertyChanged(nameof(AppNumberNew));
             }
         }
@@ -1171,6 +1222,59 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
         private bool? isValidAppNumberNew;
+
+        /// <summary>
+        /// Parses a DESFire application identifier from decimal or hexadecimal input.
+        /// </summary>
+        /// <param name="value">The user input to parse.</param>
+        /// <param name="appId">The parsed application identifier.</param>
+        /// <returns><c>true</c> when the input yields a valid app ID.</returns>
+        private static bool TryParseDesfireAppId(string value, out int appId)
+        {
+            appId = 0;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var trimmed = value.Trim();
+            var isHex = trimmed.StartsWith("0x", StringComparison.OrdinalIgnoreCase);
+            var candidate = isHex ? trimmed.Substring(2) : trimmed;
+
+            if (isHex && int.TryParse(candidate, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out appId))
+            {
+                return appId <= (int)0xFFFFFF;
+            }
+
+            return int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out appId)
+                   && appId <= (int)0xFFFFFF;
+        }
+
+        /// <summary>
+        /// Parses a byte value from decimal or hexadecimal input.
+        /// </summary>
+        /// <param name="value">The user input to parse.</param>
+        /// <param name="parsed">The parsed byte value.</param>
+        /// <returns><c>true</c> when the input yields a valid byte.</returns>
+        private static bool TryParseDesfireByteValue(string value, out byte parsed)
+        {
+            parsed = 0;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var trimmed = value.Trim();
+            var isHex = trimmed.StartsWith("0x", StringComparison.OrdinalIgnoreCase);
+            var candidate = isHex ? trimmed.Substring(2) : trimmed;
+
+            if (isHex && byte.TryParse(candidate, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out parsed))
+            {
+                return true;
+            }
+
+            return byte.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed);
+        }
 
         /// <summary>
         ///
@@ -1359,7 +1463,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 {
                     appNumberCurrent = value.ToUpper();
                 }
-                IsValidAppNumberCurrent = (int.TryParse(value, out appNumberCurrentAsInt) && appNumberCurrentAsInt <= (int)0xFFFFFF);
+                IsValidAppNumberCurrent = TryParseDesfireAppId(value, out appNumberCurrentAsInt);
                 OnPropertyChanged(nameof(AppNumberCurrent));
                 OnPropertyChanged(nameof(IsAppKeyChangeEnabled));
                 OnPropertyChanged(nameof(ShowAppKeyOldInputs));
@@ -1425,7 +1529,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 selectedDesfireAppKeyVersionTarget = value?.ToUpperInvariant();
 
-                if (byte.TryParse(selectedDesfireAppKeyVersionTarget, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var parsedVersion))
+                if (TryParseDesfireByteValue(selectedDesfireAppKeyVersionTarget, out var parsedVersion))
                 {
                     selectedDesfireAppKeyVersionTargetAsInt = parsedVersion;
                     selectedDesfireAppKeyVersionTarget = parsedVersion.ToString("X2", CultureInfo.InvariantCulture);
@@ -1642,7 +1746,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 fileNumberCurrent = value;
-                IsValidFileNumberCurrent = (int.TryParse(value, out fileNumberCurrentAsInt) && fileNumberCurrentAsInt <= (int)0xFFFF);
+                IsValidFileNumberCurrent = TryParseDesfireByteValue(value, out var parsedFileNumber);
+                fileNumberCurrentAsInt = parsedFileNumber;
                 OnPropertyChanged(nameof(FileNumberCurrent));
             }
         }
@@ -2378,7 +2483,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     var authKeyValue = DesfireAppKeyCurrent;
                     var oldKeyForTargetSlot = ShowAppKeyOldInputs ? DesfireAppKeyCurrentOld : DesfireAppKeyCurrent;
-                    var oldKeyForChangeKey = authKeyValue;
                     var keyNumberForChange = AppNumberCurrentAsInt == 0 ? 0 : selectedDesfireAppKeyNumberCurrentAsInt;
                     var numberOfKeys = AppNumberCurrentAsInt == 0 ? 1 : 15;
 
@@ -2405,12 +2509,23 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             await TryUpdateKeyVersionAsync(device, keyNumberForChange);
 
                             var keySettings = GetChangeKeyModeForApplication(AppNumberCurrentAsInt);
+                            var payload = BuildAppKeyChangePayload(
+                                AppNumberCurrentAsInt,
+                                keyNumberForChange,
+                                authKeyValue,
+                                oldKeyForTargetSlot,
+                                keySettings);
 
-                            result = await device.ChangeMifareDesfireKeyAsync((uint)AppNumberCurrentAsInt, (byte)keyNumberForChange, SelectedDesfireAppKeyEncryptionTypeCurrent, authKeyValue,
-                                                                         oldKeyForChangeKey,
-                                                                         (byte)keyVersionTargetAsInt,
-                                                                         DesfireAppKeyTarget, selectedDesfireAppKeyEncryptionTypeTarget,
-                                                                         keySettings);
+                            result = await device.ChangeMifareDesfireKeyAsync(
+                                payload.AppId,
+                                payload.TargetKeyNo,
+                                payload.TargetKeyType,
+                                payload.CurrentTargetKeyHex,
+                                payload.NewTargetKeyHex,
+                                payload.NewTargetKeyVersion,
+                                payload.MasterKeyHex,
+                                payload.MasterKeyType,
+                                payload.KeySettings);
 
                             if (await SetOperationResultAsync(
                                     result,
@@ -2898,12 +3013,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 IsValidDesfireMasterKeyTarget != false &&
                                 IsValidKeyVersionTarget != false)
                             {
-                                result = await device.ChangeMifareDesfireKeyAsync(0,0,SelectedDesfireMasterKeyEncryptionTypeTarget,
-                                    null,
+                                result = await device.ChangeMifareDesfireKeyAsync(
+                                    0,
+                                    0,
+                                    SelectedDesfireMasterKeyEncryptionTypeTarget,
+                                    DesfireMasterKeyCurrent,
                                     DesfireMasterKeyTarget,
                                     (byte)keyVersionTargetAsInt,
                                     DesfireMasterKeyCurrent,
-                                    SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                    SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                     keySettings);
 
                                 if (result == ERROR.NoError)

@@ -115,6 +115,119 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
+        [InlineData("0x4bc", 0x4BC)]
+        [InlineData("0x4BC", 0x4BC)]
+        [InlineData("1212", 1212)]
+        public void AppNumberNew_SupportsHexOrDecimalInput(string value, int expected)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                AppNumberNew = value
+            };
+
+            Assert.True(viewModel.IsValidAppNumberNew);
+            Assert.Equal(expected, viewModel.AppNumberNewAsInt);
+        }
+
+        [Theory]
+        [InlineData("0x4bc", 0x4BC)]
+        [InlineData("1212", 1212)]
+        public void AppNumberCurrent_SupportsHexPrefixOrDecimalInput(string value, int expected)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                AppNumberCurrent = value
+            };
+
+            Assert.True(viewModel.IsValidAppNumberCurrent);
+            Assert.Equal(expected, viewModel.AppNumberCurrentAsInt);
+        }
+
+        [Theory]
+        [InlineData("0x0A", "0A")]
+        [InlineData("10", "0A")]
+        public void KeyVersionCurrent_SupportsHexPrefixOrDecimalInput(string value, string expected)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                KeyVersionCurrent = value
+            };
+
+            Assert.True(viewModel.IsValidKeyVersionCurrent);
+            Assert.Equal(expected, viewModel.KeyVersionCurrent, ignoreCase: true);
+        }
+
+        [Theory]
+        [InlineData("0x0B", "0B")]
+        [InlineData("11", "0B")]
+        public void SelectedDesfireAppKeyVersionTarget_SupportsHexPrefixOrDecimalInput(string value, string expected)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                SelectedDesfireAppKeyVersionTarget = value
+            };
+
+            Assert.True(viewModel.IsValidDesfireAppKeyVersionTarget);
+            Assert.Equal(expected, viewModel.SelectedDesfireAppKeyVersionTarget, ignoreCase: true);
+        }
+
+        [Theory]
+        [InlineData("0x0C", 0x0C)]
+        [InlineData("12", 12)]
+        public void FileNumberCurrent_SupportsHexPrefixOrDecimalInput(string value, int expected)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                FileNumberCurrent = value
+            };
+
+            Assert.True(viewModel.IsValidFileNumberCurrent);
+            Assert.Equal(expected, viewModel.FileNumberCurrentAsInt);
+        }
+
+        [Theory]
+        [InlineData("FF")]
+        [InlineData("0x100")]
+        public void FileNumberCurrent_InvalidValuesAreRejected(string value)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                FileNumberCurrent = value
+            };
+
+            Assert.False(viewModel.IsValidFileNumberCurrent);
+        }
+
+        [Fact]
+        public void BuildAppKeyChangePayload_UsesCurrentAuthKeyAsMasterKey()
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                SelectedDesfireAppKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_DES,
+                SelectedDesfireAppKeyEncryptionTypeTarget = DESFireKeyType.DF_KEY_AES,
+                SelectedDesfireAppKeyVersionTarget = "01",
+                DesfireAppKeyTarget = "A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1"
+            };
+
+            var payload = viewModel.BuildAppKeyChangePayload(
+                appId: 1,
+                keyNumberForChange: 0,
+                authKeyHex: "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+                oldKeyForTargetSlot: "00000000000000000000000000000000",
+                keySettings: DESFireKeySettings.ChangeKeyWithMasterKey);
+
+            Assert.Equal((uint)1, payload.AppId);
+            Assert.Equal((byte)0, payload.TargetKeyNo);
+            Assert.Equal(DESFireKeyType.DF_KEY_AES, payload.TargetKeyType);
+            Assert.Equal("00000000000000000000000000000000", payload.CurrentTargetKeyHex);
+            Assert.Equal("A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1", payload.NewTargetKeyHex);
+            Assert.Equal((byte)0x01, payload.NewTargetKeyVersion);
+            Assert.Equal("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", payload.MasterKeyHex);
+            Assert.Equal(DESFireKeyType.DF_KEY_DES, payload.MasterKeyType);
+            Assert.Equal(DESFireKeySettings.ChangeKeyWithMasterKey, payload.KeySettings);
+        }
+
+        [Theory]
         [InlineData("0")]
         [InlineData("-1")]
         public async Task ChangeAppKeyCommand_WhenAppIdNotPositive_SetsStatusAndStops(string appNumber)

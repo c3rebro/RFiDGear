@@ -548,7 +548,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
 
                     MaxNumberOfAppKeys = (byte)ks.NumberOfKeys;
-                    EncryptionType = (DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), ks.KeyType));
+                    EncryptionType = ResolveDesfireKeyType(ks.KeyType.ToString(), _keyType);
                     DesfireAppKeySetting = (AccessControl.DESFireKeySettings)ks.AccessRights;
 
                     var metadata = new Dictionary<string, string>
@@ -790,7 +790,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     // Try map the returned key type to your enum by name; if it fails, keep the requested targetKeyType.
                     if (Enum.TryParse<DESFireKeyType>(ks.KeyType.ToString(), out var parsed))
-                        keyTypeForContext = parsed;
+                        keyTypeForContext = ResolveKeyTypeForChange(resolved.AppId, resolved.TargetKeyType, parsed);
                 }
                 catch
                 {
@@ -831,6 +831,39 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <summary>
+        /// Resolves the key type to use when issuing a DESFire ChangeKey command via the Elatec API.
+        /// </summary>
+        /// <param name="appId">Application identifier (0 = PICC, &gt;0 = application).</param>
+        /// <param name="targetKeyType">Desired target key type from the UI.</param>
+        /// <param name="detectedKeyType">Detected key type from the card, if available.</param>
+        /// <returns>The key type to pass to the reader API for ChangeKey.</returns>
+        internal static DESFireKeyType ResolveKeyTypeForChange(uint appId, DESFireKeyType targetKeyType, DESFireKeyType? detectedKeyType)
+        {
+            if (appId == 0)
+            {
+                return targetKeyType;
+            }
+
+            return detectedKeyType ?? targetKeyType;
+        }
+
+        /// <summary>
+        /// Maps a provider-reported key type name to the local DESFire key type enum.
+        /// </summary>
+        /// <param name="providerKeyTypeName">Name reported by the provider for the key type.</param>
+        /// <param name="fallback">Fallback when the name is not recognized.</param>
+        /// <returns>The resolved DESFire key type.</returns>
+        internal static DESFireKeyType ResolveDesfireKeyType(string providerKeyTypeName, DESFireKeyType fallback)
+        {
+            if (Enum.TryParse<DESFireKeyType>(providerKeyTypeName, out var parsed))
+            {
+                return parsed;
+            }
+
+            return fallback;
+        }
+
         /// <inheritdoc />
         public async override Task<ERROR> ChangeMifareDesfireApplicationKeySettings(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
            int _appIDCurrent, AccessControl.DESFireKeySettings keySettings)
@@ -861,9 +894,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         cardKeyCount = (byte)desfireSettings.NumberOfKeys;
                         MaxNumberOfAppKeys = cardKeyCount.Value;
 
-                        cardKeyType = (DESFireKeyType)Enum.Parse(
-                            typeof(DESFireKeyType),
-                            Enum.GetName(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), desfireSettings.KeyType));
+                        cardKeyType = ResolveDesfireKeyType(desfireSettings.KeyType.ToString(), _keyTypeCurrent);
                         EncryptionType = cardKeyType.Value;
                     }
                     catch (Exception e)
