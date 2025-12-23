@@ -7,6 +7,7 @@ using RFiDGear.ViewModel.TaskSetupViewModels;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 
 namespace RFiDGear.ViewModel.DialogFactories
 {
@@ -47,7 +48,7 @@ namespace RFiDGear.ViewModel.DialogFactories
 
                         chipTasks.TaskCollection.Add(sender);
 
-                        chipTasks.TaskCollection = new ObservableCollection<object>(chipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
+                        chipTasks.TaskCollection = new ObservableCollection<object>(chipTasks.TaskCollection.OrderBy(x => (x as IGenericTask).SelectedTaskIndexAsInt));
 
                         notifyChipTasksChanged();
                     }
@@ -102,7 +103,7 @@ namespace RFiDGear.ViewModel.DialogFactories
 
                         chipTasks.TaskCollection.Add(sender);
 
-                        chipTasks.TaskCollection = new ObservableCollection<object>(chipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
+                        chipTasks.TaskCollection = new ObservableCollection<object>(chipTasks.TaskCollection.OrderBy(x => (x as IGenericTask).SelectedTaskIndexAsInt));
 
                         notifyChipTasksChanged();
                     }
@@ -169,7 +170,7 @@ namespace RFiDGear.ViewModel.DialogFactories
 
                         chipTasks.TaskCollection.Add(sender);
 
-                        chipTasks.TaskCollection = new ObservableCollection<object>(chipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
+                        chipTasks.TaskCollection = new ObservableCollection<object>(chipTasks.TaskCollection.OrderBy(x => (x as IGenericTask).SelectedTaskIndexAsInt));
 
                         notifyChipTasksChanged();
 
@@ -224,7 +225,7 @@ namespace RFiDGear.ViewModel.DialogFactories
 
                         chipTasks.TaskCollection.Add(sender);
 
-                        chipTasks.TaskCollection = new ObservableCollection<object>(chipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
+                        chipTasks.TaskCollection = new ObservableCollection<object>(chipTasks.TaskCollection.OrderBy(x => (x as IGenericTask).SelectedTaskIndexAsInt));
 
                         notifyChipTasksChanged();
 

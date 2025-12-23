@@ -1,13 +1,14 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using RFiDGear.Infrastructure;
+using RFiDGear.Models;
 
-namespace RFiDGear.Models
+namespace RFiDGear.Infrastructure.Tasks.Interfaces
 {
     /// <summary>
     /// This Interface contains a Description of Common Properties for all Tasks. A Task has an Execute Condition and a Result.
     /// </summary>
-    public interface IGenericTaskModel
+    public interface IGenericTask
     {
         /// <summary>
         /// Indicates a Task Result and is interpreted by one of the following ElatecError states: true = NoError, null = Empty, false = Everything else
