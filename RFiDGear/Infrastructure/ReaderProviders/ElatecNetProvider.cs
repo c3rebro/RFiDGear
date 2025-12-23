@@ -790,7 +790,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     // Try map the returned key type to your enum by name; if it fails, keep the requested targetKeyType.
                     if (Enum.TryParse<DESFireKeyType>(ks.KeyType.ToString(), out var parsed))
-                        keyTypeForContext = parsed;
+                        keyTypeForContext = ResolveKeyTypeForChange(resolved.AppId, resolved.TargetKeyType, parsed);
                 }
                 catch
                 {
@@ -829,6 +829,23 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 throw new ArgumentOutOfRangeException(nameof(t), $"No Elatec key type mapping for {t}.");
             }
+        }
+
+        /// <summary>
+        /// Resolves the key type to use when issuing a DESFire ChangeKey command via the Elatec API.
+        /// </summary>
+        /// <param name="appId">Application identifier (0 = PICC, &gt;0 = application).</param>
+        /// <param name="targetKeyType">Desired target key type from the UI.</param>
+        /// <param name="detectedKeyType">Detected key type from the card, if available.</param>
+        /// <returns>The key type to pass to the reader API for ChangeKey.</returns>
+        internal static DESFireKeyType ResolveKeyTypeForChange(uint appId, DESFireKeyType targetKeyType, DESFireKeyType? detectedKeyType)
+        {
+            if (appId == 0)
+            {
+                return targetKeyType;
+            }
+
+            return detectedKeyType ?? targetKeyType;
         }
 
         /// <inheritdoc />
