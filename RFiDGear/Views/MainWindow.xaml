@@ -361,10 +361,11 @@
                             VerticalAlignment="Center"
                             Source="/RFiDGear;component/Resources/wait.ico" />
                         <DataTemplate.Triggers>
-                            <DataTrigger Binding="{Binding IsTaskCompletedSuccessfully}" Value="True">
+                            <!-- Bind explicitly to the row item so the header updates with task status changes. -->
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Item.IsTaskCompletedSuccessfully}" Value="True">
                                 <Setter TargetName="editImage" Property="Source" Value="/RFiDGear;component/Resources/confirm.ico" />
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding IsTaskCompletedSuccessfully}" Value="False">
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Item.IsTaskCompletedSuccessfully}" Value="False">
                                 <Setter TargetName="editImage" Property="Source" Value="/RFiDGear;component/Resources/error.ico" />
                             </DataTrigger>
                         </DataTemplate.Triggers>
