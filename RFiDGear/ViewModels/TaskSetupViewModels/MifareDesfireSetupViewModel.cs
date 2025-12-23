@@ -1144,7 +1144,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 {
                     appNumberNew = value.ToUpper();
                 }
-                IsValidAppNumberNew = (int.TryParse(value, out appNumberNewAsInt) && appNumberNewAsInt <= (int)0xFFFFFF);
+                IsValidAppNumberNew = TryParseDesfireAppId(value, out appNumberNewAsInt);
                 OnPropertyChanged(nameof(AppNumberNew));
             }
         }
@@ -1171,6 +1171,33 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
         private bool? isValidAppNumberNew;
+
+        /// <summary>
+        /// Parses a DESFire application identifier from decimal or hexadecimal input.
+        /// </summary>
+        /// <param name="value">The user input to parse.</param>
+        /// <param name="appId">The parsed application identifier.</param>
+        /// <returns><c>true</c> when the input yields a valid app ID.</returns>
+        private static bool TryParseDesfireAppId(string value, out int appId)
+        {
+            appId = 0;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var trimmed = value.Trim();
+            var isHex = trimmed.StartsWith("0x", StringComparison.OrdinalIgnoreCase);
+            var candidate = isHex ? trimmed.Substring(2) : trimmed;
+
+            if (int.TryParse(candidate, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out appId))
+            {
+                return appId <= (int)0xFFFFFF;
+            }
+
+            return int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out appId)
+                   && appId <= (int)0xFFFFFF;
+        }
 
         /// <summary>
         ///
