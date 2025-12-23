@@ -239,8 +239,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => isTaskCompletedSuccessfully;
             set
             {
+                if (isTaskCompletedSuccessfully == value)
+                {
+                    return;
+                }
+
                 isTaskCompletedSuccessfully = value;
-                OnPropertyChanged(nameof(IsTaskCompletedSuccessfully));
+                UiDispatcher.InvokeIfRequired(() => OnPropertyChanged(nameof(IsTaskCompletedSuccessfully)));
             }
         }
         private bool? isTaskCompletedSuccessfully;
