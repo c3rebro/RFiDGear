@@ -198,6 +198,35 @@ namespace RFiDGear.Tests
             Assert.False(viewModel.IsValidFileNumberCurrent);
         }
 
+        [Fact]
+        public void BuildAppKeyChangePayload_UsesCurrentAuthKeyAsMasterKey()
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                SelectedDesfireAppKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_DES,
+                SelectedDesfireAppKeyEncryptionTypeTarget = DESFireKeyType.DF_KEY_AES,
+                SelectedDesfireAppKeyVersionTarget = "01",
+                DesfireAppKeyTarget = "A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1"
+            };
+
+            var payload = viewModel.BuildAppKeyChangePayload(
+                appId: 1,
+                keyNumberForChange: 0,
+                authKeyHex: "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+                oldKeyForTargetSlot: "00000000000000000000000000000000",
+                keySettings: DESFireKeySettings.ChangeKeyWithMasterKey);
+
+            Assert.Equal((uint)1, payload.AppId);
+            Assert.Equal((byte)0, payload.TargetKeyNo);
+            Assert.Equal(DESFireKeyType.DF_KEY_AES, payload.TargetKeyType);
+            Assert.Equal("00000000000000000000000000000000", payload.CurrentTargetKeyHex);
+            Assert.Equal("A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1", payload.NewTargetKeyHex);
+            Assert.Equal((byte)0x01, payload.NewTargetKeyVersion);
+            Assert.Equal("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", payload.MasterKeyHex);
+            Assert.Equal(DESFireKeyType.DF_KEY_DES, payload.MasterKeyType);
+            Assert.Equal(DESFireKeySettings.ChangeKeyWithMasterKey, payload.KeySettings);
+        }
+
         [Theory]
         [InlineData("0")]
         [InlineData("-1")]

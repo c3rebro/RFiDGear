@@ -487,6 +487,57 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             await UpdateReaderStatusCommand.ExecuteAsync(false);
         }
 
+        /// <summary>
+        /// Encapsulates the resolved inputs for an application key change call.
+        /// </summary>
+        /// <param name="AppId">Target application identifier.</param>
+        /// <param name="TargetKeyNo">Target key slot number.</param>
+        /// <param name="TargetKeyType">Cryptographic type of the new key.</param>
+        /// <param name="CurrentTargetKeyHex">Current key value for the target slot.</param>
+        /// <param name="NewTargetKeyHex">New key value for the target slot.</param>
+        /// <param name="NewTargetKeyVersion">Version byte for the new key.</param>
+        /// <param name="MasterKeyHex">Authentication key value (key 0 when policy requires it).</param>
+        /// <param name="MasterKeyType">Cryptographic type of the authentication key.</param>
+        /// <param name="KeySettings">Key settings bits used to drive authentication policy.</param>
+        internal sealed record AppKeyChangePayload(
+            uint AppId,
+            byte TargetKeyNo,
+            DESFireKeyType TargetKeyType,
+            string CurrentTargetKeyHex,
+            string NewTargetKeyHex,
+            byte NewTargetKeyVersion,
+            string MasterKeyHex,
+            DESFireKeyType MasterKeyType,
+            DESFireKeySettings KeySettings);
+
+        /// <summary>
+        /// Builds the input payload for changing an application key.
+        /// </summary>
+        /// <param name="appId">Target application identifier.</param>
+        /// <param name="keyNumberForChange">Target key slot number.</param>
+        /// <param name="authKeyHex">Authentication key value (master key or targeted key).</param>
+        /// <param name="oldKeyForTargetSlot">Current key value for the target slot.</param>
+        /// <param name="keySettings">Key settings bits used to drive authentication policy.</param>
+        /// <returns>Resolved change-key payload for provider calls.</returns>
+        internal AppKeyChangePayload BuildAppKeyChangePayload(
+            int appId,
+            int keyNumberForChange,
+            string authKeyHex,
+            string oldKeyForTargetSlot,
+            DESFireKeySettings keySettings)
+        {
+            return new AppKeyChangePayload(
+                (uint)appId,
+                (byte)keyNumberForChange,
+                SelectedDesfireAppKeyEncryptionTypeTarget,
+                oldKeyForTargetSlot,
+                DesfireAppKeyTarget,
+                (byte)selectedDesfireAppKeyVersionTargetAsInt,
+                authKeyHex,
+                SelectedDesfireAppKeyEncryptionTypeCurrent,
+                keySettings);
+        }
+
         private DESFireKeySettings GetGeneralDesfireKeyFlags()
         {
             var keySettings = DESFireKeySettings.ChangeKeyWithMasterKey;
@@ -2432,7 +2483,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     var authKeyValue = DesfireAppKeyCurrent;
                     var oldKeyForTargetSlot = ShowAppKeyOldInputs ? DesfireAppKeyCurrentOld : DesfireAppKeyCurrent;
-                    var oldKeyForChangeKey = authKeyValue;
                     var keyNumberForChange = AppNumberCurrentAsInt == 0 ? 0 : selectedDesfireAppKeyNumberCurrentAsInt;
                     var numberOfKeys = AppNumberCurrentAsInt == 0 ? 1 : 15;
 
@@ -2459,12 +2509,23 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             await TryUpdateKeyVersionAsync(device, keyNumberForChange);
 
                             var keySettings = GetChangeKeyModeForApplication(AppNumberCurrentAsInt);
+                            var payload = BuildAppKeyChangePayload(
+                                AppNumberCurrentAsInt,
+                                keyNumberForChange,
+                                authKeyValue,
+                                oldKeyForTargetSlot,
+                                keySettings);
 
-                            result = await device.ChangeMifareDesfireKeyAsync((uint)AppNumberCurrentAsInt, (byte)keyNumberForChange, SelectedDesfireAppKeyEncryptionTypeCurrent, authKeyValue,
-                                                                         oldKeyForChangeKey,
-                                                                         (byte)keyVersionTargetAsInt,
-                                                                         DesfireAppKeyTarget, selectedDesfireAppKeyEncryptionTypeTarget,
-                                                                         keySettings);
+                            result = await device.ChangeMifareDesfireKeyAsync(
+                                payload.AppId,
+                                payload.TargetKeyNo,
+                                payload.TargetKeyType,
+                                payload.CurrentTargetKeyHex,
+                                payload.NewTargetKeyHex,
+                                payload.NewTargetKeyVersion,
+                                payload.MasterKeyHex,
+                                payload.MasterKeyType,
+                                payload.KeySettings);
 
                             if (await SetOperationResultAsync(
                                     result,
