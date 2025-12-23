@@ -2600,7 +2600,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     var appId = AppNumberCurrentAsInt;
                     var authKey = appId == 0 ? DesfireMasterKeyCurrent : DesfireAppKeyCurrent;
                     var authKeyType = appId == 0 ? SelectedDesfireMasterKeyEncryptionTypeCurrent : SelectedDesfireAppKeyEncryptionTypeCurrent;
-                    var authKeyNumber = appId == 0 ? 0 : selectedDesfireAppKeyNumberCurrentAsInt;
+                    var authKeyNumber = 0; //Codex TODO: authKeyNumber should be 0 always on Settings Change,
+                                           //Check if removing this code: appId == 0 ? 0 : selectedDesfireAppKeyNumberCurrentAsInt; produce any leftovers to be removed
 
                     try
                     {

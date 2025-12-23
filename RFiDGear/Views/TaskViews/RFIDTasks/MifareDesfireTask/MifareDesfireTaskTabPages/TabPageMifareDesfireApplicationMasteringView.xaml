@@ -109,6 +109,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
+                        Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
                         Text="{Binding SelectedDesfireAppKeyVersionTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
@@ -134,29 +135,18 @@
                         Margin="8,8,8,8"
                         VerticalAlignment="Stretch"
                         Visibility="{Binding ShowAppKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
-                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireAppSettingsTarget'}">
+                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireAppSetupKeySettings'}">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="auto" />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
-                            <Label
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                Margin="8,8,8,8"
-                                VerticalAlignment="Stretch"
-                                HorizontalAlignment="Stretch"
-                                VerticalContentAlignment="Center"
-                                HorizontalContentAlignment="Left"
-                                Visibility="{Binding ShowAppKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
-                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireAppSetupKeySettings'}" />
                             <StackPanel
                                 Grid.Row="0"
-                                Grid.Column="1"
+                                Grid.Column="0"
                                 Margin="8,0,8,8"
                                 VerticalAlignment="Top"
                                 HorizontalAlignment="Left">
@@ -227,6 +217,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
+                        Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter=labelContentMifareDesfireKeyVersion}" />
                     <Label
                      Grid.Row="3"
@@ -488,8 +479,10 @@
                     <TextBox
                         Grid.Row="5"
                         Grid.Column="1"
+                        Height="26"
                         Margin="8,0,8,8"
                         VerticalAlignment="Center"
+                        VerticalContentAlignment="Center"
                         HorizontalAlignment="Stretch"
                         IsReadOnly="True"
                         Text="{Binding KeyVersionCurrent}" />
