@@ -1,3 +1,4 @@
+using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.ViewModel.TaskSetupViewModels;
@@ -21,6 +22,19 @@ namespace RFiDGear.Tests
             Assert.False(viewModel.IsDesfireAppAuthenticationTabEnabled);
             Assert.False(viewModel.IsDesfireAppAuthoringTabEnabled);
             Assert.False(viewModel.IsDesfireAppCreationTabEnabled);
+        }
+
+        [Fact]
+        public async Task CommandDelegator_FinalizesTaskForNoOpSelection()
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                CurrentTaskErrorLevel = ERROR.NoError
+            };
+
+            await viewModel.CommandDelegator.ExecuteAsync(TaskType_MifareDesfireTask.None);
+
+            Assert.True(viewModel.IsTaskCompletedSuccessfully);
         }
 
         [Theory]

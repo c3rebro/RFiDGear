@@ -40,6 +40,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     {
         #region Fields
         private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private bool hasFinalizedTask;
 
         private protected SettingsReaderWriter settings = new SettingsReaderWriter();
 
@@ -483,6 +484,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         private async Task FinalizeTaskAsync()
         {
+            if (hasFinalizedTask)
+            {
+                return;
+            }
+
+            hasFinalizedTask = true;
             IsTaskCompletedSuccessfully = CurrentTaskErrorLevel == ERROR.NoError;
             await UpdateReaderStatusCommand.ExecuteAsync(false);
         }
@@ -2040,68 +2047,76 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public IAsyncRelayCommand CommandDelegator => new AsyncRelayCommand<TaskType_MifareDesfireTask>((x) => OnNewCommandDelegatorCall(x));
         private async Task OnNewCommandDelegatorCall(TaskType_MifareDesfireTask desfireTaskType)
         {
-            switch (desfireTaskType)
+            hasFinalizedTask = false;
+
+            try
             {
-                case TaskType_MifareDesfireTask.AppExistCheck:
-                    await DoesAppExistCommand(null);
-                    break;
+                switch (desfireTaskType)
+                {
+                    case TaskType_MifareDesfireTask.AppExistCheck:
+                        await DoesAppExistCommand(null);
+                        break;
 
-                case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
-                    await OnNewChangeAppKeyCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
+                        await OnNewChangeAppKeyCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover:
-                    await OnNewChangeAppKeySettingsCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover:
+                        await OnNewChangeAppKeySettingsCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.AuthenticateApplication:
-                    await OnNewAuthenticateToCardApplicationCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.AuthenticateApplication:
+                        await OnNewAuthenticateToCardApplicationCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.CreateApplication:
-                    await OnNewCreateAppCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.CreateApplication:
+                        await OnNewCreateAppCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.CreateFile:
-                    await OnNewCreateFileCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.CreateFile:
+                        await OnNewCreateFileCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.DeleteApplication:
-                    await OnNewDeleteSignleCardApplicationCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.DeleteApplication:
+                        await OnNewDeleteSignleCardApplicationCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.DeleteFile:
-                    await OnNewDeleteFileCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.DeleteFile:
+                        await OnNewDeleteFileCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.FormatDesfireCard:
-                    await OnNewFormatDesfireCardCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.FormatDesfireCard:
+                        await OnNewFormatDesfireCardCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.PICCMasterKeyChangeover:
-                    await OnNewChangeMasterCardKeyCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.PICCMasterKeyChangeover:
+                        await OnNewChangeMasterCardKeyCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover:
-                    await OnNewChangeAppKeySettingsCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover:
+                        await OnNewChangeAppKeySettingsCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.ReadAppSettings:
-                    await ReadAppSettingsCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.ReadAppSettings:
+                        await ReadAppSettingsCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.ReadData:
-                    await OnNewReadDataCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.ReadData:
+                        await OnNewReadDataCommand();
+                        break;
 
-                case TaskType_MifareDesfireTask.WriteData:
-                    await OnNewWriteDataCommand();
-                    break;
+                    case TaskType_MifareDesfireTask.WriteData:
+                        await OnNewWriteDataCommand();
+                        break;
 
-                default:
-                    break;
+                    default:
+                        break;
+                }
             }
-
+            finally
+            {
+                await FinalizeTaskAsync();
+            }
         }
         /// <summary>
         /// return new RelayCommand<LibLogicalAccessProvider>((_device) => OnNewCreateAppCommand(_device));
