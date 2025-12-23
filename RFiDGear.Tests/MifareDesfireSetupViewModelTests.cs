@@ -115,6 +115,21 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
+        [InlineData("0x4bc", 0x4BC)]
+        [InlineData("0x4BC", 0x4BC)]
+        [InlineData("1212", 0x1212)]
+        public void AppNumberNew_SupportsHexInput(string value, int expected)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                AppNumberNew = value
+            };
+
+            Assert.True(viewModel.IsValidAppNumberNew);
+            Assert.Equal(expected, viewModel.AppNumberNewAsInt);
+        }
+
+        [Theory]
         [InlineData("0")]
         [InlineData("-1")]
         public async Task ChangeAppKeyCommand_WhenAppIdNotPositive_SetsStatusAndStops(string appNumber)
