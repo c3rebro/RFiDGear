@@ -523,6 +523,11 @@ namespace RFiDGear.ViewModel
                             sender.SelectedTaskType == TaskType_CommonTask.CheckLogicCondition ||
                             sender.SelectedTaskType == TaskType_CommonTask.ExecuteProgram)
                         {
+                            if (!TryValidateTaskIndices(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel))
+                            {
+                                return;
+                            }
+
                             if (ChipTasks.TaskCollection.OfType<CommonTaskViewModel>().Where(x => (x as CommonTaskViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any())
                             {
                                 ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
@@ -574,6 +579,30 @@ namespace RFiDGear.ViewModel
             OnPropertyChanged(nameof(ChipTasks));
 
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Validates task indices and shows a dialog when the input is invalid.
+        /// </summary>
+        /// <param name="taskIndex">The task index assigned to the current task.</param>
+        /// <param name="executeConditionTaskIndex">The task index referenced by the execute condition.</param>
+        /// <param name="executeConditionErrorLevel">The execute condition error level.</param>
+        /// <returns><see langword="true"/> when validation succeeds; otherwise <see langword="false"/>.</returns>
+        private bool TryValidateTaskIndices(string taskIndex, string executeConditionTaskIndex, ERROR executeConditionErrorLevel)
+        {
+            if (!TaskIndexValidation.TryValidateTaskIndex(taskIndex, ChipTasks?.TaskCollection, SelectedSetupViewModel, out var errorMessage) ||
+                !TaskIndexValidation.TryValidateExecuteConditionIndex(executeConditionTaskIndex, executeConditionErrorLevel, ChipTasks?.TaskCollection, out errorMessage))
+            {
+                dialogs.Add(new CustomDialogViewModel
+                {
+                    Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                    Message = errorMessage,
+                    OnOk = sender => sender.Close()
+                });
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>

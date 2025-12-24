@@ -252,7 +252,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 selectedExecuteConditionTaskIndex = value;
-                IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
+                IsValidSelectedExecuteConditionTaskIndex = TaskIndexValidation.TryValidateExecuteConditionIndex(value, SelectedExecuteConditionErrorLevel, AvailableTasks, out _);
+                int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
                 OnPropertyChanged(nameof(SelectedExecuteConditionTaskIndex));
             }
         }
@@ -288,6 +289,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 selectedExecuteConditionErrorLevel = value;
+                RevalidateSelectedExecuteConditionTaskIndex();
                 OnPropertyChanged(nameof(SelectedExecuteConditionErrorLevel));
             }
         }
@@ -346,7 +348,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 currentTaskIndex = value;
-                IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
+                IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(value, AvailableTasks, this, out _);
+                int.TryParse(value, out selectedTaskIndexAsInt);
             }
         }
         private string currentTaskIndex;
@@ -370,6 +373,32 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
         private bool? isValidSelectedTaskIndex;
+
+        /// <summary>
+        /// The collection of available tasks for validation.
+        /// </summary>
+        [XmlIgnore]
+        public ObservableCollection<object> AvailableTasks
+        {
+            get => availableTasks;
+            set
+            {
+                availableTasks = value;
+                RevalidateSelectedTaskIndex();
+                RevalidateSelectedExecuteConditionTaskIndex();
+            }
+        }
+        private ObservableCollection<object> availableTasks;
+
+        private void RevalidateSelectedTaskIndex()
+        {
+            IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(CurrentTaskIndex, AvailableTasks, this, out _);
+        }
+
+        private void RevalidateSelectedExecuteConditionTaskIndex()
+        {
+            IsValidSelectedExecuteConditionTaskIndex = TaskIndexValidation.TryValidateExecuteConditionIndex(SelectedExecuteConditionTaskIndex, SelectedExecuteConditionErrorLevel, AvailableTasks, out _);
+        }
 
         /// <summary>
         ///

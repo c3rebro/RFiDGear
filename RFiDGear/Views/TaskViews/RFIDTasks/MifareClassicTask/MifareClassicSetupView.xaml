@@ -170,14 +170,14 @@
                         TabIndex="2"
                         Text="{Binding CurrentTaskIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
                         <TextBox.Resources>
-                            <Style x:Key="IsValidSelectedKeySetupTaskIndex" TargetType="TextBox">
+                            <Style TargetType="TextBox">
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidSelectedKeySetupTaskIndex}" Value="True">
+                                    <DataTrigger Binding="{Binding IsValidSelectedTaskIndex}" Value="True">
                                         <Setter Property="Foreground" Value="Green" />
                                         <Setter Property="Background" Value="White" />
                                         <Setter Property="FontWeight" Value="Normal" />
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidSelectedKeySetupTaskIndex}" Value="False">
+                                    <DataTrigger Binding="{Binding IsValidSelectedTaskIndex}" Value="False">
                                         <Setter Property="Foreground" Value="Black" />
                                         <Setter Property="Background" Value="Red" />
                                         <Setter Property="FontWeight" Value="Normal" />
@@ -211,14 +211,14 @@
                                 TabIndex="2"
                                 Text="{Binding SelectedExecuteConditionTaskIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Cursor="IBeam">
                                 <TextBox.Resources>
-                                    <Style x:Key="IsValidSelectedKeySetupTaskIndex" TargetType="{x:Type TextBox}">
+                                    <Style TargetType="{x:Type TextBox}">
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsValidSelectedKeySetupTaskIndex}" Value="True">
+                                            <DataTrigger Binding="{Binding IsValidSelectedExecuteConditionTaskIndex}" Value="True">
                                                 <Setter Property="Foreground" Value="Green" />
                                                 <Setter Property="Background" Value="White" />
                                                 <Setter Property="FontWeight" Value="Normal" />
                                             </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsValidSelectedKeySetupTaskIndex}" Value="False">
+                                            <DataTrigger Binding="{Binding IsValidSelectedExecuteConditionTaskIndex}" Value="False">
                                                 <Setter Property="Foreground" Value="Black" />
                                                 <Setter Property="Background" Value="Red" />
                                                 <Setter Property="FontWeight" Value="Normal" />
