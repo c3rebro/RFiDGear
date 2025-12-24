@@ -31,12 +31,13 @@ using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.UIExtensions.Interfaces;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
     /// Description of MifareDesfireSetupViewModel.
     /// </summary>
-    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTaskModel
+    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask
     {
         #region Fields
         private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);

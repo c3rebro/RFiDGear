@@ -20,6 +20,7 @@ using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using Serilog;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 
 namespace RFiDGear.Services.TaskExecution
 {
@@ -108,7 +109,7 @@ namespace RFiDGear.Services.TaskExecution
     /// </summary>
     public class TaskDescriptor
     {
-        public TaskDescriptor(int index, IGenericTaskModel task, Func<CancellationToken, Task> executor = null)
+        public TaskDescriptor(int index, IGenericTask task, Func<CancellationToken, Task> executor = null)
         {
             Index = index;
             Task = task;
@@ -118,7 +119,7 @@ namespace RFiDGear.Services.TaskExecution
 
         public int Index { get; }
         public string Id { get; }
-        public IGenericTaskModel Task { get; }
+        public IGenericTask Task { get; }
         public Func<CancellationToken, Task> ExecuteAsync { get; }
     }
 
@@ -232,7 +233,7 @@ namespace RFiDGear.Services.TaskExecution
         public IReadOnlyList<TaskDescriptor> TaskDescriptors { get; set; }
         public IDictionary<ERROR, string> ErrorRouting { get; set; } = new Dictionary<ERROR, string>();
         public IDictionary<string, string> AlternateExecutionKeys { get; set; }
-        public Action<IGenericTaskModel, IDictionary<string, string>> ConfigureTaskStrategy { get; set; }
+        public Action<IGenericTask, IDictionary<string, string>> ConfigureTaskStrategy { get; set; }
     }
 
     /// <summary>
@@ -419,7 +420,7 @@ namespace RFiDGear.Services.TaskExecution
             if (activeRequest?.TaskHandler.TaskCollection != null &&
                 activeRequest.TaskHandler.TaskCollection.Count > taskIndex)
             {
-                (activeRequest.TaskHandler.TaskCollection[taskIndex] as IGenericTaskModel).IsTaskCompletedSuccessfully = false;
+                (activeRequest.TaskHandler.TaskCollection[taskIndex] as IGenericTask).IsTaskCompletedSuccessfully = false;
             }
         }
 
@@ -436,7 +437,7 @@ namespace RFiDGear.Services.TaskExecution
             {
                 for (var index = 0; index < request.TaskHandler.TaskCollection.Count; index++)
                 {
-                    var task = request.TaskHandler.TaskCollection[index] as IGenericTaskModel;
+                    var task = request.TaskHandler.TaskCollection[index] as IGenericTask;
                     descriptors.Add(new TaskDescriptor(index, task));
                 }
             }
@@ -566,7 +567,7 @@ namespace RFiDGear.Services.TaskExecution
                 taskTimeout.Tag = CurrentTaskIndex;
 
                 var descriptor = descriptors[CurrentTaskIndex];
-                var taskModel = descriptor.Task ?? request.TaskHandler?.TaskCollection?[CurrentTaskIndex] as IGenericTaskModel;
+                var taskModel = descriptor.Task ?? request.TaskHandler?.TaskCollection?[CurrentTaskIndex] as IGenericTask;
 
                 request.ConfigureTaskStrategy?.Invoke(
                     taskModel,
@@ -676,7 +677,7 @@ namespace RFiDGear.Services.TaskExecution
             }
         }
 
-        private void RecordTaskAttempt(IGenericTaskModel taskModel)
+        private void RecordTaskAttempt(IGenericTask taskModel)
         {
             if (taskModel == null || taskModel.AttemptResults == null)
             {
@@ -692,7 +693,7 @@ namespace RFiDGear.Services.TaskExecution
             });
         }
 
-        private void ApplyErrorRouting(IGenericTaskModel taskModel, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors)
+        private void ApplyErrorRouting(IGenericTask taskModel, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors)
         {
             if (taskModel == null || request?.ErrorRouting == null || descriptors == null)
             {
@@ -723,13 +724,13 @@ namespace RFiDGear.Services.TaskExecution
             {
                 case TaskType_CommonTask.CreateReport:
                     taskTimeout.Stop();
-                    switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
+                    switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel)
                     {
                         case ERROR.TransportError:
                             break;
 
                         case ERROR.Empty:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.TransportError;
+                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel = ERROR.TransportError;
                             taskTimeout.Start();
                             taskTimeout.Stop();
 
@@ -745,7 +746,7 @@ namespace RFiDGear.Services.TaskExecution
                                 }
                             }
 
-                            if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                            if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                             {
                                 if (string.IsNullOrEmpty(result.ReportOutputPath))
                                 {
@@ -781,9 +782,9 @@ namespace RFiDGear.Services.TaskExecution
 
                             else
                             {
-                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                 {
-                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
                                     {
                                         if (string.IsNullOrEmpty(result.ReportOutputPath))
                                         {
@@ -841,7 +842,7 @@ namespace RFiDGear.Services.TaskExecution
                             break;
 
                         case ERROR.Empty:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.TransportError;
+                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel = ERROR.TransportError;
                             taskTimeout.Start();
 
                             if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
@@ -851,9 +852,9 @@ namespace RFiDGear.Services.TaskExecution
                             }
                             else
                             {
-                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                 {
-                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
                                     {
                                         await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.ExecuteAsync(request.TaskHandler.TaskCollection);
                                         executed = true;
@@ -882,7 +883,7 @@ namespace RFiDGear.Services.TaskExecution
                             break;
 
                         case ERROR.Empty:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.TransportError;
+                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel = ERROR.TransportError;
                             taskTimeout.Start();
 
                             if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
@@ -892,9 +893,9 @@ namespace RFiDGear.Services.TaskExecution
                             }
                             else
                             {
-                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                 {
-                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
                                     {
                                         (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
                                         executed = true;
@@ -929,12 +930,12 @@ namespace RFiDGear.Services.TaskExecution
             {
                 case TaskType_GenericChipTask.ChipIsOfType:
                     taskTimeout.Start();
-                    switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
+                    switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel)
                     {
                         case ERROR.Empty:
                             (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).IsFocused = true;
 
-                            if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                            if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                             {
                                 request.UpdateReaderBusy?.Invoke(true);
                                 await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).CheckChipType.ExecuteAsync(device.GenericChip);
@@ -942,9 +943,9 @@ namespace RFiDGear.Services.TaskExecution
                             }
                             else
                             {
-                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                 {
-                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
                                     {
                                         request.UpdateReaderBusy?.Invoke(true);
                                         await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).CheckChipType.ExecuteAsync(device.GenericChip);
@@ -968,12 +969,12 @@ namespace RFiDGear.Services.TaskExecution
                     break;
                 case TaskType_GenericChipTask.ChipIsMultiChip:
                     taskTimeout.Start();
-                    switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
+                    switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel)
                     {
                         case ERROR.Empty:
                             (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).IsFocused = true;
 
-                            if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                            if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                             {
                                 request.UpdateReaderBusy?.Invoke(true);
                                 await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).CheckChipIsMultiTecChip.ExecuteAsync(device.GenericChip);
@@ -981,9 +982,9 @@ namespace RFiDGear.Services.TaskExecution
                             }
                             else
                             {
-                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                                 {
-                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
                                     {
                                         request.UpdateReaderBusy?.Invoke(true);
                                         await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as GenericChipTaskViewModel).CheckChipIsMultiTecChip.ExecuteAsync(device.GenericChip);
@@ -1015,17 +1016,17 @@ namespace RFiDGear.Services.TaskExecution
         private async Task<bool> HandleClassicTaskAsync(MifareClassicSetupViewModel classicTask, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors)
         {
             var executed = false;
-            switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
+            switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel)
             {
                 case ERROR.TransportError:
                     taskTimeout.Start();
                     break;
 
                 case ERROR.Empty:
-                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.TransportError;
+                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel = ERROR.TransportError;
                     taskTimeout.Start();
 
-                    if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                    if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                     {
                         request.UpdateReaderBusy?.Invoke(true);
                         await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareClassicSetupViewModel).CommandDelegator.ExecuteAsync(classicTask.SelectedTaskType);
@@ -1034,9 +1035,9 @@ namespace RFiDGear.Services.TaskExecution
 
                     else
                     {
-                        if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                        if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                         {
-                            if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                            if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
                             {
                                 request.UpdateReaderBusy?.Invoke(true);
                                 await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareClassicSetupViewModel).CommandDelegator.ExecuteAsync(classicTask.SelectedTaskType);
@@ -1065,17 +1066,17 @@ namespace RFiDGear.Services.TaskExecution
         private async Task<bool> HandleDesfireTaskAsync(MifareDesfireSetupViewModel desfireTask, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors)
         {
             var executed = false;
-            switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel)
+            switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel)
             {
                 case ERROR.TransportError:
                     taskTimeout.Start();
                     break;
 
                 case ERROR.Empty:
-                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.TransportError;
+                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel = ERROR.TransportError;
                     taskTimeout.Start();
 
-                    if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                    if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel == ERROR.Empty)
                     {
                         request.UpdateReaderBusy?.Invoke(true);
                         await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareDesfireSetupViewModel).CommandDelegator.ExecuteAsync(desfireTask.SelectedTaskType);
@@ -1084,9 +1085,9 @@ namespace RFiDGear.Services.TaskExecution
 
                     else
                     {
-                        if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                        if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                         {
-                            if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTaskModel).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTaskModel).SelectedExecuteConditionErrorLevel)
+                            if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
                             {
                                 request.UpdateReaderBusy?.Invoke(true);
                                 await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareDesfireSetupViewModel).CommandDelegator.ExecuteAsync(desfireTask.SelectedTaskType);

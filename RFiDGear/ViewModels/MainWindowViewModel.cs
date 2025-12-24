@@ -38,6 +38,7 @@ using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 
 namespace RFiDGear.ViewModel
 {
@@ -535,7 +536,7 @@ namespace RFiDGear.ViewModel
 
                             ChipTasks.TaskCollection.Add(sender);
 
-                            ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTaskModel).SelectedTaskIndexAsInt));
+                            ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTask).SelectedTaskIndexAsInt));
 
                             OnPropertyChanged(nameof(ChipTasks));
                         }
@@ -854,7 +855,7 @@ namespace RFiDGear.ViewModel
         {
             await Task.Run(() =>
             {
-                foreach (IGenericTaskModel chipTask in taskHandler.TaskCollection)
+                foreach (IGenericTask chipTask in taskHandler.TaskCollection)
                 {
                     chipTask.IsTaskCompletedSuccessfully = null;
                     chipTask.CurrentTaskErrorLevel = ERROR.Empty;
@@ -900,8 +901,8 @@ namespace RFiDGear.ViewModel
         {
             await Task.Run(() =>
             {
-                (SelectedSetupViewModel as IGenericTaskModel).IsTaskCompletedSuccessfully = null;
-                (SelectedSetupViewModel as IGenericTaskModel).CurrentTaskErrorLevel = ERROR.Empty;
+                (SelectedSetupViewModel as IGenericTask).IsTaskCompletedSuccessfully = null;
+                (SelectedSetupViewModel as IGenericTask).CurrentTaskErrorLevel = ERROR.Empty;
             });
         }
 

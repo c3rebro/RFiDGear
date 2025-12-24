@@ -28,13 +28,14 @@ using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
     /// Description of ReportTaskViewModel.
     /// </summary>
-    public class CommonTaskViewModel : ObservableObject, IUserDialogViewModel, IGenericTaskModel
+    public class CommonTaskViewModel : ObservableObject, IUserDialogViewModel, IGenericTask
     {
         #region Fields
         private static int IterCounter = 1; //Initial Value of Counter: How often have "this" been called (+1 per "run all tasks")
@@ -976,7 +977,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 // (they could be different as because item at array position 0 can have index "100")
                 foreach (var rfidTaskObject in AvailableTasks)
                 {
-                    checkpointDictionary.Add((rfidTaskObject as IGenericTaskModel).CurrentTaskIndex, AvailableTasks.IndexOf(rfidTaskObject));
+                    checkpointDictionary.Add((rfidTaskObject as IGenericTask).CurrentTaskIndex, AvailableTasks.IndexOf(rfidTaskObject));
                 }
 
                 try
@@ -1116,7 +1117,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             // .ConfigureAwait(false) due to fileAccess
                             if (checkpointDictionary.TryGetValue(checkpoint.TaskIndex ?? "-1", out var targetIndex))
                             {
-                                if ((AvailableTasks[targetIndex] as IGenericTaskModel).CurrentTaskErrorLevel == checkpoint.ErrorLevel)
+                                if ((AvailableTasks[targetIndex] as IGenericTask).CurrentTaskErrorLevel == checkpoint.ErrorLevel)
                                 {
                                     if (concatenate)
                                     {
