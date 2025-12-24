@@ -27,7 +27,7 @@ namespace RFiDGear.ViewModel.DialogFactories
 
         public IUserDialogViewModel CreateGenericChipTaskDialog(object selectedSetupViewModel, ChipTaskHandlerModel chipTasks, ObservableCollection<IDialogViewModel> dialogs)
         {
-            return new GenericChipTaskViewModel(selectedSetupViewModel, chipTasks.TaskCollection, dialogs)
+            var viewModel = new GenericChipTaskViewModel(selectedSetupViewModel, chipTasks.TaskCollection, dialogs)
             {
                 Caption = ResourceLoader.GetResource("windowCaptionAddEditGenericChipTask"),
 
@@ -81,11 +81,13 @@ namespace RFiDGear.ViewModel.DialogFactories
                     activateMainWindow();
                 }
             };
+            viewModel.AvailableTasks = chipTasks.TaskCollection;
+            return viewModel;
         }
 
         public IUserDialogViewModel CreateClassicTaskDialog(object selectedSetupViewModel, ChipTaskHandlerModel chipTasks, ObservableCollection<IDialogViewModel> dialogs)
         {
-            return new MifareClassicSetupViewModel(selectedSetupViewModel, dialogs)
+            var viewModel = new MifareClassicSetupViewModel(selectedSetupViewModel, dialogs)
             {
                 Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareClassicTask"),
                 IsClassicAuthInfoEnabled = true,
@@ -145,11 +147,13 @@ namespace RFiDGear.ViewModel.DialogFactories
                     activateMainWindow();
                 }
             };
+            viewModel.AvailableTasks = chipTasks.TaskCollection;
+            return viewModel;
         }
 
         public IUserDialogViewModel CreateDesfireTaskDialog(object selectedSetupViewModel, ChipTaskHandlerModel chipTasks, ObservableCollection<IDialogViewModel> dialogs)
         {
-            return new MifareDesfireSetupViewModel(selectedSetupViewModel, dialogs)
+            var viewModel = new MifareDesfireSetupViewModel(selectedSetupViewModel, dialogs)
             {
                 Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareDesfireTask"),
 
@@ -214,12 +218,14 @@ namespace RFiDGear.ViewModel.DialogFactories
                     activateMainWindow();
                 }
             };
+            viewModel.AvailableTasks = chipTasks.TaskCollection;
+            return viewModel;
         }
 
         public IUserDialogViewModel CreateUltralightTaskDialog(object selectedSetupViewModel, ChipTaskHandlerModel chipTasks, ObservableCollection<IDialogViewModel> dialogs)
         {
 
-            return new MifareUltralightSetupViewModel(selectedSetupViewModel, dialogs)
+            var viewModel = new MifareUltralightSetupViewModel(selectedSetupViewModel, dialogs)
             {
                 Caption = ResourceLoader.GetResource("windowCaptionAddEditMifareDesfireTask"),
 
@@ -269,6 +275,35 @@ namespace RFiDGear.ViewModel.DialogFactories
                     activateMainWindow();
                 }
             };
+            viewModel.AvailableTasks = chipTasks.TaskCollection;
+            return viewModel;
+        }
+
+        /// <summary>
+        /// Validates task indices and shows a dialog when the input is invalid.
+        /// </summary>
+        /// <param name="taskIndex">The task index assigned to the current task.</param>
+        /// <param name="executeConditionTaskIndex">The task index referenced by the execute condition.</param>
+        /// <param name="executeConditionErrorLevel">The execute condition error level.</param>
+        /// <param name="taskCollection">The collection of existing tasks.</param>
+        /// <param name="selectedSetupViewModel">The task being edited, if any.</param>
+        /// <param name="dialogs">The dialog collection to update with validation messages.</param>
+        /// <returns><see langword="true"/> when validation succeeds; otherwise <see langword="false"/>.</returns>
+        private static bool TryValidateTaskIndices(string taskIndex, string executeConditionTaskIndex, ERROR executeConditionErrorLevel, ObservableCollection<object> taskCollection, object selectedSetupViewModel, ObservableCollection<IDialogViewModel> dialogs)
+        {
+            if (!TaskIndexValidation.TryValidateTaskIndex(taskIndex, taskCollection, selectedSetupViewModel, out var errorMessage) ||
+                !TaskIndexValidation.TryValidateExecuteConditionIndex(executeConditionTaskIndex, executeConditionErrorLevel, taskCollection, out errorMessage))
+            {
+                dialogs?.Add(new CustomDialogViewModel
+                {
+                    Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                    Message = errorMessage,
+                    OnOk = sender => sender.Close()
+                });
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>

@@ -40,7 +40,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         private protected ReportReaderWriter reportReaderWriter;
         private protected Checkpoint checkpoint;
-        private protected readonly ObservableCollection<object> _availableTasks;
+        private protected ObservableCollection<object> availableTasks;
 
         #endregion fields
 
@@ -63,6 +63,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             try
             {
+                availableTasks = _tasks;
+
                 if (_selectedSetupViewModel is GenericChipTaskViewModel)
                 {
                     var properties = typeof(GenericChipTaskViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -114,6 +116,21 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         #region Visual Properties
 
         /// <summary>
+        /// The collection of available tasks for validation.
+        /// </summary>
+        [XmlIgnore]
+        public ObservableCollection<object> AvailableTasks
+        {
+            get => availableTasks;
+            set
+            {
+                availableTasks = value;
+                RevalidateSelectedTaskIndex();
+                RevalidateSelectedExecuteConditionTaskIndex();
+            }
+        }
+
+        /// <summary>
         ///
         /// </summary>
         public bool IsFocused
@@ -153,7 +170,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 selectedExecuteConditionTaskIndex = value;
-                IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
+                IsValidSelectedExecuteConditionTaskIndex = TaskIndexValidation.TryValidateExecuteConditionIndex(value, SelectedExecuteConditionErrorLevel, AvailableTasks, out _);
+                int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
                 OnPropertyChanged(nameof(SelectedExecuteConditionTaskIndex));
             }
         }
@@ -191,6 +209,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 selectedExecuteConditionErrorLevel = value;
+                RevalidateSelectedExecuteConditionTaskIndex();
                 OnPropertyChanged(nameof(SelectedExecuteConditionErrorLevel));
             }
         }
@@ -220,7 +239,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 selectedTaskIndex = value;
-                IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
+                IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(value, AvailableTasks, this, out _);
+                int.TryParse(value, out selectedTaskIndexAsInt);
             }
         }
         private string selectedTaskIndex;
@@ -316,6 +336,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private string selectedTaskDescription;
 
         #endregion General Properties
+
+        private void RevalidateSelectedTaskIndex()
+        {
+            IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(CurrentTaskIndex, AvailableTasks, this, out _);
+        }
+
+        private void RevalidateSelectedExecuteConditionTaskIndex()
+        {
+            IsValidSelectedExecuteConditionTaskIndex = TaskIndexValidation.TryValidateExecuteConditionIndex(SelectedExecuteConditionTaskIndex, SelectedExecuteConditionErrorLevel, AvailableTasks, out _);
+        }
 
         #region Commands
 
