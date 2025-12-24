@@ -42,7 +42,7 @@ namespace RFiDGear.ViewModel.DialogFactories
                         sender.SelectedTaskType == TaskType_GenericChipTask.CheckUID ||
                         sender.SelectedTaskType == TaskType_GenericChipTask.ChipIsMultiChip)
                     {
-                        if (!TryValidateTaskIndices(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
+                        if (!TryValidateTaskIndicesWithDialog(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
                         {
                             return;
                         }
@@ -103,7 +103,7 @@ namespace RFiDGear.ViewModel.DialogFactories
                         sender.SelectedTaskType == TaskType_MifareClassicTask.ReadData ||
                         sender.SelectedTaskType == TaskType_MifareClassicTask.EmptyCheck)
                     {
-                        if (!TryValidateTaskIndices(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
+                        if (!TryValidateTaskIndicesWithDialog(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
                         {
                             return;
                         }
@@ -177,7 +177,7 @@ namespace RFiDGear.ViewModel.DialogFactories
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadData ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData)
                     {
-                        if (!TryValidateTaskIndices(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
+                        if (!TryValidateTaskIndicesWithDialog(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
                         {
                             return;
                         }
@@ -239,7 +239,7 @@ namespace RFiDGear.ViewModel.DialogFactories
                     if (sender.SelectedTaskType == TaskType_MifareUltralightTask.ReadData ||
                         sender.SelectedTaskType == TaskType_MifareUltralightTask.WriteData)
                     {
-                        if (!TryValidateTaskIndices(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
+                        if (!TryValidateTaskIndicesWithDialog(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
                         {
                             return;
                         }
@@ -289,34 +289,7 @@ namespace RFiDGear.ViewModel.DialogFactories
         /// <param name="selectedSetupViewModel">The task being edited, if any.</param>
         /// <param name="dialogs">The dialog collection to update with validation messages.</param>
         /// <returns><see langword="true"/> when validation succeeds; otherwise <see langword="false"/>.</returns>
-        private static bool TryValidateTaskIndices(string taskIndex, string executeConditionTaskIndex, ERROR executeConditionErrorLevel, ObservableCollection<object> taskCollection, object selectedSetupViewModel, ObservableCollection<IDialogViewModel> dialogs)
-        {
-            if (!TaskIndexValidation.TryValidateTaskIndex(taskIndex, taskCollection, selectedSetupViewModel, out var errorMessage) ||
-                !TaskIndexValidation.TryValidateExecuteConditionIndex(executeConditionTaskIndex, executeConditionErrorLevel, taskCollection, out errorMessage))
-            {
-                dialogs?.Add(new CustomDialogViewModel
-                {
-                    Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
-                    Message = errorMessage,
-                    OnOk = sender => sender.Close()
-                });
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Validates task indices and shows a dialog when the input is invalid.
-        /// </summary>
-        /// <param name="taskIndex">The task index assigned to the current task.</param>
-        /// <param name="executeConditionTaskIndex">The task index referenced by the execute condition.</param>
-        /// <param name="executeConditionErrorLevel">The execute condition error level.</param>
-        /// <param name="taskCollection">The collection of existing tasks.</param>
-        /// <param name="selectedSetupViewModel">The task being edited, if any.</param>
-        /// <param name="dialogs">The dialog collection to update with validation messages.</param>
-        /// <returns><see langword="true"/> when validation succeeds; otherwise <see langword="false"/>.</returns>
-        private static bool TryValidateTaskIndices(string taskIndex, string executeConditionTaskIndex, ERROR executeConditionErrorLevel, ObservableCollection<object> taskCollection, object selectedSetupViewModel, ObservableCollection<IDialogViewModel> dialogs)
+        private static bool TryValidateTaskIndicesWithDialog(string taskIndex, string executeConditionTaskIndex, ERROR executeConditionErrorLevel, ObservableCollection<object> taskCollection, object selectedSetupViewModel, ObservableCollection<IDialogViewModel> dialogs)
         {
             if (!TaskIndexValidation.TryValidateTaskIndex(taskIndex, taskCollection, selectedSetupViewModel, out var errorMessage) ||
                 !TaskIndexValidation.TryValidateExecuteConditionIndex(executeConditionTaskIndex, executeConditionErrorLevel, taskCollection, out errorMessage))
