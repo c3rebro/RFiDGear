@@ -40,6 +40,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     {
         #region Fields
         private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
 
         private readonly ObservableCollection<MifareClassicDataBlockAccessConditionModel> dataBlock_AccessBits = new ObservableCollection<MifareClassicDataBlockAccessConditionModel>
             (new[]
@@ -267,6 +268,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 if (_selectedSetupViewModel is MifareClassicSetupViewModel)
                 {
+                    editedTaskReference = _selectedSetupViewModel;
                     var properties = typeof(MifareClassicSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
                     foreach (var p in properties)
@@ -292,6 +294,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 else
                 {
+                    editedTaskReference = null;
                     DataBlockIsCombinedToggleButtonIsChecked = true;
 
                     IsValidSectorTrailer = true;
@@ -663,7 +666,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 selectedExecuteConditionTaskIndex = value;
-                IsValidSelectedExecuteConditionTaskIndex = int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
+                IsValidSelectedExecuteConditionTaskIndex = TaskIndexValidation.TryValidateExecuteConditionIndex(value, SelectedExecuteConditionErrorLevel, AvailableTasks, out _);
+                int.TryParse(value, out selectedExecuteConditionTaskIndexAsInt);
                 OnPropertyChanged(nameof(SelectedExecuteConditionTaskIndex));
             }
         }
@@ -701,6 +705,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 selectedExecuteConditionErrorLevel = value;
+                RevalidateSelectedExecuteConditionTaskIndex();
                 OnPropertyChanged(nameof(SelectedExecuteConditionErrorLevel));
             }
         }
@@ -760,7 +765,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 currentTaskIndex = value;
-                IsValidSelectedTaskIndex = int.TryParse(value, out selectedTaskIndexAsInt);
+                IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(value, AvailableTasks, editedTaskReference ?? this, out _);
+                int.TryParse(value, out selectedTaskIndexAsInt);
             }
         }
         private string currentTaskIndex;
@@ -786,6 +792,32 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
         private bool? isValidSelectedTaskIndex;
+
+        /// <summary>
+        /// The collection of available tasks for validation.
+        /// </summary>
+        [XmlIgnore]
+        public ObservableCollection<object> AvailableTasks
+        {
+            get => availableTasks;
+            set
+            {
+                availableTasks = value;
+                RevalidateSelectedTaskIndex();
+                RevalidateSelectedExecuteConditionTaskIndex();
+            }
+        }
+        private ObservableCollection<object> availableTasks;
+
+        private void RevalidateSelectedTaskIndex()
+        {
+            IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(CurrentTaskIndex, AvailableTasks, editedTaskReference ?? this, out _);
+        }
+
+        private void RevalidateSelectedExecuteConditionTaskIndex()
+        {
+            IsValidSelectedExecuteConditionTaskIndex = TaskIndexValidation.TryValidateExecuteConditionIndex(SelectedExecuteConditionTaskIndex, SelectedExecuteConditionErrorLevel, AvailableTasks, out _);
+        }
 
         /// <summary>
         ///
