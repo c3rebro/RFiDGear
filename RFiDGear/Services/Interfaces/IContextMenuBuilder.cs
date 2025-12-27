@@ -13,6 +13,11 @@ namespace RFiDGear.Services.Interfaces
 
         ObservableCollection<MenuItem> BuildEmptyTreeMenu(ICommand readChipCommand);
 
-        ObservableCollection<MenuItem> BuildEmptySpaceMenu(ICommand addNewTaskCommand);
+        ObservableCollection<MenuItem> BuildEmptySpaceMenu(
+            ICommand createGenericTaskCommand,
+            ICommand createGenericChipTaskCommand,
+            ICommand createClassicTaskCommand,
+            ICommand createDesfireTaskCommand,
+            ICommand createUltralightTaskCommand);
     }
 }

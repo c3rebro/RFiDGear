@@ -127,7 +127,12 @@ namespace RFiDGear.Tests
 
     internal class FakeContextMenuBuilder : IContextMenuBuilder
     {
-        public ObservableCollection<MenuItem> BuildEmptySpaceMenu(System.Windows.Input.ICommand addNewTaskCommand) => new() { new MenuItem() };
+        public ObservableCollection<MenuItem> BuildEmptySpaceMenu(
+            System.Windows.Input.ICommand createGenericTaskCommand,
+            System.Windows.Input.ICommand createGenericChipTaskCommand,
+            System.Windows.Input.ICommand createClassicTaskCommand,
+            System.Windows.Input.ICommand createDesfireTaskCommand,
+            System.Windows.Input.ICommand createUltralightTaskCommand) => new() { new MenuItem() };
 
         public ObservableCollection<MenuItem> BuildEmptyTreeMenu(System.Windows.Input.ICommand readChipCommand) => new() { new MenuItem() };
 
@@ -216,10 +221,20 @@ namespace RFiDGear.Tests
             System.Windows.Input.ICommand resetSelectedStatusCommand,
             System.Windows.Input.ICommand writeToChipOnceCommand,
             System.Windows.Input.ICommand resetReportTaskDirectoryCommand,
-            System.Windows.Input.ICommand readChipCommand)
+            System.Windows.Input.ICommand readChipCommand,
+            System.Windows.Input.ICommand createGenericTaskCommand,
+            System.Windows.Input.ICommand createGenericChipTaskCommand,
+            System.Windows.Input.ICommand createClassicTaskCommand,
+            System.Windows.Input.ICommand createDesfireTaskCommand,
+            System.Windows.Input.ICommand createUltralightTaskCommand)
         {
             var rowMenu = contextMenuBuilder.BuildNodeMenu(addEditCommand, addEditCommand, deleteSelectedCommand, writeSelectedOnceCommand, resetSelectedStatusCommand, writeToChipOnceCommand, resetReportTaskDirectoryCommand);
-            var emptySpaceMenu = contextMenuBuilder.BuildEmptySpaceMenu(addEditCommand);
+            var emptySpaceMenu = contextMenuBuilder.BuildEmptySpaceMenu(
+                createGenericTaskCommand,
+                createGenericChipTaskCommand,
+                createClassicTaskCommand,
+                createDesfireTaskCommand,
+                createUltralightTaskCommand);
             var emptyTreeMenu = contextMenuBuilder.BuildEmptyTreeMenu(readChipCommand);
             return new MenuInitializationResult(rowMenu, emptySpaceMenu, emptyTreeMenu);
         }

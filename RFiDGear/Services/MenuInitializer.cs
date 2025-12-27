@@ -16,7 +16,12 @@ namespace RFiDGear.Services
             ICommand resetSelectedStatusCommand,
             ICommand writeToChipOnceCommand,
             ICommand resetReportTaskDirectoryCommand,
-            ICommand readChipCommand);
+            ICommand readChipCommand,
+            ICommand createGenericTaskCommand,
+            ICommand createGenericChipTaskCommand,
+            ICommand createClassicTaskCommand,
+            ICommand createDesfireTaskCommand,
+            ICommand createUltralightTaskCommand);
     }
 
     public class MenuInitializationResult
@@ -48,7 +53,12 @@ namespace RFiDGear.Services
             ICommand resetSelectedStatusCommand,
             ICommand writeToChipOnceCommand,
             ICommand resetReportTaskDirectoryCommand,
-            ICommand readChipCommand)
+            ICommand readChipCommand,
+            ICommand createGenericTaskCommand,
+            ICommand createGenericChipTaskCommand,
+            ICommand createClassicTaskCommand,
+            ICommand createDesfireTaskCommand,
+            ICommand createUltralightTaskCommand)
         {
             if (contextMenuBuilder == null)
             {
@@ -64,7 +74,12 @@ namespace RFiDGear.Services
                 writeToChipOnceCommand,
                 resetReportTaskDirectoryCommand);
 
-            var emptySpaceContextMenuItems = contextMenuBuilder.BuildEmptySpaceMenu(addEditCommand);
+            var emptySpaceContextMenuItems = contextMenuBuilder.BuildEmptySpaceMenu(
+                createGenericTaskCommand,
+                createGenericChipTaskCommand,
+                createClassicTaskCommand,
+                createDesfireTaskCommand,
+                createUltralightTaskCommand);
             var emptySpaceTreeViewContextMenu = contextMenuBuilder.BuildEmptyTreeMenu(readChipCommand);
 
             return new MenuInitializationResult(rowContextMenuItems, emptySpaceContextMenuItems, emptySpaceTreeViewContextMenu);

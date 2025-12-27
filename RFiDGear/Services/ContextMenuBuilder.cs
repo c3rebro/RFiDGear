@@ -107,19 +107,123 @@ namespace RFiDGear.Services
             return emptySpaceTreeViewContextMenu;
         }
 
-        public ObservableCollection<MenuItem> BuildEmptySpaceMenu(ICommand addNewTaskCommand)
+        public ObservableCollection<MenuItem> BuildEmptySpaceMenu(
+            ICommand createGenericTaskCommand,
+            ICommand createGenericChipTaskCommand,
+            ICommand createClassicTaskCommand,
+            ICommand createDesfireTaskCommand,
+            ICommand createUltralightTaskCommand)
         {
             var emptySpaceContextMenuItems = new ObservableCollection<MenuItem>();
 
-            emptySpaceContextMenuItems.Add(new MenuItem
-            {
-                Header = resourceResolver("contextMenuItemAddNewTask"),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Command = addNewTaskCommand
-            });
+            emptySpaceContextMenuItems.Add(BuildCreateTaskMenu(
+                createGenericTaskCommand,
+                createGenericChipTaskCommand,
+                createClassicTaskCommand,
+                createDesfireTaskCommand,
+                createUltralightTaskCommand));
 
             return emptySpaceContextMenuItems;
+        }
+
+        private MenuItem BuildCreateTaskMenu(
+            ICommand createGenericTaskCommand,
+            ICommand createGenericChipTaskCommand,
+            ICommand createClassicTaskCommand,
+            ICommand createDesfireTaskCommand,
+            ICommand createUltralightTaskCommand)
+        {
+            var createTaskMenu = new MenuItem
+            {
+                Header = resourceResolver("menuItemCreateTaskHeader"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center
+            };
+
+            createTaskMenu.Items.Add(new MenuItem
+            {
+                Header = resourceResolver("menuItemCreateGenericTaskHeader"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Command = createGenericTaskCommand
+            });
+
+            createTaskMenu.Items.Add(new MenuItem
+            {
+                Header = resourceResolver("menuItemCreateGenericChipTaskHeader"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Command = createGenericChipTaskCommand
+            });
+
+            var mifareMenu = new MenuItem
+            {
+                Header = resourceResolver("menuItemMifareHeader"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center
+            };
+
+            mifareMenu.Items.Add(new MenuItem
+            {
+                Header = resourceResolver("menuItemAddEditMifareClassicTaskHeader"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Command = createClassicTaskCommand
+            });
+
+            mifareMenu.Items.Add(new MenuItem
+            {
+                Header = resourceResolver("menuItemAddEditMifareDesfireTaskHeader"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Command = createDesfireTaskCommand
+            });
+
+            mifareMenu.Items.Add(new MenuItem
+            {
+                Header = resourceResolver("menuItemAddEditMifarePlusTaskHeader"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                IsEnabled = false
+            });
+
+            mifareMenu.Items.Add(new MenuItem
+            {
+                Header = resourceResolver("menuItemAddEditMifareSAMTaskHeader"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                IsEnabled = false
+            });
+
+            mifareMenu.Items.Add(new MenuItem
+            {
+                Header = resourceResolver("menuItemAddEditMifareUltralightTaskHeader"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Command = createUltralightTaskCommand
+            });
+
+            createTaskMenu.Items.Add(mifareMenu);
+
+            var tagItMenu = new MenuItem
+            {
+                Header = resourceResolver("menuItemTagItHeader"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                IsEnabled = false
+            };
+
+            tagItMenu.Items.Add(new MenuItem
+            {
+                Header = resourceResolver("menuItemAddEditTagitHFIPlusTaskHeader"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                IsEnabled = false
+            });
+
+            createTaskMenu.Items.Add(tagItMenu);
+
+            return createTaskMenu;
         }
     }
 }
