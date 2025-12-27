@@ -305,6 +305,7 @@
                 HorizontalContentAlignment="Left"
                 VerticalContentAlignment="Center"
                 uiBehaviors:DataGridSelectionBehavior.SelectingItem="{Binding SelectedSetupViewModel, Mode=TwoWay}"
+                uiBehaviors:DataGridSelectionClearOnEmptySpaceBehavior.ClearSelectionOnEmptySpace="True"
                 AlternatingRowBackground="LightGray"
                 AutoGenerateColumns="False"
                 Background="Transparent"
