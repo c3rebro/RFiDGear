@@ -6,7 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using RFiDGear.Models;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 
 namespace RFiDGear.UI.Behaviors
 {
@@ -167,7 +167,7 @@ namespace RFiDGear.UI.Behaviors
             var index = 0;
             foreach (var item in items)
             {
-                if (item is IGenericTaskModel task)
+                if (item is IGenericTask task)
                 {
                     task.CurrentTaskIndex = index.ToString(CultureInfo.CurrentCulture);
                 }

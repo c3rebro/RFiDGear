@@ -27,12 +27,13 @@ using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
     /// Description of CommonTaskViewModel.
     /// </summary>
-    public class GenericChipTaskViewModel : ObservableObject, IUserDialogViewModel, IGenericTaskModel
+    public class GenericChipTaskViewModel : ObservableObject, IUserDialogViewModel, IGenericTask
     {
         #region fields
         private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);

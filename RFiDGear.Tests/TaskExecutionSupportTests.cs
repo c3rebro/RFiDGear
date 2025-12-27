@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Threading;
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Models;
 using RFiDGear.Services;
 using RFiDGear.Services.TaskExecution;
@@ -76,7 +77,7 @@ namespace RFiDGear.Tests
         }
     }
 
-    internal class StubTaskModel : IGenericTaskModel
+    internal class StubTaskModel : IGenericTask
     {
         public bool? IsTaskCompletedSuccessfully { get; set; }
 
