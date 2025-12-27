@@ -41,6 +41,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     {
         #region Fields
         private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
         private bool hasFinalizedTask;
 
         private protected SettingsReaderWriter settings = new SettingsReaderWriter();
@@ -113,6 +114,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 if (_selectedSetupViewModel is MifareDesfireSetupViewModel)
                 {
+                    editedTaskReference = _selectedSetupViewModel;
                     var properties = typeof(MifareDesfireSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
                     foreach (var p in properties.Where(x => x.PropertyType != items.GetType()))
@@ -133,6 +135,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 else
                 {
+                    editedTaskReference = null;
                     DesfireMasterKeyCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey).Key;
                     SelectedDesfireMasterKeyEncryptionTypeCurrent = settings.DefaultSpecification.MifareDesfireDefaultSecuritySettings.First(x => x.KeyType == KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey).EncryptionType;
 
@@ -840,7 +843,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 currentTaskIndex = value;
-                IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(value, AvailableTasks, this, out _);
+                IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(value, AvailableTasks, editedTaskReference ?? this, out _);
                 int.TryParse(value, out selectedTaskIndexAsInt);
             }
         }
@@ -886,7 +889,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         private void RevalidateSelectedTaskIndex()
         {
-            IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(CurrentTaskIndex, AvailableTasks, this, out _);
+            IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(CurrentTaskIndex, AvailableTasks, editedTaskReference ?? this, out _);
         }
 
         private void RevalidateSelectedExecuteConditionTaskIndex()

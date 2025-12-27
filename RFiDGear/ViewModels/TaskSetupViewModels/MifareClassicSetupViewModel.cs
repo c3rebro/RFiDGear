@@ -41,6 +41,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     {
         #region Fields
         private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
 
         private readonly ObservableCollection<MifareClassicDataBlockAccessConditionModel> dataBlock_AccessBits = new ObservableCollection<MifareClassicDataBlockAccessConditionModel>
             (new[]
@@ -268,6 +269,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 if (_selectedSetupViewModel is MifareClassicSetupViewModel)
                 {
+                    editedTaskReference = _selectedSetupViewModel;
                     var properties = typeof(MifareClassicSetupViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
                     foreach (var p in properties)
@@ -293,6 +295,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 else
                 {
+                    editedTaskReference = null;
                     DataBlockIsCombinedToggleButtonIsChecked = true;
 
                     IsValidSectorTrailer = true;
@@ -763,7 +766,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 currentTaskIndex = value;
-                IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(value, AvailableTasks, this, out _);
+                IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(value, AvailableTasks, editedTaskReference ?? this, out _);
                 int.TryParse(value, out selectedTaskIndexAsInt);
             }
         }
@@ -809,7 +812,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         private void RevalidateSelectedTaskIndex()
         {
-            IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(CurrentTaskIndex, AvailableTasks, this, out _);
+            IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(CurrentTaskIndex, AvailableTasks, editedTaskReference ?? this, out _);
         }
 
         private void RevalidateSelectedExecuteConditionTaskIndex()

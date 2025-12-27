@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 
 using RFiDGear.Infrastructure;
 using RFiDGear.Models;
+using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using Xunit;
 
@@ -77,6 +78,19 @@ namespace RFiDGear.Tests
 
             Assert.True(isValid);
             Assert.Null(errorMessage);
+        }
+
+        [Fact]
+        public void CommonTaskViewModel_EditMode_AllowsExistingTaskIndex()
+        {
+            var existingTask = new CommonTaskViewModel();
+            existingTask.CurrentTaskIndex = "1";
+            var tasks = new ObservableCollection<object> { existingTask };
+
+            var viewModel = new CommonTaskViewModel(existingTask, tasks, new ObservableCollection<IDialogViewModel>());
+            viewModel.AvailableTasks = tasks;
+
+            Assert.True(viewModel.IsValidSelectedTaskIndex);
         }
 
         private sealed class FakeTask : IGenericTaskModel

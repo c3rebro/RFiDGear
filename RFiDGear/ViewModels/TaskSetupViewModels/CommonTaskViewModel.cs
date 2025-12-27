@@ -40,6 +40,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         #region Fields
         private static int IterCounter = 1; //Initial Value of Counter: How often have "this" been called (+1 per "run all tasks")
         private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
+        private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
         // The Counter could be replaced in an pdf by %n; %nn or %nnn. increased once per run all tasks: %n -> 1 on first execution
 
         private protected ReportReaderWriter reportReaderWriter;
@@ -120,6 +121,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 if (_selectedSetupViewModel is CommonTaskViewModel)
                 {
+                    editedTaskReference = _selectedSetupViewModel;
+
                     var properties = typeof(CommonTaskViewModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
                     foreach (var p in properties)
@@ -162,6 +165,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 else
                 {
+                    editedTaskReference = null;
                     CurrentTaskIndex = "0";
                     SelectedTaskDescription = "Enter a Description";
                     SelectedExecuteConditionErrorLevel = ERROR.Empty;
@@ -485,7 +489,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 selectedTaskIndex = value;
-                IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(value, AvailableTasks, this, out _);
+                IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(value, AvailableTasks, editedTaskReference ?? this, out _);
                 int.TryParse(value, out selectedTaskIndexAsInt);
             }
         }
@@ -499,7 +503,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         private void RevalidateSelectedTaskIndex()
         {
-            IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(CurrentTaskIndex, AvailableTasks, this, out _);
+            IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(CurrentTaskIndex, AvailableTasks, editedTaskReference ?? this, out _);
         }
 
         private void RevalidateSelectedExecuteConditionTaskIndex()
