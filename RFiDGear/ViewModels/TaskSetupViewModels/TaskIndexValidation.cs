@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 
 using RFiDGear.Infrastructure;
-using RFiDGear.Models;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
@@ -89,7 +89,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             switch (task)
             {
-                case IGenericTaskModel genericTask when int.TryParse(genericTask.CurrentTaskIndex, out taskIndex):
+                case IGenericTask genericTask when int.TryParse(genericTask.CurrentTaskIndex, out taskIndex):
                     return true;
                 case MifareUltralightSetupViewModel ultralightTask when int.TryParse(ultralightTask.CurrentTaskIndex, out taskIndex):
                     return true;
