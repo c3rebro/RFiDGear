@@ -205,7 +205,12 @@ namespace RFiDGear.ViewModel
                 ResetSelectedTaskStatusCommand,
                 WriteToChipOnceCommand,
                 ResetReportTaskDirectoryCommand,
-                ReadChipCommand);
+                ReadChipCommand,
+                CreateGenericTaskCommand,
+                CreateGenericChipTaskCommand,
+                CreateClassicTaskCommand,
+                CreateDesfireTaskCommand,
+                CreateUltralightTaskCommand);
 
             rowContextMenuItems = menuInitialization.RowContextMenuItems;
             emptySpaceContextMenuItems = menuInitialization.EmptySpaceContextMenuItems;
