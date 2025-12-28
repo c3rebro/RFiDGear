@@ -752,6 +752,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(IsFormatTaskSelected));
                 OnPropertyChanged(nameof(ShowAppKeyTargetInputs));
                 OnPropertyChanged(nameof(ShowAppKeySettingsInputs));
+                OnPropertyChanged(nameof(ShowAppKeyTargetSection));
                 OnPropertyChanged(nameof(ShowPiccMasterKeyTargetInputs));
                 OnPropertyChanged(nameof(ShowPiccMasterKeySettingsInputs));
                 OnPropertyChanged(nameof(ShowPiccMasterKeyAuthoringSection));
@@ -780,6 +781,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         [XmlIgnore]
         public bool ShowAppKeySettingsInputs => SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover;
+
+        /// <summary>
+        /// Gets a value indicating whether the target application key settings section should be shown.
+        /// The target key section is unnecessary for file and data operations.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowAppKeyTargetSection => SelectedTaskType != TaskType_MifareDesfireTask.CreateFile
+                                               && SelectedTaskType != TaskType_MifareDesfireTask.DeleteFile
+                                               && SelectedTaskType != TaskType_MifareDesfireTask.ReadData
+                                               && SelectedTaskType != TaskType_MifareDesfireTask.WriteData;
 
         /// <summary>
         /// Gets a value indicating whether UI elements for providing a target PICC master key should be shown.

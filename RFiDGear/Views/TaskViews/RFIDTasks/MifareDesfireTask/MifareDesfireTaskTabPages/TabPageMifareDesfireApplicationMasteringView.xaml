@@ -15,6 +15,7 @@
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+        <dal:BooleanToGridLengthConverter x:Key="BoolToGridLengthConverter" />
         <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
                         <ContextMenu.ItemContainerStyle>
                                 <Style TargetType="MenuItem">
@@ -37,14 +38,15 @@
             VerticalAlignment="Stretch">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="5" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="{Binding ShowAppKeyTargetSection, Converter={StaticResource BoolToGridLengthConverter}, ConverterParameter=5}" />
+                <ColumnDefinition Width="{Binding ShowAppKeyTargetSection, Converter={StaticResource BoolToGridLengthConverter}, ConverterParameter=*}" />
             </Grid.ColumnDefinitions>
             <GroupBox
                 Grid.Row="0"
                 Grid.Column="2"
                 Margin="8,8,8,8"
                 VerticalAlignment="Stretch"
+                Visibility="{Binding ShowAppKeyTargetSection, Converter={StaticResource BoolToVisConv}}"
                 Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireAppSettingsTarget'}">
                 <Grid>
                     <Label
@@ -286,6 +288,7 @@
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 Background="#FFD9D9DB"
+                Visibility="{Binding ShowAppKeyTargetSection, Converter={StaticResource BoolToVisConv}}"
                 ResizeBehavior="PreviousAndNext"
                 ResizeDirection="Auto" />
             <GroupBox
