@@ -100,6 +100,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Elatec.NET" Version="0.5.2" />
     <PackageReference Include="GemBox.Pdf" Version="2025.12.101" />
     <PackageReference Include="LibLogicalAccessNetCE" Version="3.6.0" />
     <PackageReference Include="LibLogicalAccessNetCE.Native" Version="3.6.0" />
@@ -142,9 +143,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Arguments.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Elatec.NET\Elatec.NET.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">

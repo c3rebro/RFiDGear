@@ -20,8 +20,6 @@ Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "RFiDGearSetup_x86", "RFiDGe
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Setup", "Setup", "{5D5B37E2-0033-4F9B-B4E1-DC351852FC65}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Elatec.NET", "..\Elatec.NET\Elatec.NET.csproj", "{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug(without args)|Any CPU = Debug(without args)|Any CPU
@@ -121,24 +119,6 @@ Global
 		{BA120DA6-2DB3-4D16-8203-E7B369DBF123}.Release|x64.Build.0 = Release|x64
 		{BA120DA6-2DB3-4D16-8203-E7B369DBF123}.Release|x86.ActiveCfg = Release|x64
 		{BA120DA6-2DB3-4D16-8203-E7B369DBF123}.Release|x86.Build.0 = Release|x64
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug(without args)|Any CPU.ActiveCfg = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug(without args)|Any CPU.Build.0 = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug(without args)|x64.ActiveCfg = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug(without args)|x64.Build.0 = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug(without args)|x86.ActiveCfg = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug(without args)|x86.Build.0 = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug|x64.Build.0 = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Debug|x86.Build.0 = Debug|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Release|x64.ActiveCfg = Release|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Release|x64.Build.0 = Release|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Release|x86.ActiveCfg = Release|Any CPU
-		{D77149CD-11C5-44CC-A10E-5FB70CAEA1C4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
