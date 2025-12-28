@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 
@@ -126,11 +127,21 @@ namespace RFiDGear.UI.Behaviors
             TryGetRowFromPoint(grid, e.GetPosition(grid), out var targetRow);
             var targetItem = targetRow?.Item;
 
+            if (!TryEnsureDragDropAllowed(grid, draggedItem))
+            {
+                return;
+            }
+
             MoveItem(grid, draggedItem, targetItem);
         }
 
         private static void MoveItem(DataGrid grid, object draggedItem, object targetItem)
         {
+            if (!TryEnsureDragDropAllowed(grid, draggedItem))
+            {
+                return;
+            }
+
             var collection = grid.ItemsSource as IList ?? grid.Items as IList;
             if (collection == null)
             {
