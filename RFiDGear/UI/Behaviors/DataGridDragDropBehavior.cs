@@ -1,12 +1,17 @@
 using System;
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
+using RFiDGear.UI.MVVMDialogs.ViewModels;
+using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
+using RFiDGear.ViewModel;
 
 namespace RFiDGear.UI.Behaviors
 {
@@ -124,11 +129,21 @@ namespace RFiDGear.UI.Behaviors
             TryGetRowFromPoint(grid, e.GetPosition(grid), out var targetRow);
             var targetItem = targetRow?.Item;
 
+            if (!TryEnsureDragDropAllowed(grid, draggedItem))
+            {
+                return;
+            }
+
             MoveItem(grid, draggedItem, targetItem);
         }
 
         private static void MoveItem(DataGrid grid, object draggedItem, object targetItem)
         {
+            if (!TryEnsureDragDropAllowed(grid, draggedItem))
+            {
+                return;
+            }
+
             var collection = grid.ItemsSource as IList ?? grid.Items as IList;
             if (collection == null)
             {
@@ -160,6 +175,66 @@ namespace RFiDGear.UI.Behaviors
             UpdateTaskIndices(collection);
             grid.SelectedItem = draggedItem;
             grid.Items.Refresh();
+        }
+
+        /// <summary>
+        /// Blocks drag-drop operations when the dragged task has an execute condition set.
+        /// </summary>
+        /// <param name="grid">The data grid that initiated the drag-drop.</param>
+        /// <param name="draggedItem">The dragged item instance.</param>
+        /// <returns><see langword="true"/> when drag-drop can proceed; otherwise <see langword="false"/>.</returns>
+        private static bool TryEnsureDragDropAllowed(DataGrid grid, object draggedItem)
+        {
+            if (draggedItem is not IGenericTask task)
+            {
+                return true;
+            }
+
+            var dialogs = TryGetDialogCollection(grid);
+            return !TryBlockDragDropWithDialog(task, dialogs);
+        }
+
+        /// <summary>
+        /// Determines whether a task has an execute condition configured.
+        /// </summary>
+        /// <param name="task">The task to inspect.</param>
+        /// <returns><see langword="true"/> when an execute condition is set; otherwise <see langword="false"/>.</returns>
+        internal static bool HasExecuteCondition(IGenericTask task)
+        {
+            return task != null &&
+                   (!string.IsNullOrWhiteSpace(task.SelectedExecuteConditionTaskIndex) ||
+                    task.SelectedExecuteConditionErrorLevel != ERROR.Empty);
+        }
+
+        /// <summary>
+        /// Shows a dialog and blocks drag-drop when the task has an execute condition configured.
+        /// </summary>
+        /// <param name="task">The task being dragged.</param>
+        /// <param name="dialogs">The dialog collection used by the main window.</param>
+        /// <returns><see langword="true"/> when drag-drop should be blocked; otherwise <see langword="false"/>.</returns>
+        internal static bool TryBlockDragDropWithDialog(IGenericTask task, ObservableCollection<IDialogViewModel> dialogs)
+        {
+            if (!HasExecuteCondition(task))
+            {
+                return false;
+            }
+
+            dialogs?.Add(new CustomDialogViewModel
+            {
+                Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                Message = ResourceLoader.GetResource("messageDragDropExecuteConditionBlocked"),
+                OnOk = sender => sender.Close()
+            });
+
+            return true;
+        }
+
+        private static ObservableCollection<IDialogViewModel> TryGetDialogCollection(DataGrid grid)
+        {
+            var mainWindowViewModel = grid?.DataContext as MainWindowViewModel
+                ?? Application.Current?.MainWindow?.DataContext as MainWindowViewModel;
+
+            return mainWindowViewModel?.Dialogs;
         }
 
         private static void UpdateTaskIndices(IEnumerable items)
