@@ -170,7 +170,7 @@ namespace RFiDGear.UI.Behaviors
                 collection.Insert(newIndex, draggedItem);
             }
 
-            if (!TryAssignTaskIndexForDrop(collection, draggedItem, newIndex, out var errorMessage))
+            if (!TryEnsureDragDropAllowed(collection, draggedItem, newIndex, out var errorMessage))
             {
                 collection.Remove(draggedItem);
 
@@ -254,6 +254,19 @@ namespace RFiDGear.UI.Behaviors
             }
 
             return TryAssignTaskIndexCandidate(draggedTask, taskCollection, 0, out errorMessage);
+        }
+
+        /// <summary>
+        /// Ensures the dragged task can be assigned a valid index after a drop operation.
+        /// </summary>
+        /// <param name="items">The reordered task collection.</param>
+        /// <param name="draggedItem">The task being moved.</param>
+        /// <param name="targetIndex">The new position in the collection.</param>
+        /// <param name="errorMessage">The error message to show when no valid index is available.</param>
+        /// <returns><see langword="true"/> when the task index was updated; otherwise <see langword="false"/>.</returns>
+        private static bool TryEnsureDragDropAllowed(IList items, object draggedItem, int targetIndex, out string errorMessage)
+        {
+            return TryAssignTaskIndexForDrop(items, draggedItem, targetIndex, out errorMessage);
         }
 
         /// <summary>
