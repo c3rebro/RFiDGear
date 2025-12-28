@@ -127,8 +127,14 @@ namespace RFiDGear.UI.Behaviors
             TryGetRowFromPoint(grid, e.GetPosition(grid), out var targetRow);
             var targetItem = targetRow?.Item;
 
-            if (!TryEnsureDragDropAllowed(grid, draggedItem))
+            if (!TryGetItemCollection(grid, out var collection))
             {
+                return;
+            }
+
+            if (!TryEnsureDragDropAllowed(collection, draggedItem, out var errorMessage))
+            {
+                MessageBox.Show(errorMessage, "Task Index Update", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -137,14 +143,14 @@ namespace RFiDGear.UI.Behaviors
 
         private static void MoveItem(DataGrid grid, object draggedItem, object targetItem)
         {
-            if (!TryEnsureDragDropAllowed(grid, draggedItem))
+            if (!TryGetItemCollection(grid, out var collection))
             {
                 return;
             }
 
-            var collection = grid.ItemsSource as IList ?? grid.Items as IList;
-            if (collection == null)
+            if (!TryEnsureDragDropAllowed(collection, draggedItem, out var errorMessage))
             {
+                MessageBox.Show(errorMessage, "Task Index Update", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -170,7 +176,7 @@ namespace RFiDGear.UI.Behaviors
                 collection.Insert(newIndex, draggedItem);
             }
 
-            if (!TryEnsureDragDropAllowed(collection, draggedItem, newIndex, out var errorMessage))
+            if (!TryEnsureDragDropAllowed(collection, draggedItem, newIndex, out errorMessage))
             {
                 collection.Remove(draggedItem);
 
@@ -191,6 +197,18 @@ namespace RFiDGear.UI.Behaviors
 
             grid.SelectedItem = draggedItem;
             grid.Items.Refresh();
+        }
+
+        /// <summary>
+        /// Attempts to read the list that the grid is bound to for drag/drop operations.
+        /// </summary>
+        /// <param name="grid">The grid providing the collection.</param>
+        /// <param name="collection">The collection used for index updates.</param>
+        /// <returns><see langword="true"/> when the collection is available; otherwise <see langword="false"/>.</returns>
+        private static bool TryGetItemCollection(DataGrid grid, out IList collection)
+        {
+            collection = grid.ItemsSource as IList ?? grid.Items as IList;
+            return collection != null;
         }
 
         /// <summary>
