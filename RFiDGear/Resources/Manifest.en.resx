@@ -1666,6 +1666,9 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="toolTipMifareDesfireOldAppKey" xml:space="preserve">
     <value>Required when authenticating with master key while changing a non-master key slot.</value>
   </data>
+  <data name="messageDragDropExecuteConditionBlocked" xml:space="preserve">
+    <value>Drag-and-drop is not available while an execute condition is set for this task. Clear the execute condition before reordering.</value>
+  </data>
   <data name="ENUM.TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover" xml:space="preserve">
     <value>Change PICC Master Key Settings</value>
   </data>
