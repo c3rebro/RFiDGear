@@ -3,7 +3,6 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Models;
 using RFiDGear.UI.Behaviors;
-using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using Xunit;
 
 namespace RFiDGear.Tests
@@ -11,58 +10,37 @@ namespace RFiDGear.Tests
     public class DataGridDragDropBehaviorTests
     {
         [Fact]
-        public void HasExecuteCondition_ReturnsFalseWhenUnset()
+        public void TryAssignTaskIndexForDrop_UsesFirstAvailableGapBetweenNeighbors()
         {
-            var task = new StubTaskModel
-            {
-                SelectedExecuteConditionErrorLevel = ERROR.Empty,
-                SelectedExecuteConditionTaskIndex = string.Empty
-            };
+            var previous = new StubTask { CurrentTaskIndex = "1" };
+            var dragged = new StubTask { CurrentTaskIndex = "5" };
+            var next = new StubTask { CurrentTaskIndex = "4" };
+            var other = new StubTask { CurrentTaskIndex = "2" };
+            var items = new ObservableCollection<object> { previous, dragged, next, other };
 
-            Assert.False(DataGridDragDropBehavior.HasExecuteCondition(task));
+            var result = DataGridDragDropBehavior.TryAssignTaskIndexForDrop(items, dragged, 1, out var errorMessage);
+
+            Assert.True(result);
+            Assert.Null(errorMessage);
+            Assert.Equal("3", dragged.CurrentTaskIndex);
         }
 
         [Fact]
-        public void HasExecuteCondition_ReturnsTrueWhenIndexSet()
+        public void TryAssignTaskIndexForDrop_NoGapBetweenNeighbors_ReturnsFalse()
         {
-            var task = new StubTaskModel
-            {
-                SelectedExecuteConditionErrorLevel = ERROR.Empty,
-                SelectedExecuteConditionTaskIndex = "2"
-            };
+            var previous = new StubTask { CurrentTaskIndex = "1" };
+            var dragged = new StubTask { CurrentTaskIndex = "9" };
+            var next = new StubTask { CurrentTaskIndex = "2" };
+            var items = new ObservableCollection<object> { previous, dragged, next };
 
-            Assert.True(DataGridDragDropBehavior.HasExecuteCondition(task));
+            var result = DataGridDragDropBehavior.TryAssignTaskIndexForDrop(items, dragged, 1, out var errorMessage);
+
+            Assert.False(result);
+            Assert.Equal("9", dragged.CurrentTaskIndex);
+            Assert.False(string.IsNullOrWhiteSpace(errorMessage));
         }
 
-        [Fact]
-        public void HasExecuteCondition_ReturnsTrueWhenErrorLevelSet()
-        {
-            var task = new StubTaskModel
-            {
-                SelectedExecuteConditionErrorLevel = ERROR.NoError,
-                SelectedExecuteConditionTaskIndex = string.Empty
-            };
-
-            Assert.True(DataGridDragDropBehavior.HasExecuteCondition(task));
-        }
-
-        [Fact]
-        public void TryBlockDragDropWithDialog_AddsDialogWhenExecuteConditionIsSet()
-        {
-            var task = new StubTaskModel
-            {
-                SelectedExecuteConditionErrorLevel = ERROR.NoError,
-                SelectedExecuteConditionTaskIndex = string.Empty
-            };
-            var dialogs = new ObservableCollection<IDialogViewModel>();
-
-            var blocked = DataGridDragDropBehavior.TryBlockDragDropWithDialog(task, dialogs);
-
-            Assert.True(blocked);
-            Assert.Single(dialogs);
-        }
-
-        private sealed class StubTaskModel : IGenericTask
+        private sealed class StubTask : IGenericTask
         {
             public bool? IsTaskCompletedSuccessfully { get; set; }
 

@@ -9,9 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
-using RFiDGear.UI.MVVMDialogs.ViewModels;
-using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
-using RFiDGear.ViewModel;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 namespace RFiDGear.UI.Behaviors
 {
@@ -172,83 +170,163 @@ namespace RFiDGear.UI.Behaviors
                 collection.Insert(newIndex, draggedItem);
             }
 
-            UpdateTaskIndices(collection);
+            if (!TryAssignTaskIndexForDrop(collection, draggedItem, newIndex, out var errorMessage))
+            {
+                collection.Remove(draggedItem);
+
+                if (oldIndex >= collection.Count)
+                {
+                    collection.Add(draggedItem);
+                }
+                else
+                {
+                    collection.Insert(oldIndex, draggedItem);
+                }
+
+                MessageBox.Show(errorMessage, "Task Index Update", MessageBoxButton.OK, MessageBoxImage.Warning);
+                grid.SelectedItem = draggedItem;
+                grid.Items.Refresh();
+                return;
+            }
+
             grid.SelectedItem = draggedItem;
             grid.Items.Refresh();
         }
 
         /// <summary>
-        /// Blocks drag-drop operations when the dragged task has an execute condition set.
+        /// Attempts to assign a new task index to the dragged item based on its neighbors.
         /// </summary>
-        /// <param name="grid">The data grid that initiated the drag-drop.</param>
-        /// <param name="draggedItem">The dragged item instance.</param>
-        /// <returns><see langword="true"/> when drag-drop can proceed; otherwise <see langword="false"/>.</returns>
-        private static bool TryEnsureDragDropAllowed(DataGrid grid, object draggedItem)
+        /// <param name="items">The reordered task collection.</param>
+        /// <param name="draggedItem">The task being moved.</param>
+        /// <param name="targetIndex">The new position in the collection.</param>
+        /// <param name="errorMessage">The error message to show when no valid index is available.</param>
+        /// <returns><see langword="true"/> when the task index was updated; otherwise <see langword="false"/>.</returns>
+        internal static bool TryAssignTaskIndexForDrop(IList items, object draggedItem, int targetIndex, out string errorMessage)
         {
-            if (draggedItem is not IGenericTask task)
+            if (draggedItem is not IGenericTask draggedTask)
             {
-                return true;
+                errorMessage = "The dragged item does not support task indexing.";
+                return false;
             }
 
-            var dialogs = TryGetDialogCollection(grid);
-            return !TryBlockDragDropWithDialog(task, dialogs);
+            var taskCollection = items as ObservableCollection<object> ?? new ObservableCollection<object>(items.Cast<object>());
+
+            var hasPreviousIndex = TryGetNeighborIndex(items, targetIndex - 1, out var previousIndex, out var previousExists);
+            if (previousExists && !hasPreviousIndex)
+            {
+                errorMessage = "Unable to read the previous task index.";
+                return false;
+            }
+
+            var hasNextIndex = TryGetNeighborIndex(items, targetIndex + 1, out var nextIndex, out var nextExists);
+            if (nextExists && !hasNextIndex)
+            {
+                errorMessage = "Unable to read the next task index.";
+                return false;
+            }
+
+            if (hasPreviousIndex && hasNextIndex)
+            {
+                if (previousIndex >= nextIndex - 1)
+                {
+                    errorMessage = "No available task index between the surrounding tasks.";
+                    return false;
+                }
+
+                return TryAssignTaskIndexInRange(draggedTask, taskCollection, previousIndex + 1, nextIndex - 1, out errorMessage);
+            }
+
+            if (!hasPreviousIndex && hasNextIndex)
+            {
+                if (nextIndex <= 0)
+                {
+                    errorMessage = "No available task index before the target task.";
+                    return false;
+                }
+
+                return TryAssignTaskIndexInRange(draggedTask, taskCollection, 0, nextIndex - 1, out errorMessage);
+            }
+
+            if (hasPreviousIndex && !hasNextIndex)
+            {
+                var candidate = previousIndex + 1;
+                return TryAssignTaskIndexCandidate(draggedTask, taskCollection, candidate, out errorMessage);
+            }
+
+            return TryAssignTaskIndexCandidate(draggedTask, taskCollection, 0, out errorMessage);
         }
 
         /// <summary>
-        /// Determines whether a task has an execute condition configured.
+        /// Attempts to assign the first valid task index within the provided range.
         /// </summary>
-        /// <param name="task">The task to inspect.</param>
-        /// <returns><see langword="true"/> when an execute condition is set; otherwise <see langword="false"/>.</returns>
-        internal static bool HasExecuteCondition(IGenericTask task)
+        /// <param name="draggedTask">The task being moved.</param>
+        /// <param name="taskCollection">The collection used for duplicate validation.</param>
+        /// <param name="minCandidate">The first candidate index.</param>
+        /// <param name="maxCandidate">The last candidate index.</param>
+        /// <param name="errorMessage">The error message to show when no valid index is available.</param>
+        /// <returns><see langword="true"/> when the task index was updated; otherwise <see langword="false"/>.</returns>
+        private static bool TryAssignTaskIndexInRange(IGenericTask draggedTask, ObservableCollection<object> taskCollection, int minCandidate, int maxCandidate, out string errorMessage)
         {
-            return task != null &&
-                   (!string.IsNullOrWhiteSpace(task.SelectedExecuteConditionTaskIndex) ||
-                    task.SelectedExecuteConditionErrorLevel != ERROR.Empty);
+            for (var candidate = minCandidate; candidate <= maxCandidate; candidate++)
+            {
+                if (TryAssignTaskIndexCandidate(draggedTask, taskCollection, candidate, out errorMessage))
+                {
+                    return true;
+                }
+            }
+
+            errorMessage = "No available task index between the surrounding tasks.";
+            return false;
         }
 
         /// <summary>
-        /// Shows a dialog and blocks drag-drop when the task has an execute condition configured.
+        /// Attempts to assign a specific task index after validation.
         /// </summary>
-        /// <param name="task">The task being dragged.</param>
-        /// <param name="dialogs">The dialog collection used by the main window.</param>
-        /// <returns><see langword="true"/> when drag-drop should be blocked; otherwise <see langword="false"/>.</returns>
-        internal static bool TryBlockDragDropWithDialog(IGenericTask task, ObservableCollection<IDialogViewModel> dialogs)
+        /// <param name="draggedTask">The task being moved.</param>
+        /// <param name="taskCollection">The collection used for duplicate validation.</param>
+        /// <param name="candidateIndex">The candidate task index.</param>
+        /// <param name="errorMessage">The error message to show when validation fails.</param>
+        /// <returns><see langword="true"/> when the task index was updated; otherwise <see langword="false"/>.</returns>
+        private static bool TryAssignTaskIndexCandidate(IGenericTask draggedTask, ObservableCollection<object> taskCollection, int candidateIndex, out string errorMessage)
         {
-            if (!HasExecuteCondition(task))
+            if (candidateIndex < 0)
+            {
+                errorMessage = "Task index must be non-negative.";
+                return false;
+            }
+
+            var candidateText = candidateIndex.ToString(CultureInfo.CurrentCulture);
+            if (!TaskIndexValidation.TryValidateTaskIndex(candidateText, taskCollection, draggedTask, out errorMessage))
             {
                 return false;
             }
 
-            dialogs?.Add(new CustomDialogViewModel
-            {
-                Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
-                Message = ResourceLoader.GetResource("messageDragDropExecuteConditionBlocked"),
-                OnOk = sender => sender.Close()
-            });
-
+            draggedTask.CurrentTaskIndex = candidateText;
+            errorMessage = null;
             return true;
         }
 
-        private static ObservableCollection<IDialogViewModel> TryGetDialogCollection(DataGrid grid)
+        private static bool TryGetNeighborIndex(IList items, int neighborPosition, out int taskIndex, out bool neighborExists)
         {
-            var mainWindowViewModel = grid?.DataContext as MainWindowViewModel
-                ?? Application.Current?.MainWindow?.DataContext as MainWindowViewModel;
+            taskIndex = -1;
+            neighborExists = neighborPosition >= 0 && neighborPosition < items.Count;
+            if (!neighborExists)
+            {
+                return false;
+            }
 
-            return mainWindowViewModel?.Dialogs;
+            return TryGetTaskIndex(items[neighborPosition], out taskIndex);
         }
 
-        private static void UpdateTaskIndices(IEnumerable items)
+        private static bool TryGetTaskIndex(object item, out int taskIndex)
         {
-            var index = 0;
-            foreach (var item in items)
+            if (item is IGenericTask task && int.TryParse(task.CurrentTaskIndex, out taskIndex))
             {
-                if (item is IGenericTask task)
-                {
-                    task.CurrentTaskIndex = index.ToString(CultureInfo.CurrentCulture);
-                }
-
-                index++;
+                return true;
             }
+
+            taskIndex = -1;
+            return false;
         }
 
         private static bool CanHandleDrag(DataGrid grid, IDataObject data)
