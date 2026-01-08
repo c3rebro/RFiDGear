@@ -1,4 +1,5 @@
 using System.Windows.Controls;
+using CommunityToolkit.Mvvm.Input;
 using RFiDGear.Infrastructure;
 using RFiDGear.Services;
 using Xunit;

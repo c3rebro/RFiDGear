@@ -102,13 +102,51 @@ namespace RFiDGear.Tests
 
         private static void RaiseContextMenuOpening(UIElement element)
         {
-            var args = new ContextMenuEventArgs(Mouse.PrimaryDevice, Environment.TickCount)
-            {
-                RoutedEvent = FrameworkElement.ContextMenuOpeningEvent,
-                Source = element
-            };
+            var args = CreateContextMenuEventArgs(element);
+            args.RoutedEvent = FrameworkElement.ContextMenuOpeningEvent;
+            args.Source = element;
 
             element.RaiseEvent(args);
+        }
+
+        private static ContextMenuEventArgs CreateContextMenuEventArgs(UIElement element)
+        {
+            var routedEvent = FrameworkElement.ContextMenuOpeningEvent;
+            var constructors = typeof(ContextMenuEventArgs).GetConstructors();
+
+            foreach (var constructor in constructors)
+            {
+                var parameters = constructor.GetParameters();
+                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(RoutedEvent))
+                {
+                    return (ContextMenuEventArgs)constructor.Invoke(new object[] { routedEvent });
+                }
+
+                if (parameters.Length == 2)
+                {
+                    if (parameters[0].ParameterType == typeof(RoutedEvent)
+                        && parameters[1].ParameterType == typeof(object))
+                    {
+                        return (ContextMenuEventArgs)constructor.Invoke(new object[] { routedEvent, element });
+                    }
+
+                    if (parameters[0].ParameterType == typeof(object)
+                        && parameters[1].ParameterType == typeof(bool))
+                    {
+                        return (ContextMenuEventArgs)constructor.Invoke(new object[] { element, true });
+                    }
+                }
+
+                if (parameters.Length == 3
+                    && parameters[0].ParameterType == typeof(RoutedEvent)
+                    && parameters[1].ParameterType == typeof(object)
+                    && parameters[2].ParameterType == typeof(bool))
+                {
+                    return (ContextMenuEventArgs)constructor.Invoke(new object[] { routedEvent, element, true });
+                }
+            }
+
+            throw new InvalidOperationException("Unable to locate a ContextMenuEventArgs constructor.");
         }
 
         private static Task RunOnStaThreadAsync(Action action)

@@ -93,6 +93,23 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
+        [InlineData(TaskType_MifareDesfireTask.ReadData, false)]
+        [InlineData(TaskType_MifareDesfireTask.WriteData, false)]
+        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, true)]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, true)]
+        public void SelectedTaskType_TogglesCurrentAppKeyInputs(
+            TaskType_MifareDesfireTask taskType,
+            bool showCurrent)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = taskType
+            };
+
+            Assert.Equal(showCurrent, viewModel.ShowAppKeyCurrentInputs);
+        }
+
+        [Theory]
         [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover, true, false)]
         [InlineData(TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover, false, true)]
         [InlineData(TaskType_MifareDesfireTask.ChangeDefault, false, false)]
