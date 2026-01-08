@@ -1030,8 +1030,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <inheritdoc />
-        public override async Task<ERROR> ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
-                                               string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
+        public override async Task<ERROR> ReadMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                                string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                                                EncryptionMode _encMode,
                                                int _fileNo, int _appID, int _fileSize)
@@ -1055,20 +1054,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 StorageCardService storage = (StorageCardService)card.getService(CardServiceType.CST_STORAGE);
 
                 // Change keys with the following ones
-                DESFireAccessInfo aiToWrite = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
-                aiToWrite.masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToWrite.masterApplicationKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
-
+                DESFireAccessInfo aiToRead = new DESFireAccessInfo();
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
-                aiToWrite.readKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToWrite.readKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppReadKey);
-                aiToWrite.readKeyno = (byte)_readKeyNo;
+                aiToRead.readKey.fromString(CustomConverter.DesfireKeyToCheck);
+                aiToRead.readKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppReadKey);
+                aiToRead.readKeyno = (byte)_readKeyNo;
 
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
-                aiToWrite.writeKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToWrite.writeKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppWriteKey);
-                aiToWrite.writeKeyno = (byte)_writeKeyNo;
+                aiToRead.writeKey.fromString(CustomConverter.DesfireKeyToCheck);
+                aiToRead.writeKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppWriteKey);
+                aiToRead.writeKeyno = (byte)_writeKeyNo;
 
                 if (await tryInitReader())
                 {
@@ -1085,7 +1080,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             {
                                 cmd.selectApplication((uint)_appID);
 
-                                cmd.authenticate((byte)_readKeyNo, aiToWrite.readKey);
+                                cmd.authenticate((byte)_readKeyNo, aiToRead.readKey);
 
                                 MifareDESFireData = cmd.readData((byte)_fileNo, 0, (uint)_fileSize, LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT).ToArray();
                             }
@@ -1126,9 +1121,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <inheritdoc />
-        public override async Task<ERROR> WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
-                                                string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
-                                                string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
+        public override async Task<ERROR> WriteMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                                 string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                                                 EncryptionMode _encMode,
                                                 int _fileNo, int _appID, byte[] _data)
@@ -1152,19 +1145,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 StorageCardService storage = (StorageCardService)card.getService(CardServiceType.CST_STORAGE);
 
                 // Change keys with the following ones
-                DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_cardMasterKey);
-                aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
-
                 DESFireAccessInfo aiToWrite = new DESFireAccessInfo();
-                aiToWrite.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToWrite.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
-
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
-                aiToWrite.masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToWrite.masterApplicationKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
-
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
                 aiToWrite.readKey.fromString(CustomConverter.DesfireKeyToCheck);
                 aiToWrite.readKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppReadKey);

@@ -1,8 +1,12 @@
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
+using RFiDGear.Infrastructure.ReaderProviders;
+using RFiDGear.Models;
+using RFiDGear.ViewModel;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -295,6 +299,102 @@ namespace RFiDGear.Tests
             Assert.Contains("ChangeKeyFrozen", line);
         }
 
+        [Fact]
+        public async Task ReadDataCommand_UsesReadKeyForAuthenticationAndRead()
+        {
+            var fakeProvider = new FakeElatecNetProvider();
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                AppNumberCurrent = "1",
+                AppNumberNew = "1",
+                FileNumberCurrent = "1",
+                FileSizeCurrent = "4",
+                DesfireReadKeyCurrent = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+                SelectedDesfireReadKeyEncryptionType = DESFireKeyType.DF_KEY_AES,
+                SelectedDesfireReadKeyNumber = "1",
+                DesfireWriteKeyCurrent = "11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11",
+                SelectedDesfireWriteKeyEncryptionType = DESFireKeyType.DF_KEY_3K3DES,
+                SelectedDesfireWriteKeyNumber = "2"
+            };
+
+            viewModel.ChildNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(
+                new MifareDesfireFileModel(new byte[4], 0),
+                viewModel.ChildNodeViewModelTemp));
+
+            var originalReader = ReaderDevice.Reader;
+            var originalInstance = GetReaderDeviceInstance();
+            try
+            {
+                ReaderDevice.Reader = ReaderTypes.Elatec;
+                SetReaderDeviceInstance(fakeProvider);
+
+                await viewModel.ReadDataCommand.ExecuteAsync(null);
+
+                Assert.Equal(viewModel.DesfireReadKeyCurrent, fakeProvider.LastAuthKey);
+                Assert.Equal(viewModel.SelectedDesfireReadKeyEncryptionType, fakeProvider.LastAuthKeyType);
+                Assert.Equal(1, fakeProvider.LastAuthKeyNumber);
+                Assert.Equal(viewModel.DesfireReadKeyCurrent, fakeProvider.LastReadKey);
+                Assert.Equal(viewModel.SelectedDesfireReadKeyEncryptionType, fakeProvider.LastReadKeyType);
+                Assert.Equal(1, fakeProvider.LastReadKeyNumber);
+                Assert.Equal(viewModel.DesfireWriteKeyCurrent, fakeProvider.LastWriteKey);
+                Assert.Equal(viewModel.SelectedDesfireWriteKeyEncryptionType, fakeProvider.LastWriteKeyType);
+                Assert.Equal(2, fakeProvider.LastWriteKeyNumber);
+            }
+            finally
+            {
+                ReaderDevice.Reader = originalReader;
+                SetReaderDeviceInstance(originalInstance);
+            }
+        }
+
+        [Fact]
+        public async Task WriteDataCommand_UsesWriteKeyForAuthenticationAndWrite()
+        {
+            var fakeProvider = new FakeElatecNetProvider();
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                AppNumberCurrent = "1",
+                AppNumberNew = "1",
+                FileNumberCurrent = "1",
+                FileSizeCurrent = "4",
+                DesfireReadKeyCurrent = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+                SelectedDesfireReadKeyEncryptionType = DESFireKeyType.DF_KEY_AES,
+                SelectedDesfireReadKeyNumber = "1",
+                DesfireWriteKeyCurrent = "22 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22",
+                SelectedDesfireWriteKeyEncryptionType = DESFireKeyType.DF_KEY_DES,
+                SelectedDesfireWriteKeyNumber = "3"
+            };
+
+            viewModel.ChildNodeViewModelTemp.Children.Add(new RFiDChipGrandChildLayerViewModel(
+                new MifareDesfireFileModel(new byte[] { 0x01, 0x02, 0x03, 0x04 }, 0),
+                viewModel.ChildNodeViewModelTemp));
+
+            var originalReader = ReaderDevice.Reader;
+            var originalInstance = GetReaderDeviceInstance();
+            try
+            {
+                ReaderDevice.Reader = ReaderTypes.Elatec;
+                SetReaderDeviceInstance(fakeProvider);
+
+                await viewModel.WriteDataCommand.ExecuteAsync(null);
+
+                Assert.Equal(viewModel.DesfireWriteKeyCurrent, fakeProvider.LastAuthKey);
+                Assert.Equal(viewModel.SelectedDesfireWriteKeyEncryptionType, fakeProvider.LastAuthKeyType);
+                Assert.Equal(3, fakeProvider.LastAuthKeyNumber);
+                Assert.Equal(viewModel.DesfireReadKeyCurrent, fakeProvider.LastReadKey);
+                Assert.Equal(viewModel.SelectedDesfireReadKeyEncryptionType, fakeProvider.LastReadKeyType);
+                Assert.Equal(1, fakeProvider.LastReadKeyNumber);
+                Assert.Equal(viewModel.DesfireWriteKeyCurrent, fakeProvider.LastWriteKey);
+                Assert.Equal(viewModel.SelectedDesfireWriteKeyEncryptionType, fakeProvider.LastWriteKeyType);
+                Assert.Equal(3, fakeProvider.LastWriteKeyNumber);
+            }
+            finally
+            {
+                ReaderDevice.Reader = originalReader;
+                SetReaderDeviceInstance(originalInstance);
+            }
+        }
+
         [Theory]
         [InlineData("0", "0", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK, false)]
         [InlineData("0", "1", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK, false)]
@@ -319,6 +419,66 @@ namespace RFiDGear.Tests
             };
 
             Assert.Equal(expected, viewModel.ShowAppKeyOldInputs);
+        }
+
+        private static ReaderDevice GetReaderDeviceInstance()
+        {
+            return typeof(ReaderDevice).GetField("instance", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) as ReaderDevice;
+        }
+
+        private static void SetReaderDeviceInstance(ReaderDevice instance)
+        {
+            typeof(ReaderDevice).GetField("instance", BindingFlags.NonPublic | BindingFlags.Static)?.SetValue(null, instance);
+        }
+
+        private sealed class FakeElatecNetProvider : ElatecNetProvider
+        {
+            public string LastAuthKey { get; private set; }
+            public DESFireKeyType LastAuthKeyType { get; private set; }
+            public int LastAuthKeyNumber { get; private set; }
+            public string LastReadKey { get; private set; }
+            public DESFireKeyType LastReadKeyType { get; private set; }
+            public int LastReadKeyNumber { get; private set; }
+            public string LastWriteKey { get; private set; }
+            public DESFireKeyType LastWriteKeyType { get; private set; }
+            public int LastWriteKeyNumber { get; private set; }
+
+            public override Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0)
+            {
+                LastAuthKey = _applicationMasterKey;
+                LastAuthKeyType = _keyType;
+                LastAuthKeyNumber = _keyNumber;
+                return Task.FromResult(ERROR.NoError);
+            }
+
+            public override Task<ERROR> ReadMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
+                string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
+                EncryptionMode _encMode,
+                int _fileNo, int _appID, int _fileSize)
+            {
+                LastReadKey = _appReadKey;
+                LastReadKeyType = _keyTypeAppReadKey;
+                LastReadKeyNumber = _readKeyNo;
+                LastWriteKey = _appWriteKey;
+                LastWriteKeyType = _keyTypeAppWriteKey;
+                LastWriteKeyNumber = _writeKeyNo;
+                MifareDESFireData = new byte[_fileSize];
+                return Task.FromResult(ERROR.NoError);
+            }
+
+            public override Task<ERROR> WriteMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
+                string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
+                EncryptionMode _encMode,
+                int _fileNo, int _appID, byte[] _data)
+            {
+                LastReadKey = _appReadKey;
+                LastReadKeyType = _keyTypeAppReadKey;
+                LastReadKeyNumber = _readKeyNo;
+                LastWriteKey = _appWriteKey;
+                LastWriteKeyType = _keyTypeAppWriteKey;
+                LastWriteKeyNumber = _writeKeyNo;
+                return Task.FromResult(ERROR.NoError);
+            }
         }
 
         [Theory]

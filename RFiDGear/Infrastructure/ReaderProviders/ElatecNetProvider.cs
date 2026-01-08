@@ -1252,8 +1252,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <inheritdoc />
-        public async override Task<ERROR> ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
-                                       string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
+        public async override Task<ERROR> ReadMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                        string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                                        EncryptionMode _encMode,
                                        int _fileNo, int _appID, int _fileSize)
@@ -1263,7 +1262,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
 
-                if (await AuthToMifareDesfireApplication(_appMasterKey, _keyTypeAppMasterKey, _readKeyNo, _appID) == ERROR.NoError)
+                if (await AuthToMifareDesfireApplication(_appReadKey, _keyTypeAppReadKey, _readKeyNo, _appID) == ERROR.NoError)
                 {
                     MifareDESFireData = await readerDevice.MifareDesfire_ReadDataAsync((byte)_fileNo, _fileSize, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
 
@@ -1290,9 +1289,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <inheritdoc />
-        public async override Task<ERROR> WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
-                                        string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
-                                        string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
+        public async override Task<ERROR> WriteMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                         string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                                         EncryptionMode _encMode,
                                         int _fileNo, int _appID, byte[] _data)
@@ -1302,7 +1299,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
 
-                if (await AuthToMifareDesfireApplication(_appMasterKey, _keyTypeAppMasterKey, _writeKeyNo, _appID) == ERROR.NoError)
+                if (await AuthToMifareDesfireApplication(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID) == ERROR.NoError)
                 {
                     await readerDevice.MifareDesfire_WriteDataAsync((byte)_fileNo, _data, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
                 }
