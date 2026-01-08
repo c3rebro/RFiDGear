@@ -195,17 +195,40 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                         int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
                                         int _maxNbOfRecords = 100);
 
-        // Todo: add XML comments
-        public abstract Task<ERROR> ReadMiFareDESFireChipFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
-                                        string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
+        /// <summary>
+        /// Reads a MIFARE DESFire file from the specified application using the provided application keys.
+        /// </summary>
+        /// <param name="_appReadKey">The application read key used to authenticate before reading.</param>
+        /// <param name="_keyTypeAppReadKey">The key type for the application read key.</param>
+        /// <param name="_readKeyNo">The key number for the application read key.</param>
+        /// <param name="_appWriteKey">The application write key configured for the file.</param>
+        /// <param name="_keyTypeAppWriteKey">The key type for the application write key.</param>
+        /// <param name="_writeKeyNo">The key number for the application write key.</param>
+        /// <param name="_encMode">The communication mode to use when reading the file.</param>
+        /// <param name="_fileNo">The file number to read.</param>
+        /// <param name="_appID">The application ID that owns the file.</param>
+        /// <param name="_fileSize">The number of bytes to read from the file.</param>
+        /// <returns cref="ERROR">Result of the operation.</returns>
+        public abstract Task<ERROR> ReadMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                         string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                                         EncryptionMode _encMode,
                                         int _fileNo, int _appID, int _fileSize);
 
-        // Todo: add XML comments
-        public abstract Task<ERROR> WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
-                                        string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
-                                        string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
+        /// <summary>
+        /// Writes data to a MIFARE DESFire file in the specified application using the provided application keys.
+        /// </summary>
+        /// <param name="_appReadKey">The application read key configured for the file.</param>
+        /// <param name="_keyTypeAppReadKey">The key type for the application read key.</param>
+        /// <param name="_readKeyNo">The key number for the application read key.</param>
+        /// <param name="_appWriteKey">The application write key used to authenticate before writing.</param>
+        /// <param name="_keyTypeAppWriteKey">The key type for the application write key.</param>
+        /// <param name="_writeKeyNo">The key number for the application write key.</param>
+        /// <param name="_encMode">The communication mode to use when writing the file.</param>
+        /// <param name="_fileNo">The file number to write.</param>
+        /// <param name="_appID">The application ID that owns the file.</param>
+        /// <param name="_data">The data to write to the file.</param>
+        /// <returns cref="ERROR">Result of the operation.</returns>
+        public abstract Task<ERROR> WriteMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                         string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                                         EncryptionMode _encMode,
                                         int _fileNo, int _appID, byte[] _data);
