@@ -150,6 +150,25 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
+        [InlineData(TaskType_MifareDesfireTask.ReadData, false, false)]
+        [InlineData(TaskType_MifareDesfireTask.WriteData, false, false)]
+        [InlineData(TaskType_MifareDesfireTask.CreateFile, true, true)]
+        [InlineData(TaskType_MifareDesfireTask.DeleteFile, true, true)]
+        public void SelectedTaskType_TogglesFileMasteringVisibility(
+            TaskType_MifareDesfireTask taskType,
+            bool showAccessRights,
+            bool showAuthoringCommands)
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = taskType
+            };
+
+            Assert.Equal(showAccessRights, viewModel.ShowFileAccessRights);
+            Assert.Equal(showAuthoringCommands, viewModel.ShowFileAuthoringCommands);
+        }
+
+        [Theory]
         [InlineData("0x4bc", 0x4BC)]
         [InlineData("0x4BC", 0x4BC)]
         [InlineData("1212", 1212)]

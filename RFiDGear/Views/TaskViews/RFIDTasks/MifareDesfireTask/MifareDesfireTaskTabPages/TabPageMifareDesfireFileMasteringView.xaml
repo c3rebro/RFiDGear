@@ -16,6 +16,7 @@
     <UserControl.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
         <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 			<ContextMenu.ItemContainerStyle>
 				<Style TargetType="MenuItem">
@@ -56,6 +57,7 @@
                         HorizontalContentAlignment="Center"
                         VerticalContentAlignment="Center"
                         Command="{Binding DeleteFileCommand}"
+                        Visibility="{Binding ShowFileAuthoringCommands, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileMasteringDeleteFile'}" Grid.RowSpan="2" />
                     <Button
                         Grid.Row="6"
@@ -69,6 +71,7 @@
                         HorizontalContentAlignment="Center"
                         VerticalContentAlignment="Center"
                         Command="{Binding CreateFileCommand}"
+                        Visibility="{Binding ShowFileAuthoringCommands, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileMasteringCreateFile'}" />
                     <Label
                         Grid.Row="0"
@@ -157,6 +160,7 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentWrite'}" />
                     <Label
                         Grid.Row="3"
@@ -166,6 +170,7 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentRead'}" />
                     <Label
                         Grid.Row="4"
@@ -175,6 +180,7 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentReadAndWrite'}" />
                     <Label
                         Grid.Row="4"
@@ -184,6 +190,7 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentChange'}" />
                     <ComboBox
                         x:Name="rnwriteCB"
@@ -194,6 +201,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:TaskAccessRights}}"
+                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
                         SelectedItem="{Binding SelectedDesfireFileAccessRightReadWrite, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Label
                         Grid.Row="0"
@@ -213,6 +221,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:TaskAccessRights}}"
+                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
                         SelectedItem="{Binding SelectedDesfireFileAccessRightChange, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="writeCB"
@@ -223,6 +232,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:TaskAccessRights}}"
+                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
                         SelectedItem="{Binding SelectedDesfireFileAccessRightWrite, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="readCB"
@@ -233,6 +243,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type dal:TaskAccessRights}}"
+                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
                         SelectedItem="{Binding SelectedDesfireFileAccessRightRead, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="encModeCB"
