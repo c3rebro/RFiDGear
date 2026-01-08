@@ -13,7 +13,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using MvvmDialogs.ViewModels;
-using MefMvvm.SharedContracts.ViewModel;
 
 using System;
 using System.Collections.Generic;

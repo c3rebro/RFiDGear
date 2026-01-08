@@ -177,9 +177,6 @@
               <Component Id="MVVMDialogsExtDll" Guid="5118101C-03AA-4014-A620-513D2E581042" DiskId="1">
                 <File Id="MVVMDialogsExt.dll" Name="MVVMDialogs.dll" Source="..\..\VCNEditor\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
               </Component>
-              <Component Id="PluginSystemExtDll" Guid="AF8C7A46-7867-47C5-9D02-533D7808B48F" DiskId="1">
-                <File Id="PluginSystemExt.dll" Name="PluginSystem.dll" Source="..\..\VCNEditor\bin\Release\PluginSystem.dll" KeyPath="yes" />
-              </Component>
               <Directory Id="de_DE" Name="de-DE">
                 <Component Id="VCNEditorresourcesDll" Guid="7748ED31-8581-46D7-9D72-49631DF34E8C" DiskId="1">
                   <File Id="VCNEditor.resources.dll" Name="VCNEditor.resources.dll" Source="..\..\VCNEditor\bin\Release\de-DE\VCNEditor.resources.dll" KeyPath="yes" />
@@ -229,7 +226,6 @@
 				<!--<ComponentRef Id="RFiDGearProgramDataFolder" />-->
 				<ComponentRef Id="VCNEditorDll" />
         <ComponentRef Id="ByteArrayExtDll"/>
-        <ComponentRef Id="PluginSystemExtDll"/>
         <ComponentRef Id="CommunityToolkitMvvmExtDll" />
         <ComponentRef Id="MVVMDialogsExtDll" />
 				<ComponentRef Id="En_USVCNEditorresourcesDll" />
