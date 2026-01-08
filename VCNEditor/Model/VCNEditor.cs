@@ -4,7 +4,8 @@ using RFiDGear.UI.UIExtensions.Interfaces;
 namespace VCNEditor.Model
 {
     /// <summary>
-    /// UI extension entry point for the VCN editor view.
+    /// MEF-exported UI extension that registers the VCN editor view and points to the
+    /// pack URI entry point for its XAML view.
     /// </summary>
     [UiExtension(Name = "VCNEditor",
         Uri = "pack://application:,,,/VCNEditor;component/View/VCNEditorView.xaml",
