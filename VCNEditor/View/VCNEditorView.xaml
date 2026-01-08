@@ -1,0 +1,668 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:local="clr-namespace:VCNEditor" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
+	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}" xmlns:dal="clr-namespace:VCNEditor.DataAccessLayer" xmlns:system="clr-namespace:System;assembly=mscorlib" xmlns:v="clr-namespace:VCNEditor.View" xmlns:vm="clr-namespace:VCNEditor.ViewModel"
+	x:Class="VCNEditor.View.VCNEditorView"
+	x:Name="VCNEditor"
+	mc:Ignorable="d">
+	<UserControl.Resources>
+		<system:Boolean
+			x:Key="True">True</system:Boolean>
+		<system:Boolean
+			x:Key="False">False</system:Boolean>
+		<dal:BindingProxy
+			x:Key="proxy"
+			Data="{Binding}" />
+		<dal:ResourceLoader
+			x:Key="Localization" />
+	</UserControl.Resources>
+	<UserControl.DataContext>
+		<vm:VCNEditorViewModel />
+	</UserControl.DataContext>
+	<!--d:DesignHeight="300" d:DesignWidth="300"-->
+	<Grid
+		HorizontalAlignment="Stretch"
+		VerticalAlignment="Stretch">
+		<TabControl
+			HorizontalAlignment="Stretch"
+			VerticalAlignment="Stretch"
+			Margin="0,0,0,0">
+			<TabItem
+				Header="{Binding LocalizationResourceSet,Converter={StaticResource Localization},ConverterParameter='tabItemHeaderConfig'}">
+				<Grid>
+					<GroupBox
+						Header="AccessFile Header - Common Setup"
+						Grid.Column="6"
+						Grid.Row="4"
+						Grid.RowSpan="3"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="9,0,7,7">
+						<Grid
+							HorizontalAlignment="Stretch"
+							VerticalAlignment="Stretch">
+							<Grid.RowDefinitions>
+								<RowDefinition
+									Height="42" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="0.572012436988651*" />
+							</Grid.RowDefinitions>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition
+									Width="Auto" />
+								<ColumnDefinition
+									Width="0.361185714464168*" />
+								<ColumnDefinition
+									Width="100" />
+								<ColumnDefinition
+									Width="0.329616511136843*" />
+							</Grid.ColumnDefinitions>
+							<Label
+								Content="Rel.Major"
+								Height="26"
+								Width="75"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Left"
+								VerticalAlignment="Top"
+								Margin="8,9,0,0" />
+							<Label
+								Content="AreaID"
+								Height="26"
+								Grid.Column="0"
+								Grid.Row="1"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,3,7,0" />
+							<TextBox
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								Text="{Binding ReleaseMajor, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								Height="26"
+								Grid.Column="1"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,9,7,0" />
+							<Label
+								Content="Rel. Minor"
+								Height="26"
+								Grid.Column="2"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,9,7,0" />
+							<TextBox
+								Height="26"
+								Text="{Binding ReleaseMinor, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								Grid.Column="3"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,9,7,0" />
+							<TextBox
+								Text="{Binding AreaID, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								Height="26"
+								Grid.Column="1"
+								Grid.Row="1"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,3,7,0" />
+						</Grid>
+					</GroupBox>
+					<GroupBox
+						Header="AccessFile Header - SI Config"
+						Grid.Column="3"
+						Grid.ColumnSpan="3"
+						Grid.Row="0"
+						Grid.RowSpan="7"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="9,8,7,7">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition
+									Height="42" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="0.600426742742249*" />
+							</Grid.RowDefinitions>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition
+									Width="90" />
+								<ColumnDefinition
+									Width="*" />
+							</Grid.ColumnDefinitions>
+							<Label
+								Content="LogLevel"
+								Height="26"
+								Width="75"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Left"
+								VerticalAlignment="Top"
+								Margin="8,9,0,0" />
+							<CheckBox
+								IsChecked="{Binding NoEntryWhenALFull, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								Grid.Column="0"
+								Grid.ColumnSpan="2"
+								Grid.Row="1"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Stretch"
+								Margin="7.66666666666667,3,7.66666666666669,7"
+								Content="suppress Coupling on AL Full" />
+							<TextBox
+								Height="26"
+								Grid.Row="0"
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,9,7,0"
+								Grid.Column="1"
+								Text="{Binding MinAccessListLogLevelAsString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+							<CheckBox
+								IsChecked="{Binding SuppressBeeping, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								Height="26"
+								Grid.Column="0"
+								Grid.ColumnSpan="2"
+								Grid.Row="5"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="7.66666666666667,1,7.66666666666669,0"
+								Content="suppress Beeping" />
+							<CheckBox
+								IsChecked="{Binding LongCoupling, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								Grid.Column="0"
+								Grid.ColumnSpan="2"
+								Grid.Row="2"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Stretch"
+								Margin="7.66666666666667,2.33333333333333,7.66666666666669,7"
+								Content="extended Coupling" />
+							<CheckBox
+								IsChecked="{Binding SuppressCoupling, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								Grid.Column="0"
+								Grid.ColumnSpan="2"
+								Grid.Row="4"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Stretch"
+								Margin="8,3,8,7"
+								Content="suppress Coupling" />
+							<CheckBox
+								IsChecked="{Binding ToggleDoorState, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								Grid.Column="0"
+								Grid.ColumnSpan="2"
+								Grid.Row="3"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Stretch"
+								Margin="7.66666666666667,3.66666666666666,7.66666666666669,7"
+								Content="tggl DoorState (activ./deactivate)" />
+						</Grid>
+					</GroupBox>
+					<GroupBox
+						Header="Access Profile"
+						Grid.Column="0"
+						Grid.ColumnSpan="3"
+						Grid.Row="0"
+						Grid.RowSpan="9"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="8,8,7,7">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition
+									Height="42" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="7.27877849842324*" />
+								<RowDefinition
+									Height="7.27076075179461*" />
+							</Grid.RowDefinitions>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition
+									Width="125.570386368189" />
+								<ColumnDefinition
+									Width="76.4296136318106" />
+								<ColumnDefinition
+									Width="0.204542449150451*" />
+							</Grid.ColumnDefinitions>
+							<Button
+								Content="Edit WeekSched."
+								Command="{Binding EditWeekSchedulesCommand}"
+								Height="26"
+								Grid.Column="0"
+								Grid.Row="1"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Bottom"
+								Margin="8,0,7,7" />
+							<Button
+								Content="Edit MainList"
+								Command="{Binding EditMainListCommand}"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								Margin="9,8.99999999999999,7,7" />
+							<Button
+								Height="26"
+								Content="Pos. excp. DoorList"
+								Grid.Column="0"
+								Grid.Row="2"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Bottom"
+								Margin="8,0,7,7" />
+							<Button
+								Height="26"
+								Content="Neg. excp. DoorList"
+								Grid.Column="0"
+								Grid.Row="3"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Bottom"
+								Margin="8,0,7,7" />
+							<TextBox
+								Text="{Binding SelectedAccessProfile.WeekSchedulesCount, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"
+								IsReadOnly="True"
+								Height="26"
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								Grid.Column="1"
+								Grid.Row="1"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,3,7,0" />
+							<TextBox
+								IsReadOnly="True"
+								Text="{Binding SelectedAccessProfile.MainListWordsCount, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								IsEnabled="True"
+								Height="26"
+								Grid.Column="1"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,9,7,0" />
+							<TextBox
+								Text="tadaa"
+								IsReadOnly="True"
+								Height="26"
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								Grid.Column="1"
+								Grid.Row="2"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,3,7,0" />
+							<Label
+								HorizontalContentAlignment="Center"
+								Content="Length of Lists (Words)"
+								Height="31"
+								Grid.Column="1"
+								Grid.ColumnSpan="2"
+								Grid.Row="1"
+								Grid.RowSpan="2"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="29.5,21.5,-45.5,0"
+								RenderTransformOrigin="0.5,0.5">
+								<Label.RenderTransform>
+									<RotateTransform
+										Angle="90" />
+								</Label.RenderTransform>
+							</Label>
+							<TextBox
+								Text="blubb"
+								IsReadOnly="True"
+								Height="26"
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								Grid.Column="1"
+								Grid.Row="3"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,3,7,0" />
+							<ListBox
+								ItemsSource="{Binding AccessProfiles}"
+								SelectedItem="{Binding SelectedAccessProfile, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								DisplayMemberPath="ProfileDesc"
+								VerticalContentAlignment="Top" xmlns:Controls0="clr-namespace:VCNEditor" xmlns:Controls1="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs" xmlns:Controls2="clr-namespace:System;assembly=mscorlib" xmlns:Controls3="clr-namespace:VCNEditor.View"
+								Grid.Column="0"
+								Grid.ColumnSpan="3"
+								Grid.Row="4"
+								Grid.RowSpan="3"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Stretch"
+								Margin="8,1,7,7" />
+						</Grid>
+					</GroupBox>
+					<GroupBox
+						Header="AccessFile Header - SI Card Config"
+						Grid.Column="6"
+						Grid.Row="0"
+						Grid.RowSpan="4"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="9,8,7,7">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition
+									Height="42" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="*" />
+							</Grid.RowDefinitions>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition
+									Width="90" />
+								<ColumnDefinition
+									Width="0.812257311526977*" />
+							</Grid.ColumnDefinitions>
+							<Label
+								Width="75"
+								Height="26"
+								Content="upStrmFileC"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Left"
+								VerticalAlignment="Top"
+								Margin="8,7.50000000000003,0,0" />
+							<TextBox
+								Text="{Binding UpStreamFileContentAsString}"
+								Height="26"
+								Grid.Column="1"
+								Grid.Row="0"
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,8,7,0" />
+							<Label
+								Width="75"
+								Height="26"
+								Content="upStrmFileT"
+								Grid.Column="0"
+								Grid.Row="0"
+								Grid.RowSpan="2"
+								HorizontalAlignment="Left"
+								VerticalAlignment="Top"
+								Margin="8,39.5000000000001,0,0" />
+							<CheckBox
+								IsChecked="{Binding IsAccessListLongDate, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								Height="26"
+								Width="75"
+								Content="AL long D."
+								Grid.Column="0"
+								Grid.Row="2"
+								HorizontalAlignment="Left"
+								VerticalAlignment="Top"
+								Margin="8,3,0,0" />
+							<TextBox
+								Text="{Binding UpStreamFileTypeAsString, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+								Height="26"
+								Grid.Column="1"
+								Grid.Row="1"
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,4,7,0" />
+						</Grid>
+					</GroupBox>
+					<GroupBox
+						Header="Expiry"
+						Grid.Column="3"
+						Grid.ColumnSpan="4"
+						Grid.Row="7"
+						Grid.RowSpan="2"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="9,1,7,7">
+						<Grid>
+							<Label
+								Content="Expires"
+								Grid.Column="2"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Stretch"
+								Margin="9,8,7,8" />
+							<Label
+								Content="Valid from"
+								Height="23"
+								Grid.Column="0"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="8,12,13,0" />
+							<TextBox
+								Text="{Binding Expires}"
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								Grid.Column="3"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Stretch"
+								Margin="9,9,8,10" />
+							<TextBox
+								Text="{Binding ValidFrom}"
+								HorizontalContentAlignment="Left"
+								VerticalContentAlignment="Center"
+								Grid.Column="1"
+								Grid.Row="0"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Stretch"
+								Margin="9,12,7,7" />
+							<Button
+								Height="23"
+								Content="Set Expiry"
+								Command="{Binding SetExpiryCommand}"
+								Grid.Column="1"
+								Grid.Row="1"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,6,7,0" />
+							<Button
+								Height="23"
+								Content="Reset Expiry"
+								Grid.Column="3"
+								Grid.Row="1"
+								HorizontalAlignment="Stretch"
+								VerticalAlignment="Top"
+								Margin="9,6,7,0" />
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition
+									Width="99.2066115702479" />
+								<ColumnDefinition
+									Width="0.5*" />
+								<ColumnDefinition
+									Width="99.2066115702478" />
+								<ColumnDefinition
+									Width="0.5*" />
+							</Grid.ColumnDefinitions>
+							<Grid.RowDefinitions>
+								<RowDefinition
+									Height="42" />
+								<RowDefinition
+									Height="36" />
+								<RowDefinition
+									Height="4.12509195153234*" />
+							</Grid.RowDefinitions>
+						</Grid>
+					</GroupBox>
+					<Grid.RowDefinitions>
+						<RowDefinition
+							Height="42" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="*" />
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition
+							Width="90" />
+						<ColumnDefinition
+							Width="90" />
+						<ColumnDefinition
+							Width="90" />
+						<ColumnDefinition
+							Width="90" />
+						<ColumnDefinition
+							Width="90" />
+						<ColumnDefinition
+							Width="73.8106818131229" />
+						<ColumnDefinition
+							Width="*" />
+					</Grid.ColumnDefinitions>
+				</Grid>
+			</TabItem>
+			<TabItem
+				Header="Data">
+				<Grid>
+					<Label
+						Height="26"
+						Width="75"
+						Content="CRC32"
+						Grid.Column="0"
+						Grid.Row="3"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="7.83333333333333,3,0,0" />
+					<TextBox
+						Text="{Binding CRC32}"
+						Height="26"
+						Grid.Column="1"
+						Grid.Row="3"
+						HorizontalContentAlignment="Left"
+						VerticalContentAlignment="Center"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Top"
+						Margin="9.00000000000001,3,7,0" />
+					<Label
+						Content="CardID"
+						Height="26"
+						Width="75"
+						Grid.Column="0"
+						Grid.Row="2"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="5.83333333333331,3,0,0" />
+					<TextBox
+						Text="{Binding CardID}"
+						Height="26"
+						Grid.Column="1"
+						Grid.ColumnSpan="2"
+						Grid.Row="2"
+						HorizontalContentAlignment="Left"
+						VerticalContentAlignment="Center"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Top"
+						Margin="9.00000000000001,3,7,0" />
+					<Button
+						Command="{Binding GenerateVCNDataCommand}"
+						CommandParameter="{StaticResource True}"
+						Height="26"
+						Width="252"
+						Content="Generate Random ID + VCN Data"
+						Grid.Column="3"
+						Grid.ColumnSpan="2"
+						Grid.Row="2"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="9,3,0,0" />
+					<Label
+						Height="26"
+						Grid.Column="0"
+						Grid.Row="0"
+						VerticalAlignment="Top"
+						Content="VCN Data"
+						Margin="8,19,7,0" />
+					<TextBox
+						TextWrapping="Wrap"
+						IsReadOnly="True"
+						Text="{Binding VCNDataTextBox}"
+						Grid.Column="1"
+						Grid.ColumnSpan="5"
+						Grid.Row="0"
+						Grid.RowSpan="2"
+						HorizontalAlignment="Stretch"
+						VerticalAlignment="Stretch"
+						Margin="9,9,7,5" />
+					<Button
+						Command="{Binding GenerateVCNDataCommand}"
+						CommandParameter="{StaticResource False}"
+						Height="26"
+						Width="252"
+						Content="Generate VCN Data"
+						Grid.Column="3"
+						Grid.ColumnSpan="2"
+						Grid.Row="3"
+						HorizontalAlignment="Left"
+						VerticalAlignment="Top"
+						Margin="9,3.00000000000001,0,0" />
+					<Grid.RowDefinitions>
+						<RowDefinition
+							Height="42" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="36" />
+						<RowDefinition
+							Height="*" />
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition
+							Width="90" />
+						<ColumnDefinition
+							Width="90" />
+						<ColumnDefinition
+							Width="90" />
+						<ColumnDefinition
+							Width="90" />
+						<ColumnDefinition
+							Width="*"
+							MaxWidth="450" />
+					</Grid.ColumnDefinitions>
+				</Grid>
+			</TabItem>
+		</TabControl>
+	</Grid>
+</UserControl>

@@ -1031,7 +1031,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         /// <inheritdoc />
         public override async Task<ERROR> ReadMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
-                                               string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                                                EncryptionMode _encMode,
                                                int _fileNo, int _appID, int _fileSize)
         {
@@ -1059,11 +1058,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 aiToRead.readKey.fromString(CustomConverter.DesfireKeyToCheck);
                 aiToRead.readKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppReadKey);
                 aiToRead.readKeyno = (byte)_readKeyNo;
-
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
-                aiToRead.writeKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToRead.writeKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppWriteKey);
-                aiToRead.writeKeyno = (byte)_writeKeyNo;
 
                 if (await tryInitReader())
                 {
@@ -1121,8 +1115,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <inheritdoc />
-        public override async Task<ERROR> WriteMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
-                                                string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
+        public override async Task<ERROR> WriteMiFareDESFireChipFile(string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                                                 EncryptionMode _encMode,
                                                 int _fileNo, int _appID, byte[] _data)
         {
@@ -1146,10 +1139,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 // Change keys with the following ones
                 DESFireAccessInfo aiToWrite = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
-                aiToWrite.readKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToWrite.readKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppReadKey);
-                aiToWrite.readKeyno = (byte)_readKeyNo;
 
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
                 aiToWrite.writeKey.fromString(CustomConverter.DesfireKeyToCheck);
