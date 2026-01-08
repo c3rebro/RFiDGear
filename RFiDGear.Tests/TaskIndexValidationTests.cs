@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Models;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.ViewModel.TaskSetupViewModels;
@@ -93,7 +94,7 @@ namespace RFiDGear.Tests
             Assert.True(viewModel.IsValidSelectedTaskIndex);
         }
 
-        private sealed class FakeTask : IGenericTaskModel
+        private sealed class FakeTask : IGenericTask
         {
             public bool? IsTaskCompletedSuccessfully { get; set; }
             public ERROR SelectedExecuteConditionErrorLevel { get; set; }

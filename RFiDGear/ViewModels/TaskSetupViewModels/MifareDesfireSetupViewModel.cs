@@ -758,6 +758,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowPiccMasterKeyAuthoringSection));
                 OnPropertyChanged(nameof(ShowCreateApplicationInputs));
                 OnPropertyChanged(nameof(ShowDeleteApplicationInputs));
+                OnPropertyChanged(nameof(ShowAppKeyCurrentInputs));
                 OnPropertyChanged(nameof(ShowAppKeyOldInputs));
 
                 UpdateOldAppKeyDefaults();
@@ -790,6 +791,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public bool ShowAppKeyTargetSection => SelectedTaskType != TaskType_MifareDesfireTask.CreateFile
                                                && SelectedTaskType != TaskType_MifareDesfireTask.DeleteFile
                                                && SelectedTaskType != TaskType_MifareDesfireTask.ReadData
+                                               && SelectedTaskType != TaskType_MifareDesfireTask.WriteData;
+
+        /// <summary>
+        /// Gets a value indicating whether UI elements for supplying the current application key should be shown.
+        /// The current key inputs are unnecessary when reading or writing data.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowAppKeyCurrentInputs => SelectedTaskType != TaskType_MifareDesfireTask.ReadData
                                                && SelectedTaskType != TaskType_MifareDesfireTask.WriteData;
 
         /// <summary>
