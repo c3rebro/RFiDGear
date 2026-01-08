@@ -8,7 +8,7 @@ using VCNEditor.Model;
 using MvvmDialogs.ViewModels;
 
 using CRC_IT;
-using MefMvvm.SharedContracts.ViewModel;
+using RFiDGear.Infrastructure.DI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

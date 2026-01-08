@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Window
 	x:Class="VCNEditor.View.ScheduleConfigurationDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:VCNEditor" xmlns:vm="clr-namespace:VCNEditor.ViewModel" xmlns:v="clr-namespace:VCNEditor.View" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs"
-	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}" xmlns:plugins="clr-namespace:MefMvvm.SharedContracts.ViewModel;assembly=PluginSystem"
+	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}"
 	Title="{Binding Caption}"
 	WindowStartupLocation="CenterScreen"
 	ResizeMode="NoResize"

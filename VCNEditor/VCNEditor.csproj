@@ -49,5 +49,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ByteArray\ByteArray.csproj" />
     <ProjectReference Include="..\MVVMDialogs\MVVMDialogs.csproj" />
+    <ProjectReference Include="..\RFiDGear\RFiDGear.csproj" />
   </ItemGroup>
 </Project>
