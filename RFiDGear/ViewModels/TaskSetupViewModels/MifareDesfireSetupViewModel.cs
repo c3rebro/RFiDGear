@@ -760,6 +760,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowDeleteApplicationInputs));
                 OnPropertyChanged(nameof(ShowAppKeyCurrentInputs));
                 OnPropertyChanged(nameof(ShowAppKeyOldInputs));
+                OnPropertyChanged(nameof(ShowFileAccessRights));
+                OnPropertyChanged(nameof(ShowFileAuthoringCommands));
 
                 UpdateOldAppKeyDefaults();
             }
@@ -823,6 +825,22 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public bool ShowPiccMasterKeyAuthoringSection => SelectedTaskType != TaskType_MifareDesfireTask.FormatDesfireCard
                                                          && SelectedTaskType != TaskType_MifareDesfireTask.CreateApplication
                                                          && SelectedTaskType != TaskType_MifareDesfireTask.DeleteApplication;
+
+        /// <summary>
+        /// Gets a value indicating whether file access rights controls should be shown.
+        /// The access rights are unnecessary when reading or writing file data.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowFileAccessRights => SelectedTaskType != TaskType_MifareDesfireTask.ReadData
+                                            && SelectedTaskType != TaskType_MifareDesfireTask.WriteData;
+
+        /// <summary>
+        /// Gets a value indicating whether file authoring commands should be shown.
+        /// The create/delete actions are unnecessary when reading or writing file data.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowFileAuthoringCommands => SelectedTaskType != TaskType_MifareDesfireTask.ReadData
+                                                 && SelectedTaskType != TaskType_MifareDesfireTask.WriteData;
 
         /// <summary>
         /// Gets a value indicating whether application creation inputs should be shown.
