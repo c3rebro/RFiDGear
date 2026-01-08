@@ -3,7 +3,7 @@
 	x:Class="VCNEditor.View.ProfileEditor" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	Title="VCNEditor.View" xmlns:vm="clr-namespace:VCNEditor.ViewModel" xmlns:dal="clr-namespace:VCNEditor.DataAccessLayer"
 	WindowStartupLocation="CenterScreen" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-	mc:Ignorable="d" xmlns:Controls0="clr-namespace:VCNEditor" xmlns:Controls1="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs" xmlns:Controls2="clr-namespace:System;assembly=mscorlib" xmlns:Controls3="clr-namespace:VCNEditor.View"
+	mc:Ignorable="d" xmlns:Controls0="clr-namespace:VCNEditor" xmlns:Controls1="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors;assembly=RFiDGear" xmlns:Controls2="clr-namespace:System;assembly=mscorlib" xmlns:Controls3="clr-namespace:VCNEditor.View"
 	Width="312"
 	Height="433">
 	<Window.Resources>
@@ -56,7 +56,7 @@
 			ItemsSource="{Binding AccessProfiles}"
 			SelectedItem="{Binding SelectedAccessProfile, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 			DisplayMemberPath="ProfileDesc"
-			VerticalContentAlignment="Top" xmlns:local="clr-namespace:VCNEditor" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs" xmlns:system="clr-namespace:System;assembly=mscorlib" xmlns:v="clr-namespace:VCNEditor.View"
+			VerticalContentAlignment="Top" xmlns:local="clr-namespace:VCNEditor" xmlns:dlgs="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors;assembly=RFiDGear" xmlns:system="clr-namespace:System;assembly=mscorlib" xmlns:v="clr-namespace:VCNEditor.View"
 			Grid.Column="0"
 			Grid.ColumnSpan="2"
 			Grid.Row="3"
@@ -66,7 +66,7 @@
 		<Button
 			Content="Add Profile"
 			Command="{Binding AddProfileCommand}"
-			RenderTransformOrigin="0.5,0.5" xmlns:local="clr-namespace:VCNEditor" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs" xmlns:system="clr-namespace:System;assembly=mscorlib" xmlns:v="clr-namespace:VCNEditor.View"
+			RenderTransformOrigin="0.5,0.5" xmlns:local="clr-namespace:VCNEditor" xmlns:dlgs="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors;assembly=RFiDGear" xmlns:system="clr-namespace:System;assembly=mscorlib" xmlns:v="clr-namespace:VCNEditor.View"
 			Height="26"
 			Grid.Column="0"
 			Grid.ColumnSpan="2"
@@ -76,7 +76,7 @@
 			Margin="8,3,8,0" />
 		<Label
 			Content="ProfileType"
-			Height="26" xmlns:local="clr-namespace:VCNEditor" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs" xmlns:system="clr-namespace:System;assembly=mscorlib" xmlns:v="clr-namespace:VCNEditor.View"
+			Height="26" xmlns:local="clr-namespace:VCNEditor" xmlns:dlgs="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors;assembly=RFiDGear" xmlns:system="clr-namespace:System;assembly=mscorlib" xmlns:v="clr-namespace:VCNEditor.View"
 			Grid.Column="0"
 			Grid.Row="0"
 			HorizontalAlignment="Stretch"
@@ -85,7 +85,7 @@
 		<ComboBox
 			ItemsSource="{Binding ProfileType}"
 			SelectedItem="{Binding SelectedProfileType}"
-			Height="26" xmlns:local="clr-namespace:VCNEditor" xmlns:dlgs="clr-namespace:MvvmDialogs.Behaviors;assembly=MVVMDialogs" xmlns:system="clr-namespace:System;assembly=mscorlib" xmlns:v="clr-namespace:VCNEditor.View"
+			Height="26" xmlns:local="clr-namespace:VCNEditor" xmlns:dlgs="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors;assembly=RFiDGear" xmlns:system="clr-namespace:System;assembly=mscorlib" xmlns:v="clr-namespace:VCNEditor.View"
 			Grid.Column="1"
 			Grid.Row="0"
 			HorizontalAlignment="Stretch"

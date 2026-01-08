@@ -20,7 +20,8 @@ using VCNEditor.Model;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using MvvmDialogs.ViewModels;
+using RFiDGear.UI.MVVMDialogs.ViewModels;
+using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 
 namespace VCNEditor.ViewModel
 {

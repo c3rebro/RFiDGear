@@ -5,7 +5,8 @@ using VCNEditor.DataAccessLayer;
 using VCNEditor.Model;
 
 
-using MvvmDialogs.ViewModels;
+using RFiDGear.UI.MVVMDialogs.ViewModels;
+using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 
 using CRC_IT;
 using RFiDGear.Infrastructure.DI;
@@ -47,7 +48,7 @@ namespace VCNEditor.ViewModel
             {
                 //MefHelper.Instance.Container.ComposeParts(this); //load mef imports if any
 
-                MvvmDialogs.Behaviors.DialogBehavior.SetResourceDictionary("/VCNEditor;component/ResourceDictionary.xaml"); // set view <-> viewmodel resources (viewmodel first pattern)
+                RFiDGear.UI.MVVMDialogs.Behaviors.DialogBehavior.SetResourceDictionary("/VCNEditor;component/ResourceDictionary.xaml"); // set view <-> viewmodel resources (viewmodel first pattern)
 
                 VCNEditor.DataAccessLayer.CultureInfoProxy.Culture = culture; // set selected culture from main app via mef import
 
