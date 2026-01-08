@@ -1263,9 +1263,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
 
-                if (await AuthToMifareDesfireApplication(_appMasterKey, _keyTypeAppMasterKey, 0, _appID) == ERROR.NoError)
+                if (await AuthToMifareDesfireApplication(_appMasterKey, _keyTypeAppMasterKey, _readKeyNo, _appID) == ERROR.NoError)
                 {
-                    //MifareDESFireData = readerDevice.DesfireReadData((byte)_fileNo, _fileSize, (byte)_encMode);
+                    MifareDESFireData = await readerDevice.MifareDesfire_ReadDataAsync((byte)_fileNo, _fileSize, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
 
                     if (MifareDESFireData != null)
                     {
@@ -1289,14 +1289,31 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        public override Task<ERROR> WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
+        /// <inheritdoc />
+        public async override Task<ERROR> WriteMiFareDESFireChipFile(string _cardMasterKey, DESFireKeyType _keyTypeCardMasterKey,
                                         string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey,
                                         string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
                                         string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                                         EncryptionMode _encMode,
                                         int _fileNo, int _appID, byte[] _data)
         {
-            throw new NotImplementedException();
+            try
+            {
+
+                await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
+
+                if (await AuthToMifareDesfireApplication(_appMasterKey, _keyTypeAppMasterKey, _writeKeyNo, _appID) == ERROR.NoError)
+                {
+                    await readerDevice.MifareDesfire_WriteDataAsync((byte)_fileNo, _data, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
+                }
+            }
+            catch (Exception e)
+            {
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                return ERROR.AuthFailure;
+            }
+
+            return ERROR.NoError;
         }
 
         #endregion
