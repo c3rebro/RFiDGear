@@ -15,6 +15,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\\RFiDGear\\RFiDGear.csproj" />
-    <ProjectReference Include="..\\VCNEditor\\VCNEditor.csproj" />
   </ItemGroup>
 </Project>
