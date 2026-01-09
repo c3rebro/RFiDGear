@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Windows.Input;
 using System.Xml.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -28,7 +29,6 @@ namespace VCNEditor.ViewModel
     public class VCNEditorViewModel : ObservableObject, IUserDialogViewModel
     {
         private byte[] accessFileAsByte;
-        private AccessProfile accessProfile;
 
         private byte[] cardIDAsBytes = new byte[10]; // will grow in size after rnd id is generated, so keep it that size
         private byte[] idAsBytes = new byte[10];
@@ -37,10 +37,10 @@ namespace VCNEditor.ViewModel
         private byte sICardConfAsByte = 0x00;
         private byte fileFormatRelease = 0x00;
 
-        private byte[] expiryAsBytes = new byte[3];
-        private byte[] validFromAsBytes = new byte[3];
+        private readonly byte[] expiryAsBytes = new byte[3];
+        private readonly byte[] validFromAsBytes = new byte[3];
 
-        private Random rnd = new Random();
+        private readonly Random rnd = new Random();
 
         public VCNEditorViewModel()
         {
@@ -82,18 +82,16 @@ namespace VCNEditor.ViewModel
 
             UpStreamFileContentAsString = "0";
             UpStreamFileTypeAsString = "0";
-
-            accessProfile = new AccessProfile();
         }
 
         #region Dialogs
 
-        public string WindowName = "VCNEditor";
+        public string WindowName { get; } = "VCNEditor";
 
         /// <summary>
         /// 
         /// </summary>
-        private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+        private readonly ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
         public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
 
 
@@ -158,8 +156,7 @@ namespace VCNEditor.ViewModel
         public ICommand EditWeekSchedulesCommand { get { return new RelayCommand(OnNewEditWeekSchedulesCommand); } }
         private void OnNewEditWeekSchedulesCommand()
         {
-            int err = 0;
-            string combinedWeekSchedule = "";
+            StringBuilder combinedWeekScheduleBuilder = new StringBuilder();
 
             try
             {
@@ -175,11 +172,10 @@ namespace VCNEditor.ViewModel
 
                             foreach (WeekSchedule ws in sender.ScheduleCollection ?? new ObservableCollection<WeekSchedule>())
                             {
-                                combinedWeekSchedule +=
-                                    (ByteArrayConverter.GetStringFrom(ws.WeekScheduleAsBytes));
+                                combinedWeekScheduleBuilder.Append(ByteArrayConverter.GetStringFrom(ws.WeekScheduleAsBytes));
                             }
 
-                            SelectedAccessProfile.WeekSchedules = ByteArrayConverter.GetBytesFrom(combinedWeekSchedule);
+                            SelectedAccessProfile.WeekSchedules = ByteArrayConverter.GetBytesFrom(combinedWeekScheduleBuilder.ToString());
 
                             SelectedAccessProfile.AccessProfileAsBytes[0] |= (byte)(((sender.ScheduleCollection.Count) << 2) & 0x3C); // set week schedules count / size
 
@@ -214,8 +210,7 @@ namespace VCNEditor.ViewModel
         public ICommand GenerateVCNDataCommand { get { return new RelayCommand<bool>(OnNewGenerateVCNDataCommand); } }
         private void OnNewGenerateVCNDataCommand(bool withID)
         {
-            string combinedAccessProfile = "";
-            _ = new ObservableCollection<ByteArray>();
+            StringBuilder combinedAccessProfileBuilder = new StringBuilder();
 
             if (withID)
             {
@@ -245,11 +240,11 @@ namespace VCNEditor.ViewModel
             }
 
             // toggl si config bits
-            sIConfAsBytes[1] = toggleDoorState ? (sIConfAsBytes[1] |= 0x40) : (sIConfAsBytes[1] &= 0xBF);
-            sIConfAsBytes[1] = suppressCoupling ? (sIConfAsBytes[1] |= 0x20) : (sIConfAsBytes[1] &= 0xDF);
-            sIConfAsBytes[1] = longCoupling ? (sIConfAsBytes[1] |= 0x10) : (sIConfAsBytes[1] &= 0xEF);
-            sIConfAsBytes[1] = suppressBeeping ? (sIConfAsBytes[1] |= 0x08) : (sIConfAsBytes[1] &= 0xF7);
-            sIConfAsBytes[1] = noEntryWhenALFull ? (sIConfAsBytes[1] |= 0x04) : (sIConfAsBytes[1] &= 0xFB);
+            SetFlag(ref sIConfAsBytes[1], 0x40, toggleDoorState);
+            SetFlag(ref sIConfAsBytes[1], 0x20, suppressCoupling);
+            SetFlag(ref sIConfAsBytes[1], 0x10, longCoupling);
+            SetFlag(ref sIConfAsBytes[1], 0x08, suppressBeeping);
+            SetFlag(ref sIConfAsBytes[1], 0x04, noEntryWhenALFull);
 
             sIConfAsBytes = ByteArrayConverter.Reverse(sIConfAsBytes);
 
@@ -258,14 +253,14 @@ namespace VCNEditor.ViewModel
             // create access profiles
             foreach (AccessProfile ap in AccessProfiles ?? new ObservableCollection<AccessProfile>())
             {
-                combinedAccessProfile +=
-                    ((ByteArrayConverter.GetStringFrom(ap.AccessProfileAsBytes)
-                      + ByteArrayConverter.GetStringFrom(ap.MainListWords)
-                      + (ap.WeekSchedules != null ? ByteArrayConverter.GetStringFrom(ap.WeekSchedules) : string.Empty) // week schedules
-                                                                                                                //					  + "0000" // extra door list
-                                                                                                                //					  + "0000" // neg excpt. list
-                     ));
+                combinedAccessProfileBuilder.Append(ByteArrayConverter.GetStringFrom(ap.AccessProfileAsBytes)
+                                                    + ByteArrayConverter.GetStringFrom(ap.MainListWords)
+                                                    + (ap.WeekSchedules != null ? ByteArrayConverter.GetStringFrom(ap.WeekSchedules) : string.Empty)); // week schedules
+                                                                                                                        //					  + "0000" // extra door list
+                                                                                                                        //					  + "0000" // neg excpt. list
             }
+
+            string combinedAccessProfile = combinedAccessProfileBuilder.ToString();
 
             //resize access file
             accessFileAsByte = new byte[
@@ -704,7 +699,7 @@ namespace VCNEditor.ViewModel
             {
                 isAccessListLongDate = value;
 
-                sICardConfAsByte = value ? (sICardConfAsByte |= 0x10) : (sICardConfAsByte &= 0xEF);
+                SetFlag(ref sICardConfAsByte, 0x10, value);
 
                 OnPropertyChanged(nameof(IsAccessListLongDate));
             }
@@ -941,5 +936,16 @@ namespace VCNEditor.ViewModel
         }
 
         #endregion IUserDialogViewModel Implementation
+
+        /// <summary>
+        /// Sets or clears a bit flag on the provided byte.
+        /// </summary>
+        /// <param name="value">The byte value to update.</param>
+        /// <param name="mask">The bit mask to apply.</param>
+        /// <param name="enabled">True to set the flag; false to clear it.</param>
+        private static void SetFlag(ref byte value, byte mask, bool enabled)
+        {
+            value = enabled ? (byte)(value | mask) : (byte)(value & (byte)~mask);
+        }
     }
 }
