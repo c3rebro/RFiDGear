@@ -18,4 +18,5 @@
 /RFiDGearSetup/RFiDGear_Setup_x64/obj
 /RFiDGearSetup/RFiDGear_Setup_x86/obj
 /RFiDGearSetup/RFiDGear_Setup_x64/obj
-/VCNEditor
+/VCNEditor/bin
+/VCNEditor/obj
