@@ -5,6 +5,8 @@
  *
  */
 
+// Codacy TODO: Remove this file if it is not used in the project. possible duplicate in: RFiDGear.DataAccessLayer.Constants.cs
+
 using System;
 
 namespace RFiDGear.DataAccessLayer
