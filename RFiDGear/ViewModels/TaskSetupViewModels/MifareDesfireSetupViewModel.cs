@@ -95,7 +95,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             try
             {
-                MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
+                MefHelper.Instance.EnsureCompose();
+                MefHelper.Instance.Container?.ComposeParts(this); //Load Plugins
 
                 chip = new MifareDesfireChipModel(string.Format("Task Description: {0}", ""), CARD_TYPE.DESFireEV1);
                 app = new MifareDesfireAppModel(0);
