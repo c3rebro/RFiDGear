@@ -35,13 +35,22 @@ namespace VCNEditor.ViewModel
     /// </summary>
     public class ScheduleConfigurationDialogViewModel : ObservableObject, IUserDialogViewModel
     {
-        private WeekSchedule schedule;
+        private readonly WeekSchedule schedule;
+        private static readonly string[] ScheduleDateTimeFormats = new[]
+        {
+            "dd.MM.yyyy HH':'mm':'ss",
+            "dd.MM.yyyy h':'mm':'ss",
+            "dddd HH':'mm':'ss",
+            "dddd h':'mm':'ss"
+        };
 
         /// <summary>
         /// 
         /// </summary>
         public ScheduleConfigurationDialogViewModel()
         {
+            accessProfile = null;
+            culture = CultureInfo.CurrentCulture;
 
             schedule = new WeekSchedule(DateTime.MinValue.AddDays(7), DateTime.MinValue.AddDays(7).Add(new TimeSpan(1, 0, 0)));
             ScheduleCollection = new ObservableCollection<WeekSchedule>();
@@ -63,7 +72,7 @@ namespace VCNEditor.ViewModel
         public ScheduleConfigurationDialogViewModel(AccessProfile _accessProfile, CultureInfo _culture)
         {
             accessProfile = _accessProfile;
-            culture = _culture;
+            culture = _culture ?? CultureInfo.CurrentCulture;
 
             schedule = new WeekSchedule(DateTime.MinValue.AddDays(7), DateTime.MinValue.AddDays(7).Add(new TimeSpan(1, 0, 0)));
             ScheduleCollection = new ObservableCollection<WeekSchedule>();
@@ -80,15 +89,15 @@ namespace VCNEditor.ViewModel
 
         #region Dialogs
 
-        private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+        private readonly ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
         public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
 
         #endregion
 
         #region single items
 
-        private CultureInfo culture;
-        private AccessProfile accessProfile;
+        private readonly CultureInfo culture;
+        private readonly AccessProfile accessProfile;
 
         /// <summary>
         /// 
@@ -141,11 +150,7 @@ namespace VCNEditor.ViewModel
                     else if (value.Length == 8 || value.Length == 5)
                     {
 
-                        var t1 = schedule.Begin.ToShortDateString() + ' ' +
-
-                            TimeSpan.ParseExact(value, "c", culture);
-
-                        schedule.Begin = new DateTime(DateTime.ParseExact(t1, new string[] { "dd.MM.yyyy HH':'mm':'ss", "dd.MM.yyyy h':'mm':'ss", "dddd HH':'mm':'ss", "dddd h':'mm':'ss" }, culture, DateTimeStyles.None).Ticks);
+                        schedule.Begin = new DateTime(TimeParsing.ParseDateTimeFromTimeText(schedule.Begin, value, culture, ScheduleDateTimeFormats).Ticks);
 
                         startTime = string.Format("{0:HH\\:mm\\:ss}", value);
                     }
@@ -203,11 +208,7 @@ namespace VCNEditor.ViewModel
                     else if (value.Length == 8 || value.Length == 5)
                     {
 
-                        var t1 = schedule.End.ToShortDateString() + ' ' +
-
-                            TimeSpan.ParseExact(value, "c", culture);
-
-                        schedule.End = new DateTime(DateTime.ParseExact(t1, new string[] { "dd.MM.yyyy HH':'mm':'ss", "dd.MM.yyyy h':'mm':'ss", "dddd HH':'mm':'ss", "dddd h':'mm':'ss" }, culture, DateTimeStyles.None).Ticks);
+                        schedule.End = new DateTime(TimeParsing.ParseDateTimeFromTimeText(schedule.End, value, culture, ScheduleDateTimeFormats).Ticks);
 
                         endTime = string.Format(culture, "{0:HH\\:mm\\:ss}", value);
                     }
@@ -334,7 +335,7 @@ namespace VCNEditor.ViewModel
 
         public string Caption
         {
-            get { return "scheduler"; } //using (var resMan = new ResourceLoader()) { return resMan.getResource("windowCaptionScheduleConfigurationDialog"); }
+            get { return "scheduler"; }
         }
 
         #endregion
@@ -346,9 +347,9 @@ namespace VCNEditor.ViewModel
         {
             try
             {
-                schedule = new WeekSchedule();
+                var newSchedule = new WeekSchedule();
 
-                int days = (Array.FindIndex<string>(schedule.WeekDays, (s) =>
+                int days = (Array.FindIndex<string>(newSchedule.WeekDays, (s) =>
                 {
 
                     if (s == SelectedWeekEnd)
@@ -362,7 +363,7 @@ namespace VCNEditor.ViewModel
                 })
                             -
 
-                            Array.FindIndex<string>(schedule.WeekDays, (s) =>
+                            Array.FindIndex<string>(newSchedule.WeekDays, (s) =>
                             {
 
                                 if (s == SelectedWeekStart)
@@ -376,34 +377,34 @@ namespace VCNEditor.ViewModel
                             })
                            );
 
-                schedule.Begin = schedule.Begin.AddDays(7).Date.Add(TimeSpan.Parse(startTime)); //TODO: Add TryCatch and Log
-                schedule.End = schedule.End.AddDays(7).Date.Add(TimeSpan.Parse(endTime));
+                newSchedule.Begin = newSchedule.Begin.AddDays(7).Date.Add(TimeSpan.Parse(startTime)); //TODO: Add TryCatch and Log
+                newSchedule.End = newSchedule.End.AddDays(7).Date.Add(TimeSpan.Parse(endTime));
 
-                schedule.Begin = schedule.Begin.AddDays((double)selectedWeekStartAsEnum - 1);
-                schedule.End = schedule.End.AddDays((double)selectedWeekEndAsEnum - 1);
+                newSchedule.Begin = newSchedule.Begin.AddDays((double)selectedWeekStartAsEnum - 1);
+                newSchedule.End = newSchedule.End.AddDays((double)selectedWeekEndAsEnum - 1);
 
-                schedule.StartMinute = (int)(schedule.Begin.TimeOfDay.TotalMinutes);
-                schedule.Duration = (int)(schedule.End - schedule.Begin).TotalMinutes; // + days * 24 * 60;
+                newSchedule.StartMinute = (int)(newSchedule.Begin.TimeOfDay.TotalMinutes);
+                newSchedule.Duration = (int)(newSchedule.End - newSchedule.Begin).TotalMinutes;
 
-                if (schedule.End > schedule.Begin && schedule.Duration <= 1439)
+                if (newSchedule.End > newSchedule.Begin && newSchedule.Duration <= 1439)
                 {
-                    schedule.WeekScheduleAsBytes = new byte[4];
-                    schedule.WeekScheduleAsBytes[0] = (schedule.Begin.DayOfWeek == DayOfWeek.Monday) ? (byte)(schedule.WeekScheduleAsBytes[0] | 0x01) : (byte)(schedule.WeekScheduleAsBytes[0] & 0xFE);
-                    schedule.WeekScheduleAsBytes[0] = (schedule.Begin.DayOfWeek == DayOfWeek.Tuesday) ? (byte)(schedule.WeekScheduleAsBytes[0] | 0x02) : (byte)(schedule.WeekScheduleAsBytes[0] & 0xFD);
-                    schedule.WeekScheduleAsBytes[0] = (schedule.Begin.DayOfWeek == DayOfWeek.Wednesday) ? (byte)(schedule.WeekScheduleAsBytes[0] | 0x04) : (byte)(schedule.WeekScheduleAsBytes[0] & 0xFB);
-                    schedule.WeekScheduleAsBytes[0] = (schedule.Begin.DayOfWeek == DayOfWeek.Thursday) ? (byte)(schedule.WeekScheduleAsBytes[0] | 0x08) : (byte)(schedule.WeekScheduleAsBytes[0] & 0xF7);
-                    schedule.WeekScheduleAsBytes[0] = (schedule.Begin.DayOfWeek == DayOfWeek.Friday) ? (byte)(schedule.WeekScheduleAsBytes[0] | 0x10) : (byte)(schedule.WeekScheduleAsBytes[0] & 0xEF);
-                    schedule.WeekScheduleAsBytes[0] = (schedule.Begin.DayOfWeek == DayOfWeek.Saturday) ? (byte)(schedule.WeekScheduleAsBytes[0] | 0x20) : (byte)(schedule.WeekScheduleAsBytes[0] & 0xDF);
-                    schedule.WeekScheduleAsBytes[0] = (schedule.Begin.DayOfWeek == DayOfWeek.Sunday) ? (byte)(schedule.WeekScheduleAsBytes[0] | 0x40) : (byte)(schedule.WeekScheduleAsBytes[0] & 0xBF);
+                    newSchedule.WeekScheduleAsBytes = new byte[4];
+                    newSchedule.WeekScheduleAsBytes[0] = (newSchedule.Begin.DayOfWeek == DayOfWeek.Monday) ? (byte)(newSchedule.WeekScheduleAsBytes[0] | 0x01) : (byte)(newSchedule.WeekScheduleAsBytes[0] & 0xFE);
+                    newSchedule.WeekScheduleAsBytes[0] = (newSchedule.Begin.DayOfWeek == DayOfWeek.Tuesday) ? (byte)(newSchedule.WeekScheduleAsBytes[0] | 0x02) : (byte)(newSchedule.WeekScheduleAsBytes[0] & 0xFD);
+                    newSchedule.WeekScheduleAsBytes[0] = (newSchedule.Begin.DayOfWeek == DayOfWeek.Wednesday) ? (byte)(newSchedule.WeekScheduleAsBytes[0] | 0x04) : (byte)(newSchedule.WeekScheduleAsBytes[0] & 0xFB);
+                    newSchedule.WeekScheduleAsBytes[0] = (newSchedule.Begin.DayOfWeek == DayOfWeek.Thursday) ? (byte)(newSchedule.WeekScheduleAsBytes[0] | 0x08) : (byte)(newSchedule.WeekScheduleAsBytes[0] & 0xF7);
+                    newSchedule.WeekScheduleAsBytes[0] = (newSchedule.Begin.DayOfWeek == DayOfWeek.Friday) ? (byte)(newSchedule.WeekScheduleAsBytes[0] | 0x10) : (byte)(newSchedule.WeekScheduleAsBytes[0] & 0xEF);
+                    newSchedule.WeekScheduleAsBytes[0] = (newSchedule.Begin.DayOfWeek == DayOfWeek.Saturday) ? (byte)(newSchedule.WeekScheduleAsBytes[0] | 0x20) : (byte)(newSchedule.WeekScheduleAsBytes[0] & 0xDF);
+                    newSchedule.WeekScheduleAsBytes[0] = (newSchedule.Begin.DayOfWeek == DayOfWeek.Sunday) ? (byte)(newSchedule.WeekScheduleAsBytes[0] | 0x40) : (byte)(newSchedule.WeekScheduleAsBytes[0] & 0xBF);
 
 
-                    schedule.WeekScheduleAsBytes[1] |= (byte)((schedule.StartMinute & 0x3F) << 2);
-                    schedule.WeekScheduleAsBytes[2] |= (byte)((schedule.StartMinute & 0x7C0) >> 6);
+                    newSchedule.WeekScheduleAsBytes[1] |= (byte)((newSchedule.StartMinute & 0x3F) << 2);
+                    newSchedule.WeekScheduleAsBytes[2] |= (byte)((newSchedule.StartMinute & 0x7C0) >> 6);
 
-                    schedule.WeekScheduleAsBytes[2] = (byte)(schedule.WeekScheduleAsBytes[2] | (byte)((schedule.Duration & 0x07) << 5));
-                    schedule.WeekScheduleAsBytes[3] |= (byte)(schedule.Duration >> 3);
+                    newSchedule.WeekScheduleAsBytes[2] = (byte)(newSchedule.WeekScheduleAsBytes[2] | (byte)((newSchedule.Duration & 0x07) << 5));
+                    newSchedule.WeekScheduleAsBytes[3] |= (byte)(newSchedule.Duration >> 3);
 
-                    ScheduleCollection.Add(schedule);
+                    ScheduleCollection.Add(newSchedule);
 
                 }
 
