@@ -200,12 +200,6 @@ namespace VCNEditor.ViewModel
                         {
                             accessProfile.MainListWords[i * 2] |= (byte)(mainListRecords[i] & 0xFF);
                             accessProfile.MainListWords[(i * 2) + 1] |= (byte)((mainListRecords[i] & 0xFF00) >> 8);
-
-                            //						Array.ConvertAll<int, byte[]>((int[])mainListRecords,
-                            //						                                                            new Converter<int, byte[]>((x) =>
-                            //						                                                                                           {
-                            //						                                                                                           	return int.Parse(x);
-                            //						                                                                                           }));
                         }
 
                         MainListWordsCount = accessProfile.MainListWords.Length / 2;
@@ -214,8 +208,6 @@ namespace VCNEditor.ViewModel
                 }
 
                 #region accessprofile
-
-                //Array.Clear(accessProfile.AccessProfileAsBytes, 0, 4);
 
                 foreach (AccessProfile ap in AccessProfiles)
                 {

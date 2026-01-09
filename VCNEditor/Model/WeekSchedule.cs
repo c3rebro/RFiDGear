@@ -27,7 +27,7 @@ namespace VCNEditor.Model
 
         public WeekSchedule(DateTime _begin, DateTime _end)
         {
-            weekDays = Enum.GetNames(typeof(DayOfWeek)); //new string[]{"Monday","Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+            weekDays = Enum.GetNames(typeof(DayOfWeek));
 
             Begin = _begin;
             End = _end;
@@ -58,16 +58,6 @@ namespace VCNEditor.Model
         /// 
         /// </summary>
         public DateTime End { get; set; }
-
-        //		/// <summary>
-        //		/// 
-        //		/// </summary>
-        //		public DayOfWeek StartDayOfWeek { get; set; }
-        //		
-        //		/// <summary>
-        //		/// 
-        //		/// </summary>
-        //		public DayOfWeek EndDayOfWeek { get; set; }
 
         /// <summary>
         /// 

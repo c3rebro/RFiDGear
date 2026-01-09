@@ -57,9 +57,5 @@ namespace VCNEditor.Model
         /// </summary>
         public DateTime End { get; set; }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        //public ScheduleRepeatType RepeatType { get; set; }
     }
 }
