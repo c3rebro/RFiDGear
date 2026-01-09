@@ -184,6 +184,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         public MifareClassicSetupViewModel()
         {
+            MefHelper.Instance.EnsureCompose();
             MefHelper.Instance.Container?.ComposeParts(this); //Load Plugins
 
             sectorModel = new MifareClassicSectorModel(4,
@@ -318,6 +319,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 dialogs = _dialogs;
 
+                MefHelper.Instance.EnsureCompose();
                 MefHelper.Instance.Container?.ComposeParts(this); //Load Plugins
 
                 HasPlugins = items != null ? items.Any() : false;
