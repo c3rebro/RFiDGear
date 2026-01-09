@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:local="clr-namespace:VCNEditor" xmlns:dlgs="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors;assembly=RFiDGear"
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:dlgs="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors;assembly=RFiDGear"
 	dlgs:DialogBehavior.DialogViewModels="{Binding Dialogs}" xmlns:dal="clr-namespace:VCNEditor.DataAccessLayer" xmlns:system="clr-namespace:System;assembly=mscorlib" xmlns:v="clr-namespace:VCNEditor.View" xmlns:vm="clr-namespace:VCNEditor.ViewModel"
 	x:Class="VCNEditor.View.VCNEditorView"
 	x:Name="VCNEditor"
@@ -344,7 +344,7 @@
 								ItemsSource="{Binding AccessProfiles}"
 								SelectedItem="{Binding SelectedAccessProfile, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
 								DisplayMemberPath="ProfileDesc"
-								VerticalContentAlignment="Top" xmlns:Controls0="clr-namespace:VCNEditor" xmlns:Controls1="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors;assembly=RFiDGear" xmlns:Controls2="clr-namespace:System;assembly=mscorlib" xmlns:Controls3="clr-namespace:VCNEditor.View"
+								VerticalContentAlignment="Top" xmlns:Controls1="clr-namespace:RFiDGear.UI.MVVMDialogs.Behaviors;assembly=RFiDGear" xmlns:Controls2="clr-namespace:System;assembly=mscorlib" xmlns:Controls3="clr-namespace:VCNEditor.View"
 								Grid.Column="0"
 								Grid.ColumnSpan="3"
 								Grid.Row="4"
