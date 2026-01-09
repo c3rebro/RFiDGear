@@ -16,6 +16,9 @@ using System.Windows.Input;
 
 namespace RFiDGear.DataAccessLayer
 {
+    /// <summary>
+    /// Provides a base implementation for asynchronous WPF commands.
+    /// </summary>
     public abstract class AsyncCommandBase : IAsyncCommand
     {
         public abstract bool CanExecute(object parameter);

@@ -12,7 +12,7 @@ using System.IO;
 namespace VCNEditor.DataAccessLayer
 {
     /// <summary>
-    /// Description of LogWriter.
+    /// Writes error entries to a local log file within the application folder.
     /// </summary>
     public static class LogWriter
     {
@@ -21,9 +21,9 @@ namespace VCNEditor.DataAccessLayer
         private static readonly string _logFileName = "err.log";
 
         /// <summary>
-        ///
+        /// Appends a log entry to the error log, creating the file and folder if needed.
         /// </summary>
-        /// <param name="entry"></param>
+        /// <param name="entry">The log entry text to write.</param>
         public static void CreateLogEntry(string entry)
         {
             string _logFilePath = Path.Combine(new DirectoryInfo(new System.Uri(typeof(VCNEditor.ViewModel.VCNEditorViewModel).Assembly.CodeBase).LocalPath).Parent.FullName, "log");
