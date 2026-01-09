@@ -20,8 +20,15 @@ namespace RFiDGear.DataAccessLayer
 
     public static class Constants
     {
-    	public const int MAX_WAIT_INSERTION = 200; //timeout for chip response in ms
-		public const string TITLE_SUFFIX = "DEVELOPER PREVIEW"; //turns out special app versions
+        /// <summary>
+        /// Gets or sets the timeout for chip response in milliseconds.
+        /// </summary>
+        public static int MaxWaitInsertion { get; set; } = 200;
+
+        /// <summary>
+        /// Gets or sets the suffix used for special app versions.
+        /// </summary>
+        public static string TitleSuffix { get; set; } = "DEVELOPER PREVIEW";
     }
     
     /// <summary>
@@ -120,18 +127,51 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
-    ///
+    /// Identifies a card by type and UID.
     /// </summary>
-    public struct CARD_INFO
+    public readonly struct CARD_INFO : IEquatable<CARD_INFO>
     {
-        public CARD_INFO(CARD_TYPE _type, string _uid)
+        public CARD_INFO(CARD_TYPE type, string uid)
         {
-            CardType = _type;
-            uid = _uid;
+            CardType = type;
+            Uid = uid;
         }
 
-        public string uid;
-        public CARD_TYPE CardType;
+        /// <summary>
+        /// Gets the card UID.
+        /// </summary>
+        public string Uid { get; }
+
+        /// <summary>
+        /// Gets the card type.
+        /// </summary>
+        public CARD_TYPE CardType { get; }
+
+        public bool Equals(CARD_INFO other)
+        {
+            return CardType == other.CardType
+                && string.Equals(Uid, other.Uid, StringComparison.Ordinal);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is CARD_INFO other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(CardType, Uid);
+        }
+
+        public static bool operator ==(CARD_INFO left, CARD_INFO right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(CARD_INFO left, CARD_INFO right)
+        {
+            return !left.Equals(right);
+        }
     }
 
     /// <summary>
