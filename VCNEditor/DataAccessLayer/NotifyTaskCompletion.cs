@@ -14,6 +14,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace RFiDGear.DataAccessLayer
@@ -52,9 +53,9 @@ namespace RFiDGear.DataAccessLayer
             {
                 await task;
             }
-            catch
+            catch (Exception ex)
             {
-                //This catch is intentionally empty, the errors will be handled lower on the "task.IsFaulted" branch.
+                Trace.TraceError("NotifyTaskCompletion observed task exception: {0}", ex);
             }
             var propertyChanged = PropertyChanged;
             if (propertyChanged == null)

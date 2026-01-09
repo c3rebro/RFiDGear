@@ -28,10 +28,8 @@ namespace RFiDGear.DataAccessLayer
         {
             try
             {
-                // Combine the base folder with the specific folder....
                 appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear");
 
-                // Check if folder exists and if not, create it
                 if (!Directory.Exists(appDataPath))
                     Directory.CreateDirectory(appDataPath);
 
@@ -42,18 +40,12 @@ namespace RFiDGear.DataAccessLayer
 
                     TextWriter writer = new StreamWriter(Path.Combine(appDataPath, chipDatabaseFileName));
 
-                    //serializer.Serialize(writer, treeViewModel);
-
                     writer.Close();
                 }
 
                 if (!File.Exists(Path.Combine(appDataPath, taskDatabaseFileName)))
                 {
-                    //XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-
                     TextWriter writer = new StreamWriter(Path.Combine(appDataPath, taskDatabaseFileName));
-
-                    //serializer.Serialize(writer, setupModel);
 
                     writer.Close();
                 }
@@ -81,7 +73,6 @@ namespace RFiDGear.DataAccessLayer
 
             if (File.Exists(_fileName) || (string.IsNullOrWhiteSpace(_fileName) && File.Exists(Path.Combine(appDataPath, chipDatabaseFileName))))
             {
-                //Path.Combine(appDataPath,databaseFileName)
                 XmlDocument doc = new XmlDocument();
 
                 try
@@ -143,66 +134,6 @@ namespace RFiDGear.DataAccessLayer
 
             return true;
         }
-
-//        public void WriteDatabase(ObservableCollection<RFiDChipParentLayerViewModel> objModel, string _path = "")
-//        {
-//            try
-//            {
-//                TextWriter writer;
-//                XmlSerializer serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
-//
-//                if (!string.IsNullOrEmpty(_path))
-//                {
-//                    writer = new StreamWriter(@_path);
-//                }
-//                else
-//                    writer = new StreamWriter(@Path.Combine(appDataPath, chipDatabaseFileName), false, new UTF8Encoding(false));
-//
-//                //writer.WriteStartDocument();
-//                //writer.WriteStartElement("Manifest");
-//                //writer.WriteAttributeString("version", string.Format("{0}.{1}.{2}",Version.Major,Version.Minor,Version.Build));
-//                //writer = new StreamWriter(@Path.Combine(appDataPath,databaseFileName));
-//
-//                serializer.Serialize(writer, objModel);
-//
-//                writer.Close();
-//            }
-//            catch (XmlException e)
-//            {
-//                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-//                Environment.Exit(0);
-//            }
-//        }
-
-//        public void WriteDatabase(ChipTaskHandlerModel objModel, string _path = "")
-//        {
-//            try
-//            {
-//                TextWriter writer;
-//                XmlSerializer serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-//
-//                if (!string.IsNullOrEmpty(_path))
-//                {
-//                    writer = new StreamWriter(@_path);
-//                }
-//                else
-//                    writer = new StreamWriter(@Path.Combine(appDataPath, taskDatabaseFileName), false, new UTF8Encoding(false));
-//
-//                //writer.WriteStartDocument();
-//                //writer.WriteStartElement("Manifest");
-//                //writer.WriteAttributeString("version", string.Format("{0}.{1}.{2}",Version.Major,Version.Minor,Version.Build));
-//                //writer = new StreamWriter(@Path.Combine(appDataPath,databaseFileName));
-//
-//                serializer.Serialize(writer, objModel);
-//
-//                writer.Close();
-//            }
-//            catch (XmlException e)
-//            {
-//                LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
-//                Environment.Exit(0);
-//            }
-//        }
 
         public void DeleteDatabase()
         {

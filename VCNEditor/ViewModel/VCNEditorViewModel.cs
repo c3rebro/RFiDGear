@@ -46,8 +46,6 @@ namespace VCNEditor.ViewModel
         {
             try
             {
-                //MefHelper.Instance.Container.ComposeParts(this); //load mef imports if any
-
                 RFiDGear.UI.MVVMDialogs.Behaviors.DialogBehavior.SetResourceDictionary("/VCNEditor;component/ResourceDictionary.xaml"); // set view <-> viewmodel resources (viewmodel first pattern)
 
                 VCNEditor.DataAccessLayer.CultureInfoProxy.Culture = culture; // set selected culture from main app via mef import
@@ -239,7 +237,6 @@ namespace VCNEditor.ViewModel
                 sIConfAsBytes[1] = (byte)((sIConfAsBytes[1] & 0xFC) | (byte)minAccessListLogLevelAsInt);
             }
 
-            // toggl si config bits
             SetFlag(ref sIConfAsBytes[1], 0x40, toggleDoorState);
             SetFlag(ref sIConfAsBytes[1], 0x20, suppressCoupling);
             SetFlag(ref sIConfAsBytes[1], 0x10, longCoupling);
@@ -250,19 +247,15 @@ namespace VCNEditor.ViewModel
 
             #endregion
 
-            // create access profiles
             foreach (AccessProfile ap in AccessProfiles ?? new ObservableCollection<AccessProfile>())
             {
                 combinedAccessProfileBuilder.Append(ByteArrayConverter.GetStringFrom(ap.AccessProfileAsBytes)
                                                     + ByteArrayConverter.GetStringFrom(ap.MainListWords)
                                                     + (ap.WeekSchedules != null ? ByteArrayConverter.GetStringFrom(ap.WeekSchedules) : string.Empty)); // week schedules
-                                                                                                                        //					  + "0000" // extra door list
-                                                                                                                        //					  + "0000" // neg excpt. list
             }
 
             string combinedAccessProfile = combinedAccessProfileBuilder.ToString();
 
-            //resize access file
             accessFileAsByte = new byte[
                 ByteArrayConverter.GetByteCount(
                     ByteArrayConverter.GetStringFrom(fileFormatRelease)// CRC32_Begin; fileFormat major plus minor
@@ -278,7 +271,6 @@ namespace VCNEditor.ViewModel
                     + combinedAccessProfile
                 )];
 
-            //fill access file
             accessFileAsByte = ByteArrayConverter.GetBytesFrom(
                 ByteArrayConverter.GetStringFrom(fileFormatRelease)// fileFormat major plus minor
                 + "02"//content identifier

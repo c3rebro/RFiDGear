@@ -6,6 +6,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace VCNEditor.DataAccessLayer
@@ -47,8 +48,9 @@ namespace VCNEditor.DataAccessLayer
                 textStream.Close();
                 textStream.Dispose();
             }
-            catch
+            catch (Exception ex)
             {
+                Trace.TraceError("Failed to write log entry: {0}", ex);
             }
         }
     }
