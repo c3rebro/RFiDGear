@@ -30,8 +30,8 @@ namespace RFiDGear.Infrastructure.DI
                 {
                     if (ViewModels == null)
                     {
-                        MefHelper.Instance.Compose(); // 
-                        MefHelper.Instance.Container.ComposeParts(this);
+                        MefHelper.Instance.EnsureCompose();
+                        MefHelper.Instance.Container?.ComposeParts(this);
                     }
 
                     dictionary[binder.Name] = result = ViewModels.Single(v => v.Metadata.Name.Equals(name)).Value;

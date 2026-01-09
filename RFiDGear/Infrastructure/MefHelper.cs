@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Serilog;
 
@@ -19,6 +21,7 @@ using Serilog;
 /// </remarks>
 public sealed class MefHelper : IDisposable
 {
+    private const int SolutionRootDepth = 5;
 
     #region Constructor / Destructor
 
@@ -65,9 +68,6 @@ public sealed class MefHelper : IDisposable
                 .Error(e, "Failed to create extensions directory at {ExtensionsPath}", _ExtensionsPath);
         }
 
-#if (DEBUG)
-        _ExtensionsPath = Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).ToString()).ToString()).ToString()).ToString()).ToString(), @"VCNEditor\bin\Debug");
-#endif
     }
 
     #region IDisposable Members
@@ -148,13 +148,116 @@ public sealed class MefHelper : IDisposable
         System.Reflection.Assembly ass = System.Reflection.Assembly.GetEntryAssembly();
         Catalog.Catalogs.Add(new AssemblyCatalog(ass));
 
-        // Directory of catalog parts
-        if (System.IO.Directory.Exists(ExtensionsPath))
+        foreach (var catalogPath in GetExtensionCatalogPaths(AppDomain.CurrentDomain.BaseDirectory, ExtensionsPath))
         {
-            Catalog.Catalogs.Add(new DirectoryCatalog(ExtensionsPath));
+            TryAddDirectoryCatalog(Catalog, catalogPath);
         }
 
         _Container = new CompositionContainer(Catalog);
+    }
+
+    /// <summary>
+    /// Ensures that the MEF container has been composed exactly once.
+    /// </summary>
+    public void EnsureCompose()
+    {
+        if (_Container == null)
+        {
+            Compose();
+        }
+    }
+
+    /// <summary>
+    /// Returns extension catalog paths that should be scanned for UI extensions.
+    /// </summary>
+    /// <param name="baseDirectory">The base directory of the running application.</param>
+    /// <param name="extensionsPath">The configured extensions directory.</param>
+    /// <returns>A list of existing directories to scan for extensions.</returns>
+    internal static IReadOnlyList<string> GetExtensionCatalogPaths(string baseDirectory, string extensionsPath)
+    {
+        var paths = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(extensionsPath) && Directory.Exists(extensionsPath))
+        {
+            paths.Add(extensionsPath);
+        }
+
+#if DEBUG
+        var devPath = FindDevelopmentExtensionsPath(baseDirectory);
+        if (!string.IsNullOrWhiteSpace(devPath))
+        {
+            paths.Add(devPath);
+        }
+#endif
+
+        return paths
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Attempts to locate the VCNEditor build output path during local development.
+    /// </summary>
+    /// <param name="baseDirectory">The base directory of the running application.</param>
+    /// <returns>The path to the VCNEditor output directory, or <c>null</c> if not found.</returns>
+    internal static string FindDevelopmentExtensionsPath(string baseDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(baseDirectory))
+        {
+            return null;
+        }
+
+        var solutionRoot = GetSolutionRoot(baseDirectory, SolutionRootDepth);
+        if (string.IsNullOrWhiteSpace(solutionRoot))
+        {
+            return null;
+        }
+
+        var baseOutputPath = Path.Combine(solutionRoot, "VCNEditor", "bin", "Debug");
+        var candidates = new[]
+        {
+            Path.Combine(baseOutputPath, "net8.0-windows"),
+            baseOutputPath
+        };
+
+        foreach (var candidate in candidates)
+        {
+            if (Directory.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static string GetSolutionRoot(string baseDirectory, int depth)
+    {
+        var current = new DirectoryInfo(baseDirectory);
+
+        for (var i = 0; i < depth; i++)
+        {
+            current = current?.Parent;
+            if (current == null)
+            {
+                break;
+            }
+        }
+
+        return current?.FullName;
+    }
+
+    private static void TryAddDirectoryCatalog(AggregateCatalog catalog, string catalogPath)
+    {
+        try
+        {
+            catalog.Catalogs.Add(new DirectoryCatalog(catalogPath));
+        }
+        catch (Exception e)
+        {
+            Log.ForContext<MefHelper>()
+                .Error(e, "Failed to compose extensions from {ExtensionsPath}", catalogPath);
+        }
     }
 
     #endregion

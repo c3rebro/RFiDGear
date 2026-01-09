@@ -71,7 +71,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             try
             {
-                MefHelper.Instance.Container.ComposeParts(this); //Load Plugins
+                MefHelper.Instance.EnsureCompose();
+                MefHelper.Instance.Container?.ComposeParts(this); //Load Plugins
 
                 databaseReaderWriter = new DatabaseReaderWriter();
 

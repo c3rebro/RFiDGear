@@ -1,0 +1,54 @@
+using System;
+using System.IO;
+using RFiDGear.Infrastructure;
+using Xunit;
+
+namespace RFiDGear.Tests
+{
+    public class MefHelperTests
+    {
+        [Fact]
+        public void GetExtensionCatalogPaths_IncludesConfiguredExtensionsPath()
+        {
+            var tempRoot = Directory.CreateTempSubdirectory("RFiDGearExt").FullName;
+            var extensionsPath = Path.Combine(tempRoot, "Extensions");
+            var baseDirectory = Path.Combine(tempRoot, "a", "b", "c", "d", "e");
+
+            try
+            {
+                Directory.CreateDirectory(extensionsPath);
+                Directory.CreateDirectory(baseDirectory);
+
+                var paths = MefHelper.GetExtensionCatalogPaths(baseDirectory, extensionsPath);
+
+                Assert.Contains(extensionsPath, paths, StringComparer.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                Directory.Delete(tempRoot, true);
+            }
+        }
+
+        [Fact]
+        public void FindDevelopmentExtensionsPath_ReturnsNet8OutputWhenPresent()
+        {
+            var tempRoot = Directory.CreateTempSubdirectory("RFiDGearDev").FullName;
+            var baseDirectory = Path.Combine(tempRoot, "a", "b", "c", "d", "e");
+            var expectedPath = Path.Combine(tempRoot, "VCNEditor", "bin", "Debug", "net8.0-windows");
+
+            try
+            {
+                Directory.CreateDirectory(baseDirectory);
+                Directory.CreateDirectory(expectedPath);
+
+                var result = MefHelper.FindDevelopmentExtensionsPath(baseDirectory);
+
+                Assert.Equal(expectedPath, result);
+            }
+            finally
+            {
+                Directory.Delete(tempRoot, true);
+            }
+        }
+    }
+}
