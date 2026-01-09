@@ -120,28 +120,28 @@ namespace VCNEditor.DataAccessLayer
         {
             try
             {
-                if (parameter is string)
+                if (parameter is string key)
                 {
-                    return ResourceLoader.getResource((parameter as string));
+                    return ResourceLoader.getResource(key);
                 }
-                else if (value != null && value.GetType() == typeof(ObservableCollection<string>))
+                else if (value is ObservableCollection<string> collection)
                 {
-                    var collection = new ObservableCollection<string>();
+                    var localizedCollection = new ObservableCollection<string>();
 
-                    foreach (string s in value as ObservableCollection<string>)
+                    foreach (string s in collection)
                     {
-                        collection.Add(ResourceLoader.getResource(string.Format("ENUM.{0}", s)));
+                        localizedCollection.Add(ResourceLoader.getResource(string.Format("ENUM.{0}", s)));
                     }
-                    return collection;
+                    return localizedCollection;
                 }
                 else if (value != null && !(value is string))
                 {
-                    string t = string.Format("ENUM.{0}.{1}", value.GetType().Name, Enum.GetName(value.GetType(), value));
-                    return ResourceLoader.getResource(string.Format("ENUM.{0}.{1}", value.GetType().Name, Enum.GetName(value.GetType(), value)));
+                    string resourceKey = string.Format("ENUM.{0}.{1}", value.GetType().Name, Enum.GetName(value.GetType(), value));
+                    return ResourceLoader.getResource(resourceKey);
                 }
-                else if (value is string)
+                else if (value is string stringValue)
                 {
-                    return ResourceLoader.getResource(string.Format("ENUM.{0}.{1}", value.GetType().Name, value));
+                    return ResourceLoader.getResource(string.Format("ENUM.{0}.{1}", value.GetType().Name, stringValue));
                 }
                 else
                 {
@@ -152,10 +152,10 @@ namespace VCNEditor.DataAccessLayer
             {
                 LogWriter.CreateLogEntry(string.Format("{0}; {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
 
-                throw new Exception(
-                    string.Format("parameter:{0}\nvalue:{1}",
-                                  parameter ?? "no param",
-                                  value ?? "no value"));
+                string errorMessage = string.Format("Resource conversion failed. parameter:{0}\nvalue:{1}",
+                    parameter ?? "no param",
+                    value ?? "no value");
+                throw new InvalidOperationException(errorMessage, e);
             }
         }
 
