@@ -34,13 +34,20 @@ namespace VCNEditor.ViewModel
     public class ExpiryConfigurationDialogViewModel : ObservableObject, IUserDialogViewModel
     {
         private Period currentPeriod;
-        private WeekSchedule schedule;
+        private readonly WeekSchedule schedule;
+        private static readonly string[] ExpiryDateTimeFormats = new[]
+        {
+            "dd.MM.yyyy HH':'mm':'ss",
+            "dd.MM.yyyy h':'mm':'ss"
+        };
 
         /// <summary>
         /// 
         /// </summary>
         public ExpiryConfigurationDialogViewModel()
         {
+            accessProfile = null;
+            culture = CultureInfo.CurrentCulture;
 
             currentPeriod = new Period(DateTime.Now, DateTime.Now.Add(new TimeSpan(1, 0, 0)));
             ScheduleCollection = new ObservableCollection<Period>();
@@ -63,7 +70,7 @@ namespace VCNEditor.ViewModel
         public ExpiryConfigurationDialogViewModel(AccessProfile _accessProfile, CultureInfo _culture)
         {
             accessProfile = _accessProfile;
-            culture = _culture;
+            culture = _culture ?? CultureInfo.CurrentCulture;
 
             currentPeriod = new Period(DateTime.Now, DateTime.Now.Add(new TimeSpan(1, 0, 0)));
             ScheduleCollection = new ObservableCollection<Period>();
@@ -82,15 +89,15 @@ namespace VCNEditor.ViewModel
 
         #region Dialogs
 
-        private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+        private readonly ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
         public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
 
         #endregion
 
         #region single items
 
-        private CultureInfo culture;
-        private AccessProfile accessProfile;
+        private readonly CultureInfo culture;
+        private readonly AccessProfile accessProfile;
 
         /// <summary>
         /// 
@@ -129,13 +136,6 @@ namespace VCNEditor.ViewModel
             set
             {
                 beginDate = value;
-                //				try{
-                //					beginDate =	beginDate.Date.Add(TimeSpan.Parse(startTime));
-                //				}
-                //				catch(Exception e)
-                //				{
-                //
-                //				}
 
                 OnPropertyChanged(nameof(BeginDate));
             }
@@ -179,11 +179,7 @@ namespace VCNEditor.ViewModel
                     else if (value.Length == 8 || value.Length == 5)
                     {
 
-                        var t1 = BeginDate.ToShortDateString() + ' ' +
-
-                            TimeSpan.ParseExact(value, "c", culture);
-
-                        BeginDate = new DateTime(DateTime.ParseExact(t1, new string[] { "dd.MM.yyyy HH':'mm':'ss", "dd.MM.yyyy h':'mm':'ss" }, culture, DateTimeStyles.None).Ticks);
+                        BeginDate = new DateTime(TimeParsing.ParseDateTimeFromTimeText(BeginDate, value, culture, ExpiryDateTimeFormats).Ticks);
 
                         startTime = string.Format(culture, "{0:HH\\:mm\\:ss}", value);
                     }
@@ -241,11 +237,7 @@ namespace VCNEditor.ViewModel
                     else if (value.Length == 8 || value.Length == 5)
                     {
 
-                        var t1 = EndDate.ToShortDateString() + ' ' +
-
-                            TimeSpan.ParseExact(value, "c", culture);
-
-                        EndDate = new DateTime(DateTime.ParseExact(t1, new string[] { "dd.MM.yyyy HH':'mm':'ss", "dd.MM.yyyy h':'mm':'ss" }, culture, DateTimeStyles.None).Ticks);
+                        EndDate = new DateTime(TimeParsing.ParseDateTimeFromTimeText(EndDate, value, culture, ExpiryDateTimeFormats).Ticks);
 
                         endTime = string.Format(culture, "{0:HH\\:mm\\:ss}", value);
                     }
@@ -348,7 +340,7 @@ namespace VCNEditor.ViewModel
 
         public string Caption
         {
-            get { return "expiry"; } //using (var resMan = new ResourceLoader()) { return resMan.getResource("windowCaptionScheduleConfigurationDialog"); }
+            get { return "expiry"; }
         }
 
         #endregion
