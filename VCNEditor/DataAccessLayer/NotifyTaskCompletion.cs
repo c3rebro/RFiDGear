@@ -19,6 +19,9 @@ using System.Threading.Tasks;
 
 namespace RFiDGear.DataAccessLayer
 {
+    /// <summary>
+    /// Wraps a task with a result and exposes completion state via properties.
+    /// </summary>
     public sealed class NotifyTaskCompletion<TResult> : NotifyTaskCompletion
     {
         public NotifyTaskCompletion(Task<TResult> task)
@@ -26,6 +29,9 @@ namespace RFiDGear.DataAccessLayer
         {
         }
 
+        /// <summary>
+        /// Gets the task result when the task completes successfully; otherwise default.
+        /// </summary>
         public TResult Result
         {
             get
@@ -36,6 +42,9 @@ namespace RFiDGear.DataAccessLayer
         }
     }
 
+    /// <summary>
+    /// Wraps a task and exposes completion state changes via <see cref="INotifyPropertyChanged"/>.
+    /// </summary>
     public class NotifyTaskCompletion : INotifyPropertyChanged
     {
         public NotifyTaskCompletion(Task task)
@@ -81,11 +90,33 @@ namespace RFiDGear.DataAccessLayer
             }
         }
 
+        /// <summary>
+        /// Gets the underlying task being tracked.
+        /// </summary>
         public Task Task { get; private set; }
+
+        /// <summary>
+        /// Gets the task that completes when the tracked task finishes.
+        /// </summary>
         public Task TaskCompletion { get; private set; }
+
+        /// <summary>
+        /// Gets the current status of the tracked task.
+        /// </summary>
         public TaskStatus Status { get { return Task.Status; } }
+
+        /// <summary>
+        /// Gets whether the tracked task has completed.
+        /// </summary>
         public bool IsCompleted { get { return Task.IsCompleted; } }
+
+        /// <summary>
+        /// Gets whether the tracked task is still running.
+        /// </summary>
         public bool IsNotCompleted { get { return !Task.IsCompleted; } }
+        /// <summary>
+        /// Gets whether the tracked task completed successfully.
+        /// </summary>
         public bool IsSuccessfullyCompleted
         {
             get
@@ -94,9 +125,24 @@ namespace RFiDGear.DataAccessLayer
                     TaskStatus.RanToCompletion;
             }
         }
+        /// <summary>
+        /// Gets whether the tracked task was canceled.
+        /// </summary>
         public bool IsCanceled { get { return Task.IsCanceled; } }
+
+        /// <summary>
+        /// Gets whether the tracked task faulted.
+        /// </summary>
         public bool IsFaulted { get { return Task.IsFaulted; } }
+
+        /// <summary>
+        /// Gets the aggregate exception raised by the tracked task, if any.
+        /// </summary>
         public AggregateException Exception { get { return Task.Exception; } }
+
+        /// <summary>
+        /// Gets the inner exception for convenience, if available.
+        /// </summary>
         public Exception InnerException
         {
             get
@@ -105,6 +151,9 @@ namespace RFiDGear.DataAccessLayer
                     null : Exception.InnerException;
             }
         }
+        /// <summary>
+        /// Gets the inner exception message, if available.
+        /// </summary>
         public string ErrorMessage
         {
             get

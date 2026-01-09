@@ -11,11 +11,13 @@ using System.Windows.Markup;
 namespace VCNEditor.DataAccessLayer
 {
     /// <summary>
-    /// Description of ResourceLoaderViewModel.
+    /// Provides a shared culture override for resource lookups in the VCN editor.
     /// </summary>
-
     public static class CultureInfoProxy
     {
+        /// <summary>
+        /// Gets or sets the culture used for localized resource lookups.
+        /// </summary>
         public static CultureInfo Culture { get; set; }
     }
 
@@ -28,9 +30,9 @@ namespace VCNEditor.DataAccessLayer
         #region Overrides of Freezable
 
         /// <summary>
-        ///
+        /// Creates a new instance of the binding proxy for WPF cloning.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A new <see cref="BindingProxy"/> instance.</returns>
         protected override Freezable CreateInstanceCore()
         {
             return new BindingProxy();
@@ -38,6 +40,9 @@ namespace VCNEditor.DataAccessLayer
 
         #endregion Overrides of Freezable
 
+        /// <summary>
+        /// Gets or sets the data object to expose for binding.
+        /// </summary>
         public object Data
         {
             get => (object)GetValue(DataProperty);
@@ -50,7 +55,7 @@ namespace VCNEditor.DataAccessLayer
     }
 
     /// <summary>
-    ///
+    /// Exposes localized enum values for use in XAML bindings.
     /// </summary>
     public sealed class EnumerateExtension : MarkupExtension
     {
@@ -58,14 +63,14 @@ namespace VCNEditor.DataAccessLayer
         private readonly ResourceManager resManager;
 
         /// <summary>
-        ///
+        /// Gets or sets the enum type to enumerate.
         /// </summary>
         public Type Type { get; set; }
 
         /// <summary>
-        ///
+        /// Initializes the extension with the enum type to enumerate.
         /// </summary>
-        /// <param name="type"></param>
+        /// <param name="type">The enum type whose values should be localized.</param>
         public EnumerateExtension(Type type)
         {
             Type = type;
@@ -75,10 +80,10 @@ namespace VCNEditor.DataAccessLayer
         }
 
         /// <summary>
-        ///
+        /// Builds the localized enum value array for XAML usage.
         /// </summary>
-        /// <param name="serviceProvider"></param>
-        /// <returns></returns>
+        /// <param name="serviceProvider">The service provider for markup extensions.</param>
+        /// <returns>The array of localized enum display strings.</returns>
         public override object ProvideValue(IServiceProvider serviceProvider)
         {
             string[] names = Enum.GetNames(Type);
@@ -92,7 +97,7 @@ namespace VCNEditor.DataAccessLayer
     }
 
     /// <summary>
-    ///
+    /// Converts enum values and keys into localized resource strings.
     /// </summary>
     public sealed class ResourceLoader : IValueConverter, IDisposable
     {
@@ -100,7 +105,7 @@ namespace VCNEditor.DataAccessLayer
         private readonly ResourceManager resManager;
 
         /// <summary>
-        ///
+        /// Initializes a new resource loader using the current UI culture.
         /// </summary>
         public ResourceLoader()
         {
@@ -109,13 +114,13 @@ namespace VCNEditor.DataAccessLayer
         }
 
         /// <summary>
-        ///
+        /// Converts enum values or resource keys into localized strings.
         /// </summary>
-        /// <param name="value"></param>
-        /// <param name="targetType"></param>
-        /// <param name="parameter"></param>
-        /// <param name="language"></param>
-        /// <returns></returns>
+        /// <param name="value">The value to convert, such as an enum or string key.</param>
+        /// <param name="targetType">The expected target type.</param>
+        /// <param name="parameter">Optional key parameter for lookups.</param>
+        /// <param name="language">The language to use for conversion.</param>
+        /// <returns>The localized string or localized collection of strings.</returns>
         public object Convert(object value, Type targetType, object parameter, CultureInfo language)
         {
             try
@@ -160,13 +165,13 @@ namespace VCNEditor.DataAccessLayer
         }
 
         /// <summary>
-        ///
+        /// Converts a localized enum display string back into the enum name.
         /// </summary>
-        /// <param name="value"></param>
-        /// <param name="targetType"></param>
-        /// <param name="parameter"></param>
-        /// <param name="language"></param>
-        /// <returns></returns>
+        /// <param name="value">The localized value selected by the user.</param>
+        /// <param name="targetType">The target enum type.</param>
+        /// <param name="parameter">The enum type parameter for conversion.</param>
+        /// <param name="language">The language to use for conversion.</param>
+        /// <returns>The enum name matching the localized value.</returns>
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo language)
         {
             if (value != null)
@@ -190,17 +195,17 @@ namespace VCNEditor.DataAccessLayer
         }
 
         /// <summary>
-        ///
+        /// Disposes of the resource loader.
         /// </summary>
         public void Dispose()
         {
         }
 
         /// <summary>
-        ///
+        /// Looks up a localized resource string by key.
         /// </summary>
-        /// <param name="resName"></param>
-        /// <returns></returns>
+        /// <param name="resName">The resource key to retrieve.</param>
+        /// <returns>The localized resource string, or an empty string if not found.</returns>
         public static string getResource(string resName)
         {
 

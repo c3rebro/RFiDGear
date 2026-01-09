@@ -26,7 +26,7 @@ using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 namespace VCNEditor.ViewModel
 {
     /// <summary>
-    /// Description of ProfileEditorViewModel.
+    /// Builds and edits access profiles based on user-entered main list values.
     /// </summary>
     public class ProfileEditorViewModel : CommunityToolkit.Mvvm.ComponentModel.ObservableObject, IUserDialogViewModel
     {
@@ -50,6 +50,9 @@ namespace VCNEditor.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets or sets the raw profile text input used to build main list words.
+        /// </summary>
         public string ProfileText
         {
             get => profileText;
@@ -63,6 +66,9 @@ namespace VCNEditor.ViewModel
 
         #region Commands
 
+        /// <summary>
+        /// Gets a command that parses <see cref="ProfileText"/> into a new access profile.
+        /// </summary>
         public ICommand AddProfileCommand { get { return new RelayCommand(OnNewAddProfileCommand); } }
         private void OnNewAddProfileCommand()
         {
@@ -245,7 +251,7 @@ namespace VCNEditor.ViewModel
 
 
         /// <summary>
-        /// 
+        /// Gets the available profile type identifiers for selection.
         /// </summary>
         public int[] ProfileType
         {
@@ -253,7 +259,7 @@ namespace VCNEditor.ViewModel
         }
 
         /// <summary>
-        /// 
+        /// Gets or sets the selected profile type, which controls how profile bytes are serialized.
         /// </summary>
         public int SelectedProfileType
         {
@@ -268,7 +274,7 @@ namespace VCNEditor.ViewModel
         private int selectedProfileType;
 
         /// <summary>
-        /// 
+        /// Gets or sets the number of 16-bit words in the main list.
         /// </summary>
         public int MainListWordsCount
         {
@@ -283,7 +289,7 @@ namespace VCNEditor.ViewModel
         private int mainListWordsCount;
 
         /// <summary>
-        /// 
+        /// Gets or sets the collection of available access profiles.
         /// </summary>
         public ObservableCollection<AccessProfile> AccessProfiles
         {
@@ -297,7 +303,7 @@ namespace VCNEditor.ViewModel
         private ObservableCollection<AccessProfile> accessProfiles;
 
         /// <summary>
-        /// 
+        /// Gets or sets the currently selected access profile.
         /// </summary>
         public AccessProfile SelectedAccessProfile
         {
@@ -314,6 +320,9 @@ namespace VCNEditor.ViewModel
 
         #region IUserDialogViewModel Implementation
 
+        /// <summary>
+        /// Gets whether this dialog should behave as a modal dialog.
+        /// </summary>
         [XmlIgnore]
         public bool IsModal { get; private set; }
 
@@ -331,6 +340,9 @@ namespace VCNEditor.ViewModel
 
         public event EventHandler DialogClosing;
 
+        /// <summary>
+        /// Gets a command that confirms the dialog selection.
+        /// </summary>
         public ICommand OKCommand { get { return new RelayCommand(Ok); } }
 
         protected virtual void Ok()
@@ -345,6 +357,9 @@ namespace VCNEditor.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets a command that cancels the dialog selection.
+        /// </summary>
         public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
 
         protected virtual void Cancel()
@@ -359,6 +374,9 @@ namespace VCNEditor.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets a command that triggers authentication handling for the dialog.
+        /// </summary>
         public ICommand AuthCommand { get { return new RelayCommand(Auth); } }
 
         protected virtual void Auth()
@@ -373,12 +391,24 @@ namespace VCNEditor.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets or sets the callback invoked when the dialog is confirmed.
+        /// </summary>
         public Action<ProfileEditorViewModel> OnOk { get; set; }
 
+        /// <summary>
+        /// Gets or sets the callback invoked when the dialog is canceled.
+        /// </summary>
         public Action<ProfileEditorViewModel> OnCancel { get; set; }
 
+        /// <summary>
+        /// Gets or sets the callback invoked when authentication is requested.
+        /// </summary>
         public Action<ProfileEditorViewModel> OnAuth { get; set; }
 
+        /// <summary>
+        /// Gets or sets the callback invoked when the dialog requests to close.
+        /// </summary>
         public Action<ProfileEditorViewModel> OnCloseRequest { get; set; }
 
         public void Close()
@@ -396,9 +426,8 @@ namespace VCNEditor.ViewModel
         #region Localization
 
         /// <summary>
-        /// localization strings
+        /// Gets or sets the localization caption key for the dialog.
         /// </summary>
-
         public string Caption
         {
             get => _Caption;

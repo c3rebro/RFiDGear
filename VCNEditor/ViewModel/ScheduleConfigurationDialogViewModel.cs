@@ -31,7 +31,7 @@ using System.Xml.Serialization;
 namespace VCNEditor.ViewModel
 {
     /// <summary>
-    /// Description of ScheduleConfigurationDialogViewModel.
+    /// Coordinates week schedule entry creation and validation for the schedule configuration dialog.
     /// </summary>
     public class ScheduleConfigurationDialogViewModel : ObservableObject, IUserDialogViewModel
     {
@@ -45,7 +45,7 @@ namespace VCNEditor.ViewModel
         };
 
         /// <summary>
-        /// 
+        /// Initializes a new schedule dialog with default times and the current culture.
         /// </summary>
         public ScheduleConfigurationDialogViewModel()
         {
@@ -65,10 +65,10 @@ namespace VCNEditor.ViewModel
         }
 
         /// <summary>
-        /// 
+        /// Initializes a new schedule dialog bound to the specified access profile and culture.
         /// </summary>
-        /// <param name="_accessProfile"></param>
-        /// <param name="_culture"></param>
+        /// <param name="_accessProfile">The access profile to update with newly added schedules.</param>
+        /// <param name="_culture">The culture used to parse and format time strings.</param>
         public ScheduleConfigurationDialogViewModel(AccessProfile _accessProfile, CultureInfo _culture)
         {
             accessProfile = _accessProfile;
@@ -90,6 +90,9 @@ namespace VCNEditor.ViewModel
         #region Dialogs
 
         private readonly ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+        /// <summary>
+        /// Gets the active dialog view models owned by this view model.
+        /// </summary>
         public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
 
         #endregion
@@ -100,7 +103,7 @@ namespace VCNEditor.ViewModel
         private readonly AccessProfile accessProfile;
 
         /// <summary>
-        /// 
+        /// Gets or sets whether the start time input failed validation.
         /// </summary>
         public bool StartTimeHasWrongFormat
         {
@@ -114,7 +117,7 @@ namespace VCNEditor.ViewModel
         private bool startTimeHasWrongFormat;
 
         /// <summary>
-        /// 
+        /// Gets or sets whether the end time input failed validation.
         /// </summary>
         public bool EndTimeHasWrongFormat
         {
@@ -128,7 +131,8 @@ namespace VCNEditor.ViewModel
         private bool endTimeHasWrongFormat;
 
         /// <summary>
-        /// 
+        /// Gets or sets the start time text in <c>HH:mm:ss</c> or <c>HH:mm</c> format, with optional
+        /// <c>:MouseWheel</c> suffix indicating 15-minute increments.
         /// </summary>
         public string StartTime
         {
@@ -186,7 +190,8 @@ namespace VCNEditor.ViewModel
         private string startTime;
 
         /// <summary>
-        /// 
+        /// Gets or sets the end time text in <c>HH:mm:ss</c> or <c>HH:mm</c> format, with optional
+        /// <c>:MouseWheel</c> suffix indicating 15-minute increments.
         /// </summary>
         public string EndTime
         {
@@ -248,7 +253,7 @@ namespace VCNEditor.ViewModel
         #region collections
 
         /// <summary>
-        /// 
+        /// Gets or sets the collection of configured week schedules.
         /// </summary>
         public ObservableCollection<WeekSchedule> ScheduleCollection
         {
@@ -261,11 +266,17 @@ namespace VCNEditor.ViewModel
         }
         private ObservableCollection<WeekSchedule> scheduleCollection;
 
+        /// <summary>
+        /// Gets the active week schedule being edited.
+        /// </summary>
         public WeekSchedule Schedule
         {
             get { return schedule; }
         }
 
+        /// <summary>
+        /// Gets the localized day-of-week names used to populate pickers.
+        /// </summary>
         public string[] DaysOfWeek
         {
             get
@@ -274,6 +285,9 @@ namespace VCNEditor.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets or sets the selected start day label for the schedule span.
+        /// </summary>
         public string SelectedWeekStart
         {
             get => selectedWeekStart;
@@ -291,6 +305,9 @@ namespace VCNEditor.ViewModel
         private DayOfWeek selectedWeekStartAsEnum;
 
 
+        /// <summary>
+        /// Gets or sets the selected end day label for the schedule span.
+        /// </summary>
         public string SelectedWeekEnd
         {
             get => selectedWeekEnd;
@@ -311,7 +328,7 @@ namespace VCNEditor.ViewModel
         #region selected items
 
         /// <summary>
-        /// 
+        /// Gets or sets the currently selected schedule period.
         /// </summary>
         public Period SelectedPeriod
         {
@@ -329,10 +346,13 @@ namespace VCNEditor.ViewModel
         #region Localization
 
         /// <summary>
-        /// Act as a proxy between RessourceLoader and View directly.
+        /// Acts as a proxy between <see cref="ResourceLoader"/> and the view for localization.
         /// </summary>
         public string LocalizationResourceSet { get; set; }
 
+        /// <summary>
+        /// Gets the localization caption key for the dialog.
+        /// </summary>
         public string Caption
         {
             get { return "scheduler"; }
@@ -342,6 +362,9 @@ namespace VCNEditor.ViewModel
 
         #region commands
 
+        /// <summary>
+        /// Gets a command that adds the selected week span to the schedule collection.
+        /// </summary>
         public ICommand AddDateTimeSpanCommand { get { return new RelayCommand(OnNewAddDateTimeSpanCommand); } }
         private void OnNewAddDateTimeSpanCommand()
         {
@@ -421,7 +444,7 @@ namespace VCNEditor.ViewModel
         #region IUserDialogViewModel Implementation
 
         /// <summary>
-        /// gets; sets whether this dialog is modal or not
+        /// Gets whether this dialog should behave as a modal dialog.
         /// </summary>
         [XmlIgnore]
         public bool IsModal { get; private set; }
@@ -439,6 +462,9 @@ namespace VCNEditor.ViewModel
         }
         public event EventHandler DialogClosing;
 
+        /// <summary>
+        /// Gets a command that confirms the dialog selection.
+        /// </summary>
         public ICommand OKCommand { get { return new RelayCommand(Ok); } }
         protected virtual void Ok()
         {
@@ -452,6 +478,9 @@ namespace VCNEditor.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets a command that cancels the dialog selection.
+        /// </summary>
         public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
         protected virtual void Cancel()
         {
@@ -465,8 +494,19 @@ namespace VCNEditor.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets or sets the callback invoked when the dialog is confirmed.
+        /// </summary>
         public Action<ScheduleConfigurationDialogViewModel> OnOk { get; set; }
+
+        /// <summary>
+        /// Gets or sets the callback invoked when the dialog is canceled.
+        /// </summary>
         public Action<ScheduleConfigurationDialogViewModel> OnCancel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the callback invoked when the dialog requests to close.
+        /// </summary>
         public Action<ScheduleConfigurationDialogViewModel> OnCloseRequest { get; set; }
 
         public void Close()

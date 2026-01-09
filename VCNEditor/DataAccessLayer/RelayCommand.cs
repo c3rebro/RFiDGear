@@ -4,7 +4,7 @@ using System.Windows.Input;
 namespace RFiDGear.ViewModel
 {
 	/// <summary>
-	/// Description of RelayCommand.
+	/// Wraps delegate execution into an <see cref="ICommand"/> implementation.
 	/// </summary>
 	public class RelayCommand : ICommand
 	{

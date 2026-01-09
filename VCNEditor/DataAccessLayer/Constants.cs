@@ -32,7 +32,7 @@ namespace RFiDGear.DataAccessLayer
     }
     
     /// <summary>
-    ///
+    /// Defines supported Mifare DESFire file types.
     /// </summary>
     public enum FileType_MifareDesfireFileType
     {
@@ -44,7 +44,7 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
-    ///
+    /// Defines available task types for Mifare Classic operations.
     /// </summary>
     public enum TaskType_MifareClassicTask
     {
@@ -54,6 +54,9 @@ namespace RFiDGear.DataAccessLayer
         ChangeDefault
     }
 
+    /// <summary>
+    /// Defines available task types for Mifare DESFire operations.
+    /// </summary>
     public enum TaskType_MifareDesfireTask
     {
         None,
@@ -70,7 +73,7 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
-    /// Select DataBlock in Data Explorer
+    /// Selects a data block in the data explorer (bit flags for blocks 0-3).
     /// </summary>
     [Flags]
     public enum DataExplorer_DataBlock
@@ -82,7 +85,7 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
-    /// Select DataBlock in Sector Trailer Access Bits
+    /// Selects which data block is referenced by sector trailer access bits.
     /// </summary>
     public enum SectorTrailer_DataBlock
     {
@@ -92,6 +95,9 @@ namespace RFiDGear.DataAccessLayer
         BlockAll = 3
     }
 
+    /// <summary>
+    /// Defines sector trailer access permissions as bit flags.
+    /// </summary>
     [Flags]
     public enum SectorTrailer_AccessType
     {
@@ -104,7 +110,7 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
-    ///
+    /// Defines access condition flags for Mifare DESFire app creation keys (bit field values 0x00, 0xE0, 0xF0).
     /// </summary>
     [Flags]
     public enum AccessCondition_MifareDesfireAppCreation
@@ -115,7 +121,7 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
-    ///
+    /// Defines access conditions for Mifare Classic sector trailer operations.
     /// </summary>
     public enum AccessCondition_MifareClassicSectorTrailer
     {
@@ -175,7 +181,7 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
-    /// Description of Constants.
+    /// Identifies supported card types.
     /// </summary>
     public enum CARD_TYPE
     {
@@ -193,7 +199,7 @@ namespace RFiDGear.DataAccessLayer
     };
 
     /// <summary>
-    ///
+    /// Defines generic error identifiers for card operations.
     /// </summary>
     public enum ERROR
     {
@@ -205,7 +211,7 @@ namespace RFiDGear.DataAccessLayer
     }
 
     /// <summary>
-    ///
+    /// Defines error identifiers for key parsing and validation.
     /// </summary>
     public enum KEY_ERROR
     {

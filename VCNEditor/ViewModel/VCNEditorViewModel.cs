@@ -26,6 +26,9 @@ using CommunityToolkit.Mvvm.Input;
 namespace VCNEditor.ViewModel
 {
     [ExportViewModel("VCNEditor")]
+    /// <summary>
+    /// Builds VCN data files and exposes UI state for editing access profiles and schedules.
+    /// </summary>
     public class VCNEditorViewModel : ObservableObject, IUserDialogViewModel
     {
         private byte[] accessFileAsByte;
@@ -84,12 +87,15 @@ namespace VCNEditor.ViewModel
 
         #region Dialogs
 
+        /// <summary>
+        /// Gets the window name used by dialog hosting.
+        /// </summary>
         public string WindowName { get; } = "VCNEditor";
 
-        /// <summary>
-        /// 
-        /// </summary>
         private readonly ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
+        /// <summary>
+        /// Gets the active dialog view models owned by this view model.
+        /// </summary>
         public ObservableCollection<IDialogViewModel> Dialogs { get { return dialogs; } }
 
 
@@ -101,7 +107,7 @@ namespace VCNEditor.ViewModel
         private CultureInfo culture;
 
         /// <summary>
-        /// Expose translated strings from ResourceLoader
+        /// Exposes translated strings from <see cref="ResourceLoader"/>.
         /// </summary>
         public string LocalizationResourceSet { get; set; }
 
@@ -109,6 +115,9 @@ namespace VCNEditor.ViewModel
 
         #region Commands
 
+        /// <summary>
+        /// Gets a command that opens the profile editor dialog.
+        /// </summary>
         public ICommand EditMainListCommand { get { return new RelayCommand(OnNewEditMainListCommand); } }
         private void OnNewEditMainListCommand()
         {
@@ -151,6 +160,9 @@ namespace VCNEditor.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets a command that opens the week schedule configuration dialog.
+        /// </summary>
         public ICommand EditWeekSchedulesCommand { get { return new RelayCommand(OnNewEditWeekSchedulesCommand); } }
         private void OnNewEditWeekSchedulesCommand()
         {
@@ -203,7 +215,7 @@ namespace VCNEditor.ViewModel
         }
 
         /// <summary>
-        /// 
+        /// Gets a command that generates the VCN data text, optionally regenerating the card ID.
         /// </summary>
         public ICommand GenerateVCNDataCommand { get { return new RelayCommand<bool>(OnNewGenerateVCNDataCommand); } }
         private void OnNewGenerateVCNDataCommand(bool withID)
@@ -307,6 +319,9 @@ namespace VCNEditor.ViewModel
                                            ByteArrayConverter.GetStringFrom(accessFileAsByte));
         }
 
+        /// <summary>
+        /// Gets a command that opens the expiry configuration dialog.
+        /// </summary>
         public ICommand SetExpiryCommand { get { return new RelayCommand(OnNewSetExpiryCommand); } }
         private void OnNewSetExpiryCommand()
         {
@@ -353,7 +368,7 @@ namespace VCNEditor.ViewModel
         #region IDFile
 
         /// <summary>
-        /// 
+        /// Gets or sets the card type identifier used in the ID file header.
         /// </summary>
         public byte CardType
         {
@@ -367,7 +382,7 @@ namespace VCNEditor.ViewModel
         private byte cardType;
 
         /// <summary>
-        /// 
+        /// Gets or sets the host-use string appended to the ID file payload.
         /// </summary>
         public string ForHostUse
         {
@@ -381,7 +396,7 @@ namespace VCNEditor.ViewModel
         private string forHostUse;
 
         /// <summary>
-        /// 
+        /// Gets or sets the card identifier as a string representation.
         /// </summary>
         public string CardID
         {
@@ -399,7 +414,7 @@ namespace VCNEditor.ViewModel
         #region accessFileHeader
 
         /// <summary>
-        /// 
+        /// Gets or sets the release major value as text.
         /// </summary>
         public string ReleaseMajor
         {
@@ -417,7 +432,7 @@ namespace VCNEditor.ViewModel
         private string releaseMajor;
 
         /// <summary>
-        /// 
+        /// Gets or sets the release major value that occupies the low three bits of the file format byte.
         /// </summary>
         public int ReleaseMajorAsInt
         {
@@ -437,7 +452,7 @@ namespace VCNEditor.ViewModel
         private int releaseMajorAsInt;
 
         /// <summary>
-        /// 
+        /// Gets or sets the release minor value as text.
         /// </summary>
         public string ReleaseMinor
         {
@@ -456,7 +471,7 @@ namespace VCNEditor.ViewModel
         private string releaseMinor;
 
         /// <summary>
-        /// 
+        /// Gets or sets the release minor value that occupies the upper five bits of the file format byte.
         /// </summary>
         public int ReleaseMinorAsInt
         {
@@ -476,7 +491,7 @@ namespace VCNEditor.ViewModel
         private int releaseMinorAsInt;
 
         /// <summary>
-        /// 
+        /// Gets or sets the content identifier string used in the access file header.
         /// </summary>
         public string ContentIdentifier
         {
@@ -491,7 +506,7 @@ namespace VCNEditor.ViewModel
 
         #region si conf
         /// <summary>
-        /// 
+        /// Gets or sets the minimum access list log level as text.
         /// </summary>
         public string MinAccessListLogLevelAsString
         {
@@ -510,7 +525,7 @@ namespace VCNEditor.ViewModel
         private string minAccessListLogLevelAsString;
 
         /// <summary>
-        /// 
+        /// Gets or sets the minimum access list log level stored in the lowest two bits of the SI config byte.
         /// </summary>
         public int MinAccessListLogLevelAsInt
         {
@@ -525,7 +540,7 @@ namespace VCNEditor.ViewModel
         private int minAccessListLogLevelAsInt;
 
         /// <summary>
-        /// 
+        /// Gets or sets whether to block entry when the access list is full (bit 0x04 in the SI config byte).
         /// </summary>
         public bool NoEntryWhenALFull
         {
@@ -540,7 +555,7 @@ namespace VCNEditor.ViewModel
         private bool noEntryWhenALFull;
 
         /// <summary>
-        /// 
+        /// Gets or sets whether beeping is suppressed (bit 0x08 in the SI config byte).
         /// </summary>
         public bool SuppressBeeping
         {
@@ -555,7 +570,7 @@ namespace VCNEditor.ViewModel
         private bool suppressBeeping;
 
         /// <summary>
-        /// 
+        /// Gets or sets whether long coupling is enabled (bit 0x10 in the SI config byte).
         /// </summary>
         public bool LongCoupling
         {
@@ -570,7 +585,7 @@ namespace VCNEditor.ViewModel
         private bool longCoupling;
 
         /// <summary>
-        /// 
+        /// Gets or sets whether coupling is suppressed (bit 0x20 in the SI config byte).
         /// </summary>
         public bool SuppressCoupling
         {
@@ -585,7 +600,7 @@ namespace VCNEditor.ViewModel
         private bool suppressCoupling;
 
         /// <summary>
-        /// 
+        /// Gets or sets whether the door state toggles on valid reads (bit 0x40 in the SI config byte).
         /// </summary>
         public bool ToggleDoorState
         {
@@ -604,7 +619,7 @@ namespace VCNEditor.ViewModel
         #region si card conf
 
         /// <summary>
-        /// 
+        /// Gets or sets the upstream file content as text, stored in the low two bits of the SI card config byte.
         /// </summary>
         public string UpStreamFileContentAsString
         {
@@ -623,7 +638,7 @@ namespace VCNEditor.ViewModel
         private string upStreamFileContentAsString;
 
         /// <summary>
-        /// 
+        /// Gets or sets the upstream file content value stored in the low two bits of the SI card config byte.
         /// </summary>
         public int UpStreamFileContentAsInt
         {
@@ -643,7 +658,7 @@ namespace VCNEditor.ViewModel
         private int upStreamFileContentAsInt;
 
         /// <summary>
-        /// 
+        /// Gets or sets the upstream file type as text, stored in bits 2-3 of the SI card config byte.
         /// </summary>
         public string UpStreamFileTypeAsString
         {
@@ -662,7 +677,7 @@ namespace VCNEditor.ViewModel
         private string upStreamFileTypeAsString;
 
         /// <summary>
-        /// 
+        /// Gets or sets the upstream file type stored in bits 2-3 of the SI card config byte.
         /// </summary>
         public int UpStreamFileTypeAsInt
         {
@@ -682,7 +697,7 @@ namespace VCNEditor.ViewModel
         private int upStreamFileTypeAsInt;
 
         /// <summary>
-        /// 
+        /// Gets or sets whether the access list uses the long date format (bit 0x10 in the SI card config byte).
         /// </summary>
         public bool IsAccessListLongDate
         {
@@ -701,7 +716,7 @@ namespace VCNEditor.ViewModel
         #endregion
 
         /// <summary>
-        /// 
+        /// Gets or sets the area identifier as a string and updates the backing bytes.
         /// </summary>
         public string AreaID
         {
@@ -723,7 +738,7 @@ namespace VCNEditor.ViewModel
         private string areaID;
 
         /// <summary>
-        /// 
+        /// Gets or sets the area identifier bytes used in the access file header.
         /// </summary>
         public byte[] AreaIDAsBytes
         {
@@ -740,7 +755,7 @@ namespace VCNEditor.ViewModel
         #region accessProfiles
 
         /// <summary>
-        /// 
+        /// Gets or sets the collection of access profiles.
         /// </summary>
         public ObservableCollection<AccessProfile> AccessProfiles
         {
@@ -754,7 +769,7 @@ namespace VCNEditor.ViewModel
         private ObservableCollection<AccessProfile> accessProfiles;
 
         /// <summary>
-        /// 
+        /// Gets or sets the combined access profile bytes for persistence.
         /// </summary>
         public byte[] CombinedAccessProfileAsBytes
         {
@@ -768,7 +783,7 @@ namespace VCNEditor.ViewModel
         private byte[] combinedAccessProfileAsBytes;
 
         /// <summary>
-        /// 
+        /// Gets or sets the currently selected access profile.
         /// </summary>
         public AccessProfile SelectedAccessProfile
         {
@@ -782,7 +797,7 @@ namespace VCNEditor.ViewModel
         private AccessProfile selectedAccessProfile;
 
         /// <summary>
-        /// 
+        /// Gets or sets the count of main list words for the selected profile.
         /// </summary>
         public int MainListWordsCount
         {
@@ -797,7 +812,7 @@ namespace VCNEditor.ViewModel
         private int mainListWordsCount;
 
         /// <summary>
-        /// 
+        /// Gets or sets the formatted expiry text shown in the UI.
         /// </summary>
         public string Expires
         {
@@ -811,7 +826,7 @@ namespace VCNEditor.ViewModel
         private string expires;
 
         /// <summary>
-        /// 
+        /// Gets or sets the formatted valid-from text shown in the UI.
         /// </summary>
         public string ValidFrom
         {
@@ -829,7 +844,7 @@ namespace VCNEditor.ViewModel
         #region PluginValue
 
         /// <summary>
-        /// 
+        /// Gets or sets the computed CRC32 value for the access file.
         /// </summary>
         public string CRC32
         {
@@ -843,7 +858,7 @@ namespace VCNEditor.ViewModel
         private string crc32;
 
         /// <summary>
-        /// Gets the VCNDataTextBox property.
+        /// Gets or sets the composed VCN data text shown in the UI.
         /// </summary>
         public string VCNDataTextBox
         {
@@ -864,6 +879,9 @@ namespace VCNEditor.ViewModel
         #endregion
 
         #region IUserDialogViewModel Implementation
+        /// <summary>
+        /// Gets whether this dialog should behave as a modal dialog.
+        /// </summary>
         [XmlIgnore]
         public bool IsModal { get; private set; }
 
@@ -881,6 +899,9 @@ namespace VCNEditor.ViewModel
 
         public event EventHandler DialogClosing;
 
+        /// <summary>
+        /// Gets a command that confirms the dialog selection.
+        /// </summary>
         public ICommand OKCommand { get { return new RelayCommand(Ok); } }
 
         protected virtual void Ok()
@@ -895,6 +916,9 @@ namespace VCNEditor.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets a command that cancels the dialog selection.
+        /// </summary>
         public ICommand CancelCommand { get { return new RelayCommand(Cancel); } }
 
         protected virtual void Cancel()
@@ -909,12 +933,24 @@ namespace VCNEditor.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets or sets the callback invoked when the dialog is confirmed.
+        /// </summary>
         public Action<VCNEditorViewModel> OnOk { get; set; }
 
+        /// <summary>
+        /// Gets or sets the callback invoked when the dialog is canceled.
+        /// </summary>
         public Action<VCNEditorViewModel> OnCancel { get; set; }
 
+        /// <summary>
+        /// Gets or sets the callback invoked when authentication is requested.
+        /// </summary>
         public Action<VCNEditorViewModel> OnAuth { get; set; }
 
+        /// <summary>
+        /// Gets or sets the callback invoked when the dialog requests to close.
+        /// </summary>
         public Action<VCNEditorViewModel> OnCloseRequest { get; set; }
 
         public void Close()

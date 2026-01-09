@@ -9,7 +9,7 @@ using System.Xml.Serialization;
 namespace RFiDGear.DataAccessLayer
 {
     /// <summary>
-    /// Description of Class1.
+    /// Reads and writes chip and task database XML files in the user profile.
     /// </summary>
     public class DatabaseReaderWriter
     {
@@ -58,9 +58,10 @@ namespace RFiDGear.DataAccessLayer
         }
 
         /// <summary>
-        ///
+        /// Attempts to load the chip or task database from disk.
         /// </summary>
-        /// <returns></returns>
+        /// <param name="_fileName">Optional explicit file path to load.</param>
+        /// <returns><c>true</c> when a blocking error occurs; otherwise <c>false</c>.</returns>
         public bool ReadDatabase(string _fileName = "")
         {
             TextReader reader;
@@ -135,6 +136,9 @@ namespace RFiDGear.DataAccessLayer
             return true;
         }
 
+        /// <summary>
+        /// Deletes the chip database file from the local application data folder.
+        /// </summary>
         public void DeleteDatabase()
         {
             File.Delete(Path.Combine(appDataPath, chipDatabaseFileName));

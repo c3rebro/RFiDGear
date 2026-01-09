@@ -28,6 +28,9 @@ namespace RFiDGear.DataAccessLayer
 	using System.Threading.Tasks;
 	using System.Windows.Input;
 
+	/// <summary>
+	/// Executes asynchronous commands with cancellation support and completion tracking.
+	/// </summary>
 	public class AsyncCommand<TResult> : AsyncCommandBase, INotifyPropertyChanged
 	{
 		private readonly Func<CancellationToken, Task<TResult>> _command;
@@ -55,11 +58,17 @@ namespace RFiDGear.DataAccessLayer
 			RaiseCanExecuteChanged();
 		}
 
+		/// <summary>
+		/// Gets a command that requests cancellation for the running task.
+		/// </summary>
 		public ICommand CancelCommand
 		{
 			get { return _cancelCommand; }
 		}
 
+		/// <summary>
+		/// Gets the task execution wrapper that exposes completion status.
+		/// </summary>
 		public NotifyTaskCompletion<TResult> Execution
 		{
 			get { return _execution; }
@@ -85,6 +94,9 @@ namespace RFiDGear.DataAccessLayer
 			private CancellationTokenSource _cts = new CancellationTokenSource();
 			private bool _commandExecuting;
 
+			/// <summary>
+			/// Gets the cancellation token for the currently executing command.
+			/// </summary>
 			public CancellationToken Token { get { return _cts.Token; } }
 
 			public void NotifyCommandStarting()
@@ -141,23 +153,38 @@ namespace RFiDGear.DataAccessLayer
 		}
 	}
 
+	/// <summary>
+	/// Factory helpers for creating <see cref="AsyncCommand{TResult}"/> instances.
+	/// </summary>
 	public static class AsyncCommand
 	{
+		/// <summary>
+		/// Creates a command for a task without a return value.
+		/// </summary>
 		public static AsyncCommand<object> Create(Func<Task> command)
 		{
 			return new AsyncCommand<object>(async _ => { await command(); return null; });
 		}
 
+		/// <summary>
+		/// Creates a command for a task that returns a result.
+		/// </summary>
 		public static AsyncCommand<TResult> Create<TResult>(Func<Task<TResult>> command)
 		{
 			return new AsyncCommand<TResult>(_ => command());
 		}
 
+		/// <summary>
+		/// Creates a cancellable command for a task without a return value.
+		/// </summary>
 		public static AsyncCommand<object> Create(Func<CancellationToken, Task> command)
 		{
 			return new AsyncCommand<object>(async token => { await command(token); return null; });
 		}
 
+		/// <summary>
+		/// Creates a cancellable command for a task that returns a result.
+		/// </summary>
 		public static AsyncCommand<TResult> Create<TResult>(Func<CancellationToken, Task<TResult>> command)
 		{
 			return new AsyncCommand<TResult>(command);
