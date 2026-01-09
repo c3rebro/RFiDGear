@@ -76,10 +76,13 @@ namespace RFiDGear.DataAccessLayer
 		protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
 		{
 			PropertyChangedEventHandler handler = PropertyChanged;
-			if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
+			if (handler != null)
+			{
+				handler(this, new PropertyChangedEventArgs(propertyName));
+			}
 		}
 
-		private sealed class CancelAsyncCommand : ICommand
+		private sealed class CancelAsyncCommand : ICommand, IDisposable
 		{
 			private CancellationTokenSource _cts = new CancellationTokenSource();
 			private bool _commandExecuting;
@@ -90,8 +93,11 @@ namespace RFiDGear.DataAccessLayer
 			{
 				_commandExecuting = true;
 				if (!_cts.IsCancellationRequested)
+				{
 					return;
-				_cts = new CancellationTokenSource();
+				}
+
+				ResetCancellationTokenSource();
 				RaiseCanExecuteChanged();
 			}
 
@@ -112,6 +118,11 @@ namespace RFiDGear.DataAccessLayer
 				RaiseCanExecuteChanged();
 			}
 
+			public void Dispose()
+			{
+				_cts.Dispose();
+			}
+
 			public event EventHandler CanExecuteChanged
 			{
 				add { CommandManager.RequerySuggested += value; }
@@ -121,6 +132,13 @@ namespace RFiDGear.DataAccessLayer
 			private void RaiseCanExecuteChanged()
 			{
 				CommandManager.InvalidateRequerySuggested();
+			}
+
+			private void ResetCancellationTokenSource()
+			{
+				CancellationTokenSource previous = _cts;
+				_cts = new CancellationTokenSource();
+				previous.Dispose();
 			}
 		}
 	}
