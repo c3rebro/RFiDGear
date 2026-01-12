@@ -849,6 +849,15 @@ Needed by:
   <data name="buttonContentMifareDesfireFileSetupOpenDataFile" xml:space="preserve">
     <value>Load Data from Disk...</value>
   </data>
+  <data name="buttonContentMifareDesfireFileSetupSaveReadData" xml:space="preserve">
+    <value>Select Read Data File...</value>
+  </data>
+  <data name="checkBoxContentMifareDesfireFileSetupOverwriteOnRead" xml:space="preserve">
+    <value>Overwrite on read</value>
+  </data>
+  <data name="checkBoxContentMifareDesfireFileSetupRefreshDataFromFile" xml:space="preserve">
+    <value>Reload before write</value>
+  </data>
   <data name="buttonContentMifareDesfireFileSetupReadData" xml:space="preserve">
     <value>Read from File</value>
   </data>
@@ -1458,6 +1467,9 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="windowCaptionSaveReport" xml:space="preserve">
     <value>Save Report as...</value>
+  </data>
+  <data name="windowCaptionSaveDesfireReadData" xml:space="preserve">
+    <value>Save DESFire Read Data as...</value>
   </data>
   <data name="windowCaptionOpenReport" xml:space="preserve">
     <value>Open PDF-Template File...</value>

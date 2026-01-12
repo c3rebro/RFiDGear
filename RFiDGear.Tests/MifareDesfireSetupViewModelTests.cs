@@ -6,8 +6,10 @@ using RFiDGear.Models;
 using RFiDGear.ViewModel;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using System;
+using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Xunit;
 
 namespace RFiDGear.Tests
@@ -195,6 +197,102 @@ namespace RFiDGear.Tests
 
             Assert.True(viewModel.IsValidAppNumberCurrent);
             Assert.Equal(expected, viewModel.AppNumberCurrentAsInt);
+        }
+
+        [Fact]
+        public void TryGetDesfireWritePayload_ReturnsSelectedSlice()
+        {
+            var viewModel = new MifareDesfireSetupViewModel();
+            var data = new byte[] { 1, 2, 3, 4, 5 };
+            var desfireNode = new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(data, 0), null)
+            {
+                SelectedDataIndexStartInBytes = 1,
+                SelectedDataLengthInBytes = 3
+            };
+
+            viewModel.ChildNodeViewModelTemp.Children.Add(desfireNode);
+
+            var result = viewModel.TryGetDesfireWritePayload(out var payload, out var errorMessage);
+
+            Assert.True(result);
+            Assert.Null(errorMessage);
+            Assert.Equal(new byte[] { 2, 3, 4 }, payload);
+        }
+
+        [Fact]
+        public void TryGetDesfireWritePayload_FailsWhenRangeExceedsData()
+        {
+            var viewModel = new MifareDesfireSetupViewModel();
+            var data = new byte[] { 1, 2, 3 };
+            var desfireNode = new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(data, 0), null)
+            {
+                SelectedDataIndexStartInBytes = 2,
+                SelectedDataLengthInBytes = 4
+            };
+
+            viewModel.ChildNodeViewModelTemp.Children.Add(desfireNode);
+
+            var result = viewModel.TryGetDesfireWritePayload(out var payload, out var errorMessage);
+
+            Assert.False(result);
+            Assert.NotNull(errorMessage);
+            Assert.Null(payload);
+        }
+
+        [Fact]
+        public void RefreshDesfireDataFromFileBeforeWrite_RoundTripsThroughXmlSerialization()
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                RefreshDesfireDataFromFileBeforeWrite = true,
+                DesfireDataFilePath = @"C:\data\sample.txt"
+            };
+
+            var serializer = new XmlSerializer(typeof(MifareDesfireSetupViewModel));
+            string xml;
+
+            using (var writer = new StringWriter())
+            {
+                serializer.Serialize(writer, viewModel);
+                xml = writer.ToString();
+            }
+
+            MifareDesfireSetupViewModel roundTripped;
+            using (var reader = new StringReader(xml))
+            {
+                roundTripped = (MifareDesfireSetupViewModel)serializer.Deserialize(reader);
+            }
+
+            Assert.True(roundTripped.RefreshDesfireDataFromFileBeforeWrite);
+            Assert.Equal(viewModel.DesfireDataFilePath, roundTripped.DesfireDataFilePath);
+        }
+
+        [Fact]
+        public void BuildReadDataOutputPath_OverwritesWhenEnabled()
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                DesfireReadDataFilePath = @"C:\data\read.txt",
+                OverwriteReadDataFileOnRead = true
+            };
+
+            var result = viewModel.BuildReadDataOutputPath(new DateTime(2024, 1, 2, 3, 4, 5));
+
+            Assert.Equal(@"C:\data\read.txt", result);
+        }
+
+        [Fact]
+        public void BuildReadDataOutputPath_AppendsTimestampWhenNotOverwriting()
+        {
+            var viewModel = new MifareDesfireSetupViewModel
+            {
+                DesfireReadDataFilePath = @"C:\data\read.txt",
+                OverwriteReadDataFileOnRead = false
+            };
+
+            var result = viewModel.BuildReadDataOutputPath(new DateTime(2024, 1, 2, 3, 4, 5));
+
+            Assert.Equal(@"C:\data\read_20240102_030405.txt", result);
         }
 
         [Theory]
