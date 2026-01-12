@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.IO;
 using System.Threading.Tasks;
 using RFiDGear;
 using RFiDGear.Models;
@@ -47,15 +48,16 @@ namespace RFiDGear.Services
                         : new CultureInfo("en-US"));
 
                     var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
+                    var shouldOpenProject = ShouldOpenProject(request, autoLoadLastUsedDB);
 
-                    if (autoLoadLastUsedDB && request.CreateSplashScreen != null && request.AddDialog != null)
+                    if (ShouldShowSplash(request, shouldOpenProject))
                     {
                         request.AddDialog(request.CreateSplashScreen());
                     }
 
-                    if (autoLoadLastUsedDB && request.OpenProjectAsync != null)
+                    if (shouldOpenProject && request.OpenProjectAsync != null)
                     {
-                        await request.OpenProjectAsync(request.ProjectFilePath);
+                        await OpenProjectAsync(request);
                         request.RemoveSplash?.Invoke();
                     }
 
@@ -83,6 +85,39 @@ namespace RFiDGear.Services
             catch (Exception ex)
             {
                 Logger.Error(ex, "Bootstrap failed");
+            }
+        }
+
+        private static bool ShouldOpenProject(ProjectBootstrapRequest request, bool autoLoadLastUsedDB)
+        {
+            return autoLoadLastUsedDB || request.Autorun || !string.IsNullOrWhiteSpace(request.ProjectFilePath);
+        }
+
+        private static bool ShouldShowSplash(ProjectBootstrapRequest request, bool shouldOpenProject)
+        {
+            return shouldOpenProject && request.CreateSplashScreen != null && request.AddDialog != null;
+        }
+
+        private static async Task OpenProjectAsync(ProjectBootstrapRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(request.ProjectFilePath) && !File.Exists(request.ProjectFilePath))
+            {
+                Logger.Warning("Project file not found at path {ProjectFilePath}", request.ProjectFilePath);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(request.ProjectFilePath))
+            {
+                Logger.Warning("Project file path not provided, opening the last used project instead.");
+            }
+
+            try
+            {
+                await request.OpenProjectAsync(request.ProjectFilePath);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to open project file {ProjectFilePath}", request.ProjectFilePath);
             }
         }
     }
