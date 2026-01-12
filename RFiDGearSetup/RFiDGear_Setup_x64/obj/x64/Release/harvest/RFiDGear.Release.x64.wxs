@@ -21,12 +21,6 @@
             <Component Id="cmp6024C8F868A81963E6D004FFC5284599" Directory="INSTALLDIR" Guid="*">
                 <File Id="filF7BA16DCD1C86646A0FD418CC96EBE57" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Elatec.NET.dll" />
             </Component>
-            <Component Id="cmpECDF8B8CE7259B6E2DB07C5A127B4F3E" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil0EAE3F83169F07DC66D612F803FE2697" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Elatec.NET.dll.config" />
-            </Component>
-            <Component Id="cmpC75291E5F33029601AFD4DF110BED17A" Directory="INSTALLDIR" Guid="*">
-                <File Id="filCA747BE4C1FCB36D7015EA9887B68F85" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Elatec.NET.pdb" />
-            </Component>
             <Component Id="cmp84BF1C3F26E20668B023D5F11D4A4D79" Directory="INSTALLDIR" Guid="*">
                 <File Id="fil13CD8F533167FFDC8394AB31D9EBCF5D" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\GemBox.Pdf.dll" />
             </Component>
@@ -4385,9 +4379,6 @@
                 <RegistryValue Root="HKCR" Key="Record\{FCD66AF7-58C9-356B-AEE7-D024E4F87DE0}\3.6.0.0" Name="RuntimeVersion" Value="v4.0.30319" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="Record\{FCD66AF7-58C9-356B-AEE7-D024E4F87DE0}\3.6.0.0" Name="CodeBase" Value="file:///[#filED967ED202B48D908056D64CE19C7BDF]" Type="string" Action="write" />
             </Component>
-            <Component Id="cmp3FF6DCE0D0033820184F84E911819031" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil93C2623A85FD0206E6A65950D378964B" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\LICENSE" />
-            </Component>
             <Component Id="cmp0D9A10D690127C0AC268C669E46E66D0" Directory="INSTALLDIR" Guid="*">
                 <File Id="fil43161AE75FFE9B147B3E96990703538E" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\Microsoft.Bcl.AsyncInterfaces.dll" />
             </Component>
@@ -6110,9 +6101,6 @@
                 <RegistryValue Root="HKCR" Key="Record\{FF8D6D12-04BD-3B38-BE9C-937F4F1DA857}\5.1.1.0" Name="Assembly" Value="Pkcs11Interop, Version=5.1.1.0, Culture=neutral, PublicKeyToken=c10e9c2d8c006d2a" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="Record\{FF8D6D12-04BD-3B38-BE9C-937F4F1DA857}\5.1.1.0" Name="RuntimeVersion" Value="v4.0.30319" Type="string" Action="write" />
                 <RegistryValue Root="HKCR" Key="Record\{FF8D6D12-04BD-3B38-BE9C-937F4F1DA857}\5.1.1.0" Name="CodeBase" Value="file:///[#filE447FF7900BE1E21619B8D443A6FF486]" Type="string" Action="write" />
-            </Component>
-            <Component Id="cmp77B4A071D4D4E81445BE03B0AD534C90" Directory="INSTALLDIR" Guid="*">
-                <File Id="fil4560734A3E7B53FF55D3B92F7AFD23E3" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\README.md" />
             </Component>
             <Component Id="cmp30EA6709C825C194FC16582233F8040F" Directory="INSTALLDIR" Guid="*">
                 <File Id="fil381DA89B5B1BA8C11892547A8CBDA70C" KeyPath="yes" Source="$(var.RFiDGearReleaseDir)\RFiDGear.deps.json" />
