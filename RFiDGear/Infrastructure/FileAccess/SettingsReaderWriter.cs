@@ -114,6 +114,14 @@ namespace RFiDGear.Infrastructure.FileAccess
                 throw new ArgumentException("File path cannot be null or whitespace.", nameof(filePath));
             }
 
+            if (!File.Exists(filePath))
+            {
+                EnsureSettingsDirectoryExists(filePath);
+                DefaultSpecification = new DefaultSpecification(true);
+                SaveSettings(DefaultSpecification, filePath);
+                return DefaultSpecification;
+            }
+
             try
             {
                 var serializer = new XmlSerializer(typeof(DefaultSpecification));
@@ -128,6 +136,17 @@ namespace RFiDGear.Infrastructure.FileAccess
             }
 
             return DefaultSpecification;
+        }
+
+        private static void EnsureSettingsDirectoryExists(string filePath)
+        {
+            var directoryPath = Path.GetDirectoryName(filePath);
+            if (string.IsNullOrWhiteSpace(directoryPath))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(directoryPath);
         }
 
         public Task<DefaultSpecification> ReadSettingsAsync(string filePath)
