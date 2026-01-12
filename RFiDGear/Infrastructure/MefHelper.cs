@@ -22,6 +22,7 @@ using Serilog;
 public sealed class MefHelper : IDisposable
 {
     private const int SolutionRootDepth = 5;
+    private const string ExtensionAssemblySearchPattern = "RFiDGear.Extensions*.dll";
 
     #region Constructor / Destructor
 
@@ -254,13 +255,32 @@ public sealed class MefHelper : IDisposable
     {
         try
         {
-            catalog.Catalogs.Add(new DirectoryCatalog(catalogPath));
+            foreach (var assemblyPath in GetExtensionAssemblyPaths(catalogPath))
+            {
+                catalog.Catalogs.Add(new AssemblyCatalog(assemblyPath));
+            }
         }
         catch (Exception e)
         {
             Log.ForContext<MefHelper>()
                 .Error(e, "Failed to compose extensions from {ExtensionsPath}", catalogPath);
         }
+    }
+
+    /// <summary>
+    /// Returns extension assembly files from a directory that match the extension naming convention.
+    /// </summary>
+    /// <param name="catalogPath">The directory path to scan for extension assemblies.</param>
+    /// <returns>A list of extension assembly file paths.</returns>
+    internal static IReadOnlyList<string> GetExtensionAssemblyPaths(string catalogPath)
+    {
+        if (string.IsNullOrWhiteSpace(catalogPath) || !Directory.Exists(catalogPath))
+        {
+            return Array.Empty<string>();
+        }
+
+        return Directory.EnumerateFiles(catalogPath, ExtensionAssemblySearchPattern, SearchOption.TopDirectoryOnly)
+            .ToList();
     }
 
     #endregion
