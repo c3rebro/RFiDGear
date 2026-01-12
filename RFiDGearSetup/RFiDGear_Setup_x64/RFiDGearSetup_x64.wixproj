@@ -27,10 +27,11 @@
     <RFiDGearReleaseDir Condition=" '$(RFiDGearReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear\bin\x64\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseDir>
     <RFiDGearExePath Condition=" '$(RFiDGearExePath)' == '' ">$(RFiDGearReleaseDir)\RFiDGear.exe</RFiDGearExePath>
     <RFiDGearDllPath Condition=" '$(RFiDGearDllPath)' == '' ">$(RFiDGearReleaseDir)\RFiDGear.dll</RFiDGearDllPath>
+    <RFiDGearExtensionsReleaseDir Condition=" '$(RFiDGearExtensionsReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear.Extensions\VCNEditor\bin\Release\$(RFiDGearTargetFramework)</RFiDGearExtensionsReleaseDir>
     <RFiDGearProjectDir>$(ProjectDir)..\..\RFiDGear\</RFiDGearProjectDir>
     <RFiDGearProjectName>RFiDGear</RFiDGearProjectName>
     <RFiDGearVersion Condition=" '$(RFiDGearVersion)' == '' ">0.0.0.0</RFiDGearVersion>
-    <DefineConstants>$(DefineConstants);RFiDGearReleaseDir=$(RFiDGearReleaseDir);RFiDGear.ProjectDir=$(RFiDGearProjectDir);RFiDGear.ProjectName=$(RFiDGearProjectName)</DefineConstants>
+    <DefineConstants>$(DefineConstants);RFiDGearReleaseDir=$(RFiDGearReleaseDir);RFiDGearExtensionsReleaseDir=$(RFiDGearExtensionsReleaseDir);RFiDGear.ProjectDir=$(RFiDGearProjectDir);RFiDGear.ProjectName=$(RFiDGearProjectName)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="LicenseAgreementDlg_HK.wxs" />
@@ -67,6 +68,7 @@
   <Target Name="ValidateReleaseOutputs" BeforeTargets="HarvestReleaseOutputs">
     <Error Condition="!Exists('$(RFiDGearReleaseDir)')" Text="Release output directory '$(RFiDGearReleaseDir)' not found. Build the RFiDGear project for the x64 Release configuration before packaging." />
     <Error Condition="!Exists('$(RFiDGearExePath)')" Text="RFiDGear.exe not found at '$(RFiDGearExePath)'. Build the RFiDGear project for the x64 Release configuration before packaging." />
+    <Error Condition="!Exists('$(RFiDGearExtensionsReleaseDir)')" Text="Extensions output directory '$(RFiDGearExtensionsReleaseDir)' not found. Build the VCNEditor extensions project before packaging." />
   </Target>
 
   <Target Name="SetRFiDGearVersion" BeforeTargets="BeforeBuild" DependsOnTargets="ValidateReleaseOutputs">
@@ -92,8 +94,10 @@
     </PropertyGroup>
     <MakeDir Directories="$(HarvestOutputDir)" />
     <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.ReleaseFiles.x64" Directory="$(RFiDGearReleaseDir)" DirectoryRefId="INSTALLDIR" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Release.x64.wxs" PreprocessorVariable="var.RFiDGearReleaseDir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressSpecificWarnings="5150;5151" SuppressRootDirectory="true" Condition="Exists('$(RFiDGearReleaseDir)')" />
+    <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.Extensions.ReleaseFiles" Directory="$(RFiDGearExtensionsReleaseDir)" DirectoryRefId="RFiDGearExtensionsFolder" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Extensions.Release.wxs" PreprocessorVariable="var.RFiDGearExtensionsReleaseDir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressSpecificWarnings="5150;5151" SuppressRootDirectory="true" Condition="Exists('$(RFiDGearExtensionsReleaseDir)')" />
     <ItemGroup>
       <Compile Include="$(HarvestOutputDir)RFiDGear.Release.x64.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Release.x64.wxs')" />
+      <Compile Include="$(HarvestOutputDir)RFiDGear.Extensions.Release.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Extensions.Release.wxs')" />
     </ItemGroup>
   </Target>
 </Project>

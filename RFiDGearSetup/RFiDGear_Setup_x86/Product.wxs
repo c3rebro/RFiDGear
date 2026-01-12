@@ -164,30 +164,6 @@
         <!-- All folders from here on are relative to their parent. -->
         <Directory Id="RFiDGearProgramDataFolder" Name="!(loc.ApplicationName)">
           <Directory Id="RFiDGearExtensionsFolder" Name="Extensions">
-            <Directory Id="RFiDGearExtionsVCNEditor" Name="VCNEditor">
-              <Component Id="ByteArrayExtDll" Guid="0907B20F-F549-4005-89A2-645C550BB7E7" DiskId="1">
-                <File Id="ByteArrayExt.dll" Name="ByteArrayExt.dll" Source="..\..\VCNEditor\bin\Release\ByteArray.dll" KeyPath="yes" />
-              </Component>
-              <Component Id="VCNEditorDll" Guid="DF58305F-6D10-49D0-865E-F0DC41224925" DiskId="1">
-                <File Id="VCNEditor.dll" Name="VCNEditor.dll" Source="..\..\VCNEditor\bin\Release\VCNEditor.dll" KeyPath="yes" />
-              </Component>
-              <Component Id="CommunityToolkitMvvmExtDll" Guid="3F4A8963-C15E-449B-B701-CC7A680CAB6E" DiskId="1">
-                <File Id="CommunityToolkitExt.Mvvm.dll" Name="CommunityToolkit.Mvvm.dll" Source="..\..\VCNEditor\bin\Release\CommunityToolkit.Mvvm.dll" KeyPath="yes" />
-              </Component>
-              <Component Id="MVVMDialogsExtDll" Guid="5118101C-03AA-4014-A620-513D2E581042" DiskId="1">
-                <File Id="MVVMDialogsExt.dll" Name="MVVMDialogs.dll" Source="..\..\VCNEditor\bin\Release\MVVMDialogs.dll" KeyPath="yes" />
-              </Component>
-              <Directory Id="de_DE" Name="de-DE">
-                <Component Id="VCNEditorresourcesDll" Guid="7748ED31-8581-46D7-9D72-49631DF34E8C" DiskId="1">
-                  <File Id="VCNEditor.resources.dll" Name="VCNEditor.resources.dll" Source="..\..\VCNEditor\bin\Release\de-DE\VCNEditor.resources.dll" KeyPath="yes" />
-                </Component>
-              </Directory>
-              <Directory Id="en_US" Name="en-US">
-                <Component Id="En_USVCNEditorresourcesDll" Guid="6FE862FD-7B7D-4F77-BC0F-6884B5A68235" DiskId="1">
-                  <File Id="en_US.VCNEditor.resources.dll" Name="VCNEditor.resources.dll" Source="..\..\VCNEditor\bin\Release\en-US\VCNEditor.resources.dll" KeyPath="yes" />
-                </Component>
-              </Directory>
-            </Directory>
           </Directory>
         </Directory>
         <!-- Registry entries -->
@@ -222,14 +198,8 @@
 				<ComponentRef Id="StartMenuShortcuts" />
 			</Feature>
 			
-			<Feature Id="Plugins" Title="!(loc.FeaturePluginsTitle)" Description="!(loc.FeaturePluginsDescription)" Level="1">
-				<!--<ComponentRef Id="RFiDGearProgramDataFolder" />-->
-				<ComponentRef Id="VCNEditorDll" />
-        <ComponentRef Id="ByteArrayExtDll"/>
-        <ComponentRef Id="CommunityToolkitMvvmExtDll" />
-        <ComponentRef Id="MVVMDialogsExtDll" />
-				<ComponentRef Id="En_USVCNEditorresourcesDll" />
-				<ComponentRef Id="VCNEditorresourcesDll" />
+			<Feature Id="Plugins" Title="!(loc.FeaturePluginsTitle)" Description="!(loc.FeaturePluginsDescription)" Level="2" Display="expand">
+				<ComponentGroupRef Id="RFiDGear.Extensions.ReleaseFiles" />
 			</Feature>
 		</Feature>
 		<UI>

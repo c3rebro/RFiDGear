@@ -50,5 +50,15 @@ namespace RFiDGear.Tests
                 Directory.Delete(tempRoot, true);
             }
         }
+
+        [Fact]
+        public void BuildExtensionsPath_UsesProgramDataRootAndExtensionsFolder()
+        {
+            var programDataRoot = Path.Combine(Path.GetTempPath(), "ProgramData");
+
+            var result = MefHelper.BuildExtensionsPath(programDataRoot, "RFiDGear");
+
+            Assert.Equal(Path.Combine(programDataRoot, "RFiDGear", "Extensions"), result);
+        }
     }
 }

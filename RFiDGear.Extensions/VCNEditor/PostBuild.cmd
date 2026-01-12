@@ -7,5 +7,4 @@ REM * In your project, in the Post Build Event, put the following code:
 REM *          "$(ProjectDir)\postbuild.cmd" "$(ProjectName)" "$(TargetPath)"
 REM ************************************************************************
 MkDir "%ProgramData%\RFiDGear\Extensions"
-MkDir "%ProgramData%\RFiDGear\Extensions\%1"
-COPY %2 %ProgramData%\RFiDGear\Extensions\%1 /y
+COPY "%2" "%ProgramData%\RFiDGear\Extensions" /y

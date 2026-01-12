@@ -31,43 +31,12 @@ public sealed class MefHelper : IDisposable
     /// <remarks></remarks>
     private MefHelper()
     {
+        var programDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+        var assembly = Assembly.GetEntryAssembly();
+        var applicationName = assembly?.GetName().Name;
 
-        string sPathInitial = string.Empty;
-
-        sPathInitial = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-
-        Assembly ass = Assembly.GetEntryAssembly();
-
-        _ExtensionsPath = Path.Combine(sPathInitial, ass.GetName().Name);
-
-        try
-        {
-            if (Directory.Exists(_ExtensionsPath) == false)
-            {
-                Directory.CreateDirectory(_ExtensionsPath);
-            }
-        }
-        catch (Exception e)
-        {
-            Log.ForContext<MefHelper>()
-                .Error(e, "Failed to create initial extensions directory at {ExtensionsPath}", _ExtensionsPath);
-        }
-
-        _ExtensionsPath = Path.Combine(_ExtensionsPath, "Extensions");
-
-        try
-        {
-            if (Directory.Exists(_ExtensionsPath) == false)
-            {
-                Directory.CreateDirectory(_ExtensionsPath);
-            }
-        }
-        catch (Exception e)
-        {
-            Log.ForContext<MefHelper>()
-                .Error(e, "Failed to create extensions directory at {ExtensionsPath}", _ExtensionsPath);
-        }
-
+        _ExtensionsPath = BuildExtensionsPath(programDataPath, applicationName);
+        EnsureExtensionsDirectoryExists(_ExtensionsPath);
     }
 
     #region IDisposable Members
@@ -231,6 +200,22 @@ public sealed class MefHelper : IDisposable
         return null;
     }
 
+    /// <summary>
+    /// Builds the default extensions directory path for the application.
+    /// </summary>
+    /// <param name="programDataPath">The ProgramData path where shared data is stored.</param>
+    /// <param name="applicationName">The application name used for the extensions folder.</param>
+    /// <returns>The full path to the extensions folder.</returns>
+    internal static string BuildExtensionsPath(string programDataPath, string applicationName)
+    {
+        if (string.IsNullOrWhiteSpace(programDataPath) || string.IsNullOrWhiteSpace(applicationName))
+        {
+            return string.Empty;
+        }
+
+        return Path.Combine(programDataPath, applicationName, "Extensions");
+    }
+
     private static string GetSolutionRoot(string baseDirectory, int depth)
     {
         var current = new DirectoryInfo(baseDirectory);
@@ -245,6 +230,24 @@ public sealed class MefHelper : IDisposable
         }
 
         return current?.FullName;
+    }
+
+    private static void EnsureExtensionsDirectoryExists(string extensionsPath)
+    {
+        if (string.IsNullOrWhiteSpace(extensionsPath))
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(extensionsPath);
+        }
+        catch (Exception e)
+        {
+            Log.ForContext<MefHelper>()
+                .Error(e, "Failed to create extensions directory at {ExtensionsPath}", extensionsPath);
+        }
     }
 
     private static void TryAddDirectoryCatalog(AggregateCatalog catalog, string catalogPath)
