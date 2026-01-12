@@ -197,6 +197,46 @@ namespace RFiDGear.Tests
             Assert.Equal(expected, viewModel.AppNumberCurrentAsInt);
         }
 
+        [Fact]
+        public void TryGetDesfireWritePayload_ReturnsSelectedSlice()
+        {
+            var viewModel = new MifareDesfireSetupViewModel();
+            var data = new byte[] { 1, 2, 3, 4, 5 };
+            var desfireNode = new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(data, 0), null)
+            {
+                SelectedDataIndexStartInBytes = 1,
+                SelectedDataLengthInBytes = 3
+            };
+
+            viewModel.ChildNodeViewModelTemp.Children.Add(desfireNode);
+
+            var result = viewModel.TryGetDesfireWritePayload(out var payload, out var errorMessage);
+
+            Assert.True(result);
+            Assert.Null(errorMessage);
+            Assert.Equal(new byte[] { 2, 3, 4 }, payload);
+        }
+
+        [Fact]
+        public void TryGetDesfireWritePayload_FailsWhenRangeExceedsData()
+        {
+            var viewModel = new MifareDesfireSetupViewModel();
+            var data = new byte[] { 1, 2, 3 };
+            var desfireNode = new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(data, 0), null)
+            {
+                SelectedDataIndexStartInBytes = 2,
+                SelectedDataLengthInBytes = 4
+            };
+
+            viewModel.ChildNodeViewModelTemp.Children.Add(desfireNode);
+
+            var result = viewModel.TryGetDesfireWritePayload(out var payload, out var errorMessage);
+
+            Assert.False(result);
+            Assert.NotNull(errorMessage);
+            Assert.Null(payload);
+        }
+
         [Theory]
         [InlineData("0x0A", "0A")]
         [InlineData("10", "0A")]

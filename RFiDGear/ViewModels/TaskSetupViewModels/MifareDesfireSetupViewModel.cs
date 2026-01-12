@@ -43,6 +43,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
         private bool hasFinalizedTask;
+        private string desfireDataFilePath;
+        private bool refreshDesfireDataFromFileBeforeWrite;
 
         private protected SettingsReaderWriter settings = new SettingsReaderWriter();
 
@@ -1955,6 +1957,32 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public RFiDChipGrandChildLayerViewModel GrandChildNodeViewModel => ChildNodeViewModelTemp.Children.Count > 0 ? ChildNodeViewModelTemp.Children.Single(x => x.DesfireFile != null) : null;
 
         /// <summary>
+        /// Stores the most recently loaded DESFire data file path for optional refresh operations.
+        /// </summary>
+        public string DesfireDataFilePath
+        {
+            get => desfireDataFilePath;
+            set
+            {
+                desfireDataFilePath = value;
+                OnPropertyChanged(nameof(DesfireDataFilePath));
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the DESFire data file should be reloaded before executing a write.
+        /// </summary>
+        public bool RefreshDesfireDataFromFileBeforeWrite
+        {
+            get => refreshDesfireDataFromFileBeforeWrite;
+            set
+            {
+                refreshDesfireDataFromFileBeforeWrite = value;
+                OnPropertyChanged(nameof(RefreshDesfireDataFromFileBeforeWrite));
+            }
+        }
+
+        /// <summary>
         ///
         /// </summary>
         public string DesfireReadKeyCurrent
@@ -2444,7 +2472,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        /// 
+        /// Opens a data file and loads its hex payload into the in-memory DESFire buffer.
         /// </summary>
         public ICommand GetDataFromFileCommand => new RelayCommand(OnNewGetDataFromFileCommand);
         private void OnNewGetDataFromFileCommand()
@@ -2459,15 +2487,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 try
                 {
-
-                    var data = File.ReadAllText(dlg.FileName);
-                    int err;
-
-
-                    childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel((CustomConverter.GetBytes(data, out err)), 0);
-
-                    OnPropertyChanged(nameof(ChildNodeViewModelTemp));
-                    OnPropertyChanged(nameof(ChildNodeViewModelFromChip));
+                    if (TryLoadDesfireDataFromFile(dlg.FileName, out var bytes, out var errorMessage))
+                    {
+                        DesfireDataFilePath = dlg.FileName;
+                        ApplyDesfireFileData(bytes);
+                        StatusText += string.Format("{0}: Loaded {1} bytes from {2}\n", DateTime.Now, bytes.Length, Path.GetFileName(dlg.FileName));
+                    }
+                    else
+                    {
+                        StatusText += string.Format("{0}: Unable to load data file: {1}\n", DateTime.Now, errorMessage);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -2477,12 +2506,31 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        /// 
+        /// Writes the current DESFire buffer contents to the configured file, optionally reloading from disk.
         /// </summary>
         public IAsyncRelayCommand WriteDataCommand => new AsyncRelayCommand(OnNewWriteDataCommand);
         private async Task OnNewWriteDataCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
+
+            if (RefreshDesfireDataFromFileBeforeWrite)
+            {
+                if (string.IsNullOrWhiteSpace(DesfireDataFilePath))
+                {
+                    StatusText += string.Format("{0}: Data file refresh requested but no file has been selected.\n", DateTime.Now);
+                    CurrentTaskErrorLevel = ERROR.Unknown;
+                    return;
+                }
+
+                if (!TryLoadDesfireDataFromFile(DesfireDataFilePath, out var bytes, out var errorMessage))
+                {
+                    StatusText += string.Format("{0}: Unable to reload data file: {1}\n", DateTime.Now, errorMessage);
+                    CurrentTaskErrorLevel = ERROR.Unknown;
+                    return;
+                }
+
+                ApplyDesfireFileData(bytes);
+            }
 
             using (var device = ReaderDevice.Instance)
             {
@@ -2504,8 +2552,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         {
                             StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
+                            if (!TryGetDesfireWritePayload(out var payload, out var errorMessage))
+                            {
+                                await SetErrorStatusAsync(ERROR.Unknown, "{0}: Unable to prepare DESFire data payload: {1}\n", DateTime.Now, errorMessage);
+                                return;
+                            }
+
                             result = await device.WriteMiFareDESFireChipFile(DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType, selectedDesfireWriteKeyNumberAsInt,
-                                                                   EncryptionMode.CM_ENCRYPT, FileNumberCurrentAsInt, AppNumberCurrentAsInt, childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile.Data);
+                                                                   EncryptionMode.CM_ENCRYPT, FileNumberCurrentAsInt, AppNumberCurrentAsInt, payload);
 
                             if (result == ERROR.NoError)
                             {
@@ -2537,6 +2591,100 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             await FinalizeTaskAsync();
             return;
+        }
+
+        private bool TryLoadDesfireDataFromFile(string filePath, out byte[] data, out string errorMessage)
+        {
+            data = null;
+            errorMessage = null;
+
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                errorMessage = "File path is empty.";
+                return false;
+            }
+
+            if (!File.Exists(filePath))
+            {
+                errorMessage = "File does not exist.";
+                return false;
+            }
+
+            var fileContents = File.ReadAllText(filePath);
+            var discarded = 0;
+            var parsedBytes = CustomConverter.GetBytes(fileContents, out discarded);
+
+            if (parsedBytes.Length == 0)
+            {
+                errorMessage = "File does not contain any valid hex data.";
+                return false;
+            }
+
+            data = parsedBytes;
+            return true;
+        }
+
+        private void ApplyDesfireFileData(byte[] data)
+        {
+            var targetNode = childNodeViewModelTemp.Children.SingleOrDefault(x => x.DesfireFile != null);
+
+            if (targetNode == null)
+            {
+                targetNode = new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(), null);
+                childNodeViewModelTemp.Children.Add(targetNode);
+            }
+
+            targetNode.DesfireFile = new MifareDesfireFileModel(data, (byte)FileNumberCurrentAsInt);
+            targetNode.SelectedDataIndexStartInBytes = 0;
+            targetNode.SelectedDataLengthInBytes = data.Length;
+
+            OnPropertyChanged(nameof(ChildNodeViewModelTemp));
+            OnPropertyChanged(nameof(ChildNodeViewModelFromChip));
+        }
+
+        /// <summary>
+        /// Attempts to resolve the selected DESFire data slice for writing based on offset and length.
+        /// </summary>
+        /// <param name="payload">The resolved payload to write.</param>
+        /// <param name="errorMessage">Error details when resolution fails.</param>
+        /// <returns>True when a valid payload is produced; otherwise false.</returns>
+        internal bool TryGetDesfireWritePayload(out byte[] payload, out string errorMessage)
+        {
+            payload = null;
+            errorMessage = null;
+
+            var targetNode = childNodeViewModelTemp?.Children?.SingleOrDefault(x => x.DesfireFile != null);
+            if (targetNode?.DesfireFile?.Data == null)
+            {
+                errorMessage = "No DESFire data has been loaded.";
+                return false;
+            }
+
+            var data = targetNode.DesfireFile.Data;
+            var startIndex = targetNode.SelectedDataIndexStartInBytes;
+            var length = targetNode.SelectedDataLengthInBytes;
+
+            if (startIndex < 0)
+            {
+                errorMessage = "Start index must be zero or positive.";
+                return false;
+            }
+
+            if (length <= 0)
+            {
+                errorMessage = "Length must be greater than zero.";
+                return false;
+            }
+
+            if (startIndex + length > data.Length)
+            {
+                errorMessage = "Selected range exceeds available data length.";
+                return false;
+            }
+
+            payload = new byte[length];
+            Buffer.BlockCopy(data, startIndex, payload, 0, length);
+            return true;
         }
 
         /// <summary>

@@ -590,13 +590,21 @@
                     <Button
                         Grid.Row="6"
                         Grid.Column="0"
-                        Grid.ColumnSpan="5"
+                        Grid.ColumnSpan="4"
                         Height="26"
                         Margin="8,0,7,7"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Command="{Binding GetDataFromFileCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileSetupOpenDataFile'}" />
+                    <CheckBox
+                        Grid.Row="6"
+                        Grid.Column="4"
+                        Margin="8,0,8,7"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='checkBoxContentMifareDesfireFileSetupRefreshDataFromFile'}"
+                        IsChecked="{Binding RefreshDesfireDataFromFileBeforeWrite, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
