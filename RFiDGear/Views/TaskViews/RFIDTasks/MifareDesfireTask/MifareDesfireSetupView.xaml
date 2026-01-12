@@ -294,7 +294,7 @@
                             Margin="0,9,0,7"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch">
-                            <Frame Source="{Binding SelectedPlugin.Metadata.Uri, UpdateSourceTrigger=PropertyChanged}" />
+                            <Frame NavigationUIVisibility="Hidden" Source="{Binding SelectedPlugin.Metadata.Uri, UpdateSourceTrigger=PropertyChanged}" />
                         </Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto" />
