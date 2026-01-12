@@ -856,6 +856,9 @@ Wird benötigt von:
   <data name="buttonContentMifareDesfireFileSetupOpenDataFile" xml:space="preserve">
     <value>Datendatei Öffnen...</value>
   </data>
+  <data name="checkBoxContentMifareDesfireFileSetupRefreshDataFromFile" xml:space="preserve">
+    <value>Vor Schreiben neu laden</value>
+  </data>
   <data name="buttonContentMifareDesfireFileSetupReadData" xml:space="preserve">
     <value>Datei lesen</value>
   </data>
