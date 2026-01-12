@@ -856,6 +856,12 @@ Wird benötigt von:
   <data name="buttonContentMifareDesfireFileSetupOpenDataFile" xml:space="preserve">
     <value>Datendatei Öffnen...</value>
   </data>
+  <data name="buttonContentMifareDesfireFileSetupSaveReadData" xml:space="preserve">
+    <value>Lese-Daten speichern...</value>
+  </data>
+  <data name="checkBoxContentMifareDesfireFileSetupOverwriteOnRead" xml:space="preserve">
+    <value>Beim Lesen überschreiben</value>
+  </data>
   <data name="checkBoxContentMifareDesfireFileSetupRefreshDataFromFile" xml:space="preserve">
     <value>Vor Schreiben neu laden</value>
   </data>
@@ -1483,6 +1489,9 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="windowCaptionSaveReport" xml:space="preserve">
     <value>PDF Bericht Speichern unter...</value>
+  </data>
+  <data name="windowCaptionSaveDesfireReadData" xml:space="preserve">
+    <value>DESFire-Lesedaten speichern als...</value>
   </data>
   <data name="windowCaptionOpenReport" xml:space="preserve">
     <value>PDF-Vorlage auswählen...</value>

@@ -381,28 +381,36 @@
                     Margin="0,0,0,0"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch">
-                    <Button
+                    <Grid
                         Grid.Row="7"
                         Grid.Column="0"
                         Grid.ColumnSpan="5"
                         Margin="8,0,7,7"
-                        Padding="5,2"
-                        Height="26"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Bottom"
-                        Command="{Binding WriteDataCommand}"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileSetupWriteData'}" />
-                    <Button
-                        Height="26"
-                        Grid.Row="8"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="5"
-                        Padding="5,2"
-                        Margin="8,0,7,7"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Bottom"
-                        Command="{Binding ReadDataCommand}"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileSetupReadData'}" />
+                        VerticalAlignment="Bottom">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button
+                            Grid.Column="0"
+                            Height="26"
+                            Margin="0,0,4,0"
+                            Padding="5,2"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Bottom"
+                            Command="{Binding WriteDataCommand}"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileSetupWriteData'}" />
+                        <Button
+                            Grid.Column="1"
+                            Height="26"
+                            Margin="4,0,0,0"
+                            Padding="5,2"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Bottom"
+                            Command="{Binding ReadDataCommand}"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileSetupReadData'}" />
+                    </Grid>
                     <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
@@ -595,10 +603,28 @@
                         Margin="8,0,7,7"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
+                        Command="{Binding SelectReadDataFileCommand}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileSetupSaveReadData'}" />
+                    <CheckBox
+                        Grid.Row="6"
+                        Grid.Column="4"
+                        Margin="8,0,8,7"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='checkBoxContentMifareDesfireFileSetupOverwriteOnRead'}"
+                        IsChecked="{Binding OverwriteReadDataFileOnRead, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                    <Button
+                        Grid.Row="7"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="4"
+                        Height="26"
+                        Margin="8,0,7,7"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
                         Command="{Binding GetDataFromFileCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileSetupOpenDataFile'}" />
                     <CheckBox
-                        Grid.Row="6"
+                        Grid.Row="7"
                         Grid.Column="4"
                         Margin="8,0,8,7"
                         HorizontalAlignment="Right"

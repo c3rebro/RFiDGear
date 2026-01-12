@@ -45,6 +45,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private bool hasFinalizedTask;
         private string desfireDataFilePath;
         private bool refreshDesfireDataFromFileBeforeWrite;
+        private string desfireReadDataFilePath;
+        private bool overwriteReadDataFileOnRead;
 
         private protected SettingsReaderWriter settings = new SettingsReaderWriter();
 
@@ -1983,6 +1985,32 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
+        /// Stores the target file path used to save read DESFire data.
+        /// </summary>
+        public string DesfireReadDataFilePath
+        {
+            get => desfireReadDataFilePath;
+            set
+            {
+                desfireReadDataFilePath = value;
+                OnPropertyChanged(nameof(DesfireReadDataFilePath));
+            }
+        }
+
+        /// <summary>
+        /// Determines whether read data should overwrite the selected file on each read.
+        /// </summary>
+        public bool OverwriteReadDataFileOnRead
+        {
+            get => overwriteReadDataFileOnRead;
+            set
+            {
+                overwriteReadDataFileOnRead = value;
+                OnPropertyChanged(nameof(OverwriteReadDataFileOnRead));
+            }
+        }
+
+        /// <summary>
         ///
         /// </summary>
         public string DesfireReadKeyCurrent
@@ -2443,6 +2471,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                                 OnPropertyChanged(nameof(ChildNodeViewModelTemp));
                                 OnPropertyChanged(nameof(ChildNodeViewModelFromChip));
+                                SaveReadDataToFile(device.MifareDESFireData);
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
                             }
@@ -2502,6 +2531,25 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 {
                     eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Selects the target file to write DESFire read data to.
+        /// </summary>
+        public ICommand SelectReadDataFileCommand => new RelayCommand(OnNewSelectReadDataFileCommand);
+        private void OnNewSelectReadDataFileCommand()
+        {
+            var dlg = new SaveFileDialogViewModel
+            {
+                Title = ResourceLoader.GetResource("windowCaptionSaveDesfireReadData"),
+                Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
+                RestoreDirectory = true
+            };
+
+            if (dlg.Show(this.Dialogs) && !string.IsNullOrWhiteSpace(dlg.FileName))
+            {
+                DesfireReadDataFilePath = dlg.FileName;
             }
         }
 
@@ -2685,6 +2733,69 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             payload = new byte[length];
             Buffer.BlockCopy(data, startIndex, payload, 0, length);
             return true;
+        }
+
+        /// <summary>
+        /// Builds the output path for read data based on overwrite settings.
+        /// </summary>
+        /// <param name="timestamp">Timestamp used to suffix the file name when not overwriting.</param>
+        /// <returns>The output path, or null when no target path is configured.</returns>
+        internal string BuildReadDataOutputPath(DateTime timestamp)
+        {
+            if (string.IsNullOrWhiteSpace(DesfireReadDataFilePath))
+            {
+                return null;
+            }
+
+            if (OverwriteReadDataFileOnRead)
+            {
+                return DesfireReadDataFilePath;
+            }
+
+            var directory = Path.GetDirectoryName(DesfireReadDataFilePath);
+            var baseName = Path.GetFileNameWithoutExtension(DesfireReadDataFilePath);
+            var extension = Path.GetExtension(DesfireReadDataFilePath);
+            var stamp = timestamp.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+            var fileName = string.Format("{0}_{1}{2}", baseName, stamp, extension);
+
+            return string.IsNullOrWhiteSpace(directory)
+                ? fileName
+                : Path.Combine(directory, fileName);
+        }
+
+        private void SaveReadDataToFile(byte[] data)
+        {
+            if (data == null || data.Length == 0)
+            {
+                StatusText += string.Format("{0}: No data available to save.\n", DateTime.Now);
+                return;
+            }
+
+            var outputPath = BuildReadDataOutputPath(DateTime.Now);
+            if (string.IsNullOrWhiteSpace(outputPath))
+            {
+                StatusText += string.Format("{0}: Read data file path is not configured.\n", DateTime.Now);
+                return;
+            }
+
+            var directory = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+            {
+                StatusText += string.Format("{0}: Target directory does not exist: {1}\n", DateTime.Now, directory);
+                return;
+            }
+
+            try
+            {
+                var hexPayload = CustomConverter.HexToString(data);
+                File.WriteAllText(outputPath, hexPayload);
+                StatusText += string.Format("{0}: Saved read data to {1}\n", DateTime.Now, outputPath);
+            }
+            catch (Exception e)
+            {
+                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                StatusText += string.Format("{0}: Unable to save read data: {1}\n", DateTime.Now, e.Message);
+            }
         }
 
         /// <summary>
