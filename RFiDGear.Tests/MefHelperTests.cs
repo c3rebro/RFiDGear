@@ -60,5 +60,32 @@ namespace RFiDGear.Tests
 
             Assert.Equal(Path.Combine(programDataRoot, "RFiDGear", "Extensions"), result);
         }
+
+        [Fact]
+        public void GetExtensionAssemblyPaths_ReturnsOnlyExtensionAssemblies()
+        {
+            var tempRoot = Directory.CreateTempSubdirectory("RFiDGearExtScan").FullName;
+
+            try
+            {
+                var extensionPath = Path.Combine(tempRoot, "RFiDGear.Extensions.Sample.dll");
+                var appPath = Path.Combine(tempRoot, "RFiDGear.dll");
+                var otherPath = Path.Combine(tempRoot, "SomeOther.dll");
+
+                File.WriteAllText(extensionPath, string.Empty);
+                File.WriteAllText(appPath, string.Empty);
+                File.WriteAllText(otherPath, string.Empty);
+
+                var results = MefHelper.GetExtensionAssemblyPaths(tempRoot);
+
+                Assert.Contains(extensionPath, results, StringComparer.OrdinalIgnoreCase);
+                Assert.DoesNotContain(appPath, results, StringComparer.OrdinalIgnoreCase);
+                Assert.DoesNotContain(otherPath, results, StringComparer.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                Directory.Delete(tempRoot, true);
+            }
+        }
     }
 }
