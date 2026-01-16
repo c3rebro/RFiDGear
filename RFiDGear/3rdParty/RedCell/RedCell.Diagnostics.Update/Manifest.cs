@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using Serilog;
 
 namespace RedCell.Diagnostics.Update
 {
@@ -11,6 +12,7 @@ namespace RedCell.Diagnostics.Update
     {
         #region Fields
 
+        private static readonly ILogger Logger = Serilog.Log.ForContext<Manifest>();
         private string _data;
 
         #endregion Fields
@@ -102,13 +104,13 @@ namespace RedCell.Diagnostics.Update
 
                 if (xml.Root == null)
                 {
-                    Log.Write("Root XML element is missing, stopping.");
+                    Logger.Warning("Root XML element is missing, stopping.");
                     return;
                 }
 
                 if (xml.Root.Name.LocalName != "Manifest")
                 {
-                    Log.Write("Root XML element '{0}' is not recognized, stopping.", xml.Root.Name);
+                    Logger.Warning("Root XML element '{RootName}' is not recognized, stopping.", xml.Root.Name);
                     return;
                 }
 
@@ -118,7 +120,7 @@ namespace RedCell.Diagnostics.Update
 
                 if (!Version.TryParse(xml.Root.Attribute("version")?.Value, out var manifestVersion))
                 {
-                    Log.Write("Manifest version could not be parsed, stopping.");
+                    Logger.Warning("Manifest version could not be parsed, stopping.");
                     return;
                 }
 
@@ -127,7 +129,7 @@ namespace RedCell.Diagnostics.Update
                 if (!TryReadElementValue(root, ns, "CheckInterval", out var checkIntervalValue)
                     || !int.TryParse(checkIntervalValue, out var checkInterval))
                 {
-                    Log.Write("CheckInterval could not be parsed, stopping.");
+                    Logger.Warning("CheckInterval could not be parsed, stopping.");
                     return;
                 }
 
@@ -136,14 +138,14 @@ namespace RedCell.Diagnostics.Update
                     || !TryReadElementValue(root, ns, "BaseUri", out var baseUri)
                     || !TryReadElementValue(root, ns, "VersionInfoText", out var versionInfoText))
                 {
-                    Log.Write("Manifest elements are missing, stopping.");
+                    Logger.Warning("Manifest elements are missing, stopping.");
                     return;
                 }
 
                 var payloads = FindElements(root, ns, "Payload").Select(x => x.Value).ToArray();
                 if (payloads.Length == 0)
                 {
-                    Log.Write("Manifest payloads are missing, stopping.");
+                    Logger.Warning("Manifest payloads are missing, stopping.");
                     return;
                 }
 
@@ -156,7 +158,7 @@ namespace RedCell.Diagnostics.Update
             }
             catch (Exception ex)
             {
-                Log.Write("Error: {0}", ex.Message);
+                Logger.Error(ex, "Error parsing manifest.");
                 return;
             }
         }
