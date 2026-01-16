@@ -99,6 +99,12 @@ namespace RedCell.Diagnostics.Update
 
                 var xml = XDocument.Parse(txt);
 
+                if (xml.Root == null)
+                {
+                    Log.Write("Root XML element is missing, stopping.");
+                    return;
+                }
+
                 if (xml.Root.Name.LocalName != "Manifest")
                 {
                     Log.Write("Root XML element '{0}' is not recognized, stopping.", xml.Root.Name);
@@ -106,6 +112,9 @@ namespace RedCell.Diagnostics.Update
                 }
 
                 // Set properties.
+                var root = xml.Root;
+                var ns = root.Name.Namespace;
+
                 if (!Version.TryParse(xml.Root.Attribute("version")?.Value, out var manifestVersion))
                 {
                     Log.Write("Manifest version could not be parsed, stopping.");
@@ -113,18 +122,66 @@ namespace RedCell.Diagnostics.Update
                 }
 
                 Version = manifestVersion;
-                CheckInterval = int.Parse(xml.Root.Element("CheckInterval").Value);
-                SecurityToken = xml.Root.Element("SecurityToken").Value;
-                RemoteConfigUri = xml.Root.Element("RemoteConfigUri").Value;
-                BaseUri = xml.Root.Element("BaseUri").Value;
-                Payloads = xml.Root.Elements("Payload").Select(x => x.Value).ToArray();
-                VersionInfoText = xml.Root.Element("VersionInfoText").Value;
+
+                if (!TryReadElementValue(root, ns, "CheckInterval", out var checkIntervalValue)
+                    || !int.TryParse(checkIntervalValue, out var checkInterval))
+                {
+                    Log.Write("CheckInterval could not be parsed, stopping.");
+                    return;
+                }
+
+                if (!TryReadElementValue(root, ns, "SecurityToken", out var securityToken)
+                    || !TryReadElementValue(root, ns, "RemoteConfigUri", out var remoteConfigUri)
+                    || !TryReadElementValue(root, ns, "BaseUri", out var baseUri)
+                    || !TryReadElementValue(root, ns, "VersionInfoText", out var versionInfoText))
+                {
+                    Log.Write("Manifest elements are missing, stopping.");
+                    return;
+                }
+
+                var payloads = FindElements(root, ns, "Payload").Select(x => x.Value).ToArray();
+                if (payloads.Length == 0)
+                {
+                    Log.Write("Manifest payloads are missing, stopping.");
+                    return;
+                }
+
+                CheckInterval = checkInterval;
+                SecurityToken = securityToken;
+                RemoteConfigUri = remoteConfigUri;
+                BaseUri = baseUri;
+                Payloads = payloads;
+                VersionInfoText = versionInfoText;
             }
             catch (Exception ex)
             {
                 Log.Write("Error: {0}", ex.Message);
                 return;
             }
+        }
+
+        private static bool TryReadElementValue(XElement root, XNamespace ns, string name, out string value)
+        {
+            var element = FindElement(root, ns, name);
+            if (element == null)
+            {
+                value = string.Empty;
+                return false;
+            }
+
+            value = element.Value;
+            return true;
+        }
+
+        private static XElement? FindElement(XElement root, XNamespace ns, string name)
+        {
+            return root.Element(ns + name) ?? root.Element(name);
+        }
+
+        private static IEnumerable<XElement> FindElements(XElement root, XNamespace ns, string name)
+        {
+            var namespaced = root.Elements(ns + name).ToList();
+            return namespaced.Count > 0 ? namespaced : root.Elements(name);
         }
 
         /// <summary>
