@@ -14,13 +14,19 @@ namespace RFiDGear.Services
         {
             var result = new StartupArgumentResult();
 
-            if (args == null || args.Length <= 1)
+            if (args == null || args.Length == 0)
             {
                 return result;
             }
 
             foreach (var arg in args)
             {
+                if (TryGetProjectFilePathFromArg(arg, out var projectFilePath))
+                {
+                    result.ProjectFilePath = projectFilePath;
+                    continue;
+                }
+
                 var splitArg = arg.Split('=');
                 if (splitArg.Length < 2)
                 {
@@ -29,15 +35,18 @@ namespace RFiDGear.Services
 
                 var key = splitArg[0];
                 var value = string.Join("=", splitArg.Skip(1));
+                var normalizedKey = key.ToUpperInvariant();
 
-                switch (key)
+                switch (normalizedKey)
                 {
                     case "REPORTTARGETPATH":
+                    case "REPORTOUTPUTPATH":
                         result.Variables[key] = value;
                         result.ReportOutputPath = NormalizeReportTargetPath(value);
                         break;
 
                     case "REPORTTEMPLATEFILE":
+                    case "REPORTTEMPLATEPATH":
                         result.Variables[key] = value;
                         if (File.Exists(value))
                         {
@@ -70,6 +79,29 @@ namespace RFiDGear.Services
             }
 
             return result;
+        }
+
+        private static bool TryGetProjectFilePathFromArg(string arg, out string projectFilePath)
+        {
+            projectFilePath = null;
+
+            if (string.IsNullOrWhiteSpace(arg))
+            {
+                return false;
+            }
+
+            if (!arg.EndsWith(".rfprj", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!File.Exists(arg))
+            {
+                return false;
+            }
+
+            projectFilePath = new FileInfo(arg).FullName;
+            return true;
         }
 
         private static string NormalizeReportTargetPath(string path)

@@ -57,5 +57,59 @@ namespace RFiDGear.Tests
                 File.Delete(tempProjectFile);
             }
         }
+
+        [Fact]
+        public void RawProjectFileArgument_LoadsProjectPath()
+        {
+            var tempProjectFile = Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName()}.rfprj");
+
+            try
+            {
+                File.WriteAllText(tempProjectFile, "test");
+
+                var result = new StartupArgumentProcessor().Process(new[]
+                {
+                    "RFiDGear.exe",
+                    tempProjectFile
+                });
+
+                Assert.Equal(new FileInfo(tempProjectFile).FullName, result.ProjectFilePath);
+            }
+            finally
+            {
+                File.Delete(tempProjectFile);
+            }
+        }
+
+        [Fact]
+        public void LegacyReportArguments_MapToReportFields()
+        {
+            var tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            Directory.CreateDirectory(tempDirectory);
+
+            var reportPattern = Path.Combine(tempDirectory, "Report-??.pdf");
+            var existingReport = Path.Combine(tempDirectory, "Report-01.pdf");
+            File.WriteAllText(existingReport, "report");
+
+            var templateFile = Path.Combine(tempDirectory, "Template.pdf");
+            File.WriteAllText(templateFile, "template");
+
+            try
+            {
+                var result = new StartupArgumentProcessor().Process(new[]
+                {
+                    "RFiDGear.exe",
+                    $"REPORTOUTPUTPATH={reportPattern}",
+                    $"REPORTTEMPLATEPATH={templateFile}"
+                });
+
+                Assert.Equal(Path.Combine(tempDirectory, "Report-02.pdf"), result.ReportOutputPath);
+                Assert.Equal(templateFile, result.ReportTemplateFile);
+            }
+            finally
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
     }
 }
