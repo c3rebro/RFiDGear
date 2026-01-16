@@ -37,8 +37,8 @@
     <GenerateManifests>false</GenerateManifests>
     <GenerateClickOnceManifests>false</GenerateClickOnceManifests>    
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
-    <FileVersion>2.0.0</FileVersion>
-    <AssemblyVersion>2.0.0</AssemblyVersion>
+    <FileVersion>2.0.1</FileVersion>
+    <AssemblyVersion>2.0.1</AssemblyVersion>
     <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">

@@ -88,7 +88,7 @@ goes here!
   <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>
   <BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>
   <Payload>update.zip</Payload>
-  <VersionInfoText>UI & dialogs & settings (v2) 100% "ready" / 'ok'</VersionInfoText>
+  <VersionInfoText>UI & dialogs & settings (v2) 100% 'ready' / 'ok'</VersionInfoText>
 </Manifest>";
 
             var manifest = new Manifest(xml);
