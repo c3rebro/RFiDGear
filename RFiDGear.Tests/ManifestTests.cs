@@ -79,6 +79,24 @@ goes here!
         }
 
         [Fact]
+        public void Load_WhenManifestHasUnescapedAmpersandsAndPrintableCharacters_ParsesValues()
+        {
+            var xml = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<Manifest version=""2.0.0"">
+  <CheckInterval>900</CheckInterval>
+  <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
+  <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>
+  <BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>
+  <Payload>update.zip</Payload>
+  <VersionInfoText>UI & dialogs & settings (v2) 100% "ready" / 'ok'</VersionInfoText>
+</Manifest>";
+
+            var manifest = new Manifest(xml);
+
+            Assert.Equal("UI & dialogs & settings (v2) 100% \"ready\" / 'ok'", manifest.VersionInfoText);
+        }
+
+        [Fact]
         public void Load_WhenManifestHasInvalidXmlCharacters_StripsInvalidCharacters()
         {
             var xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
@@ -94,6 +112,24 @@ goes here!
             var manifest = new Manifest(xml);
 
             Assert.Equal("Updatenotes", manifest.VersionInfoText);
+        }
+
+        [Fact]
+        public void Load_WhenManifestHasMultipleInvalidControlCharacters_StripsInvalidCharacters()
+        {
+            var xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                + "<Manifest version=\"2.0.0\">"
+                + "<CheckInterval>900</CheckInterval>"
+                + "<RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>"
+                + "<SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>"
+                + "<BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>"
+                + "<Payload>update.zip</Payload>"
+                + "<VersionInfoText>UI" + '\u0001' + '\u0008' + " notes" + '\u001F' + " here</VersionInfoText>"
+                + "</Manifest>";
+
+            var manifest = new Manifest(xml);
+
+            Assert.Equal("UI notes here", manifest.VersionInfoText);
         }
     }
 }
