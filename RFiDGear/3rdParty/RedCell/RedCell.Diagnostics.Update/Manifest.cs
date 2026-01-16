@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -97,7 +98,7 @@ namespace RedCell.Diagnostics.Update
                     txt = new string(data.ToCharArray());
                 }
 
-                var xml = XDocument.Parse(txt);
+                var xml = XDocument.Parse(SanitizeXmlForParsing(txt));
 
                 if (xml.Root == null)
                 {
@@ -158,6 +159,95 @@ namespace RedCell.Diagnostics.Update
                 Log.Write("Error: {0}", ex.Message);
                 return;
             }
+        }
+
+        /// <summary>
+        /// Sanitizes the XML string by removing invalid XML characters and escaping stray ampersands.
+        /// </summary>
+        /// <param name="input">The XML string to sanitize.</param>
+        /// <returns>The sanitized XML string.</returns>
+        private static string SanitizeXmlForParsing(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return input ?? string.Empty;
+            }
+
+            var normalized = new StringBuilder(input.Length);
+            foreach (var character in input)
+            {
+                if (XmlConvert.IsXmlChar(character))
+                {
+                    normalized.Append(character);
+                }
+            }
+
+            var text = normalized.ToString();
+            var escaped = new StringBuilder(text.Length);
+            for (var index = 0; index < text.Length; index++)
+            {
+                var character = text[index];
+                if (character != '&')
+                {
+                    escaped.Append(character);
+                    continue;
+                }
+
+                if (TryReadEntity(text, index, out var endIndex))
+                {
+                    escaped.Append(text, index, endIndex - index + 1);
+                    index = endIndex;
+                    continue;
+                }
+
+                escaped.Append("&amp;");
+            }
+
+            return escaped.ToString();
+        }
+
+        private static bool TryReadEntity(string text, int startIndex, out int endIndex)
+        {
+            endIndex = text.IndexOf(';', startIndex + 1);
+            if (endIndex == -1)
+            {
+                return false;
+            }
+
+            var entityBody = text.Substring(startIndex + 1, endIndex - startIndex - 1);
+            if (entityBody.Length == 0)
+            {
+                return false;
+            }
+
+            if (entityBody == "amp" || entityBody == "lt" || entityBody == "gt" || entityBody == "quot"
+                || entityBody == "apos")
+            {
+                return true;
+            }
+
+            if (entityBody[0] != '#')
+            {
+                return false;
+            }
+
+            var isHex = entityBody.Length > 2 && (entityBody[1] == 'x' || entityBody[1] == 'X');
+            var start = isHex ? 2 : 1;
+            if (entityBody.Length <= start)
+            {
+                return false;
+            }
+
+            for (var index = start; index < entityBody.Length; index++)
+            {
+                var character = entityBody[index];
+                if (isHex ? !Uri.IsHexDigit(character) : !char.IsDigit(character))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool TryReadElementValue(XElement root, XNamespace ns, string name, out string value)

@@ -59,5 +59,41 @@ goes here!
             Assert.Equal(new[] { "update.zip" }, manifest.Payloads);
             Assert.Equal("Version Info\n\ngoes here!\n==>", manifest.VersionInfoText);
         }
+
+        [Fact]
+        public void Load_WhenManifestHasStrayAmpersand_ParsesValues()
+        {
+            var xml = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<Manifest version=""2.0.0"">
+  <CheckInterval>900</CheckInterval>
+  <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
+  <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>
+  <BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>
+  <Payload>update.zip</Payload>
+  <VersionInfoText>UI & dialogs</VersionInfoText>
+</Manifest>";
+
+            var manifest = new Manifest(xml);
+
+            Assert.Equal("UI & dialogs", manifest.VersionInfoText);
+        }
+
+        [Fact]
+        public void Load_WhenManifestHasInvalidXmlCharacters_StripsInvalidCharacters()
+        {
+            var xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                + "<Manifest version=\"2.0.0\">"
+                + "<CheckInterval>900</CheckInterval>"
+                + "<RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>"
+                + "<SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>"
+                + "<BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>"
+                + "<Payload>update.zip</Payload>"
+                + "<VersionInfoText>Update" + '\u001F' + "notes</VersionInfoText>"
+                + "</Manifest>";
+
+            var manifest = new Manifest(xml);
+
+            Assert.Equal("Updatenotes", manifest.VersionInfoText);
+        }
     }
 }
