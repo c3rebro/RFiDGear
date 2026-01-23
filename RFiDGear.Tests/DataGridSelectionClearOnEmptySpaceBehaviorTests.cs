@@ -1,11 +1,9 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Threading;
 using RFiDGear.UI.Behaviors;
 using Xunit;
 
@@ -16,7 +14,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task PreviewRightClickOnEmptySpace_ClearsSelection()
         {
-            await RunOnStaThreadAsync(() =>
+            await StaTestRunner.RunOnStaThreadAsync(() =>
             {
                 if (Application.Current == null)
                 {
@@ -42,7 +40,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task EmptySpaceContextMenu_DoesNotEnterEditMode()
         {
-            await RunOnStaThreadAsync(() =>
+            await StaTestRunner.RunOnStaThreadAsync(() =>
             {
                 if (Application.Current == null)
                 {
@@ -112,7 +110,10 @@ namespace RFiDGear.Tests
         private static ContextMenuEventArgs CreateContextMenuEventArgs(UIElement element)
         {
             var routedEvent = FrameworkElement.ContextMenuOpeningEvent;
-            var constructors = typeof(ContextMenuEventArgs).GetConstructors();
+            var constructors = typeof(ContextMenuEventArgs).GetConstructors(
+                System.Reflection.BindingFlags.Instance
+                | System.Reflection.BindingFlags.Public
+                | System.Reflection.BindingFlags.NonPublic);
 
             foreach (var constructor in constructors)
             {
@@ -147,41 +148,6 @@ namespace RFiDGear.Tests
             }
 
             throw new InvalidOperationException("Unable to locate a ContextMenuEventArgs constructor.");
-        }
-
-        private static Task RunOnStaThreadAsync(Action action)
-        {
-            var tcs = new TaskCompletionSource<object>();
-
-            var thread = new Thread(() =>
-            {
-                SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
-
-                Dispatcher.CurrentDispatcher.InvokeAsync(() =>
-                {
-                    try
-                    {
-                        action();
-                        tcs.SetResult(null);
-                    }
-                    catch (Exception ex)
-                    {
-                        tcs.SetException(ex);
-                    }
-                    finally
-                    {
-                        Dispatcher.CurrentDispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
-                    }
-                });
-
-                Dispatcher.Run();
-            });
-
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.IsBackground = true;
-            thread.Start();
-
-            return tcs.Task;
         }
     }
 }

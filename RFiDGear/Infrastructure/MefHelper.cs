@@ -153,8 +153,7 @@ public sealed class MefHelper : IDisposable
         }
 
 #if DEBUG
-        var devPath = FindDevelopmentExtensionsPath(baseDirectory);
-        if (!string.IsNullOrWhiteSpace(devPath))
+        foreach (var devPath in FindDevelopmentExtensionsPaths(baseDirectory))
         {
             paths.Add(devPath);
         }
@@ -166,39 +165,39 @@ public sealed class MefHelper : IDisposable
     }
 
     /// <summary>
-    /// Attempts to locate the VCNEditor build output path during local development.
+    /// Attempts to locate extension build output paths during local development.
     /// </summary>
     /// <param name="baseDirectory">The base directory of the running application.</param>
-    /// <returns>The path to the VCNEditor output directory, or <c>null</c> if not found.</returns>
-    internal static string FindDevelopmentExtensionsPath(string baseDirectory)
+    /// <returns>A list of extension output directories, or an empty list if none are found.</returns>
+    internal static IReadOnlyList<string> FindDevelopmentExtensionsPaths(string baseDirectory)
     {
         if (string.IsNullOrWhiteSpace(baseDirectory))
         {
-            return null;
+            return Array.Empty<string>();
         }
 
         var solutionRoot = GetSolutionRoot(baseDirectory, SolutionRootDepth);
         if (string.IsNullOrWhiteSpace(solutionRoot))
         {
-            return null;
+            return Array.Empty<string>();
         }
 
-        var baseOutputPath = Path.Combine(solutionRoot, "VCNEditor", "bin", "Debug");
-        var candidates = new[]
-        {
-            Path.Combine(baseOutputPath, "net8.0-windows"),
-            baseOutputPath
-        };
+        var candidatePaths = new List<string>();
 
-        foreach (var candidate in candidates)
+        foreach (var projectRoot in GetDevelopmentExtensionProjectRoots(solutionRoot))
         {
-            if (Directory.Exists(candidate))
+            foreach (var candidate in GetBuildOutputCandidates(projectRoot))
             {
-                return candidate;
+                if (Directory.Exists(candidate))
+                {
+                    candidatePaths.Add(candidate);
+                }
             }
         }
 
-        return null;
+        return candidatePaths
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     /// <summary>
@@ -231,6 +230,32 @@ public sealed class MefHelper : IDisposable
         }
 
         return current?.FullName;
+    }
+
+    private static IEnumerable<string> GetDevelopmentExtensionProjectRoots(string solutionRoot)
+    {
+        var projectRoots = new List<string>();
+        var vcnEditorRoot = Path.Combine(solutionRoot, "VCNEditor");
+        if (Directory.Exists(vcnEditorRoot))
+        {
+            projectRoots.Add(vcnEditorRoot);
+        }
+
+        var extensionsRoot = Path.Combine(solutionRoot, "RFiDGear.Extensions");
+        if (Directory.Exists(extensionsRoot))
+        {
+            projectRoots.AddRange(Directory.EnumerateDirectories(extensionsRoot));
+        }
+
+        return projectRoots;
+    }
+
+    private static IEnumerable<string> GetBuildOutputCandidates(string projectRoot)
+    {
+        var baseOutputPath = Path.Combine(projectRoot, "bin", "Debug");
+
+        yield return Path.Combine(baseOutputPath, "net8.0-windows");
+        yield return baseOutputPath;
     }
 
     private static void EnsureExtensionsDirectoryExists(string extensionsPath)
