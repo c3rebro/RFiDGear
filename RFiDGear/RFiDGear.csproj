@@ -37,9 +37,10 @@
     <GenerateManifests>false</GenerateManifests>
     <GenerateClickOnceManifests>false</GenerateClickOnceManifests>    
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
-    <FileVersion>2.0.1</FileVersion>
-    <AssemblyVersion>2.0.1</AssemblyVersion>
+    <AssemblyVersion>2.0.2</AssemblyVersion>
     <Platforms>AnyCPU;x64;x86</Platforms>
+    <FileVersion>$(AssemblyVersion)</FileVersion>
+    <NeutralLanguage>en-US</NeutralLanguage>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
     <BaseAddress>4194304</BaseAddress>

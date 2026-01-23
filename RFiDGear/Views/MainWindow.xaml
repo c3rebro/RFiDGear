@@ -423,7 +423,7 @@
                     <DataGridTemplateColumn Width="auto" Header="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='dataGridHeaderMainWindowTaskDescription', Source={StaticResource proxy}}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding Path=SelectedTaskDescription}" TextWrapping="Wrap">
+                                <TextBox Text="{Binding Path=SelectedTaskDescription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap">
                                     <TextBox.Style>
                                         <Style TargetType="{x:Type TextBox}">
                                             <Setter Property="HorizontalAlignment" Value="Stretch" />
