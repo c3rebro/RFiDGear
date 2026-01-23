@@ -1,5 +1,5 @@
 using System.Globalization;
-using VCNEditor.DataAccessLayer;
+using RFiDGear.Extensions.VCNEditor.DataAccessLayer;
 using Xunit;
 
 namespace RFiDGear.Tests

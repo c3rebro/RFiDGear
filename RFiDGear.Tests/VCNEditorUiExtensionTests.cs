@@ -1,7 +1,7 @@
 using System.Reflection;
 using RFiDGear.UI.UIExtensions;
 using RFiDGear.UI.UIExtensions.Interfaces;
-using VCNEditor.Model;
+using RFiDGear.Extensions.VCNEditor.Model;
 using Xunit;
 
 namespace RFiDGear.Tests

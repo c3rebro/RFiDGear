@@ -4,6 +4,7 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ReaderProviders;
 using Xunit;
 using RfidEncryptionMode = RFiDGear.Infrastructure.EncryptionMode;
+using DESFireKeyType = RFiDGear.Infrastructure.DESFireKeyType;
 
 namespace RFiDGear.Tests
 {
@@ -73,7 +74,7 @@ namespace RFiDGear.Tests
             var result = await provider.CreateMifareDesfireFile(
                 _appMasterKey: "0000000000000000",
                 _keyTypeAppMasterKey: DESFireKeyType.DF_KEY_AES,
-                _fileType: FileType_MifareDesfireFileType.BackupFile,
+                _fileType: Infrastructure.Tasks.FileType_MifareDesfireFileType.BackupFile,
                 _accessRights: accessRights,
                 _encMode: RfidEncryptionMode.CM_PLAIN,
                 _appID: 1,
@@ -98,7 +99,7 @@ namespace RFiDGear.Tests
                 return Task.FromResult(ERROR.NoError);
             }
 
-            protected override Task CreateStdDataFileAsync(byte fileNo, FileType_MifareDesfireFileType fileType, RfidEncryptionMode encMode, DESFireFileAccessRights accessRights, uint fileSize)
+            protected override Task CreateStdDataFileAsync(byte fileNo, Infrastructure.Tasks.FileType_MifareDesfireFileType fileType, RfidEncryptionMode encMode, DESFireFileAccessRights accessRights, uint fileSize)
             {
                 StdDataFileRequested = true;
                 return Task.CompletedTask;

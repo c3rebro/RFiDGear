@@ -353,7 +353,7 @@ namespace RedCell.Diagnostics.Update
                     Verb="runas",
                     Arguments = string.Format("/i \"{0}\" ", Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe")),
                     */
-                    FileName = Path.Combine(appDataPath, WorkPath, "RFiDGearBundleSetup.exe"),
+                    FileName = Path.Combine(appDataPath, WorkPath, "RFiDGearSetup_x64_86.exe"),
                     Verb = "runas",
                     UseShellExecute = false
                 };

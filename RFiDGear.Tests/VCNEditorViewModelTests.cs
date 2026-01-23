@@ -1,6 +1,6 @@
 using System.Reflection;
 
-using VCNEditor.ViewModel;
+using RFiDGear.Extensions.VCNEditor.ViewModel;
 
 using Xunit;
 

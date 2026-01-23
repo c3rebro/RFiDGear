@@ -1,4 +1,4 @@
-using RFiDGear.DataAccessLayer;
+using RFiDGear.Infrastructure;
 using Xunit;
 
 namespace RFiDGear.Tests

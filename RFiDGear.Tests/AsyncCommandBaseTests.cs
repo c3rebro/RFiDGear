@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using RFiDGear.DataAccessLayer;
 using Xunit;
 
 namespace RFiDGear.Tests

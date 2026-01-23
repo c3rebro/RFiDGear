@@ -1,6 +1,6 @@
 using System;
 using System.Globalization;
-using VCNEditor.ViewModel;
+using RFiDGear.Extensions.VCNEditor.ViewModel;
 using Xunit;
 
 namespace RFiDGear.Tests

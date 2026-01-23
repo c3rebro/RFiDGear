@@ -1,0 +1,195 @@
+; SCL3711.inf
+;
+; Windows 2000/XP/Vista/7 driver for SCx371x reader & NFC device.
+;
+; Copyright © Identive, 2009 - 2013
+
+[Version]
+Signature="$CHICAGO$"
+Class=SmartCardReader
+ClassGuid={50DD5230-BA8A-11D1-BF5D-0000F805F530}
+Provider=%MFG%
+DriverVer=07/25/2013,1.13
+CatalogFile=SCL3711.cat
+
+[Manufacturer]
+%MFG%=Models
+
+[Models]
+%S3711_DFU%=PCSC_3711,USB\VID_04CC&PID_2533
+%S3711_NAME%=PCSC_3711,USB\VID_04E6&PID_5591
+%SCM3712_INTPA_NAME%=PCSC_INTPA,USB\VID_04E6&PID_5592
+%SCM3712_INTNOPA_NAME%=PCSC_INTNOPA,USB\VID_04E6&PID_5593
+%SCM3712_50OHMNOPA_NAME%=PCSC_50OHMNOPA,USB\VID_04E6&PID_5594
+%SURUGA_NAME%=PCSC_SURUGA,USB\VID_04E6&PID_5595
+
+[ControlFlags]
+ExcludeFromSelect=*
+
+[SourceDisksNames]
+1=%FLOPPY_DESCRIPTION%,,,""
+
+[SourceDisksFiles]
+SCL3711.sys=1
+
+[DestinationDirs]
+PCSC_3711_NTCopyFiles=%SYSTEMROOT_SYSTEM32_DRIVERS%
+
+[PCSC_3711.NT]
+CopyFiles=PCSC_3711_NTCopyFiles
+AddReg=PCSC_3711_ReaderAddReg, PCSC_3711_RDR_Name_AddReg
+
+[PCSC_3711_NTCopyFiles]
+SCL3711.sys
+
+[PCSC_3711_ReaderAddReg]
+HKLM,Software\Microsoft\Cryptography\Calais\Readers,,,
+HKLM, System\CurrentControlSet\Services\SCardSvr,Start,0x00010001,2
+HKLM, System\CurrentControlSet\Services\CertPropSvc,Start,0x00010001,2
+HKLM, SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\ScCertProp,DLLName,0,wlnotify.dll
+HKLM, SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\ScCertProp,Logon,0,SCardStartCertProp
+HKLM, SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\ScCertProp,Logoff,0,SCardStopCertProp
+HKLM, SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\ScCertProp,Lock,0,SCardSuspendCertProp
+HKLM, SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\ScCertProp,Unlock,0,SCardResumeCertProp
+HKLM, SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\ScCertProp,Enabled,0x00010001,1
+HKLM, SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\ScCertProp,Impersonate,0x00010001,1
+HKLM, SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\ScCertProp,Asynchronous,0x00010001,1
+
+[PCSC_3711_RDR_Name_AddReg]
+HKLM, System\CurrentControlSet\Services\%SCx371x_SERVICE_NAME%\Parameters\%S3711_NAME%,VendorName,%REG_SZ%,%MFG%
+HKLM, System\CurrentControlSet\Services\%SCx371x_SERVICE_NAME%\Parameters\%S3711_NAME%,ReaderName,%REG_SZ%,%S3711_NAME%
+
+[PCSC_3711.NT.Services]
+AddService=%SCx371x_SERVICE_NAME%,0x00000002,PCSC_3711_ServiceInstall
+
+[PCSC_3711_ServiceInstall]
+ServiceType=%SERVICE_KERNEL_DRIVER%
+StartType=%SERVICE_DEMAND_START%
+ErrorControl=%SERVICE_ERROR_NORMAL%
+ServiceBinary=%12%\SCL3711.sys
+
+;--------------------------INTPA-----------------------------------------------
+[PCSC_INTPA.NT]
+CopyFiles=PCSC_3711_NTCopyFiles
+AddReg=PCSC_3711_ReaderAddReg, PCSC_INTPA_RDR_Name_AddReg
+
+[PCSC_INTPA.NT.Services]
+AddService=%SCx371x_SERVICE_NAME%,0x00000002,PCSC_3711_ServiceInstall
+
+[PCSC_INTPA_RDR_Name_AddReg]
+HKLM, System\CurrentControlSet\Services\%SCx371x_SERVICE_NAME%\Parameters\%SCM3712_INTPA_NAME%,VendorName,%REG_SZ%,%MFG%
+HKLM, System\CurrentControlSet\Services\%SCx371x_SERVICE_NAME%\Parameters\%SCM3712_INTPA_NAME%,ReaderName,%REG_SZ%,%SCM3712_INTPA_NAME%
+
+;---------------------------------INTNOPA----------------------------------------
+[PCSC_INTNOPA.NT]
+CopyFiles=PCSC_3711_NTCopyFiles
+AddReg=PCSC_3711_ReaderAddReg, PCSC_INTNOPA_ServiceAddReg
+
+[PCSC_INTNOPA.NT.Services]
+AddService=%SCx371x_SERVICE_NAME%,0x00000002,PCSC_3711_ServiceInstall
+
+[PCSC_INTNOPA_ServiceAddReg]
+HKLM, System\CurrentControlSet\Services\%SCx371x_SERVICE_NAME%\Parameters\%SCM3712_INTNOPA_NAME%,VendorName,%REG_SZ%,%MFG%
+HKLM, System\CurrentControlSet\Services\%SCx371x_SERVICE_NAME%\Parameters\%SCM3712_INTNOPA_NAME%,ReaderName,%REG_SZ%,%SCM3712_INTNOPA_NAME%
+
+;---------------------------50OHMNOPA-------------------------------------
+[PCSC_50OHMNOPA.NT]
+CopyFiles=PCSC_3711_NTCopyFiles
+AddReg=PCSC_3711_ReaderAddReg, PCSC_50OHMNOPA_RDR_Name_Reg
+
+[PCSC_50OHMNOPA.NT.Services]
+AddService=%SCx371x_SERVICE_NAME%,0x00000002,PCSC_3711_ServiceInstall
+
+[PCSC_50OHMNOPA_RDR_Name_Reg]
+HKLM, System\CurrentControlSet\Services\%SCx371x_SERVICE_NAME%\Parameters\%SCM3712_50OHMNOPA_NAME%,VendorName,%REG_SZ%,%MFG%
+HKLM, System\CurrentControlSet\Services\%SCx371x_SERVICE_NAME%\Parameters\%SCM3712_50OHMNOPA_NAME%,ReaderName,%REG_SZ%,%SCM3712_50OHMNOPA_NAME%
+
+;------------------------SURUGA-------------------------------------
+[PCSC_SURUGA.NT]
+CopyFiles=PCSC_3711_NTCopyFiles
+AddReg=PCSC_3711_ReaderAddReg, PCSC_SURUGA_RDR_Name_Reg
+
+[PCSC_SURUGA.NT.Services]
+AddService=%SCx371x_SERVICE_NAME%,0x00000002,PCSC_3711_ServiceInstall
+
+[PCSC_SURUGA_RDR_Name_Reg]
+HKLM, System\CurrentControlSet\Services\%SCx371x_SERVICE_NAME%\Parameters\%SURUGA_NAME%,VendorName,%REG_SZ%,%MFG_SURUGA%
+HKLM, System\CurrentControlSet\Services\%SCx371x_SERVICE_NAME%\Parameters\%SURUGA_NAME%,ReaderName,%REG_SZ%,%SURUGA_NAME%
+
+;-------------------[ WDF Coinstaller installation ]-------------------;
+
+[DestinationDirs]
+CoInstaller_CopyFiles=%SYSTEMROOT_SYSTEM32%
+
+[SourceDisksFiles]
+WdfCoInstaller01009.dll=1
+
+[CoInstaller_CopyFiles]
+WdfCoInstaller01009.dll
+
+[CoInstaller_AddReg]
+HKR,,CoInstallers32,%REG_MULTI_SZ%,"WdfCoInstaller01009.dll,WdfCoInstaller"
+
+[PCSC_3711_wdfsect]
+KmdfLibraryVersion=1.9
+
+;--------------------------SCL3711-----------------------------------------------
+[PCSC_3711.NT.CoInstallers]
+CopyFiles=CoInstaller_CopyFiles
+AddReg=CoInstaller_AddReg
+
+[PCSC_3711.NT.Wdf]
+KmdfService=%SCx371x_SERVICE_NAME%,PCSC_3711_wdfsect
+;--------------------------INTPA-----------------------------------------------
+[PCSC_INTPA.NT.CoInstallers]
+CopyFiles=CoInstaller_CopyFiles
+AddReg=CoInstaller_AddReg
+
+[PCSC_INTPA.NT.Wdf]
+KmdfService=%SCx371x_SERVICE_NAME%,PCSC_3711_wdfsect
+;---------------------------------INTNOPA----------------------------------------
+[PCSC_INTNOPA.NT.CoInstallers]
+CopyFiles=CoInstaller_CopyFiles
+AddReg=CoInstaller_AddReg
+
+[PCSC_INTNOPA.NT.Wdf]
+KmdfService=%SCx371x_SERVICE_NAME%,PCSC_3711_wdfsect
+;---------------------------50OHMNOPA-------------------------------------
+[PCSC_50OHMNOPA.NT.CoInstallers]
+CopyFiles=CoInstaller_CopyFiles
+AddReg=CoInstaller_AddReg
+
+[PCSC_50OHMNOPA.NT.Wdf]
+KmdfService=%SCx371x_SERVICE_NAME%,PCSC_3711_wdfsect
+;------------------------SURUGA-------------------------------------
+[PCSC_SURUGA.NT.CoInstallers]
+CopyFiles=CoInstaller_CopyFiles
+AddReg=CoInstaller_AddReg
+
+[PCSC_SURUGA.NT.Wdf]
+KmdfService=%SCx371x_SERVICE_NAME%,PCSC_3711_wdfsect
+;----------------------------------------------------------------------;
+
+[Strings]
+MFG="SCM Microsystems"
+MFG_SURUGA="SCM Microsystems."
+FLOPPY_DESCRIPTION="Driver for SCx371x reader & NFC device"
+S3711_NAME="SCL3711 reader & NFC device"
+S3711_DFU="NXP Reader"
+SCM3712_INTPA_NAME="SCM3712 Reader"
+SCM3712_INTNOPA_NAME="SCM3712 NFC Reader"
+SCM3712_50OHMNOPA_NAME="SCM3712 EA Reader"
+SURUGA_NAME="NDI711 reader & NFC device"
+SCx371x_SERVICE_NAME="S3711"
+
+REG_DWORD=0x00010001
+REG_SZ=0x00000000
+REG_MULTI_SZ=0x00010000
+
+SERVICE_AUTO_START=2
+SERVICE_DEMAND_START=3
+SERVICE_KERNEL_DRIVER=1
+SERVICE_ERROR_NORMAL=1
+
+SYSTEMROOT_SYSTEM32=11
+SYSTEMROOT_SYSTEM32_DRIVERS=12
