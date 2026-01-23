@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -22,6 +23,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
 using System.Xml.Serialization;
+using Serilog;
 using Org.BouncyCastle.Asn1.X509;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
@@ -29,6 +31,7 @@ using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
+using SerilogLog = Serilog.Log;
 
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
@@ -38,8 +41,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     public class CommonTaskViewModel : ObservableObject, IUserDialogViewModel, IGenericTask
     {
         #region Fields
+        private static readonly ILogger Logger = SerilogLog.ForContext<CommonTaskViewModel>();
+
+        private static readonly string appDataPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "RFiDGear");
+
         private static int IterCounter = 1; //Initial Value of Counter: How often have "this" been called (+1 per "run all tasks")
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
         // The Counter could be replaced in an pdf by %n; %nn or %nnn. increased once per run all tasks: %n -> 1 on first execution
 
@@ -178,7 +186,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     catch (Exception e)
                     {
-                        eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                        Logger.Error("Error executing CommonTaskViewmodel: '{ConfigFile}'", e.Message);
                     }
                 }
 
@@ -209,7 +217,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Logger.Error("Error executing CommonTaskViewmodel: '{ConfigFile}'", e.Message);
             }
         }
 
@@ -959,7 +967,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             catch(Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Information);
+                Logger.Information(e.Message);
             }
         }
 
@@ -1158,7 +1166,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     IsTaskCompletedSuccessfully = false;
                     OnPropertyChanged(nameof(TemplateFields));
 
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                    Logger.Error("Error Parsing Variable: {Message}", e.Message);
 
                     return;
                 }
@@ -1581,7 +1589,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             catch (Exception e)
                             {
-                                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                                Logger.Error("Error Parsing Variable: {Message}",e.Message);
                             }
 
                             break;
@@ -1592,7 +1600,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 catch (Exception e)
                 {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                    Logger.Error("Error Parsing Variable: {Message}", e.Message);
                 }
 
                 return CurrentTaskErrorLevel;
@@ -1721,7 +1729,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 CurrentTaskErrorLevel = ERROR.IsNotTrue;
                 IsTaskCompletedSuccessfully = false;
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Logger.Error("Error Parsing Variable: {Message}", e.Message);
             }
 
             return Task.CompletedTask;
@@ -1796,7 +1804,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Logger.Error("Error Parsing Variable: {Message}", e.Message);
             }
 
             return Task.CompletedTask;

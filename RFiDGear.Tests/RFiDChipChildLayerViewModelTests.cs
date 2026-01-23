@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows;
 using RFiDGear.Models;
+using RFiDGear.Infrastructure;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.ViewModel;
 using Xunit;
