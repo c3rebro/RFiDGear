@@ -600,8 +600,51 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 timestamp,
                 appId,
                 appKeyNumber,
-                selectedSettings,
+                DescribeKeySettings(selectedSettings),
                 authKeyNo);
+        }
+
+        /// <summary>
+        /// Builds a readable string for DESFire key settings, ensuring change-key policies are visible.
+        /// </summary>
+        /// <param name="settings">Selected key settings.</param>
+        /// <returns>Readable key settings string.</returns>
+        internal static string DescribeKeySettings(DESFireKeySettings settings)
+        {
+            var parts = new List<string>();
+            var changeKeyMode = settings & DESFireKeySettings.ChangeKeyMask;
+
+            if (changeKeyMode == DESFireKeySettings.ChangeKeyWithMasterKey)
+            {
+                parts.Add(DESFireKeySettings.ChangeKeyWithMasterKey.ToString());
+            }
+            else if (changeKeyMode == DESFireKeySettings.ChangeKeyWithTargetedKeyNumber
+                     || changeKeyMode == DESFireKeySettings.ChangeKeyFrozen)
+            {
+                parts.Add(changeKeyMode.ToString());
+            }
+
+            if (settings.HasFlag(DESFireKeySettings.AllowChangeMasterKey))
+            {
+                parts.Add(DESFireKeySettings.AllowChangeMasterKey.ToString());
+            }
+
+            if (settings.HasFlag(DESFireKeySettings.AllowFreeListingWithoutMasterKey))
+            {
+                parts.Add(DESFireKeySettings.AllowFreeListingWithoutMasterKey.ToString());
+            }
+
+            if (settings.HasFlag(DESFireKeySettings.AllowFreeCreateDeleteWithoutMasterKey))
+            {
+                parts.Add(DESFireKeySettings.AllowFreeCreateDeleteWithoutMasterKey.ToString());
+            }
+
+            if (settings.HasFlag(DESFireKeySettings.ConfigurationChangeable))
+            {
+                parts.Add(DESFireKeySettings.ConfigurationChangeable.ToString());
+            }
+
+            return parts.Count == 0 ? settings.ToString() : string.Join(", ", parts);
         }
 
         /// <summary>
@@ -2441,9 +2484,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                                 StatusText += string.Format("{0}: Successfully Read {2} Bytes Data from FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
 
-                                childNodeViewModelFromChip.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
+                                var fromChipNode = EnsureDesfireDataNode(childNodeViewModelFromChip, FileNumberCurrentAsInt);
+                                var tempNode = EnsureDesfireDataNode(childNodeViewModelTemp, FileNumberCurrentAsInt);
 
-                                childNodeViewModelTemp.Children.Single(x => x.DesfireFile != null).DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
+                                fromChipNode.DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
+                                tempNode.DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
 
                                 CurrentTaskErrorLevel = result;
 
@@ -2652,13 +2697,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         private void ApplyDesfireFileData(byte[] data)
         {
-            var targetNode = childNodeViewModelTemp.Children.SingleOrDefault(x => x.DesfireFile != null);
-
-            if (targetNode == null)
-            {
-                targetNode = new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(), null);
-                childNodeViewModelTemp.Children.Add(targetNode);
-            }
+            var targetNode = EnsureDesfireDataNode(childNodeViewModelTemp, FileNumberCurrentAsInt);
 
             targetNode.DesfireFile = new MifareDesfireFileModel(data, (byte)FileNumberCurrentAsInt);
             targetNode.SelectedDataIndexStartInBytes = 0;
@@ -2679,7 +2718,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             payload = null;
             errorMessage = null;
 
-            var targetNode = childNodeViewModelTemp?.Children?.SingleOrDefault(x => x.DesfireFile != null);
+            var targetNode = FindDesfireDataNode(childNodeViewModelTemp, FileNumberCurrentAsInt);
             if (targetNode?.DesfireFile?.Data == null)
             {
                 errorMessage = "No DESFire data has been loaded.";
@@ -2711,6 +2750,57 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             payload = new byte[length];
             Buffer.BlockCopy(data, startIndex, payload, 0, length);
             return true;
+        }
+
+        /// <summary>
+        /// Finds the best matching DESFire data node for the current file number.
+        /// </summary>
+        /// <param name="parentNode">Parent node that holds DESFire file children.</param>
+        /// <param name="fileId">File ID to match when available.</param>
+        /// <returns>The matching node or null if none exist.</returns>
+        private static RFiDChipGrandChildLayerViewModel FindDesfireDataNode(
+            RFiDChipChildLayerViewModel parentNode,
+            int fileId)
+        {
+            if (parentNode?.Children == null)
+            {
+                return null;
+            }
+
+            var dataNodes = parentNode.Children.Where(node => node?.DesfireFile != null).ToList();
+            if (dataNodes.Count == 0)
+            {
+                return null;
+            }
+
+            var matchingNode = dataNodes.FirstOrDefault(node => node.DesfireFile.FileID == fileId);
+            return matchingNode ?? dataNodes.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Ensures a DESFire data node exists for the given file identifier.
+        /// </summary>
+        /// <param name="parentNode">Parent node that holds DESFire file children.</param>
+        /// <param name="fileId">File ID to match.</param>
+        /// <returns>A valid DESFire data node.</returns>
+        private static RFiDChipGrandChildLayerViewModel EnsureDesfireDataNode(
+            RFiDChipChildLayerViewModel parentNode,
+            int fileId)
+        {
+            if (parentNode == null)
+            {
+                return null;
+            }
+
+            var node = FindDesfireDataNode(parentNode, fileId);
+            if (node != null)
+            {
+                return node;
+            }
+
+            node = new RFiDChipGrandChildLayerViewModel(new MifareDesfireFileModel(new byte[0], (byte)fileId), parentNode);
+            parentNode.Children.Add(node);
+            return node;
         }
 
         /// <summary>

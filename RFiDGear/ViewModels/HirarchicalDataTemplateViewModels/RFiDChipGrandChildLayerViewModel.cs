@@ -122,8 +122,15 @@ namespace RFiDGear.ViewModel
                 };
             }
 
-            DataAsHexString = "00000000000000000000000000000000";
-            DataAsCharString = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+            if (desfireFile.Data == null)
+            {
+                desfireFile.Data = Array.Empty<byte>();
+            }
+
+            var fileData = desfireFile.Data;
+            dataBlockAsHexString = CustomConverter.HexToString(fileData);
+            dataBlockAsCharString = BuildPrintableString(fileData);
+            SelectedDataLengthInBytes = fileData.Length;
 
             IsValidDataContent = null;
 
@@ -334,6 +341,27 @@ namespace RFiDGear.ViewModel
             }
         }
         private string dataBlockAsCharString;
+
+        /// <summary>
+        /// Creates a printable representation for the data buffer, substituting non-printable bytes.
+        /// </summary>
+        /// <param name="data">Raw byte data to inspect.</param>
+        /// <returns>A printable string representing the buffer.</returns>
+        private static string BuildPrintableString(byte[] data)
+        {
+            if (data == null || data.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            var tempString = new char[data.Length];
+            for (var i = 0; i < data.Length; i++)
+            {
+                tempString[i] = (data[i] < 27 || data[i] > 127) ? (char)248 : (char)data[i];
+            }
+
+            return new string(tempString);
+        }
 
         /// <summary>
         /// DependencyProperty
