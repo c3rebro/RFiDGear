@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using RFiDGear.UI.UIExtensions.Interfaces;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using Xunit;
@@ -8,42 +9,51 @@ namespace RFiDGear.Tests
     public class PluginSelectionViewModelTests
     {
         [Fact]
-        public void SelectedPlugin_ForMifareClassic_ExposesSelectedMetadataUri()
+        public async Task SelectedPlugin_ForMifareClassic_ExposesSelectedMetadataUri()
         {
-            var viewModel = new MifareClassicSetupViewModel();
-            var plugin = CreatePlugin("classic://plugin");
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var viewModel = new MifareClassicSetupViewModel();
+                var plugin = CreatePlugin("classic://plugin");
 
-            viewModel.Items = new[] { plugin };
-            viewModel.SelectedPlugin = plugin;
+                viewModel.Items = new[] { plugin };
+                viewModel.SelectedPlugin = plugin;
 
-            var selected = Assert.IsType<Lazy<IUIExtension, IUIExtensionDetails>>(viewModel.SelectedPlugin);
-            Assert.Equal("classic://plugin", selected.Metadata.Uri);
+                var selected = Assert.IsType<Lazy<IUIExtension, IUIExtensionDetails>>(viewModel.SelectedPlugin);
+                Assert.Equal("classic://plugin", selected.Metadata.Uri);
+            });
         }
 
         [Fact]
-        public void SelectedPlugin_ForMifareUltralight_ExposesSelectedMetadataUri()
+        public async Task SelectedPlugin_ForMifareUltralight_ExposesSelectedMetadataUri()
         {
-            var viewModel = new MifareUltralightSetupViewModel();
-            var plugin = CreatePlugin("ultralight://plugin");
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var viewModel = new MifareUltralightSetupViewModel();
+                var plugin = CreatePlugin("ultralight://plugin");
 
-            viewModel.Items = new[] { plugin };
-            viewModel.SelectedPlugin = plugin;
+                viewModel.Items = new[] { plugin };
+                viewModel.SelectedPlugin = plugin;
 
-            var selected = Assert.IsType<Lazy<IUIExtension, IUIExtensionDetails>>(viewModel.SelectedPlugin);
-            Assert.Equal("ultralight://plugin", selected.Metadata.Uri);
+                var selected = Assert.IsType<Lazy<IUIExtension, IUIExtensionDetails>>(viewModel.SelectedPlugin);
+                Assert.Equal("ultralight://plugin", selected.Metadata.Uri);
+            });
         }
 
         [Fact]
-        public void SelectedPlugin_ForMifareDesfire_ExposesSelectedMetadataUri()
+        public async Task SelectedPlugin_ForMifareDesfire_ExposesSelectedMetadataUri()
         {
-            var viewModel = new MifareDesfireSetupViewModel();
-            var plugin = CreatePlugin("desfire://plugin");
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var viewModel = new MifareDesfireSetupViewModel();
+                var plugin = CreatePlugin("desfire://plugin");
 
-            viewModel.Items = new[] { plugin };
-            viewModel.SelectedPlugin = plugin;
+                viewModel.Items = new[] { plugin };
+                viewModel.SelectedPlugin = plugin;
 
-            var selected = Assert.IsType<Lazy<IUIExtension, IUIExtensionDetails>>(viewModel.SelectedPlugin);
-            Assert.Equal("desfire://plugin", selected.Metadata.Uri);
+                var selected = Assert.IsType<Lazy<IUIExtension, IUIExtensionDetails>>(viewModel.SelectedPlugin);
+                Assert.Equal("desfire://plugin", selected.Metadata.Uri);
+            });
         }
 
         private static Lazy<IUIExtension, IUIExtensionDetails> CreatePlugin(string uri)
