@@ -1192,39 +1192,45 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Creates a DESFire file on the selected application.
+        /// </summary>
+        /// <remarks>
+        /// Backup file creation prefers a dedicated Elatec API if available and falls back to the standard data file creation
+        /// path with <see cref="DESFireFileType.BackupFile"/> when the API is unavailable.
+        /// </remarks>
         public async override Task<ERROR> CreateMifareDesfireFile(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey, FileType_MifareDesfireFileType _fileType, DESFireAccessRights _accessRights, EncryptionMode _encMode,
                                      int _appID, int _fileNo, int _fileSize,
                                      int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
                                      int _maxNbOfRecords = 100)
         {
-            if (readerDevice.IsConnected)
+            if (IsConnected)
             {
                 try
                 {
                     if (await AuthToMifareDesfireApplication(_appMasterKey, _keyTypeAppMasterKey, 0, _appID) == ERROR.NoError)
                     {
+                        var ar = BuildDesfireAccessRights(_accessRights);
+
                         switch (_fileType)
                         {
                             case FileType_MifareDesfireFileType.StdDataFile:
-                                var ar = new DESFireFileAccessRights
-                                {
-                                    ReadKeyNo = (byte)_accessRights.readAccess,
-                                    WriteKeyNo = (byte)_accessRights.writeAccess,
-                                    ReadWriteKeyNo = (byte)_accessRights.readAndWriteAccess,
-                                    ChangeKeyNo = (byte)_accessRights.changeAccess
-                                };
-
                                 try
                                 {
-                                    await readerDevice.MifareDesfire_CreateStdDataFileAsync(
-                                        (byte)_fileNo,
-                                        (DESFireFileType)_fileType,
-                                        (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode,
-                                        ar,
-                                        (uint)_fileSize);
+                                    await CreateStdDataFileAsync((byte)_fileNo, _fileType, _encMode, ar, (uint)_fileSize);
+                                }
+                                catch
+                                {
+                                    return ERROR.AuthFailure;
                                 }
 
+                                break;
+
+                            case FileType_MifareDesfireFileType.BackupFile:
+                                try
+                                {
+                                    await CreateBackupFileAsync((byte)_fileNo, _encMode, ar, (uint)_fileSize);
+                                }
                                 catch
                                 {
                                     return ERROR.AuthFailure;
@@ -1249,6 +1255,85 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
 
 
+        }
+
+        private static DESFireFileAccessRights BuildDesfireAccessRights(DESFireAccessRights accessRights)
+        {
+            return new DESFireFileAccessRights
+            {
+                ReadKeyNo = (byte)accessRights.readAccess,
+                WriteKeyNo = (byte)accessRights.writeAccess,
+                ReadWriteKeyNo = (byte)accessRights.readAndWriteAccess,
+                ChangeKeyNo = (byte)accessRights.changeAccess
+            };
+        }
+
+        protected virtual Task CreateStdDataFileAsync(byte fileNo, FileType_MifareDesfireFileType fileType, EncryptionMode encMode, DESFireFileAccessRights accessRights, uint fileSize)
+        {
+            return readerDevice.MifareDesfire_CreateStdDataFileAsync(
+                fileNo,
+                (DESFireFileType)fileType,
+                (Elatec.NET.Cards.Mifare.EncryptionMode)encMode,
+                accessRights,
+                fileSize);
+        }
+
+        protected virtual async Task CreateBackupFileAsync(byte fileNo, EncryptionMode encMode, DESFireFileAccessRights accessRights, uint fileSize)
+        {
+            var backupMethod = readerDevice?.GetType().GetMethod("MifareDesfire_CreateBackupFileAsync");
+            if (backupMethod != null && TryBuildBackupMethodArguments(backupMethod, fileNo, encMode, accessRights, fileSize, out var arguments))
+            {
+                var result = backupMethod.Invoke(readerDevice, arguments);
+                if (result is Task task)
+                {
+                    await task;
+                    return;
+                }
+            }
+
+            await CreateStdDataFileAsync(fileNo, FileType_MifareDesfireFileType.BackupFile, encMode, accessRights, fileSize);
+        }
+
+        private static bool TryBuildBackupMethodArguments(MethodInfo backupMethod, byte fileNo, EncryptionMode encMode, DESFireFileAccessRights accessRights, uint fileSize, out object[] arguments)
+        {
+            var parameters = backupMethod.GetParameters();
+
+            if (parameters.Length == 4
+                && parameters[0].ParameterType == typeof(byte)
+                && parameters[1].ParameterType == typeof(Elatec.NET.Cards.Mifare.EncryptionMode)
+                && parameters[2].ParameterType == typeof(DESFireFileAccessRights)
+                && parameters[3].ParameterType == typeof(uint))
+            {
+                arguments = new object[]
+                {
+                    fileNo,
+                    (Elatec.NET.Cards.Mifare.EncryptionMode)encMode,
+                    accessRights,
+                    fileSize
+                };
+                return true;
+            }
+
+            if (parameters.Length == 5
+                && parameters[0].ParameterType == typeof(byte)
+                && parameters[1].ParameterType == typeof(DESFireFileType)
+                && parameters[2].ParameterType == typeof(Elatec.NET.Cards.Mifare.EncryptionMode)
+                && parameters[3].ParameterType == typeof(DESFireFileAccessRights)
+                && parameters[4].ParameterType == typeof(uint))
+            {
+                arguments = new object[]
+                {
+                    fileNo,
+                    DESFireFileType.BackupFile,
+                    (Elatec.NET.Cards.Mifare.EncryptionMode)encMode,
+                    accessRights,
+                    fileSize
+                };
+                return true;
+            }
+
+            arguments = Array.Empty<object>();
+            return false;
         }
 
         /// <inheritdoc />
