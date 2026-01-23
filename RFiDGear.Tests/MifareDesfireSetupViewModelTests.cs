@@ -6,6 +6,7 @@ using RFiDGear.Models;
 using RFiDGear.ViewModel;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -16,6 +17,33 @@ namespace RFiDGear.Tests
 {
     public class MifareDesfireSetupViewModelTests
     {
+        public static IEnumerable<object[]> DesfireKeyNormalizationCases()
+        {
+            yield return new object[]
+            {
+                new Action<MifareDesfireSetupViewModel, string>((vm, value) => vm.DesfireMasterKeyCurrent = value),
+                new Func<MifareDesfireSetupViewModel, string>(vm => vm.DesfireMasterKeyCurrent),
+                "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F",
+                "000102030405060708090A0B0C0D0E0F"
+            };
+
+            yield return new object[]
+            {
+                new Action<MifareDesfireSetupViewModel, string>((vm, value) => vm.DesfireAppKeyCurrent = value),
+                new Func<MifareDesfireSetupViewModel, string>(vm => vm.DesfireAppKeyCurrent),
+                "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99:aa",
+                "AABBCCDDEEFF00112233445566778899"
+            };
+
+            yield return new object[]
+            {
+                new Action<MifareDesfireSetupViewModel, string>((vm, value) => vm.DesfireReadKeyCurrent = value),
+                new Func<MifareDesfireSetupViewModel, string>(vm => vm.DesfireReadKeyCurrent),
+                "01.02.03.04.05.06.07.08.09.0A.0B.0C.0D.0E.0F.10",
+                "0102030405060708090A0B0C0D0E0F10"
+            };
+        }
+
         [Fact]
         public void Constructor_DisablesTabsByDefault()
         {
@@ -197,6 +225,22 @@ namespace RFiDGear.Tests
 
             Assert.True(viewModel.IsValidAppNumberCurrent);
             Assert.Equal(expected, viewModel.AppNumberCurrentAsInt);
+        }
+
+        [Theory]
+        [MemberData(nameof(DesfireKeyNormalizationCases))]
+        public void DesfireKeyInputs_NormalizeToHex32(
+            Action<MifareDesfireSetupViewModel, string> setter,
+            Func<MifareDesfireSetupViewModel, string> getter,
+            string input,
+            string expected)
+        {
+            var viewModel = new MifareDesfireSetupViewModel();
+
+            setter(viewModel, input);
+
+            Assert.Equal(expected, getter(viewModel));
+            Assert.Equal(32, getter(viewModel).Length);
         }
 
         [Fact]
