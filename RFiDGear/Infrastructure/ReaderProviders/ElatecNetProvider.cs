@@ -1324,7 +1324,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 arguments = new object[]
                 {
                     fileNo,
-                    DESFireFileType.BackupFile,
+                    DESFireFileType.DF_FT_BACKUPDATAFILE,
                     (Elatec.NET.Cards.Mifare.EncryptionMode)encMode,
                     accessRights,
                     fileSize
