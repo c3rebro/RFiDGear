@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using RFiDGear.Infrastructure;
-using RFiDGear.Infrastructure.ReaderProviders;
+using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Models;
 using RFiDGear.Services;
 using RFiDGear.Services.Factories;
