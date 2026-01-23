@@ -16,11 +16,6 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
-                if (Application.Current == null)
-                {
-                    new Application();
-                }
-
                 var items = new ObservableCollection<string> { "First", "Second" };
                 var grid = BuildDataGrid(items);
                 var window = new Window { Content = grid, Width = 300, Height = 200 };
@@ -42,11 +37,6 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
-                if (Application.Current == null)
-                {
-                    new Application();
-                }
-
                 var items = new ObservableCollection<string> { "First", "Second" };
                 var grid = BuildDataGrid(items);
                 var window = new Window { Content = grid, Width = 300, Height = 200 };
@@ -55,7 +45,7 @@ namespace RFiDGear.Tests
                 grid.SelectedItem = items[0];
                 grid.UpdateLayout();
 
-                var row = (DataGridRow)grid.ItemContainerGenerator.ContainerFromItem(items[0]);
+                var row = GetRow(grid, items[0]);
                 Assert.NotNull(row);
                 Assert.False(row.IsEditing);
 
@@ -148,6 +138,25 @@ namespace RFiDGear.Tests
             }
 
             throw new InvalidOperationException("Unable to locate a ContextMenuEventArgs constructor.");
+        }
+
+        private static DataGridRow GetRow(DataGrid grid, object item)
+        {
+            grid.UpdateLayout();
+            grid.ScrollIntoView(item);
+            grid.UpdateLayout();
+            DoEvents();
+
+            return (DataGridRow)grid.ItemContainerGenerator.ContainerFromItem(item);
+        }
+
+        private static void DoEvents()
+        {
+            var frame = new System.Windows.Threading.DispatcherFrame();
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Background,
+                new Action(() => frame.Continue = false));
+            System.Windows.Threading.Dispatcher.PushFrame(frame);
         }
     }
 }

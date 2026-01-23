@@ -9,17 +9,26 @@ namespace RFiDGear.Tests
     {
         public static Task RunOnStaThreadAsync(Action action)
         {
+            return RunOnStaThreadAsync(() =>
+            {
+                action();
+                return Task.CompletedTask;
+            });
+        }
+
+        public static Task RunOnStaThreadAsync(Func<Task> action)
+        {
             var tcs = new TaskCompletionSource<object>();
 
             var thread = new Thread(() =>
             {
                 SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
 
-                Dispatcher.CurrentDispatcher.InvokeAsync(() =>
+                Dispatcher.CurrentDispatcher.InvokeAsync(async () =>
                 {
                     try
                     {
-                        action();
+                        await action();
                         tcs.SetResult(null);
                     }
                     catch (Exception ex)
