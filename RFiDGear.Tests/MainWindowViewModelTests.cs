@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using RFiDGear.Infrastructure;
-using RFiDGear.Infrastructure.ReaderProviders;
+using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Models;
 using RFiDGear.Services;
 using RFiDGear.Services.Factories;

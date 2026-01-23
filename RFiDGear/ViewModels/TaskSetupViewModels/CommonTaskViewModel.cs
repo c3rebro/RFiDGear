@@ -86,8 +86,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         public CommonTaskViewModel()
         {
-            eventLog.Source = Assembly.GetEntryAssembly().GetName().Name;
-
             CurrentTaskErrorLevel = ERROR.Empty;
 
             checkpoint = new Checkpoint();

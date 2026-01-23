@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using RFiDGear.Extensions.VCNEditor.DataAccessLayer;
 using Xunit;
