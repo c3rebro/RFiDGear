@@ -21,6 +21,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
@@ -1129,14 +1130,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => desfireMasterKeyCurrent;
             set
             {
-                try
-                {
-                    desfireMasterKeyCurrent = value.Length > 32 ? value.ToUpper().Remove(32) : value;
-                }
-                catch
-                {
-                    desfireMasterKeyCurrent = value.ToUpper();
-                }
+                desfireMasterKeyCurrent = NormalizeDesfireKeyInput(value);
                 IsValidDesfireMasterKeyCurrent = (CustomConverter.IsInHexFormat(desfireMasterKeyCurrent) && desfireMasterKeyCurrent.Length == 32);
                 OnPropertyChanged(nameof(DesfireMasterKeyCurrent));
             }
@@ -1180,14 +1174,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => desfireMasterKeyTarget;
             set
             {
-                try
-                {
-                    desfireMasterKeyTarget = value.Length > 32 ? value.ToUpper().Remove(32) : value;
-                }
-                catch
-                {
-                    desfireMasterKeyTarget = value.ToUpper();
-                }
+                desfireMasterKeyTarget = NormalizeDesfireKeyInput(value);
 
                 IsValidDesfireMasterKeyTarget = (
                     CustomConverter.IsInHexFormat(desfireMasterKeyTarget) &&
@@ -1365,6 +1352,32 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
+        /// Normalizes DESFire key input by stripping non-hex characters, uppercasing, and trimming to the expected length.
+        /// </summary>
+        /// <param name="value">The user-provided key input.</param>
+        /// <param name="maxLength">The maximum number of hex characters to retain.</param>
+        /// <returns>The normalized key string.</returns>
+        private static string NormalizeDesfireKeyInput(string value, int maxLength = 32)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var builder = new StringBuilder(value.Length);
+            foreach (var character in value)
+            {
+                if (Uri.IsHexDigit(character))
+                {
+                    builder.Append(char.ToUpperInvariant(character));
+                }
+            }
+
+            var normalized = builder.ToString();
+            return normalized.Length > maxLength ? normalized.Substring(0, maxLength) : normalized;
+        }
+
+        /// <summary>
         ///
         /// </summary>
         public bool IsAllowChangeMKChecked
@@ -1467,14 +1480,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => desfireAppKeyCurrent;
             set
             {
-                try
-                {
-                    desfireAppKeyCurrent = value.Length > 32 ? value.ToUpper().Remove(32) : value;
-                }
-                catch
-                {
-                    desfireAppKeyCurrent = value.ToUpper();
-                }
+                desfireAppKeyCurrent = NormalizeDesfireKeyInput(value);
                 IsValidDesfireAppKeyCurrent = (CustomConverter.IsInHexFormat(desfireAppKeyCurrent) && desfireAppKeyCurrent.Length == 32);
                 OnPropertyChanged(nameof(DesfireAppKeyCurrent));
 
@@ -1506,14 +1512,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => desfireAppKeyCurrentOld;
             set
             {
-                try
-                {
-                    desfireAppKeyCurrentOld = value.Length > 32 ? value.ToUpper().Remove(32) : value;
-                }
-                catch
-                {
-                    desfireAppKeyCurrentOld = value.ToUpper();
-                }
+                desfireAppKeyCurrentOld = NormalizeDesfireKeyInput(value);
                 IsValidDesfireAppKeyCurrentOld = (CustomConverter.IsInHexFormat(desfireAppKeyCurrentOld) && desfireAppKeyCurrentOld.Length == 32);
                 OnPropertyChanged(nameof(DesfireAppKeyCurrentOld));
             }
@@ -1657,14 +1656,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => desfireAppKeyTarget;
             set
             {
-                try
-                {
-                    desfireAppKeyTarget = value.Length > 32 ? value.ToUpper().Remove(32) : value;
-                }
-                catch
-                {
-                    desfireAppKeyTarget = value.ToUpper();
-                }
+                desfireAppKeyTarget = NormalizeDesfireKeyInput(value);
 
                 IsValidDesfireAppKeyTarget = (
                     CustomConverter.IsInHexFormat(desfireAppKeyTarget) &&
@@ -2018,14 +2010,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => desfireReadKeyCurrent;
             set
             {
-                try
-                {
-                    desfireReadKeyCurrent = value.Length > 32 ? value.ToUpper().Remove(32) : value;
-                }
-                catch
-                {
-                    desfireReadKeyCurrent = value.ToUpper();
-                }
+                desfireReadKeyCurrent = NormalizeDesfireKeyInput(value);
 
                 IsValidDesfireReadKeyCurrent = (
                     CustomConverter.IsInHexFormat(desfireReadKeyCurrent) &&
@@ -2077,14 +2062,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => desfireWriteKeyCurrent;
             set
             {
-                try
-                {
-                    desfireWriteKeyCurrent = value.Length > 32 ? value.ToUpper().Remove(32) : value;
-                }
-                catch
-                {
-                    desfireWriteKeyCurrent = value.ToUpper();
-                }
+                desfireWriteKeyCurrent = NormalizeDesfireKeyInput(value);
 
                 IsValidDesfireWriteKeyCurrent = (
                     CustomConverter.IsInHexFormat(desfireWriteKeyCurrent) &&
