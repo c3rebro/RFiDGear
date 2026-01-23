@@ -1341,6 +1341,9 @@ Needed by:
   <data name="contextMenuItemExecuteAllItems" xml:space="preserve">
     <value>Run All Tasks</value>
   </data>
+  <data name="contextMenuItemResetAllItems" xml:space="preserve">
+    <value>Reset All Tasks</value>
+  </data>
   <data name="contextMenuItemAddNewTask" xml:space="preserve">
     <value>Add New Task</value>
   </data>

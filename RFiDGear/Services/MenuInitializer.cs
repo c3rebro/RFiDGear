@@ -15,6 +15,7 @@ namespace RFiDGear.Services
             ICommand writeSelectedOnceCommand,
             ICommand resetSelectedStatusCommand,
             ICommand writeToChipOnceCommand,
+            ICommand resetAllStatusCommand,
             ICommand resetReportTaskDirectoryCommand,
             ICommand readChipCommand,
             ICommand createGenericTaskCommand,
@@ -52,6 +53,7 @@ namespace RFiDGear.Services
             ICommand writeSelectedOnceCommand,
             ICommand resetSelectedStatusCommand,
             ICommand writeToChipOnceCommand,
+            ICommand resetAllStatusCommand,
             ICommand resetReportTaskDirectoryCommand,
             ICommand readChipCommand,
             ICommand createGenericTaskCommand,
@@ -72,6 +74,7 @@ namespace RFiDGear.Services
                 writeSelectedOnceCommand,
                 resetSelectedStatusCommand,
                 writeToChipOnceCommand,
+                resetAllStatusCommand,
                 resetReportTaskDirectoryCommand);
 
             var emptySpaceContextMenuItems = contextMenuBuilder.BuildEmptySpaceMenu(

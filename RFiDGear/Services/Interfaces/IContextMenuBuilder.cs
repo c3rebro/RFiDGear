@@ -9,7 +9,15 @@ namespace RFiDGear.Services.Interfaces
     /// </summary>
     public interface IContextMenuBuilder
     {
-        ObservableCollection<MenuItem> BuildNodeMenu(ICommand addNewTaskCommand, ICommand addOrEditCommand, ICommand deleteCommand, ICommand executeSelectedCommand, ICommand resetSelectedCommand, ICommand executeAllCommand, ICommand resetReportPathCommand);
+        ObservableCollection<MenuItem> BuildNodeMenu(
+            ICommand addNewTaskCommand,
+            ICommand addOrEditCommand,
+            ICommand deleteCommand,
+            ICommand executeSelectedCommand,
+            ICommand resetSelectedCommand,
+            ICommand executeAllCommand,
+            ICommand resetAllCommand,
+            ICommand resetReportPathCommand);
 
         ObservableCollection<MenuItem> BuildEmptyTreeMenu(ICommand readChipCommand);
 

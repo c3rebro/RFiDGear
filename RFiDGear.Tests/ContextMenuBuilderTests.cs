@@ -9,6 +9,43 @@ namespace RFiDGear.Tests
     public class ContextMenuBuilderTests
     {
         [Fact]
+        public void BuildNodeMenu_BuildsResetAllItemWithCommand()
+        {
+            var addNewTaskCommand = new RelayCommand(() => { });
+            var addEditTaskCommand = new RelayCommand(() => { });
+            var deleteCommand = new RelayCommand(() => { });
+            var executeSelectedCommand = new RelayCommand(() => { });
+            var resetSelectedCommand = new RelayCommand(() => { });
+            var executeAllCommand = new RelayCommand(() => { });
+            var resetAllCommand = new RelayCommand(() => { });
+            var resetReportPathCommand = new RelayCommand(() => { });
+
+            var builder = new ContextMenuBuilder(key => key);
+
+            var menuItems = builder.BuildNodeMenu(
+                addNewTaskCommand,
+                addEditTaskCommand,
+                deleteCommand,
+                executeSelectedCommand,
+                resetSelectedCommand,
+                executeAllCommand,
+                resetAllCommand,
+                resetReportPathCommand);
+
+            var executeAllItem = Assert.IsType<MenuItem>(menuItems[7]);
+            Assert.Equal("contextMenuItemExecuteAllItems", executeAllItem.Header);
+            Assert.Same(executeAllCommand, executeAllItem.Command);
+
+            var resetAllItem = Assert.IsType<MenuItem>(menuItems[8]);
+            Assert.Equal("contextMenuItemResetAllItems", resetAllItem.Header);
+            Assert.Same(resetAllCommand, resetAllItem.Command);
+
+            var resetReportItem = Assert.IsType<MenuItem>(menuItems[9]);
+            Assert.Equal("contextMenuItemResetReportPath", resetReportItem.Header);
+            Assert.Same(resetReportPathCommand, resetReportItem.Command);
+        }
+
+        [Fact]
         public void BuildEmptySpaceMenu_BuildsCreateTaskSubMenuWithCommands()
         {
             var createGenericTaskCommand = new RelayCommand(() => { });

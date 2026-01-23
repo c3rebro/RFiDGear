@@ -1360,6 +1360,9 @@ Needed by:
   <data name="contextMenuItemExecuteAllItems" xml:space="preserve">
     <value>Alle Aufgaben zurücksetzen und ausführen</value>
   </data>
+  <data name="contextMenuItemResetAllItems" xml:space="preserve">
+    <value>Alle Aufgaben zurücksetzen</value>
+  </data>
   <data name="contextMenuItemAddNewTask" xml:space="preserve">
     <value>Neue Aufgabe anlegen</value>
   </data>
