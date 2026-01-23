@@ -288,19 +288,19 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// 
+        /// Opens the last-used project file from settings when no explicit path is provided.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A task that completes once the project load finishes.</returns>
         private async Task OpenLastProjectFile()
         {
             await OpenLastProjectFile(string.Empty);
         }
 
         /// <summary>
-        /// 
+        /// Opens the specified project file, persisting it as the last-used path when provided.
         /// </summary>
-        /// <param name="projectFileToUse"></param>
-        /// <returns></returns>
+        /// <param name="projectFileToUse">Optional project path to load instead of the persisted value.</param>
+        /// <returns>A task that completes once the project load finishes.</returns>
         private async Task OpenLastProjectFile(string projectFileToUse)
         {
             using (var settings = new SettingsReaderWriter())
@@ -315,6 +315,8 @@ namespace RFiDGear.ViewModel
                 else
                 {
                     lastUsedDBPath = projectFileToUse;
+                    settings.DefaultSpecification.LastUsedProjectPath = projectFileToUse;
+                    await settings.SaveSettings();
                 }
 
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
@@ -1268,17 +1270,23 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// Expose Command to Save ProjectFile Menu Item
+        /// Exposes the command to save the current project, falling back to Save As
+        /// when no valid last-used project path is available.
         /// </summary>
         public IAsyncRelayCommand SaveTaskDialogCommand => new AsyncRelayCommand(OnNewSaveTaskDialogCommand);
-        private Task OnNewSaveTaskDialogCommand()
+        private async Task OnNewSaveTaskDialogCommand()
         {
             using (var settings = new SettingsReaderWriter())
             {
-                databaseReaderWriter.WriteDatabase(ChipTasks, settings.DefaultSpecification.LastUsedProjectPath);
-            }
+                var targetPath = settings.DefaultSpecification.LastUsedProjectPath;
+                if (!IsValidProjectSavePath(targetPath))
+                {
+                    await OnNewSaveTaskAsDialogCommand();
+                    return;
+                }
 
-            return Task.CompletedTask;
+                databaseReaderWriter.WriteDatabase(ChipTasks, targetPath);
+            }
         }
 
         /// <summary>
@@ -1325,6 +1333,26 @@ namespace RFiDGear.ViewModel
             {
                 databaseReaderWriter.WriteDatabase(ChipTasks, fileName);
             }
+        }
+
+        private static bool IsValidProjectSavePath(string projectPath)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath))
+            {
+                return false;
+            }
+
+            if (!Path.HasExtension(projectPath))
+            {
+                return false;
+            }
+
+            if (Directory.Exists(projectPath))
+            {
+                return false;
+            }
+
+            return File.Exists(projectPath);
         }
 
         /// <summary>
