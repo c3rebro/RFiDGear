@@ -16,11 +16,12 @@ namespace RFiDGear.Services.Commands
             ICommand deleteSelectedCommand,
             ICommand resetSelectedCommand,
             ICommand executeAllCommand,
+            ICommand resetAllCommand,
             ICommand resetReportCommand,
             ICommand readChipCommand)
         {
             commandMenuProvider.BuildMenus(getAddEditCommand, executeSelectedCommand, deleteSelectedCommand, resetSelectedCommand,
-                executeAllCommand, resetReportCommand, readChipCommand);
+                executeAllCommand, resetAllCommand, resetReportCommand, readChipCommand);
 
             return new CommandMenuSet(commandMenuProvider.RowContextMenuItems,
                 commandMenuProvider.EmptySpaceContextMenuItems,

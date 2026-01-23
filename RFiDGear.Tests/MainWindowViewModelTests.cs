@@ -242,6 +242,7 @@ namespace RFiDGear.Tests
             System.Windows.Input.ICommand executeSelectedCommand,
             System.Windows.Input.ICommand resetSelectedCommand,
             System.Windows.Input.ICommand executeAllCommand,
+            System.Windows.Input.ICommand resetAllCommand,
             System.Windows.Input.ICommand resetReportPathCommand) => new() { new MenuItem() };
     }
 
@@ -319,6 +320,7 @@ namespace RFiDGear.Tests
             System.Windows.Input.ICommand writeSelectedOnceCommand,
             System.Windows.Input.ICommand resetSelectedStatusCommand,
             System.Windows.Input.ICommand writeToChipOnceCommand,
+            System.Windows.Input.ICommand resetAllStatusCommand,
             System.Windows.Input.ICommand resetReportTaskDirectoryCommand,
             System.Windows.Input.ICommand readChipCommand,
             System.Windows.Input.ICommand createGenericTaskCommand,
@@ -327,7 +329,15 @@ namespace RFiDGear.Tests
             System.Windows.Input.ICommand createDesfireTaskCommand,
             System.Windows.Input.ICommand createUltralightTaskCommand)
         {
-            var rowMenu = contextMenuBuilder.BuildNodeMenu(addEditCommand, addEditCommand, deleteSelectedCommand, writeSelectedOnceCommand, resetSelectedStatusCommand, writeToChipOnceCommand, resetReportTaskDirectoryCommand);
+            var rowMenu = contextMenuBuilder.BuildNodeMenu(
+                addEditCommand,
+                addEditCommand,
+                deleteSelectedCommand,
+                writeSelectedOnceCommand,
+                resetSelectedStatusCommand,
+                writeToChipOnceCommand,
+                resetAllStatusCommand,
+                resetReportTaskDirectoryCommand);
             var emptySpaceMenu = contextMenuBuilder.BuildEmptySpaceMenu(
                 createGenericTaskCommand,
                 createGenericChipTaskCommand,

@@ -17,6 +17,7 @@ namespace RFiDGear.Services.Commands
             ICommand deleteSelectedCommand,
             ICommand resetSelectedCommand,
             ICommand executeAllCommand,
+            ICommand resetAllCommand,
             ICommand resetReportCommand,
             ICommand readChipCommand)
         {
@@ -82,6 +83,14 @@ namespace RFiDGear.Services.Commands
                 HorizontalContentAlignment = HorizontalAlignment.Center,
                 VerticalContentAlignment = VerticalAlignment.Center,
                 Command = executeAllCommand
+            });
+
+            RowContextMenuItems.Add(new MenuItem()
+            {
+                Header = ResourceLoader.GetResource("contextMenuItemResetAllItems"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Command = resetAllCommand
             });
 
             RowContextMenuItems.Add(new MenuItem()

@@ -25,7 +25,15 @@ namespace RFiDGear.Services
             this.resourceResolver = resourceResolver ?? throw new ArgumentNullException(nameof(resourceResolver));
         }
 
-        public ObservableCollection<MenuItem> BuildNodeMenu(ICommand addNewTaskCommand, ICommand addOrEditCommand, ICommand deleteCommand, ICommand executeSelectedCommand, ICommand resetSelectedCommand, ICommand executeAllCommand, ICommand resetReportPathCommand)
+        public ObservableCollection<MenuItem> BuildNodeMenu(
+            ICommand addNewTaskCommand,
+            ICommand addOrEditCommand,
+            ICommand deleteCommand,
+            ICommand executeSelectedCommand,
+            ICommand resetSelectedCommand,
+            ICommand executeAllCommand,
+            ICommand resetAllCommand,
+            ICommand resetReportPathCommand)
         {
             var rowContextMenuItems = new ObservableCollection<MenuItem>();
 
@@ -79,6 +87,14 @@ namespace RFiDGear.Services
                 HorizontalContentAlignment = HorizontalAlignment.Center,
                 VerticalContentAlignment = VerticalAlignment.Center,
                 Command = executeAllCommand
+            });
+
+            rowContextMenuItems.Add(new MenuItem
+            {
+                Header = resourceResolver("contextMenuItemResetAllItems"),
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Command = resetAllCommand
             });
 
             rowContextMenuItems.Add(new MenuItem

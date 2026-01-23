@@ -204,6 +204,7 @@ namespace RFiDGear.ViewModel
                 WriteSelectedTaskToChipOnceCommand,
                 ResetSelectedTaskStatusCommand,
                 WriteToChipOnceCommand,
+                ResetTaskStatusCommand,
                 ResetReportTaskDirectoryCommand,
                 ReadChipCommand,
                 CreateGenericTaskCommand,

@@ -11,6 +11,7 @@ namespace RFiDGear.Services.Commands
             ICommand deleteSelectedCommand,
             ICommand resetSelectedCommand,
             ICommand executeAllCommand,
+            ICommand resetAllCommand,
             ICommand resetReportCommand,
             ICommand readChipCommand);
     }
