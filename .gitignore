@@ -28,3 +28,5 @@
 /RFiDGearSetup/RFiDGear_Setup_x86/bin
 /RFiDGear.Extensions/VCNEditor
 /RFiDGearBundleSetup/Bundle.wxs
+/RFiDGearBundleSetup/obj
+/RFiDGearBundleSetup/bin

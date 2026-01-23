@@ -1,67 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension" xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
-	<?define VersionNumber="!(bind.packageVersion.MainPackage)" ?>
+	<?define VersionNumber="2.0.2" ?>
 	
-	<?define UpgradeCode="a34bc413-e349-4fd1-8b90-32f95a333436" ?>
-	<?define NetFx451MinRelease = 378675 ?>
+	<?define UpgradeCode="a34bc413-e349-4fd1-8b90-32f95a333477" ?>
 	<!-- The URL for add/remove programs -->
 	<?define InfoURL="https://github.com/c3rebro" ?>
-	<?define Leosac_ProgramDataDir = "C:\Program Files\LibLogicalAccess\LibLogicalAccess" ?>
 	<!-- 32-bit / 64-bit variables -->
 	<?if $(var.Platform) = x64 ?>
 	<?define Win64 = "yes" ?>
 	<?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
 	<?define RFiDGearExeSourcePath = "$(var.ProjectDir)..\RFiDGear\bin\Release\RFiDGear.exe" ?>
-	<?define Leosac_RegistrySearch_Value = "C:\Program Files\Common Files\ISLOG\LibLogicalAccess\1.87.3.0214\liblogicalaccess.com.dll" ?>
 	<?else ?>
 	<?define Win64 = "no" ?>
 	<?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
 	<?define RFiDGearExeSourcePath = "$(var.ProjectDir)..\RFiDGear\bin\Release\RFiDGear.exe" ?>
-	<?define Leosac_RegistrySearch_Value = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.3.0214\liblogicalaccess.com.dll" ?>
 	<?endif ?>
 	
-	<Bundle Name="$(var.RFiDGear.ProjectName)" Version="$(var.VersionNumber)" Manufacturer="Messgeraetetechnik Hansen" UpgradeCode="$(var.UpgradeCode)" Copyright="Messgeraetetechnik Hansen 2024" IconSourceFile="$(var.RFiDGear.ProjectDir)Resources\logo.ico" AboutUrl="https://github.com/c3rebro">
+	<Bundle Name="$(var.RFiDGear.ProjectName)" Version="$(var.VersionNumber)" Manufacturer="Messgeraetetechnik Hansen" UpgradeCode="$(var.UpgradeCode)" Copyright="Messgeraetetechnik Hansen 2026" IconSourceFile="$(var.RFiDGear.ProjectDir)Resources\logo.ico" AboutUrl="https://github.com/c3rebro">
 		<BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
 			<bal:WixStandardBootstrapperApplication LicenseFile="$(var.RFiDGear.ProjectDir)Resources\gpl_v3_license.rtf" LogoFile="setuplogo.ico" ThemeFile="rtftheme.xml"/>
 		</BootstrapperApplicationRef>
 		
 		<Chain>
-			<!-- Runtime dependency: Microsoft Visual C++ 2010 x86 libraries -->
-			<ExePackage
-				Cache="no"
-				Compressed="yes"
-				PerMachine="yes"
-				Permanent="yes"
-				Vital="yes"
-				Name="vcredist_x86_2010_SP1.exe"
-				SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\runtime\vcredist_x86_2010_SP1.exe"
-				InstallCommand="/install /quiet /norestart">
-				
-				<!-- -->
-				<ExitCode Value="3010" Behavior="forceReboot"/>
-				
-				<!-- Ignore "Newer version installed" error -->
-				<ExitCode Value="1638" Behavior="success"/>
-			</ExePackage>
-			
-			<!-- Runtime dependency: Microsoft Visual C++ 2010 x64 libraries -->
-			<ExePackage
-				Cache="no"
-				Compressed="yes"
-				PerMachine="yes"
-				Permanent="yes"
-				Vital="yes"
-				Name="vcredist_x64_2010_SP1.exe"
-				SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\runtime\vcredist_x64_2010_SP1.exe"
-				InstallCommand="/install /quiet /norestart">
-				
-				<!-- -->
-				<ExitCode Value="3010" Behavior="forceReboot"/>
-				
-				<!-- Ignore "Newer version installed" error -->
-				<ExitCode Value="1638" Behavior="success"/>
-			</ExePackage>
-			
 			<!-- Runtime dependency: Microsoft Visual C++ x86 libraries -->
 			<ExePackage
 				Cache="no"
@@ -70,7 +30,7 @@
 				Permanent="yes"
 				Vital="yes"
 				Name="vcredist_x86.exe"
-				SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\runtime\vcredist_x86.exe"
+				SourceFile="runtime\vcredist_x86.exe"
 				InstallCommand="/install /quiet /norestart">
 				
 				<!-- -->
@@ -88,7 +48,7 @@
 				Permanent="yes"
 				Vital="yes"
 				Name="vcredist_x64.exe"
-				SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\runtime\vcredist_x64.exe"
+				SourceFile="runtime\vcredist_x64.exe"
 				InstallCommand="/install /quiet /norestart">
 				
 				<!-- -->
@@ -105,7 +65,7 @@
 				Permanent="yes"
 				Vital="yes"
 				Name="aspnetcore-runtime-8.0.23-win-x86.exe"
-				SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\runtime\aspnetcore-runtime-8.0.23-win-x86.exe"
+				SourceFile="runtime\aspnetcore-runtime-8.0.23-win-x86.exe"
 				InstallCommand="/install /quiet /norestart"
 				InstallCondition="NOT VersionNT64">
 				<ExitCode Value="3010" Behavior="forceReboot"/>
@@ -118,7 +78,7 @@
 				Permanent="yes"
 				Vital="yes"
 				Name="aspnetcore-runtime-8.0.23-win-x64.exe"
-				SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\runtime\aspnetcore-runtime-8.0.23-win-x64.exe"
+				SourceFile="runtime\aspnetcore-runtime-8.0.23-win-x64.exe"
 				InstallCommand="/install /quiet /norestart"
 				InstallCondition="VersionNT64">
 				<ExitCode Value="3010" Behavior="forceReboot"/>
@@ -128,50 +88,50 @@
 			<!-- Optional driver packages (selectable in the installer). -->
 			<MsiPackage Id="Driver_Omnikey_5321_x64" Cache="no" Compressed="yes" Vital="no" Visible="yes"
 			            DisplayName="Omnikey 5321 driver (x64)"
-			            SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\drivers\HID_Global_xchip_driver_1.2.29.156\HID_Global_xchip_driver_1.2.29.156_x64.msi"
+			            SourceFile="drivers\HID_Global_xchip_driver_1.2.29.156\HID_Global_xchip_driver_1.2.29.156_x64.msi"
 			            InstallCondition="VersionNT64" />
 			<MsiPackage Id="Driver_Omnikey_5321_x86" Cache="no" Compressed="yes" Vital="no" Visible="yes"
 			            DisplayName="Omnikey 5321 driver (x86)"
-			            SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\drivers\HID_Global_xchip_driver_1.2.29.156\HID_Global_xchip_driver_1.2.29.156_x86.msi"
+			            SourceFile="drivers\HID_Global_xchip_driver_1.2.29.156\HID_Global_xchip_driver_1.2.29.156_x86.msi"
 			            InstallCondition="NOT VersionNT64" />
 			<MsiPackage Id="Driver_Omnikey_5422_x64" Cache="no" Compressed="yes" Vital="no" Visible="yes"
 			            DisplayName="Omnikey 5422 driver (x64)"
-			            SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\drivers\sfw-01556-revC-hid-omnikey-ccid-driver-2.3.4.121\HID-OMNIKEY-CCID-Driver-Installer-2.3.4.121-x64.msi"
+			            SourceFile="drivers\sfw-01556-revC-hid-omnikey-ccid-driver-2.3.4.121\HID-OMNIKEY-CCID-Driver-Installer-2.3.4.121-x64.msi"
 			            InstallCondition="VersionNT64" />
 			<MsiPackage Id="Driver_Omnikey_5422_x86" Cache="no" Compressed="yes" Vital="no" Visible="yes"
 			            DisplayName="Omnikey 5422 driver (x86)"
-			            SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\drivers\sfw-01556-revC-hid-omnikey-ccid-driver-2.3.4.121\HID-OMNIKEY-CCID-Driver-Installer-2.3.4.121-x86.msi"
+			            SourceFile="drivers\sfw-01556-revC-hid-omnikey-ccid-driver-2.3.4.121\HID-OMNIKEY-CCID-Driver-Installer-2.3.4.121-x86.msi"
 			            InstallCondition="NOT VersionNT64" />
-			<ExePackage Id="Driver_Sciel_SCL3711_x64" Cache="no" Compressed="yes" Vital="no" Visible="yes"
+			<ExePackage Id="Driver_Sciel_SCL3711_x64" Cache="no" Compressed="yes" Vital="no"
 			            PerMachine="yes" Permanent="yes"
 			            DisplayName="Sciel SCL3711 driver (x64)"
-			            SourceFile="C:\Windows\System32\pnputil.exe"
+			            SourceFile="pnputil.exe"
 			            InstallCommand="/add-driver &quot;SCL3711.inf&quot; /install"
 			            InstallCondition="VersionNT64">
 				<Payload Name="SCL3711.inf"
-				         SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\drivers\scl3711_windows_driver\X64\SCL3711.inf" />
+				         SourceFile="drivers\scl3711_windows_driver\X64\SCL3711.inf" />
 			</ExePackage>
-			<ExePackage Id="Driver_Sciel_SCL3711_x86" Cache="no" Compressed="yes" Vital="no" Visible="yes"
+			<ExePackage Id="Driver_Sciel_SCL3711_x86" Cache="no" Compressed="yes" Vital="no"
 			            PerMachine="yes" Permanent="yes"
 			            DisplayName="Sciel SCL3711 driver (x86)"
-			            SourceFile="C:\Windows\System32\pnputil.exe"
+			            SourceFile="pnputil.exe"
 			            InstallCommand="/add-driver &quot;SCL3711.inf&quot; /install"
 			            InstallCondition="NOT VersionNT64">
 				<Payload Name="SCL3711.inf"
-				         SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearBundleSetup\drivers\scl3711_windows_driver\X86\SCL3711.inf" />
+				         SourceFile="drivers\scl3711_windows_driver\X86\SCL3711.inf" />
 			</ExePackage>
 			<!-- RFiDGear MSI selection based on OS architecture and UI language (German = 1031). -->
 			<MsiPackage Id="RFiDGear_x64_de" Cache="no" Compressed="yes" Vital="yes"
-			            SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearSetup\RFiDGear_Setup_x64\bin\x64\Release\de-de\RFiDGear_Setup_x64.msi"
+			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x64\bin\x64\Release\de-de\RFiDGear_Setup_x64.msi"
 			            InstallCondition="VersionNT64 AND (WixBundleUILanguage = 1031)" />
 			<MsiPackage Id="RFiDGear_x86_de" Cache="no" Compressed="yes" Vital="yes"
-			            SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearSetup\RFiDGear_Setup_x86\bin\x64\Release\de-de\RFiDGear_Setup_x86.msi"
+			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x86\bin\x64\Release\de-de\RFiDGear_Setup_x86.msi"
 			            InstallCondition="NOT VersionNT64 AND (WixBundleUILanguage = 1031)" />
 			<MsiPackage Id="RFiDGear_x64_en" Cache="no" Compressed="yes" Vital="yes"
-			            SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearSetup\RFiDGear_Setup_x64\bin\x64\Release\en-us\RFiDGear_Setup_x64.msi"
+			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x64\bin\x64\Release\en-us\RFiDGear_Setup_x64.msi"
 			            InstallCondition="VersionNT64 AND NOT (WixBundleUILanguage = 1031)" />
 			<MsiPackage Id="RFiDGear_x86_en" Cache="no" Compressed="yes" Vital="yes"
-			            SourceFile="C:\TEMP\Seafile\EinzelSync\RFIDGear\RFiDGearSetup\RFiDGear_Setup_x86\bin\x64\Release\en-us\RFiDGear_Setup_x86.msi"
+			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x86\bin\x64\Release\en-us\RFiDGear_Setup_x86.msi"
 			            InstallCondition="NOT VersionNT64 AND NOT (WixBundleUILanguage = 1031)" />
 		</Chain>
 	</Bundle>

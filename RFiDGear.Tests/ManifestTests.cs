@@ -13,7 +13,7 @@ namespace RFiDGear.Tests
 <Manifest version=""2.0.0"">
   <CheckInterval>900</CheckInterval>
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
-  <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>
+  <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>
   <BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>
   <Payload>update.zip</Payload>
   <VersionInfoText>Version Info
@@ -27,7 +27,7 @@ goes here!
             Assert.Equal(new Version("2.0.0"), manifest.Version);
             Assert.Equal(900, manifest.CheckInterval);
             Assert.Equal("https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml", manifest.RemoteConfigUri);
-            Assert.Equal("D68EF3A7-E787-4CC4-B020-878BA649B4CD", manifest.SecurityToken);
+            Assert.Equal("D68EF3A7-E787-4CC4-B020-878BA649B4DC", manifest.SecurityToken);
             Assert.Equal("https://github.com/c3rebro/RFiDGear/releases/latest/download/", manifest.BaseUri);
             Assert.Equal(new[] { "update.zip" }, manifest.Payloads);
             Assert.Equal("Version Info\n\ngoes here!\n==>", manifest.VersionInfoText);
@@ -40,7 +40,7 @@ goes here!
 <Manifest xmlns=""urn:rfidgear-update"" version=""2.0.0"">
   <CheckInterval>900</CheckInterval>
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
-  <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>
+  <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>
   <BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>
   <Payload>update.zip</Payload>
   <VersionInfoText>Version Info
@@ -54,7 +54,7 @@ goes here!
             Assert.Equal(new Version("2.0.0"), manifest.Version);
             Assert.Equal(900, manifest.CheckInterval);
             Assert.Equal("https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml", manifest.RemoteConfigUri);
-            Assert.Equal("D68EF3A7-E787-4CC4-B020-878BA649B4CD", manifest.SecurityToken);
+            Assert.Equal("D68EF3A7-E787-4CC4-B020-878BA649B4DC", manifest.SecurityToken);
             Assert.Equal("https://github.com/c3rebro/RFiDGear/releases/latest/download/", manifest.BaseUri);
             Assert.Equal(new[] { "update.zip" }, manifest.Payloads);
             Assert.Equal("Version Info\n\ngoes here!\n==>", manifest.VersionInfoText);
@@ -67,7 +67,7 @@ goes here!
 <Manifest version=""2.0.0"">
   <CheckInterval>900</CheckInterval>
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
-  <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>
+  <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>
   <BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>
   <Payload>update.zip</Payload>
   <VersionInfoText>UI & dialogs</VersionInfoText>
@@ -85,7 +85,7 @@ goes here!
 <Manifest version=""2.0.0"">
   <CheckInterval>900</CheckInterval>
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
-  <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>
+  <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>
   <BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>
   <Payload>update.zip</Payload>
   <VersionInfoText>UI & dialogs & settings (v2) 100% 'ready' / 'ok'</VersionInfoText>
@@ -103,7 +103,7 @@ goes here!
                 + "<Manifest version=\"2.0.0\">"
                 + "<CheckInterval>900</CheckInterval>"
                 + "<RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>"
-                + "<SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>"
+                + "<SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>"
                 + "<BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>"
                 + "<Payload>update.zip</Payload>"
                 + "<VersionInfoText>Update" + '\u001F' + "notes</VersionInfoText>"
@@ -121,7 +121,7 @@ goes here!
                 + "<Manifest version=\"2.0.0\">"
                 + "<CheckInterval>900</CheckInterval>"
                 + "<RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>"
-                + "<SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>"
+                + "<SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>"
                 + "<BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>"
                 + "<Payload>update.zip</Payload>"
                 + "<VersionInfoText>UI" + '\u0001' + '\u0008' + " notes" + '\u001F' + " here</VersionInfoText>"

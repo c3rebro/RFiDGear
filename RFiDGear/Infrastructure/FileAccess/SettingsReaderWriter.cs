@@ -21,7 +21,7 @@ namespace RFiDGear.Infrastructure.FileAccess
         private readonly string updateConfigFileFileName = "update.xml";
         private readonly string updateURL = @"https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml";
         private readonly int updateInterval = 900;
-        private readonly string securityToken = "D68EF3A7-E787-4CC4-B020-878BA649B4CD";
+        private readonly string securityToken = "D68EF3A7-E787-4CC4-B020-878BA649B4DC";
         private readonly string payload = "update.zip";
         private readonly string baseUri = @"https://github.com/c3rebro/RFiDGear/releases/latest/download/";
         private readonly string settingsFileFileName = "settings.xml";
