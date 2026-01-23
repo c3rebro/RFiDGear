@@ -1,6 +1,8 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -62,6 +64,103 @@ namespace RFiDGear.Tests
 
                 Assert.Equal("Reader", viewModel.CurrentReader);
                 Assert.Equal(uiThreadId, Environment.CurrentManagedThreadId);
+            });
+        }
+
+        [Fact]
+        public async Task SaveProject_UsesProjectPathFromStartupArguments()
+        {
+            await RunOnStaThreadAsync(async () =>
+            {
+                if (Application.Current == null)
+                {
+                    new Application();
+                }
+
+                var bootstrapper = new DeferredSettingsBootstrapper();
+                var viewModel = new MainWindowViewModel(
+                    bootstrapper,
+                    new NoopUpdateNotifier(),
+                    new FakeContextMenuBuilder(),
+                    new FakeAppStartupInitializer(),
+                    new FakeTimerFactory(),
+                    new FakeTaskServiceInitializer(),
+                    new FakeMenuInitializer(),
+                    new FakeStartupArgumentProcessor(),
+                    new NoopUpdateScheduler(),
+                    new FakeReaderMonitor(),
+                    new FakeProjectBootstrapper());
+
+                var initializationTask = viewModel.InitializeAsync();
+
+                bootstrapper.Complete(new SettingsBootstrapResult
+                {
+                    CurrentReaderName = "Reader",
+                    DefaultReaderProvider = ReaderTypes.None,
+                    Culture = CultureInfo.InvariantCulture
+                });
+
+                await initializationTask;
+
+                var tempRoot = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(tempRoot);
+
+                var oldProjectPath = Path.Combine(tempRoot, "old.xml");
+                var newProjectPath = Path.Combine(tempRoot, "new.xml");
+                var originalOldProjectContent = "<Project><ManifestVersion>1.0.0</ManifestVersion></Project>";
+                var originalNewProjectContent = "<Project><ManifestVersion>1.0.0</ManifestVersion></Project>";
+                File.WriteAllText(oldProjectPath, originalOldProjectContent);
+                File.WriteAllText(newProjectPath, originalNewProjectContent);
+
+                var projectManager = new ProjectManager();
+                var originalLastUsedPath = string.Empty;
+
+                using (var settings = new SettingsReaderWriter(projectManager.AppDataPath))
+                {
+                    originalLastUsedPath = settings.DefaultSpecification.LastUsedProjectPath;
+                    settings.DefaultSpecification.LastUsedProjectPath = oldProjectPath;
+                    await settings.SaveSettings();
+                }
+
+                try
+                {
+                    var method = typeof(MainWindowViewModel).GetMethod(
+                        "OpenLastProjectFile",
+                        BindingFlags.Instance | BindingFlags.NonPublic,
+                        null,
+                        new[] { typeof(string) },
+                        null);
+                    Assert.NotNull(method);
+
+                    var openTask = (Task)method.Invoke(viewModel, new object[] { newProjectPath });
+                    await openTask;
+
+                    await viewModel.SaveTaskDialogCommand.ExecuteAsync(null);
+
+                    var updatedOldProjectContent = File.ReadAllText(oldProjectPath);
+                    var updatedNewProjectContent = File.ReadAllText(newProjectPath);
+
+                    Assert.Equal(originalOldProjectContent, updatedOldProjectContent);
+                    Assert.NotEqual(originalNewProjectContent, updatedNewProjectContent);
+
+                    using (var settings = new SettingsReaderWriter(projectManager.AppDataPath))
+                    {
+                        Assert.Equal(newProjectPath, settings.DefaultSpecification.LastUsedProjectPath);
+                    }
+                }
+                finally
+                {
+                    using (var settings = new SettingsReaderWriter(projectManager.AppDataPath))
+                    {
+                        settings.DefaultSpecification.LastUsedProjectPath = originalLastUsedPath;
+                        await settings.SaveSettings();
+                    }
+
+                    if (Directory.Exists(tempRoot))
+                    {
+                        Directory.Delete(tempRoot, recursive: true);
+                    }
+                }
             });
         }
 
