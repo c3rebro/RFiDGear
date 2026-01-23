@@ -30,7 +30,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public void FindDevelopmentExtensionsPath_ReturnsNet8OutputWhenPresent()
+        public void FindDevelopmentExtensionsPaths_ReturnsNet8OutputWhenPresent()
         {
             var tempRoot = Directory.CreateTempSubdirectory("RFiDGearDev").FullName;
             var baseDirectory = Path.Combine(tempRoot, "a", "b", "c", "d", "e");
@@ -41,9 +41,37 @@ namespace RFiDGear.Tests
                 Directory.CreateDirectory(baseDirectory);
                 Directory.CreateDirectory(expectedPath);
 
-                var result = MefHelper.FindDevelopmentExtensionsPath(baseDirectory);
+                var result = MefHelper.FindDevelopmentExtensionsPaths(baseDirectory);
 
-                Assert.Equal(expectedPath, result);
+                Assert.Contains(expectedPath, result, StringComparer.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                Directory.Delete(tempRoot, true);
+            }
+        }
+
+        [Fact]
+        public void FindDevelopmentExtensionsPaths_ReturnsExtensionsOutputWhenPresent()
+        {
+            var tempRoot = Directory.CreateTempSubdirectory("RFiDGearExtDev").FullName;
+            var baseDirectory = Path.Combine(tempRoot, "a", "b", "c", "d", "e");
+            var expectedPath = Path.Combine(
+                tempRoot,
+                "RFiDGear.Extensions",
+                "DesfirePluginSample",
+                "bin",
+                "Debug",
+                "net8.0-windows");
+
+            try
+            {
+                Directory.CreateDirectory(baseDirectory);
+                Directory.CreateDirectory(expectedPath);
+
+                var result = MefHelper.FindDevelopmentExtensionsPaths(baseDirectory);
+
+                Assert.Contains(expectedPath, result, StringComparer.OrdinalIgnoreCase);
             }
             finally
             {

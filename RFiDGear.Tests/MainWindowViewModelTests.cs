@@ -3,11 +3,8 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Models;
@@ -26,13 +23,8 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task InitializeAsync_UsesAsyncSettingsBootstrapperOnUiThread()
         {
-            await RunOnStaThreadAsync(async () =>
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                if (Application.Current == null)
-                {
-                    new Application();
-                }
-
                 var bootstrapper = new DeferredSettingsBootstrapper();
                 var viewModel = new MainWindowViewModel(
                     bootstrapper,
@@ -70,13 +62,8 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task SaveProject_UsesProjectPathFromStartupArguments()
         {
-            await RunOnStaThreadAsync(async () =>
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                if (Application.Current == null)
-                {
-                    new Application();
-                }
-
                 var bootstrapper = new DeferredSettingsBootstrapper();
                 var viewModel = new MainWindowViewModel(
                     bootstrapper,
@@ -164,40 +151,6 @@ namespace RFiDGear.Tests
             });
         }
 
-        private static Task RunOnStaThreadAsync(Func<Task> action)
-        {
-            var tcs = new TaskCompletionSource<object>();
-
-            var thread = new Thread(() =>
-            {
-                SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
-
-                Dispatcher.CurrentDispatcher.InvokeAsync(async () =>
-                {
-                    try
-                    {
-                        await action();
-                        tcs.SetResult(null);
-                    }
-                    catch (Exception ex)
-                    {
-                        tcs.SetException(ex);
-                    }
-                    finally
-                    {
-                        Dispatcher.CurrentDispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
-                    }
-                });
-
-                Dispatcher.Run();
-            });
-
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.IsBackground = true;
-            thread.Start();
-
-            return tcs.Task;
-        }
     }
 
     internal class DeferredSettingsBootstrapper : ISettingsBootstrapper

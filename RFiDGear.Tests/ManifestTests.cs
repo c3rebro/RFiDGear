@@ -93,7 +93,7 @@ goes here!
 
             var manifest = new Manifest(xml);
 
-            Assert.Equal("UI & dialogs & settings (v2) 100% \"ready\" / 'ok'", manifest.VersionInfoText);
+            Assert.Equal("UI & dialogs & settings (v2) 100% 'ready' / 'ok'", manifest.VersionInfoText);
         }
 
         [Fact]

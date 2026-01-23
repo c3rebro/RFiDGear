@@ -18,6 +18,7 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.UI.Selection.Interfaces;
+using System.Windows.Threading;
 
 namespace RFiDGear.ViewModel
 {
@@ -97,24 +98,21 @@ namespace RFiDGear.ViewModel
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
             _cmdReadSectorWithCustoms = new RelayCommand(ReadSectorWithCustoms);
 
-            Application.Current.Dispatcher.BeginInvoke((Action)(() => {
-                ContextMenuItems = new List<MenuItem>
+            InitializeContextMenuItems(new List<MenuItem>
+            {
+                new MenuItem
                 {
-                    new MenuItem()
-                    {
-                        Header = "Read Sector using default Configuration",
-                        Command = _cmdReadSectorWithDefaults,
-                        IsEnabled = false
-                    },
-
-                    new MenuItem()
-                    {
-                        Header = "Edit Authentication Settings and Modify Sector",
-                        Command = _cmdEditAuthAndModifySector,
-                        IsEnabled = false
-                    }
-                };
-            }));
+                    Header = "Read Sector using default Configuration",
+                    Command = _cmdReadSectorWithDefaults,
+                    IsEnabled = false
+                },
+                new MenuItem
+                {
+                    Header = "Edit Authentication Settings and Modify Sector",
+                    Command = _cmdEditAuthAndModifySector,
+                    IsEnabled = false
+                }
+            });
             children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
             LoadChildren();
@@ -141,25 +139,21 @@ namespace RFiDGear.ViewModel
             _cmdReadSectorWithDefaults = new AsyncRelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
 
-            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+            InitializeContextMenuItems(new List<MenuItem>
             {
-                ContextMenuItems = new List<MenuItem>
+                new MenuItem
                 {
-                    new MenuItem()
-                    {
-                        Header = "Read Sector using default Configuration",
-                        Command = null,
-                        Visibility = Visibility.Hidden
-                    },
-
-                    new MenuItem()
-                    {
-                        Header = "Edit Authentication Settings and Modify Sector",
-                        Command = null,
-                        Visibility = Visibility.Hidden
-                    }
-                };
-            }));
+                    Header = "Read Sector using default Configuration",
+                    Command = null,
+                    Visibility = Visibility.Hidden
+                },
+                new MenuItem
+                {
+                    Header = "Edit Authentication Settings and Modify Sector",
+                    Command = null,
+                    Visibility = Visibility.Hidden
+                }
+            });
 
             children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
@@ -188,25 +182,21 @@ namespace RFiDGear.ViewModel
             _cmdReadSectorWithDefaults = new AsyncRelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
 
-            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+            InitializeContextMenuItems(new List<MenuItem>
             {
-                ContextMenuItems = new List<MenuItem>
+                new MenuItem
                 {
-                    new MenuItem()
-                    {
-                        Header = "Read Sector using default Configuration",
-                        Command = _cmdReadSectorWithDefaults,
-                        IsEnabled = false
-                    },
-
-                    new MenuItem()
-                    {
-                        Header = "Edit Authentication Settings and Modify Sector",
-                        Command = _cmdEditAuthAndModifySector,
-                        IsEnabled = false
-                    }
-                };
-            }));
+                    Header = "Read Sector using default Configuration",
+                    Command = _cmdReadSectorWithDefaults,
+                    IsEnabled = false
+                },
+                new MenuItem
+                {
+                    Header = "Edit Authentication Settings and Modify Sector",
+                    Command = _cmdEditAuthAndModifySector,
+                    IsEnabled = false
+                }
+            });
             children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
 
             LoadChildren();
@@ -234,6 +224,20 @@ namespace RFiDGear.ViewModel
         public List<MenuItem> ContextMenu => ContextMenuItems;
 
         private List<MenuItem> ContextMenuItems;
+
+        private void InitializeContextMenuItems(List<MenuItem> items)
+        {
+            var dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+            if (dispatcher.CheckAccess())
+            {
+                ContextMenuItems = items;
+                return;
+            }
+
+            dispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                new Action(() => ContextMenuItems = items));
+        }
 
         public async Task ReadSectorWithDefaults()
         {
