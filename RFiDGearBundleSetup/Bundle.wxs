@@ -86,23 +86,23 @@
 			</ExePackage>
 			<RollbackBoundary />
 			<!-- Optional driver packages (selectable in the installer). -->
-			<MsiPackage Id="Driver_Omnikey_5321_x64" Cache="no" Compressed="yes" Vital="no" Visible="yes"
+			<MsiPackage Id="Driver_Omnikey_5321_x64" Cache="yes" Compressed="yes" Vital="no" Visible="yes" ForcePerMachine="yes" EnableFeatureSelection="yes"
 			            DisplayName="Omnikey 5321 driver (x64)"
 			            SourceFile="drivers\HID_Global_xchip_driver_1.2.29.156\HID_Global_xchip_driver_1.2.29.156_x64.msi"
 			            InstallCondition="VersionNT64" />
-			<MsiPackage Id="Driver_Omnikey_5321_x86" Cache="no" Compressed="yes" Vital="no" Visible="yes"
+			<MsiPackage Id="Driver_Omnikey_5321_x86" Cache="yes" Compressed="yes" Vital="no" Visible="yes" ForcePerMachine="yes" EnableFeatureSelection="yes"
 			            DisplayName="Omnikey 5321 driver (x86)"
 			            SourceFile="drivers\HID_Global_xchip_driver_1.2.29.156\HID_Global_xchip_driver_1.2.29.156_x86.msi"
 			            InstallCondition="NOT VersionNT64" />
-			<MsiPackage Id="Driver_Omnikey_5422_x64" Cache="no" Compressed="yes" Vital="no" Visible="yes"
+			<MsiPackage Id="Driver_Omnikey_5422_x64" Cache="yes" Compressed="yes" Vital="no" Visible="yes" ForcePerMachine="yes" EnableFeatureSelection="yes"
 			            DisplayName="Omnikey 5422 driver (x64)"
 			            SourceFile="drivers\sfw-01556-revC-hid-omnikey-ccid-driver-2.3.4.121\HID-OMNIKEY-CCID-Driver-Installer-2.3.4.121-x64.msi"
 			            InstallCondition="VersionNT64" />
-			<MsiPackage Id="Driver_Omnikey_5422_x86" Cache="no" Compressed="yes" Vital="no" Visible="yes"
+			<MsiPackage Id="Driver_Omnikey_5422_x86" Cache="yes" Compressed="yes" Vital="no" Visible="yes" ForcePerMachine="yes" EnableFeatureSelection="yes"
 			            DisplayName="Omnikey 5422 driver (x86)"
 			            SourceFile="drivers\sfw-01556-revC-hid-omnikey-ccid-driver-2.3.4.121\HID-OMNIKEY-CCID-Driver-Installer-2.3.4.121-x86.msi"
 			            InstallCondition="NOT VersionNT64" />
-			<ExePackage Id="Driver_Sciel_SCL3711_x64" Cache="no" Compressed="yes" Vital="no"
+			<ExePackage Id="Driver_Sciel_SCL3711_x64" Cache="no" Compressed="yes" Vital="no" 
 			            PerMachine="yes" Permanent="yes"
 			            DisplayName="Sciel SCL3711 driver (x64)"
 			            SourceFile="pnputil.exe"
@@ -121,16 +121,16 @@
 				         SourceFile="drivers\scl3711_windows_driver\X86\SCL3711.inf" />
 			</ExePackage>
 			<!-- RFiDGear MSI selection based on OS architecture and UI language (German = 1031). -->
-			<MsiPackage Id="RFiDGear_x64_de" Cache="no" Compressed="yes" Vital="yes"
+			<MsiPackage Id="RFiDGear_x64_de" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
 			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x64\bin\x64\Release\de-de\RFiDGear_Setup_x64.msi"
 			            InstallCondition="VersionNT64 AND (WixBundleUILanguage = 1031)" />
-			<MsiPackage Id="RFiDGear_x86_de" Cache="no" Compressed="yes" Vital="yes"
+			<MsiPackage Id="RFiDGear_x86_de" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
 			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x86\bin\x64\Release\de-de\RFiDGear_Setup_x86.msi"
 			            InstallCondition="NOT VersionNT64 AND (WixBundleUILanguage = 1031)" />
-			<MsiPackage Id="RFiDGear_x64_en" Cache="no" Compressed="yes" Vital="yes"
+			<MsiPackage Id="RFiDGear_x64_en" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
 			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x64\bin\x64\Release\en-us\RFiDGear_Setup_x64.msi"
 			            InstallCondition="VersionNT64 AND NOT (WixBundleUILanguage = 1031)" />
-			<MsiPackage Id="RFiDGear_x86_en" Cache="no" Compressed="yes" Vital="yes"
+			<MsiPackage Id="RFiDGear_x86_en" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
 			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x86\bin\x64\Release\en-us\RFiDGear_Setup_x86.msi"
 			            InstallCondition="NOT VersionNT64 AND NOT (WixBundleUILanguage = 1031)" />
 		</Chain>
