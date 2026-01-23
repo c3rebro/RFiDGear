@@ -514,9 +514,7 @@ namespace RFiDGear.Tests
                 Assert.Equal(viewModel.DesfireReadKeyCurrent, fakeProvider.LastReadKey);
                 Assert.Equal(viewModel.SelectedDesfireReadKeyEncryptionType, fakeProvider.LastReadKeyType);
                 Assert.Equal(1, fakeProvider.LastReadKeyNumber);
-                Assert.Equal(viewModel.DesfireWriteKeyCurrent, fakeProvider.LastWriteKey);
-                Assert.Equal(viewModel.SelectedDesfireWriteKeyEncryptionType, fakeProvider.LastWriteKeyType);
-                Assert.Equal(2, fakeProvider.LastWriteKeyNumber);
+                Assert.Null(fakeProvider.LastWriteKey);
             }
             finally
             {
@@ -559,9 +557,7 @@ namespace RFiDGear.Tests
                 Assert.Equal(viewModel.DesfireWriteKeyCurrent, fakeProvider.LastAuthKey);
                 Assert.Equal(viewModel.SelectedDesfireWriteKeyEncryptionType, fakeProvider.LastAuthKeyType);
                 Assert.Equal(3, fakeProvider.LastAuthKeyNumber);
-                Assert.Equal(viewModel.DesfireReadKeyCurrent, fakeProvider.LastReadKey);
-                Assert.Equal(viewModel.SelectedDesfireReadKeyEncryptionType, fakeProvider.LastReadKeyType);
-                Assert.Equal(1, fakeProvider.LastReadKeyNumber);
+                Assert.Null(fakeProvider.LastReadKey);
                 Assert.Equal(viewModel.DesfireWriteKeyCurrent, fakeProvider.LastWriteKey);
                 Assert.Equal(viewModel.SelectedDesfireWriteKeyEncryptionType, fakeProvider.LastWriteKeyType);
                 Assert.Equal(3, fakeProvider.LastWriteKeyNumber);
@@ -630,28 +626,20 @@ namespace RFiDGear.Tests
             }
 
             public override Task<ERROR> ReadMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
-                string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                 EncryptionMode _encMode,
                 int _fileNo, int _appID, int _fileSize)
             {
                 LastReadKey = _appReadKey;
                 LastReadKeyType = _keyTypeAppReadKey;
                 LastReadKeyNumber = _readKeyNo;
-                LastWriteKey = _appWriteKey;
-                LastWriteKeyType = _keyTypeAppWriteKey;
-                LastWriteKeyNumber = _writeKeyNo;
                 MifareDESFireData = new byte[_fileSize];
                 return Task.FromResult(ERROR.NoError);
             }
 
-            public override Task<ERROR> WriteMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,
-                string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
+            public override Task<ERROR> WriteMiFareDESFireChipFile(string _appWriteKey, DESFireKeyType _keyTypeAppWriteKey, int _writeKeyNo,
                 EncryptionMode _encMode,
                 int _fileNo, int _appID, byte[] _data)
             {
-                LastReadKey = _appReadKey;
-                LastReadKeyType = _keyTypeAppReadKey;
-                LastReadKeyNumber = _readKeyNo;
                 LastWriteKey = _appWriteKey;
                 LastWriteKeyType = _keyTypeAppWriteKey;
                 LastWriteKeyNumber = _writeKeyNo;

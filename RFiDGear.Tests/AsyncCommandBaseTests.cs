@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using System.Windows.Input;
+using CommunityToolkit.Mvvm.Input;
 using Xunit;
 
 namespace RFiDGear.Tests
@@ -8,37 +8,15 @@ namespace RFiDGear.Tests
     public class AsyncCommandBaseTests
     {
         [Fact]
-        public async Task ICommandExecute_UsesExceptionHandlerForFaultedTask()
+        public async Task Execute_PropagatesExceptionsFromExecutionTask()
         {
-            var command = new TestAsyncCommand();
+            var command = new AsyncRelayCommand(() => Task.FromException(new InvalidOperationException("Boom")));
 
-            ((ICommand)command).Execute(null);
+            command.Execute(null);
 
-            var exception = await command.ExceptionTask.WaitAsync(TimeSpan.FromSeconds(1));
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecutionTask!.WaitAsync(TimeSpan.FromSeconds(1)));
 
-            Assert.IsType<InvalidOperationException>(exception);
-        }
-
-        private sealed class TestAsyncCommand : AsyncCommandBase
-        {
-            private readonly TaskCompletionSource<Exception> _exceptionSource = new();
-
-            public Task<Exception> ExceptionTask => _exceptionSource.Task;
-
-            public override bool CanExecute(object parameter)
-            {
-                return true;
-            }
-
-            public override Task ExecuteAsync(object parameter)
-            {
-                return Task.FromException(new InvalidOperationException("Boom"));
-            }
-
-            protected override void HandleExecutionException(Exception exception)
-            {
-                _exceptionSource.TrySetResult(exception);
-            }
+            Assert.Equal("Boom", exception.Message);
         }
     }
 }
