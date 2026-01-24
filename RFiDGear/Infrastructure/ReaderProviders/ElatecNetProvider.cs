@@ -831,6 +831,23 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
+        public override async Task<ERROR> CommitTransactionAsync()
+        {
+            if (!readerDevice.IsConnected)
+                return ERROR.TransportError;
+
+            try
+            {
+                await readerDevice.MifareDesfire_CommitTransactionAsync();
+                return ERROR.NoError;
+            }
+            catch
+            {
+                return ERROR.AuthFailure;
+            }
+        }
+
         /// <summary>
         /// Resolves the key type to use when issuing a DESFire ChangeKey command via the Elatec API.
         /// </summary>

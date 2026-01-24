@@ -2166,6 +2166,12 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <inheritdoc />
+        public override async Task<ERROR> CommitTransactionAsync()
+        {
+            throw new NotSupportedException("Retrieving key versions is not supported for LibLogicalAccessProvider.");
+        }
+
+        /// <inheritdoc />
         public override Task<byte> MifareDesfire_GetKeyVersionAsync(byte keyNo)
         {
             throw new NotSupportedException("Retrieving key versions is not supported for LibLogicalAccessProvider.");

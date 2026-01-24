@@ -415,6 +415,12 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public abstract Task<ERROR> GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent = 0, int _appID = 0, int _fileNo = 0);
 
         /// <summary>
+        /// Commits a DESFire transaction for FileType BACKUP, VALUE and RECORD.
+        /// </summary>
+        /// <returns></returns>
+        public abstract Task<ERROR> CommitTransactionAsync();
+
+        /// <summary>
         /// Get the key version of a DESFire key.
         /// </summary>
         /// <param name="keyNo">Key number</param>

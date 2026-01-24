@@ -33,6 +33,7 @@ using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.UIExtensions.Interfaces;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
+using Elatec.NET;
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
@@ -2476,7 +2477,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
                             result = await device.ReadMiFareDESFireChipFile(DesfireReadKeyCurrent, SelectedDesfireReadKeyEncryptionType, selectedDesfireReadKeyNumberAsInt,
-                                                                   EncryptionMode.CM_ENCRYPT, FileNumberCurrentAsInt, AppNumberCurrentAsInt, FileSizeCurrentAsInt);
+                                                                   SelectedDesfireFileCryptoMode, FileNumberCurrentAsInt, AppNumberCurrentAsInt, FileSizeCurrentAsInt);
 
                             if (result == ERROR.NoError)
                             {
@@ -2635,6 +2636,17 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             if (result == ERROR.NoError)
                             {
                                 StatusText += string.Format("{0}: Successfully Wrote {2} Bytes to FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, GrandChildNodeViewModel.SelectedDataLengthInBytes, AppNumberCurrentAsInt);
+                                await UpdateReaderStatusCommand.ExecuteAsync(false);
+                            }
+
+                            if (SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile && device.GetType() == typeof(ElatecNetProvider))
+                            {
+                                await device.CommitTransactionAsync();
+                            }
+
+                            if (result == ERROR.NoError)
+                            {
+                                StatusText += string.Format("{0}: Commit Successfully FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, GrandChildNodeViewModel.SelectedDataLengthInBytes, AppNumberCurrentAsInt);
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
