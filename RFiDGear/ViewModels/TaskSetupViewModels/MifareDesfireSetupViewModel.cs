@@ -573,7 +573,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             var changeKeyMode = appId == 0
                 ? DESFireKeySettings.ChangeKeyWithMasterKey
-                : (DESFireKeySettings)((DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp & DESFireKeySettings.ChangeKeyMask);
+                : (DESFireKeySettings)((DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp & DESFireKeySettings.ChangeKeyFrozen);
 
             AccessConditionValidation.EnsureValid(changeKeyMode);
 
@@ -612,7 +612,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         internal static string DescribeKeySettings(DESFireKeySettings settings)
         {
             var parts = new List<string>();
-            var changeKeyMode = settings & DESFireKeySettings.ChangeKeyMask;
+            var changeKeyMode = settings & DESFireKeySettings.ChangeKeyFrozen;
 
             if (changeKeyMode == DESFireKeySettings.ChangeKeyWithMasterKey)
             {
@@ -697,7 +697,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private DESFireKeySettings BuildSelectedKeySettings(int appId)
         {
             var keySettings = GetGeneralDesfireKeyFlags();
-            keySettings &= ~DESFireKeySettings.ChangeKeyMask;
+            keySettings &= ~DESFireKeySettings.ChangeKeyFrozen;
             keySettings |= GetChangeKeyModeForApplication(appId);
 
             AccessConditionValidation.EnsureValid(keySettings);

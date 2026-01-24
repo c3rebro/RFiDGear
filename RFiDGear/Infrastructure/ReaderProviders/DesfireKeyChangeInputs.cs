@@ -75,7 +75,7 @@ internal static class DesfireKeyChangeInputs
         if (string.IsNullOrWhiteSpace(newTargetKeyHex))
             throw new ArgumentException("New target key must be provided.", nameof(newTargetKeyHex));
 
-        var changeKeyMode = keySettings & AccessControl.DESFireKeySettings.ChangeKeyMask;
+        var changeKeyMode = keySettings & AccessControl.DESFireKeySettings.ChangeKeyFrozen;
         var authKeyNo = changeKeyMode == AccessControl.DESFireKeySettings.ChangeKeyWithTargetedKeyNumber
             ? targetKeyNo
             : (byte)0;

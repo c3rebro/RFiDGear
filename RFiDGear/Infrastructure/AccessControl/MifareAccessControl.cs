@@ -79,8 +79,7 @@ namespace RFiDGear.Infrastructure.AccessControl
         ConfigurationChangeable = 0x08,
         Default = AllowChangeMasterKey | AllowFreeListingWithoutMasterKey | ConfigurationChangeable,
         ChangeKeyWithTargetedKeyNumber = 0xE0,
-        ChangeKeyFrozen = 0xF0,
-        ChangeKeyMask = ChangeKeyFrozen
+        ChangeKeyFrozen = 0xF0
     }
 
     /// <summary>
@@ -124,14 +123,14 @@ namespace RFiDGear.Infrastructure.AccessControl
         /// <returns><c>true</c> when the settings can be written to the card.</returns>
         public static bool IsValid(DESFireKeySettings settings, out string reason)
         {
-            var unknownFlags = settings & ~(AllowedGeneralFlags | DESFireKeySettings.ChangeKeyMask);
+            var unknownFlags = settings & ~(AllowedGeneralFlags | DESFireKeySettings.ChangeKeyFrozen);
             if (unknownFlags != 0)
             {
                 reason = $"Unknown DESFire key setting bits: 0x{(byte)unknownFlags:X2}.";
                 return false;
             }
 
-            var changeKeyMode = settings & DESFireKeySettings.ChangeKeyMask;
+            var changeKeyMode = settings & DESFireKeySettings.ChangeKeyFrozen;
             if (changeKeyMode != DESFireKeySettings.ChangeKeyWithMasterKey
                 && changeKeyMode != DESFireKeySettings.ChangeKeyWithTargetedKeyNumber
                 && changeKeyMode != DESFireKeySettings.ChangeKeyFrozen)

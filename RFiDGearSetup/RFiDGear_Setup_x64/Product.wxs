@@ -16,7 +16,7 @@
    Upgrade code HAS to be the same for all updates.
    Once you've chosen it don't change it.
    -->
-	<?define UpgradeCode="a34bc413-e349-4fd1-8b90-2eb95a333436" ?>
+	<?define UpgradeCode="a34bc413-e349-4fd1-8b90-2eb95a333489" ?>
 	
 	<!-- The URL for add/remove programs -->
 	<?define InfoURL="https://c3rebro.github.io/RFiDGear/" ?>
@@ -25,7 +25,6 @@
         <!-- x64-only variables -->
         <?define Win64 = "yes" ?>
         <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
-        <?define ISLOG_ProgramDataDir = "C:\Program Files (x86)\Common Files\ISLOG\LibLogicalAccess\1.87.8.1030" ?>
         <?define RFiDGearReleaseDir = "$(var.RFiDGearReleaseDir)" ?>
 	<?define RFiDGearExeSourcePath = "$(var.RFiDGearReleaseDir)\\RFiDGear.exe" ?>
 	
@@ -53,10 +52,6 @@
 		
 		<Property Id="HAS_RFIDGEAR_PROGRAMDATADIR">
 			<DirectorySearch Id="ProgramDataPathSearch" Path="$(var.RFIDGear_ProgramDataDir)" />
-		</Property>
-		
-		<Property Id="SYSTEM_HAS_ISLOG">
-			<DirectorySearch Id="ProgramFilesPathSearch" Path="$(var.ISLOG_ProgramDataDir)" />
 		</Property>
 		
 		<!-- Set properties for add/remove programs -->

@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace RFiDGear.Tests
 {
@@ -526,7 +527,8 @@ namespace RFiDGear.Tests
                 Assert.Equal(DESFireKeySettings.ChangeKeyWithMasterKey, settings);
             });
         }
-
+        private readonly ITestOutputHelper _output;
+        public MifareDesfireSetupViewModelTests(ITestOutputHelper output) => _output = output;
         [Fact]
         public async Task BuildChangeAppKeyAuthStatusLine_IncludesSelectedValues()
         {
@@ -540,10 +542,10 @@ namespace RFiDGear.Tests
                     appKeyNumber: 2,
                     selectedSettings: DESFireKeySettings.ChangeKeyFrozen,
                     authKeyNo: 3);
-
+                _output.WriteLine(line);
                 Assert.Contains("AppID 1", line);
                 Assert.Contains("KeyNo 2", line);
-                Assert.Contains("Settings ChangeKeyFrozen", line);
+                Assert.Contains(nameof(DESFireKeySettings.ChangeKeyFrozen), line);
                 Assert.Contains("AuthKeyNo 3", line);
             });
         }
