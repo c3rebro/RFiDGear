@@ -2630,11 +2630,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             }
 
                             result = await device.WriteMiFareDESFireChipFile(DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType, selectedDesfireWriteKeyNumberAsInt,
-                                                                   EncryptionMode.CM_ENCRYPT, FileNumberCurrentAsInt, AppNumberCurrentAsInt, payload);
+                                                                   SelectedDesfireFileCryptoMode, FileNumberCurrentAsInt, AppNumberCurrentAsInt, payload);
 
                             if (result == ERROR.NoError)
                             {
-                                StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
+                                StatusText += string.Format("{0}: Successfully Wrote {2} Bytes to FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, GrandChildNodeViewModel.SelectedDataLengthInBytes, AppNumberCurrentAsInt);
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;

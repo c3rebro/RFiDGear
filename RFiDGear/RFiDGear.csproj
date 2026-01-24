@@ -37,7 +37,7 @@
     <GenerateManifests>false</GenerateManifests>
     <GenerateClickOnceManifests>false</GenerateClickOnceManifests>    
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
-    <AssemblyVersion>2.0.2</AssemblyVersion>
+    <AssemblyVersion>2.0.3.0</AssemblyVersion>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
