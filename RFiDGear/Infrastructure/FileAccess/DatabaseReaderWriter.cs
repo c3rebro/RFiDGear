@@ -5,10 +5,12 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 using System.IO.Compression;
+using System.Windows;
 
 using RFiDGear.Models;
 using RFiDGear.ViewModel;
@@ -122,18 +124,75 @@ namespace RFiDGear.Infrastructure.FileAccess
                 {
                     if (projectLoadResult.FileType == ProjectFileType.Xml)
                     {
-                        AsyncRelayCommandLoadDB?.Execute(projectLoadResult.Reader);
+                        ExecuteOnStaThread(() => AsyncRelayCommandLoadDB?.Execute(projectLoadResult.Reader));
                         return;
                     }
 
-                    var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-                    SetupModel = serializer.Deserialize(projectLoadResult.Reader) as ChipTaskHandlerModel;
+                    ExecuteOnStaThread(() =>
+                    {
+                        var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
+                        SetupModel = serializer.Deserialize(projectLoadResult.Reader) as ChipTaskHandlerModel;
+                    });
                 }
                 catch (Exception e)
                 {
                     logger.Error(e, "Failed to deserialize project manifest from {ManifestFile}", projectLoadResult?.Reader?.ToString());
                 }
             }
+        }
+
+        /// <summary>
+        /// Executes the provided action on an STA thread to satisfy UI component requirements.
+        /// </summary>
+        /// <param name="action">The action to execute on an STA thread.</param>
+        private void ExecuteOnStaThread(Action action)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+
+            if (dispatcher != null)
+            {
+                if (dispatcher.CheckAccess())
+                {
+                    action();
+                    return;
+                }
+
+                dispatcher.Invoke(action);
+                return;
+            }
+
+            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+            {
+                action();
+                return;
+            }
+
+            var tcs = new TaskCompletionSource<object>();
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    action();
+                    tcs.SetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+            })
+            {
+                IsBackground = true
+            };
+
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+
+            tcs.Task.GetAwaiter().GetResult();
         }
 
         private void LogNewerManifest(int manifestVersion)
