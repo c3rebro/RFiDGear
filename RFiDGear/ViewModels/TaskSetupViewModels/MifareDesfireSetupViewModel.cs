@@ -2646,7 +2646,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                             if (result == ERROR.NoError)
                             {
-                                StatusText += string.Format("{0}: Commit Successfully FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, GrandChildNodeViewModel.SelectedDataLengthInBytes, AppNumberCurrentAsInt);
+                                if(SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile)
+                                {
+                                    StatusText += string.Format("{0}: Commit Successfully FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, GrandChildNodeViewModel.SelectedDataLengthInBytes, AppNumberCurrentAsInt);
+                                }
+                                
                                 CurrentTaskErrorLevel = result;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
