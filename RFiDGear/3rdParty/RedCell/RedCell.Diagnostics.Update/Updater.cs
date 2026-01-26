@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -228,10 +229,11 @@ namespace RedCell.Diagnostics.Update
                 }
 
                 Logger.Information("Remote config is valid.");
-                Logger.Information("Local version is {LocalVersion}", _localConfig.Version);
+                var effectiveLocalVersion = GetEffectiveLocalVersion();
+                Logger.Information("Local version is {LocalVersion}", effectiveLocalVersion);
                 Logger.Information("Remote version is {RemoteVersion}", _remoteConfig.Version);
 
-                var versionComparison = _remoteConfig.Version?.CompareTo(_localConfig.Version ?? new Version()) ?? -1;
+                var versionComparison = _remoteConfig.Version?.CompareTo(effectiveLocalVersion) ?? -1;
 
                 if (versionComparison == 0)
                 {
@@ -273,6 +275,64 @@ namespace RedCell.Diagnostics.Update
             {
                 Logger.Error(e, "Error during update check");
             }
+        }
+
+        /// <summary>
+        /// Resolves the version to compare for update checks by preferring the running assembly version
+        /// when it is newer than the cached manifest.
+        /// </summary>
+        /// <param name="manifestVersion">The version read from the local manifest.</param>
+        /// <param name="runningVersion">The current application version.</param>
+        /// <returns>The version to use when evaluating update availability.</returns>
+        internal static Version ResolveEffectiveLocalVersion(Version manifestVersion, Version runningVersion)
+        {
+            if (runningVersion == null && manifestVersion == null)
+            {
+                return new Version();
+            }
+
+            if (runningVersion == null)
+            {
+                return manifestVersion ?? new Version();
+            }
+
+            if (manifestVersion == null)
+            {
+                return runningVersion;
+            }
+
+            return runningVersion > manifestVersion ? runningVersion : manifestVersion;
+        }
+
+        /// <summary>
+        /// Determines the most accurate local version for update comparisons.
+        /// </summary>
+        /// <returns>The version to compare against the remote manifest.</returns>
+        private Version GetEffectiveLocalVersion()
+        {
+            var runningVersion = GetRunningVersion();
+            var manifestVersion = _localConfig?.Version;
+            var effectiveVersion = ResolveEffectiveLocalVersion(manifestVersion, runningVersion);
+
+            if (manifestVersion != null && runningVersion != null && runningVersion > manifestVersion)
+            {
+                Logger.Information(
+                    "Running version {RunningVersion} is newer than local manifest {LocalVersion}; using running version for comparisons.",
+                    runningVersion,
+                    manifestVersion);
+                _localConfig.Version = effectiveVersion;
+            }
+
+            return effectiveVersion;
+        }
+
+        /// <summary>
+        /// Gets the version of the currently running application.
+        /// </summary>
+        /// <returns>The running application version.</returns>
+        private static Version GetRunningVersion()
+        {
+            return Assembly.GetExecutingAssembly().GetName().Version ?? new Version();
         }
 
         /// <summary>
