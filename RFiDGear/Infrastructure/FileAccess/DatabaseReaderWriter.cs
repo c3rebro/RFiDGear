@@ -101,7 +101,8 @@ namespace RFiDGear.Infrastructure.FileAccess
                     if (!projectLoadResult.IsSupportedVersion)
                     {
                         LogNewerManifest(projectLoadResult.ManifestVersion);
-                        return new DatabaseReadResult(false, projectLoadResult.ManifestVersion, false);
+                        // codex TODO: instead of returning we need to prompt and ask the user to update an older database, return new DatabaseReadResult(false, projectLoadResult.ManifestVersion, false);
+
                     }
 
                     DeserializeProject(projectLoadResult);

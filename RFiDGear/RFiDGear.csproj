@@ -41,6 +41,7 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
+    <SignAssembly>False</SignAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
     <BaseAddress>4194304</BaseAddress>

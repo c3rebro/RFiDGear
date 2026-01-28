@@ -42,7 +42,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
         }
 
-        public LibLogicalAccessProvider(ReaderTypes readerType, string readerName = null)
+        public LibLogicalAccessProvider(ReaderTypes readerType, string readerName)
         {
             try
             {
@@ -140,6 +140,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 if (await tryInitReader())
                 {
                     card = readerUnit.getSingleChip();
+                    selectedReaderName = readerUnit.getConnectedName();
 
                     if (!string.IsNullOrWhiteSpace(ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray())))
                     {

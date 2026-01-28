@@ -1,6 +1,7 @@
 ﻿using Elatec.NET.Cards.Mifare;
 using LibLogicalAccess;
 using RFiDGear.Infrastructure.AccessControl;
+using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Models;
 
@@ -23,19 +24,24 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     case ReaderTypes.PCSC:
                         lock (syncRoot)
                         {
-                            if (instance == null)
+                            using (SettingsReaderWriter srw = new SettingsReaderWriter())
                             {
-                                instance = new LibLogicalAccessProvider(Reader);
-                                return instance;
-                            }
-                            else if (instance != null && !(instance is LibLogicalAccessProvider))
-                            {
-                                instance = new LibLogicalAccessProvider(Reader);
-                                return instance;
-                            }
-                            else
-                            {
-                                return instance;
+                                var settings = srw.DefaultSpecification;
+
+                                if (instance == null)
+                                {      
+                                    instance = new LibLogicalAccessProvider(Reader, settings.DefaultReaderName);
+                                    return instance;
+                                }
+                                else if (instance != null && !(instance is LibLogicalAccessProvider))
+                                {
+                                    instance = new LibLogicalAccessProvider(Reader, settings.DefaultReaderName);
+                                    return instance;
+                                }
+                                else
+                                {
+                                    return instance;
+                                }
                             }
                         }
 
