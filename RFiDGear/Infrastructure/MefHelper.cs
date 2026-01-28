@@ -118,10 +118,7 @@ public sealed class MefHelper : IDisposable
         System.Reflection.Assembly ass = System.Reflection.Assembly.GetEntryAssembly();
         Catalog.Catalogs.Add(new AssemblyCatalog(ass));
 
-        foreach (var catalogPath in GetExtensionCatalogPaths(AppDomain.CurrentDomain.BaseDirectory, ExtensionsPath))
-        {
-            TryAddDirectoryCatalog(Catalog, catalogPath);
-        }
+        TryAddDirectoryCatalog(Catalog, ExtensionsPath);
 
         _Container = new CompositionContainer(Catalog);
     }

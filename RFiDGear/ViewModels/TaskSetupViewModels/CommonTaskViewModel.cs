@@ -64,7 +64,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => availableTasks;
             set
             {
-                availableTasks = value;
+                availableTasks = value ?? new ObservableCollection<object>();
                 RevalidateSelectedTaskIndex();
                 RevalidateSelectedExecuteConditionTaskIndex();
             }
@@ -100,6 +100,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             SelectedCheckpoint = checkpoint;
             Checkpoints = new ObservableCollection<Checkpoint>();
             Args = new Dictionary<string, string>();
+            availableTasks = new ObservableCollection<object>();
 
             IsLogicFuncTaskLogicFuncEnabled = true;
             IsLogicFuncTaskCountFuncEnabled = false;

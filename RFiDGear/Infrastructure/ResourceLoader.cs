@@ -99,7 +99,7 @@ namespace RFiDGear.Infrastructure
     /// </summary>
     public sealed class ResourceLoader : IValueConverter, IDisposable
     {
-        private readonly ILogger logger = Log.ForContext<ResourceLoader>();
+        private static readonly ILogger logger = Log.ForContext<ResourceLoader>();
         private readonly ResourceManager resManager;
 
         /// <summary>
@@ -208,18 +208,41 @@ namespace RFiDGear.Infrastructure
             {
                 var projectManager = new ProjectManager();
                 var settingsResult = projectManager.LoadSettings();
+                var normalizedResourceName = NormalizeResourceKey(resName);
 
                 var ressource = new ResourceManager("RFiDGear.Resources.Manifest", Assembly.GetExecutingAssembly())
-                    .GetString(resName, settingsResult.DefaultSpecification.DefaultLanguage == "german" ? new CultureInfo("de") : new CultureInfo("en"));
+                    .GetString(normalizedResourceName, settingsResult.DefaultSpecification.DefaultLanguage == "german" ? new CultureInfo("de") : new CultureInfo("en"));
+
+                if (string.IsNullOrEmpty(ressource))
+                {
+                    return string.Empty;
+                }
+
 
                 return ressource.Replace("%NEWLINE", "\n");
 
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                //logger.Error(e, "Failed to resolve resource {ResourceName}", resName);
+                logger.Error(e, "Failed to resolve resource {ResourceName}", resName);
                 return string.Empty;
             }
         }
+
+        /// <summary>
+        /// Normalizes legacy resource keys to current equivalents.
+        /// </summary>
+        /// <param name="resourceName">The resource key to normalize.</param>
+        /// <returns>The normalized resource key.</returns>
+        internal static string NormalizeResourceKey(string resourceName)
+        {
+            if (string.IsNullOrWhiteSpace(resourceName))
+            {
+                return resourceName ?? string.Empty;
+            }
+
+            return resourceName.Replace("ENUM.ERROR.AuthenticationError", "ENUM.ERROR.AuthFailure", StringComparison.Ordinal);
+        }
+
     }
 }
