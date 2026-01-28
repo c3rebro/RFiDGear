@@ -171,6 +171,21 @@ namespace RFiDGear.Infrastructure.FileAccess
             return manifestVersion <= currentVersion;
         }
 
+        /// <summary>
+        /// Normalizes legacy XML values in a project payload to the currently supported ones.
+        /// </summary>
+        /// <param name="projectXml">The raw project XML.</param>
+        /// <returns>The normalized project XML.</returns>
+        internal string NormalizeLegacyProjectXml(string projectXml)
+        {
+            if (string.IsNullOrWhiteSpace(projectXml))
+            {
+                return projectXml ?? string.Empty;
+            }
+
+            return projectXml.Replace("AuthenticationError", "AuthFailure", StringComparison.Ordinal);
+        }
+
         private SettingsLoadResult CreateSettingsLoadResult(Version appVersion, string resolvedPath, DefaultSpecification specification)
         {
             var manifestVersion = GetManifestVersion(resolvedPath);

@@ -101,7 +101,6 @@ namespace RFiDGear.Infrastructure.FileAccess
                     if (!projectLoadResult.IsSupportedVersion)
                     {
                         LogNewerManifest(projectLoadResult.ManifestVersion);
-                        // codex TODO: instead of returning we need to prompt and ask the user to update an older database, return new DatabaseReadResult(false, projectLoadResult.ManifestVersion, false);
 
                     }
 
@@ -131,8 +130,10 @@ namespace RFiDGear.Infrastructure.FileAccess
 
                     ExecuteOnStaThread(() =>
                     {
+                        var projectXml = ReadProjectXml(projectLoadResult.Reader);
                         var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-                        SetupModel = serializer.Deserialize(projectLoadResult.Reader) as ChipTaskHandlerModel;
+                        using var stringReader = new StringReader(projectXml);
+                        SetupModel = serializer.Deserialize(stringReader) as ChipTaskHandlerModel;
                     });
                 }
                 catch (Exception e)
@@ -140,6 +141,23 @@ namespace RFiDGear.Infrastructure.FileAccess
                     logger.Error(e, "Failed to deserialize project manifest from {ManifestFile}", projectLoadResult?.Reader?.ToString());
                 }
             }
+        }
+
+        /// <summary>
+        /// Reads the project XML content and normalizes legacy values before deserialization.
+        /// </summary>
+        /// <param name="reader">The source reader for the project XML.</param>
+        /// <returns>The normalized XML string.</returns>
+        private string ReadProjectXml(TextReader reader)
+        {
+            if (reader == null)
+            {
+                return string.Empty;
+            }
+
+            var xmlContent = reader.ReadToEnd();
+
+            return projectManager.NormalizeLegacyProjectXml(xmlContent);
         }
 
         /// <summary>

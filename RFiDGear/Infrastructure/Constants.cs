@@ -347,6 +347,11 @@ namespace RFiDGear.Infrastructure
         Empty,
         NoError,
         AuthFailure,
+        /// <summary>
+        /// Legacy name for <see cref="AuthFailure"/> used by older project manifests.
+        /// </summary>
+        [Obsolete("Use AuthFailure instead.")]
+        AuthenticationError = AuthFailure,
         PermissionDenied,
         ProtocolConstraint,
         TransportError,
