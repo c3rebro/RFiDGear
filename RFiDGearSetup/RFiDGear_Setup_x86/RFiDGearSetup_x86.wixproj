@@ -27,7 +27,7 @@
     <RFiDGearReleaseDir Condition=" '$(RFiDGearReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear\bin\x64\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseDir>
     <RFiDGearExePath Condition=" '$(RFiDGearExePath)' == '' ">$(RFiDGearReleaseDir)\RFiDGear.exe</RFiDGearExePath>
     <RFiDGearDllPath Condition=" '$(RFiDGearDllPath)' == '' ">$(RFiDGearReleaseDir)\RFiDGear.dll</RFiDGearDllPath>
-    <RFiDGearExtensionsReleaseDir Condition=" '$(RFiDGearExtensionsReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear.Extensions\VCNEditor\bin\Release\$(RFiDGearTargetFramework)</RFiDGearExtensionsReleaseDir>
+    <RFiDGearExtensionsReleaseDir Condition=" '$(RFiDGearExtensionsReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear.Extensions\DesfirePluginSample\bin\Release\$(RFiDGearTargetFramework)</RFiDGearExtensionsReleaseDir>
     <RFiDGearProjectDir>$(ProjectDir)..\..\RFiDGear\</RFiDGearProjectDir>
     <RFiDGearProjectName>RFiDGear</RFiDGearProjectName>
     <RFiDGearVersion Condition=" '$(RFiDGearVersion)' == '' ">0.0.0.0</RFiDGearVersion>
@@ -68,7 +68,7 @@
   <Target Name="ValidateReleaseOutputs" BeforeTargets="HarvestReleaseOutputs">
     <Error Condition="!Exists('$(RFiDGearReleaseDir)')" Text="Release output directory '$(RFiDGearReleaseDir)' not found. Build the RFiDGear project for the x64 Release configuration before packaging." />
     <Error Condition="!Exists('$(RFiDGearExePath)')" Text="RFiDGear.exe not found at '$(RFiDGearExePath)'. Build the RFiDGear project for the x64 Release configuration before packaging." />
-    <Error Condition="!Exists('$(RFiDGearExtensionsReleaseDir)')" Text="Extensions output directory '$(RFiDGearExtensionsReleaseDir)' not found. Build the VCNEditor extensions project before packaging." />
+    <Error Condition="!Exists('$(RFiDGearExtensionsReleaseDir)')" Text="Extensions output directory '$(RFiDGearExtensionsReleaseDir)' not found. Build the DesfirePluginSample extensions project before packaging." />
   </Target>
   <Target Name="SetRFiDGearVersion" BeforeTargets="BeforeBuild" DependsOnTargets="ValidateReleaseOutputs">
     <GetAssemblyIdentity AssemblyFiles="$(RFiDGearDllPath)">

@@ -9,7 +9,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task SetResourceDictionary_IgnoresDuplicateSource()
         {
-            const string source = "/RFiDGear.Extensions.VCNEditor;component/ResourceDictionary.xaml";
+            const string source = "/RFiDGear.Extensions.DesfirePluginSample;component/ResourceDictionary.xaml";
 
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {

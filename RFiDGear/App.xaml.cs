@@ -16,9 +16,6 @@ namespace RFiDGear
     /// </summary>
     public partial class App : Application
     {
-        private const string VcnEditorAssemblyName = "RFiDGear.Extensions.VCNEditor";
-        private const string VcnEditorResourceDictionarySource = "/RFiDGear.Extensions.VCNEditor;component/ResourceDictionary.xaml";
-
         private static readonly string LogDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear", "log");
         private static readonly string LogFilePath = Path.Combine(LogDirectory, "log-.txt");
 
@@ -33,8 +30,6 @@ namespace RFiDGear
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
             TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
             AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
-
-            TryMergeExtensionResourceDictionary(Resources, VcnEditorAssemblyName, VcnEditorResourceDictionarySource);
 
             base.OnStartup(e);
         }

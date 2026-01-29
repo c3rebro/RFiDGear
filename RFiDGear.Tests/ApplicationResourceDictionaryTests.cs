@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using System.Windows;
 using RFiDGear;
-using RFiDGear.Extensions.VCNEditor.ViewModel;
+using RFiDGear.Extensions.DesfirePluginSample.ViewModel;
 using Xunit;
 
 namespace RFiDGear.Tests
@@ -10,21 +10,21 @@ namespace RFiDGear.Tests
     public class ApplicationResourceDictionaryTests
     {
         [Fact]
-        public async Task VcnEditorResourceDictionary_RegistersProfileEditorViewModel()
+        public async Task DesfireSampleResourceDictionary_RegistersDesfireSampleViewModel()
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
                 var app = Application.Current ?? new Application();
                 var dictionary = new ResourceDictionary
                 {
-                    Source = new Uri("/RFiDGear.Extensions.VCNEditor;component/ResourceDictionary.xaml", UriKind.RelativeOrAbsolute)
+                    Source = new Uri("/RFiDGear.Extensions.DesfirePluginSample;component/ResourceDictionary.xaml", UriKind.RelativeOrAbsolute)
                 };
 
                 app.Resources.MergedDictionaries.Add(dictionary);
 
                 try
                 {
-                    var resource = app.TryFindResource(typeof(ProfileEditorViewModel));
+                    var resource = app.TryFindResource(typeof(DesfireSampleViewModel));
                     Assert.NotNull(resource);
                 }
                 finally
@@ -35,15 +35,15 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task TryMergeExtensionResourceDictionary_AddsVcnEditorResourcesWhenAssemblyAvailable()
+        public async Task TryMergeExtensionResourceDictionary_AddsDesfireSampleResourcesWhenAssemblyAvailable()
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
                 var resources = new ResourceDictionary();
                 var merged = App.TryMergeExtensionResourceDictionary(
                     resources,
-                    "RFiDGear.Extensions.VCNEditor",
-                    "/RFiDGear.Extensions.VCNEditor;component/ResourceDictionary.xaml");
+                    "RFiDGear.Extensions.DesfirePluginSample",
+                    "/RFiDGear.Extensions.DesfirePluginSample;component/ResourceDictionary.xaml");
 
                 Assert.True(merged);
                 Assert.Single(resources.MergedDictionaries);
