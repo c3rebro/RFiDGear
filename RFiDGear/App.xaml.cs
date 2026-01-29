@@ -2,6 +2,7 @@ using Serilog;
 using Serilog.Events;
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Threading.Tasks;
@@ -15,6 +16,9 @@ namespace RFiDGear
     /// </summary>
     public partial class App : Application
     {
+        private const string VcnEditorAssemblyName = "RFiDGear.Extensions.VCNEditor";
+        private const string VcnEditorResourceDictionarySource = "/RFiDGear.Extensions.VCNEditor;component/ResourceDictionary.xaml";
+
         private static readonly string LogDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear", "log");
         private static readonly string LogFilePath = Path.Combine(LogDirectory, "log-.txt");
 
@@ -29,6 +33,8 @@ namespace RFiDGear
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
             TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
             AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
+
+            TryMergeExtensionResourceDictionary(Resources, VcnEditorAssemblyName, VcnEditorResourceDictionarySource);
 
             base.OnStartup(e);
         }
@@ -135,6 +141,88 @@ namespace RFiDGear
 
             var candidatePath = Path.Combine(extensionsPath, $"{assemblyName.Name}.dll");
             return File.Exists(candidatePath) ? candidatePath : null;
+        }
+
+        /// <summary>
+        /// Attempts to merge an extension resource dictionary if the assembly is present.
+        /// </summary>
+        /// <param name="resources">The application resources to update.</param>
+        /// <param name="assemblyName">The expected extension assembly name.</param>
+        /// <param name="source">The resource dictionary source URI.</param>
+        /// <returns>True when the dictionary is merged or already present; otherwise false.</returns>
+        internal static bool TryMergeExtensionResourceDictionary(ResourceDictionary resources, string assemblyName, string source)
+        {
+            if (resources == null || string.IsNullOrWhiteSpace(source))
+            {
+                return false;
+            }
+
+            if (resources.MergedDictionaries.Any(dictionary =>
+                    string.Equals(dictionary.Source?.OriginalString, source, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            if (!IsExtensionAssemblyAvailable(assemblyName))
+            {
+                return false;
+            }
+
+            try
+            {
+                resources.MergedDictionaries.Add(new ResourceDictionary
+                {
+                    Source = new Uri(source, UriKind.RelativeOrAbsolute)
+                });
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.ForContext<App>().Warning(ex, "Failed to merge resource dictionary {ResourceDictionarySource}", source);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether an extension assembly is available in the load context or expected paths.
+        /// </summary>
+        /// <param name="assemblyName">The extension assembly name.</param>
+        /// <returns>True when the assembly can be resolved; otherwise false.</returns>
+        internal static bool IsExtensionAssemblyAvailable(string assemblyName)
+        {
+            if (string.IsNullOrWhiteSpace(assemblyName))
+            {
+                return false;
+            }
+
+            if (AppDomain.CurrentDomain.GetAssemblies()
+                .Any(assembly => string.Equals(assembly.GetName().Name, assemblyName, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            if (!string.IsNullOrWhiteSpace(baseDirectory))
+            {
+                var candidatePath = Path.Combine(baseDirectory, $"{assemblyName}.dll");
+                if (File.Exists(candidatePath))
+                {
+                    return true;
+                }
+            }
+
+            var extensionsPath = MefHelper.Instance.ExtensionsPath;
+            if (!string.IsNullOrWhiteSpace(extensionsPath))
+            {
+                var candidatePath = Path.Combine(extensionsPath, $"{assemblyName}.dll");
+                if (File.Exists(candidatePath))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
