@@ -19,6 +19,8 @@ namespace RFiDGear.UI.MVVMDialogs.Behaviors
         private static readonly Dictionary<Window, NotifyCollectionChangedEventHandler> ChangeNotificationHandlers = new Dictionary<Window, NotifyCollectionChangedEventHandler>();
         private static readonly Dictionary<ObservableCollection<IDialogViewModel>, List<IDialogViewModel>> DialogBoxViewModels = new Dictionary<ObservableCollection<IDialogViewModel>, List<IDialogViewModel>>();
         private static ResourceDictionary resourceDictionary;
+        private static string resourceDictionarySource;
+        private static bool isResourceDictionaryInitializing;
 
         public static readonly DependencyProperty ClosingProperty = DependencyProperty.RegisterAttached(
             "Closing",
@@ -50,12 +52,42 @@ namespace RFiDGear.UI.MVVMDialogs.Behaviors
 
         public static void SetResourceDictionary(string source)
         {
-            resourceDictionary = new ResourceDictionary
+            if (string.IsNullOrWhiteSpace(source))
             {
-                Source =
-                new Uri(source,
-                        UriKind.RelativeOrAbsolute)
-            };
+                return;
+            }
+
+            if (resourceDictionary != null)
+            {
+                return;
+            }
+
+            if (string.Equals(resourceDictionarySource, source, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (isResourceDictionaryInitializing)
+            {
+                return;
+            }
+
+            isResourceDictionaryInitializing = true;
+            try
+            {
+                resourceDictionary = new ResourceDictionary
+                {
+                    Source =
+                    new Uri(source,
+                            UriKind.RelativeOrAbsolute)
+                };
+
+                resourceDictionarySource = source;
+            }
+            finally
+            {
+                isResourceDictionaryInitializing = false;
+            }
         }
 
         private static void OnDialogViewModelsChange(DependencyObject d, DependencyPropertyChangedEventArgs e)
