@@ -17,5 +17,14 @@ namespace RFiDGear.Tests
                 DialogBehavior.SetResourceDictionary(source);
             });
         }
+
+        [Fact]
+        public async Task SetResourceDictionary_IgnoresEmptySource()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                DialogBehavior.SetResourceDictionary(string.Empty);
+            });
+        }
     }
 }
