@@ -16,6 +16,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Windows;
 using System.Windows.Input;
 using System.Xml.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -49,8 +50,6 @@ namespace RFiDGear.Extensions.VCNEditor.ViewModel
         {
             try
             {
-                RFiDGear.UI.MVVMDialogs.Behaviors.DialogBehavior.SetResourceDictionary("/RFiDGear.Extensions.VCNEditor;component/ResourceDictionary.xaml"); // set view <-> viewmodel resources (viewmodel first pattern)
-
                 RFiDGear.Extensions.VCNEditor.DataAccessLayer.CultureInfoProxy.Culture = culture; // set selected culture from main app via mef import
 
                 for (int i = 0; i < cardIDAsBytes.Length; i++)
@@ -123,6 +122,10 @@ namespace RFiDGear.Extensions.VCNEditor.ViewModel
         {
             try
             {
+                if (!CanOpenDialogs())
+                {
+                    return;
+                }
 
                 Dialogs.Add(new ProfileEditorViewModel()
                 {
@@ -170,6 +173,11 @@ namespace RFiDGear.Extensions.VCNEditor.ViewModel
 
             try
             {
+                if (!CanOpenDialogs())
+                {
+                    return;
+                }
+
                 if (SelectedAccessProfile != null)
                 {
                     Dialogs.Add(new ScheduleConfigurationDialogViewModel(SelectedAccessProfile, CultureInfoProxy.Culture)
@@ -327,6 +335,11 @@ namespace RFiDGear.Extensions.VCNEditor.ViewModel
         {
             try
             {
+                if (!CanOpenDialogs())
+                {
+                    return;
+                }
+
                 Dialogs.Add(new ExpiryConfigurationDialogViewModel(SelectedAccessProfile, CultureInfoProxy.Culture)
                 {
 
@@ -361,6 +374,20 @@ namespace RFiDGear.Extensions.VCNEditor.ViewModel
                 LogWriter.CreateLogEntry(string.Format("{0}: {1}; {2}", DateTime.Now, e.Message, e.InnerException != null ? e.InnerException.Message : ""));
                 Dialogs.Clear();
             }
+        }
+
+        /// <summary>
+        /// Determines whether dialog resources are available before opening dialogs.
+        /// </summary>
+        private bool CanOpenDialogs()
+        {
+            if (Application.Current?.TryFindResource(typeof(ProfileEditorViewModel)) != null)
+            {
+                return true;
+            }
+
+            LogWriter.CreateLogEntry(string.Format("{0}: {1}", DateTime.Now, "Dialog resources are missing for VCN editor dialogs."));
+            return false;
         }
 
         #endregion
