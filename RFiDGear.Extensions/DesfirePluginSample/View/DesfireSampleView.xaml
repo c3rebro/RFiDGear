@@ -31,6 +31,11 @@
                            Foreground="#6EE7B7"
                            FontWeight="Bold" />
             </StackPanel>
+            <Button Margin="0,12,0,0"
+                    Padding="10,4"
+                    HorizontalAlignment="Left"
+                    Command="{Binding ShowDialogCommand}"
+                    Content="Show sample dialog" />
         </StackPanel>
     </Border>
 </UserControl>
