@@ -156,7 +156,7 @@
           </Directory>
         </Directory>
       </Directory>
-      <Directory Id="$(var.RFIDGear_ProgramDataDir)" Name="plugins">
+      <Directory Id="$(var.RFIDGear_ProgramDataDir)">
         <!-- All folders from here on are relative to their parent. -->
         <Directory Id="RFiDGearProgramDataFolder" Name="!(loc.ApplicationName)">
           <Directory Id="RFiDGearExtensionsFolder" Name="Extensions">

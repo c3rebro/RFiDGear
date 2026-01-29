@@ -19,6 +19,7 @@ namespace RFiDGear.UI.MVVMDialogs.Behaviors
         private static readonly Dictionary<Window, NotifyCollectionChangedEventHandler> ChangeNotificationHandlers = new Dictionary<Window, NotifyCollectionChangedEventHandler>();
         private static readonly Dictionary<ObservableCollection<IDialogViewModel>, List<IDialogViewModel>> DialogBoxViewModels = new Dictionary<ObservableCollection<IDialogViewModel>, List<IDialogViewModel>>();
         private static ResourceDictionary resourceDictionary;
+        private static string resourceDictionarySource;
 
         public static readonly DependencyProperty ClosingProperty = DependencyProperty.RegisterAttached(
             "Closing",
@@ -50,12 +51,24 @@ namespace RFiDGear.UI.MVVMDialogs.Behaviors
 
         public static void SetResourceDictionary(string source)
         {
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                return;
+            }
+
+            if (string.Equals(resourceDictionarySource, source, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
             resourceDictionary = new ResourceDictionary
             {
                 Source =
                 new Uri(source,
                         UriKind.RelativeOrAbsolute)
             };
+
+            resourceDictionarySource = source;
         }
 
         private static void OnDialogViewModelsChange(DependencyObject d, DependencyPropertyChangedEventArgs e)

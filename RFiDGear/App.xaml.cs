@@ -2,9 +2,11 @@ using Serilog;
 using Serilog.Events;
 using System;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Threading.Tasks;
 using System.Windows.Threading;
+using RFiDGear.Infrastructure;
 
 namespace RFiDGear
 {
@@ -26,6 +28,7 @@ namespace RFiDGear
             DispatcherUnhandledException += OnDispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
             TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+            AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
 
             base.OnStartup(e);
         }
@@ -73,6 +76,65 @@ namespace RFiDGear
         {
             Log.ForContext<App>().Fatal(e.Exception, "Unobserved task exception");
             e.SetObserved();
+        }
+
+        /// <summary>
+        /// Resolves extension assemblies that are stored in the ProgramData extensions folder.
+        /// </summary>
+        /// <param name="sender">The domain raising the resolve event.</param>
+        /// <param name="args">The resolution arguments.</param>
+        /// <returns>The loaded assembly or null if not handled.</returns>
+        internal static Assembly OnAssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            if (args == null || string.IsNullOrWhiteSpace(args.Name))
+            {
+                return null;
+            }
+
+            var assemblyName = new AssemblyName(args.Name);
+            var candidatePath = GetExtensionAssemblyPath(MefHelper.Instance.ExtensionsPath, assemblyName);
+            if (candidatePath == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return Assembly.LoadFrom(candidatePath);
+            }
+            catch (Exception ex)
+            {
+                Log.ForContext<App>().Error(
+                    ex,
+                    "Failed to resolve extension assembly {AssemblyName} from {AssemblyPath}",
+                    assemblyName.FullName,
+                    candidatePath);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the extension assembly path for a requested assembly name.
+        /// </summary>
+        /// <param name="extensionsPath">The extensions directory to probe.</param>
+        /// <param name="assemblyName">The assembly name to resolve.</param>
+        /// <returns>The full path to the extension assembly, or null if it cannot be resolved.</returns>
+        internal static string GetExtensionAssemblyPath(string extensionsPath, AssemblyName assemblyName)
+        {
+            if (assemblyName == null ||
+                string.IsNullOrWhiteSpace(assemblyName.Name) ||
+                !assemblyName.Name.StartsWith("RFiDGear.Extensions", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(extensionsPath))
+            {
+                return null;
+            }
+
+            var candidatePath = Path.Combine(extensionsPath, $"{assemblyName.Name}.dll");
+            return File.Exists(candidatePath) ? candidatePath : null;
         }
     }
 }
