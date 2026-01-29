@@ -16,7 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RFiDGear.Extensions\DesfirePluginSample\RFiDGear.Extensions.DesfirePluginSample.csproj" />
-    <ProjectReference Include="..\RFiDGear.Extensions\VCNEditor\RFiDGear.Extensions.VCNEditor.csproj" />
     <ProjectReference Include="..\\RFiDGear\\RFiDGear.csproj" />
   </ItemGroup>
 </Project>
