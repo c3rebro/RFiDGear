@@ -232,12 +232,6 @@ public sealed class MefHelper : IDisposable
     private static IEnumerable<string> GetDevelopmentExtensionProjectRoots(string solutionRoot)
     {
         var projectRoots = new List<string>();
-        var vcnEditorRoot = Path.Combine(solutionRoot, "VCNEditor");
-        if (Directory.Exists(vcnEditorRoot))
-        {
-            projectRoots.Add(vcnEditorRoot);
-        }
-
         var extensionsRoot = Path.Combine(solutionRoot, "RFiDGear.Extensions");
         if (Directory.Exists(extensionsRoot))
         {

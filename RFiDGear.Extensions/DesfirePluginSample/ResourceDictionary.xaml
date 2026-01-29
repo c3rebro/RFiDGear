@@ -1,0 +1,5 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:viewModel="clr-namespace:RFiDGear.Extensions.DesfirePluginSample.ViewModel">
+    <viewModel:DesfireSampleViewModel x:Key="{x:Type viewModel:DesfireSampleViewModel}" />
+</ResourceDictionary>

@@ -22,8 +22,8 @@ namespace RFiDGear.Tests
         {
             var tempRoot = Directory.CreateTempSubdirectory("RFiDGearExtResolve").FullName;
             var extensionsPath = Path.Combine(tempRoot, "Extensions");
-            var assemblyName = new AssemblyName("RFiDGear.Extensions.VCNEditor");
-            var expectedPath = Path.Combine(extensionsPath, "RFiDGear.Extensions.VCNEditor.dll");
+            var assemblyName = new AssemblyName("RFiDGear.Extensions.DesfirePluginSample");
+            var expectedPath = Path.Combine(extensionsPath, "RFiDGear.Extensions.DesfirePluginSample.dll");
 
             try
             {
