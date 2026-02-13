@@ -203,7 +203,7 @@ namespace RFiDGear.Tests
 
     internal class FakeAppStartupInitializer : IAppStartupInitializer
     {
-        public AppStartupContext Initialize() => new AppStartupContext(null, new Mutex(), Array.Empty<string>());
+        public AppStartupContext Initialize() => new AppStartupContext(new Mutex(), Array.Empty<string>());
     }
 
     internal class FakeTimerFactory : ITimerFactory

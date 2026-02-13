@@ -1,7 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -228,7 +227,6 @@ namespace RFiDGear.Services.TaskExecution
         public Action<bool> UpdateReaderBusy { get; set; }
         public Action NotifyTreeViewChanged { get; set; }
         public Action NotifyTasksChanged { get; set; }
-        public EventLog EventLog { get; set; }
         public TaskExecutionTimeouts Timeouts { get; set; } = TaskExecutionTimeouts.Default;
         public IReadOnlyList<TaskDescriptor> TaskDescriptors { get; set; }
         public IDictionary<ERROR, string> ErrorRouting { get; set; } = new Dictionary<ERROR, string>();
@@ -379,7 +377,6 @@ namespace RFiDGear.Services.TaskExecution
             catch (Exception e)
             {
                 logger.LogError("ExecuteOnceAsync", e, new { CurrentTaskIndex });
-                request.EventLog?.WriteEntry(e.ToString(), EventLogEntryType.Error);
                 throw;
             }
             finally

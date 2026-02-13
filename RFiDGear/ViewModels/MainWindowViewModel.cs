@@ -19,6 +19,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Serilog;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -50,7 +51,6 @@ namespace RFiDGear.ViewModel
     {
         private readonly Version Version = Assembly.GetExecutingAssembly().GetName().Version;
 #nullable enable
-        private readonly EventLog? eventLog;
 #nullable disable
         private readonly string[] args;
         private readonly Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
@@ -138,7 +138,6 @@ namespace RFiDGear.ViewModel
             IsReaderBusy = false;
 
             var startupContext = appStartupInitializer.Initialize();
-            eventLog = startupContext.EventLog;
             mutex = startupContext.Mutex;
             args = startupContext.Arguments;
 
@@ -402,7 +401,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<MainWindowViewModel>().Error(e, "Failed to update chip.");
             }
 
             Mouse.OverrideCursor = null;
@@ -490,7 +489,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<MainWindowViewModel>().Error(e, "Failed to update chip.");
 
                 dialogs.Clear();
 
@@ -574,7 +573,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<MainWindowViewModel>().Error(e, "Failed to update chip.");
 
                 dialogs.Clear();
 
@@ -646,7 +645,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<MainWindowViewModel>().Error(e, "Failed to update chip.");
 
                 dialogs.Clear();
 
@@ -895,7 +894,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception e)
             {
-                eventLog?.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<MainWindowViewModel>().Error(e, "Failed to update chip.");
             }
 
             return Task.CompletedTask;
@@ -997,7 +996,6 @@ namespace RFiDGear.ViewModel
                 UpdateReaderBusy = status => IsReaderBusy = status,
                 NotifyTreeViewChanged = () => OnPropertyChanged(nameof(TreeViewParentNodes)),
                 NotifyTasksChanged = () => OnPropertyChanged(nameof(ChipTasks)),
-                EventLog = eventLog
             };
 
             try
@@ -1012,7 +1010,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception ex)
             {
-                eventLog?.WriteEntry(ex.ToString(), EventLogEntryType.Error);
+                Log.ForContext<MainWindowViewModel>().Error(ex, "Task execution failed.");
                 Dialogs.Add(new CustomDialogViewModel
                 {
                     Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
