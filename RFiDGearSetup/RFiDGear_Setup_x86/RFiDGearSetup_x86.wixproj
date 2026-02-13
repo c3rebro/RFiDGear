@@ -27,7 +27,7 @@
     <RFiDGearReleaseDir Condition=" '$(RFiDGearReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear\bin\x64\Release\$(RFiDGearTargetFramework)</RFiDGearReleaseDir>
     <RFiDGearExePath Condition=" '$(RFiDGearExePath)' == '' ">$(RFiDGearReleaseDir)\RFiDGear.exe</RFiDGearExePath>
     <RFiDGearDllPath Condition=" '$(RFiDGearDllPath)' == '' ">$(RFiDGearReleaseDir)\RFiDGear.dll</RFiDGearDllPath>
-    <RFiDGearExtensionsReleaseDir Condition=" '$(RFiDGearExtensionsReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear.Extensions\DesfirePluginSample\bin\Release\$(RFiDGearTargetFramework)</RFiDGearExtensionsReleaseDir>
+    <RFiDGearExtensionsReleaseDir Condition=" '$(RFiDGearExtensionsReleaseDir)' == '' ">$(ProjectDir)..\..\RFiDGear.Extensions\DesfirePluginSample\bin\x86\Release\$(RFiDGearTargetFramework)</RFiDGearExtensionsReleaseDir>
     <RFiDGearProjectDir>$(ProjectDir)..\..\RFiDGear\</RFiDGearProjectDir>
     <RFiDGearProjectName>RFiDGear</RFiDGearProjectName>
     <RFiDGearVersion Condition=" '$(RFiDGearVersion)' == '' ">0.0.0.0</RFiDGearVersion>
