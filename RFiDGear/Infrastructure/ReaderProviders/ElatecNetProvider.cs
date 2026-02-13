@@ -1,7 +1,6 @@
 ﻿//using Elatec.NET.Model;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -12,6 +11,7 @@ using Elatec.NET;
 using RFiDGear.Models;
 using RFiDGear.Infrastructure.Tasks;
 using Elatec.NET.Cards.Mifare;
+using Serilog;
 
 namespace RFiDGear.Infrastructure.ReaderProviders
 {
@@ -20,9 +20,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         private TWN4ReaderDevice readerDevice;
         private readonly byte DESFIRE_AUTHMODE_COMPATIBLE = 0;
         private readonly byte DESFIRE_AUTHMODE_EV1 = 1;
-
-        private readonly EventLog eventLog
-            = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
 
         private GenericChipModel hfTag;
         private GenericChipModel lfTag;
@@ -59,7 +56,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
             }
         }
 
@@ -187,7 +184,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
 
                 return ERROR.TransportError;
             }
@@ -430,7 +427,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry($"Unable to read DESFire key version: {e.Message}", EventLogEntryType.Error);
+                Log.ForContext<ElatecNetProvider>().Error(e, "Unable to read DESFire key version.");
                 throw;
             }
         }
@@ -916,7 +913,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     }
                     catch (Exception e)
                     {
-                        eventLog.WriteEntry($"Unable to read DESFire key settings after authentication: {e.Message}", EventLogEntryType.Warning);
+                        Log.ForContext<ElatecNetProvider>().Warning(e, "Unable to read DESFire key settings after authentication.");
                     }
 
                     var configuredKeyType = EncryptionType;
@@ -934,7 +931,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     foreach (var warning in resolvedSettings.Warnings)
                     {
-                        eventLog.WriteEntry(warning, EventLogEntryType.Warning);
+                        Log.ForContext<ElatecNetProvider>().Warning("{WarningMessage}", warning);
                     }
 
                     MaxNumberOfAppKeys = resolvedSettings.KeyCount;
@@ -1259,7 +1256,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 }
                 catch (Exception e)
                 {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                    Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
                     return ERROR.TransportError;
                 }
 
@@ -1384,7 +1381,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
                 return ERROR.TransportError;
             }
         }
@@ -1406,7 +1403,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
                 return ERROR.AuthFailure;
             }
 

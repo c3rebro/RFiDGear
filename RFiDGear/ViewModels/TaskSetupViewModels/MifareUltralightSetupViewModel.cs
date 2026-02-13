@@ -13,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -22,6 +21,7 @@ using System.Windows.Input;
 using System.Xml.Serialization;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
+using Serilog;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.UIExtensions.Interfaces;
@@ -34,7 +34,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     public class MifareUltralightSetupViewModel : ObservableObject, IUserDialogViewModel
     {
         #region Fields
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
 
         private MifareUltralightChipModel chipModel;
@@ -128,7 +127,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<MifareUltralightSetupViewModel>().Error(e, "Mifare Ultralight setup operation failed.");
             }
 
         }

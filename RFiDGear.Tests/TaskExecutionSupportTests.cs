@@ -61,7 +61,7 @@ namespace RFiDGear.Tests
         {
             using var mutex = new Mutex();
 #pragma warning disable CS8625 // Intentional null to validate default handling
-            var context = new AppStartupContext(null, mutex, (string[])null!);
+            var context = new AppStartupContext(mutex, (string[])null!);
 #pragma warning restore CS8625
 
             Assert.NotNull(context.Arguments);
@@ -72,7 +72,7 @@ namespace RFiDGear.Tests
         public void Constructor_ThrowsWhenMutexIsNull()
         {
 #pragma warning disable CS8625 // Intentional null to validate guard clause
-            Assert.Throws<ArgumentNullException>(() => new AppStartupContext(null, null!, Array.Empty<string>()));
+            Assert.Throws<ArgumentNullException>(() => new AppStartupContext(null!, Array.Empty<string>()));
 #pragma warning restore CS8625
         }
     }

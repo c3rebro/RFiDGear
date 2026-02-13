@@ -14,7 +14,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -24,6 +23,7 @@ using System.Windows.Input;
 using System.Xml.Serialization;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
+using Serilog;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
@@ -40,7 +40,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     public class MifareClassicSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask
     {
         #region Fields
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
 
         private readonly ObservableCollection<MifareClassicDataBlockAccessConditionModel> dataBlock_AccessBits = new ObservableCollection<MifareClassicDataBlockAccessConditionModel>
@@ -331,7 +330,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<MifareClassicSetupViewModel>().Error(e, "Mifare Classic setup operation failed.");
             }
         }
 
@@ -1999,7 +1998,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 catch (Exception e)
                 {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                    Log.ForContext<MifareClassicSetupViewModel>().Error(e, "Mifare Classic setup operation failed.");
                 }
             }
             return Task.CompletedTask;

@@ -16,7 +16,6 @@ using System;
 using System.ComponentModel.Composition;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -27,6 +26,7 @@ using System.Windows.Input;
 using System.Xml.Serialization;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
+using Serilog;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
@@ -42,7 +42,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask
     {
         #region Fields
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
         private bool hasFinalizedTask;
         private string desfireDataFilePath;
@@ -212,7 +211,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<MifareDesfireSetupViewModel>().Error(e, "Mifare DESFire setup operation failed.");
             }
         }
         #endregion
@@ -2553,7 +2552,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
                 catch (Exception e)
                 {
-                    eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                    Log.ForContext<MifareDesfireSetupViewModel>().Error(e, "Mifare DESFire setup operation failed.");
                 }
             }
         }
@@ -2877,7 +2876,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<MifareDesfireSetupViewModel>().Error(e, "Mifare DESFire setup operation failed.");
                 StatusText += string.Format("{0}: Unable to save read data: {1}\n", DateTime.Now, e.Message);
             }
         }

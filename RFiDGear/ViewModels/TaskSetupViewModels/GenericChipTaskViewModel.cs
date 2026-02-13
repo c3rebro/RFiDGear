@@ -14,16 +14,16 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Serialization;
 using Elatec.NET;
 using System.Linq;
+using System.Reflection;
 using LibLogicalAccess;
-using System.Diagnostics;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
+using Serilog;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
@@ -36,7 +36,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
     public class GenericChipTaskViewModel : ObservableObject, IUserDialogViewModel, IGenericTask
     {
         #region fields
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
 
         private protected ReportReaderWriter reportReaderWriter;
@@ -99,7 +98,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<GenericChipTaskViewModel>().Error(e, "Failed to create generic chip task model.");
             }
         }
 

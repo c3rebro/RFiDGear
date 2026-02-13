@@ -9,13 +9,12 @@ using RFiDGear.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Diagnostics;
-using System.Reflection;
 using System.Linq;
 using System.Globalization;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.FileAccess;
+using Serilog;
 
 namespace RFiDGear.Infrastructure.ReaderProviders
 {
@@ -28,7 +27,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
     public class LibLogicalAccessProvider : ReaderDevice, IDisposable
     {
         // global (cross-class) Instances go here ->
-        private readonly EventLog eventLog = new EventLog("Application", ".", Assembly.GetEntryAssembly().GetName().Name);
         private readonly ProjectManager projectManager = new ProjectManager();
         private ReaderProvider readerProvider;
         private ReaderUnit readerUnit;
@@ -54,7 +52,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
             }
         }
 
@@ -96,7 +94,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
             }
         }
 
@@ -187,7 +185,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         }
                         catch (Exception e)
                         {
-                            eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                            Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
 
                             return ERROR.TransportError;
                         }
@@ -201,7 +199,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 if (readerProvider != null)
                     readerProvider.release();
 
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
 
                 return ERROR.TransportError;
             }
@@ -326,7 +324,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
                 return ERROR.AuthFailure;
             }
         }
@@ -413,7 +411,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
 
                 return ERROR.TransportError;
             }
@@ -473,7 +471,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
 
                 return ERROR.TransportError;
             }
@@ -501,7 +499,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         }
                         catch (Exception e)
                         {
-                            eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                            Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
                         }
                     }
 
@@ -546,7 +544,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
 
                 return ERROR.TransportError;
             }
@@ -623,7 +621,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     }
                     catch (Exception e)
                     {
-                        eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                        Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
                         return ERROR.AuthFailure;
                     }
                     return ERROR.NoError;
@@ -631,7 +629,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
                 return ERROR.AuthFailure;
             }
             return ERROR.NoError;
@@ -680,7 +678,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     }
                     catch (Exception e)
                     {
-                        eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                        Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
                         return ERROR.AuthFailure;
                     }
                     return ERROR.NoError;
@@ -688,7 +686,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
                 return ERROR.AuthFailure;
             }
             return ERROR.NoError;
@@ -726,7 +724,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
-                eventLog.WriteEntry(e.Message, EventLogEntryType.Error);
+                Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
                 return ERROR.TransportError;
             }
         }
