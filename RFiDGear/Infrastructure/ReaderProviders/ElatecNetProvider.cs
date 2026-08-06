@@ -1396,10 +1396,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
 
-                if (await AuthToMifareDesfireApplication(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID) == ERROR.NoError)
-                {
-                    await readerDevice.MifareDesfire_WriteDataAsync((byte)_fileNo, _data, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
-                }
+                var authResult = await AuthToMifareDesfireApplication(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID);
+                if (authResult != ERROR.NoError)
+                    return authResult;
+
+                await readerDevice.MifareDesfire_WriteDataAsync((byte)_fileNo, _data, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
             }
             catch (Exception e)
             {

@@ -1332,7 +1332,24 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 if (authenticateBeforeReading)
                 {
-                    cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterCardKey);
+                    try
+                    {
+                        cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterCardKey);
+                    }
+                    catch (Exception authEx)
+                    {
+                        return OperationResult.Failure(
+                            ERROR.AuthFailure,
+                            "Authentication failed",
+                            authEx.Message,
+                            nameof(GetMifareDesfireAppSettings),
+                            wasAuthenticated: false,
+                            new Dictionary<string, string>
+                            {
+                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                                { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                            });
+                    }
                 }
 
                 cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
@@ -1680,6 +1697,18 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     // Authenticate with required key number (master key or target key).
                     cmd.authenticate(resolved.AuthKeyNo, authKey);
+
+                    // When changing a key other than the auth key, the DESFire protocol requires
+                    // the command payload to contain newKey XOR oldKey. LibLogicalAccess reads the
+                    // old key from DESFireCrypto, so we must load it there before calling changeKey.
+                    if (resolved.TargetKeyNo != resolved.AuthKeyNo)
+                    {
+                        var oldKey = new LibLogicalAccess.Card.DESFireKey();
+                        oldKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)resolved.TargetKeyType);
+                        CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(resolved.OldTargetKeyHex);
+                        oldKey.fromString(CustomConverter.DesfireKeyToCheck);
+                        (card as LibLogicalAccess.Card.DESFireChip)?.getCrypto()?.setKey(resolved.AppId, resolved.TargetKeyNo, 0, oldKey);
+                    }
 
                     // Change the requested key number to the new value.
                     cmd.changeKey(resolved.TargetKeyNo, newKey);

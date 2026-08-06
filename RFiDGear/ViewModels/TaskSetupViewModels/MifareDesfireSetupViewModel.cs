@@ -2203,7 +2203,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 switch (desfireTaskType)
                 {
                     case TaskType_MifareDesfireTask.AppExistCheck:
-                        await DoesAppExistCommand(null);
+                        await DoesAppExistCommand(new MifareDesfireChipModel());
                         break;
 
                     case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
@@ -2290,17 +2290,17 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                   SelectedDesfireMasterKeyEncryptionTypeCurrent,
                                   0);
 
+                        DESFireKeySettings keySettings;
+                        keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
+
+                        keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
+                        keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
+                        keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
+                        keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
+
                         if (IsValidAppNumberNew != false && authResult == ERROR.NoError)
                         {
                             StatusText += string.Format("{0}: Successfully Authenticated to App 0\n", DateTime.Now);
-
-                            DESFireKeySettings keySettings;
-                            keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
-
-                            keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
-                            keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
-                            keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
-                            keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
 
                             var createResult = await device.CreateMifareDesfireApplication(
                                 DesfireMasterKeyCurrent,
@@ -2324,6 +2324,36 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
                             }
+                        }
+                        else if (IsValidAppNumberNew != false && authResult == ERROR.AuthFailure)
+                        {
+                            // PICC may be configured to allow application creation without master-key
+                            // authentication ("Create/Delete without MK" key-settings bit is set).
+                            // Retry unauthenticated; the card will reject the command if auth is required.
+                            StatusText += string.Format("{0}: PICC auth failed; retrying without authentication.\n", DateTime.Now);
+
+                            var createResult = await device.CreateMifareDesfireApplication(
+                                DesfireMasterKeyCurrent,
+                                keySettings,
+                                SelectedDesfireMasterKeyEncryptionTypeCurrent,
+                                SelectedDesfireAppKeyEncryptionTypeCreateNewApp,
+                                selectedDesfireAppMaxNumberOfKeysAsInt,
+                                AppNumberNewAsInt,
+                                authenticateToPICCFirst: false);
+
+                            if (createResult.Code == ERROR.NoError)
+                            {
+                                StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
+                                CurrentTaskErrorLevel = createResult.Code;
+                            }
+                            else
+                            {
+                                StatusText += string.Format("{0}: Unable to Create App: {1}\n", DateTime.Now, createResult.Message ?? createResult.Code.ToString());
+                                CurrentTaskErrorLevel = createResult.Code;
+                            }
+
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+                            return;
                         }
                         else
                         {
