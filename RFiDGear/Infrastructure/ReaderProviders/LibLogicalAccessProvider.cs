@@ -2102,13 +2102,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 try
                                 {
                                     fsFromChip = cmd.getFileSettings((byte)_fileNo);
+                                    uint unauthFileLength = 0;
+                                    try { unauthFileLength = cmd.getFileLength((byte)_fileNo); } catch { }
                                     DesfireFileSettings = new DESFireFileSettings
                                     {
                                         accessRights = fsFromChip.accessRights,
                                         comSett = fsFromChip.comSett,
-                                        //dataFile = fs.getDataFile(),
                                         FileType = fsFromChip.fileType
                                     };
+                                    DesfireFileSettings.dataFile.fileSize = unauthFileLength;
 
                                     return ERROR.NoError;
                                 }
@@ -2128,13 +2130,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             }
 
                             fsFromChip = cmd.getFileSettings((byte)_fileNo);
+                            uint fileLength = 0;
+                            try { fileLength = cmd.getFileLength((byte)_fileNo); } catch { }
                             DesfireFileSettings = new DESFireFileSettings
                             {
                                 accessRights = fsFromChip.accessRights,
                                 comSett = fsFromChip.comSett,
-                                //dataFile = fs.getDataFile(),
                                 FileType = fsFromChip.fileType
                             };
+                            DesfireFileSettings.dataFile.fileSize = fileLength;
 
                             return ERROR.NoError;
                         }
