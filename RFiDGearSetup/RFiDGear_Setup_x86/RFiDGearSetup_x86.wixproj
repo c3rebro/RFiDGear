@@ -11,13 +11,22 @@
     <Name>RFiDGearSetup_x86</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <OutputPath>bin\x86\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\x86\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>Debug</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <OutputPath>bin\x86\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\x86\$(Configuration)\</IntermediateOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <OutputPath>bin\x86\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\x86\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>Debug</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <OutputPath>bin\x86\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\x86\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Running heat in-proc can crash VS when the task bitness differs from MSBuild (see https://github.com/wixtoolset/issues/issues/6699). -->
