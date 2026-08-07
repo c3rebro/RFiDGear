@@ -2117,7 +2117,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                     try { unauthFileLength = cmd.getFileLength((byte)_fileNo); } catch { }
                                     DesfireFileSettings = new DESFireFileSettings
                                     {
-                                        accessRights = fsFromChip.accessRights,
+                                        accessRights = ConvertWireAccessRights(fsFromChip.accessRights),
                                         comSett = fsFromChip.comSett,
                                         FileType = fsFromChip.fileType
                                     };
@@ -2145,7 +2145,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             try { fileLength = cmd.getFileLength((byte)_fileNo); } catch { }
                             DesfireFileSettings = new DESFireFileSettings
                             {
-                                accessRights = fsFromChip.accessRights,
+                                accessRights = ConvertWireAccessRights(fsFromChip.accessRights),
                                 comSett = fsFromChip.comSett,
                                 FileType = fsFromChip.fileType
                             };
@@ -2176,6 +2176,25 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 return ERROR.TransportError;
             }
+        }
+
+        // DESFire wire format is a little-endian 16-bit word:
+        //   byte[0] (bits 7:0):  high nibble = ReadWrite key, low nibble = Change key
+        //   byte[1] (bits 15:8): high nibble = Read key,      low nibble = Write key
+        // The internal convention (matching ElatecNetProvider) is:
+        //   byte[0]: low nibble = Read key,      high nibble = Write key
+        //   byte[1]: low nibble = ReadWrite key, high nibble = Change key
+        private static byte[] ConvertWireAccessRights(byte[] wire)
+        {
+            byte readKey   = (byte)((wire[1] >> 4) & 0x0F);
+            byte writeKey  = (byte)(wire[1] & 0x0F);
+            byte rwKey     = (byte)((wire[0] >> 4) & 0x0F);
+            byte changeKey = (byte)(wire[0] & 0x0F);
+            return new byte[]
+            {
+                (byte)(readKey | (writeKey << 4)),
+                (byte)(rwKey   | (changeKey << 4))
+            };
         }
 
         /// <inheritdoc />
