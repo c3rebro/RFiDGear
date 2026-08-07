@@ -29,6 +29,9 @@
     <IntermediateOutputPath>obj\x86\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup>
+    <!-- Force WiX to compile a 32-bit MSI regardless of the solution platform (x86 or x64). -->
+    <!-- InstallerPlatform is read by Wix.targets before it derives the value from $(Platform). -->
+    <InstallerPlatform>x86</InstallerPlatform>
     <!-- Running heat in-proc can crash VS when the task bitness differs from MSBuild (see https://github.com/wixtoolset/issues/issues/6699). -->
     <HeatRunAsSeparateProcess Condition=" '$(HeatRunAsSeparateProcess)' == '' ">true</HeatRunAsSeparateProcess>
     <WixToolPath Condition=" '$(WixToolPath)' == '' and Exists('$(ProgramFiles(x86))\\WiX Toolset v3.14\\bin\\') ">$(ProgramFiles(x86))\WiX Toolset v3.14\bin\</WixToolPath>
@@ -101,8 +104,8 @@
       <HarvestOutputDir>$(IntermediateOutputPath)harvest\</HarvestOutputDir>
     </PropertyGroup>
     <MakeDir Directories="$(HarvestOutputDir)" />
-    <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.ReleaseFiles.x86" Directory="$(RFiDGearReleaseDir)" DirectoryRefId="INSTALLDIR" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Release.x86.wxs" PreprocessorVariable="var.RFiDGearReleaseDir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressSpecificWarnings="5150;5151" SuppressRootDirectory="true" Platform="x86" Condition="Exists('$(RFiDGearReleaseDir)')" />
-    <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.Extensions.ReleaseFiles" Directory="$(RFiDGearExtensionsReleaseDir)" DirectoryRefId="RFiDGearExtensionsFolder" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Extensions.Release.wxs" PreprocessorVariable="var.RFiDGearExtensionsReleaseDir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressSpecificWarnings="5150;5151" SuppressRootDirectory="true" Platform="x86" Condition="Exists('$(RFiDGearExtensionsReleaseDir)')" />
+    <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.ReleaseFiles.x86" Directory="$(RFiDGearReleaseDir)" DirectoryRefId="INSTALLDIR" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Release.x86.wxs" PreprocessorVariable="var.RFiDGearReleaseDir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressSpecificWarnings="5150;5151" SuppressRootDirectory="true" Condition="Exists('$(RFiDGearReleaseDir)')" />
+    <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.Extensions.ReleaseFiles" Directory="$(RFiDGearExtensionsReleaseDir)" DirectoryRefId="RFiDGearExtensionsFolder" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Extensions.Release.wxs" PreprocessorVariable="var.RFiDGearExtensionsReleaseDir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressSpecificWarnings="5150;5151" SuppressRootDirectory="true" Condition="Exists('$(RFiDGearExtensionsReleaseDir)')" />
     <ItemGroup>
       <Compile Include="$(HarvestOutputDir)RFiDGear.Release.x86.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Release.x86.wxs')" />
       <Compile Include="$(HarvestOutputDir)RFiDGear.Extensions.Release.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Extensions.Release.wxs')" />
