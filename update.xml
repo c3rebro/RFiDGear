@@ -4,6 +4,19 @@
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
   <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4CD</SecurityToken>
   <BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>
-  <VersionInfoText>RFiDGear 2.0.5.0</VersionInfoText>
+  <VersionInfoText>RFiDGear 2.0.5.0
+
+New:
+- Pre-quick-check key dialog: configure DESFire and MIFARE Classic keys before every quick check, with a "Do not ask again" option
+- Default Keys tab in Settings: edit and validate quick-check keys with live green/red feedback
+- "Check for Updates" now shows a confirmation when already on the latest version
+
+Fixed:
+- AppExistCheck task incorrectly reported success even when the specified application ID did not exist on the card
+- DESFire WriteData returning false success; key settings not persisted after ChangeKey; PICC authentication retry logic
+- LibLogicalAccess: file access-rights byte order mismatch; missing file size in GetFileSettings; application list accumulating across repeated quick-check runs; DESFire key SWIG copy trap causing authentication failures
+- Elatec provider: COM port access now serialised to prevent concurrent-access errors
+- Settings window no longer grows to extreme width when many MIFARE Classic keys are loaded
+  </VersionInfoText>
   <Payload>update.zip</Payload>
 </Manifest>
