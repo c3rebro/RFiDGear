@@ -82,12 +82,13 @@
                 Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelClassicDefaultKeysSection'}">
                 <TextBox
                     Margin="6,6,6,6"
-                    Height="120"
-                    AcceptsReturn="True"
-                    VerticalScrollBarVisibility="Auto"
+                    Height="24"
+                    Width="auto"
+                    TextWrapping="Wrap"
+                    VerticalContentAlignment="Center"
                     FontFamily="Consolas"
                     Text="{Binding ClassicKeysText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                    ToolTip="One key per line (12 hex characters)." />
+                    ToolTip="Comma-separated list of keys (12 hex characters each)." />
             </GroupBox>
 
         </StackPanel>

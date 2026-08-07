@@ -44,7 +44,22 @@
                 <Label Grid.Row="1" Grid.Column="0" VerticalContentAlignment="Center"
                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyPiccMaster'}" />
                 <TextBox Grid.Row="1" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                         MaxLength="32" Text="{Binding PiccMasterKeyValue, UpdateSourceTrigger=PropertyChanged}" />
+                         MaxLength="32" Text="{Binding PiccMasterKeyValue, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBox.Resources>
+                        <Style TargetType="TextBox">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsValidPiccMasterKeyValue}" Value="True">
+                                    <Setter Property="Foreground" Value="Green" />
+                                    <Setter Property="Background" Value="White" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsValidPiccMasterKeyValue}" Value="False">
+                                    <Setter Property="Foreground" Value="Black" />
+                                    <Setter Property="Background" Value="Red" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
                 <ComboBox Grid.Row="1" Grid.Column="2" Margin="0,2,0,2" Height="24"
                           ItemsSource="{Binding AvailableEncryptionTypes}"
                           SelectedItem="{Binding PiccMasterKeyEncType, Mode=TwoWay}" />
@@ -53,7 +68,22 @@
                 <Label Grid.Row="2" Grid.Column="0" VerticalContentAlignment="Center"
                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyAppMaster'}" />
                 <TextBox Grid.Row="2" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                         MaxLength="32" Text="{Binding AppMasterKeyValue, UpdateSourceTrigger=PropertyChanged}" />
+                         MaxLength="32" Text="{Binding AppMasterKeyValue, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBox.Resources>
+                        <Style TargetType="TextBox">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsValidAppMasterKeyValue}" Value="True">
+                                    <Setter Property="Foreground" Value="Green" />
+                                    <Setter Property="Background" Value="White" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsValidAppMasterKeyValue}" Value="False">
+                                    <Setter Property="Foreground" Value="Black" />
+                                    <Setter Property="Background" Value="Red" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
                 <ComboBox Grid.Row="2" Grid.Column="2" Margin="0,2,0,2" Height="24"
                           ItemsSource="{Binding AvailableEncryptionTypes}"
                           SelectedItem="{Binding AppMasterKeyEncType, Mode=TwoWay}" />
@@ -62,7 +92,22 @@
                 <Label Grid.Row="3" Grid.Column="0" VerticalContentAlignment="Center"
                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyRead'}" />
                 <TextBox Grid.Row="3" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                         MaxLength="32" Text="{Binding ReadKeyValue, UpdateSourceTrigger=PropertyChanged}" />
+                         MaxLength="32" Text="{Binding ReadKeyValue, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBox.Resources>
+                        <Style TargetType="TextBox">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsValidReadKeyValue}" Value="True">
+                                    <Setter Property="Foreground" Value="Green" />
+                                    <Setter Property="Background" Value="White" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsValidReadKeyValue}" Value="False">
+                                    <Setter Property="Foreground" Value="Black" />
+                                    <Setter Property="Background" Value="Red" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
                 <ComboBox Grid.Row="3" Grid.Column="2" Margin="0,2,0,2" Height="24"
                           ItemsSource="{Binding AvailableEncryptionTypes}"
                           SelectedItem="{Binding ReadKeyEncType, Mode=TwoWay}" />
@@ -71,7 +116,22 @@
                 <Label Grid.Row="4" Grid.Column="0" VerticalContentAlignment="Center"
                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyWrite'}" />
                 <TextBox Grid.Row="4" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                         MaxLength="32" Text="{Binding WriteKeyValue, UpdateSourceTrigger=PropertyChanged}" />
+                         MaxLength="32" Text="{Binding WriteKeyValue, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBox.Resources>
+                        <Style TargetType="TextBox">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsValidWriteKeyValue}" Value="True">
+                                    <Setter Property="Foreground" Value="Green" />
+                                    <Setter Property="Background" Value="White" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsValidWriteKeyValue}" Value="False">
+                                    <Setter Property="Foreground" Value="Black" />
+                                    <Setter Property="Background" Value="Red" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
                 <ComboBox Grid.Row="4" Grid.Column="2" Margin="0,2,0,2" Height="24"
                           ItemsSource="{Binding AvailableEncryptionTypes}"
                           SelectedItem="{Binding WriteKeyEncType, Mode=TwoWay}" />
@@ -84,12 +144,13 @@
             Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelClassicDefaultKeysSection'}">
             <TextBox
                 Margin="6,6,6,6"
-                Height="120"
-                AcceptsReturn="True"
+                MinHeight="60"
+                AcceptsReturn="False"
+                TextWrapping="Wrap"
                 VerticalScrollBarVisibility="Auto"
                 FontFamily="Consolas"
                 Text="{Binding ClassicKeysText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                ToolTip="One key per line (12 hex characters)." />
+                ToolTip="Comma-separated list of keys (12 hex characters each)." />
         </GroupBox>
 
         <!-- Do not ask again -->

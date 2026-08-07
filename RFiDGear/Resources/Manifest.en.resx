@@ -504,6 +504,12 @@ Use a csv file to acuire default keys for authentication</value>
   <data name="messageBoxUpdateAvailableMessage" xml:space="preserve">
     <value>A newer Version of RFiDGear was found. Would you like to Download an Install the Update?</value>
   </data>
+  <data name="messageBoxNoUpdateAvailableCaption" xml:space="preserve">
+    <value>No Update Available</value>
+  </data>
+  <data name="messageBoxNoUpdateAvailableMessage" xml:space="preserve">
+    <value>You are running the latest version of RFiDGear.</value>
+  </data>
   <data name="menuItemProgrammingHeader" xml:space="preserve">
     <value>_Programming</value>
   </data>

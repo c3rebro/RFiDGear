@@ -742,7 +742,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         break;
 
                     case TaskType_MifareDesfireTask.AppExistCheck:
-                        SetTabAvailability(false, false, false, false, false, true, true);
+                        SetTabAvailability(false, false, false, false, false, false, true);
                         break;
 
                     case TaskType_MifareDesfireTask.ApplicationKeyChangeover:
@@ -3683,8 +3683,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         desfireChip.FreeMemory = device.DesfireChip.FreeMemory;
                         //desfireChip.UID = device.GenericChip.Select(x => x.UID).UID;
 
-                        // Check if specified App "AppNumberCurrentAsInt" exist
-                        if (IsValidAppNumberCurrent != false && AppNumberCurrentAsInt > 0 && result == ERROR.NoError && Array.Exists<uint>(device.DesfireChip.AppIDs, x => x == (uint)AppNumberNewAsInt))
+                        // Check if specified App "AppNumberNewAsInt" exists
+                        if (IsValidAppNumberCurrent != false && AppNumberNewAsInt > 0 && result == ERROR.NoError && Array.Exists<uint>(device.DesfireChip.AppIDs, x => x == (uint)AppNumberNewAsInt))
                         {
                             StatusText += string.Format("{0}: Success. App with ID:{1} exists\n", DateTime.Now, AppNumberNewAsInt);
 
@@ -3692,7 +3692,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         }
 
                         // Check if ANY App exists
-                        else if (IsValidAppNumberCurrent != false && AppNumberCurrentAsInt == 0 && result == ERROR.NoError && Array.Exists<uint>(device.DesfireChip.AppIDs, x => x > 0))
+                        else if (IsValidAppNumberCurrent != false && AppNumberNewAsInt == 0 && result == ERROR.NoError && Array.Exists<uint>(device.DesfireChip.AppIDs, x => x > 0))
                         {
                             StatusText += string.Format("{0}: Success. Existing Apps Detected\n", DateTime.Now);
 

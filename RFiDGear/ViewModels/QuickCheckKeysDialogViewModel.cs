@@ -45,9 +45,22 @@ namespace RFiDGear.ViewModel
         public string PiccMasterKeyValue
         {
             get => _piccMasterKeyValue;
-            set { _piccMasterKeyValue = value; OnPropertyChanged(); }
+            set
+            {
+                _piccMasterKeyValue = value;
+                IsValidPiccMasterKeyValue = string.IsNullOrEmpty(value) ? (bool?)null
+                    : CustomConverter.IsInHexFormat(value) && value.Length == 32;
+                OnPropertyChanged();
+            }
         }
         private string _piccMasterKeyValue;
+
+        public bool? IsValidPiccMasterKeyValue
+        {
+            get => _isValidPiccMasterKeyValue;
+            set { _isValidPiccMasterKeyValue = value; OnPropertyChanged(); }
+        }
+        private bool? _isValidPiccMasterKeyValue;
 
         public DESFireKeyType PiccMasterKeyEncType
         {
@@ -59,9 +72,22 @@ namespace RFiDGear.ViewModel
         public string AppMasterKeyValue
         {
             get => _appMasterKeyValue;
-            set { _appMasterKeyValue = value; OnPropertyChanged(); }
+            set
+            {
+                _appMasterKeyValue = value;
+                IsValidAppMasterKeyValue = string.IsNullOrEmpty(value) ? (bool?)null
+                    : CustomConverter.IsInHexFormat(value) && value.Length == 32;
+                OnPropertyChanged();
+            }
         }
         private string _appMasterKeyValue;
+
+        public bool? IsValidAppMasterKeyValue
+        {
+            get => _isValidAppMasterKeyValue;
+            set { _isValidAppMasterKeyValue = value; OnPropertyChanged(); }
+        }
+        private bool? _isValidAppMasterKeyValue;
 
         public DESFireKeyType AppMasterKeyEncType
         {
@@ -73,9 +99,22 @@ namespace RFiDGear.ViewModel
         public string ReadKeyValue
         {
             get => _readKeyValue;
-            set { _readKeyValue = value; OnPropertyChanged(); }
+            set
+            {
+                _readKeyValue = value;
+                IsValidReadKeyValue = string.IsNullOrEmpty(value) ? (bool?)null
+                    : CustomConverter.IsInHexFormat(value) && value.Length == 32;
+                OnPropertyChanged();
+            }
         }
         private string _readKeyValue;
+
+        public bool? IsValidReadKeyValue
+        {
+            get => _isValidReadKeyValue;
+            set { _isValidReadKeyValue = value; OnPropertyChanged(); }
+        }
+        private bool? _isValidReadKeyValue;
 
         public DESFireKeyType ReadKeyEncType
         {
@@ -87,9 +126,22 @@ namespace RFiDGear.ViewModel
         public string WriteKeyValue
         {
             get => _writeKeyValue;
-            set { _writeKeyValue = value; OnPropertyChanged(); }
+            set
+            {
+                _writeKeyValue = value;
+                IsValidWriteKeyValue = string.IsNullOrEmpty(value) ? (bool?)null
+                    : CustomConverter.IsInHexFormat(value) && value.Length == 32;
+                OnPropertyChanged();
+            }
         }
         private string _writeKeyValue;
+
+        public bool? IsValidWriteKeyValue
+        {
+            get => _isValidWriteKeyValue;
+            set { _isValidWriteKeyValue = value; OnPropertyChanged(); }
+        }
+        private bool? _isValidWriteKeyValue;
 
         public DESFireKeyType WriteKeyEncType
         {
@@ -110,15 +162,15 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public string ClassicKeysText
         {
-            get => string.Join(Environment.NewLine, ClassicQuickCheckKeys);
+            get => string.Join(", ", ClassicQuickCheckKeys);
             set
             {
                 ClassicQuickCheckKeys.Clear();
                 if (value != null)
                 {
-                    foreach (var line in value.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                    foreach (var entry in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     {
-                        var trimmed = line.Trim();
+                        var trimmed = entry.Trim();
                         if (trimmed.Length > 0)
                             ClassicQuickCheckKeys.Add(trimmed);
                     }

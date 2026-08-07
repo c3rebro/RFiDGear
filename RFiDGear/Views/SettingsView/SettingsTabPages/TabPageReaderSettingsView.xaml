@@ -135,11 +135,70 @@
                 HorizontalContentAlignment="Left"
                 Foreground="Black"
                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelReaderStatus'}" />
+            <Label
+                Grid.Row="4"
+                Grid.Column="0"
+                Width="198"
+                Margin="8,7,8,3"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Center"
+                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectedComPort'}"
+                Foreground="Black" />
+            <TextBox
+                Grid.Row="4"
+                Grid.Column="1"
+                Height="auto"
+                Margin="8,7,8,3"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Top"
+                Text="{Binding ComPort}">
+                <TextBox.ToolTip>
+                    <ToolTip>
+                        <StackPanel>
+                            <TextBlock FontWeight="Bold" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipSelectReaderComboBox'}" />
+                        </StackPanel>
+                    </ToolTip>
+                </TextBox.ToolTip>
+            </TextBox>
+            <Label
+                Grid.Row="5"
+                Grid.Column="0"
+                Width="198"
+                Margin="8,7,8,3"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Left"
+                VerticalContentAlignment="Center"
+                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelSelectedBaudRate'}"
+                Foreground="Black" />
+            <ComboBox
+                Grid.Row="5"
+                Grid.Column="1"
+                Height="26"
+                Margin="8,7,8,3"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Top"
+                IsSynchronizedWithCurrentItem="True"
+                ItemsSource="{Binding BaudRates}"
+                SelectedValue="{Binding SelectedBaudRate, Mode=TwoWay}">
+                <ComboBox.ToolTip>
+                    <ToolTip>
+                        <StackPanel>
+                            <TextBlock FontWeight="Bold" Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipSelectReaderComboBox'}" />
+                        </StackPanel>
+                    </ToolTip>
+                </ComboBox.ToolTip>
+            </ComboBox>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="213" />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />

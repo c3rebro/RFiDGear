@@ -456,15 +456,15 @@ namespace RFiDGear.ViewModel
 
         public string ClassicKeysText
         {
-            get => string.Join(Environment.NewLine, _classicKeysCollection);
+            get => string.Join(", ", _classicKeysCollection);
             set
             {
                 _classicKeysCollection.Clear();
                 if (value != null)
                 {
-                    foreach (var line in value.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                    foreach (var entry in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     {
-                        var trimmed = line.Trim();
+                        var trimmed = entry.Trim();
                         if (trimmed.Length > 0)
                             _classicKeysCollection.Add(trimmed);
                     }

@@ -519,6 +519,12 @@ Soll die Aktualisierung jetzt herunter geladen und installiert werden?</value>
   <data name="messageBoxUpdateAvailableCaption" xml:space="preserve">
     <value>Aktualisierung verfügbar</value>
   </data>
+  <data name="messageBoxNoUpdateAvailableCaption" xml:space="preserve">
+    <value>Kein Update verfügbar</value>
+  </data>
+  <data name="messageBoxNoUpdateAvailableMessage" xml:space="preserve">
+    <value>Sie verwenden bereits die neueste Version von RFiDGear.</value>
+  </data>
   <data name="menuItemProgrammingHeader" xml:space="preserve">
     <value>_Programmierung</value>
   </data>
