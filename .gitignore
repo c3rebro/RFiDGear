@@ -8,6 +8,8 @@
 /Setup/obj
 *.pdf
 *.xml
+!update.xml
+!**/update.xml
 *.zip
 *.htm
 *.txt

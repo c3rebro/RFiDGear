@@ -406,8 +406,20 @@ namespace RFiDGear.ViewModel
         public string PiccMasterKeyValue
         {
             get => GetDesfireKey(KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey)?.Key ?? string.Empty;
-            set => SetDesfireKeyValue(KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey, value);
+            set
+            {
+                SetDesfireKeyValue(KeyType_MifareDesFireKeyType.DefaultDesfireCardCardMasterKey, value);
+                IsValidPiccMasterKeyValue = string.IsNullOrEmpty(value) ? (bool?)null
+                    : CustomConverter.IsInHexFormat(value) && value.Length == 32;
+            }
         }
+
+        public bool? IsValidPiccMasterKeyValue
+        {
+            get => _isValidPiccMasterKeyValue;
+            set { _isValidPiccMasterKeyValue = value; OnPropertyChanged(nameof(IsValidPiccMasterKeyValue)); }
+        }
+        private bool? _isValidPiccMasterKeyValue;
 
         public DESFireKeyType PiccMasterKeyEncType
         {
@@ -418,8 +430,20 @@ namespace RFiDGear.ViewModel
         public string AppMasterKeyValue
         {
             get => GetDesfireKey(KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey)?.Key ?? string.Empty;
-            set => SetDesfireKeyValue(KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey, value);
+            set
+            {
+                SetDesfireKeyValue(KeyType_MifareDesFireKeyType.DefaultDesfireCardApplicationMasterKey, value);
+                IsValidAppMasterKeyValue = string.IsNullOrEmpty(value) ? (bool?)null
+                    : CustomConverter.IsInHexFormat(value) && value.Length == 32;
+            }
         }
+
+        public bool? IsValidAppMasterKeyValue
+        {
+            get => _isValidAppMasterKeyValue;
+            set { _isValidAppMasterKeyValue = value; OnPropertyChanged(nameof(IsValidAppMasterKeyValue)); }
+        }
+        private bool? _isValidAppMasterKeyValue;
 
         public DESFireKeyType AppMasterKeyEncType
         {
@@ -430,8 +454,20 @@ namespace RFiDGear.ViewModel
         public string ReadKeyValue
         {
             get => GetDesfireKey(KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey)?.Key ?? string.Empty;
-            set => SetDesfireKeyValue(KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey, value);
+            set
+            {
+                SetDesfireKeyValue(KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey, value);
+                IsValidReadKeyValue = string.IsNullOrEmpty(value) ? (bool?)null
+                    : CustomConverter.IsInHexFormat(value) && value.Length == 32;
+            }
         }
+
+        public bool? IsValidReadKeyValue
+        {
+            get => _isValidReadKeyValue;
+            set { _isValidReadKeyValue = value; OnPropertyChanged(nameof(IsValidReadKeyValue)); }
+        }
+        private bool? _isValidReadKeyValue;
 
         public DESFireKeyType ReadKeyEncType
         {
@@ -442,8 +478,20 @@ namespace RFiDGear.ViewModel
         public string WriteKeyValue
         {
             get => GetDesfireKey(KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey)?.Key ?? string.Empty;
-            set => SetDesfireKeyValue(KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey, value);
+            set
+            {
+                SetDesfireKeyValue(KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey, value);
+                IsValidWriteKeyValue = string.IsNullOrEmpty(value) ? (bool?)null
+                    : CustomConverter.IsInHexFormat(value) && value.Length == 32;
+            }
         }
+
+        public bool? IsValidWriteKeyValue
+        {
+            get => _isValidWriteKeyValue;
+            set { _isValidWriteKeyValue = value; OnPropertyChanged(nameof(IsValidWriteKeyValue)); }
+        }
+        private bool? _isValidWriteKeyValue;
 
         public DESFireKeyType WriteKeyEncType
         {
@@ -459,19 +507,33 @@ namespace RFiDGear.ViewModel
             get => string.Join(", ", _classicKeysCollection);
             set
             {
+                var allValid = true;
+                var hasAny = false;
                 _classicKeysCollection.Clear();
                 if (value != null)
                 {
                     foreach (var entry in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     {
                         var trimmed = entry.Trim();
-                        if (trimmed.Length > 0)
+                        if (trimmed.Length == 0) continue;
+                        hasAny = true;
+                        if (CustomConverter.IsInHexFormat(trimmed) && trimmed.Length == 12)
                             _classicKeysCollection.Add(trimmed);
+                        else
+                            allValid = false;
                     }
                 }
+                IsValidClassicKeysText = hasAny ? allValid : (bool?)null;
                 OnPropertyChanged(nameof(ClassicKeysText));
             }
         }
+
+        public bool? IsValidClassicKeysText
+        {
+            get => _isValidClassicKeysText;
+            set { _isValidClassicKeysText = value; OnPropertyChanged(nameof(IsValidClassicKeysText)); }
+        }
+        private bool? _isValidClassicKeysText;
         private readonly ObservableCollection<string> _classicKeysCollection;
 
         private MifareDesfireDefaultKeys? GetDesfireKey(KeyType_MifareDesFireKeyType keyType)

@@ -22,9 +22,9 @@
 	<?define InfoURL="https://c3rebro.github.io/RFiDGear/" ?>
 	<?define RFIDGear_ProgramDataDir = "CommonAppDataFolder" ?>
 	
-        <!-- x64-only variables -->
-        <?define Win64 = "yes" ?>
-        <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+        <!-- x86 variables -->
+        <?define Win64 = "no" ?>
+        <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
         <?define RFiDGearReleaseDir = "$(var.RFiDGearReleaseDir)" ?>
 	<?define RFiDGearExeSourcePath = "$(var.RFiDGearReleaseDir)\\RFiDGear.exe" ?>
 	
@@ -90,7 +90,7 @@
          2. Check OS bitness
             The installer is x64-only and requires a 64-bit Windows edition.
       -->
-                <Condition Message="!(loc.x86VersionRequired)"><![CDATA[VersionNT64]]></Condition>
+                <!-- x86 installer runs on both x86 and x64 Windows — no bitness condition needed -->
 		
 		<!--
          Launch conditions end
@@ -194,7 +194,7 @@
 		<Feature Id="Complete" Title="!(loc.ApplicationName)" Description="!(loc.FeatureCompleteDescription)" Display="expand" Level="1" ConfigurableDirectory="INSTALLDIR">
 			<!-- A feature block for the main (GUI) program and all its dependencies -->
 			<Feature Id="MainProgram" Title="!(loc.FeatureMainProgramTitle)" Description="!(loc.FeatureMainProgramDescription)" Level="1">
-                                <ComponentGroupRef Id="RFiDGear.ReleaseFiles.x64" />
+                                <ComponentGroupRef Id="RFiDGear.ReleaseFiles.x86" />
 				<ComponentRef Id="RegValInstallLocation_comp" />
 			</Feature>
 

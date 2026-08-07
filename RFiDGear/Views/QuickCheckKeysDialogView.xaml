@@ -150,7 +150,22 @@
                 VerticalScrollBarVisibility="Auto"
                 FontFamily="Consolas"
                 Text="{Binding ClassicKeysText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                ToolTip="Comma-separated list of keys (12 hex characters each)." />
+                ToolTip="Comma-separated list of keys (12 hex characters each).">
+                <TextBox.Resources>
+                    <Style TargetType="TextBox">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsValidClassicKeysText}" Value="True">
+                                <Setter Property="Foreground" Value="Green" />
+                                <Setter Property="Background" Value="White" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsValidClassicKeysText}" Value="False">
+                                <Setter Property="Foreground" Value="Black" />
+                                <Setter Property="Background" Value="Red" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBox.Resources>
+            </TextBox>
         </GroupBox>
 
         <!-- Do not ask again -->

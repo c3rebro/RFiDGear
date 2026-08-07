@@ -165,19 +165,33 @@ namespace RFiDGear.ViewModel
             get => string.Join(", ", ClassicQuickCheckKeys);
             set
             {
+                var allValid = true;
+                var hasAny = false;
                 ClassicQuickCheckKeys.Clear();
                 if (value != null)
                 {
                     foreach (var entry in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     {
                         var trimmed = entry.Trim();
-                        if (trimmed.Length > 0)
+                        if (trimmed.Length == 0) continue;
+                        hasAny = true;
+                        if (CustomConverter.IsInHexFormat(trimmed) && trimmed.Length == 12)
                             ClassicQuickCheckKeys.Add(trimmed);
+                        else
+                            allValid = false;
                     }
                 }
+                IsValidClassicKeysText = hasAny ? allValid : (bool?)null;
                 OnPropertyChanged();
             }
         }
+
+        public bool? IsValidClassicKeysText
+        {
+            get => _isValidClassicKeysText;
+            set { _isValidClassicKeysText = value; OnPropertyChanged(); }
+        }
+        private bool? _isValidClassicKeysText;
 
         #endregion Classic Keys
 

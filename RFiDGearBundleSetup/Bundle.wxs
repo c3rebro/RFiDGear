@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension" xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
-	<?define VersionNumber="2.0.3" ?>
+	<?define VersionNumber="2.0.5.0" ?>
 	
 	<?define UpgradeCode="a34bc413-e349-4fd1-8b90-32f95a333477" ?>
 	<!-- The URL for add/remove programs -->
@@ -57,7 +57,7 @@
 				<!-- Ignore "Newer version installed" error -->
 				<ExitCode Value="1638" Behavior="success"/>
 			</ExePackage>
-			<!-- Runtime dependency: .NET 8 ASP.NET Core runtime -->
+			<!-- Runtime dependency: .NET 8 ASP.NET Core runtime (x86 only — LibLogicalAccess is x86-only) -->
 			<ExePackage
 				Cache="no"
 				Compressed="yes"
@@ -66,21 +66,7 @@
 				Vital="yes"
 				Name="aspnetcore-runtime-8.0.23-win-x86.exe"
 				SourceFile="runtime\aspnetcore-runtime-8.0.23-win-x86.exe"
-				InstallCommand="/install /quiet /norestart"
-				InstallCondition="NOT VersionNT64">
-				<ExitCode Value="3010" Behavior="forceReboot"/>
-				<ExitCode Value="1638" Behavior="success"/>
-			</ExePackage>
-			<ExePackage
-				Cache="no"
-				Compressed="yes"
-				PerMachine="yes"
-				Permanent="yes"
-				Vital="yes"
-				Name="aspnetcore-runtime-8.0.23-win-x64.exe"
-				SourceFile="runtime\aspnetcore-runtime-8.0.23-win-x64.exe"
-				InstallCommand="/install /quiet /norestart"
-				InstallCondition="VersionNT64">
+				InstallCommand="/install /quiet /norestart">
 				<ExitCode Value="3010" Behavior="forceReboot"/>
 				<ExitCode Value="1638" Behavior="success"/>
 			</ExePackage>
@@ -120,19 +106,13 @@
 				<Payload Name="SCL3711.inf"
 				         SourceFile="drivers\scl3711_windows_driver\X86\SCL3711.inf" />
 			</ExePackage>
-			<!-- RFiDGear MSI selection based on OS architecture and UI language (German = 1031). -->
-			<MsiPackage Id="RFiDGear_x64_de" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
-			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x64\bin\x64\Release\de-de\RFiDGear_Setup_x64.msi"
-			            InstallCondition="VersionNT64 AND (WixBundleUILanguage = 1031)" />
+			<!-- RFiDGear MSI selection based on UI language only (always x86 — LibLogicalAccess is x86-only). -->
 			<MsiPackage Id="RFiDGear_x86_de" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
-			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x86\bin\x64\Release\de-de\RFiDGear_Setup_x86.msi"
-			            InstallCondition="NOT VersionNT64 AND (WixBundleUILanguage = 1031)" />
-			<MsiPackage Id="RFiDGear_x64_en" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
-			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x64\bin\x64\Release\en-us\RFiDGear_Setup_x64.msi"
-			            InstallCondition="VersionNT64 AND NOT (WixBundleUILanguage = 1031)" />
+			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x86\bin\x86\Release\de-de\RFiDGear_Setup_x86.msi"
+			            InstallCondition="(WixBundleUILanguage = 1031)" />
 			<MsiPackage Id="RFiDGear_x86_en" Cache="no" Compressed="yes" Vital="yes" ForcePerMachine="yes"
-			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x86\bin\x64\Release\en-us\RFiDGear_Setup_x86.msi"
-			            InstallCondition="NOT VersionNT64 AND NOT (WixBundleUILanguage = 1031)" />
+			            SourceFile="..\RFiDGearSetup\RFiDGear_Setup_x86\bin\x86\Release\en-us\RFiDGear_Setup_x86.msi"
+			            InstallCondition="NOT (WixBundleUILanguage = 1031)" />
 		</Chain>
 	</Bundle>
 </Wix>
