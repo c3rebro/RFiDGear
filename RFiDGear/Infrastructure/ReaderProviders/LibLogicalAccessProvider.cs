@@ -1320,29 +1320,40 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 cmd.selectApplication((uint)_appID);
                 DesfireChip.UID = ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray());
 
+                var authenticated = false;
                 if (authenticateBeforeReading)
                 {
                     try
                     {
                         cmd.authenticate((byte)_keyNumberCurrent, masterKey);
+                        authenticated = true;
                     }
-                    catch (Exception authEx)
+                    catch
                     {
-                        return OperationResult.Failure(
-                            ERROR.AuthFailure,
-                            "Authentication failed",
-                            authEx.Message,
-                            nameof(GetMifareDesfireAppSettings),
-                            wasAuthenticated: false,
-                            new Dictionary<string, string>
-                            {
-                                { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
-                                { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
-                            });
+                        // Auth failed with the supplied key. Fall through and attempt
+                        // getKeySettings without authentication — many apps allow it.
                     }
                 }
 
-                cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
+                try
+                {
+                    cmd.getKeySettings(out keySettings, out maxNbrOfKeys);
+                }
+                catch (Exception authEx)
+                {
+                    return OperationResult.Failure(
+                        ERROR.AuthFailure,
+                        "Authentication required to read key settings",
+                        authEx.Message,
+                        nameof(GetMifareDesfireAppSettings),
+                        wasAuthenticated: false,
+                        new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
+                        });
+                }
+
                 MaxNumberOfAppKeys = (byte)(maxNbrOfKeys & 0x0F);
                 EncryptionType = (DESFireKeyType)(maxNbrOfKeys & 0xF0);
                 DesfireAppKeySetting = (AccessControl.DESFireKeySettings)keySettings;
@@ -1356,7 +1367,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 return OperationResult.Success(
                     operation: nameof(GetMifareDesfireAppSettings),
-                    wasAuthenticated: authenticateBeforeReading,
+                    wasAuthenticated: authenticated,
                     metadata: metadata);
             }
             catch (TimeoutException e)
