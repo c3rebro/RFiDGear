@@ -181,6 +181,12 @@ namespace RFiDGear.ViewModel
         }
         private string _caption;
 
+        /// <summary>
+        /// Dummy binding anchor so ResourceLoader converter is invoked from XAML bindings
+        /// that use ConverterParameter for localization.
+        /// </summary>
+        public string LocalizationResourceSet { get; set; }
+
         public Action<QuickCheckKeysDialogViewModel> OnOk { get; set; }
         public Action<QuickCheckKeysDialogViewModel> OnCancel { get; set; }
         public Action<QuickCheckKeysDialogViewModel> OnCloseRequest { get; set; }
