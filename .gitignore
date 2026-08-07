@@ -33,3 +33,5 @@
 /RFiDGearBundleSetup/obj
 /RFiDGearBundleSetup/bin
 /RFiDGear.Extensions/VCNEditor/RFiDGear.Extensions.VCNEditor.csproj
+/.claude
+RFiDGear/.claude/settings.local.json

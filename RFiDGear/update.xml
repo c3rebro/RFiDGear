@@ -4,12 +4,54 @@
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
   <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>
   <BaseUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/</BaseUri>
-  <VersionInfoText>RFiDGear 2.0.5.0
+  <VersionInfoText>################## GENERAL USAGE INFORMATION ####################
 
+Available Arguments:
+
+  + REPORTTEMPLATEPATH="C:\Path\to\Template.pdf"
+  + REPORTOUTPUTPATH="C:\Path\where\Report\is\placed-??.pdf"
+    (NOTE: ?? will be replaced by 01, 02..)
+  + CUSTOMPROJECTFILE="C:\Path\where\project-file\is\placed.rfprj"
+    (NOTE: When a projectfile gets loaded, its fullpath is memorized.
+    This enables the AUTORUN=1 feature to start all tasks once. If
+    the CUSTOMPROJECTFILE is used instead, the last used project is ignored
+  + AUTORUN=1 
+    (NOTE: Will execute the "Run All Tasks Once" Command
+    when the application starts. The last used projectfile
+	is used. Exept to when CUSTOMPROJECTFILE is specified.
+	see above)
+  
+Available internal Variables
+  + The "Dollar" Character is recognized as a placeholder to 
+    exchange Strings into pdf reports. 
+	Usage: Create a "CreateReportTask" with a Fieldvalue
+	$ThisWillBeReplaced Then call the rfidgear.exe with
+	$ThisWillBeReplaced="A New Value" and it gets replaced in the PDF
+  + %UID = Will be replaced with the UID
+  + %CHIPTYPE = Will be replaced with the Chiptype String (Mifare Desfire EV1 8k)
+  + %DATETIME = Will be replaced with "DateTime.Now" in the "CurrentCulture" Format
+  + %DATE = Will be replaced with the Current Date in Format dd/MM/yyyy
+  + %FREEMEM = Will be replaced with the current available memory if available
+  + %LISTAPPS = Will be replaced with a List of Desfire App IDs
+  + %COUNTAPPS = Will be replaced with the Integer Number of Desfire Apps on Chip
+  + %CONCAT = Will Concatenate the text to existing text in the pdf formfield
+  + %NEWLINE = Will add a newline
+  + %n will add an integer number of length 1 to a pdf formfield
+    the integer counts up +1 each time the variable itself has been used.
+	Example: $JobNumber-%nn in the "Fieldvalue" Textbox will take the 
+	external argument $Jobnumer=Job1234 and fill the pdf formfield with
+	Job1234-01
+  + %EXIT will immediatly exit rfidgear application
+
+################# END OF GENERAL INFORMATION ####################
+
+Version 2.0.5.0
+-----------------------------------------------------------------
 New:
-- Pre-quick-check key dialog: configure DESFire and MIFARE Classic keys before every quick check, with a &quot;Do not ask again&quot; option
+- Pre-quick-check key dialog: configure DESFire and MIFARE Classic keys before every quick check, 
+  with a "Do not ask again" option
 - Default Keys tab in Settings: edit and validate quick-check keys with live green/red feedback
-- &quot;Check for Updates&quot; now shows a confirmation when already on the latest version
+- "Check for Updates" now shows a confirmation when already on the latest version
 
 Fixed:
 - #181: AppExistCheck task incorrectly reported success even when the specified application ID did not exist on the card
@@ -18,9 +60,433 @@ Fixed:
 - #178: ChangeKey used wrong XOR payload for non-master key changes (LibLogicalAccess)
 - #176: Create Application retried without PICC auth for cards configured with Create/Delete-without-MK
 - #175: DESFire app settings not displayed when card requires unauthenticated fallback (partial fix)
-- LibLogicalAccess: file access-rights byte order mismatch; missing file size in GetFileSettings; application list accumulating across repeated quick-check runs; DESFire key SWIG copy trap causing authentication failures
+- LibLogicalAccess: file access-rights byte order mismatch; missing file size in GetFileSettings; application list 
+  accumulating across repeated quick-check runs; DESFire key SWIG copy trap causing authentication failures
 - Elatec provider: COM port access serialised to prevent concurrent-access errors
 - Settings window no longer grows to extreme width when many MIFARE Classic keys are loaded
-  </VersionInfoText>
-  <Payload>update.zip</Payload>
+
+Version 2.0.4.1
+-----------------------------------------------------------------
+- Normalize legacy AuthenticationError in project XML before deserialization by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/166
+- Resolve extension assemblies from ProgramData\-App-\Extensions and add path-resolution tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/167
+- Avoid reinitializing dialog ResourceDictionary and add tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/168
+- Guard dialog ResourceDictionary initialization and add empty-source STA test by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/169
+- Load VCN editor resources only when available by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/170
+- Replace VCNEditor references with Desfire sample; update MEF discovery and installer paths by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/171
+- Add DESFire sample dialog flow by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/172
+- Remove EventLog dependency and route errors through Serilog by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/174
+
+Version 2.0.4
+-----------------------------------------------------------------
+- Fix update check after upgrades by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/164
+- Fix wrong shift direction misaligned key usage display vs. actual behaviour
+
+Version 2.0.3
+-----------------------------------------------------------------
+- WiX bundle: add runtime dependencies and optional drivers; select MSI by arch+language by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/155
+- Align tests with DESFire plugin namespace and ElatecNetProvider API changes by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/156
+- Fix STA WPF tests and extend debug extension discovery by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/157
+- Stabilize WPF tests, null-safe context menus, and improve extension discovery by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/158
+- Ensure WPF view model tests run on STA threads by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/159
+- Fix DESFire data node selection and status formatting by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/160
+- Ensure project deserialization runs on STA thread by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/161
+- Add start menu shortcut to MSI installers by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/162
+
+Version 2.0.2
+-----------------------------------------------------------------
+- Handle legacy startup arguments and raw .rfprj paths by @c3rebro in #145
+- Fix manifest parsing for namespaced update XML by @c3rebro in #146
+- Sanitize manifest XML before parsing by @c3rebro in #147
+- Replace Manifest logging with Serilog and remove legacy update Log classes by @c3rebro in #148
+- Add manifest coverage for ampersands and control characters by @c3rebro in #149
+
+Version 2.0.1
+-----------------------------------------------------------------
+- Handle legacy startup arguments and raw .rfprj paths by @c3rebro in #145
+- Fix manifest parsing for namespaced update XML by @c3rebro in #146
+- Sanitize manifest XML before parsing by @c3rebro in #147
+- Replace Manifest logging with Serilog and remove legacy update Log classes by @c3rebro in #148
+- Add manifest coverage for ampersands and control characters by @c3rebro in #149
+
+Version 2.0.0
+-----------------------------------------------------------------
+- Refactor main window services and add tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/17
+- Add async accessors for settings specification by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/18
+- Use typed chip task collections by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/19
+- Refactor main window startup dependencies into services by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/20
+- default Filezise to 0 if could not be read by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/21
+- Refactor task dialog creation into factory by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/22
+- Extract task execution into service by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/23
+- Introduce project manager for database loading by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/24
+- Refactor report template handling via ProjectManager by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/25
+- Add settings facade operations by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/26
+- Refine settings reader async API by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/27
+- Allow updating default specification from view models by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/28
+- Ensure setup dialog saves updated settings by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/29
+- Load settings when initializing SettingsReaderWriter by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/30
+- Add PC/SC reader selection support by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/31
+- Add PC/SC reader selection support by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/32
+- Refactor MVVM dialog structure by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/33
+- Replace custom file logging with Serilog by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/34
+- Broaden Serilog logging coverage and exception handling by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/35
+- Master 2 by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/36
+- Revert "Master 2" by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/37
+- Document normalized provider errors by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/42
+- Refine DESFire operations to return structured results by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/43
+- Enhance operation results and structured logging by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/44
+- Track task attempts and route standardized errors by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/45
+- Refactor main window setup into services by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/46
+- Refactor MainWindow initialization into dedicated services by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/47
+- Refactor startup flow into dedicated collaborators by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/48
+- Fix build blockers after .NET 8 upgrade by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/49
+- Ensure splash loading runs on UI thread by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/50
+- Fix updater version comparison by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/51
+- Replace DotNetZip with built-in compression by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/52
+- Hide DESFire format UI outside the format task by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/53
+- Align XAML namespaces with refactored infrastructure by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/54
+- Support editable runtime defaults via configuration file by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/55
+- Expand runtime defaults sample by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/56
+- Make main window initialization asynchronous by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/58
+- Improve ByteArray copying and OR semantics by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/57
+- Handle trigger timer null during checkbox bindings by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/59
+- Handle plain XML task database saves by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/60
+- Replace WebRequest usage with HttpClient by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/61
+- Add Serilog logging to updater and task components by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/62
+- Show splash screen immediately when startup tasks run by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/63
+- Enable drag-and-drop reordering of chip tasks by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/64
+- Prevent window drag from blocking task grid drag-and-drop by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/65
+- Reduce duplication in DESFire setup view model by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/66
+- Redesign docs/index.html by @google-labs-jules[bot] in https://github.com/c3rebro/RFiDGear/pull/67
+- Refine MIFARE constants and DESFire key handling by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/68
+- Separate app key change controls by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/69
+- Add unit tests for task execution support types by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/71
+- Translate German help content by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/72
+- Add DESFire key settings command by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/73
+- Improve DESFire key settings handling by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/75
+- Align DESFire key change settings handling by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/74
+- Add DESFire key settings composer and orchestrator tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/76
+- Adjust DESFire app mastering UI for key/settings tasks by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/77
+- Add old DESFire app key inputs and visibility controls by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/78
+- Handle authentication and old key inputs for DESFire key changes by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/79
+- Propagate DESFire change key metadata by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/80
+- Use WiX harvest for release binaries by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/81
+- Validate release directory before harvesting WiX fragments by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/82
+- Run heat harvesting out of process by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/83
+- Relocate WiX installer to x64-only setup path by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/84
+- Add DESFire key version display and input by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/85
+- Hide DESFire target key controls for format task by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/86
+- Handle PICC master key settings change by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/87
+- Adjust Mifare DESFire task UI visibility based on task selection by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/88
+- Remove Task.Run wrappers and simplify async flows in reader providers by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/89
+- Standardize ReaderDevice documentation and MIFARE parameter names by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/90
+- Tighten Mifare Desfire key visibility flags by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/91
+- Guard and UI disable for Change Key when App ID is not positive by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/92
+- Use minimal PICC master key settings for PICC key change by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/93
+- Log app-key auth details and warn when ChangeKeyFrozen by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/94
+- Add tooltips for DESFire application key fields and update old-app-key text by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/95
+- Add GetAuthKeyNumberForChangeAppKey helper and tests for ShowAppKeyOldInputs/auth policy by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/96
+- Add auth-key helper and tests for DESFire app-key change; fix enum cast by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/97
+- Fix PICC master key change inputs by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/98
+- Honor PICC master key type and resolve ChangeKey context for Elatec provider by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/99
+- Support hex App IDs for Create Application input by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/100
+- Support 0x-prefixed hex for App IDs, key versions and file numbers; add parsing helpers and tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/101
+- Map provider DESFire key types and fix PICC old-key resolution for quick check by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/102
+- Fix app key change payload mapping and input parsing by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/103
+- Fix task status icons to update per row by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/104
+- Dispatch task status updates on UI thread (fix row header icon updates) by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/105
+- Finalize DESFire tasks after command dispatch and marshal task status updates to UI by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/106
+- Bind row header status to task item by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/107
+- Validate task indices before adding tasks by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/108
+- Highlight invalid task indices in task dialogs by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/109
+- Task index validation: add helper, wire UI & dialogs, and fix duplicate helper name by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/110
+- Preserve task index validation in edit mode by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/111
+- Use task-specific create commands for empty-space context menu and add tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/112
+- Clear DataGrid selection when empty space is clicked by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/113
+- Block DataGrid drag-drop when task has execute condition and show dialog by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/114
+- Assign task index on drag-drop using neighbor gaps by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/115
+- Fix drag-drop validation helper for task indices by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/116
+- Add overload for drag-drop validation helper by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/117
+- Fix drag/drop collection lookup and surface validation errors by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/118
+- Hide target key settings for file/data MifareDesfire tasks by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/119
+- Use application read/write keys for DESFire file auth and update callsites by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/120
+- Fix WPF test construction for ContextMenuEventArgs; add ShowAppKeyCurrentInputs and tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/121
+- Hide file mastering controls for Read/Write tasks by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/122
+- Convert VCNEditor to SDK-style net8.0-windows WPF project by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/123
+- Consolidate VCNEditor UI extension to `UiExtensionAttribute`/`IUIExtension` and remove legacy PluginSystem by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/124
+- Add XML doc summary to VCNEditor MEF export by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/125
+- Fix VCNEditor references to embedded dialog helpers by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/126
+- Restore MEF extension discovery and one-time composition by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/127
+- Add DESFire sample plugin with MEF export, mock UI and tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/128
+- AsyncCommand: replace async void with safe fire-and-forget and dispose CTS by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/129
+- Improve ResourceLoader conversion handling and add unit test by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/130
+- Make CARD_INFO immutable and equatable by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/131
+- Extract TimeParsing helper and refactor dialog time parsing by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/132
+- Extract TimeParsing helper and refactor dialog time parsing by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/133
+- Refactor VCNEditorViewModel: StringBuilder, flag helper, readonly fields and tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/134
+- Remove commented-out code and add Trace logging in VCNEditor by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/135
+- Improve XML documentation in VCNEditor components by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/136
+- Remove duplicate VCNEditor constants file by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/137
+- Hide plugin Frame navigation UI and add plugin-selection view-model tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/138
+- Install and harvest extensions into ProgramData\RFiDGear\Extensions; add HeatDirectory and unit test by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/139
+- Open custom project path or autorun on startup regardless of AutoLoadProjectOnStart by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/140
+- Add DESFire data refresh option and partial-write slicing by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/141
+- Add DESFire read-data save options by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/142
+- Create default settings file when missing and add unit test by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/143
+- Limit MEF extension loading to RFiDGear.Extensions*.dll and add settings auto-create with tests by @c3rebro in https://github.com/c3rebro/RFiDGear/pull/144
+
+Version 1.10.9054
+-----------------------------------------------------------------
+Backend related changes:
+- fix: logging facility produced an error in commontaskvm
+- new feature: arguments with "$" will be replaced in commontaskvm of type "execute program"
+
+Version 1.9.8941
+-----------------------------------------------------------------
+Backend related changes:
+- fix: parameter position "autorun" is not mandatory anymore
+- fix: parameter position "customprojectfile" is not mandatory anymore
+
+Version 1.9.8843
+-----------------------------------------------------------------
+Backend related changes:
+- ReaderDevice Improvement: Upgraded Elatec.NET to v0.4
+- Reimplementation of Leosac's LibLogicalAccess Library to support PCSC Readers
+- Installer: Create a new EventSource "CardCheckAssistant"
+
+Version 1.8.8819
+-----------------------------------------------------------------
+Frontend related changes
+- Feature: "Checkpoints" now do have a "header number"
+- Feature: "Checkpoints" now do have a context-menu "copy / paste"
+- Feature: "Checkpoints" can now be created on the cursor position instead of "only at the end"
+- Improvement: Auto scroll feature. Scrolling down when a tasklist executes now also
+keep the most left cell in focus.
+
+Backend related changes
+- ReaderDevice Improvement: Upgraded Elatec.NET to v0.2 in order to utilize async/await
+- App ID Length limited to 8 digits
+- Improvement: converted most of the Methods to utilize async/await
+- Logging: Log to Windows Event Viewer with new Source "RFiDGear"
+- Installer: Create a new EventSource "RFiDGear"
+
+Version 1.7.8670
+----------------------------------------------------------------- 
+Frontend related changes
+- Improvement: Set FitToContent = Width
+
+Backend related changes
+- Improvement: Stability on COMPort Access
+
+Version 1.6.8657
+----------------------------------------------------------------- 
+Frontend related changes
+
+Backend related changes
+- BugFix: Detection of lfTags in Task: "Detect MultiType Chip"
+	
+Version 1.5.8605
+----------------------------------------------------------------- 
+Frontend related changes
+- Feature: "Help" -> "Changelog" will show up this info.
+- Improvement: Auto scroll feature. Scrolling down when a tasklist executes now also 
+  keep the most left cell in focus.
+
+Backend related changes
+- Feature: Added internal variable
+  + CUSTOMPROJECTFILE="C:\Path\where\project-file\is\placed.rfprj" would load the
+	specified project file. 
+	NOTE: When a projectfile gets loaded, its fullpath is memorized.
+	This enables the AUTORUN=1 feature to start all tasks once. If
+	the CUSTOMPROJECTFILE is used instead, the last used project is ignored
+	  
+Version 1.4.8535
+-----------------------------------------------------------------
+Backend related changes
+- BugFIX: Set "HFTag" as default Tagtype. Currently i do not switch between different
+  Reader Tag Types. LF Tags and Legic storage services are not implemented yet.
+
+Version 1.4.8528
+-----------------------------------------------------------------
+Backend related changes
+- Feature: Added Support for MultiTag (Desfire + Legic Prime) recognition
+	
+Version 1.3.8451
+-----------------------------------------------------------------
+Backend related changes
+- Feature: Added internal variables
+  + %EXIT will immediatly exit rfidgear
+  + adding a question-mark to the REPORTOUTPUTPATH variable will add a counter
+    to the resulting filename i.e. 
+	REPORTOUTPUTPATH="C:\Path\where\Report\is\placed-??.pdf" would be replaced to
+	REPORTOUTPUTPATH="C:\Path\where\Report\is\placed-01.pdf" where always +1 
+	would be added to any existing filename matching.
+	
+	Notes: File must end with ".pdf"; The ?? must be the last character before
+	the .pdf file extension. Available digits are: ?, ?? and ???
+
+Version 1.2.8445
+-----------------------------------------------------------------
+Backend related changes
+- LibLogicalAccess and as such, PCSC Support was removed in this release. 
+  This was necessary as ISLOG was taken by HID and did not respond to 
+  requests related to LibLogicalAccess Library.
+
+- iTextPDF was removed due open licensing questions that could not be resolved.
+
+- Feature: TWN4 Reader Support (replaces PCSC Readers)
+
+Version 1.1.8306
+----------------------------------------------------------------- 
+Frontend related changes
+- Feature: "Save Project As" will ask, if one would like to set the saved
+  project as "default". This will load the project automatically
+  if the setting "load projects on start" is set.
+- Improvement: Reordered Menu Items
+
+Backend related changes
+- Feature: "Dollar" arguments could be logically checked by "check logic condition" task:
+  Example: Create a "Check Logic Condition" Task of Checktype "Compare".
+  Then add a argument with compare operation like i.e. $CardType!=Desfire.
+  The Result will be NoError if the argument given when starting rfidgear
+  was $CardType=Desfire.
+  One might also Check for variable existance with: $CardType!= or $CardType==
+  
+- Improvement: InitialDirectory of SaveReportTask is set to argument "REPORTTARGETPATH"
+- Fix: internal variable %n was not identified as variable and therefore only worked
+  in conjunction with other variables
+- Fix: Update function: Missing access rights to log directory leads to 
+  update installation fail
+
+Version 1.1.8303
+----------------------------------------------------------------- 
+Frontend related changes
+- Feature: Added chiptypes. These are:
+  + NTAG
+  + DESFIRE light
+  + DESFIRE EV3
+  + DESFIRE is now identified including memory size
+    e.g.: Desfire EV1 is now displayed as: Desfire EV1 (8K)
+- Feature: Added new Task "Common Tasks" -> "Execute external Program"
+  + User Input: In the Textbox "Program to Execute (with Arguments)"
+  one might insert the Program to execute. Loading Files with the default
+  Application is supported too. 
+  Example 1 (Shell Execute):
+  "C:\path to\app file with spaces in filename.bat" arg1 %DATE %CHIPTYPE
+  Will execute the batch with the arguments arg1 01.01.2022 DesfireEV18k
+  Example 2:
+  "C:\path to\non executable file.pdf"
+  Will open the file by using the default application (i.e. Adobe Reader)
+- Feature: Add one "Internal Variable" (see ver. 0.1.8231):
+  Usage:
+  + %n will add an integer number of length 1 to a pdf formfield
+    the integer counts up +1 each time the variable itself has been used.
+	Example: $JobNumber-%nn in the "Fieldvalue" Textbox will take the 
+	external argument $Jobnumer=Job1234 and fill the pdf formfield with
+	Job1234-01
+- Improvement: Set Elatec COM-Port as "USB" leads to "AutoDetect"
+
+Backend related changes
+- Fix: Rename Project Files after they have been saved is now possible
+- Fix: Extended Reader Timeout (5 Sec). Elatec TWN4 Readers are slower than PCSC
+- Fix: Closing Dialogs will no longer minimize Main Window
+
+Version 1.0.8289
+----------------------------------------------------------------- 
+Frontend related changes
+- Feature: Added Helpfiles. Call by using Menu "Help" -> "Help" or "F1"
+
+Backend related changes
+- Feature: Hand over Arguments when Starting the App:
+  + REPORTTEMPLATEPATH="C:\Path\to\Template.pdf"
+  + REPORTOUTPUTPATH="C:\Path\where\Report\is\placed.pdf
+  + The "Dollar" Character is recognized as a placeholder to 
+    exchange Strings into pdf reports. 
+	Usage: Create a "CreateReportTask" with a Fieldvalue
+	$ThisWillBeReplaced Then call the rfidgear.exe with
+	$ThisWillBeReplaced="A New Value" and it gets replaced in the PDF
+  + AUTORUN=1 will execute the "Run All Tasks Once" Command
+- Improvement: migrated from abandoned mvvmlight to WCT MVVM
+- Fix: Show Update Dialog again after having already updated
+
+Version 1.0.8281
+----------------------------------------------------------------- 
+Frontend related changes
+- Feature: Added "DoubleClick" on Row in MainWindow to Edit Task
+
+Backend related changes
+- Update Dependency "itext7" to latest 7.2.3
+- Fix: correct dispose of pdfDoc when "using" directive is used
+
+Version 1.0.8278
+----------------------------------------------------------------- 
+First Mayor Release.
+
+Note: Earlier *.rfPrj project files are not compatible with this release. 
+
+Frontend related changes
+- Feature: Added "Help" -> "About" to display detailed version info
+- Feature: Added "CheckMifareClassicSecturUnused" Tasktype for MF Classic
+- Improvement: Changed "TextBlock" to "TextBox" in Datagridcells of type 
+  "Content" to easily modify it's content
+- Improvement: Added "ReadChipPublic" to treeview contextmenu
+- Improvement: Added "AddNew" to treeview contextmenu
+- Improvement: Removed Hardcoded strings from ui
+
+Backend related changes
+- Abstraction of ReaderDevice. Ability to add more readers in future releases
+- DefaultKeys. AppMasterKey and Read/WriteKey become of type AES
+- Added GenericChip Interface to display more chiptypes without hardcoding 
+  their type in HierarchicalDataTemplateViewModel
+- Added GenericTask Interface to ease access to shared properties (e.g. taskindex...)
+- Fix: Need to restart Application when changing reader
+
+Version 0.1.8240
+----------------------------------------------------------------- 
+Frontend related changes
+- Improvement: Button Added: Loading Data to Write from File
+
+Version 0.1.8239
+----------------------------------------------------------------- 
+Frontend related changes
+- Improvement: remove '-' character when copy/paste data as "Hex"-String
+- Improvement: Closing "Update Dialog" without using "Cancel Button" does no longer minimize mainWindow
+- Improvement: changed "application id" to application code and function cluster code according to NXP AN10787 (MAD)
+- Improvement: RunTask as ContextMenuItem
+
+Version 0.1.8238
+----------------------------------------------------------------- 
+- Fix: MAD:    Different Keys for MAD and App now available
+
+Version 0.1.8237
+----------------------------------------------------------------- 
+- Fix:          Update function
+- Fix:          Mifare Classic MAD
+- Improvement:  UI Redesign when using Classic MAD
+- Improvement:  Desfire Data Explorer: Index and Data Length
+
+Version 0.1.8231
+----------------------------------------------------------------- 
+Frontend related changes
+- Feature: Added "Internal Variables" to "Create Report" Tasks:
+  These internal Variables will be replaced Automatically during PDF creation.
+  To make use of them select one of the following implemented variables:
+  + %UID = Will be replaced with the UID
+  + %CHIPTYPE = Will be replaced with the Chiptype String (Mifare Desfire EV1 8k)
+  + %DATETIME = Will be replaced with "DateTime.Now" in the "CurrentCulture" Format
+  + %DATE = Will be replaced with the Current Date in Format dd/MM/yyyy
+  + %FREEMEM = Will be replaced with the current available memory if available
+  + %LISTAPPS = Will be replaced with a List of Desfire App IDs
+  + %COUNTAPPS = Will be replaced with the Integer Number of Desfire Apps on Chip
+  + %CONCAT = Will Concatenate the text to existing text in the pdf formfield
+  + %NEWLINE = Will add a newline
+- Feature:      UpdateScreen now showing the latest Changes
+- Fix:          Copy Pasting Data in DataExplorerHexView failed when it contained CR.LF or WS
+- Fix:          When Copy Pasting Data the DataLength is not refreshed after setting the cursor back to the top
+
+Backend related changes
+- Fix:          Change Key Of Application is Now Possible by selecting ChangeKeyUsingKeyNo
+- Fix:          Limited Key Length in DataExplorer
+- Fix:          Writing Data in Backup Type Files failed
+
+</VersionInfoText>
 </Manifest>
