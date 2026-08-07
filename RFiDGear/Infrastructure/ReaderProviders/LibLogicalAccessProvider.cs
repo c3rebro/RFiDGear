@@ -735,6 +735,19 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
 
         /// <inheritdoc />
+        // DESFireAccessInfo.masterCardKey (and readKey/writeKey) are by-value SWIG members: every
+        // property access returns a fresh copy. Mutations through that copy are silently lost, so
+        // the key passed to cmd.authenticate() would always be a default-constructed DES/8-byte key.
+        // Build a standalone DESFireKey instead and pass it directly to authenticate().
+        private static DESFireKey MakeDesfireKey(LibLogicalAccess.Card.DESFireKeyType keyType, string keyHex)
+        {
+            var key = new DESFireKey();
+            key.setKeyType(keyType);
+            CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(keyHex);
+            key.fromString(CustomConverter.DesfireKeyToCheck);
+            return key;
+        }
+
         public override async Task<ERROR> GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
         {
             try
@@ -751,10 +764,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     securityLevel = (LibLogicalAccess.Card.EncryptionMode)EncryptionMode.CM_ENCRYPT
                 };
 
-                // Keys to use for authentication
-                DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-                aiToUse.masterCardKey.fromString(_appMasterKey);
-                aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
+                var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey, _appMasterKey);
 
 
                 if (await tryInitReader())
@@ -787,7 +797,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 try
                                 {
                                     cmd.selectApplication(0);
-                                    cmd.authenticate(0, aiToUse.masterCardKey);
+                                    cmd.authenticate(0, masterKey);
 
                                     UIntCollection appIDsObject = cmd.getApplicationIDs();
                                     foreach (uint appID in appIDsObject.ToArray())
@@ -839,7 +849,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 try
                                 {
                                     cmd.selectApplication(0);
-                                    cmd.authenticate(0, aiToUse.masterCardKey);
+                                    cmd.authenticate(0, masterKey);
 
                                     UIntCollection appIDsObject = cmd.getApplicationIDs();
                                     foreach (uint appID in appIDsObject.ToArray())
@@ -880,7 +890,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 var cmd = card.getCommands() as DESFireCommands;
 
                                 cmd.selectApplication(0);
-                                cmd.authenticate(0, aiToUse.masterCardKey);
+                                cmd.authenticate(0, masterKey);
 
                                 UIntCollection appIDsObject = cmd.getApplicationIDs();
                                 foreach (uint appID in appIDsObject.ToArray())
@@ -936,11 +946,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 DESFireAccessRights accessRights = _accessRights;
 
-                // Keys to use for authentication
-                DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appMasterKey);
-                aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey);
+                var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppMasterKey, _appMasterKey);
 
                 var arToUse = new LibLogicalAccess.Card.DESFireAccessRights()
                 {
@@ -975,7 +981,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
 
                         cmd.selectApplication((uint)_appID);
-                        cmd.authenticate(0, aiToUse.masterCardKey);
+                        cmd.authenticate(0, masterKey);
 
                         switch (_fileType)
                         {
@@ -1051,12 +1057,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 // Get the card storage service
                 StorageCardService storage = (StorageCardService)card.getService(CardServiceType.CST_STORAGE);
 
-                // Change keys with the following ones
-                DESFireAccessInfo aiToRead = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appReadKey);
-                aiToRead.readKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToRead.readKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppReadKey);
-                aiToRead.readKeyno = (byte)_readKeyNo;
+                var readKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppReadKey, _appReadKey);
 
                 if (await tryInitReader())
                 {
@@ -1073,7 +1074,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             {
                                 cmd.selectApplication((uint)_appID);
 
-                                cmd.authenticate((byte)_readKeyNo, aiToRead.readKey);
+                                cmd.authenticate((byte)_readKeyNo, readKey);
 
                                 MifareDESFireData = cmd.readData((byte)_fileNo, 0, (uint)_fileSize, LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT).ToArray();
                             }
@@ -1136,13 +1137,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 // Get the card storage service
                 StorageCardService storage = (StorageCardService)card.getService(CardServiceType.CST_STORAGE);
 
-                // Change keys with the following ones
-                DESFireAccessInfo aiToWrite = new DESFireAccessInfo();
-
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_appWriteKey);
-                aiToWrite.writeKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToWrite.writeKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppWriteKey);
-                aiToWrite.writeKeyno = (byte)_writeKeyNo;
+                var writeKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyTypeAppWriteKey, _appWriteKey);
 
                 if (await tryInitReader())
                 {
@@ -1157,7 +1152,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                             cmd.selectApplication((uint)_appID);
 
-                            cmd.authenticate((byte)_writeKeyNo, aiToWrite.writeKey);
+                            cmd.authenticate((byte)_writeKeyNo, writeKey);
 
                             //byte[] padded = new byte[161];
                             //Buffer.BlockCopy(_data, 0, padded, 0, _data.Length);
@@ -1212,11 +1207,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 };
                 // File communication requires encryption
 
-                // Keys to use for authentication
-                DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-                aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
+                var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyType, _applicationMasterKey);
 
                 if (await tryInitReader())
                 {
@@ -1232,9 +1223,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         {
                             cmd.selectApplication((uint)_appID);
                             if (_appID > 0)
-                                cmd.authenticate((byte)_keyNumber, aiToUse.masterCardKey);
+                                cmd.authenticate((byte)_keyNumber, masterKey);
                             else
-                                cmd.authenticate(0, aiToUse.masterCardKey);
+                                cmd.authenticate(0, masterKey);
                             return ERROR.NoError;
                         }
 
@@ -1277,10 +1268,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             try
             {
-                DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-                aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
+                var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyType, _applicationMasterKey);
 
                 if (!await tryInitReader())
                 {
@@ -1302,7 +1290,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 if (card.getCardType() == "DESFire")
                 {
-                    cmd = card.getCommands() as DESFireCommands;
+                    cmd = (card as DESFireEV1Chip).getDESFireCommands();
                 }
 
                 else if (card.getCardType() == "DESFireEV1" ||
@@ -1310,7 +1298,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         card.getCardType() == "DESFireEV3" ||
                         card.getCardType() == "GENERIC_T_CL_A")
                 {
-                    cmd = (card as DESFireChip).getDESFireCommands();
+                    cmd = (card as DESFireEV1Chip).getDESFireCommands();
                 }
                 else
                 {
@@ -1334,7 +1322,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 {
                     try
                     {
-                        cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterCardKey);
+                        cmd.authenticate((byte)_keyNumberCurrent, masterKey);
                     }
                     catch (Exception authEx)
                     {
@@ -1471,12 +1459,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT
                 };
 
-                // IDESFireEV1Commands cmd;
-                // Keys to use for authentication
-                DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_piccMasterKey);
-                aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypePiccMasterKey);
+                var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyTypePiccMasterKey, _piccMasterKey);
 
                 if (!await tryInitReader())
                 {
@@ -1502,7 +1485,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     cmd.selectApplication(0);
 
                     if (authenticateToPICCFirst)
-                        cmd.authenticate(0, aiToUse.masterCardKey);
+                        cmd.authenticate(0, masterKey);
 
                     if (card.getCardType() == "DESFire")
                     {
@@ -1809,10 +1792,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 // IDESFireEV1Commands cmd;
                 // Keys to use for authentication
-                DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-                aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
+                var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyType, _applicationMasterKey);
 
                 if (await tryInitReader())
                 {
@@ -1827,7 +1807,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         try
                         {
                             cmd.selectApplication(0);
-                            cmd.authenticate(0, aiToUse.masterCardKey);
+                            cmd.authenticate(0, masterKey);
 
                             cmd.deleteApplication(_appID);
                             return ERROR.NoError;
@@ -1837,7 +1817,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             try
                             {
                                 cmd.selectApplication(_appID);
-                                cmd.authenticate(0, aiToUse.masterCardKey);
+                                cmd.authenticate(0, masterKey);
                                 cmd.deleteApplication(_appID);
                                 return ERROR.NoError;
                             }
@@ -1882,10 +1862,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 };
 
                 // Keys to use for authentication
-                DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-                aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
+                var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyType, _applicationMasterKey);
 
                 if (await tryInitReader())
                 {
@@ -1903,7 +1880,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             try
                             {
                                 cmd.selectApplication((uint)_appID);
-                                cmd.authenticate(0, aiToUse.masterCardKey);
+                                cmd.authenticate(0, masterKey);
                             }
 
                             catch
@@ -1955,10 +1932,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 };
 
                 // Keys to use for authentication
-                DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-                aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
+                var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyType, _applicationMasterKey);
 
                 if (await tryInitReader())
                 {
@@ -1973,7 +1947,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         try
                         {
                             cmd.selectApplication(0);
-                            cmd.authenticate(0, aiToUse.masterCardKey);
+                            cmd.authenticate(0, masterKey);
 
                             cmd.erase();
 
@@ -2020,10 +1994,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 //IDESFireEV1Commands cmd;
                 // Keys to use for authentication
-                DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-                aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
+                var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyType, _applicationMasterKey);
 
                 ByteVector fileIDsObject;
 
@@ -2042,7 +2013,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             cmd.selectApplication((uint)_appID);
                             try
                             {
-                                cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterCardKey);
+                                cmd.authenticate((byte)_keyNumberCurrent, masterKey);
                             }
                             catch
                             {
@@ -2103,10 +2074,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 // Keys to use for authentication
-                DESFireAccessInfo aiToUse = new DESFireAccessInfo();
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKey);
-                aiToUse.masterCardKey.fromString(CustomConverter.DesfireKeyToCheck);
-                aiToUse.masterCardKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyType);
+                var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyType, _applicationMasterKey);
 
                 DESFireCommands.FileSetting fsFromChip;
 
@@ -2125,7 +2093,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             cmd.selectApplication((uint)_appID);
                             try
                             {
-                                cmd.authenticate((byte)_keyNumberCurrent, aiToUse.masterCardKey);
+                                cmd.authenticate((byte)_keyNumberCurrent, masterKey);
                             }
                             catch
                             {
