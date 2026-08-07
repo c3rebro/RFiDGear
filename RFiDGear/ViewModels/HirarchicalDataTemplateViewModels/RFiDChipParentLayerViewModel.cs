@@ -308,10 +308,66 @@ namespace RFiDGear.ViewModel
         public List<MenuItem> ContextMenu => ContextMenuItems;
 
         /// <summary>
-        /// 
+        /// Shows the key configuration dialog and waits for the user's response.
+        /// Returns <see langword="true"/> when the user confirms; <see langword="false"/> when cancelled.
+        /// On confirmation the entered keys are saved to settings (in memory + disk) and
+        /// <see cref="DefaultSpecification.PromptForKeysBeforeQuickCheck"/> is cleared when "Do not ask again" is checked.
+        /// </summary>
+        private async Task<bool> ShowQuickCheckKeysDialogAsync()
+        {
+            if (dialogs == null)
+                return true;
+
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var dlg = new QuickCheckKeysDialogViewModel(settings.DefaultSpecification)
+            {
+                Caption = ResourceLoader.GetResource("windowCaptionQuickCheckKeys"),
+
+                OnOk = (sender) =>
+                {
+                    sender.SaveToSettings(settings.DefaultSpecification);
+
+                    var srw = new SettingsReaderWriter();
+                    sender.SaveToSettings(srw.DefaultSpecification);
+                    if (sender.DoNotAskAgain)
+                    {
+                        settings.DefaultSpecification.PromptForKeysBeforeQuickCheck = false;
+                        srw.DefaultSpecification.PromptForKeysBeforeQuickCheck = false;
+                    }
+                    srw.SaveSettings();
+
+                    sender.Close();
+                    tcs.TrySetResult(true);
+                },
+
+                OnCancel = (sender) =>
+                {
+                    sender.Close();
+                    tcs.TrySetResult(false);
+                },
+
+                OnCloseRequest = (sender) =>
+                {
+                    sender.Close();
+                    tcs.TrySetResult(false);
+                }
+            };
+
+            dialogs.Add(dlg);
+            return await tcs.Task;
+        }
+
+        /// <summary>
+        ///
         /// </summary>
         private async Task MifareClassicQuickCheck()
         {
+            if (settings.DefaultSpecification.PromptForKeysBeforeQuickCheck)
+            {
+                if (!await ShowQuickCheckKeysDialogAsync()) return;
+            }
+
             await MifareClassicQuickCheck(null);
         }
 
@@ -388,6 +444,11 @@ namespace RFiDGear.ViewModel
         /// </summary>
         private async Task MifareDesfireQuickCheck()
         {
+            if (settings.DefaultSpecification.PromptForKeysBeforeQuickCheck)
+            {
+                if (!await ShowQuickCheckKeysDialogAsync()) return;
+            }
+
             using (await desfireQuickCheckLock.AcquireAsync())
             {
                 using (var device = ReaderDevice.Instance)

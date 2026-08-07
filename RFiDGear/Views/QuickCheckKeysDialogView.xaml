@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="RFiDGear.View.QuickCheckKeysDialogView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
+    Title="{Binding Caption}"
+    Width="520"
+    MinWidth="420"
+    ResizeMode="NoResize"
+    SizeToContent="Height"
+    WindowStartupLocation="CenterOwner"
+    FontFamily="Segoe UI"
+    FontWeight="Normal">
+    <Window.Resources>
+        <dal:ResourceLoader x:Key="Localization" />
+    </Window.Resources>
+    <StackPanel Margin="10">
+
+        <!-- DESFire Keys -->
+        <GroupBox
+            Margin="0,0,0,8"
+            Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelDesfireDefaultKeysSection'}">
+            <Grid Margin="6,6,6,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="160" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="110" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="auto" />
+                    <RowDefinition Height="auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Header row -->
+                <TextBlock Grid.Row="0" Grid.Column="1" Margin="4,0,4,4" FontWeight="SemiBold" Text="Key Value (hex)" />
+                <TextBlock Grid.Row="0" Grid.Column="2" Margin="4,0,0,4" FontWeight="SemiBold"
+                           Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyEncType'}" />
+
+                <!-- PICC Master Key -->
+                <Label Grid.Row="1" Grid.Column="0" VerticalContentAlignment="Center"
+                       Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyPiccMaster'}" />
+                <TextBox Grid.Row="1" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
+                         MaxLength="32" Text="{Binding PiccMasterKeyValue, UpdateSourceTrigger=PropertyChanged}" />
+                <ComboBox Grid.Row="1" Grid.Column="2" Margin="0,2,0,2" Height="24"
+                          ItemsSource="{Binding AvailableEncryptionTypes}"
+                          SelectedItem="{Binding PiccMasterKeyEncType, Mode=TwoWay}" />
+
+                <!-- App Master Key -->
+                <Label Grid.Row="2" Grid.Column="0" VerticalContentAlignment="Center"
+                       Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyAppMaster'}" />
+                <TextBox Grid.Row="2" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
+                         MaxLength="32" Text="{Binding AppMasterKeyValue, UpdateSourceTrigger=PropertyChanged}" />
+                <ComboBox Grid.Row="2" Grid.Column="2" Margin="0,2,0,2" Height="24"
+                          ItemsSource="{Binding AvailableEncryptionTypes}"
+                          SelectedItem="{Binding AppMasterKeyEncType, Mode=TwoWay}" />
+
+                <!-- Read Key -->
+                <Label Grid.Row="3" Grid.Column="0" VerticalContentAlignment="Center"
+                       Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyRead'}" />
+                <TextBox Grid.Row="3" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
+                         MaxLength="32" Text="{Binding ReadKeyValue, UpdateSourceTrigger=PropertyChanged}" />
+                <ComboBox Grid.Row="3" Grid.Column="2" Margin="0,2,0,2" Height="24"
+                          ItemsSource="{Binding AvailableEncryptionTypes}"
+                          SelectedItem="{Binding ReadKeyEncType, Mode=TwoWay}" />
+
+                <!-- Write Key -->
+                <Label Grid.Row="4" Grid.Column="0" VerticalContentAlignment="Center"
+                       Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyWrite'}" />
+                <TextBox Grid.Row="4" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
+                         MaxLength="32" Text="{Binding WriteKeyValue, UpdateSourceTrigger=PropertyChanged}" />
+                <ComboBox Grid.Row="4" Grid.Column="2" Margin="0,2,0,2" Height="24"
+                          ItemsSource="{Binding AvailableEncryptionTypes}"
+                          SelectedItem="{Binding WriteKeyEncType, Mode=TwoWay}" />
+            </Grid>
+        </GroupBox>
+
+        <!-- MIFARE Classic Quick-Check Keys -->
+        <GroupBox
+            Margin="0,0,0,8"
+            Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelClassicDefaultKeysSection'}">
+            <TextBox
+                Margin="6,6,6,6"
+                Height="120"
+                AcceptsReturn="True"
+                VerticalScrollBarVisibility="Auto"
+                FontFamily="Consolas"
+                Text="{Binding ClassicKeysText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                ToolTip="One key per line (12 hex characters)." />
+        </GroupBox>
+
+        <!-- Do not ask again -->
+        <CheckBox
+            Margin="4,0,0,10"
+            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='checkBoxDoNotAskAgain'}"
+            IsChecked="{Binding DoNotAskAgain, Mode=TwoWay}" />
+
+        <!-- Buttons -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="1" Width="80" Height="26" Margin="0,0,8,0"
+                    Command="{Binding OkCommand}" Content="OK" IsDefault="True" />
+            <Button Grid.Column="2" Width="80" Height="26"
+                    Command="{Binding CancelCommand}" Content="Cancel" IsCancel="True" />
+        </Grid>
+
+    </StackPanel>
+</Window>

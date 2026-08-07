@@ -7,9 +7,9 @@
     xmlns:v="clr-namespace:RFiDGear.View"
     Title="{Binding Caption}"
     Width="auto"
-    Height="300"
-    MinWidth="430"
-    MinHeight="350"
+    Height="420"
+    MinWidth="480"
+    MinHeight="420"
     ResizeMode="NoResize"
     HorizontalContentAlignment="Left"
     FontFamily="Segoe UI"
@@ -32,6 +32,9 @@
             </TabItem>
             <TabItem MinWidth="50" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderMisc'}">
                 <v:TabPageMiscReaderSettingsView />
+            </TabItem>
+            <TabItem MinWidth="50" Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageDefaultKeysCaption'}">
+                <v:TabPageDefaultKeysView />
             </TabItem>
         </TabControl>
         <Grid Height="40" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">

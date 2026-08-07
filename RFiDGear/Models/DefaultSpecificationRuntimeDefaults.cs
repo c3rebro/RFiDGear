@@ -75,6 +75,8 @@ namespace RFiDGear.Models
                 new MifareDesfireDefaultKeys(KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey, DESFireKeyType.DF_KEY_AES, "00000000000000000000000000000000")
             };
 
+        public bool PromptForKeysBeforeQuickCheck { get; set; } = true;
+
         public string ClassicCardDefaultSectorTrailer { get; set; }
             = "FFFFFFFFFFFF,FF0780C3,FFFFFFFFFFFF";
 

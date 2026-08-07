@@ -53,6 +53,7 @@ namespace RFiDGear.Models
             _classicCardDefaultSectorTrailer = runtimeDefaults.ClassicCardDefaultSectorTrailer;
 
             _classicCardDefaultQuickCheckKeys = runtimeDefaults.ClassicCardDefaultQuickCheckKeys.ToList();
+            _promptForKeysBeforeQuickCheck = runtimeDefaults.PromptForKeysBeforeQuickCheck;
         }
 
         #region properties
@@ -163,6 +164,16 @@ namespace RFiDGear.Models
             set => _autoLoadProjectOnStart = value;
         }
         private bool _autoLoadProjectOnStart;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public bool PromptForKeysBeforeQuickCheck
+        {
+            get => _promptForKeysBeforeQuickCheck;
+            set => _promptForKeysBeforeQuickCheck = value;
+        }
+        private bool _promptForKeysBeforeQuickCheck = true;
 
         /// <summary>
         ///

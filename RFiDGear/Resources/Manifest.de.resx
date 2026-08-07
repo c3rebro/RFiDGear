@@ -1709,4 +1709,37 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="ENUM.TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover" xml:space="preserve">
     <value>PICC Master Key Settings ändern</value>
   </data>
+  <data name="windowCaptionQuickCheckKeys" xml:space="preserve">
+    <value>Standardschlüssel konfigurieren</value>
+  </data>
+  <data name="labelDesfireDefaultKeysSection" xml:space="preserve">
+    <value>DESFire-Standardschlüssel</value>
+  </data>
+  <data name="labelClassicDefaultKeysSection" xml:space="preserve">
+    <value>MIFARE Classic-Schlüssel</value>
+  </data>
+  <data name="labelQuickCheckKeyPiccMaster" xml:space="preserve">
+    <value>PICC-Masterschlüssel</value>
+  </data>
+  <data name="labelQuickCheckKeyAppMaster" xml:space="preserve">
+    <value>Anwendungs-Masterschlüssel</value>
+  </data>
+  <data name="labelQuickCheckKeyRead" xml:space="preserve">
+    <value>Leseschlüssel</value>
+  </data>
+  <data name="labelQuickCheckKeyWrite" xml:space="preserve">
+    <value>Schreibschlüssel</value>
+  </data>
+  <data name="labelQuickCheckKeyEncType" xml:space="preserve">
+    <value>Verschlüsselung</value>
+  </data>
+  <data name="checkBoxDoNotAskAgain" xml:space="preserve">
+    <value>Nicht mehr fragen</value>
+  </data>
+  <data name="checkBoxPromptForKeysBeforeQuickCheck" xml:space="preserve">
+    <value>Vor Quick-Check nach Schlüsseln fragen</value>
+  </data>
+  <data name="tabPageDefaultKeysCaption" xml:space="preserve">
+    <value>Standardschlüssel</value>
+  </data>
 </root>
