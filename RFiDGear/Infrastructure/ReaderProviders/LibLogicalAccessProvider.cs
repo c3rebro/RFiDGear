@@ -757,6 +757,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     DesfireChip = new MifareDesfireChipModel();
                 }
 
+                DesfireChip.AppList = new List<MifareDesfireAppModel>();
+
                 // The excepted memory tree
                 DESFireLocation location = new DESFireLocation
                 {
