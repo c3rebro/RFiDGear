@@ -26,6 +26,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         private GenericChipModel legicTag;
 
         private bool _disposed;
+        private readonly SemaphoreSlim _comPortLock = new SemaphoreSlim(1, 1);
 
         #region Constructor
 
@@ -80,6 +81,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <returns></returns>
         public async override Task<ERROR> ReadChipPublic()
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
             try
             {
                 if (readerDevice == null)
@@ -188,11 +192,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 return ERROR.TransportError;
             }
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         public async override Task<ERROR> ConnectAsync()
@@ -231,41 +240,65 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <inheritdoc />
         public async override Task<ERROR> WriteMifareClassicSingleBlock(int _blockNumber, string aKey, string bKey, byte[] buffer)
         {
+            await _comPortLock.WaitAsync();
             try
-            {
-                await readerDevice.MifareClassic_LoginAsync(aKey, 0, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
-            }
-            catch
             {
                 try
                 {
-                    await readerDevice.MifareClassic_LoginAsync(bKey, 1, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
+                    await readerDevice.MifareClassic_LoginAsync(aKey, 0, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
                 }
                 catch
                 {
                     try
                     {
-                        await readerDevice.MifareClassic_WriteBlockAsync(buffer, (byte)_blockNumber);
+                        await readerDevice.MifareClassic_LoginAsync(bKey, 1, (byte)CustomConverter.GetSectorNumberFromChipBasedDataBlockNumber(_blockNumber));
                     }
                     catch
                     {
-                        return ERROR.AuthFailure;
+                        try
+                        {
+                            await readerDevice.MifareClassic_WriteBlockAsync(buffer, (byte)_blockNumber);
+                        }
+                        catch
+                        {
+                            return ERROR.AuthFailure;
+                        }
                     }
-                }
-            } // Login  
-            return ERROR.NoError;
+                } // Login
+                return ERROR.NoError;
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         /// <inheritdoc />
         public async override Task<ERROR> ReadMifareClassicSingleSector(int sectorNumber, string aKey, string bKey)
         {
-            return await ReadWriteAccessOnClassicSector(sectorNumber, aKey, bKey, null);
+            await _comPortLock.WaitAsync();
+            try
+            {
+                return await ReadWriteAccessOnClassicSector(sectorNumber, aKey, bKey, null);
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         /// <inheritdoc />
         public async override Task<ERROR> WriteMifareClassicSingleSector(int sectorNumber, string aKey, string bKey, byte[] buffer)
         {
-            return await ReadWriteAccessOnClassicSector(sectorNumber, aKey, bKey, buffer);
+            await _comPortLock.WaitAsync();
+            try
+            {
+                return await ReadWriteAccessOnClassicSector(sectorNumber, aKey, bKey, buffer);
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
 
@@ -414,27 +447,38 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <inheritdoc />
         public async override Task<byte> MifareDesfire_GetKeyVersionAsync(byte keyNo)
         {
-            if (readerDevice == null || !readerDevice.IsConnected)
-            {
-                throw new ReaderException("Reader not connected");
-            }
-
+            await _comPortLock.WaitAsync();
             try
             {
-                var keyVersion = await readerDevice.MifareDesfire_GetKeyVersionAsync(keyNo);
-                KeyVersion = keyVersion;
-                return keyVersion;
+                if (readerDevice == null || !readerDevice.IsConnected)
+                {
+                    throw new ReaderException("Reader not connected");
+                }
+
+                try
+                {
+                    var keyVersion = await readerDevice.MifareDesfire_GetKeyVersionAsync(keyNo);
+                    KeyVersion = keyVersion;
+                    return keyVersion;
+                }
+                catch (Exception e)
+                {
+                    Log.ForContext<ElatecNetProvider>().Error(e, "Unable to read DESFire key version.");
+                    throw;
+                }
             }
-            catch (Exception e)
+            finally
             {
-                Log.ForContext<ElatecNetProvider>().Error(e, "Unable to read DESFire key version.");
-                throw;
+                _comPortLock.Release();
             }
         }
 
         /// <inheritdoc />
         public async override Task<ERROR> GetMiFareDESFireChipAppIDs(string _appMasterKey, DESFireKeyType _keyTypeAppMasterKey)
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
             if (readerDevice.IsConnected)
             {
                 uint[] appArr;
@@ -478,11 +522,28 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 return ERROR.TransportError;
             }
-
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         /// <inheritdoc />
         public async override Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
+        {
+            await _comPortLock.WaitAsync();
+            try
+            {
+                return await AuthToMifareDesfireApplicationCore(_applicationMasterKey, _keyType, _keyNumber, _appID);
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
+        }
+
+        private async Task<ERROR> AuthToMifareDesfireApplicationCore(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
             if (readerDevice.IsConnected)
             {
@@ -516,12 +577,14 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 return ERROR.TransportError;
             }
-
         }
 
         /// <inheritdoc />
         public async override Task<OperationResult> GetMifareDesfireAppSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID, bool authenticateBeforeReading = true)
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
             if (readerDevice.IsConnected)
             {
                 if (readerDevice.IsTWN4LegicReader)
@@ -621,7 +684,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         { "KeyNumber", _keyNumberCurrent.ToString(CultureInfo.CurrentCulture) }
                     });
             }
-
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         /// <inheritdoc />
@@ -629,6 +696,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                         DESFireKeyType _keyTypePiccMasterKey, DESFireKeyType _keyTypeTargetApplication,
                                         int _maxNbKeys, int _appID, bool authenticateToPICCFirst = true)
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
             if (readerDevice.IsConnected)
             {
                 if (readerDevice.IsTWN4LegicReader)
@@ -723,8 +793,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
                     });
             }
-
-
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         /// <inheritdoc />
@@ -739,6 +812,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             DESFireKeyType masterKeyType,
             AccessControl.DESFireKeySettings keySettings)
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
+
             if (!readerDevice.IsConnected)
                 return ERROR.TransportError;
 
@@ -815,6 +892,12 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return ERROR.AuthFailure;
             }
 
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
+
             /// <summary>
             /// Converts your local DESFireKeyType enum to the Elatec wrapper enum.
             /// Uses name-based parsing to avoid brittle numeric casts when enum values differ.
@@ -831,17 +914,25 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <inheritdoc />
         public override async Task<ERROR> CommitTransactionAsync()
         {
-            if (!readerDevice.IsConnected)
-                return ERROR.TransportError;
-
+            await _comPortLock.WaitAsync();
             try
             {
-                await readerDevice.MifareDesfire_CommitTransactionAsync();
-                return ERROR.NoError;
+                if (!readerDevice.IsConnected)
+                    return ERROR.TransportError;
+
+                try
+                {
+                    await readerDevice.MifareDesfire_CommitTransactionAsync();
+                    return ERROR.NoError;
+                }
+                catch
+                {
+                    return ERROR.AuthFailure;
+                }
             }
-            catch
+            finally
             {
-                return ERROR.AuthFailure;
+                _comPortLock.Release();
             }
         }
 
@@ -882,6 +973,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public async override Task<ERROR> ChangeMifareDesfireApplicationKeySettings(string _applicationMasterKeyCurrent, int _keyNumberCurrent, DESFireKeyType _keyTypeCurrent,
            int _appIDCurrent, AccessControl.DESFireKeySettings keySettings)
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
             if (readerDevice.IsConnected)
             {
                 if (readerDevice.IsTWN4LegicReader)
@@ -958,11 +1052,19 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 return ERROR.TransportError;
             }
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         /// <inheritdoc />
         public async override Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyTypePiccMasterKey, uint _appID)
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
             if (readerDevice.IsConnected)
             {
                 if (readerDevice.IsTWN4LegicReader)
@@ -979,7 +1081,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 try
                 {
-                    if (await AuthToMifareDesfireApplication(_applicationMasterKey, _keyTypePiccMasterKey, 0, 0) == ERROR.NoError)
+                    if (await AuthToMifareDesfireApplicationCore(_applicationMasterKey, _keyTypePiccMasterKey, 0, 0) == ERROR.NoError)
                     {
                         await readerDevice.MifareDesfire_DeleteApplicationAsync(_appID);
                     }
@@ -999,12 +1101,19 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 return ERROR.TransportError;
             }
-
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         /// <inheritdoc />
         public async override Task<ERROR> DeleteMifareDesfireFile(string _applicationMasterKey, DESFireKeyType _keyType, int _appID, int _fileID)
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
             if (readerDevice.IsConnected)
             {
                 if (readerDevice.IsTWN4LegicReader)
@@ -1021,7 +1130,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 try
                 {
-                    if (await AuthToMifareDesfireApplication(_applicationMasterKey, _keyType, 0, _appID) == ERROR.NoError)
+                    if (await AuthToMifareDesfireApplicationCore(_applicationMasterKey, _keyType, 0, _appID) == ERROR.NoError)
                     {
                         await readerDevice.MifareDesfire_DeleteFileAsync((byte)_fileID);
                     }
@@ -1041,11 +1150,19 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 return ERROR.TransportError;
             }
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         /// <inheritdoc />
         public async override Task<ERROR> FormatDesfireCard(string _applicationMasterKey, DESFireKeyType _keyType)
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
             if (readerDevice.IsConnected)
             {
                 if (readerDevice.IsTWN4LegicReader)
@@ -1062,7 +1179,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 try
                 {
-                    if (await AuthToMifareDesfireApplication(_applicationMasterKey, _keyType, 0, 0) == ERROR.NoError)
+                    if (await AuthToMifareDesfireApplicationCore(_applicationMasterKey, _keyType, 0, 0) == ERROR.NoError)
                     {
                         await readerDevice.MifareDesfire_FormatTagAsync();
                     }
@@ -1084,13 +1201,19 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 return ERROR.TransportError;
             }
-
-
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         /// <inheritdoc />
         public async override Task<ERROR> GetMifareDesfireFileList(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID)
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
             if (readerDevice.IsConnected)
             {
                 if (readerDevice.IsTWN4LegicReader)
@@ -1134,12 +1257,19 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 return ERROR.TransportError;
             }
-
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         /// <inheritdoc />
         public async override Task<ERROR> GetMifareDesfireFileSettings(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumberCurrent, int _appID, int _fileNo)
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
             if (readerDevice.IsConnected)
             {
                 if (readerDevice.IsTWN4LegicReader)
@@ -1202,8 +1332,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 return ERROR.TransportError;
             }
-
-
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         /// <summary>
@@ -1218,11 +1351,14 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                      int _minValue = 0, int _maxValue = 1000, int _initValue = 0, bool _isValueLimited = false,
                                      int _maxNbOfRecords = 100)
         {
+            await _comPortLock.WaitAsync();
+            try
+            {
             if (IsConnected)
             {
                 try
                 {
-                    if (await AuthToMifareDesfireApplication(_appMasterKey, _keyTypeAppMasterKey, 0, _appID) == ERROR.NoError)
+                    if (await AuthToMifareDesfireApplicationCore(_appMasterKey, _keyTypeAppMasterKey, 0, _appID) == ERROR.NoError)
                     {
                         var ar = BuildDesfireAccessRights(_accessRights);
 
@@ -1267,8 +1403,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 return ERROR.TransportError;
             }
-
-
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
         }
 
         private static DESFireFileAccessRights BuildDesfireAccessRights(DESFireAccessRights accessRights)
@@ -1355,34 +1494,40 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                        EncryptionMode _encMode,
                                        int _fileNo, int _appID, int _fileSize)
         {
+            await _comPortLock.WaitAsync();
             try
             {
-
-                await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
-
-                if (await AuthToMifareDesfireApplication(_appReadKey, _keyTypeAppReadKey, _readKeyNo, _appID) == ERROR.NoError)
+                try
                 {
-                    MifareDESFireData = await readerDevice.MifareDesfire_ReadDataAsync((byte)_fileNo, _fileSize, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
+                    await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
 
-                    if (MifareDESFireData != null)
+                    if (await AuthToMifareDesfireApplicationCore(_appReadKey, _keyTypeAppReadKey, _readKeyNo, _appID) == ERROR.NoError)
                     {
-                        return ERROR.NoError;
+                        MifareDESFireData = await readerDevice.MifareDesfire_ReadDataAsync((byte)_fileNo, _fileSize, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
+
+                        if (MifareDESFireData != null)
+                        {
+                            return ERROR.NoError;
+                        }
+                        else
+                        {
+                            return ERROR.AuthFailure;
+                        }
                     }
                     else
                     {
                         return ERROR.AuthFailure;
                     }
                 }
-                else
+                catch (Exception e)
                 {
-                    return ERROR.AuthFailure;
+                    Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
+                    return ERROR.TransportError;
                 }
-
             }
-            catch (Exception e)
+            finally
             {
-                Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
-                return ERROR.TransportError;
+                _comPortLock.Release();
             }
         }
 
@@ -1391,24 +1536,31 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                         EncryptionMode _encMode,
                                         int _fileNo, int _appID, byte[] _data)
         {
+            await _comPortLock.WaitAsync();
             try
             {
+                try
+                {
+                    await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
 
-                await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
+                    var authResult = await AuthToMifareDesfireApplicationCore(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID);
+                    if (authResult != ERROR.NoError)
+                        return authResult;
 
-                var authResult = await AuthToMifareDesfireApplication(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID);
-                if (authResult != ERROR.NoError)
-                    return authResult;
+                    await readerDevice.MifareDesfire_WriteDataAsync((byte)_fileNo, _data, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
+                }
+                catch (Exception e)
+                {
+                    Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
+                    return ERROR.AuthFailure;
+                }
 
-                await readerDevice.MifareDesfire_WriteDataAsync((byte)_fileNo, _data, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
+                return ERROR.NoError;
             }
-            catch (Exception e)
+            finally
             {
-                Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
-                return ERROR.AuthFailure;
+                _comPortLock.Release();
             }
-
-            return ERROR.NoError;
         }
 
         #endregion
