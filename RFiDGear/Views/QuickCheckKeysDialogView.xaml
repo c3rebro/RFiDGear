@@ -14,6 +14,7 @@
     FontWeight="Normal">
     <Window.Resources>
         <dal:ResourceLoader x:Key="Localization" />
+        <dal:DESFireKeyTypeToMaxLengthConverter x:Key="DESFireKeyMaxLengthConv" />
     </Window.Resources>
     <StackPanel Margin="10">
 
@@ -44,7 +45,7 @@
                 <Label Grid.Row="1" Grid.Column="0" VerticalContentAlignment="Center"
                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyPiccMaster'}" />
                 <TextBox Grid.Row="1" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                         MaxLength="48" Text="{Binding PiccMasterKeyValue, UpdateSourceTrigger=PropertyChanged}">
+                         MaxLength="{Binding PiccMasterKeyEncType, Converter={StaticResource DESFireKeyMaxLengthConv}}" Text="{Binding PiccMasterKeyValue, UpdateSourceTrigger=PropertyChanged}">
                     <TextBox.Resources>
                         <Style TargetType="TextBox">
                             <Style.Triggers>
@@ -68,7 +69,7 @@
                 <Label Grid.Row="2" Grid.Column="0" VerticalContentAlignment="Center"
                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyAppMaster'}" />
                 <TextBox Grid.Row="2" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                         MaxLength="48" Text="{Binding AppMasterKeyValue, UpdateSourceTrigger=PropertyChanged}">
+                         MaxLength="{Binding AppMasterKeyEncType, Converter={StaticResource DESFireKeyMaxLengthConv}}" Text="{Binding AppMasterKeyValue, UpdateSourceTrigger=PropertyChanged}">
                     <TextBox.Resources>
                         <Style TargetType="TextBox">
                             <Style.Triggers>
@@ -92,7 +93,7 @@
                 <Label Grid.Row="3" Grid.Column="0" VerticalContentAlignment="Center"
                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyRead'}" />
                 <TextBox Grid.Row="3" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                         MaxLength="48" Text="{Binding ReadKeyValue, UpdateSourceTrigger=PropertyChanged}">
+                         MaxLength="{Binding ReadKeyEncType, Converter={StaticResource DESFireKeyMaxLengthConv}}" Text="{Binding ReadKeyValue, UpdateSourceTrigger=PropertyChanged}">
                     <TextBox.Resources>
                         <Style TargetType="TextBox">
                             <Style.Triggers>
@@ -116,7 +117,7 @@
                 <Label Grid.Row="4" Grid.Column="0" VerticalContentAlignment="Center"
                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyWrite'}" />
                 <TextBox Grid.Row="4" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                         MaxLength="48" Text="{Binding WriteKeyValue, UpdateSourceTrigger=PropertyChanged}">
+                         MaxLength="{Binding WriteKeyEncType, Converter={StaticResource DESFireKeyMaxLengthConv}}" Text="{Binding WriteKeyValue, UpdateSourceTrigger=PropertyChanged}">
                     <TextBox.Resources>
                         <Style TargetType="TextBox">
                             <Style.Triggers>

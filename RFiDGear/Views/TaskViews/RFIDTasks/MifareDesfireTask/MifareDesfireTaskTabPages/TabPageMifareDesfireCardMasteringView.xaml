@@ -15,6 +15,7 @@
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+        <dal:DESFireKeyTypeToMaxLengthConverter x:Key="DESFireKeyMaxLengthConv" />
         <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
                         <ContextMenu.ItemContainerStyle>
                                 <Style TargetType="MenuItem">
@@ -78,6 +79,7 @@
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
                         Visibility="{Binding ShowPiccMasterKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
+                        MaxLength="{Binding SelectedDesfireMasterKeyEncryptionTypeTarget, Converter={StaticResource DESFireKeyMaxLengthConv}}"
                         Text="{Binding DesfireMasterKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
                         <TextBox.Resources>
                             <Style TargetType="TextBox" >
@@ -318,6 +320,7 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
+                        MaxLength="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
                         Text="{Binding DesfireMasterKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.Resources>
                             <Style TargetType="TextBox" >

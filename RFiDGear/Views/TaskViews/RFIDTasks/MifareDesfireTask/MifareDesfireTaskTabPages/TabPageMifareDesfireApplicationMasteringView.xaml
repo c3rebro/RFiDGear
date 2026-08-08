@@ -16,6 +16,7 @@
         <dal:ResourceLoader x:Key="Localization" />
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
         <dal:BooleanToGridLengthConverter x:Key="BoolToGridLengthConverter" />
+        <dal:DESFireKeyTypeToMaxLengthConverter x:Key="DESFireKeyMaxLengthConv" />
         <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
                         <ContextMenu.ItemContainerStyle>
                                 <Style TargetType="MenuItem">
@@ -77,6 +78,7 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
+                        MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeTarget, Converter={StaticResource DESFireKeyMaxLengthConv}}"
                         Text="{Binding DesfireAppKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.ToolTip>
                             <ToolTip>
@@ -365,6 +367,7 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyCurrentInputs, Converter={StaticResource BoolToVisConv}}"
+                        MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
                         Text="{Binding DesfireAppKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.ToolTip>
                             <ToolTip>
@@ -410,6 +413,7 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyOldInputs, Converter={StaticResource BoolToVisConv}}"
+                        MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
                         Text="{Binding DesfireAppKeyCurrentOld, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
                         <TextBox.ToolTip>
                             <ToolTip>

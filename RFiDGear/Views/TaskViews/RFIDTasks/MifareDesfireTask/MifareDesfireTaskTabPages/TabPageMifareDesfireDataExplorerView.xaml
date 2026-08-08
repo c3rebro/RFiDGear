@@ -10,6 +10,7 @@
     <UserControl.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
+        <dal:DESFireKeyTypeToMaxLengthConverter x:Key="DESFireKeyMaxLengthConv" />
         <!--<ContextMenu  x:Key="RowMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.RowContextMenu}">
 			<ContextMenu.ItemContainerStyle>
 				<Style TargetType="MenuItem">
@@ -420,6 +421,7 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
+                        MaxLength="{Binding SelectedDesfireReadKeyEncryptionType, Converter={StaticResource DESFireKeyMaxLengthConv}}"
                         Text="{Binding DesfireReadKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.Resources>
                             <Style TargetType="TextBox" >
@@ -483,6 +485,7 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
+                        MaxLength="{Binding SelectedDesfireWriteKeyEncryptionType, Converter={StaticResource DESFireKeyMaxLengthConv}}"
                         Text="{Binding DesfireWriteKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.Resources>
                             <Style TargetType="TextBox" >
