@@ -2691,9 +2691,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                             }
 
-                            if (SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile && device.GetType() == typeof(ElatecNetProvider))
+                            if (result == ERROR.NoError && SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile && device.GetType() == typeof(ElatecNetProvider))
                             {
-                                await device.CommitTransactionAsync();
+                                result = await device.CommitTransactionAsync();
                             }
 
                             if (result == ERROR.NoError)
