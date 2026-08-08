@@ -262,6 +262,9 @@ slot of an available reader</value>
   <data name="ENUM.TaskType_MifareDesfireTask.ChangeDefault" xml:space="preserve">
     <value>Change Default Values</value>
   </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.ChangeFileSettings" xml:space="preserve">
+    <value>Change File Settings</value>
+  </data>
   <data name="ENUM.TaskType_MifareDesfireTask.WriteData" xml:space="preserve">
     <value>Write Data</value>
   </data>
@@ -833,6 +836,9 @@ Recommended Setting (FOR PICC LAYER ONLY)</value>
   </data>
   <data name="buttonContentMifareDesfireFileMasteringCreateFile" xml:space="preserve">
     <value>Create File</value>
+  </data>
+  <data name="buttonContentMifareDesfireFileMasteringChangeFileSettings" xml:space="preserve">
+    <value>Change File Settings</value>
   </data>
   <data name="buttonContentMifareDesfireFileMasteringDeleteFile" xml:space="preserve">
     <value>Delete File</value>
@@ -1725,5 +1731,8 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="tabPageDefaultKeysCaption" xml:space="preserve">
     <value>Default Keys</value>
+  </data>
+  <data name="menuItemReadAppWithKey" xml:space="preserve">
+    <value>Read App with Key…</value>
   </data>
 </root>

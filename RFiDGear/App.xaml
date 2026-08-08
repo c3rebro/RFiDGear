@@ -32,6 +32,7 @@
             <mainview:UpdateNotifierView x:Key="{x:Type vm:UpdateNotifierViewModel}" x:Shared="False" />
             <mainview:AboutView x:Key="{x:Type vm:AboutViewModel}" x:Shared="False" />
             <mainview:QuickCheckKeysDialogView x:Key="{x:Type vm:QuickCheckKeysDialogViewModel}" x:Shared="False" />
+            <mainview:DesfireAppKeyDialogView x:Key="{x:Type vm:DesfireAppKeyDialogViewModel}" x:Shared="False" />
 
             <pre:MessageBoxPresenter x:Key="{x:Type dialogsvm:MessageBoxViewModel}" />
             <pre:OpenFileDialogPresenter x:Key="{x:Type dialogsvm:OpenFileDialogViewModel}" />

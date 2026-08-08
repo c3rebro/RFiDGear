@@ -177,7 +177,8 @@ namespace RFiDGear.ViewModel.DialogFactories
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteFile ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateFile ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadData ||
-                        sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData)
+                        sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData ||
+                        sender.SelectedTaskType == TaskType_MifareDesfireTask.ChangeFileSettings)
                     {
                         if (!TryValidateTaskIndicesWithDialog(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel, chipTasks.TaskCollection, selectedSetupViewModel, dialogs))
                         {

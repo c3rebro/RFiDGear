@@ -1789,6 +1789,58 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <inheritdoc />
+        public override async Task<ERROR> ChangeMifareDesfireFileSettings(string changeKeyHex, DESFireKeyType changeKeyType, int changeKeyNo, DESFireAccessRights newAccessRights, EncryptionMode newEncMode, int appId = 0, int fileNo = 0)
+        {
+            try
+            {
+                var changeFileSettingsKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)changeKeyType, changeKeyHex);
+
+                var arToUse = new LibLogicalAccess.Card.DESFireAccessRights()
+                {
+                    changeAccess = (LibLogicalAccess.Card.TaskAccessRights)newAccessRights.changeAccess,
+                    readAccess = (LibLogicalAccess.Card.TaskAccessRights)newAccessRights.readAccess,
+                    writeAccess = (LibLogicalAccess.Card.TaskAccessRights)newAccessRights.writeAccess,
+                    readAndWriteAccess = (LibLogicalAccess.Card.TaskAccessRights)newAccessRights.readAndWriteAccess
+                };
+
+                if (await tryInitReader())
+                {
+                    card = readerUnit.getSingleChip();
+
+                    if (card.getCardType() == "DESFire" ||
+                        card.getCardType() == "DESFireEV1" ||
+                        card.getCardType() == "DESFireEV2" ||
+                        card.getCardType() == "DESFireEV3")
+                    {
+                        var cmd = card.getCommands() as DESFireCommands;
+                        try
+                        {
+                            cmd.selectApplication((uint)appId);
+                            cmd.authenticate((byte)changeKeyNo, changeFileSettingsKey);
+                            cmd.changeFileSettings((byte)fileNo, (LibLogicalAccess.Card.EncryptionMode)newEncMode, arToUse, false);
+
+                            return ERROR.NoError;
+                        }
+                        catch (Exception e)
+                        {
+                            if (e.Message != null && e.Message.Contains("authentication"))
+                                return ERROR.AuthFailure;
+                            else
+                                return ERROR.TransportError;
+                        }
+                    }
+                    else
+                        return ERROR.TransportError;
+                }
+                return ERROR.TransportError;
+            }
+            catch
+            {
+                return ERROR.TransportError;
+            }
+        }
+
+        /// <inheritdoc />
         public override async Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, uint _appID = 0)
         {
             try

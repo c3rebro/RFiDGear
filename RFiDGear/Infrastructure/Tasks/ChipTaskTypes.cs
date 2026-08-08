@@ -66,6 +66,7 @@ namespace RFiDGear.Infrastructure.Tasks
         ApplicationKeyChangeover,
         ApplicationKeySettingsChangeover,
         CreateFile,
+        ChangeFileSettings,
         DeleteFile,
         ReadData,
         WriteData,

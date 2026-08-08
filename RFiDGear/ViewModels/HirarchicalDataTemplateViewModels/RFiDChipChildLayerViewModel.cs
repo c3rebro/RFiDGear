@@ -34,6 +34,7 @@ namespace RFiDGear.ViewModel
         private readonly RelayCommand _cmdReadSectorWithCustoms;
         private readonly AsyncRelayCommand _cmdReadSectorWithDefaults;
         private readonly RelayCommand _cmdEditAuthAndModifySector;
+        private readonly AsyncRelayCommand _cmdReadAppWithKey;
         private readonly string _parentUid;
 
         //private MifareClassicSetupViewModel setupViewModel;
@@ -135,23 +136,18 @@ namespace RFiDGear.ViewModel
             appModel = appID;
             _cardType = cardType;
             _parentUid = parentUID?.UID;
+            _parent = parentUID;
 
             _cmdReadSectorWithDefaults = new AsyncRelayCommand(ReadSectorWithDefaults);
             _cmdEditAuthAndModifySector = new RelayCommand(ReadSectorWithCustoms);
+            _cmdReadAppWithKey = new AsyncRelayCommand(ReadDesfireAppWithKey);
 
             InitializeContextMenuItems(new List<MenuItem>
             {
                 new MenuItem
                 {
-                    Header = "Read Sector using default Configuration",
-                    Command = null,
-                    Visibility = Visibility.Hidden
-                },
-                new MenuItem
-                {
-                    Header = "Edit Authentication Settings and Modify Sector",
-                    Command = null,
-                    Visibility = Visibility.Hidden
+                    Header = ResourceLoader.GetResource("menuItemReadAppWithKey"),
+                    Command = _cmdReadAppWithKey
                 }
             });
 
@@ -291,6 +287,12 @@ namespace RFiDGear.ViewModel
         }
 
         #endregion Context Menu Items
+
+        private async Task ReadDesfireAppWithKey()
+        {
+            if (_parent != null)
+                await _parent.QuickCheckDesfireAppWithKeyAsync(this);
+        }
 
         #region Dependency Properties
 

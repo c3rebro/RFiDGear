@@ -796,6 +796,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     case TaskType_MifareDesfireTask.WriteData:
                         SetTabAvailability(true, true, false, false, true, true, false);
                         break;
+
+                    case TaskType_MifareDesfireTask.ChangeFileSettings:
+                        SetTabAvailability(true, false, false, false, true, true, false);
+                        break;
                 }
                 OnPropertyChanged(nameof(SelectedTaskType));
                 OnPropertyChanged(nameof(IsFormatTaskSelected));
@@ -811,6 +815,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowAppKeyOldInputs));
                 OnPropertyChanged(nameof(ShowFileAccessRights));
                 OnPropertyChanged(nameof(ShowFileAuthoringCommands));
+                OnPropertyChanged(nameof(ShowChangeFileSettingsButton));
 
                 UpdateOldAppKeyDefaults();
             }
@@ -842,7 +847,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public bool ShowAppKeyTargetSection => SelectedTaskType != TaskType_MifareDesfireTask.CreateFile
                                                && SelectedTaskType != TaskType_MifareDesfireTask.DeleteFile
                                                && SelectedTaskType != TaskType_MifareDesfireTask.ReadData
-                                               && SelectedTaskType != TaskType_MifareDesfireTask.WriteData;
+                                               && SelectedTaskType != TaskType_MifareDesfireTask.WriteData
+                                               && SelectedTaskType != TaskType_MifareDesfireTask.ChangeFileSettings;
 
         /// <summary>
         /// Gets a value indicating whether UI elements for supplying the current application key should be shown.
@@ -873,7 +879,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         [XmlIgnore]
         public bool ShowPiccMasterKeyAuthoringSection => SelectedTaskType != TaskType_MifareDesfireTask.FormatDesfireCard
                                                          && SelectedTaskType != TaskType_MifareDesfireTask.CreateApplication
-                                                         && SelectedTaskType != TaskType_MifareDesfireTask.DeleteApplication;
+                                                         && SelectedTaskType != TaskType_MifareDesfireTask.DeleteApplication
+                                                         && SelectedTaskType != TaskType_MifareDesfireTask.ChangeFileSettings;
 
         /// <summary>
         /// Gets a value indicating whether file access rights controls should be shown.
@@ -885,11 +892,18 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         /// <summary>
         /// Gets a value indicating whether file authoring commands should be shown.
-        /// The create/delete actions are unnecessary when reading or writing file data.
+        /// The create/delete actions are unnecessary when reading or writing file data or when changing file settings.
         /// </summary>
         [XmlIgnore]
         public bool ShowFileAuthoringCommands => SelectedTaskType != TaskType_MifareDesfireTask.ReadData
-                                                 && SelectedTaskType != TaskType_MifareDesfireTask.WriteData;
+                                                 && SelectedTaskType != TaskType_MifareDesfireTask.WriteData
+                                                 && SelectedTaskType != TaskType_MifareDesfireTask.ChangeFileSettings;
+
+        /// <summary>
+        /// Gets a value indicating whether the Change File Settings button should be shown.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowChangeFileSettingsButton => SelectedTaskType == TaskType_MifareDesfireTask.ChangeFileSettings;
 
         /// <summary>
         /// Gets a value indicating whether application creation inputs should be shown.
@@ -2258,6 +2272,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         await OnNewWriteDataCommand();
                         break;
 
+                    case TaskType_MifareDesfireTask.ChangeFileSettings:
+                        await OnNewChangeFileSettingsCommand();
+                        break;
+
                     default:
                         break;
                 }
@@ -2380,6 +2398,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// return new RelayCommand<LibLogicalAccessProvider>((_device) => OnNewCreateAppCommand(_device));
         /// </summary>
         public IAsyncRelayCommand CreateFileCommand => new AsyncRelayCommand(OnNewCreateFileCommand);
+
+        /// <summary>
+        /// Gets the command that adds a Change File Settings task using the current file and key configuration.
+        /// </summary>
+        public IAsyncRelayCommand ChangeFileSettingsCommand => new AsyncRelayCommand(OnNewChangeFileSettingsCommand);
         private async Task OnNewCreateFileCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
@@ -3599,6 +3622,50 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             catch (Exception e)
             {
                 StatusText += string.Format("{0}: Unable to read key version: {1}\n", DateTime.Now, e.Message);
+            }
+        }
+
+        private async Task OnNewChangeFileSettingsCommand()
+        {
+            CurrentTaskErrorLevel = ERROR.Empty;
+
+            accessRights.changeAccess = SelectedDesfireFileAccessRightChange;
+            accessRights.readAccess = SelectedDesfireFileAccessRightRead;
+            accessRights.writeAccess = SelectedDesfireFileAccessRightWrite;
+            accessRights.readAndWriteAccess = SelectedDesfireFileAccessRightReadWrite;
+
+            using (var device = ReaderDevice.Instance)
+            {
+                if (device != null)
+                {
+                    await UpdateReaderStatusCommand.ExecuteAsync(true);
+                    StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent) == KEY_ERROR.NO_ERROR)
+                    {
+                        var result = await device.ChangeMifareDesfireFileSettings(
+                            DesfireAppKeyCurrent,
+                            SelectedDesfireAppKeyEncryptionTypeCurrent,
+                            selectedDesfireAppKeyNumberCurrentAsInt,
+                            accessRights,
+                            SelectedDesfireFileCryptoMode,
+                            AppNumberCurrentAsInt,
+                            FileNumberCurrentAsInt);
+
+                        if (await SetOperationResultAsync(
+                                result,
+                                "{0}: Successfully Changed File Settings for FileNo: {1} in AppID: {2}\n",
+                                new object[] { DateTime.Now, FileNumberCurrentAsInt, AppNumberCurrentAsInt },
+                                "{0}: Unable to Change File Settings for FileNo: {1} in AppID: {2}: {3}\n",
+                                new object[] { DateTime.Now, FileNumberCurrentAsInt, AppNumberCurrentAsInt, result.ToString() }))
+                            return;
+                    }
+                }
+                else
+                {
+                    CurrentTaskErrorLevel = ERROR.TransportError;
+                    await UpdateReaderStatusCommand.ExecuteAsync(false);
+                }
             }
         }
 

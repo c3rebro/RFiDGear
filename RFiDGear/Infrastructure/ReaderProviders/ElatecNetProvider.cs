@@ -1,4 +1,10 @@
 ﻿//using Elatec.NET.Model;
+using ByteArrayHelper.Extensions;
+using Elatec.NET;
+using Elatec.NET.Cards.Mifare;
+using RFiDGear.Infrastructure.Tasks;
+using RFiDGear.Models;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -6,12 +12,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using ByteArrayHelper.Extensions;
-using Elatec.NET;
-using RFiDGear.Models;
-using RFiDGear.Infrastructure.Tasks;
-using Elatec.NET.Cards.Mifare;
-using Serilog;
+using static LibLogicalAccess.Card.DESFireCommands;
 
 namespace RFiDGear.Infrastructure.ReaderProviders
 {
@@ -1052,6 +1053,65 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 return ERROR.TransportError;
             }
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
+        }
+
+        /// <inheritdoc />
+        public async override Task<ERROR> ChangeMifareDesfireFileSettings(string changeKeyHex, DESFireKeyType changeKeyType, int changeKeyNo, DESFireAccessRights newAccessRights, EncryptionMode newEncMode, int appId = 0, int fileNo = 0)
+        {
+            await _comPortLock.WaitAsync();
+            try
+            {
+                if (readerDevice.IsConnected)
+                {
+                    if (readerDevice.IsTWN4LegicReader)
+                    {
+                        try
+                        {
+                            await readerDevice.SearchTagAsync();
+                        }
+                        catch { }
+                    }
+
+                    try
+                    {
+                        await readerDevice.MifareDesfire_SelectApplicationAsync((uint)appId);
+
+                        await readerDevice.MifareDesfire_AuthenticateAsync(
+                            changeKeyHex,
+                            (byte)changeKeyNo,
+                            (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType),
+                            Enum.GetName(typeof(DESFireKeyType), changeKeyType)),
+                            1);
+
+                        var rawSettings = await readerDevice.MifareDesfire_GetFileSettingsAsync((byte)fileNo);
+                        if (rawSettings == null)
+                            return ERROR.AuthFailure;
+
+                        var oldAR = rawSettings.accessRights;
+                        var newAR = BuildDesfireAccessRights(newAccessRights);
+
+                        await readerDevice.MifareDesfire_ChangeFileSettingsAsync(
+                            (byte)fileNo,
+                            (Elatec.NET.Cards.Mifare.EncryptionMode)newEncMode,
+                            oldAR,
+                            newAR);
+
+                        return ERROR.NoError;
+                    }
+                    catch
+                    {
+                        return ERROR.TransportError;
+                    }
+                }
+                else
+                {
+                    return ERROR.TransportError;
+                }
             }
             finally
             {

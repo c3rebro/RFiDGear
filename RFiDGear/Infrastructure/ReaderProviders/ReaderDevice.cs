@@ -373,6 +373,25 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             int _appIDCurrent, AccessControl.DESFireKeySettings keySettings);
 
         /// <summary>
+        /// Changes the communication mode and access rights of an existing DESFire file (command 0x5F).
+        /// Implementations must authenticate to the target application with the specified key before
+        /// issuing the ChangeFileSettings command.
+        /// </summary>
+        /// <param name="changeKeyHex">Hex-encoded key used to authenticate to the application (must have ChangeKey rights on the file).</param>
+        /// <param name="changeKeyType">Cryptographic algorithm of the authenticating key (DES, 3DES, 3K3DES, AES).</param>
+        /// <param name="changeKeyNo">Key slot (0–13) within the application used for authentication.</param>
+        /// <param name="newAccessRights">Desired read/write/read-write/change-key access rights to apply to the file.</param>
+        /// <param name="newEncMode">Desired communication mode for the file (plain, MAC'd, or fully encrypted).</param>
+        /// <param name="appId">Application identifier that owns the file; 0 selects the PICC level.</param>
+        /// <param name="fileNo">File number within the application to reconfigure.</param>
+        /// <returns>
+        /// <see cref="ERROR.NoError"/> on success;
+        /// <see cref="ERROR.AuthFailure"/> when authentication or key pre-fetch fails;
+        /// <see cref="ERROR.TransportError"/> on reader communication failure.
+        /// </returns>
+        public abstract Task<ERROR> ChangeMifareDesfireFileSettings(string changeKeyHex, DESFireKeyType changeKeyType, int changeKeyNo, DESFireAccessRights newAccessRights, EncryptionMode newEncMode, int appId = 0, int fileNo = 0);
+
+        /// <summary>
         /// Deletes a MIFARE DESFire application after authenticating to PICC Lvl (AppID = 0, KeyNo = 0).
         /// </summary>
         /// <param name="_applicationMasterKey">The 16 byte PICC master key, used to authenticate.</param>
