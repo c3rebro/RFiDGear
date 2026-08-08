@@ -104,7 +104,11 @@
       <HarvestOutputDir>$(IntermediateOutputPath)harvest\</HarvestOutputDir>
     </PropertyGroup>
     <MakeDir Directories="$(HarvestOutputDir)" />
-    <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.ReleaseFiles.x86" Directory="$(RFiDGearReleaseDir)" DirectoryRefId="INSTALLDIR" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Release.x86.wxs" PreprocessorVariable="var.RFiDGearReleaseDir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressSpecificWarnings="5150;5151" SuppressRootDirectory="true" Condition="Exists('$(RFiDGearReleaseDir)')" />
+    <!-- Use heat.exe directly to pass -x flags and exclude non-Windows NuGet native runtimes.
+         The HeatDirectory MSBuild task has no Exclude parameter, and GetShortPathName fails
+         on paths like runtimes\linux-x64\native\libseoscards.so.3.7.0. -->
+    <Exec Command='"$(WixToolPath)heat.exe" dir "$(RFiDGearReleaseDir)" -ag -cg RFiDGear.ReleaseFiles.x86 -dr INSTALLDIR -gg -nologo -out "$(HarvestOutputDir)RFiDGear.Release.x86.wxs" -sw5150 -sw5151 -srd -var var.RFiDGearReleaseDir -x "$(RFiDGearReleaseDir)\runtimes\linux-arm" -x "$(RFiDGearReleaseDir)\runtimes\linux-arm64" -x "$(RFiDGearReleaseDir)\runtimes\linux-x64" -x "$(RFiDGearReleaseDir)\runtimes\osx" -x "$(RFiDGearReleaseDir)\runtimes\osx-arm64" -x "$(RFiDGearReleaseDir)\runtimes\osx-x64" -x "$(RFiDGearReleaseDir)\runtimes\unix"'
+         Condition="Exists('$(RFiDGearReleaseDir)')" />
     <HeatDirectory ToolPath="$(WixToolPath)" AutogenerateGuids="true" ComponentGroupName="RFiDGear.Extensions.ReleaseFiles" Directory="$(RFiDGearExtensionsReleaseDir)" DirectoryRefId="RFiDGearExtensionsFolder" GenerateGuidsNow="true" OutputFile="$(HarvestOutputDir)RFiDGear.Extensions.Release.wxs" PreprocessorVariable="var.RFiDGearExtensionsReleaseDir" RunAsSeparateProcess="$(HeatRunAsSeparateProcess)" SuppressSpecificWarnings="5150;5151" SuppressRootDirectory="true" Condition="Exists('$(RFiDGearExtensionsReleaseDir)')" />
     <ItemGroup>
       <Compile Include="$(HarvestOutputDir)RFiDGear.Release.x86.wxs" Condition="Exists('$(HarvestOutputDir)RFiDGear.Release.x86.wxs')" />

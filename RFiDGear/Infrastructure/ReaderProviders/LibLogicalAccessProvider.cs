@@ -1657,16 +1657,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     keySettings);
 
                 // Build authentication key (either master key or target key depending on policy).
+                // resolved.*Hex is already space-separated uppercase from DesfireKeyChangeInputs.NormalizeKeyHex,
+                // which is the format DESFireKey.fromString expects — no further conversion needed.
                 var authKey = new DESFireKey();
                 authKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)resolved.AuthKeyType);
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(resolved.AuthKeyHex);
-                authKey.fromString(CustomConverter.DesfireKeyToCheck);
+                authKey.fromString(resolved.AuthKeyHex);
 
                 // Build new key to be written.
                 var newKey = new DESFireKey();
                 newKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)resolved.TargetKeyType);
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(resolved.NewTargetKeyHex);
-                newKey.fromString(CustomConverter.DesfireKeyToCheck);
+                newKey.fromString(resolved.NewTargetKeyHex);
 
                 // Ensure a clean reader state before reconnecting.
                 readerUnit.disconnectFromReader();
@@ -1701,8 +1701,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     {
                         var oldKey = new LibLogicalAccess.Card.DESFireKey();
                         oldKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)resolved.TargetKeyType);
-                        CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(resolved.OldTargetKeyHex);
-                        oldKey.fromString(CustomConverter.DesfireKeyToCheck);
+                        oldKey.fromString(resolved.OldTargetKeyHex);
                         (card as LibLogicalAccess.Card.DESFireChip)?.getCrypto()?.setKey(resolved.AppId, resolved.TargetKeyNo, 0, oldKey);
                     }
 

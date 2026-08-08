@@ -11,7 +11,6 @@ namespace RFiDGear.Infrastructure
     public static class CustomConverter
     {
         public static string DesfireKeyToCheck { get; private set; }
-        public static string ClassicKeyToCheck { get; private set; }
 
         #region parser
 
@@ -171,27 +170,19 @@ namespace RFiDGear.Infrastructure
 
         public static KEY_ERROR FormatMifareDesfireKeyStringWithSpacesEachByte(string Str)
         {
-            var temp = Str;
-
-            if (string.IsNullOrEmpty(temp))
-            {
+            if (string.IsNullOrEmpty(Str))
                 return KEY_ERROR.KEY_IS_EMPTY;
-            }
+
+            var temp = Str.Replace(" ", "");
 
             if (!IsInHexFormat(temp))
-            {
                 return KEY_ERROR.KEY_HAS_WRONG_FORMAT;
-            }
 
             if (temp.Length != 32)
-            {
                 return KEY_ERROR.KEY_HAS_WRONG_LENGTH;
-            }
 
-            for (var i = Str.Length - 2; i > 0; i -= 2)
-            {
+            for (var i = temp.Length - 2; i > 0; i -= 2)
                 temp = temp.Insert(i, " ");
-            }
 
             DesfireKeyToCheck = temp.ToUpper();
 
@@ -221,8 +212,6 @@ namespace RFiDGear.Infrastructure
             {
                 temp = temp.Insert(i, " ");
             }
-
-            ClassicKeyToCheck = temp.ToUpper();
 
             return KEY_ERROR.NO_ERROR;
         }
