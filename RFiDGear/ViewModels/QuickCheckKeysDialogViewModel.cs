@@ -41,6 +41,7 @@ namespace RFiDGear.ViewModel
 
             ClassicQuickCheckKeys = new ObservableCollection<string>(
                 spec?.MifareClassicDefaultQuickCheckKeys ?? new List<string>());
+            _classicKeysRawText = string.Join(", ", ClassicQuickCheckKeys);
 
             _dialogs = dialogs;
         }
@@ -186,17 +187,19 @@ namespace RFiDGear.ViewModel
         public ObservableCollection<string> ClassicQuickCheckKeys { get; }
 
         /// <summary>
-        /// Newline-separated representation of <see cref="ClassicQuickCheckKeys"/> for direct TextBox binding.
-        /// Each line is one hex key (12 chars). Setter re-parses and updates the collection.
+        /// Comma-separated representation of the Classic quick-check keys for direct TextBox binding.
+        /// The setter validates the raw text and updates <see cref="IsValidClassicKeysText"/> without
+        /// modifying <see cref="ClassicQuickCheckKeys"/>; the collection is only rebuilt at save time
+        /// so that partial edits (temporarily invalid entries) are not stripped while the user is typing.
         /// </summary>
         public string ClassicKeysText
         {
-            get => string.Join(", ", ClassicQuickCheckKeys);
+            get => _classicKeysRawText;
             set
             {
+                _classicKeysRawText = value ?? string.Empty;
                 var allValid = true;
                 var hasAny = false;
-                ClassicQuickCheckKeys.Clear();
                 if (value != null)
                 {
                     foreach (var entry in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
@@ -204,9 +207,7 @@ namespace RFiDGear.ViewModel
                         var trimmed = entry.Trim();
                         if (trimmed.Length == 0) continue;
                         hasAny = true;
-                        if (CustomConverter.IsInHexFormat(trimmed) && trimmed.Length == 12)
-                            ClassicQuickCheckKeys.Add(trimmed);
-                        else
+                        if (!CustomConverter.IsInHexFormat(trimmed) || trimmed.Length != 12)
                             allValid = false;
                     }
                 }
@@ -214,6 +215,7 @@ namespace RFiDGear.ViewModel
                 OnPropertyChanged();
             }
         }
+        private string _classicKeysRawText;
 
         public bool? IsValidClassicKeysText
         {
@@ -246,7 +248,14 @@ namespace RFiDGear.ViewModel
             UpdateOrAddKey(keys, KeyType_MifareDesFireKeyType.DefaultDesfireCardReadKey, ReadKeyValue, ReadKeyEncType);
             UpdateOrAddKey(keys, KeyType_MifareDesFireKeyType.DefaultDesfireCardWriteKey, WriteKeyValue, WriteKeyEncType);
 
-            spec.MifareClassicDefaultQuickCheckKeys = ClassicQuickCheckKeys.ToList();
+            var classicKeys = new List<string>();
+            foreach (var entry in (_classicKeysRawText ?? string.Empty).Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var trimmed = entry.Trim();
+                if (CustomConverter.IsInHexFormat(trimmed) && trimmed.Length == 12)
+                    classicKeys.Add(trimmed);
+            }
+            spec.MifareClassicDefaultQuickCheckKeys = classicKeys;
         }
 
         private static void UpdateOrAddKey(List<MifareDesfireDefaultKeys> keys, KeyType_MifareDesFireKeyType keyType, string value, DESFireKeyType encType)

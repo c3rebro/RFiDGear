@@ -58,6 +58,7 @@ namespace RFiDGear.ViewModel
             _classicKeysCollection = new ObservableCollection<string>(
                 settingsReaderWriter.DefaultSpecification.MifareClassicDefaultQuickCheckKeys
                     ?? new List<string>());
+            _classicKeysRawText = string.Join(", ", _classicKeysCollection);
 
             RefreshAvailableReaders();
             _dialogs = dialogs;
@@ -86,8 +87,14 @@ namespace RFiDGear.ViewModel
 
         private void SyncSettingsBeforeSave()
         {
-            settingsReaderWriter.DefaultSpecification.MifareClassicDefaultQuickCheckKeys =
-                _classicKeysCollection.ToList();
+            var classicKeys = new List<string>();
+            foreach (var entry in (_classicKeysRawText ?? string.Empty).Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var trimmed = entry.Trim();
+                if (CustomConverter.IsInHexFormat(trimmed) && trimmed.Length == 12)
+                    classicKeys.Add(trimmed);
+            }
+            settingsReaderWriter.DefaultSpecification.MifareClassicDefaultQuickCheckKeys = classicKeys;
         }
 
         public ICommand ReaderSeletedCommand => new RelayCommand(ReaderSelected);
@@ -517,12 +524,12 @@ namespace RFiDGear.ViewModel
 
         public string ClassicKeysText
         {
-            get => string.Join(", ", _classicKeysCollection);
+            get => _classicKeysRawText;
             set
             {
+                _classicKeysRawText = value ?? string.Empty;
                 var allValid = true;
                 var hasAny = false;
-                _classicKeysCollection.Clear();
                 if (value != null)
                 {
                     foreach (var entry in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
@@ -530,9 +537,7 @@ namespace RFiDGear.ViewModel
                         var trimmed = entry.Trim();
                         if (trimmed.Length == 0) continue;
                         hasAny = true;
-                        if (CustomConverter.IsInHexFormat(trimmed) && trimmed.Length == 12)
-                            _classicKeysCollection.Add(trimmed);
-                        else
+                        if (!CustomConverter.IsInHexFormat(trimmed) || trimmed.Length != 12)
                             allValid = false;
                     }
                 }
@@ -540,6 +545,7 @@ namespace RFiDGear.ViewModel
                 OnPropertyChanged(nameof(ClassicKeysText));
             }
         }
+        private string _classicKeysRawText;
 
         public bool? IsValidClassicKeysText
         {
