@@ -20,6 +20,7 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Models;
+using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 
 namespace RFiDGear.ViewModel
@@ -31,13 +32,14 @@ namespace RFiDGear.ViewModel
     {
         private ReaderDevice device;
         private readonly SettingsReaderWriter settingsReaderWriter;
+        private ObservableCollection<IDialogViewModel> _dialogs;
 
         public SetupViewModel()
             : this(null, new SettingsReaderWriter())
         {
         }
 
-        public SetupViewModel(ReaderDevice _device, SettingsReaderWriter settings)
+        public SetupViewModel(ReaderDevice _device, SettingsReaderWriter settings, ObservableCollection<IDialogViewModel> dialogs = null)
         {
             settingsReaderWriter = settings ?? throw new ArgumentNullException(nameof(settings));
 
@@ -58,6 +60,7 @@ namespace RFiDGear.ViewModel
                     ?? new List<string>());
 
             RefreshAvailableReaders();
+            _dialogs = dialogs;
         }
 
         #region Commands
@@ -67,6 +70,16 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand SaveSettings => new AsyncRelayCommand(OnNewSaveSettingsCommand);
         private async Task OnNewSaveSettingsCommand()
         {
+            if (IsValidClassicKeysText == false)
+            {
+                _dialogs?.Add(new CustomDialogViewModel
+                {
+                    Caption = ResourceLoader.GetResource("messageBoxInvalidClassicKeysCaption"),
+                    Message = ResourceLoader.GetResource("messageBoxInvalidClassicKeysMessage"),
+                    OnOk = sender => sender.Close()
+                });
+                return;
+            }
             SyncSettingsBeforeSave();
             await settingsReaderWriter.SaveSettings();
         }

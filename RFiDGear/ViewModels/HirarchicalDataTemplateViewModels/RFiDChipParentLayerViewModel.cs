@@ -320,7 +320,7 @@ namespace RFiDGear.ViewModel
 
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            var dlg = new QuickCheckKeysDialogViewModel(settings.DefaultSpecification)
+            var dlg = new QuickCheckKeysDialogViewModel(settings.DefaultSpecification, dialogs)
             {
                 Caption = ResourceLoader.GetResource("windowCaptionQuickCheckKeys"),
 

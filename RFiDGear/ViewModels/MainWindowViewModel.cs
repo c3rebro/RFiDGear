@@ -1136,7 +1136,7 @@ namespace RFiDGear.ViewModel
 
             using (var device = ReaderDevice.Instance)
             {
-                Dialogs.Add(new SetupViewModel(device, settings)
+                Dialogs.Add(new SetupViewModel(device, settings, Dialogs)
                 {
                     Caption = ResourceLoader.GetResource("windowCaptionReaderSetup"),
 

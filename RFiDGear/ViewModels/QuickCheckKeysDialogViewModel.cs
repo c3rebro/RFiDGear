@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using RFiDGear.Infrastructure;
 using RFiDGear.Models;
+using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 
 using System;
@@ -15,7 +16,9 @@ namespace RFiDGear.ViewModel
 {
     public class QuickCheckKeysDialogViewModel : ObservableObject, IUserDialogViewModel
     {
-        public QuickCheckKeysDialogViewModel(DefaultSpecification spec)
+        private readonly ObservableCollection<IDialogViewModel> _dialogs;
+
+        public QuickCheckKeysDialogViewModel(DefaultSpecification spec, ObservableCollection<IDialogViewModel> dialogs = null)
         {
             var desfireKeys = spec?.MifareDesfireDefaultSecuritySettings
                 ?? new List<MifareDesfireDefaultKeys>();
@@ -38,6 +41,8 @@ namespace RFiDGear.ViewModel
 
             ClassicQuickCheckKeys = new ObservableCollection<string>(
                 spec?.MifareClassicDefaultQuickCheckKeys ?? new List<string>());
+
+            _dialogs = dialogs;
         }
 
         #region DESFire Keys
@@ -284,7 +289,21 @@ namespace RFiDGear.ViewModel
         public ICommand OkCommand => new RelayCommand(Ok);
         public ICommand CancelCommand => new RelayCommand(Cancel);
 
-        private void Ok() => OnOk?.Invoke(this);
+        private void Ok()
+        {
+            if (IsValidClassicKeysText == false)
+            {
+                _dialogs?.Add(new CustomDialogViewModel
+                {
+                    Caption = ResourceLoader.GetResource("messageBoxInvalidClassicKeysCaption"),
+                    Message = ResourceLoader.GetResource("messageBoxInvalidClassicKeysMessage"),
+                    OnOk = sender => sender.Close()
+                });
+                return;
+            }
+            OnOk?.Invoke(this);
+        }
+
         private void Cancel() => OnCancel?.Invoke(this);
 
         #endregion IUserDialogViewModel

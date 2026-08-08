@@ -1675,6 +1675,12 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="statusHeaderReaderIsUnknown" xml:space="preserve">
     <value>UNKNOWN</value>
   </data>
+  <data name="messageBoxInvalidClassicKeysCaption" xml:space="preserve">
+    <value>Invalid Key</value>
+  </data>
+  <data name="messageBoxInvalidClassicKeysMessage" xml:space="preserve">
+    <value>One or more Classic keys are invalid. Each key must be exactly 12 hex characters (e.g. FFFFFFFFFFFF). Please correct the highlighted entry before saving.</value>
+  </data>
   <data name="messageBoxNoReaderFoundCaption" xml:space="preserve">
     <value>ReaderError</value>
   </data>

@@ -150,7 +150,7 @@
                 TextWrapping="Wrap"
                 VerticalScrollBarVisibility="Auto"
                 FontFamily="Consolas"
-                Text="{Binding ClassicKeysText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                Text="{Binding ClassicKeysText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 ToolTip="Comma-separated list of keys (12 hex characters each).">
                 <TextBox.Resources>
                     <Style TargetType="TextBox">
