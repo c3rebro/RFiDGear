@@ -168,7 +168,22 @@ namespace RFiDGear.Infrastructure
             }
         }
 
-        public static KEY_ERROR FormatMifareDesfireKeyStringWithSpacesEachByte(string Str)
+        /// <summary>
+        /// Returns the expected hex-string length for a DESFire key of the given type:
+        /// 48 characters for DF_KEY_3K3DES (24 bytes), 32 characters for all other types (16 bytes).
+        /// </summary>
+        /// <param name="keyType">The DESFire key algorithm.</param>
+        /// <returns>Expected number of hex characters (without spaces).</returns>
+        public static int GetExpectedKeyHexLength(DESFireKeyType keyType)
+            => keyType == DESFireKeyType.DF_KEY_3K3DES ? 48 : 32;
+
+        /// <summary>
+        /// Validates a DESFire key hex string and writes the space-separated result to <see cref="DesfireKeyToCheck"/>.
+        /// </summary>
+        /// <param name="Str">Raw hex string (spaces allowed).</param>
+        /// <param name="keyType">Key algorithm; determines the expected byte count.</param>
+        /// <returns>A <see cref="KEY_ERROR"/> indicating success or the specific validation failure.</returns>
+        public static KEY_ERROR FormatMifareDesfireKeyStringWithSpacesEachByte(string Str, DESFireKeyType keyType = DESFireKeyType.DF_KEY_AES)
         {
             if (string.IsNullOrEmpty(Str))
                 return KEY_ERROR.KEY_IS_EMPTY;
@@ -178,7 +193,7 @@ namespace RFiDGear.Infrastructure
             if (!IsInHexFormat(temp))
                 return KEY_ERROR.KEY_HAS_WRONG_FORMAT;
 
-            if (temp.Length != 32)
+            if (temp.Length != GetExpectedKeyHexLength(keyType))
                 return KEY_ERROR.KEY_HAS_WRONG_LENGTH;
 
             for (var i = temp.Length - 2; i > 0; i -= 2)

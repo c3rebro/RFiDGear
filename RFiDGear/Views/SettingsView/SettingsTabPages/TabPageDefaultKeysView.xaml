@@ -44,7 +44,7 @@
                     <Label Grid.Row="1" Grid.Column="0" VerticalContentAlignment="Center"
                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyPiccMaster'}" />
                     <TextBox Grid.Row="1" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                             MaxLength="32" Text="{Binding PiccMasterKeyValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                             MaxLength="48" Text="{Binding PiccMasterKeyValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
                                 <Style.Triggers>
@@ -68,7 +68,7 @@
                     <Label Grid.Row="2" Grid.Column="0" VerticalContentAlignment="Center"
                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyAppMaster'}" />
                     <TextBox Grid.Row="2" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                             MaxLength="32" Text="{Binding AppMasterKeyValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                             MaxLength="48" Text="{Binding AppMasterKeyValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
                                 <Style.Triggers>
@@ -92,7 +92,7 @@
                     <Label Grid.Row="3" Grid.Column="0" VerticalContentAlignment="Center"
                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyRead'}" />
                     <TextBox Grid.Row="3" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                             MaxLength="32" Text="{Binding ReadKeyValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                             MaxLength="48" Text="{Binding ReadKeyValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
                                 <Style.Triggers>
@@ -116,7 +116,7 @@
                     <Label Grid.Row="4" Grid.Column="0" VerticalContentAlignment="Center"
                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelQuickCheckKeyWrite'}" />
                     <TextBox Grid.Row="4" Grid.Column="1" Margin="4,2,4,2" Height="24" VerticalContentAlignment="Center"
-                             MaxLength="32" Text="{Binding WriteKeyValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                             MaxLength="48" Text="{Binding WriteKeyValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                         <TextBox.Resources>
                             <Style TargetType="TextBox">
                                 <Style.Triggers>

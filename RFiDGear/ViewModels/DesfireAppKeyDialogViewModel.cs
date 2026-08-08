@@ -20,6 +20,19 @@ namespace RFiDGear.ViewModel
             SelectedKeyNumber = 0;
         }
 
+        public DESFireKeyType SelectedKeyType
+        {
+            get => _selectedKeyType;
+            set
+            {
+                _selectedKeyType = value;
+                OnPropertyChanged();
+                IsValidAppKeyHex = string.IsNullOrEmpty(_appKeyHex) ? (bool?)null
+                    : CustomConverter.IsInHexFormat(_appKeyHex) && _appKeyHex.Length == CustomConverter.GetExpectedKeyHexLength(value);
+            }
+        }
+        private DESFireKeyType _selectedKeyType;
+
         public string AppKeyHex
         {
             get => _appKeyHex;
@@ -27,7 +40,7 @@ namespace RFiDGear.ViewModel
             {
                 _appKeyHex = value;
                 IsValidAppKeyHex = string.IsNullOrEmpty(value) ? (bool?)null
-                    : CustomConverter.IsInHexFormat(value) && value.Length == 32;
+                    : CustomConverter.IsInHexFormat(value) && value.Length == CustomConverter.GetExpectedKeyHexLength(_selectedKeyType);
                 OnPropertyChanged();
             }
         }
@@ -39,13 +52,6 @@ namespace RFiDGear.ViewModel
             set { _isValidAppKeyHex = value; OnPropertyChanged(); }
         }
         private bool? _isValidAppKeyHex;
-
-        public DESFireKeyType SelectedKeyType
-        {
-            get => _selectedKeyType;
-            set { _selectedKeyType = value; OnPropertyChanged(); }
-        }
-        private DESFireKeyType _selectedKeyType;
 
         public int SelectedKeyNumber
         {

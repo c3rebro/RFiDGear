@@ -743,7 +743,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             var key = new DESFireKey();
             key.setKeyType(keyType);
-            CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(keyHex);
+            CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(keyHex, (DESFireKeyType)(int)keyType);
             key.fromString(CustomConverter.DesfireKeyToCheck);
             return key;
         }
@@ -1733,7 +1733,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 DESFireKey masterApplicationKey = new DESFireKey();
                 masterApplicationKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)_keyTypeCurrent);
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent);
+                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(_applicationMasterKeyCurrent, _keyTypeCurrent);
                 masterApplicationKey.fromString(CustomConverter.DesfireKeyToCheck);
 
                 readerUnit.disconnectFromReader();
