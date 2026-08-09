@@ -342,36 +342,47 @@ namespace RFiDGear.Services.TaskExecution
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var deviceResult = await ExecuteStageWithTimeout(
-                    "DeviceDiscovery",
-                    () => Task.FromResult(new DeviceDiscoveryResult(readerDeviceProvider.GetInstance())),
-                    request.Timeouts?.DeviceDiscoveryTimeout,
-                    cancellationToken);
-
-                if (deviceResult.Device == null)
+                if (descriptors.Count > 0 && descriptors.All(d => d.ExecuteAsync != null))
                 {
-                    throw new InvalidOperationException("No reader device available for execution.");
-                }
-
-                using (var device = deviceResult.Device)
-                {
-                    var hydrationResult = await ExecuteStageWithTimeout(
-                        "ChipHydration",
-                        () => HydrateChipAsync(device, cancellationToken),
-                        request.Timeouts?.ChipHydrationTimeout,
-                        cancellationToken);
-
-                    _ = await ExecuteStageWithTimeout(
-                        "SelectionSync",
-                        () => Task.FromResult(SynchronizeSelection(request, hydrationResult.Chip)),
-                        request.Timeouts?.SelectionSyncTimeout,
-                        cancellationToken);
-
                     await ExecuteStageWithTimeout(
                         "TaskLoop",
-                        () => RunTaskLoopAsync(request, result, descriptors, hydrationResult.Chip, device, cancellationToken),
+                        () => RunTaskLoopAsync(request, result, descriptors, null, null, cancellationToken),
                         request.Timeouts?.TaskLoopTimeout,
                         cancellationToken);
+                }
+                else
+                {
+                    var deviceResult = await ExecuteStageWithTimeout(
+                        "DeviceDiscovery",
+                        () => Task.FromResult(new DeviceDiscoveryResult(readerDeviceProvider.GetInstance())),
+                        request.Timeouts?.DeviceDiscoveryTimeout,
+                        cancellationToken);
+
+                    if (deviceResult.Device == null)
+                    {
+                        throw new InvalidOperationException("No reader device available for execution.");
+                    }
+
+                    using (var device = deviceResult.Device)
+                    {
+                        var hydrationResult = await ExecuteStageWithTimeout(
+                            "ChipHydration",
+                            () => HydrateChipAsync(device, cancellationToken),
+                            request.Timeouts?.ChipHydrationTimeout,
+                            cancellationToken);
+
+                        _ = await ExecuteStageWithTimeout(
+                            "SelectionSync",
+                            () => Task.FromResult(SynchronizeSelection(request, hydrationResult.Chip)),
+                            request.Timeouts?.SelectionSyncTimeout,
+                            cancellationToken);
+
+                        await ExecuteStageWithTimeout(
+                            "TaskLoop",
+                            () => RunTaskLoopAsync(request, result, descriptors, hydrationResult.Chip, device, cancellationToken),
+                            request.Timeouts?.TaskLoopTimeout,
+                            cancellationToken);
+                    }
                 }
             }
             catch (Exception e)
@@ -548,6 +559,15 @@ namespace RFiDGear.Services.TaskExecution
 
         private async Task RunTaskLoopAsync(TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors, GenericChipModel genericChip, ReaderDevice device, CancellationToken cancellationToken)
         {
+            if (request.TaskHandler?.TaskCollection != null)
+            {
+                foreach (var item in request.TaskHandler.TaskCollection)
+                {
+                    if (item is IGenericTask t)
+                        t.ExecutionState = TaskExecutionState.NotStarted;
+                }
+            }
+
             while (descriptors != null && descriptors.Count > 0 && CurrentTaskIndex < descriptors.Count)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -720,198 +740,197 @@ namespace RFiDGear.Services.TaskExecution
             switch (commonTask.SelectedTaskType)
             {
                 case TaskType_CommonTask.CreateReport:
+                {
                     taskTimeout.Stop();
-                    switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel)
+                    var taskModel = request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask;
+
+                    if (taskModel.ExecutionState == TaskExecutionState.NotStarted)
                     {
-                        case ERROR.TransportError:
-                            break;
+                        taskModel.ExecutionState = TaskExecutionState.Running;
+                        taskTimeout.Start();
+                        taskTimeout.Stop();
 
-                        case ERROR.Empty:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel = ERROR.TransportError;
-                            taskTimeout.Start();
-                            taskTimeout.Stop();
+                        DirectoryInfo reportTargetPathDirInfo = null;
 
-                            DirectoryInfo reportTargetPathDirInfo = null;
-
-                            if (request.VariablesFromArgs != null &&
-                                request.VariablesFromArgs.TryGetValue("REPORTTARGETPATH", out var targetReportDir))
+                        if (request.VariablesFromArgs != null &&
+                            request.VariablesFromArgs.TryGetValue("REPORTTARGETPATH", out var targetReportDir))
+                        {
+                            var directoryName = Path.GetDirectoryName(targetReportDir);
+                            if (!string.IsNullOrEmpty(directoryName))
                             {
-                                var directoryName = Path.GetDirectoryName(targetReportDir);
-                                if (!string.IsNullOrEmpty(directoryName))
+                                reportTargetPathDirInfo = new DirectoryInfo(directoryName);
+                            }
+                        }
+
+                        if (taskModel.SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                        {
+                            if (string.IsNullOrEmpty(result.ReportOutputPath))
+                            {
+                                var dlg = new SaveFileDialogViewModel
                                 {
-                                    reportTargetPathDirInfo = new DirectoryInfo(directoryName);
+                                    Title = ResourceLoader.GetResource("windowCaptionSaveReport"),
+                                    Filter = ResourceLoader.GetResource("filterStringSaveReport"),
+                                    ParentWindow = null,
+                                    InitialDirectory = reportTargetPathDirInfo != null ?
+                                    (reportTargetPathDirInfo.Exists ? reportTargetPathDirInfo.FullName : null) : null
+                                };
+
+                                if (dlg.Show(request.Dialogs) && dlg.FileName != null)
+                                {
+                                    result.ReportOutputPath = dlg.FileName;
                                 }
                             }
 
-                            if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                            if (result.ReportReaderWriter == null)
                             {
-                                if (string.IsNullOrEmpty(result.ReportOutputPath))
-                                {
-                                    var dlg = new SaveFileDialogViewModel
-                                    {
-                                        Title = ResourceLoader.GetResource("windowCaptionSaveReport"),
-                                        Filter = ResourceLoader.GetResource("filterStringSaveReport"),
-                                        ParentWindow = null,
-                                        InitialDirectory = reportTargetPathDirInfo != null ?
-                                        (reportTargetPathDirInfo.Exists ? reportTargetPathDirInfo.FullName : null) : null
-                                    };
-
-                                    if (dlg.Show(request.Dialogs) && dlg.FileName != null)
-                                    {
-                                        result.ReportOutputPath = dlg.FileName;
-                                    }
-                                }
-
-                                if (result.ReportReaderWriter == null)
-                                {
-                                    result.ReportReaderWriter = new ReportReaderWriter();
-                                }
-
-                                result.ReportReaderWriter.ReportOutputPath = result.ReportOutputPath;
-                                if (!string.IsNullOrEmpty(result.ReportTemplateFile))
-                                {
-                                    result.ReportReaderWriter.ReportTemplateFile = result.ReportTemplateFile;
-                                }
-
-                                await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).WriteReportCommand.ExecuteAsync(result.ReportReaderWriter);
-                                executed = true;
+                                result.ReportReaderWriter = new ReportReaderWriter();
                             }
 
-                            else
+                            result.ReportReaderWriter.ReportOutputPath = result.ReportOutputPath;
+                            if (!string.IsNullOrEmpty(result.ReportTemplateFile))
                             {
-                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
-                                {
-                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
-                                    {
-                                        if (string.IsNullOrEmpty(result.ReportOutputPath))
-                                        {
-                                            var dlg = new SaveFileDialogViewModel
-                                            {
-                                                Title = ResourceLoader.GetResource("windowCaptionSaveReport"),
-                                                Filter = ResourceLoader.GetResource("filterStringSaveReport"),
-                                                InitialDirectory = reportTargetPathDirInfo != null ?
-                                                (reportTargetPathDirInfo.Exists ? reportTargetPathDirInfo.FullName : null) : null
-                                            };
-
-                                            if (dlg.Show(request.Dialogs) && dlg.FileName != null)
-                                            {
-                                                result.ReportOutputPath = dlg.FileName;
-                                            }
-                                        }
-
-                                        if (result.ReportReaderWriter == null)
-                                        {
-                                            result.ReportReaderWriter = new ReportReaderWriter();
-                                        }
-
-                                        result.ReportReaderWriter.ReportOutputPath = result.ReportOutputPath;
-                                        if (!string.IsNullOrEmpty(result.ReportTemplateFile))
-                                        {
-                                            result.ReportReaderWriter.ReportTemplateFile = result.ReportTemplateFile;
-                                        }
-
-                                        await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).WriteReportCommand.ExecuteAsync(result.ReportReaderWriter);
-                                        executed = true;
-                                    }
-                                    else
-                                    {
-                                        CurrentTaskIndex++;
-                                    }
-                                }
+                                result.ReportReaderWriter.ReportTemplateFile = result.ReportTemplateFile;
                             }
 
-                            taskTimeout.Start();
-                            break;
+                            await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).WriteReportCommand.ExecuteAsync(result.ReportReaderWriter);
+                            executed = true;
+                        }
+                        else
+                        {
+                            if (TryResolveTaskIndex(descriptors, taskModel.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                            {
+                                if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == taskModel.SelectedExecuteConditionErrorLevel)
+                                {
+                                    if (string.IsNullOrEmpty(result.ReportOutputPath))
+                                    {
+                                        var dlg = new SaveFileDialogViewModel
+                                        {
+                                            Title = ResourceLoader.GetResource("windowCaptionSaveReport"),
+                                            Filter = ResourceLoader.GetResource("filterStringSaveReport"),
+                                            InitialDirectory = reportTargetPathDirInfo != null ?
+                                            (reportTargetPathDirInfo.Exists ? reportTargetPathDirInfo.FullName : null) : null
+                                        };
 
-                        default:
-                            CurrentTaskIndex++;
-                            taskTimeout.Stop();
-                            taskTimeout.Start();
-                            break;
+                                        if (dlg.Show(request.Dialogs) && dlg.FileName != null)
+                                        {
+                                            result.ReportOutputPath = dlg.FileName;
+                                        }
+                                    }
+
+                                    if (result.ReportReaderWriter == null)
+                                    {
+                                        result.ReportReaderWriter = new ReportReaderWriter();
+                                    }
+
+                                    result.ReportReaderWriter.ReportOutputPath = result.ReportOutputPath;
+                                    if (!string.IsNullOrEmpty(result.ReportTemplateFile))
+                                    {
+                                        result.ReportReaderWriter.ReportTemplateFile = result.ReportTemplateFile;
+                                    }
+
+                                    await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).WriteReportCommand.ExecuteAsync(result.ReportReaderWriter);
+                                    executed = true;
+                                }
+                                else
+                                {
+                                    CurrentTaskIndex++;
+                                }
+                            }
+                        }
+
+                        taskTimeout.Start();
+                        taskModel.ExecutionState = TaskExecutionState.Completed;
+                    }
+                    else if (taskModel.ExecutionState == TaskExecutionState.Completed)
+                    {
+                        CurrentTaskIndex++;
+                        taskTimeout.Stop();
+                        taskTimeout.Start();
                     }
                     break;
+                }
 
                 case TaskType_CommonTask.CheckLogicCondition:
-                    switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).CurrentTaskErrorLevel)
+                {
+                    var taskModel = request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask;
+
+                    if (taskModel.ExecutionState == TaskExecutionState.NotStarted)
                     {
-                        case ERROR.TransportError:
-                            taskTimeout.Start();
-                            break;
+                        taskModel.ExecutionState = TaskExecutionState.Running;
+                        taskTimeout.Start();
 
-                        case ERROR.Empty:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel = ERROR.TransportError;
-                            taskTimeout.Start();
-
-                            if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                        if (taskModel.SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                        {
+                            await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.ExecuteAsync(request.TaskHandler.TaskCollection);
+                            executed = true;
+                        }
+                        else
+                        {
+                            if (TryResolveTaskIndex(descriptors, taskModel.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                             {
-                                await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.ExecuteAsync(request.TaskHandler.TaskCollection);
-                                executed = true;
-                            }
-                            else
-                            {
-                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == taskModel.SelectedExecuteConditionErrorLevel)
                                 {
-                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
-                                    {
-                                        await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.ExecuteAsync(request.TaskHandler.TaskCollection);
-                                        executed = true;
-                                    }
-                                    else
-                                    {
-                                        CurrentTaskIndex++;
-                                    }
+                                    await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).CheckLogicCondition.ExecuteAsync(request.TaskHandler.TaskCollection);
+                                    executed = true;
+                                }
+                                else
+                                {
+                                    CurrentTaskIndex++;
                                 }
                             }
-                            break;
+                        }
 
-                        default:
-                            CurrentTaskIndex++;
-                            taskTimeout.Stop();
-                            taskTimeout.Start();
-                            break;
+                        taskModel.ExecutionState = TaskExecutionState.Completed;
+                    }
+                    else if (taskModel.ExecutionState == TaskExecutionState.Completed)
+                    {
+                        CurrentTaskIndex++;
+                        taskTimeout.Stop();
+                        taskTimeout.Start();
                     }
                     break;
+                }
 
                 case TaskType_CommonTask.ExecuteProgram:
-                    switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).CurrentTaskErrorLevel)
+                {
+                    var taskModel = request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask;
+
+                    if (taskModel.ExecutionState == TaskExecutionState.NotStarted)
                     {
-                        case ERROR.TransportError:
-                            taskTimeout.Start();
-                            break;
+                        taskModel.ExecutionState = TaskExecutionState.Running;
+                        taskTimeout.Start();
 
-                        case ERROR.Empty:
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel = ERROR.TransportError;
-                            taskTimeout.Start();
-
-                            if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                        if (taskModel.SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                        {
+                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
+                            executed = true;
+                        }
+                        else
+                        {
+                            if (TryResolveTaskIndex(descriptors, taskModel.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                             {
-                                (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
-                                executed = true;
-                            }
-                            else
-                            {
-                                if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                                if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == taskModel.SelectedExecuteConditionErrorLevel)
                                 {
-                                    if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
-                                    {
-                                        (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
-                                        executed = true;
-                                    }
-                                    else
-                                    {
-                                        CurrentTaskIndex++;
-                                    }
+                                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
+                                    executed = true;
+                                }
+                                else
+                                {
+                                    CurrentTaskIndex++;
                                 }
                             }
-                            break;
+                        }
 
-                        default:
-                            CurrentTaskIndex++;
-                            taskTimeout.Stop();
-                            taskTimeout.Start();
-                            break;
+                        taskModel.ExecutionState = TaskExecutionState.Completed;
+                    }
+                    else if (taskModel.ExecutionState == TaskExecutionState.Completed)
+                    {
+                        CurrentTaskIndex++;
+                        taskTimeout.Stop();
+                        taskTimeout.Start();
                     }
                     break;
+                }
 
                 default:
                     break;
@@ -1013,48 +1032,44 @@ namespace RFiDGear.Services.TaskExecution
         private async Task<bool> HandleClassicTaskAsync(MifareClassicSetupViewModel classicTask, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors)
         {
             var executed = false;
-            switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel)
+            var taskModel = request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask;
+
+            if (taskModel.ExecutionState == TaskExecutionState.NotStarted)
             {
-                case ERROR.TransportError:
-                    taskTimeout.Start();
-                    break;
+                taskModel.ExecutionState = TaskExecutionState.Running;
+                taskTimeout.Start();
 
-                case ERROR.Empty:
-                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel = ERROR.TransportError;
-                    taskTimeout.Start();
-
-                    if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                if (taskModel.SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                {
+                    request.UpdateReaderBusy?.Invoke(true);
+                    await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareClassicSetupViewModel).CommandDelegator.ExecuteAsync(classicTask.SelectedTaskType);
+                    executed = true;
+                }
+                else
+                {
+                    if (TryResolveTaskIndex(descriptors, taskModel.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                     {
-                        request.UpdateReaderBusy?.Invoke(true);
-                        await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareClassicSetupViewModel).CommandDelegator.ExecuteAsync(classicTask.SelectedTaskType);
-                        executed = true;
-                    }
-
-                    else
-                    {
-                        if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                        if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == taskModel.SelectedExecuteConditionErrorLevel)
                         {
-                            if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
-                            {
-                                request.UpdateReaderBusy?.Invoke(true);
-                                await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareClassicSetupViewModel).CommandDelegator.ExecuteAsync(classicTask.SelectedTaskType);
-                                executed = true;
-                            }
-                            else
-                            {
-                                CurrentTaskIndex++;
-                            }
+                            request.UpdateReaderBusy?.Invoke(true);
+                            await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareClassicSetupViewModel).CommandDelegator.ExecuteAsync(classicTask.SelectedTaskType);
+                            executed = true;
+                        }
+                        else
+                        {
+                            CurrentTaskIndex++;
                         }
                     }
+                }
 
-                    request.UpdateReaderBusy?.Invoke(false);
-                    break;
-
-                default:
-                    CurrentTaskIndex++;
-                    taskTimeout.Stop();
-                    taskTimeout.Start();
-                    break;
+                request.UpdateReaderBusy?.Invoke(false);
+                taskModel.ExecutionState = TaskExecutionState.Completed;
+            }
+            else if (taskModel.ExecutionState == TaskExecutionState.Completed)
+            {
+                CurrentTaskIndex++;
+                taskTimeout.Stop();
+                taskTimeout.Start();
             }
 
             return executed;
@@ -1063,48 +1078,44 @@ namespace RFiDGear.Services.TaskExecution
         private async Task<bool> HandleDesfireTaskAsync(MifareDesfireSetupViewModel desfireTask, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors)
         {
             var executed = false;
-            switch ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel)
+            var taskModel = request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask;
+
+            if (taskModel.ExecutionState == TaskExecutionState.NotStarted)
             {
-                case ERROR.TransportError:
-                    taskTimeout.Start();
-                    break;
+                taskModel.ExecutionState = TaskExecutionState.Running;
+                taskTimeout.Start();
 
-                case ERROR.Empty:
-                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).CurrentTaskErrorLevel = ERROR.TransportError;
-                    taskTimeout.Start();
-
-                    if ((request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                if (taskModel.SelectedExecuteConditionErrorLevel == ERROR.Empty)
+                {
+                    request.UpdateReaderBusy?.Invoke(true);
+                    await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareDesfireSetupViewModel).CommandDelegator.ExecuteAsync(desfireTask.SelectedTaskType);
+                    executed = true;
+                }
+                else
+                {
+                    if (TryResolveTaskIndex(descriptors, taskModel.SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
                     {
-                        request.UpdateReaderBusy?.Invoke(true);
-                        await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareDesfireSetupViewModel).CommandDelegator.ExecuteAsync(desfireTask.SelectedTaskType);
-                        executed = true;
-                    }
-
-                    else
-                    {
-                        if (TryResolveTaskIndex(descriptors, (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionTaskIndex, out var targetTaskIndex))
+                        if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == taskModel.SelectedExecuteConditionErrorLevel)
                         {
-                            if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == (request.TaskHandler.TaskCollection[CurrentTaskIndex] as IGenericTask).SelectedExecuteConditionErrorLevel)
-                            {
-                                request.UpdateReaderBusy?.Invoke(true);
-                                await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareDesfireSetupViewModel).CommandDelegator.ExecuteAsync(desfireTask.SelectedTaskType);
-                                executed = true;
-                            }
-                            else
-                            {
-                                CurrentTaskIndex++;
-                            }
+                            request.UpdateReaderBusy?.Invoke(true);
+                            await (request.TaskHandler.TaskCollection[CurrentTaskIndex] as MifareDesfireSetupViewModel).CommandDelegator.ExecuteAsync(desfireTask.SelectedTaskType);
+                            executed = true;
+                        }
+                        else
+                        {
+                            CurrentTaskIndex++;
                         }
                     }
+                }
 
-                    request.UpdateReaderBusy?.Invoke(false);
-                    break;
-
-                default:
-                    CurrentTaskIndex++;
-                    taskTimeout.Stop();
-                    taskTimeout.Start();
-                    break;
+                request.UpdateReaderBusy?.Invoke(false);
+                taskModel.ExecutionState = TaskExecutionState.Completed;
+            }
+            else if (taskModel.ExecutionState == TaskExecutionState.Completed)
+            {
+                CurrentTaskIndex++;
+                taskTimeout.Stop();
+                taskTimeout.Start();
             }
 
             return executed;

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Models;
 
 namespace RFiDGear.Infrastructure.Tasks.Interfaces
@@ -44,5 +45,12 @@ namespace RFiDGear.Infrastructure.Tasks.Interfaces
         /// Captures the per-attempt execution results for later review and retries.
         /// </summary>
         ObservableCollection<TaskAttemptResult> AttemptResults { get; }
+
+        /// <summary>
+        /// Execution lifecycle state within a single automated run.
+        /// Reset to <see cref="TaskExecutionState.NotStarted"/> at the start of each pass.
+        /// Not persisted.
+        /// </summary>
+        TaskExecutionState ExecutionState { get; set; }
     }
 }

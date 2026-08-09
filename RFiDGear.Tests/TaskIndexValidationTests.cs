@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Models;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
@@ -103,6 +104,7 @@ namespace RFiDGear.Tests
             public string CurrentTaskIndex { get; set; }
             public int SelectedTaskIndexAsInt { get; }
             public ObservableCollection<TaskAttemptResult> AttemptResults { get; } = new ObservableCollection<TaskAttemptResult>();
+            public TaskExecutionState ExecutionState { get; set; } = TaskExecutionState.NotStarted;
         }
     }
 }

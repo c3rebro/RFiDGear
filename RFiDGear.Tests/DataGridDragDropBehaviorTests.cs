@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Models;
 using RFiDGear.UI.Behaviors;
@@ -55,6 +56,7 @@ namespace RFiDGear.Tests
             public int SelectedTaskIndexAsInt => int.TryParse(CurrentTaskIndex, out var index) ? index : -1;
 
             public ObservableCollection<TaskAttemptResult> AttemptResults { get; } = new();
+            public TaskExecutionState ExecutionState { get; set; } = TaskExecutionState.NotStarted;
         }
     }
 }

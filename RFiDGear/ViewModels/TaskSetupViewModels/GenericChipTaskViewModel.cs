@@ -253,6 +253,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         [XmlIgnore]
         public ERROR CurrentTaskErrorLevel { get; set; }
 
+        [XmlIgnore]
+        public TaskExecutionState ExecutionState { get; set; } = TaskExecutionState.NotStarted;
+
         /// <summary>
         ///
         /// </summary>

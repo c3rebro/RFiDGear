@@ -508,6 +508,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         [XmlIgnore]
         public ERROR CurrentTaskErrorLevel { get; set; }
 
+        [XmlIgnore]
+        public TaskExecutionState ExecutionState { get; set; } = TaskExecutionState.NotStarted;
+
         private void RevalidateSelectedTaskIndex()
         {
             IsValidSelectedTaskIndex = TaskIndexValidation.TryValidateTaskIndex(CurrentTaskIndex, AvailableTasks, editedTaskReference ?? this, out _);
