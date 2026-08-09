@@ -548,7 +548,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             return new AppKeyChangePayload(
                 (uint)appId,
                 (byte)keyNumberForChange,
-                SelectedDesfireAppKeyEncryptionTypeTarget,
+                SelectedDesfireAppKeyEncryptionTypeCurrent,
                 oldKeyForTargetSlot,
                 DesfireAppKeyTarget,
                 (byte)selectedDesfireAppKeyVersionTargetAsInt,
@@ -1511,6 +1511,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     : CustomConverter.IsInHexFormat(desfireAppKeyCurrent) && desfireAppKeyCurrent.Length == CustomConverter.GetExpectedKeyHexLength(value);
                 IsValidDesfireAppKeyCurrentOld = string.IsNullOrEmpty(desfireAppKeyCurrentOld) ? (bool?)null
                     : CustomConverter.IsInHexFormat(desfireAppKeyCurrentOld) && desfireAppKeyCurrentOld.Length == CustomConverter.GetExpectedKeyHexLength(value);
+                IsValidDesfireAppKeyTarget = string.IsNullOrEmpty(desfireAppKeyTarget) ? (bool?)null
+                    : CustomConverter.IsInHexFormat(desfireAppKeyTarget) && desfireAppKeyTarget.Length == CustomConverter.GetExpectedKeyHexLength(value);
             }
         }
         private DESFireKeyType selectedDesfireAppKeyEncryptionTypeCurrent;
@@ -1722,10 +1724,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => desfireAppKeyTarget;
             set
             {
-                desfireAppKeyTarget = NormalizeDesfireKeyInput(value, CustomConverter.GetExpectedKeyHexLength(selectedDesfireAppKeyEncryptionTypeTarget));
+                desfireAppKeyTarget = NormalizeDesfireKeyInput(value, CustomConverter.GetExpectedKeyHexLength(selectedDesfireAppKeyEncryptionTypeCurrent));
                 IsValidDesfireAppKeyTarget = (
                     CustomConverter.IsInHexFormat(desfireAppKeyTarget) &&
-                    desfireAppKeyTarget.Length == CustomConverter.GetExpectedKeyHexLength(selectedDesfireAppKeyEncryptionTypeTarget));
+                    desfireAppKeyTarget.Length == CustomConverter.GetExpectedKeyHexLength(selectedDesfireAppKeyEncryptionTypeCurrent));
                 OnPropertyChanged(nameof(DesfireAppKeyTarget));
             }
         }
@@ -2340,6 +2342,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             {
                                 StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
                                 CurrentTaskErrorLevel = createResult.Code;
+                                SelectedDesfireAppKeyEncryptionTypeCurrent = SelectedDesfireAppKeyEncryptionTypeCreateNewApp;
+                                AppNumberCurrent = AppNumberNew;
                                 await UpdateReaderStatusCommand.ExecuteAsync(false);
                                 return;
                             }
@@ -2371,6 +2375,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             {
                                 StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
                                 CurrentTaskErrorLevel = createResult.Code;
+                                SelectedDesfireAppKeyEncryptionTypeCurrent = SelectedDesfireAppKeyEncryptionTypeCreateNewApp;
+                                AppNumberCurrent = AppNumberNew;
                             }
                             else
                             {
@@ -3441,10 +3447,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
                     {
+                        var authKeyNo = GetAuthKeyNumberForChangeAppKey(AppNumberCurrentAsInt, GetChangeKeyModeForApplication(AppNumberCurrentAsInt), selectedDesfireAppKeyNumberCurrentAsInt);
                         var result = await device.AuthToMifareDesfireApplication(
                                 DesfireAppKeyCurrent,
                                 SelectedDesfireAppKeyEncryptionTypeCurrent,
-                                selectedDesfireAppKeyNumberCurrentAsInt,
+                                authKeyNo,
                                 AppNumberCurrentAsInt);
 
                         if (IsValidAppNumberCurrent != false && result == ERROR.NoError)

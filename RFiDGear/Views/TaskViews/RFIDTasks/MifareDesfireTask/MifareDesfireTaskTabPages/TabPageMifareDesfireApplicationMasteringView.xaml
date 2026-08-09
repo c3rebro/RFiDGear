@@ -78,7 +78,7 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyTargetInputs, Converter={StaticResource BoolToVisConv}}"
-                        MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeTarget, Converter={StaticResource DESFireKeyMaxLengthConv}}"
+                        MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
                         Text="{Binding DesfireAppKeyTarget, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
                         <TextBox.ToolTip>
                             <ToolTip>
@@ -348,7 +348,7 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowAppKeyCurrentInputs, Converter={StaticResource BoolToVisConv}}"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppKey'}">
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppMasterKey'}">
                         <Label.ToolTip>
                             <ToolTip>
                                 <StackPanel>

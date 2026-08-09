@@ -809,6 +809,9 @@ Wird benötigt von:
   <data name="labelContentMifareDesfireAppKey" xml:space="preserve">
     <value>App Schlüssel</value>
   </data>
+  <data name="labelContentMifareDesfireAppMasterKey" xml:space="preserve">
+    <value>App-Masterkey</value>
+  </data>
   <data name="toolTipMifareDesfireAppKeyPolicy" xml:space="preserve">
     <value>Policy=MK → Wert von Schlüssel 0 (Master Key) eingeben. Policy=KeyNo → Wert von Schlüssel N eingeben.</value>
   </data>

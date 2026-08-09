@@ -135,6 +135,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             try
             {
+                // Disconnect from any cached chip so tryInitReader takes the full
+                // waitInsertion→connect path and getSingleChip returns the card
+                // currently on the reader, not a cached reference from a prior read.
+                try { readerUnit?.disconnect(); } catch { /* ignore if not connected */ }
+
                 if (await tryInitReader())
                 {
                     card = readerUnit.getSingleChip();
@@ -145,7 +150,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         try
                         {
                             var uidAsString = ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray());
-                            var t = card.getCardType();
                             var chipType = (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType());
 
                             if ((chipType & CARD_TYPE.DESFire) == CARD_TYPE.DESFire)
@@ -1201,12 +1205,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             try
             {
-                // The excepted memory tree
-                DESFireLocation location = new DESFireLocation
-                {
-                    // The Application ID to use
-                    aid = (uint)_appID
-                };
                 // File communication requires encryption
 
                 var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyType, _applicationMasterKey);
@@ -1462,16 +1460,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             try
             {
-                // The excepted memory tree
-                DESFireLocation location = new DESFireLocation
-                {
-                    // The Application ID to use
-                    aid = (uint)_appID,
-
-                    // File communication requires encryption
-                    securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT
-                };
-
                 var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyTypePiccMasterKey, _piccMasterKey);
 
                 if (!await tryInitReader())
@@ -1702,7 +1690,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         var oldKey = new LibLogicalAccess.Card.DESFireKey();
                         oldKey.setKeyType((LibLogicalAccess.Card.DESFireKeyType)resolved.TargetKeyType);
                         oldKey.fromString(resolved.OldTargetKeyHex);
-                        (card as LibLogicalAccess.Card.DESFireChip)?.getCrypto()?.setKey(resolved.AppId, resolved.TargetKeyNo, 0, oldKey);
+                        (card as LibLogicalAccess.Card.DESFireChip)?.getCrypto()?.setKey(resolved.AppId, 0, resolved.TargetKeyNo, oldKey);
                     }
 
                     // Change the requested key number to the new value.

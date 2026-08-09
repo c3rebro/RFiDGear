@@ -793,6 +793,9 @@ Needed by:
   <data name="labelContentMifareDesfireAppKey" xml:space="preserve">
     <value>Application Key</value>
   </data>
+  <data name="labelContentMifareDesfireAppMasterKey" xml:space="preserve">
+    <value>App Master Key</value>
+  </data>
   <data name="toolTipMifareDesfireAppKeyPolicy" xml:space="preserve">
     <value>Policy=MK → enter key 0 (master key) value. Policy=KeyNo → enter key N value.</value>
   </data>
