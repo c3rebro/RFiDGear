@@ -548,7 +548,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             return new AppKeyChangePayload(
                 (uint)appId,
                 (byte)keyNumberForChange,
-                SelectedDesfireAppKeyEncryptionTypeCurrent,
+                SelectedDesfireAppKeyEncryptionTypeTarget,
                 oldKeyForTargetSlot,
                 DesfireAppKeyTarget,
                 (byte)selectedDesfireAppKeyVersionTargetAsInt,
@@ -2018,7 +2018,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         ///
         /// </summary>
-        public RFiDChipGrandChildLayerViewModel GrandChildNodeViewModel => ChildNodeViewModelTemp.Children.Count > 0 ? ChildNodeViewModelTemp.Children.Single(x => x.DesfireFile != null) : null;
+        public RFiDChipGrandChildLayerViewModel GrandChildNodeViewModel => FindDesfireDataNode(ChildNodeViewModelTemp, FileNumberCurrentAsInt);
 
         /// <summary>
         /// Stores the most recently loaded DESFire data file path for optional refresh operations.

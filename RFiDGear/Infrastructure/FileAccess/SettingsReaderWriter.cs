@@ -126,7 +126,8 @@ namespace RFiDGear.Infrastructure.FileAccess
             {
                 var serializer = new XmlSerializer(typeof(DefaultSpecification));
 
-                using var reader = new StreamReader(filePath);
+                using var fs = new FileStream(filePath, FileMode.Open, System.IO.FileAccess.Read, FileShare.ReadWrite);
+                using var reader = new StreamReader(fs);
 
                 DefaultSpecification = serializer.Deserialize(reader) as DefaultSpecification ?? new DefaultSpecification();
             }

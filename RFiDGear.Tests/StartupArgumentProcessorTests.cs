@@ -8,6 +8,7 @@ using Xunit;
 
 namespace RFiDGear.Tests
 {
+    [Collection("SettingsFileAccess")]
     public class StartupArgumentProcessorTests
     {
         [Fact]

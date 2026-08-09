@@ -224,7 +224,7 @@ namespace RFiDGear.ViewModel
         private void InitializeContextMenuItems(List<MenuItem> items)
         {
             var dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
-            if (dispatcher.CheckAccess())
+            if (dispatcher.CheckAccess() || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
             {
                 ContextMenuItems = items;
                 return;

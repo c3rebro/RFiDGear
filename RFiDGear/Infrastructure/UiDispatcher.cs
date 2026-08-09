@@ -20,7 +20,7 @@ namespace RFiDGear.Infrastructure
             }
 
             var dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher == null || dispatcher.CheckAccess())
+            if (dispatcher == null || dispatcher.CheckAccess() || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
             {
                 action();
                 return;

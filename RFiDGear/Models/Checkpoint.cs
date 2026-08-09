@@ -9,6 +9,8 @@
 
 using RFiDGear.Infrastructure;
 using System;
+using System.ComponentModel;
+using System.Xml.Serialization;
 
 namespace RFiDGear.Models
 {
@@ -43,7 +45,24 @@ namespace RFiDGear.Models
             }
         }
 
+        [XmlIgnore]
         public ERROR ErrorLevel { get; set; }
+
+        /// <summary>
+        /// XML-facing surrogate that accepts the legacy "AuthenticationError" name in addition to current enum names.
+        /// </summary>
+        [XmlElement("ErrorLevel")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string ErrorLevelSerialized
+        {
+            get => ErrorLevel.ToString();
+            set
+            {
+                var normalized = value == "AuthenticationError" ? nameof(ERROR.AuthFailure) : value;
+                if (Enum.TryParse<ERROR>(normalized, out var parsed))
+                    ErrorLevel = parsed;
+            }
+        }
 
         public string TaskIndex { get; set; }
 

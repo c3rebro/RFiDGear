@@ -216,7 +216,10 @@ namespace RFiDGear.ViewModel
             emptySpaceContextMenuItems = menuInitialization.EmptySpaceContextMenuItems;
             emptySpaceTreeViewContextMenu = menuInitialization.EmptySpaceTreeViewContextMenu;
 
-            var mainWindow = Application.Current?.MainWindow;
+            var appDispatcher = Application.Current?.Dispatcher;
+            var mainWindow = (appDispatcher != null && appDispatcher.CheckAccess())
+                ? Application.Current.MainWindow
+                : null;
             if (mainWindow != null)
             {
                 mainWindow.Closing += new CancelEventHandler(CloseThreads);

@@ -16,8 +16,6 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
-                Assert.Null(Application.Current);
-
                 var dialogs = new ObservableCollection<IDialogViewModel>();
                 var viewModel = new RFiDChipChildLayerViewModel(
                     new MifareDesfireAppModel(0),
