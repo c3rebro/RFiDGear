@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Manifest version="2.0.5.0">
+<Manifest version="2.0.6.0">
   <CheckInterval>900</CheckInterval>
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
   <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>
@@ -44,6 +44,27 @@ Available internal Variables
   + %EXIT will immediatly exit rfidgear application
 
 ################# END OF GENERAL INFORMATION ####################
+
+Version 2.0.6.0
+-----------------------------------------------------------------
+New:
+- DESFire ChangeFileSettings task: change access rights and communication mode on existing files
+- "Read App with Key" context menu entry on DESFire application nodes
+
+Fixed:
+- #183: Task execution loop stalled indefinitely when a provider operation returned TransportError
+  (e.g. card removed mid-task); dedicated TaskExecutionState replaces the overloaded ERROR sentinel
+- #189: DESFire task validation was checking the wrong AppID and key fields before execution
+- #187: Elatec provider CreateFile silently swallowed authentication failure; error now propagates
+- #185: DESFire BackupFile WriteData ignored CommitTransactionAsync result; partial writes are
+  now correctly detected and reported
+- #184: 3K3DES keys (48 hex characters) were truncated in DESFire key input fields; MaxLength
+  now adjusts dynamically based on the selected key type
+- DESFire 3K3DES authentication and app mastering regressions introduced in 2.0.5.0
+- Classic quick-check key input: in-progress edits were incorrectly stripped during live validation
+
+Improved:
+- Classic quick-check keys are validated before saving with live green/red field feedback
 
 Version 2.0.5.0
 -----------------------------------------------------------------
