@@ -544,7 +544,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
-        private async Task<ERROR> AuthToMifareDesfireApplicationCore(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
+        protected virtual async Task<ERROR> AuthToMifareDesfireApplicationCore(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
             if (readerDevice.IsConnected)
             {
@@ -1418,36 +1418,40 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 try
                 {
-                    if (await AuthToMifareDesfireApplicationCore(_appMasterKey, _keyTypeAppMasterKey, 0, _appID) == ERROR.NoError)
+                    var authResult = await AuthToMifareDesfireApplicationCore(_appMasterKey, _keyTypeAppMasterKey, 0, _appID);
+                    if (authResult != ERROR.NoError)
+                        return authResult;
+
+                    var ar = BuildDesfireAccessRights(_accessRights);
+
+                    switch (_fileType)
                     {
-                        var ar = BuildDesfireAccessRights(_accessRights);
+                        case FileType_MifareDesfireFileType.StdDataFile:
+                            try
+                            {
+                                await CreateStdDataFileAsync((byte)_fileNo, _fileType, _encMode, ar, (uint)_fileSize);
+                            }
+                            catch
+                            {
+                                return ERROR.AuthFailure;
+                            }
 
-                        switch (_fileType)
-                        {
-                            case FileType_MifareDesfireFileType.StdDataFile:
-                                try
-                                {
-                                    await CreateStdDataFileAsync((byte)_fileNo, _fileType, _encMode, ar, (uint)_fileSize);
-                                }
-                                catch
-                                {
-                                    return ERROR.AuthFailure;
-                                }
+                            break;
 
-                                break;
+                        case FileType_MifareDesfireFileType.BackupFile:
+                            try
+                            {
+                                await CreateBackupFileAsync((byte)_fileNo, _encMode, ar, (uint)_fileSize);
+                            }
+                            catch
+                            {
+                                return ERROR.AuthFailure;
+                            }
 
-                            case FileType_MifareDesfireFileType.BackupFile:
-                                try
-                                {
-                                    await CreateBackupFileAsync((byte)_fileNo, _encMode, ar, (uint)_fileSize);
-                                }
-                                catch
-                                {
-                                    return ERROR.AuthFailure;
-                                }
+                            break;
 
-                                break;
-                        }
+                        default:
+                            return ERROR.ProtocolConstraint;
                     }
                 }
                 catch (Exception e)

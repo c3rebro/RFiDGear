@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Elatec.NET.Cards.Mifare;
 using RFiDGear.Infrastructure;
@@ -62,7 +63,7 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task CreateMifareDesfireFile_BackupFile_UsesBackupCreatePath()
         {
-            var provider = new BackupFileTestProvider();
+            var provider = new CreateFileTestProvider(authResult: ERROR.NoError);
             var accessRights = new DESFireAccessRights
             {
                 readAccess = TaskAccessRights.AR_KEY0,
@@ -86,27 +87,96 @@ namespace RFiDGear.Tests
             Assert.False(provider.StdDataFileRequested);
         }
 
-        private sealed class BackupFileTestProvider : ElatecNetProvider
+        [Fact]
+        public async Task CreateMifareDesfireFile_AuthFails_PropagatesError()
         {
-            public bool BackupFileRequested { get; private set; }
+            var provider = new CreateFileTestProvider(authResult: ERROR.AuthFailure);
+            var accessRights = new DESFireAccessRights();
 
+            var result = await provider.CreateMifareDesfireFile(
+                _appMasterKey: "0000000000000000",
+                _keyTypeAppMasterKey: DESFireKeyType.DF_KEY_AES,
+                _fileType: Infrastructure.Tasks.FileType_MifareDesfireFileType.StdDataFile,
+                _accessRights: accessRights,
+                _encMode: RfidEncryptionMode.CM_PLAIN,
+                _appID: 1,
+                _fileNo: 0,
+                _fileSize: 16);
+
+            Assert.Equal(ERROR.AuthFailure, result);
+            Assert.False(provider.StdDataFileRequested);
+            Assert.False(provider.BackupFileRequested);
+        }
+
+        [Fact]
+        public async Task CreateMifareDesfireFile_StdDataFileCreationFails_PropagatesError()
+        {
+            var provider = new CreateFileTestProvider(authResult: ERROR.NoError, throwOnCreate: true);
+            var accessRights = new DESFireAccessRights();
+
+            var result = await provider.CreateMifareDesfireFile(
+                _appMasterKey: "0000000000000000",
+                _keyTypeAppMasterKey: DESFireKeyType.DF_KEY_AES,
+                _fileType: Infrastructure.Tasks.FileType_MifareDesfireFileType.StdDataFile,
+                _accessRights: accessRights,
+                _encMode: RfidEncryptionMode.CM_PLAIN,
+                _appID: 1,
+                _fileNo: 0,
+                _fileSize: 16);
+
+            Assert.NotEqual(ERROR.NoError, result);
+        }
+
+        [Fact]
+        public async Task CreateMifareDesfireFile_UnsupportedFileType_ReturnsProtocolConstraint()
+        {
+            var provider = new CreateFileTestProvider(authResult: ERROR.NoError);
+            var accessRights = new DESFireAccessRights();
+
+            var result = await provider.CreateMifareDesfireFile(
+                _appMasterKey: "0000000000000000",
+                _keyTypeAppMasterKey: DESFireKeyType.DF_KEY_AES,
+                _fileType: Infrastructure.Tasks.FileType_MifareDesfireFileType.ValueFile,
+                _accessRights: accessRights,
+                _encMode: RfidEncryptionMode.CM_PLAIN,
+                _appID: 1,
+                _fileNo: 0,
+                _fileSize: 16);
+
+            Assert.Equal(ERROR.ProtocolConstraint, result);
+        }
+
+        private sealed class CreateFileTestProvider : ElatecNetProvider
+        {
+            private readonly ERROR _authResult;
+            private readonly bool _throwOnCreate;
+
+            public bool BackupFileRequested { get; private set; }
             public bool StdDataFileRequested { get; private set; }
 
             public override bool IsConnected => true;
 
-            public override Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
+            public CreateFileTestProvider(ERROR authResult, bool throwOnCreate = false)
             {
-                return Task.FromResult(ERROR.NoError);
+                _authResult = authResult;
+                _throwOnCreate = throwOnCreate;
             }
+
+            protected override Task<ERROR> AuthToMifareDesfireApplicationCore(string key, DESFireKeyType keyType, int keyNumber, int appId)
+                => Task.FromResult(_authResult);
 
             protected override Task CreateStdDataFileAsync(byte fileNo, Infrastructure.Tasks.FileType_MifareDesfireFileType fileType, RfidEncryptionMode encMode, DESFireFileAccessRights accessRights, uint fileSize)
             {
+                if (_throwOnCreate)
+                    throw new InvalidOperationException("simulated create failure");
                 StdDataFileRequested = true;
                 return Task.CompletedTask;
             }
 
             protected override Task CreateBackupFileAsync(byte fileNo, RfidEncryptionMode encMode, DESFireFileAccessRights accessRights, uint fileSize)
             {
+                if (_throwOnCreate)
+                    throw new InvalidOperationException("simulated create failure");
                 BackupFileRequested = true;
                 return Task.CompletedTask;
             }
