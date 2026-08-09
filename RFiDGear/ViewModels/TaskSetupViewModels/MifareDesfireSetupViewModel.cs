@@ -2311,7 +2311,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireReadKeyCurrent, SelectedDesfireReadKeyEncryptionType) == KEY_ERROR.NO_ERROR)
+                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireMasterKeyCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
                     {
                         var authResult = await device.AuthToMifareDesfireApplication(
                                   DesfireMasterKeyCurrent,
@@ -2434,7 +2434,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR && IsValidAppNumberNew != false)
+                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR && IsValidAppNumberCurrent != false)
                     {
                         var result = await device.AuthToMifareDesfireApplication(
                                 DesfireAppKeyCurrent,
@@ -2538,7 +2538,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 selectedDesfireReadKeyNumberAsInt, AppNumberCurrentAsInt);
 
 
-                        if (IsValidAppNumberNew != false && result == ERROR.NoError)
+                        if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
                         {
                             StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
@@ -2686,7 +2686,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                                                          SelectedDesfireWriteKeyEncryptionType,
                                                                          selectedDesfireWriteKeyNumberAsInt, AppNumberCurrentAsInt);
 
-                        if (IsValidAppNumberNew != false && result == ERROR.NoError)
+                        if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
                         {
                             StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
