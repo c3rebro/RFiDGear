@@ -2533,52 +2533,38 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireReadKeyCurrent, SelectedDesfireReadKeyEncryptionType) == KEY_ERROR.NO_ERROR)
+                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireReadKeyCurrent, SelectedDesfireReadKeyEncryptionType) == KEY_ERROR.NO_ERROR && IsValidAppNumberCurrent != false)
                     {
-                        var result = await device.AuthToMifareDesfireApplication(
-                                DesfireReadKeyCurrent,
-                                SelectedDesfireReadKeyEncryptionType,
-                                selectedDesfireReadKeyNumberAsInt, AppNumberCurrentAsInt);
+                        // The provider owns the complete DESFire operation boundary:
+                        // SelectApplication -> Authenticate -> ReadData.
+                        var result = await device.ReadMiFareDESFireChipFile(
+                            DesfireReadKeyCurrent,
+                            SelectedDesfireReadKeyEncryptionType,
+                            selectedDesfireReadKeyNumberAsInt,
+                            SelectedDesfireFileCryptoMode,
+                            FileNumberCurrentAsInt,
+                            AppNumberCurrentAsInt,
+                            FileSizeCurrentAsInt);
 
-
-                        if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
+                        if (result == ERROR.NoError)
                         {
-                            StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
+                            FileSizeCurrent = device.MifareDESFireData.Length.ToString();
+                            StatusText += string.Format("{0}: Successfully Read {2} Bytes Data from FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberCurrentAsInt);
 
-                            result = await device.ReadMiFareDESFireChipFile(DesfireReadKeyCurrent, SelectedDesfireReadKeyEncryptionType, selectedDesfireReadKeyNumberAsInt,
-                                                                   SelectedDesfireFileCryptoMode, FileNumberCurrentAsInt, AppNumberCurrentAsInt, FileSizeCurrentAsInt);
-
-                            if (result == ERROR.NoError)
-                            {
-                                FileSizeCurrent = device.MifareDESFireData.Length.ToString();
-
-                                StatusText += string.Format("{0}: Successfully Read {2} Bytes Data from FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
-
-                                var fromChipNode = EnsureDesfireDataNode(childNodeViewModelFromChip, FileNumberCurrentAsInt);
-                                var tempNode = EnsureDesfireDataNode(childNodeViewModelTemp, FileNumberCurrentAsInt);
-
-                                fromChipNode.DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
-                                tempNode.DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
-
-                                CurrentTaskErrorLevel = result;
-
-                                OnPropertyChanged(nameof(ChildNodeViewModelTemp));
-                                OnPropertyChanged(nameof(ChildNodeViewModelFromChip));
-                                SaveReadDataToFile(device.MifareDESFireData);
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
-                            else
-                            {
-                                await SetErrorStatusAsync(result, "{0}: Unable to Read File with FileID: {1}: {2}", DateTime.Now, FileNumberCurrentAsInt, result.ToString());
-                                return;
-                            }
-                        }
-                        else
-                        {
-                            await SetErrorStatusAsync(result, "{0}: Unable to Read File: {1}", DateTime.Now, result.ToString());
+                            var fromChipNode = EnsureDesfireDataNode(childNodeViewModelFromChip, FileNumberCurrentAsInt);
+                            var tempNode = EnsureDesfireDataNode(childNodeViewModelTemp, FileNumberCurrentAsInt);
+                            fromChipNode.DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
+                            tempNode.DesfireFile = new MifareDesfireFileModel(device.MifareDESFireData, (byte)FileNumberCurrentAsInt);
+                            CurrentTaskErrorLevel = result;
+                            OnPropertyChanged(nameof(ChildNodeViewModelTemp));
+                            OnPropertyChanged(nameof(ChildNodeViewModelFromChip));
+                            SaveReadDataToFile(device.MifareDESFireData);
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
                         }
+
+                        await SetErrorStatusAsync(result, "{0}: Unable to Read File with FileID: {1}: {2}", DateTime.Now, FileNumberCurrentAsInt, result.ToString());
+                        return;
                     }
                 }
                 else
@@ -2678,63 +2664,52 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 if (device != null)
                 {
                     await UpdateReaderStatusCommand.ExecuteAsync(true);
-
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType) == KEY_ERROR.NO_ERROR)
+                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType) == KEY_ERROR.NO_ERROR && IsValidAppNumberCurrent != false)
                     {
-
-                        var result = await device.AuthToMifareDesfireApplication(
-                                                                         DesfireWriteKeyCurrent,
-                                                                         SelectedDesfireWriteKeyEncryptionType,
-                                                                         selectedDesfireWriteKeyNumberAsInt, AppNumberCurrentAsInt);
-
-                        if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
+                        if (!TryGetDesfireWritePayload(out var payload, out var errorMessage))
                         {
-                            StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
-
-                            if (!TryGetDesfireWritePayload(out var payload, out var errorMessage))
-                            {
-                                await SetErrorStatusAsync(ERROR.Unknown, "{0}: Unable to prepare DESFire data payload: {1}\n", DateTime.Now, errorMessage);
-                                return;
-                            }
-
-                            result = await device.WriteMiFareDESFireChipFile(DesfireWriteKeyCurrent, SelectedDesfireWriteKeyEncryptionType, selectedDesfireWriteKeyNumberAsInt,
-                                                                   SelectedDesfireFileCryptoMode, FileNumberCurrentAsInt, AppNumberCurrentAsInt, payload);
-
-                            if (result == ERROR.NoError)
-                            {
-                                StatusText += string.Format("{0}: Successfully Wrote {2} Bytes to FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, GrandChildNodeViewModel.SelectedDataLengthInBytes, AppNumberCurrentAsInt);
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                            }
-
-                            if (result == ERROR.NoError && SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile && device.GetType() == typeof(ElatecNetProvider))
-                            {
-                                result = await device.CommitTransactionAsync();
-                            }
-
-                            if (result == ERROR.NoError)
-                            {
-                                if(SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile)
-                                {
-                                    StatusText += string.Format("{0}: Commit Successfully FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, GrandChildNodeViewModel.SelectedDataLengthInBytes, AppNumberCurrentAsInt);
-                                }
-                                
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
-                            else
-                            {
-                                await SetErrorStatusAsync(result, "{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
-                                return;
-                            }
-                        }
-                        else
-                        {
-                            await SetErrorStatusAsync(result, "{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
+                            await SetErrorStatusAsync(ERROR.Unknown, "{0}: Unable to prepare DESFire data payload: {1}\n", DateTime.Now, errorMessage);
                             return;
                         }
+
+                        // The provider owns the complete DESFire operation boundary:
+                        // SelectApplication -> Authenticate -> WriteData.
+                        var result = await device.WriteMiFareDESFireChipFile(
+                            DesfireWriteKeyCurrent,
+                            SelectedDesfireWriteKeyEncryptionType,
+                            selectedDesfireWriteKeyNumberAsInt,
+                            SelectedDesfireFileCryptoMode,
+                            FileNumberCurrentAsInt,
+                            AppNumberCurrentAsInt,
+                            payload);
+
+                        if (result == ERROR.NoError)
+                        {
+                            StatusText += string.Format("{0}: Successfully Wrote {2} Bytes to FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, GrandChildNodeViewModel.SelectedDataLengthInBytes, AppNumberCurrentAsInt);
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+                        }
+
+                        if (result == ERROR.NoError && SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile && device.GetType() == typeof(ElatecNetProvider))
+                        {
+                            result = await device.CommitTransactionAsync();
+                        }
+
+                        if (result == ERROR.NoError)
+                        {
+                            if (SelectedDesfireFileType == FileType_MifareDesfireFileType.BackupFile)
+                            {
+                                StatusText += string.Format("{0}: Commit Successfully FileNo: {1} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, GrandChildNodeViewModel.SelectedDataLengthInBytes, AppNumberCurrentAsInt);
+                            }
+
+                            CurrentTaskErrorLevel = result;
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+                            return;
+                        }
+
+                        await SetErrorStatusAsync(result, "{0}: Unable to Write Data: {1}\n", DateTime.Now, result.ToString());
+                        return;
                     }
                 }
                 else

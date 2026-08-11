@@ -565,7 +565,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task ReadDataCommand_UsesReadKeyForAuthenticationAndRead()
+        public async Task ReadDataCommand_UsesProviderOwnedAuthenticationAndReadKey()
         {
             await RunOnStaThreadAsync(async () =>
             {
@@ -597,9 +597,7 @@ namespace RFiDGear.Tests
 
                     await viewModel.ReadDataCommand.ExecuteAsync(null);
 
-                    Assert.Equal(viewModel.DesfireReadKeyCurrent, fakeProvider.LastAuthKey);
-                    Assert.Equal(viewModel.SelectedDesfireReadKeyEncryptionType, fakeProvider.LastAuthKeyType);
-                    Assert.Equal(1, fakeProvider.LastAuthKeyNumber);
+                    Assert.Null(fakeProvider.LastAuthKey);
                     Assert.Equal(viewModel.DesfireReadKeyCurrent, fakeProvider.LastReadKey);
                     Assert.Equal(viewModel.SelectedDesfireReadKeyEncryptionType, fakeProvider.LastReadKeyType);
                     Assert.Equal(1, fakeProvider.LastReadKeyNumber);
@@ -614,7 +612,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task WriteDataCommand_UsesWriteKeyForAuthenticationAndWrite()
+        public async Task WriteDataCommand_UsesProviderOwnedAuthenticationAndWriteKey()
         {
             await RunOnStaThreadAsync(async () =>
             {
@@ -646,9 +644,7 @@ namespace RFiDGear.Tests
 
                     await viewModel.WriteDataCommand.ExecuteAsync(null);
 
-                    Assert.Equal(viewModel.DesfireWriteKeyCurrent, fakeProvider.LastAuthKey);
-                    Assert.Equal(viewModel.SelectedDesfireWriteKeyEncryptionType, fakeProvider.LastAuthKeyType);
-                    Assert.Equal(3, fakeProvider.LastAuthKeyNumber);
+                    Assert.Null(fakeProvider.LastAuthKey);
                     Assert.Null(fakeProvider.LastReadKey);
                     Assert.Equal(viewModel.DesfireWriteKeyCurrent, fakeProvider.LastWriteKey);
                     Assert.Equal(viewModel.SelectedDesfireWriteKeyEncryptionType, fakeProvider.LastWriteKeyType);
