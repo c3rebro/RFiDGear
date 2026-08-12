@@ -67,53 +67,51 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                var bootstrapper = new DeferredSettingsBootstrapper();
-                var viewModel = new MainWindowViewModel(
-                    bootstrapper,
-                    new NoopUpdateNotifier(),
-                    new FakeContextMenuBuilder(),
-                    new FakeAppStartupInitializer(),
-                    new FakeTimerFactory(),
-                    new FakeTaskServiceInitializer(),
-                    new FakeMenuInitializer(),
-                    new FakeStartupArgumentProcessor(),
-                    new NoopUpdateScheduler(),
-                    new FakeReaderMonitor(),
-                    new FakeProjectBootstrapper());
-
-                var initializationTask = viewModel.InitializeAsync();
-
-                bootstrapper.Complete(new SettingsBootstrapResult
-                {
-                    CurrentReaderName = "Reader",
-                    DefaultReaderProvider = ReaderTypes.None,
-                    Culture = CultureInfo.InvariantCulture
-                });
-
-                await initializationTask;
-
                 var tempRoot = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
                 Directory.CreateDirectory(tempRoot);
-
                 var oldProjectPath = Path.Combine(tempRoot, "old.xml");
                 var newProjectPath = Path.Combine(tempRoot, "new.xml");
+                var settingsDirectory = Path.Combine(tempRoot, "settings");
+                var settingsPath = Path.Combine(settingsDirectory, "settings.xml");
                 var originalOldProjectContent = "<Project><ManifestVersion>1.0.0</ManifestVersion></Project>";
                 var originalNewProjectContent = "<Project><ManifestVersion>1.0.0</ManifestVersion></Project>";
                 File.WriteAllText(oldProjectPath, originalOldProjectContent);
                 File.WriteAllText(newProjectPath, originalNewProjectContent);
+                Directory.CreateDirectory(settingsDirectory);
 
-                var projectManager = new ProjectManager();
-                var originalLastUsedPath = string.Empty;
-
-                using (var settings = new SettingsReaderWriter(projectManager.AppDataPath))
+                using (var settings = new SettingsReaderWriter(settingsDirectory, loadSettings: false))
                 {
-                    originalLastUsedPath = settings.DefaultSpecification.LastUsedProjectPath;
+                    settings.DefaultSpecification = new DefaultSpecification(true);
                     settings.DefaultSpecification.LastUsedProjectPath = oldProjectPath;
-                    await settings.SaveSettings();
+                    settings.SaveSettings(settings.DefaultSpecification, settingsPath);
                 }
 
                 try
                 {
+                    var bootstrapper = new DeferredSettingsBootstrapper();
+                    var viewModel = new MainWindowViewModel(
+                        bootstrapper,
+                        new NoopUpdateNotifier(),
+                        new FakeContextMenuBuilder(),
+                        new FakeAppStartupInitializer(),
+                        new FakeTimerFactory(),
+                        new FakeTaskServiceInitializer(),
+                        new FakeMenuInitializer(),
+                        new FakeStartupArgumentProcessor(),
+                        new NoopUpdateScheduler(),
+                        new FakeReaderMonitor(),
+                        new FakeProjectBootstrapper(),
+                        () => new SettingsReaderWriter(settingsDirectory));
+
+                    var initializationTask = viewModel.InitializeAsync();
+                    bootstrapper.Complete(new SettingsBootstrapResult
+                    {
+                        CurrentReaderName = "Reader",
+                        DefaultReaderProvider = ReaderTypes.None,
+                        Culture = CultureInfo.InvariantCulture
+                    });
+                    await initializationTask;
+
                     var method = typeof(MainWindowViewModel).GetMethod(
                         "OpenLastProjectFile",
                         BindingFlags.Instance | BindingFlags.NonPublic,
@@ -133,19 +131,13 @@ namespace RFiDGear.Tests
                     Assert.Equal(originalOldProjectContent, updatedOldProjectContent);
                     Assert.NotEqual(originalNewProjectContent, updatedNewProjectContent);
 
-                    using (var settings = new SettingsReaderWriter(projectManager.AppDataPath))
+                    using (var settings = new SettingsReaderWriter(settingsDirectory))
                     {
                         Assert.Equal(newProjectPath, settings.DefaultSpecification.LastUsedProjectPath);
                     }
                 }
                 finally
                 {
-                    using (var settings = new SettingsReaderWriter(projectManager.AppDataPath))
-                    {
-                        settings.DefaultSpecification.LastUsedProjectPath = originalLastUsedPath;
-                        await settings.SaveSettings();
-                    }
-
                     if (Directory.Exists(tempRoot))
                     {
                         Directory.Delete(tempRoot, recursive: true);
