@@ -327,6 +327,7 @@ namespace RFiDGear.Tests
 
             public void LogError(string stage, Exception exception, object details = null)
             {
+                _ = exception;
                 Entries.Add(new LogEntry(stage, JsonSerializer.Serialize(details)));
             }
         }

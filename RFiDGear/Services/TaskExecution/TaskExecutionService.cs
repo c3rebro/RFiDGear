@@ -600,10 +600,7 @@ namespace RFiDGear.Services.TaskExecution
             }
 
             var loggedTaskPositions = new HashSet<int>();
-            var executedCount = 0;
-            var skippedCount = 0;
-            var failedCount = 0;
-            var successfulCount = 0;
+            var counters = new TaskRunCounters();
 
             try
             {
@@ -680,8 +677,8 @@ namespace RFiDGear.Services.TaskExecution
                     {
                         if (loggedTaskPositions.Add(taskPosition))
                         {
-                            executedCount++;
-                            failedCount++;
+                            counters.Executed++;
+                            counters.Failed++;
                             LogTaskOutcome(runId, descriptor, taskModel, "Executed", "Failed", null, ex);
                         }
 
@@ -695,15 +692,15 @@ namespace RFiDGear.Services.TaskExecution
 
                         if (loggedTaskPositions.Add(taskPosition))
                         {
-                            executedCount++;
+                            counters.Executed++;
                             var success = GetTaskSuccess(taskModel);
                             if (success == true)
                             {
-                                successfulCount++;
+                                counters.Successful++;
                             }
                             else if (success == false)
                             {
-                                failedCount++;
+                                counters.Failed++;
                             }
 
                             LogTaskOutcome(
@@ -716,7 +713,7 @@ namespace RFiDGear.Services.TaskExecution
                     }
                     else if (!executedTask && CurrentTaskIndex != taskPosition && loggedTaskPositions.Add(taskPosition))
                     {
-                        skippedCount++;
+                        counters.Skipped++;
                         LogTaskOutcome(
                             runId,
                             descriptor,
@@ -742,14 +739,25 @@ namespace RFiDGear.Services.TaskExecution
                 {
                     RunId = runId,
                     TotalTasks = descriptors?.Count ?? 0,
-                    Executed = executedCount,
-                    Skipped = skippedCount,
-                    Failed = failedCount,
-                    Successful = successfulCount,
-                    Unknown = Math.Max(0, executedCount - failedCount - successfulCount),
+                    Executed = counters.Executed,
+                    Skipped = counters.Skipped,
+                    Failed = counters.Failed,
+                    Successful = counters.Successful,
+                    Unknown = Math.Max(0, counters.Executed - counters.Failed - counters.Successful),
                     Timestamp = DateTimeOffset.UtcNow
                 });
             }
+        }
+
+        private sealed class TaskRunCounters
+        {
+            public int Executed { get; set; }
+
+            public int Skipped { get; set; }
+
+            public int Failed { get; set; }
+
+            public int Successful { get; set; }
         }
 
         private void LogTaskOutcome(
