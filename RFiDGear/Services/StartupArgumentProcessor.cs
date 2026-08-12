@@ -58,6 +58,10 @@ namespace RFiDGear.Services
                         result.Autorun = string.Equals(value, "1", StringComparison.Ordinal);
                         break;
 
+                    case "AUTOMODE":
+                        result.AutoMode = string.Equals(value, "1", StringComparison.Ordinal);
+                        break;
+
                     case "LASTUSEDPROJECTPATH":
                         PersistLastProjectPath(value);
                         break;

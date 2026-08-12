@@ -132,6 +132,29 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void AutoModeArgument_SetsAutoModeTrue()
+        {
+            var result = new StartupArgumentProcessor().Process(new[]
+            {
+                "RFiDGear.exe",
+                "AUTOMODE=1"
+            });
+
+            Assert.True(result.AutoMode);
+        }
+
+        [Fact]
+        public void AutoModeArgument_AbsentLeavesAutoModeFalse()
+        {
+            var result = new StartupArgumentProcessor().Process(new[]
+            {
+                "RFiDGear.exe"
+            });
+
+            Assert.False(result.AutoMode);
+        }
+
+        [Fact]
         public void LegacyReportArguments_MapToReportFields()
         {
             var tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());

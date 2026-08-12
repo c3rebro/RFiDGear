@@ -17,6 +17,8 @@ namespace RFiDGear.Services.Interfaces
 
         public bool Autorun { get; set; }
 
+        public bool AutoMode { get; set; }
+
         public Dictionary<string, string> Variables { get; } = new Dictionary<string, string>();
     }
 }

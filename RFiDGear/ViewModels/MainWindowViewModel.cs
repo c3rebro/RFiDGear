@@ -1792,6 +1792,11 @@ namespace RFiDGear.ViewModel
                 SetReaderPort = value => ReaderDevice.PortNumber = value,
                 SetCulture = value => culture = value
             });
+
+            if (startupArguments.AutoMode && !IsWriteToAllChipAutoChecked)
+            {
+                OnNewWriteToAllChipAutoCommand();
+            }
         }
 
         private void ApplyStartupArguments(StartupArgumentResult startupArguments)
