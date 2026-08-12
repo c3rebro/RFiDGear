@@ -116,7 +116,7 @@ namespace RFiDGear.ViewModel
                     {
                         if (!(device is LibLogicalAccessProvider))
                         {
-                            if (_ownsDevice) device.Dispose();
+                            device.Dispose();
                             device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
                             _ownsDevice = true;
                         }
@@ -139,7 +139,7 @@ namespace RFiDGear.ViewModel
                     {
                         if (!(device is ElatecNetProvider))
                         {
-                            if (_ownsDevice) device.Dispose();
+                            device.Dispose();
                             device = new ElatecNetProvider();
                             _ownsDevice = true;
                         }
