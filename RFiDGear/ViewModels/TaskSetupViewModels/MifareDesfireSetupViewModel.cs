@@ -1325,14 +1325,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => appNumberNew;
             set
             {
-                try
-                {
-                    appNumberNew = value.Length > 8 ? value.ToUpper().Remove(8) : value;
-                }
-                catch
-                {
-                    appNumberNew = value.ToUpper();
-                }
+                appNumberNew = value != null && value.Length > 8 ? value.ToUpper().Remove(8) : value;
                 IsValidAppNumberNew = TryParseDesfireAppId(value, out appNumberNewAsInt);
                 OnPropertyChanged(nameof(AppNumberNew));
             }
