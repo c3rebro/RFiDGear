@@ -1,6 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using RFiDGear.Infrastructure;
@@ -19,12 +21,13 @@ namespace RFiDGear.Tests
     /// </summary>
     public class TaskExecutionServiceTests
     {
-        private static TaskExecutionService BuildService()
+        private static TaskExecutionService BuildService(ITaskExecutionLogger logger = null)
         {
             return new TaskExecutionService(
                 new StubReaderDeviceProvider(),
                 new StubDispatcherTimerAdapter(),
-                new StubDispatcherTimerAdapter());
+                new StubDispatcherTimerAdapter(),
+                logger);
         }
 
         private static TaskExecutionRequest BuildRequest(IReadOnlyList<TaskDescriptor> descriptors)
@@ -164,6 +167,196 @@ namespace RFiDGear.Tests
         {
             var task = new StubTaskModel();
             Assert.Equal(TaskExecutionState.NotStarted, task.ExecutionState);
+        }
+
+
+        [Fact]
+        public async Task StructuredLogs_EmitCorrelatedPerTaskOutcomesAndSummary()
+        {
+            var logger = new CapturingTaskExecutionLogger();
+            var first = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "10",
+                SelectedTaskType = "ReadData",
+                SelectedTaskDescription = "Read verification data"
+            };
+            var second = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "11",
+                SelectedTaskType = "WriteData",
+                SelectedTaskDescription = "Write personalization data"
+            };
+
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, first, ct =>
+                {
+                    first.CurrentTaskErrorLevel = ERROR.NoError;
+                    first.IsTaskCompletedSuccessfully = true;
+                    return Task.CompletedTask;
+                }),
+                new TaskDescriptor(1, second, ct =>
+                {
+                    second.CurrentTaskErrorLevel = ERROR.TransportError;
+                    second.IsTaskCompletedSuccessfully = false;
+                    return Task.CompletedTask;
+                })
+            };
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await BuildService(logger).ExecuteOnceAsync(BuildRequest(descriptors));
+            });
+
+            var outcomes = logger.Entries.Where(entry => entry.Stage == "Task.Outcome").ToList();
+            Assert.Equal(2, outcomes.Count);
+
+            var runIds = logger.Entries
+                .Where(entry => entry.Stage.StartsWith("TaskLoop", StringComparison.Ordinal) || entry.Stage == "Task.Outcome")
+                .Select(entry => GetStringProperty(entry.DetailsJson, "RunId"))
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct()
+                .ToList();
+
+            Assert.Single(runIds);
+            Assert.Equal("10", GetStringProperty(outcomes[0].DetailsJson, "TaskId"));
+            Assert.Equal("ReadData", GetStringProperty(outcomes[0].DetailsJson, "TaskType"));
+            Assert.Equal("Executed", GetStringProperty(outcomes[0].DetailsJson, "Decision"));
+            Assert.Equal("Successful", GetStringProperty(outcomes[0].DetailsJson, "Outcome"));
+            Assert.Equal("11", GetStringProperty(outcomes[1].DetailsJson, "TaskId"));
+            Assert.Equal("Failed", GetStringProperty(outcomes[1].DetailsJson, "Outcome"));
+
+            var summary = Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Summary"));
+            Assert.Equal(2, GetIntProperty(summary.DetailsJson, "Executed"));
+            Assert.Equal(0, GetIntProperty(summary.DetailsJson, "Skipped"));
+            Assert.Equal(1, GetIntProperty(summary.DetailsJson, "Failed"));
+            Assert.Equal(1, GetIntProperty(summary.DetailsJson, "Successful"));
+        }
+
+        [Fact]
+        public async Task StructuredLogs_RedactSecretsAndDoNotSerializeTaskKeyProperties()
+        {
+            const string secret = "00112233445566778899AABBCCDDEEFF";
+            var logger = new CapturingTaskExecutionLogger();
+            var task = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "20",
+                SelectedTaskType = "WriteData",
+                SelectedTaskDescription = "Key=" + secret + " payload=" + secret,
+                DesfireAppKeyCurrent = secret
+            };
+
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, task, ct =>
+                {
+                    task.CurrentTaskErrorLevel = ERROR.NoError;
+                    task.IsTaskCompletedSuccessfully = true;
+                    return Task.CompletedTask;
+                })
+            };
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await BuildService(logger).ExecuteOnceAsync(BuildRequest(descriptors));
+            });
+
+            var outcome = Assert.Single(logger.Entries.Where(entry => entry.Stage == "Task.Outcome"));
+            Assert.DoesNotContain(secret, outcome.DetailsJson);
+            Assert.DoesNotContain(nameof(LoggingStubTaskModel.DesfireAppKeyCurrent), outcome.DetailsJson);
+            Assert.Contains("REDACTED", outcome.DetailsJson);
+        }
+
+        [Fact]
+        public async Task StructuredLogs_RecordSanitizedTaskExceptionAndFailureSummary()
+        {
+            const string secret = "FFEEDDCCBBAA99887766554433221100";
+            var logger = new CapturingTaskExecutionLogger();
+            var task = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "30",
+                SelectedTaskType = "AuthenticateApplication",
+                SelectedTaskDescription = "Authentication check"
+            };
+
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, task, ct => throw new InvalidOperationException("Key=" + secret))
+            };
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                await StaTestRunner.RunOnStaThreadAsync(async () =>
+                {
+                    await BuildService(logger).ExecuteOnceAsync(BuildRequest(descriptors));
+                });
+            });
+
+            var outcome = Assert.Single(logger.Entries.Where(entry => entry.Stage == "Task.Outcome"));
+            Assert.DoesNotContain(secret, outcome.DetailsJson);
+            Assert.Equal("InvalidOperationException", GetStringProperty(outcome.DetailsJson, "ExceptionType"));
+            Assert.Contains("REDACTED", GetStringProperty(outcome.DetailsJson, "ExceptionMessage"));
+
+            var summary = Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Summary"));
+            Assert.Equal(1, GetIntProperty(summary.DetailsJson, "Executed"));
+            Assert.Equal(1, GetIntProperty(summary.DetailsJson, "Failed"));
+        }
+
+        private static string GetStringProperty(string json, string propertyName)
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.GetProperty(propertyName).ValueKind == JsonValueKind.Null
+                ? null
+                : document.RootElement.GetProperty(propertyName).GetString();
+        }
+
+        private static int GetIntProperty(string json, string propertyName)
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.GetProperty(propertyName).GetInt32();
+        }
+
+        private sealed class CapturingTaskExecutionLogger : ITaskExecutionLogger
+        {
+            public List<LogEntry> Entries { get; } = new List<LogEntry>();
+
+            public void LogInformation(string stage, object details = null)
+            {
+                Entries.Add(new LogEntry(stage, JsonSerializer.Serialize(details)));
+            }
+
+            public void LogError(string stage, Exception exception, object details = null)
+            {
+                _ = exception;
+                Entries.Add(new LogEntry(stage, JsonSerializer.Serialize(details)));
+            }
+        }
+
+        private sealed class LogEntry
+        {
+            public LogEntry(string stage, string detailsJson)
+            {
+                Stage = stage;
+                DetailsJson = detailsJson;
+            }
+
+            public string Stage { get; }
+            public string DetailsJson { get; }
+        }
+
+        private sealed class LoggingStubTaskModel : IGenericTask
+        {
+            public bool? IsTaskCompletedSuccessfully { get; set; }
+            public ERROR SelectedExecuteConditionErrorLevel { get; set; }
+            public string SelectedExecuteConditionTaskIndex { get; set; } = string.Empty;
+            public ERROR CurrentTaskErrorLevel { get; set; }
+            public string CurrentTaskIndex { get; set; } = string.Empty;
+            public int SelectedTaskIndexAsInt => int.TryParse(CurrentTaskIndex, out var index) ? index : -1;
+            public ObservableCollection<TaskAttemptResult> AttemptResults { get; } = new ObservableCollection<TaskAttemptResult>();
+            public TaskExecutionState ExecutionState { get; set; } = TaskExecutionState.NotStarted;
+            public string SelectedTaskType { get; set; }
+            public string SelectedTaskDescription { get; set; }
+            public string DesfireAppKeyCurrent { get; set; }
         }
 
         private sealed class StubReaderDeviceProvider : IReaderDeviceProvider
