@@ -58,6 +58,7 @@ namespace RFiDGear.ViewModel
         private TaskDialogFactory taskDialogFactory;
         private ITaskExecutionService taskExecutionService;
         private readonly ISettingsBootstrapper settingsBootstrapper;
+        private readonly Func<SettingsReaderWriter> settingsReaderWriterFactory;
         private readonly IUpdateNotifier updateNotifier;
         private readonly IContextMenuBuilder contextMenuBuilder;
         private readonly IStartupArgumentProcessor startupArgumentProcessor;
@@ -117,7 +118,8 @@ namespace RFiDGear.ViewModel
             IStartupArgumentProcessor startupArgumentProcessor,
             IUpdateScheduler updateScheduler,
             IReaderMonitor readerMonitor,
-            IProjectBootstrapper projectBootstrapper)
+            IProjectBootstrapper projectBootstrapper,
+            Func<SettingsReaderWriter> settingsReaderWriterFactory = null)
         {
             this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
             this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
@@ -129,6 +131,7 @@ namespace RFiDGear.ViewModel
             this.updateScheduler = updateScheduler ?? throw new ArgumentNullException(nameof(updateScheduler));
             this.readerMonitor = readerMonitor ?? throw new ArgumentNullException(nameof(readerMonitor));
             this.projectBootstrapper = projectBootstrapper ?? throw new ArgumentNullException(nameof(projectBootstrapper));
+            this.settingsReaderWriterFactory = settingsReaderWriterFactory ?? (() => new SettingsReaderWriter());
 
             if (appStartupInitializer == null)
             {
@@ -306,7 +309,7 @@ namespace RFiDGear.ViewModel
         /// <returns>A task that completes once the project load finishes.</returns>
         private async Task OpenLastProjectFile(string projectFileToUse)
         {
-            using (var settings = new SettingsReaderWriter())
+            using (var settings = settingsReaderWriterFactory())
             {
                 var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
                 string lastUsedDBPath;
@@ -1217,7 +1220,7 @@ namespace RFiDGear.ViewModel
             bool autoLoadLastUsedDB;
             string lastUsedDBPath;
 
-            using (var settings = new SettingsReaderWriter())
+            using (var settings = settingsReaderWriterFactory())
             {
                 CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
                     ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
@@ -1278,7 +1281,7 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand SaveTaskDialogCommand => new AsyncRelayCommand(OnNewSaveTaskDialogCommand);
         private async Task OnNewSaveTaskDialogCommand()
         {
-            using (var settings = new SettingsReaderWriter())
+            using (var settings = settingsReaderWriterFactory())
             {
                 var targetPath = settings.DefaultSpecification.LastUsedProjectPath;
                 if (!IsValidProjectSavePath(targetPath))
@@ -1324,7 +1327,7 @@ namespace RFiDGear.ViewModel
 
             if (mbox.Show(Dialogs) == MessageBoxResult.Yes)
             {
-                using (var settings = new SettingsReaderWriter())
+                using (var settings = settingsReaderWriterFactory())
                 {
                     settings.DefaultSpecification.LastUsedProjectPath = fileName;
                     await settings.SaveSettings();

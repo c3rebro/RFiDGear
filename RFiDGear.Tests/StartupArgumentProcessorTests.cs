@@ -16,6 +16,8 @@ namespace RFiDGear.Tests
         public async Task CustomProjectFileArgument_TriggersOpenProjectEvenWhenAutoLoadDisabled()
         {
             var tempProjectFile = Path.GetTempFileName();
+            var tempSettingsDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            Directory.CreateDirectory(tempSettingsDirectory);
             try
             {
                 var result = new StartupArgumentProcessor().Process(new[]
@@ -24,10 +26,9 @@ namespace RFiDGear.Tests
                     $"CUSTOMPROJECTFILE={tempProjectFile}"
                 });
 
-                var projectManager = new ProjectManager();
-                var settingsPath = projectManager.SettingsPath;
+                var settingsPath = Path.Combine(tempSettingsDirectory, "settings.xml");
 
-                using (var settingsWriter = new SettingsReaderWriter(projectManager.AppDataPath, loadSettings: false))
+                using (var settingsWriter = new SettingsReaderWriter(tempSettingsDirectory, loadSettings: false))
                 {
                     var specification = new DefaultSpecification(true)
                     {
@@ -49,7 +50,8 @@ namespace RFiDGear.Tests
                     }
                 };
 
-                await new ProjectBootstrapper().BootstrapAsync(request);
+                await new ProjectBootstrapper(
+                    () => new SettingsReaderWriter(tempSettingsDirectory)).BootstrapAsync(request);
 
                 Assert.Equal(new FileInfo(tempProjectFile).FullName, result.ProjectFilePath);
                 Assert.Equal(result.ProjectFilePath, openedPath);
@@ -57,6 +59,7 @@ namespace RFiDGear.Tests
             finally
             {
                 File.Delete(tempProjectFile);
+                Directory.Delete(tempSettingsDirectory, recursive: true);
             }
         }
 
