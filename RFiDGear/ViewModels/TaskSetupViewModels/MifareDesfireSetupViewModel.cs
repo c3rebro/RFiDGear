@@ -2316,11 +2316,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireMasterKeyCurrent, SelectedDesfireMasterKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
                     {
-                        var authResult = await device.AuthToMifareDesfireApplication(
-                                  DesfireMasterKeyCurrent,
-                                  SelectedDesfireMasterKeyEncryptionTypeCurrent,
-                                  0);
-
                         DESFireKeySettings keySettings;
                         keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
 
@@ -2329,10 +2324,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
                         keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
 
-                        if (IsValidAppNumberNew != false && authResult == ERROR.NoError)
+                        if (IsValidAppNumberNew != false)
                         {
-                            StatusText += string.Format("{0}: Successfully Authenticated to App 0\n", DateTime.Now);
-
+                            // The provider owns SearchTag -> Select PICC -> Authenticate -> CreateApplication.
                             var createResult = await device.CreateMifareDesfireApplication(
                                 DesfireMasterKeyCurrent,
                                 keySettings,
@@ -2341,38 +2335,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 selectedDesfireAppMaxNumberOfKeysAsInt,
                                 AppNumberNewAsInt);
 
-                            if (createResult.Code == ERROR.NoError)
+                            if (createResult.Code == ERROR.AuthFailure)
                             {
-                                StatusText += string.Format("{0}: Successfully Created AppID {1}\n", DateTime.Now, AppNumberNewAsInt);
-                                CurrentTaskErrorLevel = createResult.Code;
-                                SelectedDesfireAppKeyEncryptionTypeCurrent = SelectedDesfireAppKeyEncryptionTypeCreateNewApp;
-                                AppNumberCurrent = AppNumberNew;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
+                                // PICC may allow Create/Delete without master-key authentication.
+                                StatusText += string.Format("{0}: PICC auth failed; retrying without authentication.\n", DateTime.Now);
+                                createResult = await device.CreateMifareDesfireApplication(
+                                    DesfireMasterKeyCurrent,
+                                    keySettings,
+                                    SelectedDesfireMasterKeyEncryptionTypeCurrent,
+                                    SelectedDesfireAppKeyEncryptionTypeCreateNewApp,
+                                    selectedDesfireAppMaxNumberOfKeysAsInt,
+                                    AppNumberNewAsInt,
+                                    authenticateToPICCFirst: false);
                             }
-                            else
-                            {
-                                StatusText += string.Format("{0}: Unable to Create App: {1}\n", DateTime.Now, createResult.Message ?? createResult.Code.ToString());
-                                CurrentTaskErrorLevel = createResult.Code;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
-                        }
-                        else if (IsValidAppNumberNew != false && authResult == ERROR.AuthFailure)
-                        {
-                            // PICC may be configured to allow application creation without master-key
-                            // authentication ("Create/Delete without MK" key-settings bit is set).
-                            // Retry unauthenticated; the card will reject the command if auth is required.
-                            StatusText += string.Format("{0}: PICC auth failed; retrying without authentication.\n", DateTime.Now);
-
-                            var createResult = await device.CreateMifareDesfireApplication(
-                                DesfireMasterKeyCurrent,
-                                keySettings,
-                                SelectedDesfireMasterKeyEncryptionTypeCurrent,
-                                SelectedDesfireAppKeyEncryptionTypeCreateNewApp,
-                                selectedDesfireAppMaxNumberOfKeysAsInt,
-                                AppNumberNewAsInt,
-                                authenticateToPICCFirst: false);
 
                             if (createResult.Code == ERROR.NoError)
                             {
@@ -2386,14 +2361,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 StatusText += string.Format("{0}: Unable to Create App: {1}\n", DateTime.Now, createResult.Message ?? createResult.Code.ToString());
                                 CurrentTaskErrorLevel = createResult.Code;
                             }
-
-                            await UpdateReaderStatusCommand.ExecuteAsync(false);
-                            return;
-                        }
-                        else
-                        {
-                            StatusText += string.Format("{0}: Authentication to PICC failed.\n", DateTime.Now);
-                            CurrentTaskErrorLevel = authResult;
                             await UpdateReaderStatusCommand.ExecuteAsync(false);
                             return;
                         }
@@ -2439,70 +2406,30 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR && IsValidAppNumberCurrent != false)
                     {
-                        var result = await device.AuthToMifareDesfireApplication(
-                                DesfireAppKeyCurrent,
-                                SelectedDesfireAppKeyEncryptionTypeCurrent,
-                                selectedDesfireAppKeyNumberCurrentAsInt, AppNumberCurrentAsInt);
+                        // The provider owns the complete DESFire operation boundary:
+                        // SearchTag (TWN4 LEGIC) -> Select -> Authenticate -> CreateFile.
+                        var result = await device.CreateMifareDesfireFile(
+                            DesfireAppKeyCurrent,
+                            SelectedDesfireAppKeyEncryptionTypeCurrent,
+                            SelectedDesfireFileType,
+                            accessRights,
+                            SelectedDesfireFileCryptoMode,
+                            AppNumberCurrentAsInt,
+                            FileNumberCurrentAsInt,
+                            FileSizeCurrentAsInt);
 
                         if (result == ERROR.NoError)
                         {
-                            StatusText += string.Format("{0}: Successfully Authenticated to App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
-
-                            result = await device.CreateMifareDesfireFile(
-                               DesfireAppKeyCurrent,
-                               SelectedDesfireAppKeyEncryptionTypeCurrent,
-                               SelectedDesfireFileType,
-                               accessRights,
-                               SelectedDesfireFileCryptoMode,
-                               AppNumberCurrentAsInt,
-                               FileNumberCurrentAsInt,
-                               FileSizeCurrentAsInt);
-
-                            if (result == ERROR.NoError)
-                            {
-                                StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
-                            else
-                            {
-                                StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
+                            StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberCurrentAsInt);
+                            CurrentTaskErrorLevel = result;
+                            await UpdateReaderStatusCommand.ExecuteAsync(false);
+                            return;
                         }
 
-                        else
-                        {
-                            StatusText += string.Format("{0}: Unable to Authenticate to App {1}; Try to Continue Anyway...\n", DateTime.Now, AppNumberCurrentAsInt);
-
-                            result = await device.CreateMifareDesfireFile(
-                                  DesfireAppKeyCurrent,
-                                  SelectedDesfireAppKeyEncryptionTypeCurrent,
-                                  SelectedDesfireFileType,
-                                  accessRights,
-                                  SelectedDesfireFileCryptoMode,
-                                  AppNumberCurrentAsInt,
-                                  FileNumberCurrentAsInt,
-                                  FileSizeCurrentAsInt);
-
-                            if (result == ERROR.NoError)
-                            {
-                                StatusText += string.Format("{0}: Successfully Created FileNo: {1} with Size: {2} in AppID: {3}\n", DateTime.Now, FileNumberCurrentAsInt, FileSizeCurrentAsInt, AppNumberNewAsInt);
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
-                            else
-                            {
-                                StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
-                                CurrentTaskErrorLevel = result;
-                                await UpdateReaderStatusCommand.ExecuteAsync(false);
-                                return;
-                            }
-                        }
+                        StatusText += string.Format("{0}: Unable to Create File: {1}\n", DateTime.Now, result.ToString());
+                        CurrentTaskErrorLevel = result;
+                        await UpdateReaderStatusCommand.ExecuteAsync(false);
+                        return;
                     }
                 }
                 else
@@ -3765,6 +3692,18 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             StatusText += string.Format("{0}: Failed. Directory Listing is not allowed and PICC MK is Incorrect.\n", DateTime.Now);
 
                             CurrentTaskErrorLevel = ERROR.AuthFailure;
+                        }
+
+                        else if (IsValidAppNumberCurrent != false && result == ERROR.PermissionDenied)
+                        {
+                            StatusText += string.Format("{0}: Failed. DESFire directory listing was denied or the reader context was invalid.\n", DateTime.Now);
+                            CurrentTaskErrorLevel = ERROR.PermissionDenied;
+                        }
+
+                        else if (IsValidAppNumberCurrent != false && result == ERROR.TransportError)
+                        {
+                            StatusText += string.Format("{0}: Failed. Reader transport was unavailable while listing DESFire applications.\n", DateTime.Now);
+                            CurrentTaskErrorLevel = ERROR.TransportError;
                         }
 
                         // There are no Apps

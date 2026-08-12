@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using RFiDGear.Infrastructure;
 
 namespace RFiDGear.Services.Interfaces
 {
@@ -31,6 +32,8 @@ namespace RFiDGear.Services.Interfaces
         public Action<string> UpdateDateTime { get; set; }
 
         public Action<string> SetCurrentReader { get; set; }
+
+        public Action<ReaderTypes> SetReaderProvider { get; set; }
 
         public Action<int> SetReaderPort { get; set; }
 
