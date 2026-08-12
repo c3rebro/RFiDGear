@@ -124,7 +124,7 @@ namespace RFiDGear.Tests
                 _fileNo: 0,
                 _fileSize: 16);
 
-            Assert.NotEqual(ERROR.NoError, result);
+            Assert.Equal(ERROR.PermissionDenied, result);
         }
 
         [Fact]
@@ -144,6 +144,103 @@ namespace RFiDGear.Tests
                 _fileSize: 16);
 
             Assert.Equal(ERROR.ProtocolConstraint, result);
+        }
+
+        [Fact]
+        public async Task ReadMiFareDESFireChipFile_UsesSingleProviderOwnedAuthBoundary()
+        {
+            var provider = new DataOperationTestProvider();
+
+            var result = await provider.ReadMiFareDESFireChipFile(
+                "00000000000000000000000000000000",
+                DESFireKeyType.DF_KEY_AES,
+                1,
+                RfidEncryptionMode.CM_ENCRYPT,
+                2,
+                0x123456,
+                8);
+
+            Assert.Equal(ERROR.NoError, result);
+            Assert.Equal(1, provider.AuthCalls);
+            Assert.Equal(1, provider.ReadCalls);
+            Assert.Equal(0, provider.WriteCalls);
+        }
+
+        [Fact]
+        public async Task WriteMiFareDESFireChipFile_UsesSingleProviderOwnedAuthBoundary()
+        {
+            var provider = new DataOperationTestProvider();
+
+            var result = await provider.WriteMiFareDESFireChipFile(
+                "00000000000000000000000000000000",
+                DESFireKeyType.DF_KEY_AES,
+                2,
+                RfidEncryptionMode.CM_ENCRYPT,
+                3,
+                0x123456,
+                new byte[] { 1, 2, 3, 4 });
+
+            Assert.Equal(ERROR.NoError, result);
+            Assert.Equal(1, provider.AuthCalls);
+            Assert.Equal(0, provider.ReadCalls);
+            Assert.Equal(1, provider.WriteCalls);
+        }
+
+        [Fact]
+        public async Task ReadMiFareDESFireChipFile_AuthFailure_DoesNotAttemptRead()
+        {
+            var provider = new DataOperationTestProvider(ERROR.AuthFailure);
+
+            var result = await provider.ReadMiFareDESFireChipFile(
+                "00000000000000000000000000000000",
+                DESFireKeyType.DF_KEY_AES,
+                1,
+                RfidEncryptionMode.CM_ENCRYPT,
+                0,
+                1,
+                4);
+
+            Assert.Equal(ERROR.AuthFailure, result);
+            Assert.Equal(1, provider.AuthCalls);
+            Assert.Equal(0, provider.ReadCalls);
+        }
+
+        [Fact]
+        public async Task ReadMiFareDESFireChipFile_SdkOperationFailure_ReturnsPermissionDenied()
+        {
+            var provider = new DataOperationTestProvider(throwOnRead: true);
+
+            var result = await provider.ReadMiFareDESFireChipFile(
+                "00000000000000000000000000000000",
+                DESFireKeyType.DF_KEY_AES,
+                1,
+                RfidEncryptionMode.CM_ENCRYPT,
+                0,
+                1,
+                4);
+
+            Assert.Equal(ERROR.PermissionDenied, result);
+            Assert.Equal(1, provider.AuthCalls);
+            Assert.Equal(1, provider.ReadCalls);
+        }
+
+        [Fact]
+        public async Task WriteMiFareDESFireChipFile_SdkOperationFailure_ReturnsPermissionDenied()
+        {
+            var provider = new DataOperationTestProvider(throwOnWrite: true);
+
+            var result = await provider.WriteMiFareDESFireChipFile(
+                "00000000000000000000000000000000",
+                DESFireKeyType.DF_KEY_AES,
+                1,
+                RfidEncryptionMode.CM_ENCRYPT,
+                0,
+                1,
+                new byte[] { 1, 2, 3, 4 });
+
+            Assert.Equal(ERROR.PermissionDenied, result);
+            Assert.Equal(1, provider.AuthCalls);
+            Assert.Equal(1, provider.WriteCalls);
         }
 
         private sealed class CreateFileTestProvider : ElatecNetProvider
@@ -178,6 +275,55 @@ namespace RFiDGear.Tests
                 if (_throwOnCreate)
                     throw new InvalidOperationException("simulated create failure");
                 BackupFileRequested = true;
+                return Task.CompletedTask;
+            }
+        }
+
+        private sealed class DataOperationTestProvider : ElatecNetProvider
+        {
+            private readonly ERROR _authResult;
+            private readonly bool _throwOnRead;
+            private readonly bool _throwOnWrite;
+
+            public int AuthCalls { get; private set; }
+            public int ReadCalls { get; private set; }
+            public int WriteCalls { get; private set; }
+
+            public DataOperationTestProvider(ERROR authResult = ERROR.NoError, bool throwOnRead = false, bool throwOnWrite = false)
+            {
+                _authResult = authResult;
+                _throwOnRead = throwOnRead;
+                _throwOnWrite = throwOnWrite;
+            }
+
+            protected override Task<ERROR> AuthToMifareDesfireApplicationCore(string key, DESFireKeyType keyType, int keyNumber, int appId)
+            {
+                AuthCalls++;
+                return Task.FromResult(_authResult);
+            }
+
+            protected override Task<byte[]> ReadDesfireDataAsync(byte fileNo, int fileSize, RfidEncryptionMode encMode)
+            {
+                _ = fileNo;
+                _ = encMode;
+                ReadCalls++;
+                if (_throwOnRead)
+                {
+                    throw new InvalidOperationException("Simulated SDK read failure");
+                }
+                return Task.FromResult(new byte[fileSize]);
+            }
+
+            protected override Task WriteDesfireDataAsync(byte fileNo, byte[] data, RfidEncryptionMode encMode)
+            {
+                _ = fileNo;
+                _ = data;
+                _ = encMode;
+                WriteCalls++;
+                if (_throwOnWrite)
+                {
+                    throw new InvalidOperationException("Simulated SDK write failure");
+                }
                 return Task.CompletedTask;
             }
         }

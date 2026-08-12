@@ -1785,6 +1785,7 @@ namespace RFiDGear.ViewModel
                 WriteOnceAsync = () => OnNewWriteToChipOnceCommand(),
                 UpdateDateTime = value => DateTimeStatusBar = value,
                 SetCurrentReader = value => CurrentReader = value,
+                SetReaderProvider = value => ReaderDevice.Reader = value,
                 SetReaderPort = value => ReaderDevice.PortNumber = value,
                 SetCulture = value => culture = value
             });

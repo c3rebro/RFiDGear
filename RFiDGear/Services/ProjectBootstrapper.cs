@@ -14,6 +14,17 @@ namespace RFiDGear.Services
     public class ProjectBootstrapper : IProjectBootstrapper
     {
         private static readonly ILogger Logger = Log.ForContext<ProjectBootstrapper>();
+        private readonly Func<SettingsReaderWriter> settingsFactory;
+
+        public ProjectBootstrapper()
+            : this(() => new SettingsReaderWriter())
+        {
+        }
+
+        public ProjectBootstrapper(Func<SettingsReaderWriter> settingsFactory)
+        {
+            this.settingsFactory = settingsFactory ?? throw new ArgumentNullException(nameof(settingsFactory));
+        }
 
         public async Task BootstrapAsync(ProjectBootstrapRequest request)
         {
@@ -24,7 +35,7 @@ namespace RFiDGear.Services
 
             try
             {
-                using (var settings = new SettingsReaderWriter())
+                using (var settings = settingsFactory())
                 {
                     await settings.ReadSettingsAsync();
 
@@ -33,6 +44,10 @@ namespace RFiDGear.Services
                     request.SetCurrentReader?.Invoke(string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
                         ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                         : settings.DefaultSpecification.DefaultReaderName);
+
+                    // This is the authoritative settings read immediately before AUTORUN.
+                    // Keep the static provider in sync, not just the UI label.
+                    request.SetReaderProvider?.Invoke(settings.DefaultSpecification.DefaultReaderProvider);
 
                     if (int.TryParse(settings.DefaultSpecification.LastUsedComPort, out var portNumber))
                     {

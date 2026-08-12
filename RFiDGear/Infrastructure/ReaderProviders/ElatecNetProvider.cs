@@ -480,49 +480,88 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             await _comPortLock.WaitAsync();
             try
             {
-            if (readerDevice.IsConnected)
-            {
-                uint[] appArr;
+                if (!IsConnected)
+                {
+                    return ERROR.TransportError;
+                }
 
                 DesfireChip ??= new MifareDesfireChipModel();
-
                 DesfireChip.AppList = new List<MifareDesfireAppModel>();
 
+                uint[] appArr = null;
+                Exception lastDirectoryException = null;
+                var maxAttempts = readerDevice.IsTWN4LegicReader ? 3 : 1;
+                for (var attempt = 1; attempt <= maxAttempts; attempt++)
+                {
+                    try
+                    {
+                        // ELATEC's TWN4 LEGIC flow reads the directory directly after SearchTag.
+                        // Selecting PICC here is redundant and intermittently returns AccessDenied.
+                        var tag = await readerDevice.SearchTagAsync();
+                        if (readerDevice.IsTWN4LegicReader && tag == null)
+                        {
+                            throw new InvalidOperationException("SearchTag did not return a tag.");
+                        }
+                        if (!readerDevice.IsTWN4LegicReader)
+                        {
+                            await readerDevice.MifareDesfire_SelectApplicationAsync(0);
+                        }
+                        appArr = await readerDevice.MifareDesfire_GetAppIDsAsync();
+                        lastDirectoryException = null;
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                        lastDirectoryException = e;
+                        if (attempt < maxAttempts)
+                        {
+                            Log.ForContext<ElatecNetProvider>().Warning(e,
+                                "Elatec DESFire directory listing attempt {Attempt}/{MaxAttempts} failed; retrying SearchTag/GetAppIDs.",
+                                attempt, maxAttempts);
+                            await Task.Delay(100);
+                        }
+                    }
+                }
+
+                if (lastDirectoryException != null)
+                {
+                    Log.ForContext<ElatecNetProvider>().Error(lastDirectoryException,
+                        "Elatec DESFire directory listing failed after {MaxAttempts} attempts.", maxAttempts);
+                    return ERROR.PermissionDenied;
+                }
+
+                if (appArr != null)
+                {
+                    foreach (var appid in appArr)
+                    {
+                        DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
+                    }
+                }
+
+                // TWN4 LEGIC rejects this optional metadata call intermittently even
+                // though the directory and all card operations are valid. Do not emit
+                // a false operational failure for information the task engine does not use.
+                if (readerDevice.IsTWN4LegicReader)
+                {
+                    DesfireChip.FreeMemory = 0;
+                    return ERROR.NoError;
+                }
+
+                // On other ELATEC readers, re-establish PICC context for the optional lookup.
                 try
                 {
                     await readerDevice.SearchTagAsync();
                     await readerDevice.MifareDesfire_SelectApplicationAsync(0);
                     DesfireChip.FreeMemory = await readerDevice.MifareDesfire_GetFreeMemoryAsync();
                 }
-                catch
+                catch (Exception e)
                 {
                     DesfireChip.FreeMemory = 0;
-                }
-
-                try
-                {
-                    appArr = await readerDevice.MifareDesfire_GetAppIDsAsync();
-
-                    if (appArr != null)
-                    {
-                        foreach (var appid in appArr)
-                        {
-                            DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
-                        }
-                    }
-                }
-                catch
-                {
-                    return ERROR.AuthFailure;
+                    Log.ForContext<ElatecNetProvider>().Warning(e,
+                        "Elatec DESFire free-memory metadata lookup failed; directory listing remains valid.");
                 }
 
                 return ERROR.NoError;
-            }
-
-            else
-            {
-                return ERROR.TransportError;
-            }
             }
             finally
             {
@@ -546,37 +585,78 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         protected virtual async Task<ERROR> AuthToMifareDesfireApplicationCore(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
-            if (readerDevice.IsConnected)
+            if (!IsConnected)
             {
-                if (readerDevice.IsTWN4LegicReader)
+                return ERROR.TransportError;
+            }
+
+            if (readerDevice.IsTWN4LegicReader)
+            {
+                Exception lastSelectException = null;
+                for (var attempt = 1; attempt <= 3; attempt++)
                 {
                     try
                     {
-                        await readerDevice.SearchTagAsync();
+                        var tag = await readerDevice.SearchTagAsync();
+                        if (tag == null)
+                        {
+                            throw new InvalidOperationException("SearchTag did not return a tag.");
+                        }
+
+                        await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
+                        lastSelectException = null;
+                        break;
                     }
-                    catch { }
+                    catch (Exception e)
+                    {
+                        lastSelectException = e;
+                        if (attempt < 3)
+                        {
+                            Log.ForContext<ElatecNetProvider>().Warning(e,
+                                "Elatec DESFire context establishment attempt {Attempt}/3 failed for AppId {AppId} KeyNo {KeyNumber}; retrying SearchTag/Select.",
+                                attempt, _appID, _keyNumber);
+                            await Task.Delay(100);
+                        }
+                    }
                 }
 
+                if (lastSelectException != null)
+                {
+                    Log.ForContext<ElatecNetProvider>().Error(lastSelectException,
+                        "Elatec DESFire SearchTag/Select failed after 3 attempts for AppId {AppId} KeyNo {KeyNumber}.",
+                        _appID, _keyNumber);
+                    return ERROR.TransportError;
+                }
+            }
+            else
+            {
                 try
                 {
                     await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
-
-                    await readerDevice.MifareDesfire_AuthenticateAsync(
-                        _applicationMasterKey,
-                        (byte)_keyNumber,
-                        (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)),
-                        DESFIRE_AUTHMODE_EV1);
-                    return ERROR.NoError;
                 }
-                catch
+                catch (Exception e)
                 {
-                    return ERROR.AuthFailure;
+                    Log.ForContext<ElatecNetProvider>().Error(e,
+                        "Elatec DESFire SelectApplication failed for AppId {AppId} KeyNo {KeyNumber}.", _appID, _keyNumber);
+                    return ERROR.TransportError;
                 }
             }
 
-            else
+            try
             {
-                return ERROR.TransportError;
+                await readerDevice.MifareDesfire_AuthenticateAsync(
+                    _applicationMasterKey,
+                    (byte)_keyNumber,
+                    (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)),
+                    DESFIRE_AUTHMODE_EV1);
+                return ERROR.NoError;
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<ElatecNetProvider>().Error(e,
+                    "Elatec DESFire Authenticate failed for AppId {AppId} KeyNo {KeyNumber} KeyType {KeyType}.",
+                    _appID, _keyNumber, _keyType);
+                return ERROR.AuthFailure;
             }
         }
 
@@ -700,37 +780,72 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             await _comPortLock.WaitAsync();
             try
             {
-            if (readerDevice.IsConnected)
-            {
-                if (readerDevice.IsTWN4LegicReader)
+                if (!IsConnected)
+                {
+                    return OperationResult.Failure(
+                        ERROR.TransportError,
+                        "Reader not connected",
+                        operation: nameof(CreateMifareDesfireApplication),
+                        metadata: new Dictionary<string, string>
+                        {
+                            { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                            { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
+                        });
+                }
+
+                var metadata = new Dictionary<string, string>
+                {
+                    { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
+                    { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) },
+                    { "AuthenticateToPICCFirst", authenticateToPICCFirst.ToString(CultureInfo.CurrentCulture) }
+                };
+
+                if (authenticateToPICCFirst)
+                {
+                    // Exactly one complete boundary. The caller must not authenticate first.
+                    var authResult = await AuthToMifareDesfireApplicationCore(
+                        _piccMasterKey, _keyTypePiccMasterKey, 0, 0);
+                    if (authResult != ERROR.NoError)
+                    {
+                        return OperationResult.Failure(
+                            authResult,
+                            "PICC authentication failed while creating application",
+                            operation: nameof(CreateMifareDesfireApplication),
+                            wasAuthenticated: false,
+                            metadata: metadata);
+                    }
+                }
+                else
                 {
                     try
                     {
-                        await readerDevice.SearchTagAsync();
+                        if (readerDevice.IsTWN4LegicReader)
+                        {
+                            await readerDevice.SearchTagAsync();
+                        }
+                        await readerDevice.MifareDesfire_SelectApplicationAsync(0);
                     }
-                    catch { }
+                    catch (Exception e)
+                    {
+                        Log.ForContext<ElatecNetProvider>().Error(e,
+                            "Elatec DESFire PICC selection failed before unauthenticated CreateApplication for AppId {AppId}.", _appID);
+                        return OperationResult.Failure(
+                            ERROR.TransportError,
+                            "PICC selection failed while creating application",
+                            e.Message,
+                            nameof(CreateMifareDesfireApplication),
+                            false,
+                            metadata);
+                    }
                 }
 
                 try
                 {
-                    await readerDevice.MifareDesfire_SelectApplicationAsync(0);
-
-                    if (authenticateToPICCFirst)
-                    {
-                        await readerDevice.MifareDesfire_AuthenticateAsync(_piccMasterKey, 0, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypePiccMasterKey)), 1);
-                    }
-
                     await readerDevice.MifareDesfire_CreateApplicationAsync(
                                                 (DESFireAppAccessRights)_keySettingsTarget,
                                                 (Elatec.NET.Cards.Mifare.DESFireKeyType)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyTypeTargetApplication)),
                                                 _maxNbKeys,
                                                 _appID);
-                    var metadata = new Dictionary<string, string>
-                    {
-                        { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
-                        { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) },
-                        { "AuthenticateToPICCFirst", authenticateToPICCFirst.ToString(CultureInfo.CurrentCulture) }
-                    };
 
                     return OperationResult.Success(
                         operation: nameof(CreateMifareDesfireApplication),
@@ -767,9 +882,11 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 }
                 catch (Exception e)
                 {
-                    var code = e.Message.Contains("AUTH", StringComparison.InvariantCultureIgnoreCase) ? ERROR.AuthFailure : ERROR.TransportError;
+                    Log.ForContext<ElatecNetProvider>().Error(e,
+                        "Elatec DESFire CreateApplication command failed for AppId {AppId} MaxKeys {MaxKeys}.",
+                        _appID, _maxNbKeys);
                     return OperationResult.Failure(
-                        code,
+                        ERROR.PermissionDenied,
                         "Failed to create application",
                         e.Message,
                         nameof(CreateMifareDesfireApplication),
@@ -780,20 +897,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
                         });
                 }
-            }
-
-            else
-            {
-                return OperationResult.Failure(
-                    ERROR.TransportError,
-                    "Reader not connected",
-                    operation: nameof(CreateMifareDesfireApplication),
-                    metadata: new Dictionary<string, string>
-                    {
-                        { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
-                        { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
-                    });
-            }
             }
             finally
             {
@@ -1431,9 +1534,12 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             {
                                 await CreateStdDataFileAsync((byte)_fileNo, _fileType, _encMode, ar, (uint)_fileSize);
                             }
-                            catch
+                            catch (Exception e)
                             {
-                                return ERROR.AuthFailure;
+                                Log.ForContext<ElatecNetProvider>().Error(e,
+                                    "Elatec DESFire CreateStdDataFile failed for AppId {AppId} FileNo {FileNo} Size {FileSize}.",
+                                    _appID, _fileNo, _fileSize);
+                                return ERROR.PermissionDenied;
                             }
 
                             break;
@@ -1443,9 +1549,12 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             {
                                 await CreateBackupFileAsync((byte)_fileNo, _encMode, ar, (uint)_fileSize);
                             }
-                            catch
+                            catch (Exception e)
                             {
-                                return ERROR.AuthFailure;
+                                Log.ForContext<ElatecNetProvider>().Error(e,
+                                    "Elatec DESFire CreateBackupFile failed for AppId {AppId} FileNo {FileNo} Size {FileSize}.",
+                                    _appID, _fileNo, _fileSize);
+                                return ERROR.PermissionDenied;
                             }
 
                             break;
@@ -1493,6 +1602,22 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 (Elatec.NET.Cards.Mifare.EncryptionMode)encMode,
                 accessRights,
                 fileSize);
+        }
+
+        protected virtual Task<byte[]> ReadDesfireDataAsync(byte fileNo, int fileSize, EncryptionMode encMode)
+        {
+            return readerDevice.MifareDesfire_ReadDataAsync(
+                fileNo,
+                fileSize,
+                (Elatec.NET.Cards.Mifare.EncryptionMode)encMode);
+        }
+
+        protected virtual Task WriteDesfireDataAsync(byte fileNo, byte[] data, EncryptionMode encMode)
+        {
+            return readerDevice.MifareDesfire_WriteDataAsync(
+                fileNo,
+                data,
+                (Elatec.NET.Cards.Mifare.EncryptionMode)encMode);
         }
 
         protected virtual async Task CreateBackupFileAsync(byte fileNo, EncryptionMode encMode, DESFireFileAccessRights accessRights, uint fileSize)
@@ -1563,30 +1688,20 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 try
                 {
-                    await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
+                    // Exactly one complete boundary: SearchTag (TWN4 LEGIC) -> Select -> Authenticate -> Read.
+                    var authResult = await AuthToMifareDesfireApplicationCore(_appReadKey, _keyTypeAppReadKey, _readKeyNo, _appID);
+                    if (authResult != ERROR.NoError)
+                        return authResult;
 
-                    if (await AuthToMifareDesfireApplicationCore(_appReadKey, _keyTypeAppReadKey, _readKeyNo, _appID) == ERROR.NoError)
-                    {
-                        MifareDESFireData = await readerDevice.MifareDesfire_ReadDataAsync((byte)_fileNo, _fileSize, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
-
-                        if (MifareDESFireData != null)
-                        {
-                            return ERROR.NoError;
-                        }
-                        else
-                        {
-                            return ERROR.AuthFailure;
-                        }
-                    }
-                    else
-                    {
-                        return ERROR.AuthFailure;
-                    }
+                    MifareDESFireData = await ReadDesfireDataAsync((byte)_fileNo, _fileSize, _encMode);
+                    return MifareDESFireData != null ? ERROR.NoError : ERROR.Unknown;
                 }
                 catch (Exception e)
                 {
-                    Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
-                    return ERROR.TransportError;
+                    Log.ForContext<ElatecNetProvider>().Error(e,
+                        "Elatec DESFire ReadData failed for AppId {AppId} FileNo {FileNo} Size {FileSize} Mode {Mode}.",
+                        _appID, _fileNo, _fileSize, _encMode);
+                    return ERROR.PermissionDenied;
                 }
             }
             finally
@@ -1605,18 +1720,19 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 try
                 {
-                    await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
-
+                    // Exactly one complete boundary: SearchTag (TWN4 LEGIC) -> Select -> Authenticate -> Write.
                     var authResult = await AuthToMifareDesfireApplicationCore(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID);
                     if (authResult != ERROR.NoError)
                         return authResult;
 
-                    await readerDevice.MifareDesfire_WriteDataAsync((byte)_fileNo, _data, (Elatec.NET.Cards.Mifare.EncryptionMode)_encMode);
+                    await WriteDesfireDataAsync((byte)_fileNo, _data, _encMode);
                 }
                 catch (Exception e)
                 {
-                    Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
-                    return ERROR.AuthFailure;
+                    Log.ForContext<ElatecNetProvider>().Error(e,
+                        "Elatec DESFire WriteData failed for AppId {AppId} FileNo {FileNo} Size {FileSize} Mode {Mode}.",
+                        _appID, _fileNo, _data?.Length ?? 0, _encMode);
+                    return ERROR.PermissionDenied;
                 }
 
                 return ERROR.NoError;
