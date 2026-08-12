@@ -820,8 +820,16 @@ namespace RFiDGear.Tests
             {
                 _ = _keyTypeAppMasterKey;
                 _ = _fileType;
+                _ = _accessRights;
+                _ = _encMode;
                 _ = _appID;
+                _ = _fileNo;
+                _ = _fileSize;
+                _ = _minValue;
+                _ = _maxValue;
                 _ = _initValue;
+                _ = _isValueLimited;
+                _ = _maxNbOfRecords;
                 LastCreateFileKey = _appMasterKey;
                 CreateFileCalls++;
                 return Task.FromResult(ERROR.NoError);
@@ -833,7 +841,10 @@ namespace RFiDGear.Tests
                 bool authenticateToPICCFirst = true)
             {
                 _ = _keySettingsTarget;
+                _ = _keyTypePiccMasterKey;
                 _ = _keyTypeTargetApplication;
+                _ = _maxNbKeys;
+                _ = _appID;
                 LastCreateApplicationKey = _piccMasterKey;
                 CreateApplicationCalls++;
                 return Task.FromResult(OperationResult.Success(

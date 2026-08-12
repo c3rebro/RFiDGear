@@ -305,6 +305,7 @@ namespace RFiDGear.Tests
             protected override Task<byte[]> ReadDesfireDataAsync(byte fileNo, int fileSize, RfidEncryptionMode encMode)
             {
                 _ = fileNo;
+                _ = encMode;
                 ReadCalls++;
                 if (_throwOnRead)
                 {
@@ -316,6 +317,8 @@ namespace RFiDGear.Tests
             protected override Task WriteDesfireDataAsync(byte fileNo, byte[] data, RfidEncryptionMode encMode)
             {
                 _ = fileNo;
+                _ = data;
+                _ = encMode;
                 WriteCalls++;
                 if (_throwOnWrite)
                 {

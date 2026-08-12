@@ -586,7 +586,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         protected virtual async Task<ERROR> AuthToMifareDesfireApplicationCore(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
             if (!IsConnected)
+            {
                 return ERROR.TransportError;
+            }
 
             if (readerDevice.IsTWN4LegicReader)
             {
