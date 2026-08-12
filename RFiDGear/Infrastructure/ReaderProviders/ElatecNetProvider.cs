@@ -207,31 +207,18 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <returns></returns>
         public async override Task<ERROR> ConnectAsync()
         {
-
             readerDevice = TWN4ReaderDevice.Instance.FirstOrDefault();
 
             if (readerDevice == null)
-            {
                 return ERROR.TransportError;
-            }
 
-            if (readerDevice != null && !readerDevice.IsConnected)
-            {
-                var result = false;
+            // If the SDK device is already connected (e.g. left open by the settings dialog),
+            // skip ConnectAsync and just fetch the version.
+            if (!readerDevice.IsConnected && !await readerDevice.ConnectAsync())
+                return ERROR.TransportError;
 
-                if (!readerDevice.IsConnected)
-                {
-                    result = await readerDevice.ConnectAsync();
-                }
-
-                if (result)
-                {
-                    ReaderUnitVersion = await readerDevice.GetVersionStringAsync();
-                    return ERROR.NoError;
-                }
-            }
-
-            return ERROR.TransportError;
+            ReaderUnitVersion = await readerDevice.GetVersionStringAsync();
+            return ERROR.NoError;
         }
 
         #endregion

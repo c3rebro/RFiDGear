@@ -31,6 +31,7 @@ namespace RFiDGear.ViewModel
     public class SetupViewModel : ObservableObject, IUserDialogViewModel
     {
         private ReaderDevice device;
+        private bool _ownsDevice;
         private readonly SettingsReaderWriter settingsReaderWriter;
         private ObservableCollection<IDialogViewModel> _dialogs;
 
@@ -115,9 +116,9 @@ namespace RFiDGear.ViewModel
                     {
                         if (!(device is LibLogicalAccessProvider))
                         {
-                            device.Dispose();
-
+                            if (_ownsDevice) device.Dispose();
                             device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
+                            _ownsDevice = true;
                         }
                         else
                         {
@@ -127,6 +128,7 @@ namespace RFiDGear.ViewModel
                     else
                     {
                         device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
+                        _ownsDevice = true;
                     }
 
                     await device.ReadChipPublic();
@@ -137,9 +139,9 @@ namespace RFiDGear.ViewModel
                     {
                         if (!(device is ElatecNetProvider))
                         {
-                            device.Dispose();
-
+                            if (_ownsDevice) device.Dispose();
                             device = new ElatecNetProvider();
+                            _ownsDevice = true;
                         }
 
                         if (device != null && !device.IsConnected)
@@ -150,6 +152,7 @@ namespace RFiDGear.ViewModel
                     else
                     {
                         device = new ElatecNetProvider();
+                        _ownsDevice = true;
                     }
 
                     await device.ReadChipPublic();
@@ -258,9 +261,11 @@ namespace RFiDGear.ViewModel
                     {
                         case ReaderTypes.Elatec:
                             device = new ElatecNetProvider();
+                            _ownsDevice = true;
                             break;
                         case ReaderTypes.PCSC:
                             device = new LibLogicalAccessProvider();
+                            _ownsDevice = true;
                             break;
 
                         default:
@@ -620,6 +625,12 @@ namespace RFiDGear.ViewModel
 
         public void Close()
         {
+            if (_ownsDevice)
+            {
+                device?.Dispose();
+                device = null;
+                _ownsDevice = false;
+            }
             DialogClosing?.Invoke(this, new EventArgs());
         }
 
