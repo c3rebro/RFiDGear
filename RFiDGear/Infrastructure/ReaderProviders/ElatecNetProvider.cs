@@ -670,7 +670,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     if (authenticateBeforeReading)
                     {
-                        await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), DESFIRE_AUTHMODE_EV1);
+                        try
+                        {
+                            await readerDevice.MifareDesfire_AuthenticateAsync(_applicationMasterKey, (byte)_keyNumberCurrent, (byte)(int)Enum.Parse(typeof(Elatec.NET.Cards.Mifare.DESFireKeyType), Enum.GetName(typeof(DESFireKeyType), _keyType)), DESFIRE_AUTHMODE_EV1);
+                        }
+                        catch
+                        {
+                            // Auth failed — fall through and attempt GetKeySettings without
+                            // authentication, since many apps permit free key-settings reads.
+                        }
                     }
 
                     var ks = await readerDevice.MifareDesfire_GetKeySettingsAsync();
