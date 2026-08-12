@@ -304,17 +304,23 @@ namespace RFiDGear.Tests
 
             protected override Task<byte[]> ReadDesfireDataAsync(byte fileNo, int fileSize, RfidEncryptionMode encMode)
             {
+                _ = fileNo;
                 ReadCalls++;
                 if (_throwOnRead)
+                {
                     throw new InvalidOperationException("Simulated SDK read failure");
+                }
                 return Task.FromResult(new byte[fileSize]);
             }
 
             protected override Task WriteDesfireDataAsync(byte fileNo, byte[] data, RfidEncryptionMode encMode)
             {
+                _ = fileNo;
                 WriteCalls++;
                 if (_throwOnWrite)
+                {
                     throw new InvalidOperationException("Simulated SDK write failure");
+                }
                 return Task.CompletedTask;
             }
         }

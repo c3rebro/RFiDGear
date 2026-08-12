@@ -818,6 +818,10 @@ namespace RFiDGear.Tests
                 int _appID, int _fileNo, int _fileSize, int _minValue = 0, int _maxValue = 1000,
                 int _initValue = 0, bool _isValueLimited = false, int _maxNbOfRecords = 100)
             {
+                _ = _keyTypeAppMasterKey;
+                _ = _fileType;
+                _ = _appID;
+                _ = _initValue;
                 LastCreateFileKey = _appMasterKey;
                 CreateFileCalls++;
                 return Task.FromResult(ERROR.NoError);
@@ -828,6 +832,8 @@ namespace RFiDGear.Tests
                 DESFireKeyType _keyTypeTargetApplication, int _maxNbKeys, int _appID,
                 bool authenticateToPICCFirst = true)
             {
+                _ = _keySettingsTarget;
+                _ = _keyTypeTargetApplication;
                 LastCreateApplicationKey = _piccMasterKey;
                 CreateApplicationCalls++;
                 return Task.FromResult(OperationResult.Success(

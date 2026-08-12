@@ -481,7 +481,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 if (!IsConnected)
+                {
                     return ERROR.TransportError;
+                }
 
                 DesfireChip ??= new MifareDesfireChipModel();
                 DesfireChip.AppList = new List<MifareDesfireAppModel>();
@@ -497,9 +499,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         // Selecting PICC here is redundant and intermittently returns AccessDenied.
                         var tag = await readerDevice.SearchTagAsync();
                         if (readerDevice.IsTWN4LegicReader && tag == null)
+                        {
                             throw new InvalidOperationException("SearchTag did not return a tag.");
+                        }
                         if (!readerDevice.IsTWN4LegicReader)
+                        {
                             await readerDevice.MifareDesfire_SelectApplicationAsync(0);
+                        }
                         appArr = await readerDevice.MifareDesfire_GetAppIDsAsync();
                         lastDirectoryException = null;
                         break;
@@ -527,7 +533,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 if (appArr != null)
                 {
                     foreach (var appid in appArr)
+                    {
                         DesfireChip.AppList.Add(new MifareDesfireAppModel(appid));
+                    }
                 }
 
                 // TWN4 LEGIC rejects this optional metadata call intermittently even
@@ -589,7 +597,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     {
                         var tag = await readerDevice.SearchTagAsync();
                         if (tag == null)
+                        {
                             throw new InvalidOperationException("SearchTag did not return a tag.");
+                        }
 
                         await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
                         lastSelectException = null;
@@ -808,7 +818,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     try
                     {
                         if (readerDevice.IsTWN4LegicReader)
+                        {
                             await readerDevice.SearchTagAsync();
+                        }
                         await readerDevice.MifareDesfire_SelectApplicationAsync(0);
                     }
                     catch (Exception e)
