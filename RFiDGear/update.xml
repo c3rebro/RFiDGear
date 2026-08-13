@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Manifest version="2.0.6.0">
+<Manifest version="2.0.7.0">
   <CheckInterval>900</CheckInterval>
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
   <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>
@@ -44,6 +44,28 @@ Available internal Variables
   + %EXIT will immediatly exit rfidgear application
 
 ################# END OF GENERAL INFORMATION ####################
+
+Version 2.0.7.0
+-----------------------------------------------------------------
+New:
+- AUTOMODE=1 startup argument: enables continuous automatic card-polling mode
+  (equivalent to pressing the Auto-Run toggle button in the UI)
+
+Fixed:
+- DESFire task window: first available tab is now auto-selected when the
+  window opens or the task type changes; Plugins tab is selected automatically
+  when it is the only visible tab
+- DESFire ChangeKey: cross-type key changes (e.g. 3DES to 3K3DES) now work
+  correctly on the Elatec provider; hardcoded 16-byte key length in the
+  protocol frame caused UnusedParameters errors with 24-byte 3K3DES keys
+  (Elatec.NET 0.6.3)
+- 3K3DES application settings are now visible in the Elatec provider when the
+  app master key is 3K3DES; authentication failure now falls through to
+  unauthenticated key-settings read, matching LibLogicalAccess behaviour
+  (Elatec.NET 0.6.2)
+- Settings dialog: switching from LibLogicalAccess to Elatec no longer keeps
+  the PC/SC device handle locked; clicking Connect after a provider switch now
+  works without requiring an application restart
 
 Version 2.0.6.0
 -----------------------------------------------------------------

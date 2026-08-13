@@ -208,8 +208,8 @@
             Margin="0,0,0,0"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
-            <TabControl Margin="8,8,8,8">
-                <TabItem MinWidth="50" IsSelected="{Binding IsDesfirePICCAuthoringTabEnabled, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Visibility="{Binding IsDesfirePICCAuthoringTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, FallbackValue=Hidden}">
+            <TabControl Margin="8,8,8,8" SelectedIndex="{Binding SelectedTabIndex}">
+                <TabItem MinWidth="50" Visibility="{Binding IsDesfirePICCAuthoringTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, FallbackValue=Hidden}">
                     <TabItem.Header>
                         <TextBlock
                             Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderPICCMasterKeySetup'}"
@@ -223,7 +223,7 @@
                         </Style>
                     </TabItem.Style> -->
                 </TabItem>
-                <TabItem MinWidth="50" IsSelected="{Binding IsDesfireAppCreationTabEnabled, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Visibility="{Binding IsDesfireAppCreationTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, FallbackValue=Hidden}">
+                <TabItem MinWidth="50" Visibility="{Binding IsDesfireAppCreationTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, FallbackValue=Hidden}">
                     <TabItem.Header>
                         <TextBlock
                             Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderApplicationSetup'}"
@@ -242,7 +242,7 @@
                         </ToolTip>
                     </TabItem.ToolTip>-->
                 </TabItem>
-                <TabItem MinWidth="50" IsSelected="{Binding IsDesfireAppAuthoringTabEnabled, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Visibility="{Binding IsDesfireAppAuthoringTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay,  FallbackValue=Visible}">
+                <TabItem MinWidth="50" Visibility="{Binding IsDesfireAppAuthoringTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay,  FallbackValue=Visible}">
                     <TabItem.Header>
                         <TextBlock
                             Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderApplicationKeySetup'}"
@@ -251,7 +251,7 @@
                     </TabItem.Header>
                     <v:TabPageMifareDesfireApplicationMasteringView />
                 </TabItem>
-                <TabItem MinWidth="50" IsSelected="{Binding IsDesfireFileAuthoringTabEnabled, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Visibility="{Binding IsDesfireFileAuthoringTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay,  FallbackValue=Visible}">
+                <TabItem MinWidth="50" Visibility="{Binding IsDesfireFileAuthoringTabEnabled, Converter={StaticResource BoolToVisConv}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay,  FallbackValue=Visible}">
                     <TabItem.Header>
                         <TextBlock
                             Text="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='tabPageHeaderFileSetup'}"

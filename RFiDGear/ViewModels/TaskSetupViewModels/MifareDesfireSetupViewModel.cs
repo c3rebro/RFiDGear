@@ -208,6 +208,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 {
                     SelectedPlugin = Items.FirstOrDefault();
                 }
+                SelectFirstVisibleTab();
             }
             catch (Exception e)
             {
@@ -424,6 +425,17 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private bool isDesfireAppCreationTabEnabled;
 
         /// <summary>
+        /// Zero-based index of the currently selected tab, driven by <see cref="SelectedTaskType"/>.
+        /// </summary>
+        [XmlIgnore]
+        public int SelectedTabIndex
+        {
+            get => _selectedTabIndex;
+            set { _selectedTabIndex = value; OnPropertyChanged(nameof(SelectedTabIndex)); }
+        }
+        private int _selectedTabIndex;
+
+        /// <summary>
         /// Updates the enabled state of the DESFire authoring and authentication tabs in one place to reduce duplication.
         /// </summary>
         /// <param name="fileAuthoring">Flag indicating whether file authoring UI is enabled.</param>
@@ -449,6 +461,17 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             IsDesfireAppAuthenticationTabEnabled = desfireAppAuthentication;
             IsDesfireAppAuthoringTabEnabled = desfireAppAuthoring;
             IsDesfireAppCreationTabEnabled = desfireAppCreation;
+            SelectFirstVisibleTab();
+        }
+
+        private void SelectFirstVisibleTab()
+        {
+            if (IsDesfirePICCAuthoringTabEnabled) SelectedTabIndex = 0;
+            else if (IsDesfireAppCreationTabEnabled) SelectedTabIndex = 1;
+            else if (IsDesfireAppAuthoringTabEnabled) SelectedTabIndex = 2;
+            else if (IsDesfireFileAuthoringTabEnabled) SelectedTabIndex = 3;
+            else if (IsDataExplorerEditTabEnabled) SelectedTabIndex = 4;
+            else SelectedTabIndex = HasPlugins ? 5 : 0;
         }
 
         /// <summary>
