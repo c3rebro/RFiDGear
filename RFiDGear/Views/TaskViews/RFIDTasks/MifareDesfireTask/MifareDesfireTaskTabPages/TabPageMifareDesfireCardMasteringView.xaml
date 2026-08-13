@@ -221,6 +221,23 @@
                                     </ToolTip>
                                 </CheckBox.ToolTip>
                             </CheckBox>
+                            <Separator
+                                Margin="0,8,0,4"
+                                Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}" />
+                            <RadioButton
+                                Margin="0,0,0,4"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Content="At least selected bits must be set"
+                                Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
+                                IsChecked="{Binding IsAppSettingsAtLeastMode, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                            <RadioButton
+                                Margin="0,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Content="Exact match required"
+                                Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
+                                IsChecked="{Binding IsAppSettingsExactMatch, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                         </StackPanel>
                     </GroupBox>
                     <Button

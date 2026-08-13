@@ -831,6 +831,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowAppKeyTargetSection));
                 OnPropertyChanged(nameof(ShowPiccMasterKeyTargetInputs));
                 OnPropertyChanged(nameof(ShowPiccMasterKeySettingsInputs));
+                OnPropertyChanged(nameof(ShowAppSettingsCheckModeSelector));
                 OnPropertyChanged(nameof(ShowPiccMasterKeyAuthoringSection));
                 OnPropertyChanged(nameof(ShowCreateApplicationInputs));
                 OnPropertyChanged(nameof(ShowDeleteApplicationInputs));
@@ -891,9 +892,40 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         /// Gets a value indicating whether UI elements for configuring PICC master key settings should be shown.
         /// Settings controls are unnecessary when only changing the PICC master key material.
+        /// Also shown for <see cref="TaskType_MifareDesfireTask.ReadAppSettings"/> so the user can configure the expected bits.
         /// </summary>
         [XmlIgnore]
-        public bool ShowPiccMasterKeySettingsInputs => SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover;
+        public bool ShowPiccMasterKeySettingsInputs => SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover
+                                                       || SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings;
+
+        /// <summary>
+        /// Gets a value indicating whether the check-mode radio buttons should be shown.
+        /// Only relevant for the <see cref="TaskType_MifareDesfireTask.ReadAppSettings"/> task.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowAppSettingsCheckModeSelector => SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings;
+
+        /// <summary>
+        /// When <see langword="true"/>, requires the card's key-settings byte to exactly equal
+        /// the expected mask. When <see langword="false"/> (default), all selected bits must be
+        /// present but additional bits are permitted.
+        /// </summary>
+        public bool IsAppSettingsExactMatch
+        {
+            get => _isAppSettingsExactMatch;
+            set { _isAppSettingsExactMatch = value; OnPropertyChanged(nameof(IsAppSettingsExactMatch)); OnPropertyChanged(nameof(IsAppSettingsAtLeastMode)); }
+        }
+        private bool _isAppSettingsExactMatch;
+
+        /// <summary>
+        /// Inverse of <see cref="IsAppSettingsExactMatch"/>; bound to the "at least" radio button.
+        /// </summary>
+        [XmlIgnore]
+        public bool IsAppSettingsAtLeastMode
+        {
+            get => !_isAppSettingsExactMatch;
+            set { if (value) IsAppSettingsExactMatch = false; }
+        }
 
         /// <summary>
         /// Gets a value indicating whether PICC master key authoring inputs should be shown.
@@ -3641,14 +3673,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         {
                             StatusText += string.Format("{0}: Successfully Read App Settings of App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
 
-                            if (((byte)device.DesfireAppKeySetting & (byte)keySettings) != 0)
-                            {
-                                CurrentTaskErrorLevel = ERROR.NoError;
-                            }
-                            else
-                            {
-                                CurrentTaskErrorLevel = ERROR.IsNotTrue;
-                            }
+                            var actual = (byte)device.DesfireAppKeySetting;
+                            var expected = (byte)keySettings;
+                            bool passes = IsAppSettingsExactMatch
+                                ? actual == expected
+                                : (actual & expected) == expected;
+                            CurrentTaskErrorLevel = passes ? ERROR.NoError : ERROR.IsNotTrue;
                         }
                         else
                         {
