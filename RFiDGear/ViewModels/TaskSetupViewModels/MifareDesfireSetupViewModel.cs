@@ -761,7 +761,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         break;
 
                     case TaskType_MifareDesfireTask.ReadAppSettings:
-                        SetTabAvailability(false, false, true, false, false, false, false);
+                        SetTabAvailability(false, false, true, true, false, false, false);
                         break;
 
                     case TaskType_MifareDesfireTask.AppExistCheck:
@@ -831,6 +831,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowAppKeyTargetSection));
                 OnPropertyChanged(nameof(ShowPiccMasterKeyTargetInputs));
                 OnPropertyChanged(nameof(ShowPiccMasterKeySettingsInputs));
+                OnPropertyChanged(nameof(ShowPiccMasterKeyCurrentSection));
+                OnPropertyChanged(nameof(ShowPiccMasterKeySettingsEditButton));
                 OnPropertyChanged(nameof(ShowAppSettingsCheckModeSelector));
                 OnPropertyChanged(nameof(ShowPiccMasterKeyAuthoringSection));
                 OnPropertyChanged(nameof(ShowCreateApplicationInputs));
@@ -888,6 +890,20 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         [XmlIgnore]
         public bool ShowPiccMasterKeyTargetInputs => SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover;
+
+        /// <summary>
+        /// Gets a value indicating whether the PICC-level current-key inputs should be shown.
+        /// Hidden for <see cref="TaskType_MifareDesfireTask.ReadAppSettings"/>, which shows app-level inputs instead.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowPiccMasterKeyCurrentSection => SelectedTaskType != TaskType_MifareDesfireTask.ReadAppSettings;
+
+        /// <summary>
+        /// Gets a value indicating whether the "Update Key Settings" edit button should be shown.
+        /// Only relevant when the user is changing PICC master key settings, not when checking app settings.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowPiccMasterKeySettingsEditButton => SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover;
 
         /// <summary>
         /// Gets a value indicating whether UI elements for configuring PICC master key settings should be shown.
@@ -3377,12 +3393,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            if (SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings)
-            {
-                return;
-            }
-
-            else if (SelectedTaskType == TaskType_MifareDesfireTask.AppExistCheck)
+            if (SelectedTaskType == TaskType_MifareDesfireTask.AppExistCheck)
             {
                 await UpdateReaderStatusCommand.ExecuteAsync(true);
                 await DoesAppExistCommand(new MifareDesfireChipModel());
@@ -3636,6 +3647,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 }
             }
         }
+
+        /// <summary>
+        /// Relay command that exposes <see cref="ReadAppSettingsCommand"/> for button binding.
+        /// </summary>
+        public IAsyncRelayCommand ReadAppSettingsRelayCommand => new AsyncRelayCommand(ReadAppSettingsCommand);
 
         /// <summary>
         ///

@@ -250,8 +250,20 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Command="{Binding ChangeAppKeySettingsCommand}"
-                        Visibility="{Binding ShowPiccMasterKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
+                        Visibility="{Binding ShowPiccMasterKeySettingsEditButton, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeUpdateKeySettings'}" />
+                    <Button
+                        Grid.Row="5"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Height="26"
+                        Padding="5,2"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
+                        Command="{Binding ReadAppSettingsRelayCommand}"
+                        Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
+                        Content="Perform Compare" />
                     <Button
                         Grid.Row="6"
                         Grid.Column="0"
@@ -320,116 +332,275 @@
                     </Style>
                 </GroupBox.Style>
                 <Grid>
-                    <Label
-                        Grid.Row="0"
-                        Grid.Column="0"
-                        Margin="8,8,8,8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        VerticalContentAlignment="Center"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentMasterKey'}" />
-                    <TextBox
-                        Grid.Row="0"
-                        Grid.Column="1"
-                        Margin="8,8,8,8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        VerticalContentAlignment="Center"
-                        MaxLength="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
-                        Text="{Binding DesfireMasterKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <TextBox.Resources>
-                            <Style TargetType="TextBox" >
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidDesfireMasterKeyCurrent}" Value="True">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="Background" Value="White" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidDesfireMasterKeyCurrent}" Value="False">
-                                        <Setter Property="Foreground" Value="Black" />
-                                        <Setter Property="Background" Value="Red" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
-                    <Button
-                        Grid.Row="5"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="2"
-                        Height="26"
-                        Padding="5,2"
-                        Margin="8,3,8,8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Bottom"
-                        Command="{Binding AuthenticateToCardMasterApplicationCommand}"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireAuthenticateWithCurrentKey'}" />
-                    <Label
-                        Grid.Row="1"
-                        Grid.Column="0"
-                        Margin="8,0,8,8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        VerticalContentAlignment="Center"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
-                    <ComboBox
-                        Grid.Row="1"
-                        Height="26"
-                        Grid.Column="1"
-                        Margin="8,0,8,8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
-                        SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
-                    <Button
-                        Grid.Row="4"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="2"
-                        Height="26"
-                        Padding="5,2"
-                        Margin="8,3,8,8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        VerticalContentAlignment="Center"
-                        Command="{Binding FormatDesfireCardCommand}"
-                        Visibility="{Binding IsFormatTaskSelected, Converter={StaticResource BoolToVisConv}}"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireCardMasteringFormatButton'}" />
-                    <TextBox
-                        Grid.Row="2"
-                        Grid.Column="1"
-                        Height="26"
-                        Margin="8,0,8,8"
-                        IsReadOnly="True"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        VerticalContentAlignment="Center"
-                        Text="{Binding KeyVersionCurrent}"/>
-                    <Label
-                        Grid.Row="2"
-                        Grid.Column="0"
-                        Margin="8,0,8,8"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        VerticalContentAlignment="Center"
-                        Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareDesfireKeyVersion, Converter={StaticResource Localization}}" />
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="auto" />
-                        <RowDefinition Height="auto" />
-                        <RowDefinition Height="auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="auto" />
-                        <RowDefinition Height="auto" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="150" />
-                        <ColumnDefinition Width="*" MinWidth="100" />
-                    </Grid.ColumnDefinitions>
+                    <!-- PICC-level layout: all task types except ReadAppSettings -->
+                    <Grid Visibility="{Binding ShowPiccMasterKeyCurrentSection, Converter={StaticResource BoolToVisConv}}">
+                        <Label
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Margin="8,8,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentMasterKey'}" />
+                        <TextBox
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Margin="8,8,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            MaxLength="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
+                            Text="{Binding DesfireMasterKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                            <TextBox.Resources>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsValidDesfireMasterKeyCurrent}" Value="True">
+                                            <Setter Property="Foreground" Value="Green" />
+                                            <Setter Property="Background" Value="White" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsValidDesfireMasterKeyCurrent}" Value="False">
+                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Background" Value="Red" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                        <Label
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
+                        <ComboBox
+                            Grid.Row="1"
+                            Height="26"
+                            Grid.Column="1"
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
+                            SelectedItem="{Binding SelectedDesfireMasterKeyEncryptionTypeCurrent, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        <Label
+                            Grid.Row="2"
+                            Grid.Column="0"
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareDesfireKeyVersion, Converter={StaticResource Localization}}" />
+                        <TextBox
+                            Grid.Row="2"
+                            Grid.Column="1"
+                            Height="26"
+                            Margin="8,0,8,8"
+                            IsReadOnly="True"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Text="{Binding KeyVersionCurrent}" />
+                        <Button
+                            Grid.Row="4"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Height="26"
+                            Padding="5,2"
+                            Margin="8,3,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            VerticalContentAlignment="Center"
+                            Command="{Binding FormatDesfireCardCommand}"
+                            Visibility="{Binding IsFormatTaskSelected, Converter={StaticResource BoolToVisConv}}"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireCardMasteringFormatButton'}" />
+                        <Button
+                            Grid.Row="5"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Height="26"
+                            Padding="5,2"
+                            Margin="8,3,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Bottom"
+                            Command="{Binding AuthenticateToCardMasterApplicationCommand}"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireAuthenticateWithCurrentKey'}" />
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="*" MinWidth="100" />
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                    <!-- App-level layout: ReadAppSettings only -->
+                    <Grid Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}">
+                        <Label
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Margin="8,8,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Content="App ID" />
+                        <TextBox
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Height="26"
+                            Margin="8,8,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Text="{Binding AppNumberCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Cursor="IBeam">
+                            <TextBox.Resources>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsValidAppNumberCurrent}" Value="True">
+                                            <Setter Property="Foreground" Value="Green" />
+                                            <Setter Property="Background" Value="White" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsValidAppNumberCurrent}" Value="False">
+                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Background" Value="Red" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                        <Label
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentMasterKey'}" />
+                        <TextBox
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Height="26"
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            MaxLength="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource DESFireKeyMaxLengthConv}}"
+                            Text="{Binding DesfireAppKeyCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                            <TextBox.Resources>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrent}" Value="True">
+                                            <Setter Property="Foreground" Value="Green" />
+                                            <Setter Property="Background" Value="White" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsValidDesfireAppKeyCurrent}" Value="False">
+                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Background" Value="Red" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                        <Label
+                            Grid.Row="2"
+                            Grid.Column="0"
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
+                        <ComboBox
+                            Grid.Row="2"
+                            Grid.Column="1"
+                            Height="26"
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            ItemsSource="{dal:Enumerate {x:Type dal:DESFireKeyType}}"
+                            SelectedItem="{Binding SelectedDesfireAppKeyEncryptionTypeCurrent, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DESFireKeyType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        <Label
+                            Grid.Row="3"
+                            Grid.Column="0"
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireKeyNumber'}" />
+                        <ComboBox
+                            Grid.Row="3"
+                            Grid.Column="1"
+                            Height="26"
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            ItemsSource="{Binding MifareDesfireKeys}"
+                            SelectedItem="{Binding SelectedDesfireAppKeyNumberCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        <Label
+                            Grid.Row="4"
+                            Grid.Column="0"
+                            Margin="8,0,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Content="{Binding LocalizationResourceSet, ConverterParameter=labelContentMifareDesfireKeyVersion, Converter={StaticResource Localization}}" />
+                        <TextBox
+                            Grid.Row="4"
+                            Grid.Column="1"
+                            Height="26"
+                            Margin="8,0,8,8"
+                            IsReadOnly="True"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Text="{Binding KeyVersionCurrent}" />
+                        <Button
+                            Grid.Row="6"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Height="26"
+                            Padding="5,2"
+                            Margin="8,3,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Bottom"
+                            Command="{Binding AuthenticateToCardApplicationCommand}"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeAuthenticate'}" />
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="*" MinWidth="100" />
+                        </Grid.ColumnDefinitions>
+                    </Grid>
                 </Grid>
             </GroupBox>
         </Grid>
