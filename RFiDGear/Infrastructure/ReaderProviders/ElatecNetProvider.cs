@@ -321,14 +321,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return ERROR.TransportError;
             }
 
-            if (readerDevice.IsTWN4LegicReader)
-            {
-                try
-                {
-                    await readerDevice.SearchTagAsync();
-                }
-                catch { }
-            }
+            try { await readerDevice.SearchTagAsync(); } catch { }
 
             Sector = new MifareClassicSectorModel();
 
@@ -477,22 +470,17 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 uint[] appArr = null;
                 Exception lastDirectoryException = null;
-                var maxAttempts = readerDevice.IsTWN4LegicReader ? 3 : 1;
+                const int maxAttempts = 3;
                 for (var attempt = 1; attempt <= maxAttempts; attempt++)
                 {
                     try
                     {
-                        // ELATEC's TWN4 LEGIC flow reads the directory directly after SearchTag.
-                        // Selecting PICC here is redundant and intermittently returns AccessDenied.
                         var tag = await readerDevice.SearchTagAsync();
-                        if (readerDevice.IsTWN4LegicReader && tag == null)
+                        if (tag == null)
                         {
                             throw new InvalidOperationException("SearchTag did not return a tag.");
                         }
-                        if (!readerDevice.IsTWN4LegicReader)
-                        {
-                            await readerDevice.MifareDesfire_SelectApplicationAsync(0);
-                        }
+                        await readerDevice.MifareDesfire_SelectApplicationAsync(0);
                         appArr = await readerDevice.MifareDesfire_GetAppIDsAsync();
                         lastDirectoryException = null;
                         break;
@@ -525,16 +513,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     }
                 }
 
-                // TWN4 LEGIC rejects this optional metadata call intermittently even
-                // though the directory and all card operations are valid. Do not emit
-                // a false operational failure for information the task engine does not use.
-                if (readerDevice.IsTWN4LegicReader)
-                {
-                    DesfireChip.FreeMemory = 0;
-                    return ERROR.NoError;
-                }
-
-                // On other ELATEC readers, re-establish PICC context for the optional lookup.
                 try
                 {
                     await readerDevice.SearchTagAsync();
@@ -577,56 +555,40 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 return ERROR.TransportError;
             }
 
-            if (readerDevice.IsTWN4LegicReader)
-            {
-                Exception lastSelectException = null;
-                for (var attempt = 1; attempt <= 3; attempt++)
-                {
-                    try
-                    {
-                        var tag = await readerDevice.SearchTagAsync();
-                        if (tag == null)
-                        {
-                            throw new InvalidOperationException("SearchTag did not return a tag.");
-                        }
-
-                        await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
-                        lastSelectException = null;
-                        break;
-                    }
-                    catch (Exception e)
-                    {
-                        lastSelectException = e;
-                        if (attempt < 3)
-                        {
-                            Log.ForContext<ElatecNetProvider>().Warning(e,
-                                "Elatec DESFire context establishment attempt {Attempt}/3 failed for AppId {AppId} KeyNo {KeyNumber}; retrying SearchTag/Select.",
-                                attempt, _appID, _keyNumber);
-                            await Task.Delay(100);
-                        }
-                    }
-                }
-
-                if (lastSelectException != null)
-                {
-                    Log.ForContext<ElatecNetProvider>().Error(lastSelectException,
-                        "Elatec DESFire SearchTag/Select failed after 3 attempts for AppId {AppId} KeyNo {KeyNumber}.",
-                        _appID, _keyNumber);
-                    return ERROR.TransportError;
-                }
-            }
-            else
+            Exception lastSelectException = null;
+            for (var attempt = 1; attempt <= 3; attempt++)
             {
                 try
                 {
+                    var tag = await readerDevice.SearchTagAsync();
+                    if (tag == null)
+                    {
+                        throw new InvalidOperationException("SearchTag did not return a tag.");
+                    }
+
                     await readerDevice.MifareDesfire_SelectApplicationAsync((uint)_appID);
+                    lastSelectException = null;
+                    break;
                 }
                 catch (Exception e)
                 {
-                    Log.ForContext<ElatecNetProvider>().Error(e,
-                        "Elatec DESFire SelectApplication failed for AppId {AppId} KeyNo {KeyNumber}.", _appID, _keyNumber);
-                    return ERROR.TransportError;
+                    lastSelectException = e;
+                    if (attempt < 3)
+                    {
+                        Log.ForContext<ElatecNetProvider>().Warning(e,
+                            "Elatec DESFire context establishment attempt {Attempt}/3 failed for AppId {AppId} KeyNo {KeyNumber}; retrying SearchTag/Select.",
+                            attempt, _appID, _keyNumber);
+                        await Task.Delay(100);
+                    }
                 }
+            }
+
+            if (lastSelectException != null)
+            {
+                Log.ForContext<ElatecNetProvider>().Error(lastSelectException,
+                    "Elatec DESFire SearchTag/Select failed after 3 attempts for AppId {AppId} KeyNo {KeyNumber}.",
+                    _appID, _keyNumber);
+                return ERROR.TransportError;
             }
 
             try
@@ -655,14 +617,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
             if (readerDevice.IsConnected)
             {
-                if (readerDevice.IsTWN4LegicReader)
-                {
-                    try
-                    {
-                        await readerDevice.SearchTagAsync();
-                    }
-                    catch { }
-                }
+                try { await readerDevice.SearchTagAsync(); } catch { }
 
                 try
                 {
@@ -814,10 +769,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 {
                     try
                     {
-                        if (readerDevice.IsTWN4LegicReader)
-                        {
-                            await readerDevice.SearchTagAsync();
-                        }
+                        await readerDevice.SearchTagAsync();
                         await readerDevice.MifareDesfire_SelectApplicationAsync(0);
                     }
                     catch (Exception e)
@@ -918,12 +870,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             if (!readerDevice.IsConnected)
                 return ERROR.TransportError;
 
-            // Some TWN4 LEGIC-capable devices require a tag inventory kick before certain operations.
-            if (readerDevice.IsTWN4LegicReader)
-            {
-                try { await readerDevice.SearchTagAsync(); }
-                catch { /* ignore; best-effort workaround */ }
-            }
+            try { await readerDevice.SearchTagAsync(); } catch { }
 
             try
             {
@@ -1077,14 +1024,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
             if (readerDevice.IsConnected)
             {
-                if (readerDevice.IsTWN4LegicReader)
-                {
-                    try
-                    {
-                        await readerDevice.SearchTagAsync();
-                    }
-                    catch { }
-                }
+                try { await readerDevice.SearchTagAsync(); } catch { }
 
                 try
                 {
@@ -1166,14 +1106,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 if (readerDevice.IsConnected)
                 {
-                    if (readerDevice.IsTWN4LegicReader)
-                    {
-                        try
-                        {
-                            await readerDevice.SearchTagAsync();
-                        }
-                        catch { }
-                    }
+                    try { await readerDevice.SearchTagAsync(); } catch { }
 
                     try
                     {
@@ -1225,16 +1158,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
             if (readerDevice.IsConnected)
             {
-                if (readerDevice.IsTWN4LegicReader)
+                try
                 {
-                    try
-                    {
-                        await readerDevice.SearchTagAsync();
-                    }
-                    catch
-                    {
-                        return ERROR.TransportError;
-                    }
+                    await readerDevice.SearchTagAsync();
+                }
+                catch
+                {
+                    return ERROR.TransportError;
                 }
 
                 try
@@ -1274,16 +1204,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
             if (readerDevice.IsConnected)
             {
-                if (readerDevice.IsTWN4LegicReader)
+                try
                 {
-                    try
-                    {
-                        await readerDevice.SearchTagAsync();
-                    }
-                    catch
-                    {
-                        return ERROR.TransportError;
-                    }
+                    await readerDevice.SearchTagAsync();
+                }
+                catch
+                {
+                    return ERROR.TransportError;
                 }
 
                 try
@@ -1323,16 +1250,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
             if (readerDevice.IsConnected)
             {
-                if (readerDevice.IsTWN4LegicReader)
+                try
                 {
-                    try
-                    {
-                        await readerDevice.SearchTagAsync();
-                    }
-                    catch
-                    {
-                        return ERROR.TransportError;
-                    }
+                    await readerDevice.SearchTagAsync();
+                }
+                catch
+                {
+                    return ERROR.TransportError;
                 }
 
                 try
@@ -1374,14 +1298,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
             if (readerDevice.IsConnected)
             {
-                if (readerDevice.IsTWN4LegicReader)
-                {
-                    try
-                    {
-                        await readerDevice.SearchTagAsync();
-                    }
-                    catch { }
-                }
+                try { await readerDevice.SearchTagAsync(); } catch { }
 
                 try
                 {
@@ -1430,14 +1347,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
             if (readerDevice.IsConnected)
             {
-                if (readerDevice.IsTWN4LegicReader)
-                {
-                    try
-                    {
-                        await readerDevice.SearchTagAsync();
-                    }
-                    catch { }
-                }
+                try { await readerDevice.SearchTagAsync(); } catch { }
 
                 try
                 {
