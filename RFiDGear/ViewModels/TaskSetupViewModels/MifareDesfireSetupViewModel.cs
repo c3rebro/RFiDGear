@@ -3669,7 +3669,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
                     {
                         var result = await device.GetMifareDesfireAppSettings(
-                                DesfireMasterKeyTarget,
+                                DesfireAppKeyCurrent,
                                 SelectedDesfireAppKeyEncryptionTypeCurrent,
                                 selectedDesfireAppKeyNumberCurrentAsInt,
                                 AppNumberCurrentAsInt);
@@ -3682,23 +3682,27 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
                         keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
 
-                        //desfireChip.FreeMemory = device.GenericChip.FreeMemory;
-                        //desfireChip.UID = device.GenericChip.UID;
-
                         if (IsValidAppNumberCurrent != false && result.Code == ERROR.NoError)
                         {
-                            StatusText += string.Format("{0}: Successfully Read App Settings of App {1}\n", DateTime.Now, AppNumberCurrentAsInt);
-
                             var actual = (byte)device.DesfireAppKeySetting;
                             var expected = (byte)keySettings;
                             bool passes = IsAppSettingsExactMatch
                                 ? actual == expected
                                 : (actual & expected) == expected;
+
+                            StatusText += string.Format("{0}: App {1} settings read — actual: 0x{2:X2}, expected: 0x{3:X2} ({4}) → {5}\n",
+                                DateTime.Now,
+                                AppNumberCurrentAsInt,
+                                actual,
+                                expected,
+                                IsAppSettingsExactMatch ? "exact match" : "at least",
+                                passes ? "PASS" : "FAIL");
+
                             CurrentTaskErrorLevel = passes ? ERROR.NoError : ERROR.IsNotTrue;
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to Authenticate: {1}\n", DateTime.Now, result.Message ?? result.Code.ToString());
+                            StatusText += string.Format("{0}: Unable to read App {1} settings: {2}\n", DateTime.Now, AppNumberCurrentAsInt, result.Message ?? result.Code.ToString());
                             CurrentTaskErrorLevel = result.Code;
                         }
 
