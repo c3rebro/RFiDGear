@@ -73,6 +73,7 @@ namespace RFiDGear.Infrastructure.Tasks
         AppExistCheck,
         AuthenticateApplication,
         ReadAppSettings,
+        CheckAppKeyCount,
         ChangeDefault
     }
 }

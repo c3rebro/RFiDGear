@@ -1192,6 +1192,9 @@ Wird benötigt von:
   <data name="ENUM.TaskType_MifareDesfireTask.ReadAppSettings" xml:space="preserve">
     <value>Prüfung: App Konfig</value>
   </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.CheckAppKeyCount" xml:space="preserve">
+    <value>Prüfung: App Schlüsselanzahl</value>
+  </data>
   <data name="ENUM.ERROR.OutOfMemory" xml:space="preserve">
     <value>Nicht genügend Speicher</value>
   </data>

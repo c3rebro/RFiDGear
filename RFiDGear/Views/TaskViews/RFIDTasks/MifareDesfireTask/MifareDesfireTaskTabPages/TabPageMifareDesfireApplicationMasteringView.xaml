@@ -226,7 +226,7 @@
                     <Label
                      Grid.Row="3"
                      Grid.Column="0"
-                     Margin="8,0,8,8"
+                     Margin="8,8,8,8"
                      VerticalAlignment="Stretch"
                      HorizontalAlignment="Stretch"
                      VerticalContentAlignment="Center"
@@ -235,7 +235,7 @@
                     <ComboBox
                      Grid.Row="3"
                      Grid.Column="1"
-                     Margin="8,0,8,8"
+                     Margin="8,8,8,8"
                      Height="26"
                      VerticalAlignment="Stretch"
                      HorizontalAlignment="Stretch"

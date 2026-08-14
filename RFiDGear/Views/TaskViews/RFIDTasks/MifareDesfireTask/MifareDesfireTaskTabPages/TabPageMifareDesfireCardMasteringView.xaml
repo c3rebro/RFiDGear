@@ -264,6 +264,54 @@
                         Command="{Binding ReadAppSettingsRelayCommand}"
                         Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
                         Content="Perform Compare" />
+                    <GroupBox
+                        Grid.Row="3"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Margin="8,8,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Top"
+                        Visibility="{Binding ShowAppKeyCountCheckInputs, Converter={StaticResource BoolToVisConv}}"
+                        Header="Expected Key Count">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150" />
+                                <ColumnDefinition Width="*" MinWidth="100" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto" />
+                            </Grid.RowDefinitions>
+                            <Label
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Margin="8,8,8,8"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Center"
+                                HorizontalContentAlignment="Left"
+                                Content="Max Keys" />
+                            <ComboBox
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Height="26"
+                                Margin="8,8,8,8"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Center"
+                                ItemsSource="{Binding MifareDesfireKeyCount}"
+                                SelectedItem="{Binding SelectedDesfireAppMaxNumberOfKeys, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        </Grid>
+                    </GroupBox>
+                    <Button
+                        Grid.Row="5"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Height="26"
+                        Padding="5,2"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
+                        Command="{Binding CheckAppKeyCountRelayCommand}"
+                        Visibility="{Binding ShowAppKeyCountCheckInputs, Converter={StaticResource BoolToVisConv}}"
+                        Content="Perform Compare" />
                     <Button
                         Grid.Row="6"
                         Grid.Column="0"
@@ -445,8 +493,8 @@
                             <ColumnDefinition Width="*" MinWidth="100" />
                         </Grid.ColumnDefinitions>
                     </Grid>
-                    <!-- App-level layout: ReadAppSettings only -->
-                    <Grid Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}">
+                    <!-- App-level layout: ReadAppSettings and CheckAppKeyCount -->
+                    <Grid Visibility="{Binding ShowAppLevelCurrentPanel, Converter={StaticResource BoolToVisConv}}">
                         <Label
                             Grid.Row="0"
                             Grid.Column="0"

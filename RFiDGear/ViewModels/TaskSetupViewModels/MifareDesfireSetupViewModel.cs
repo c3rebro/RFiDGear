@@ -764,6 +764,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         SetTabAvailability(false, false, true, true, false, false, false);
                         break;
 
+                    case TaskType_MifareDesfireTask.CheckAppKeyCount:
+                        SetTabAvailability(false, false, true, true, false, false, false);
+                        break;
+
                     case TaskType_MifareDesfireTask.AppExistCheck:
                         SetTabAvailability(false, false, false, false, false, false, true);
                         break;
@@ -834,6 +838,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowPiccMasterKeyCurrentSection));
                 OnPropertyChanged(nameof(ShowPiccMasterKeySettingsEditButton));
                 OnPropertyChanged(nameof(ShowAppSettingsCheckModeSelector));
+                OnPropertyChanged(nameof(ShowAppLevelCurrentPanel));
+                OnPropertyChanged(nameof(ShowAppKeyCountCheckInputs));
                 OnPropertyChanged(nameof(ShowPiccMasterKeyAuthoringSection));
                 OnPropertyChanged(nameof(ShowCreateApplicationInputs));
                 OnPropertyChanged(nameof(ShowDeleteApplicationInputs));
@@ -893,10 +899,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         /// <summary>
         /// Gets a value indicating whether the PICC-level current-key inputs should be shown.
-        /// Hidden for <see cref="TaskType_MifareDesfireTask.ReadAppSettings"/>, which shows app-level inputs instead.
+        /// Hidden for <see cref="TaskType_MifareDesfireTask.ReadAppSettings"/> and
+        /// <see cref="TaskType_MifareDesfireTask.CheckAppKeyCount"/>, which show app-level inputs instead.
         /// </summary>
         [XmlIgnore]
-        public bool ShowPiccMasterKeyCurrentSection => SelectedTaskType != TaskType_MifareDesfireTask.ReadAppSettings;
+        public bool ShowPiccMasterKeyCurrentSection => SelectedTaskType != TaskType_MifareDesfireTask.ReadAppSettings
+                                                       && SelectedTaskType != TaskType_MifareDesfireTask.CheckAppKeyCount;
 
         /// <summary>
         /// Gets a value indicating whether the "Update Key Settings" edit button should be shown.
@@ -920,6 +928,22 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         [XmlIgnore]
         public bool ShowAppSettingsCheckModeSelector => SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings;
+
+        /// <summary>
+        /// Gets a value indicating whether the app-level current-key panel should be shown.
+        /// True for both <see cref="TaskType_MifareDesfireTask.ReadAppSettings"/> and
+        /// <see cref="TaskType_MifareDesfireTask.CheckAppKeyCount"/>.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowAppLevelCurrentPanel => SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings
+                                                || SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount;
+
+        /// <summary>
+        /// Gets a value indicating whether the expected key count input and compare button should be shown.
+        /// Only relevant for the <see cref="TaskType_MifareDesfireTask.CheckAppKeyCount"/> task.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowAppKeyCountCheckInputs => SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount;
 
         /// <summary>
         /// When <see langword="true"/>, requires the card's key-settings byte to exactly equal
@@ -2341,6 +2365,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         await ReadAppSettingsCommand();
                         break;
 
+                    case TaskType_MifareDesfireTask.CheckAppKeyCount:
+                        await CheckAppKeyCountCommand();
+                        break;
+
                     case TaskType_MifareDesfireTask.ReadData:
                         await OnNewReadDataCommand();
                         break;
@@ -3652,6 +3680,59 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// Relay command that exposes <see cref="ReadAppSettingsCommand"/> for button binding.
         /// </summary>
         public IAsyncRelayCommand ReadAppSettingsRelayCommand => new AsyncRelayCommand(ReadAppSettingsCommand);
+
+        /// <summary>
+        /// Relay command that exposes <see cref="CheckAppKeyCountCommand"/> for button binding.
+        /// </summary>
+        public IAsyncRelayCommand CheckAppKeyCountRelayCommand => new AsyncRelayCommand(CheckAppKeyCountCommand);
+
+        /// <summary>
+        /// Reads the actual max-key count from the card application and compares it to the expected value.
+        /// </summary>
+        public async Task CheckAppKeyCountCommand()
+        {
+            CurrentTaskErrorLevel = ERROR.Empty;
+
+            using (var device = ReaderDevice.Instance)
+            {
+                if (device != null)
+                {
+                    StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
+                    {
+                        var result = await device.GetMifareDesfireAppSettings(
+                                DesfireAppKeyCurrent,
+                                SelectedDesfireAppKeyEncryptionTypeCurrent,
+                                selectedDesfireAppKeyNumberCurrentAsInt,
+                                AppNumberCurrentAsInt);
+
+                        if (IsValidAppNumberCurrent != false && result.Code == ERROR.NoError)
+                        {
+                            var actual = (int)device.MaxNumberOfAppKeys;
+                            var expected = selectedDesfireAppMaxNumberOfKeysAsInt;
+                            bool passes = actual == expected;
+
+                            StatusText += string.Format("{0}: App {1} key count — actual: {2}, expected: {3} → {4}\n",
+                                DateTime.Now,
+                                AppNumberCurrentAsInt,
+                                actual,
+                                expected,
+                                passes ? "PASS" : "FAIL");
+
+                            CurrentTaskErrorLevel = passes ? ERROR.NoError : ERROR.IsNotTrue;
+                        }
+                        else
+                        {
+                            StatusText += string.Format("{0}: Unable to read App {1} settings: {2}\n", DateTime.Now, AppNumberCurrentAsInt, result.Message ?? result.Code.ToString());
+                            CurrentTaskErrorLevel = result.Code;
+                        }
+                    }
+                }
+            }
+
+            await FinalizeTaskAsync();
+        }
 
         /// <summary>
         ///
