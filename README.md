@@ -81,3 +81,24 @@ Task execution flows live in `Services/TaskExecution/TaskExecutionService.cs`. A
 RFiDGear writes a `runtime-defaults.json` file to `%LocalAppData%\RFiDGear` the first time it starts. You can edit this file with any text editor to control the initial values used for reader selection, language, auto-update behavior, and the default MIFARE keys that seed new `settings.xml` files—no code changes or recompilation required.
 
 See `runtime-defaults.sample.json` for a complete set of defaults that mirrors the built-in configuration, including reader options, auto-update flags, COM port settings, default MIFARE keys, and the pre-populated quick-check key list. Copy this file to `%LocalAppData%\RFiDGear` and rename it to `runtime-defaults.json` to start from the sample.
+
+## Known Limitations
+
+### PC/SC provider (LibLogicalAccess) is not available in Remote Desktop sessions
+
+The Windows Smart Card service (`SCardSvr`) is disrupted when you connect to a machine via Remote Desktop (RDP). Windows RDP injects virtual smart card readers into the remote machine's PC/SC stack, which causes `SCardSvr` to stop and restart. Any call to `SCardEstablishContext` — which LibLogicalAccess performs on startup — will fail with `SCARD_E_NO_SERVICE (0x8010001D)` for the duration of the RDP session.
+
+**Effect in RFiDGear:** If the PC/SC provider is selected and the app is running inside an RDP session, it will automatically fall back to *No Reader* and display a warning in the reader settings and status bar. The restriction is lifted only by closing the RDP session.
+
+**Elatec TWN4 readers are not affected** — they communicate over USB CDC (serial) and do not rely on the Smart Card service.
+
+**Workaround (administrator-controlled):** To prevent RDP from redirecting smart cards to the remote machine, set the following registry value on the remote machine:
+
+```
+HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services
+  fEnableSmartCard = 0  (DWORD)
+```
+
+This stops RDP from injecting virtual readers and allows `SCardSvr` to remain stable, restoring PC/SC functionality under RDP.
+
+See [issue #203](https://github.com/c3rebro/RFiDGear/issues/203) for technical details and current status.

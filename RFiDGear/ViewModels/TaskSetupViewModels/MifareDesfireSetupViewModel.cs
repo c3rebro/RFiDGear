@@ -761,11 +761,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         break;
 
                     case TaskType_MifareDesfireTask.ReadAppSettings:
-                        SetTabAvailability(false, false, true, true, false, false, false);
+                        SetTabAvailability(false, false, true, false, false, false, false);
                         break;
 
                     case TaskType_MifareDesfireTask.CheckAppKeyCount:
-                        SetTabAvailability(false, false, true, true, false, false, false);
+                        SetTabAvailability(false, false, true, false, false, false, false);
                         break;
 
                     case TaskType_MifareDesfireTask.AppExistCheck:
@@ -916,11 +916,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         /// Gets a value indicating whether UI elements for configuring PICC master key settings should be shown.
         /// Settings controls are unnecessary when only changing the PICC master key material.
-        /// Also shown for <see cref="TaskType_MifareDesfireTask.ReadAppSettings"/> so the user can configure the expected bits.
         /// </summary>
         [XmlIgnore]
-        public bool ShowPiccMasterKeySettingsInputs => SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover
-                                                       || SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings;
+        public bool ShowPiccMasterKeySettingsInputs => SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover;
 
         /// <summary>
         /// Gets a value indicating whether the check-mode radio buttons should be shown.

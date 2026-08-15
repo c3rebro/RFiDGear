@@ -6,6 +6,7 @@ using RFiDGear.Services.Interfaces;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
+using Serilog;
 
 namespace RFiDGear.Services
 {
@@ -33,11 +34,25 @@ namespace RFiDGear.Services
                 await settings.ReadSettingsAsync().ConfigureAwait(false);
                 settings.InitUpdateFile();
 
+                var configuredProvider = settings.DefaultSpecification.DefaultReaderProvider;
+                bool isRdpSession = false;
+
+                if (configuredProvider == ReaderTypes.PCSC && RdpSessionDetector.IsRemoteDesktopSession)
+                {
+                    Log.ForContext<SettingsBootstrapper>().Warning(
+                        "RDP session detected with PC/SC reader provider configured. " +
+                        "PC/SC is not available under Remote Desktop — switching to None. " +
+                        "Use an Elatec TWN4 reader or set fEnableSmartCard=0 in Terminal Services policy " +
+                        "to restore PC/SC access.");
+                    configuredProvider = ReaderTypes.None;
+                    isRdpSession = true;
+                }
+
                 var readerName = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
-                    ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
+                    ? Enum.GetName(typeof(ReaderTypes), configuredProvider)
                     : settings.DefaultSpecification.DefaultReaderName;
 
-                ReaderDevice.Reader = settings.DefaultSpecification.DefaultReaderProvider;
+                ReaderDevice.Reader = configuredProvider;
 
                 if (int.TryParse(settings.DefaultSpecification.LastUsedComPort, out var portNumber))
                 {
@@ -51,12 +66,13 @@ namespace RFiDGear.Services
                 return new SettingsBootstrapResult
                 {
                     CurrentReaderName = readerName,
-                    DefaultReaderProvider = settings.DefaultSpecification.DefaultReaderProvider,
+                    DefaultReaderProvider = configuredProvider,
                     PortNumber = ReaderDevice.PortNumber,
                     AutoLoadLastUsedProject = settings.DefaultSpecification.AutoLoadProjectOnStart,
                     LastUsedProjectPath = settings.DefaultSpecification.LastUsedProjectPath,
                     Culture = settings.DefaultSpecification.DefaultLanguage == "german" ? new CultureInfo("de-DE") : new CultureInfo("en-US"),
-                    DefaultSpecification = settings.DefaultSpecification
+                    DefaultSpecification = settings.DefaultSpecification,
+                    IsRdpSession = isRdpSession
                 };
             }
         }

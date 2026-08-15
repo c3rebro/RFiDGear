@@ -43,5 +43,11 @@ namespace RFiDGear.Services.Interfaces
         public CultureInfo Culture { get; set; }
 
         public DefaultSpecification DefaultSpecification { get; set; }
+
+        /// <summary>
+        /// <see langword="true"/> when the app started inside an RDP session with PC/SC selected
+        /// as the reader provider. The provider was automatically switched to <c>None</c> in this case.
+        /// </summary>
+        public bool IsRdpSession { get; set; }
     }
 }

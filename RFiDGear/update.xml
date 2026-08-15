@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Manifest version="2.0.8.0">
+<Manifest version="2.0.9.0">
   <CheckInterval>900</CheckInterval>
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
   <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>
@@ -45,6 +45,25 @@ Available internal Variables
   + %EXIT will immediatly exit rfidgear application
 
 ################# END OF GENERAL INFORMATION ####################
+
+Version 2.0.9.0
+-----------------------------------------------------------------
+New:
+- Download progress dialog: a small window with a progress bar and Cancel button is
+  now shown while the update payload is being fetched; byte-level progress is reported
+  when the server supplies Content-Length, otherwise the bar shows a marquee
+- Cancelling a download mid-transfer cleanly aborts the HTTP stream and resets the
+  update state without leaving partial files on disk
+
+Fixed:
+- RDP sessions: selecting the PC/SC (LibLogicalAccess) reader provider while running
+  under Remote Desktop now falls back to None automatically; a warning is shown in the
+  reader settings panel and in the status bar explaining why PC/SC is not available
+  (see issue #203)
+- DESFire ReadAppSettings and CheckAppKeyCount: Authentication tab was incorrectly
+  enabled for these task types; tab availability corrected
+- DESFire ReadAppSettings: PICC master key settings inputs were incorrectly shown for
+  this task type; they are now hidden as expected
 
 Version 2.0.8.0
 -----------------------------------------------------------------

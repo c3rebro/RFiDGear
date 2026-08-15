@@ -336,72 +336,85 @@ namespace RedCell.Diagnostics.Update
         }
 
         /// <summary>
-        /// Updates this instance.
+        /// Downloads all update payloads and launches the installer.
         /// </summary>
-        public async Task Update()
+        /// <param name="onProgress">
+        /// Optional callback invoked after each chunk:
+        /// <c>(fileIndex, fileCount, fileName, bytesReceived, totalBytes)</c>.
+        /// <c>totalBytes</c> is -1 when the server does not send <c>Content-Length</c>.
+        /// </param>
+        /// <param name="cancellationToken">Token that aborts the download.</param>
+        public async Task Update(
+            Action<int, int, string, long, long> onProgress = null,
+            CancellationToken cancellationToken = default)
         {
             UpdateAvailable = true;
 
-            await Task.Run(() =>
+            // Clean up any failed previous attempt.
+            var workDir = Path.Combine(appDataPath, WorkPath);
+            if (Directory.Exists(workDir))
             {
-                // Clean up failed attempts.
-                if (Directory.Exists(Path.Combine(appDataPath, WorkPath)))
+                try { Directory.Delete(workDir, true); }
+                catch { return; }
+            }
+
+            try { Directory.CreateDirectory(workDir); }
+            catch { return; }
+
+            var payloads = _remoteConfig.Payloads;
+            var fileCount = payloads.Length;
+
+            // Download files in manifest.
+            for (int fileIndex = 0; fileIndex < fileCount; fileIndex++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var update = payloads[fileIndex];
+                Logger.Information("Fetching '{UpdatePayload}'.", update);
+                var url = _remoteConfig.BaseUri + update;
+
+                IProgress<(long bytesReceived, long totalBytes)> chunkProgress = onProgress == null
+                    ? null
+                    : new Progress<(long bytesReceived, long totalBytes)>(t =>
+                        onProgress(fileIndex, fileCount, update, t.bytesReceived, t.totalBytes));
+
+                byte[] file;
+                try
                 {
-                    //"WARNING: Work directory already exists."
-                    try { Directory.Delete(Path.Combine(appDataPath, WorkPath), true); }
-                    catch
-                    {
-                        return;
-                    }
+                    file = await Fetch.GetWithProgressAsync(url, chunkProgress, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    Logger.Information("Update download cancelled.");
+                    throw;
                 }
 
-                else
+                if (file == null)
+                {
+                    Logger.Error("Fetch failed for '{UpdatePayload}'.", update);
+                    return;
+                }
+
+                var info = new FileInfo(Path.Combine(workDir, update));
+                Directory.CreateDirectory(info.DirectoryName);
+                File.WriteAllBytes(info.FullName, file);
+
+                // Unzip
+                if (Regex.IsMatch(update, @"\.zip"))
                 {
                     try
                     {
-                        Directory.CreateDirectory(Path.Combine(appDataPath, WorkPath));
+                        ZipFile.ExtractToDirectory(info.FullName, workDir, overwriteFiles: true);
+                        File.Delete(info.FullName);
+                        AllowUpdate = true;
                     }
                     catch
                     {
                         return;
                     }
                 }
-
-
-                // Download files in manifest.
-                foreach (var update in _remoteConfig.Payloads)
-                {
-                    Logger.Information("Fetching '{UpdatePayload}'.", update);
-                    var url = _remoteConfig.BaseUri + update; //TODO: make this localizable ? e.g. + (settings.DefaultSpecification.DefaultLanguage == "german" ? "de-de/" : "en-us/")
-                    var file = Fetch.Get(url);
-                    if (file == null)
-                    {
-                        Logger.Error("Fetch failed for '{UpdatePayload}'.", update);
-                        return;
-                    }
-                    var info = new FileInfo(Path.Combine(Path.Combine(appDataPath, WorkPath), update));
-                    Directory.CreateDirectory(info.DirectoryName);
-                    File.WriteAllBytes(Path.Combine(Path.Combine(appDataPath, WorkPath), update), file);
-
-                    // Unzip
-                    if (Regex.IsMatch(update, @"\.zip"))
-                    {
-                        try
-                        {
-                            var zipfile = Path.Combine(Path.Combine(appDataPath, WorkPath), update);
-                            ZipFile.ExtractToDirectory(zipfile, Path.Combine(appDataPath, WorkPath), overwriteFiles: true);
-
-                            File.Delete(zipfile);
-
-                            AllowUpdate = true;
-                        }
-                        catch
-                        {
-                            return;
-                        }
-                    }
-                }
-            }).ConfigureAwait(false);
+            }
 
             if (IsUserNotified && AllowUpdate)
             {

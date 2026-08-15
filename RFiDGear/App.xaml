@@ -30,6 +30,7 @@
             <mainview:MifareUltralightSetupView x:Key="{x:Type taskvm:MifareUltralightSetupViewModel}" x:Shared="False" />
             <mainview:SetupView x:Key="{x:Type vm:SetupViewModel}" x:Shared="False" />
             <mainview:UpdateNotifierView x:Key="{x:Type vm:UpdateNotifierViewModel}" x:Shared="False" />
+            <mainview:DownloadProgressView x:Key="{x:Type vm:DownloadProgressViewModel}" x:Shared="False" />
             <mainview:AboutView x:Key="{x:Type vm:AboutViewModel}" x:Shared="False" />
             <mainview:QuickCheckKeysDialogView x:Key="{x:Type vm:QuickCheckKeysDialogViewModel}" x:Shared="False" />
             <mainview:DesfireAppKeyDialogView x:Key="{x:Type vm:DesfireAppKeyDialogViewModel}" x:Shared="False" />

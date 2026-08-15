@@ -191,6 +191,32 @@
                     </ToolTip>
                 </ComboBox.ToolTip>
             </ComboBox>
+            <Border
+                Grid.Row="6"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Margin="8,10,8,4"
+                Padding="8"
+                Background="#FFFFF4CE"
+                BorderBrush="#FFCCA700"
+                BorderThickness="1"
+                CornerRadius="3">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsRdpSession}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <TextBlock
+                    TextWrapping="Wrap"
+                    Foreground="#FF7A5800"
+                    FontWeight="SemiBold"
+                    Text="{Binding RdpWarningText}" />
+            </Border>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="213" />
                 <ColumnDefinition />

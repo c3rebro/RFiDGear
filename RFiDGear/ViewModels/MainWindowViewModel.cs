@@ -170,6 +170,12 @@ namespace RFiDGear.ViewModel
             ReaderDevice.Reader = bootstrapResult.DefaultReaderProvider;
             culture = bootstrapResult.Culture;
 
+            if (bootstrapResult.IsRdpSession)
+            {
+                IsRdpWarningVisible = true;
+                RdpWarningMessage = ResourceLoader.GetResource("labelRdpStatusBar");
+            }
+
             var timerInitialization = timerFactory.CreateTimers(UpdateChip, TaskTimeout);
             triggerReadChip = timerInitialization.TriggerReadTimer;
             taskTimeout = timerInitialization.TaskTimeoutTimer;
@@ -1559,6 +1565,35 @@ namespace RFiDGear.ViewModel
         private string dateTimeStatusBar;
 
         /// <summary>
+        /// Short warning text shown in the status bar when the app is running in an RDP session
+        /// with PC/SC unavailable.
+        /// </summary>
+        public string RdpWarningMessage
+        {
+            get => rdpWarningMessage;
+            set
+            {
+                rdpWarningMessage = value;
+                OnPropertyChanged(nameof(RdpWarningMessage));
+            }
+        }
+        private string rdpWarningMessage;
+
+        /// <summary>
+        /// Controls visibility of the RDP/PC/SC warning item in the status bar.
+        /// </summary>
+        public bool IsRdpWarningVisible
+        {
+            get => isRdpWarningVisible;
+            set
+            {
+                isRdpWarningVisible = value;
+                OnPropertyChanged(nameof(IsRdpWarningVisible));
+            }
+        }
+        private bool isRdpWarningVisible;
+
+        /// <summary>
         /// 
         /// </summary>
         public bool IsSelected
@@ -1721,12 +1756,12 @@ namespace RFiDGear.ViewModel
 
                         OnOk = async (updateAction) =>
                         {
+                            updateAction.Close();
+
                             if (!updateDisabled)
                             {
-                                Mouse.OverrideCursor = Cursors.AppStarting;
-                                await updater.Update();
+                                await StartDownloadWithProgressAsync();
                             }
-                            updateAction.Close();
                         },
 
                         OnCancel = (updateAction) =>
@@ -1747,6 +1782,70 @@ namespace RFiDGear.ViewModel
             }
 
             userIsNotifiedForAvailableUpdate = true;
+        }
+
+        private async Task StartDownloadWithProgressAsync()
+        {
+            using var cts = new CancellationTokenSource();
+
+            var progressVm = new DownloadProgressViewModel
+            {
+                Caption = "Downloading Update",
+                OnCancel = vm =>
+                {
+                    cts.Cancel();
+                    vm.StatusText = "Cancelling…";
+                    vm.IsIndeterminate = true;
+                },
+                OnCloseRequest = vm => vm.Close()
+            };
+
+            Dialogs.Add(progressVm);
+
+            // IProgress<T> marshals Report() back to the UI thread automatically.
+            var uiProgress = new Progress<(int fileIndex, int fileCount, string fileName, long bytesReceived, long totalBytes)>(t =>
+            {
+                if (t.totalBytes > 0)
+                {
+                    var overall = (t.fileIndex + (double)t.bytesReceived / t.totalBytes) / t.fileCount * 100.0;
+                    progressVm.IsIndeterminate = false;
+                    progressVm.ProgressValue = overall;
+                    var mb = t.bytesReceived / 1_048_576.0;
+                    var totalMb = t.totalBytes / 1_048_576.0;
+                    progressVm.StatusText = t.fileCount > 1
+                        ? $"File {t.fileIndex + 1} of {t.fileCount}: {t.fileName}  {mb:F1} / {totalMb:F1} MB"
+                        : $"Downloading {t.fileName}  {mb:F1} / {totalMb:F1} MB";
+                }
+                else
+                {
+                    progressVm.IsIndeterminate = true;
+                    var mb = t.bytesReceived / 1_048_576.0;
+                    progressVm.StatusText = t.fileCount > 1
+                        ? $"File {t.fileIndex + 1} of {t.fileCount}: {t.fileName}  {mb:F1} MB received"
+                        : $"Downloading {t.fileName}  {mb:F1} MB received";
+                }
+            });
+
+            Action<int, int, string, long, long> onProgress =
+                (fi, fc, fn, br, tb) => ((IProgress<(int, int, string, long, long)>)uiProgress).Report((fi, fc, fn, br, tb));
+
+            try
+            {
+                await updater.Update(onProgress, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                updater.AllowUpdate = false;
+                progressVm.Close();
+                mw.Activate();
+            }
+            catch (Exception ex)
+            {
+                Log.ForContext<MainWindowViewModel>().Error(ex, "Update download failed.");
+                progressVm.StatusText = $"Download failed: {ex.Message}";
+                progressVm.IsIndeterminate = false;
+                // Leave dialog open so the user sees the error message; Cancel button closes it.
+            }
         }
 
         private void CloseThreads(object sender, CancelEventArgs e)

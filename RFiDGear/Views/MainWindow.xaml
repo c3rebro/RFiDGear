@@ -639,6 +639,23 @@
                         </TextBlock>
                     </Grid>
                 </StatusBarItem>
+                <StatusBarItem Margin="4,0,0,0">
+                    <StatusBarItem.Style>
+                        <Style TargetType="StatusBarItem">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsRdpWarningVisible}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StatusBarItem.Style>
+                    <TextBlock
+                        Text="{Binding RdpWarningMessage}"
+                        FontWeight="Bold"
+                        Foreground="#FFCC6600"
+                        ToolTip="PC/SC is not available in Remote Desktop sessions. See Settings &gt; Reader for details." />
+                </StatusBarItem>
                 <StatusBarItem HorizontalAlignment="Right" Margin="0,0,12,0">
                     <TextBlock Text="{Binding DateTimeStatusBar, UpdateSourceTrigger=PropertyChanged}" Height="auto" FontWeight="Bold" HorizontalAlignment="Left"/>
                 </StatusBarItem>

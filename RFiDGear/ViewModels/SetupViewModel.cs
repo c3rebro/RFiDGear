@@ -44,9 +44,13 @@ namespace RFiDGear.ViewModel
         {
             settingsReaderWriter = settings ?? throw new ArgumentNullException(nameof(settings));
 
+            IsRdpSession = RdpSessionDetector.IsRemoteDesktopSession;
+
             device = _device;
             SelectedReaderName = settingsReaderWriter.DefaultSpecification.DefaultReaderName;
-            SelectedReader = settingsReaderWriter.DefaultSpecification.DefaultReaderProvider;
+            // If running under RDP and PCSC was the configured provider, fall back to None silently
+            var configuredProvider = settingsReaderWriter.DefaultSpecification.DefaultReaderProvider;
+            SelectedReader = (IsRdpSession && configuredProvider == ReaderTypes.PCSC) ? ReaderTypes.None : configuredProvider;
             DefaultReader = string.IsNullOrWhiteSpace(settingsReaderWriter.DefaultSpecification.DefaultReaderName)
                 ? Enum.GetName(typeof(ReaderTypes), SelectedReader)
                 : settingsReaderWriter.DefaultSpecification.DefaultReaderName;
@@ -253,6 +257,10 @@ namespace RFiDGear.ViewModel
             get => selectedReader;
             set
             {
+                // Block PC/SC selection when running under RDP — SCardSvr is not usable there.
+                if (IsRdpSession && value == ReaderTypes.PCSC)
+                    value = ReaderTypes.None;
+
                 selectedReader = value;
 
                 if (device == null)
@@ -280,6 +288,19 @@ namespace RFiDGear.ViewModel
             }
         }
         private ReaderTypes selectedReader;
+
+        /// <summary>
+        /// <see langword="true"/> when the app is running inside an RDP/Terminal Services session.
+        /// PC/SC reader access is unavailable in this case.
+        /// </summary>
+        public bool IsRdpSession { get; }
+
+        /// <summary>
+        /// Warning message shown in the reader settings panel when <see cref="IsRdpSession"/> is <see langword="true"/>.
+        /// </summary>
+        public string RdpWarningText => IsRdpSession
+            ? ResourceLoader.GetResource("labelRdpPcscWarning")
+            : string.Empty;
 
         public ObservableCollection<string> AvailableReaders { get; } = new ObservableCollection<string>();
 

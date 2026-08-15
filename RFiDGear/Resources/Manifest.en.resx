@@ -415,6 +415,12 @@ slot of an available reader</value>
   <data name="labelReaderStatus" xml:space="preserve">
     <value>Reader Status:</value>
   </data>
+  <data name="labelRdpPcscWarning" xml:space="preserve">
+    <value>PC/SC reader not available: Remote Desktop session detected. SCardSvr is disrupted by RDP smart card redirection. Switch to an Elatec TWN4 reader, or set fEnableSmartCard=0 in Terminal Services policy to restore PC/SC access.</value>
+  </data>
+  <data name="labelRdpStatusBar" xml:space="preserve">
+    <value>RDP: PC/SC unavailable</value>
+  </data>
   <data name="labelSelectedReader" xml:space="preserve">
     <value>Selected Reader:</value>
   </data>

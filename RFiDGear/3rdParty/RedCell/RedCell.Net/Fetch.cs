@@ -156,6 +156,51 @@ namespace RedCell.Net
         }
 
         /// <summary>
+        /// Downloads a URL asynchronously and reports byte-level progress.
+        /// Falls back to indeterminate progress when <c>Content-Length</c> is absent.
+        /// </summary>
+        /// <param name="url">The URL to fetch.</param>
+        /// <param name="progress">Receives <c>(bytesReceived, totalBytes)</c>; <c>totalBytes</c> is -1 when unknown.</param>
+        /// <param name="cancellationToken">Token that aborts the download.</param>
+        /// <returns>The downloaded bytes, or <see langword="null"/> on failure.</returns>
+        public static async Task<byte[]> GetWithProgressAsync(
+            string url,
+            IProgress<(long bytesReceived, long totalBytes)> progress,
+            CancellationToken cancellationToken)
+        {
+            using var handler = new HttpClientHandler
+            {
+                AllowAutoRedirect = true,
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
+            using var client = new HttpClient(handler) { Timeout = TimeSpan.FromMilliseconds(60000) };
+
+            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var dest = new System.IO.MemoryStream(
+                totalBytes > 0 ? (int)Math.Min(totalBytes, int.MaxValue) : 65536);
+
+            var buffer = new byte[81920];
+            long bytesReceived = 0;
+            int read;
+
+            while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false)) > 0)
+            {
+                dest.Write(buffer, 0, read);
+                bytesReceived += read;
+                progress?.Report((bytesReceived, totalBytes));
+            }
+
+            return dest.ToArray();
+        }
+
+        /// <summary>
         /// Gets the string.
         /// </summary>
         /// <returns></returns>

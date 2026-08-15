@@ -67,19 +67,56 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
         private void InitializeReaderProvider(ReaderTypes readerType)
         {
-            readerProvider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), readerType));
+            try
+            {
+                readerProvider = LibraryManager.getInstance().getReaderProvider(
+                    Enum.GetName(typeof(ReaderTypes), readerType));
+            }
+            catch (Exception e)
+            {
+                // SCardEstablishContext failed — SCardSvr is not running or was killed.
+                // Commonly caused by RDP smart card redirection resetting the service during
+                // session attach. Fix: set fEnableSmartCard=0 under
+                // HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services to prevent
+                // RDP from disrupting the Smart Card service.
+                Log.ForContext<LibLogicalAccessProvider>().Warning(e,
+                    "PC/SC context could not be established — SCardSvr is not running or was " +
+                    "killed (e.g. by RDP smart card redirection). Restart the Smart Card service " +
+                    "or set HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services\\" +
+                    "fEnableSmartCard=0 to prevent RDP from disrupting it.");
+                AvailableReaders = new List<string>();
+                return;
+            }
 
-            var readers = readerProvider.getReaderList();
+            ReaderUnitVector readers;
+            try
+            {
+                readers = readerProvider.getReaderList();
+            }
+            catch (Exception e)
+            {
+                // SCardSvr can crash during enumeration when ghost or RDP-redirected reader
+                // entries are present in the PnP store. Remove stale SmartCardReader devices
+                // via 'pnputil /remove-device <InstanceId>' and restart the Smart Card service.
+                Log.ForContext<LibLogicalAccessProvider>().Warning(e,
+                    "PC/SC reader enumeration failed — SCardSvr may have crashed due to ghost " +
+                    "or RDP-redirected reader entries. Remove stale SmartCardReader devices via " +
+                    "'pnputil /remove-device <InstanceId>' and restart the Smart Card service.");
+                AvailableReaders = new List<string>();
+                return;
+            }
 
             AvailableReaders = readers.Select(x => x.getName()).ToList();
 
             if (readerUnit == null)
             {
-                readerUnit = readers.Where(r => r.getName() == selectedReaderName).FirstOrDefault() ?? readerProvider.createReaderUnit();
+                readerUnit = readers.FirstOrDefault(r => r.getName() == selectedReaderName)
+                             ?? readerProvider.createReaderUnit();
             }
             else
             {
-                readerUnit = readers.Where(r => r.getName() == readerUnit.getName()).FirstOrDefault() ?? readerUnit;
+                readerUnit = readers.FirstOrDefault(r => r.getName() == readerUnit.getName())
+                             ?? readerUnit;
             }
 
             ReaderUnitName = readerUnit?.getName();
@@ -98,16 +135,46 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <summary>
+        /// Returns the names of all PC/SC readers currently visible to WinSCard.
+        /// Returns an empty list if the provider cannot be obtained or if reader enumeration
+        /// fails (e.g. SCardSvr crashes due to ghost or RDP-redirected reader entries).
+        /// </summary>
+        /// <param name="readerType">The reader provider type to query.</param>
+        /// <returns>Reader names, or an empty list on any PC/SC failure.</returns>
+        /// <summary>
+        /// Returns the names of all PC/SC readers currently visible to WinSCard.
+        /// Falls back to <see cref="LibraryManager.getAvailableReaders"/> when
+        /// <see cref="SCardEstablishContext"/> is unavailable (e.g. RDP session attach).
+        /// Returns an empty list if both paths fail.
+        /// </summary>
+        /// <param name="readerType">The reader provider type to query.</param>
+        /// <returns>Reader names, or an empty list on any PC/SC failure.</returns>
         public static IReadOnlyCollection<string> GetAvailableReaderNames(ReaderTypes readerType)
         {
+            ReaderProvider provider;
             try
             {
-                var provider = LibraryManager.getInstance().getReaderProvider(Enum.GetName(typeof(ReaderTypes), readerType));
+                provider = LibraryManager.getInstance().getReaderProvider(
+                    Enum.GetName(typeof(ReaderTypes), readerType));
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<LibLogicalAccessProvider>().Warning(e,
+                    "Could not obtain PC/SC provider from LibLogicalAccess.");
+                return new List<string>();
+            }
 
+            try
+            {
                 return provider.getReaderList().Select(r => r.getName()).ToList();
             }
-            catch
+            catch (Exception e)
             {
+                Log.ForContext<LibLogicalAccessProvider>().Warning(e,
+                    "PC/SC reader enumeration failed — SCardSvr may have crashed due to ghost " +
+                    "or RDP-redirected reader entries. Remove stale SmartCardReader devices via " +
+                    "'pnputil /remove-device <InstanceId>' and restart the Smart Card service.");
                 return new List<string>();
             }
         }
