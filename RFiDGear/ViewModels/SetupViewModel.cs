@@ -44,7 +44,7 @@ namespace RFiDGear.ViewModel
         {
             settingsReaderWriter = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            IsRdpSession = RdpSessionDetector.IsRemoteDesktopSession;
+            IsRdpSession = RdpSessionDetector.IsRemoteDesktopSession && !RdpSessionDetector.CanEstablishPcscContext();
 
             device = _device;
             SelectedReaderName = settingsReaderWriter.DefaultSpecification.DefaultReaderName;

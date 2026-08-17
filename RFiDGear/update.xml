@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Manifest version="2.0.9.0">
+<Manifest version="2.0.10.0">
   <CheckInterval>900</CheckInterval>
   <RemoteConfigUri>https://github.com/c3rebro/RFiDGear/releases/latest/download/update.xml</RemoteConfigUri>
   <SecurityToken>D68EF3A7-E787-4CC4-B020-878BA649B4DC</SecurityToken>
@@ -45,6 +45,19 @@ Available internal Variables
   + %EXIT will immediatly exit rfidgear application
 
 ################# END OF GENERAL INFORMATION ####################
+
+Version 2.0.10.0
+-----------------------------------------------------------------
+Fixed:
+- RDP + PC/SC: the RDP guard now probes SCardEstablishContext directly instead of
+  using a session-type heuristic; PC/SC works correctly when smart card redirection
+  is active (redirectsmartcards:i:1 in the .rdp file) and a reader is attached to
+  the local (client) machine
+- Settings window: RDP warning banner no longer stretches the window to full desktop
+  width; window now auto-sizes in both dimensions so the action buttons remain fully
+  visible when the banner is shown
+- RDP warning text: replaced incorrect fEnableSmartCard=0 advice with correct
+  guidance to enable smart card redirection in the RDP connection settings
 
 Version 2.0.9.0
 -----------------------------------------------------------------

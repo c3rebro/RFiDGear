@@ -416,7 +416,7 @@ slot of an available reader</value>
     <value>Reader Status:</value>
   </data>
   <data name="labelRdpPcscWarning" xml:space="preserve">
-    <value>PC/SC reader not available: Remote Desktop session detected. SCardSvr is disrupted by RDP smart card redirection. Switch to an Elatec TWN4 reader, or set fEnableSmartCard=0 in Terminal Services policy to restore PC/SC access.</value>
+    <value>PC/SC reader not available: Remote Desktop session detected. To use a PC/SC reader, enable smart card redirection in your RDP connection: add redirectsmartcards:i:1 to the .rdp file or enable it in the Remote Desktop client settings. The reader must be attached to your local (client) machine — readers attached to the remote server are not accessible from an RDP session.</value>
   </data>
   <data name="labelRdpStatusBar" xml:space="preserve">
     <value>RDP: PC/SC unavailable</value>

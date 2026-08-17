@@ -7,15 +7,15 @@
     xmlns:v="clr-namespace:RFiDGear.View"
     Title="{Binding Caption}"
     Width="auto"
-    Height="420"
     MinWidth="480"
+    MaxWidth="650"
     MinHeight="420"
-    ResizeMode="NoResize"
+    ResizeMode="CanResizeWithGrip"
     HorizontalContentAlignment="Left"
     FontFamily="Segoe UI"
     FontWeight="Normal"
     MouseLeftButtonDown="WindowMouseLeftButtonDown"
-    SizeToContent="Width"
+    SizeToContent="WidthAndHeight"
     WindowStartupLocation="CenterScreen" >
     <Window.Resources>
         <dal:ResourceLoader x:Key="Localization" />
@@ -43,7 +43,7 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
             <Button
                 Grid.Row="0"
@@ -51,7 +51,7 @@
                 Width="140"
                 Height="26"
                 Padding="5,2"
-                Margin="8,0,4,8"
+                Margin="0,0,4,8"
                 VerticalAlignment="Bottom"
                 HorizontalAlignment="Right"
                 Command="{Binding ConnectToReaderCommand}"

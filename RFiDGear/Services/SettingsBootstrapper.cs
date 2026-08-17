@@ -37,15 +37,15 @@ namespace RFiDGear.Services
                 var configuredProvider = settings.DefaultSpecification.DefaultReaderProvider;
                 bool isRdpSession = false;
 
-                if (configuredProvider == ReaderTypes.PCSC && RdpSessionDetector.IsRemoteDesktopSession)
+                if (configuredProvider == ReaderTypes.PCSC && !RdpSessionDetector.CanEstablishPcscContext())
                 {
                     Log.ForContext<SettingsBootstrapper>().Warning(
-                        "RDP session detected with PC/SC reader provider configured. " +
-                        "PC/SC is not available under Remote Desktop — switching to None. " +
-                        "Use an Elatec TWN4 reader or set fEnableSmartCard=0 in Terminal Services policy " +
+                        "PC/SC smart card subsystem is not accessible in this session (SCardEstablishContext failed) — " +
+                        "switching reader provider to None. " +
+                        "If running under RDP, enable smart card redirection (redirectsmartcards:i:1 in your .rdp file) " +
                         "to restore PC/SC access.");
                     configuredProvider = ReaderTypes.None;
-                    isRdpSession = true;
+                    isRdpSession = RdpSessionDetector.IsRemoteDesktopSession;
                 }
 
                 var readerName = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)

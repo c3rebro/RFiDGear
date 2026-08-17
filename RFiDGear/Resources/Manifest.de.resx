@@ -428,7 +428,7 @@ ein Kartenlesegerät auswählen</value>
     <value>Kartenleser Status:</value>
   </data>
   <data name="labelRdpPcscWarning" xml:space="preserve">
-    <value>PC/SC Kartenleser nicht verfügbar: Remotedesktopsitzung erkannt. SCardSvr wird durch die RDP-Smartcard-Umleitung gestört. Bitte einen Elatec TWN4 Leser verwenden oder fEnableSmartCard=0 in der Terminal-Services-Richtlinie setzen, um den PC/SC-Zugriff wiederherzustellen.</value>
+    <value>PC/SC Kartenleser nicht verfügbar: Remotedesktopsitzung erkannt. Um einen PC/SC Leser zu verwenden, muss die Smartcard-Umleitung in der RDP-Verbindung aktiviert werden: redirectsmartcards:i:1 in die .rdp-Datei eintragen oder in den Einstellungen des Remotedesktop-Clients aktivieren. Der Leser muss am lokalen (Client-)Rechner angeschlossen sein — am Remote-Server angeschlossene Leser sind in einer RDP-Sitzung nicht zugänglich.</value>
   </data>
   <data name="labelRdpStatusBar" xml:space="preserve">
     <value>RDP: PC/SC nicht verfügbar</value>
