@@ -174,6 +174,7 @@ namespace RFiDGear.Tests
         public async Task StructuredLogs_EmitCorrelatedPerTaskOutcomesAndSummary()
         {
             var logger = new CapturingTaskExecutionLogger();
+            TaskExecutionResult? executionResult = null;
             var first = new LoggingStubTaskModel
             {
                 CurrentTaskIndex = "10",
@@ -205,7 +206,7 @@ namespace RFiDGear.Tests
 
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                await BuildService(logger).ExecuteOnceAsync(BuildRequest(descriptors));
+                executionResult = await BuildService(logger).ExecuteOnceAsync(BuildRequest(descriptors));
             });
 
             var outcomes = logger.Entries.Where(entry => entry.Stage == "Task.Outcome").ToList();
@@ -231,6 +232,167 @@ namespace RFiDGear.Tests
             Assert.Equal(0, GetIntProperty(summary.DetailsJson, "Skipped"));
             Assert.Equal(1, GetIntProperty(summary.DetailsJson, "Failed"));
             Assert.Equal(1, GetIntProperty(summary.DetailsJson, "Successful"));
+            Assert.Equal(0, GetIntProperty(summary.DetailsJson, "AcceptedFailures"));
+            Assert.Equal(1, GetIntProperty(summary.DetailsJson, "UnhandledFailures"));
+            Assert.Equal("Failed", GetStringProperty(summary.DetailsJson, "TerminalStatus"));
+
+            Assert.NotNull(executionResult);
+            Assert.Equal(TaskExecutionTerminalStatus.Failed, executionResult!.TerminalStatus);
+            Assert.Equal(runIds[0], executionResult.RunId);
+            Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Failure"));
+            Assert.Empty(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Success"));
+        }
+
+        [Fact]
+        public async Task StructuredLogs_EmitSuccessWhenNegativeOutcomeIsConsumedByExecutedBranch()
+        {
+            var logger = new CapturingTaskExecutionLogger();
+            TaskExecutionResult? executionResult = null;
+            var applicationCheck = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "10",
+                SelectedTaskType = "AppExistCheck",
+                SelectedTaskDescription = "Check whether application is absent"
+            };
+            var createApplication = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "20",
+                SelectedTaskType = "CreateApplication",
+                SelectedTaskDescription = "Create missing application",
+                SelectedExecuteConditionTaskIndex = "10",
+                SelectedExecuteConditionErrorLevel = ERROR.IsNotTrue
+            };
+
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, applicationCheck, ct =>
+                {
+                    applicationCheck.CurrentTaskErrorLevel = ERROR.IsNotTrue;
+                    applicationCheck.IsTaskCompletedSuccessfully = false;
+                    return Task.CompletedTask;
+                }),
+                new TaskDescriptor(1, createApplication, ct =>
+                {
+                    createApplication.CurrentTaskErrorLevel = ERROR.NoError;
+                    createApplication.IsTaskCompletedSuccessfully = true;
+                    return Task.CompletedTask;
+                })
+            };
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                executionResult = await BuildService(logger).ExecuteOnceAsync(BuildRequest(descriptors));
+            });
+
+            var summary = Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Summary"));
+            Assert.Equal(1, GetIntProperty(summary.DetailsJson, "Failed"));
+            Assert.Equal(1, GetIntProperty(summary.DetailsJson, "AcceptedFailures"));
+            Assert.Equal(0, GetIntProperty(summary.DetailsJson, "UnhandledFailures"));
+            Assert.Equal("Succeeded", GetStringProperty(summary.DetailsJson, "TerminalStatus"));
+
+            Assert.NotNull(executionResult);
+            Assert.Equal(TaskExecutionTerminalStatus.Succeeded, executionResult!.TerminalStatus);
+            Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Success"));
+            Assert.Empty(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Failure"));
+        }
+
+        [Fact]
+        public void TerminalEvaluator_FailsUnhandledWriteErrorWithConditionalFollowUpSkip()
+        {
+            var writeTask = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "50",
+                CurrentTaskErrorLevel = ERROR.Unknown
+            };
+            var readTask = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "60",
+                SelectedExecuteConditionTaskIndex = "50",
+                SelectedExecuteConditionErrorLevel = ERROR.NoError
+            };
+            var observations = new List<TaskExecutionObservation>
+            {
+                new TaskExecutionObservation(0, "50", writeTask, "Executed", false, ERROR.Unknown),
+                new TaskExecutionObservation(1, "60", readTask, "Skipped", null, ERROR.Empty, "ExecuteConditionNotMet")
+            };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(2, observations);
+
+            Assert.Equal(TaskExecutionTerminalStatus.Failed, result.TerminalStatus);
+            Assert.Equal(1, result.UnhandledFailures);
+            Assert.Equal(1, result.Skipped);
+            Assert.Equal(0, result.InvalidSkips);
+        }
+
+        [Fact]
+        public void TerminalEvaluator_FailsNonConditionalSkipWithoutTaskFailure()
+        {
+            var task = new LoggingStubTaskModel { CurrentTaskIndex = "10" };
+            var observations = new List<TaskExecutionObservation>
+            {
+                new TaskExecutionObservation(0, "10", task, "Skipped", null, ERROR.Empty, "NotExecuted")
+            };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(1, observations);
+
+            Assert.Equal(TaskExecutionTerminalStatus.Failed, result.TerminalStatus);
+            Assert.Equal(1, result.InvalidSkips);
+        }
+
+        [Fact]
+        public void TerminalEvaluator_AcceptsNotTakenConditionalBranch()
+        {
+            var checkTask = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "10",
+                CurrentTaskErrorLevel = ERROR.NoError
+            };
+            var createTask = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "20",
+                SelectedExecuteConditionTaskIndex = "10",
+                SelectedExecuteConditionErrorLevel = ERROR.IsNotTrue
+            };
+            var observations = new List<TaskExecutionObservation>
+            {
+                new TaskExecutionObservation(0, "10", checkTask, "Executed", true, ERROR.NoError),
+                new TaskExecutionObservation(1, "20", createTask, "Skipped", null, ERROR.Empty, "ExecuteConditionNotMet")
+            };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(2, observations);
+
+            Assert.Equal(TaskExecutionTerminalStatus.Succeeded, result.TerminalStatus);
+            Assert.Equal(0, result.InvalidSkips);
+        }
+
+        [Fact]
+        public void TerminalEvaluator_AcceptsFailureHandledByExplicitErrorRoute()
+        {
+            var failedTask = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "10",
+                CurrentTaskErrorLevel = ERROR.TransportError
+            };
+            var recoveryTask = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "90",
+                CurrentTaskErrorLevel = ERROR.NoError
+            };
+            var observations = new List<TaskExecutionObservation>
+            {
+                new TaskExecutionObservation(0, "10", failedTask, "Executed", false, ERROR.TransportError),
+                new TaskExecutionObservation(1, "90", recoveryTask, "Executed", true, ERROR.NoError)
+            };
+            var errorRouting = new Dictionary<ERROR, string>
+            {
+                [ERROR.TransportError] = "90"
+            };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(2, observations, errorRouting);
+
+            Assert.Equal(TaskExecutionTerminalStatus.Succeeded, result.TerminalStatus);
+            Assert.Equal(1, result.AcceptedFailures);
+            Assert.Equal(0, result.UnhandledFailures);
         }
 
         [Fact]

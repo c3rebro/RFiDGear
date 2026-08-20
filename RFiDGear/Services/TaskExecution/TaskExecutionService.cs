@@ -268,6 +268,16 @@ namespace RFiDGear.Services.TaskExecution
         public string ReportTemplateFile { get; set; }
         public object SelectedSetupViewModel { get; set; }
         public bool RunSelectedOnly { get; set; }
+
+        /// <summary>
+        /// Gets the correlation identifier shared by all structured events of this execution pass.
+        /// </summary>
+        public string RunId { get; internal set; }
+
+        /// <summary>
+        /// Gets the normalized terminal state derived from the individual task outcomes.
+        /// </summary>
+        public TaskExecutionTerminalStatus TerminalStatus { get; internal set; } = TaskExecutionTerminalStatus.NotRun;
     }
 
     /// <summary>
@@ -352,6 +362,7 @@ namespace RFiDGear.Services.TaskExecution
 
             var descriptors = BuildTaskDescriptors(request);
             var runId = Guid.NewGuid().ToString("N");
+            result.RunId = runId;
 
 #if DEBUG
             taskTimeout.IsEnabled = false;
@@ -369,12 +380,14 @@ namespace RFiDGear.Services.TaskExecution
 
                 if (descriptors.Count > 0 && descriptors.All(d => d.ExecuteAsync != null))
                 {
-                    await ExecuteStageWithTimeout(
+                    var taskLoopResult = await ExecuteStageWithTimeout(
                         "TaskLoop",
                         () => RunTaskLoopAsync(request, result, descriptors, null, null, runId, cancellationToken),
                         request.Timeouts?.TaskLoopTimeout,
                         cancellationToken,
-                        runId);
+                        runId,
+                        loopResult => loopResult.TerminalStatus == TaskExecutionTerminalStatus.Succeeded);
+                    result.TerminalStatus = taskLoopResult.TerminalStatus;
                 }
                 else
                 {
@@ -406,12 +419,14 @@ namespace RFiDGear.Services.TaskExecution
                             cancellationToken,
                         runId);
 
-                        await ExecuteStageWithTimeout(
+                        var taskLoopResult = await ExecuteStageWithTimeout(
                             "TaskLoop",
                             () => RunTaskLoopAsync(request, result, descriptors, hydrationResult.Chip, device, runId, cancellationToken),
                             request.Timeouts?.TaskLoopTimeout,
                             cancellationToken,
-                        runId);
+                            runId,
+                            loopResult => loopResult.TerminalStatus == TaskExecutionTerminalStatus.Succeeded);
+                        result.TerminalStatus = taskLoopResult.TerminalStatus;
                     }
                 }
             }
@@ -483,7 +498,13 @@ namespace RFiDGear.Services.TaskExecution
             return descriptors;
         }
 
-        private async Task<T> ExecuteStageWithTimeout<T>(string stageName, Func<Task<T>> stageAction, TimeSpan? timeout, CancellationToken cancellationToken, string runId)
+        private async Task<T> ExecuteStageWithTimeout<T>(
+            string stageName,
+            Func<Task<T>> stageAction,
+            TimeSpan? timeout,
+            CancellationToken cancellationToken,
+            string runId,
+            Func<T, bool> terminalSuccessEvaluator = null)
         {
             logger.LogInformation(stageName + ".Start", new { RunId = runId, CurrentTaskIndex });
 
@@ -511,7 +532,31 @@ namespace RFiDGear.Services.TaskExecution
                 }
 
                 var result = await stageTask;
-                logger.LogInformation(stageName + ".Success", new { RunId = runId, Stage = stageName, CurrentTaskIndex, Timestamp = DateTimeOffset.UtcNow });
+                if (terminalSuccessEvaluator == null)
+                {
+                    logger.LogInformation(stageName + ".Success", new
+                    {
+                        RunId = runId,
+                        Stage = stageName,
+                        CurrentTaskIndex,
+                        Timestamp = DateTimeOffset.UtcNow
+                    });
+                }
+                else
+                {
+                    var terminalSucceeded = terminalSuccessEvaluator(result);
+                    logger.LogInformation(stageName + (terminalSucceeded ? ".Success" : ".Failure"), new
+                    {
+                        RunId = runId,
+                        Stage = stageName,
+                        CurrentTaskIndex,
+                        TerminalStatus = terminalSucceeded
+                            ? TaskExecutionTerminalStatus.Succeeded.ToString()
+                            : TaskExecutionTerminalStatus.Failed.ToString(),
+                        Timestamp = DateTimeOffset.UtcNow
+                    });
+                }
+
                 return result;
             }
             catch (Exception ex)
@@ -588,7 +633,7 @@ namespace RFiDGear.Services.TaskExecution
             return new SelectionSyncResult(hydratedChip, selectionChanged);
         }
 
-        private async Task RunTaskLoopAsync(TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors, GenericChipModel genericChip, ReaderDevice device, string runId, CancellationToken cancellationToken)
+        private async Task<TaskLoopRunResult> RunTaskLoopAsync(TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors, GenericChipModel genericChip, ReaderDevice device, string runId, CancellationToken cancellationToken)
         {
             if (request.TaskHandler?.TaskCollection != null)
             {
@@ -600,7 +645,8 @@ namespace RFiDGear.Services.TaskExecution
             }
 
             var loggedTaskPositions = new HashSet<int>();
-            var counters = new TaskRunCounters();
+            var observations = new List<TaskExecutionObservation>();
+            TaskLoopRunResult taskLoopResult = null;
 
             try
             {
@@ -677,31 +723,22 @@ namespace RFiDGear.Services.TaskExecution
                     {
                         if (loggedTaskPositions.Add(taskPosition))
                         {
-                            counters.Executed++;
-                            counters.Failed++;
+                            observations.Add(CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", false));
                             LogTaskOutcome(runId, descriptor, taskModel, "Executed", "Failed", null, ex);
                         }
 
                         throw;
                     }
 
-                    if (executedTask && taskModel != null)
+                    if (executedTask)
                     {
                         RecordTaskAttempt(taskModel);
                         ApplyErrorRouting(taskModel, request, descriptors);
 
                         if (loggedTaskPositions.Add(taskPosition))
                         {
-                            counters.Executed++;
                             var success = GetTaskSuccess(taskModel);
-                            if (success == true)
-                            {
-                                counters.Successful++;
-                            }
-                            else if (success == false)
-                            {
-                                counters.Failed++;
-                            }
+                            observations.Add(CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", success));
 
                             LogTaskOutcome(
                                 runId,
@@ -713,14 +750,15 @@ namespace RFiDGear.Services.TaskExecution
                     }
                     else if (!executedTask && CurrentTaskIndex != taskPosition && loggedTaskPositions.Add(taskPosition))
                     {
-                        counters.Skipped++;
+                        var skipReason = GetSkipReason(taskModel);
+                        observations.Add(CreateTaskObservation(taskPosition, descriptor, taskModel, "Skipped", null, skipReason));
                         LogTaskOutcome(
                             runId,
                             descriptor,
                             taskModel,
                             "Skipped",
                             "Skipped",
-                            GetSkipReason(taskModel));
+                            skipReason);
                     }
 
                     if (request.RunSelectedOnly)
@@ -735,29 +773,46 @@ namespace RFiDGear.Services.TaskExecution
             {
                 request.NotifyTreeViewChanged?.Invoke();
                 taskTimeout.Stop();
+                taskLoopResult = TaskLoopTerminalEvaluator.Evaluate(
+                    descriptors?.Count ?? 0,
+                    observations,
+                    request?.ErrorRouting);
                 logger.LogInformation("TaskLoop.Summary", new
                 {
                     RunId = runId,
-                    TotalTasks = descriptors?.Count ?? 0,
-                    Executed = counters.Executed,
-                    Skipped = counters.Skipped,
-                    Failed = counters.Failed,
-                    Successful = counters.Successful,
-                    Unknown = Math.Max(0, counters.Executed - counters.Failed - counters.Successful),
+                    taskLoopResult.TotalTasks,
+                    taskLoopResult.Executed,
+                    taskLoopResult.Skipped,
+                    taskLoopResult.Failed,
+                    taskLoopResult.Successful,
+                    taskLoopResult.Unknown,
+                    taskLoopResult.AcceptedFailures,
+                    taskLoopResult.UnhandledFailures,
+                    taskLoopResult.InvalidSkips,
+                    TerminalStatus = taskLoopResult.TerminalStatus.ToString(),
                     Timestamp = DateTimeOffset.UtcNow
                 });
             }
+
+            return taskLoopResult;
         }
 
-        private sealed class TaskRunCounters
+        private static TaskExecutionObservation CreateTaskObservation(
+            int taskPosition,
+            TaskDescriptor descriptor,
+            IGenericTask taskModel,
+            string decision,
+            bool? wasSuccessful,
+            string skipReason = null)
         {
-            public int Executed { get; set; }
-
-            public int Skipped { get; set; }
-
-            public int Failed { get; set; }
-
-            public int Successful { get; set; }
+            return new TaskExecutionObservation(
+                taskPosition,
+                descriptor?.Id ?? taskModel?.CurrentTaskIndex,
+                taskModel,
+                decision,
+                wasSuccessful,
+                taskModel?.CurrentTaskErrorLevel ?? ERROR.Empty,
+                skipReason);
         }
 
         private void LogTaskOutcome(
