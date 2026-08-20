@@ -583,6 +583,52 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task ChangeAppKeyCommand_WhenCommandReportsAuthFailureButNewKeyAuthenticates_Succeeds()
+        {
+            await RunOnStaThreadAsync(async () =>
+            {
+                var fakeProvider = new FakeElatecNetProvider
+                {
+                    ChangeKeyResult = ERROR.AuthFailure,
+                    PostChangeAuthenticationResult = ERROR.NoError
+                };
+                var originalInstance = GetReaderDeviceInstance();
+                var originalReader = ReaderDevice.Reader;
+                try
+                {
+                    ReaderDevice.Reader = ReaderTypes.Elatec;
+                    SetReaderDeviceInstance(fakeProvider);
+                    var viewModel = new MifareDesfireSetupViewModel
+                    {
+                        SelectedTaskType = TaskType_MifareDesfireTask.ApplicationKeyChangeover,
+                        AppNumberCurrent = "0xF482D0",
+                        AppNumberTarget = "0xF482D0",
+                        SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK,
+                        SelectedDesfireAppKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_AES,
+                        SelectedDesfireAppKeyEncryptionTypeTarget = DESFireKeyType.DF_KEY_AES,
+                        SelectedDesfireAppKeyNumberCurrent = "1",
+                        DesfireAppKeyCurrent = "00000000000000000000000000000000",
+                        DesfireAppKeyCurrentOld = "00000000000000000000000000000000",
+                        DesfireAppKeyTarget = "11111111111111111111111111111111",
+                        SelectedDesfireAppKeyVersionTarget = "01"
+                    };
+
+                    await viewModel.ChangeAppKeyCommand.ExecuteAsync(null);
+
+                    Assert.Equal(1, fakeProvider.ChangeKeyCalls);
+                    Assert.Equal(2, fakeProvider.AuthCalls);
+                    Assert.Equal(ERROR.NoError, viewModel.CurrentTaskErrorLevel);
+                    Assert.Contains("Verified changed key", viewModel.StatusText);
+                }
+                finally
+                {
+                    SetReaderDeviceInstance(originalInstance);
+                    ReaderDevice.Reader = originalReader;
+                }
+            });
+        }
+
+        [Fact]
         public async Task GetPiccMasterKeyChangeSettings_UsesMinimalChangeKeyWithMasterKey()
         {
             await RunOnStaThreadAsync(() =>
@@ -836,6 +882,7 @@ namespace RFiDGear.Tests
         private sealed class FakeElatecNetProvider : ElatecNetProvider
         {
             public ERROR PostChangeAuthenticationResult { get; set; } = ERROR.NoError;
+            public ERROR ChangeKeyResult { get; set; } = ERROR.NoError;
             public int AuthCalls { get; private set; }
             public int ChangeKeyCalls { get; private set; }
             public string LastAuthKey { get; private set; }
@@ -889,7 +936,7 @@ namespace RFiDGear.Tests
                 _ = masterKeyType;
                 _ = keySettings;
                 ChangeKeyCalls++;
-                return Task.FromResult(ERROR.NoError);
+                return Task.FromResult(ChangeKeyResult);
             }
 
             public override Task<ERROR> ReadMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,

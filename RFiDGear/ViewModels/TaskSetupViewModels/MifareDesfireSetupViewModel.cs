@@ -3000,7 +3000,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 oldKeyForTargetSlot,
                                 keySettings);
 
-                            result = await device.ChangeMifareDesfireKeyAsync(
+                            var changeCommandResult = await device.ChangeMifareDesfireKeyAsync(
                                 payload.AppId,
                                 payload.TargetKeyNo,
                                 payload.TargetKeyType,
@@ -3011,14 +3011,20 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 payload.MasterKeyType,
                                 payload.KeySettings);
 
-                            if (result == ERROR.NoError)
+                            result = await VerifyChangedApplicationKeyAsync(
+                                device,
+                                (int)payload.AppId,
+                                payload.TargetKeyNo,
+                                payload.NewTargetKeyHex,
+                                payload.TargetKeyType);
+
+                            if (changeCommandResult != ERROR.NoError && result == ERROR.NoError)
                             {
-                                result = await VerifyChangedApplicationKeyAsync(
-                                    device,
-                                    (int)payload.AppId,
-                                    payload.TargetKeyNo,
-                                    payload.NewTargetKeyHex,
-                                    payload.TargetKeyType);
+                                Log.ForContext<MifareDesfireSetupViewModel>().Warning(
+                                    "ChangeKey reported {CommandOutcome}, but fresh authentication proved the target key for AppId {AppId} KeyNumber {KeyNumber}.",
+                                    changeCommandResult,
+                                    payload.AppId,
+                                    payload.TargetKeyNo);
                             }
 
                             if (await SetOperationResultAsync(
