@@ -1845,15 +1845,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => appNumberTarget;
             set
             {
-                try
-                {
-                    appNumberTarget = value.Length > 8 ? value.ToUpper().Remove(8) : value;
-                }
-                catch
-                {
-                    appNumberTarget = value.ToUpper();
-                }
-                IsValidAppNumberTarget = (int.TryParse(value, out appNumberTargetAsInt) && appNumberTargetAsInt <= (int)0xFFFFFF);
+                appNumberTarget = value?.Trim().ToUpperInvariant();
+                IsValidAppNumberTarget = TryParseDesfireAppId(appNumberTarget, out appNumberTargetAsInt);
                 OnPropertyChanged(nameof(AppNumberTarget));
             }
         }
@@ -3041,12 +3034,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         }
                         else
                         {
+                            var validationResult = result == ERROR.NoError
+                                ? ERROR.ProtocolConstraint
+                                : result;
                             await SetOperationResultAsync(
-                                result,
+                                validationResult,
                                 "{0}: Successfully Changed Key {1} of AppID {2}\n",
                                 new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt },
                                 "{0}: Unable to Change Key {1} of AppID {2}: {3}\n",
-                                new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, result.ToString() });
+                                new object[] { DateTime.Now, selectedDesfireAppKeyNumberCurrentAsInt, AppNumberTargetAsInt, validationResult.ToString() });
                             return;
                         }
                     }

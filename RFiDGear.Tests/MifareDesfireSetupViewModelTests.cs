@@ -518,6 +518,20 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
+        [InlineData("0xF482D0", 0xF482D0)]
+        [InlineData("16024272", 0xF482D0)]
+        public async Task AppNumberTarget_AcceptsHexAndDecimalApplicationIds(string value, int expected)
+        {
+            await RunOnStaThreadAsync(() =>
+            {
+                var viewModel = new MifareDesfireSetupViewModel { AppNumberTarget = value };
+
+                Assert.True(viewModel.IsValidAppNumberTarget);
+                Assert.Equal(expected, viewModel.AppNumberTargetAsInt);
+            });
+        }
+
+        [Theory]
         [InlineData(ERROR.NoError, true)]
         [InlineData(ERROR.AuthFailure, false)]
         public async Task ChangeAppKeyCommand_RequiresAuthenticationWithNewKey(
