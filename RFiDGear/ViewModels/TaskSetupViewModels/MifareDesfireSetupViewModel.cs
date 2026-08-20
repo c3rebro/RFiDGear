@@ -827,6 +827,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     case TaskType_MifareDesfireTask.ChangeFileSettings:
                         SetTabAvailability(true, false, false, false, true, true, false);
                         break;
+
+                    case TaskType_MifareDesfireTask.CheckFileSettings:
+                        SetTabAvailability(true, false, false, false, true, true, false);
+                        break;
                 }
                 OnPropertyChanged(nameof(SelectedTaskType));
                 OnPropertyChanged(nameof(IsFormatTaskSelected));
@@ -848,6 +852,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowFileAccessRights));
                 OnPropertyChanged(nameof(ShowFileAuthoringCommands));
                 OnPropertyChanged(nameof(ShowChangeFileSettingsButton));
+                OnPropertyChanged(nameof(ShowCheckFileSettingsButton));
 
                 UpdateOldAppKeyDefaults();
             }
@@ -990,13 +995,26 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         [XmlIgnore]
         public bool ShowFileAuthoringCommands => SelectedTaskType != TaskType_MifareDesfireTask.ReadData
                                                  && SelectedTaskType != TaskType_MifareDesfireTask.WriteData
-                                                 && SelectedTaskType != TaskType_MifareDesfireTask.ChangeFileSettings;
+                                                 && SelectedTaskType != TaskType_MifareDesfireTask.ChangeFileSettings
+                                                 && SelectedTaskType != TaskType_MifareDesfireTask.CheckFileSettings;
 
         /// <summary>
         /// Gets a value indicating whether the Change File Settings button should be shown.
         /// </summary>
         [XmlIgnore]
         public bool ShowChangeFileSettingsButton => SelectedTaskType == TaskType_MifareDesfireTask.ChangeFileSettings;
+
+        /// <summary>
+        /// Gets a value indicating whether the read-only file-settings comparison button should be shown.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowCheckFileSettingsButton => SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings;
+
+        /// <summary>
+        /// Gets the last key-free file-settings comparison for structured task diagnostics.
+        /// </summary>
+        [XmlIgnore]
+        public DesfireFileSettingsComparison LastFileSettingsComparison { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether application creation inputs should be shown.
@@ -2379,6 +2397,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         await OnNewChangeFileSettingsCommand();
                         break;
 
+                    case TaskType_MifareDesfireTask.CheckFileSettings:
+                        await CheckFileSettingsCommand();
+                        break;
+
                     default:
                         break;
                 }
@@ -3683,6 +3705,159 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// Relay command that exposes <see cref="CheckAppKeyCountCommand"/> for button binding.
         /// </summary>
         public IAsyncRelayCommand CheckAppKeyCountRelayCommand => new AsyncRelayCommand(CheckAppKeyCountCommand);
+
+        /// <summary>
+        /// Relay command that exposes <see cref="CheckFileSettingsCommand"/> for button binding.
+        /// </summary>
+        public IAsyncRelayCommand CheckFileSettingsRelayCommand => new AsyncRelayCommand(CheckFileSettingsCommand);
+
+        /// <summary>
+        /// Authenticates to an application, reads one file's settings, and compares every configured value.
+        /// </summary>
+        public async Task CheckFileSettingsCommand()
+        {
+            CurrentTaskErrorLevel = ERROR.Empty;
+            LastFileSettingsComparison = null;
+
+            using (var device = ReaderDevice.Instance)
+            {
+                if (device == null)
+                {
+                    CurrentTaskErrorLevel = ERROR.TransportError;
+                    await FinalizeTaskAsync();
+                    return;
+                }
+
+                StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                if (!HasValidFileSettingsCheckInput())
+                {
+                    CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
+                    StatusText += string.Format("{0}: Invalid file-settings verification input.\n", DateTime.Now);
+                    await FinalizeTaskAsync();
+                    return;
+                }
+
+                var result = await device.AuthToMifareDesfireApplication(
+                    DesfireAppKeyCurrent,
+                    SelectedDesfireAppKeyEncryptionTypeCurrent,
+                    selectedDesfireAppKeyNumberCurrentAsInt,
+                    AppNumberCurrentAsInt);
+
+                if (result == ERROR.NoError)
+                {
+                    result = await device.GetMifareDesfireFileSettings(
+                        DesfireAppKeyCurrent,
+                        SelectedDesfireAppKeyEncryptionTypeCurrent,
+                        selectedDesfireAppKeyNumberCurrentAsInt,
+                        AppNumberCurrentAsInt,
+                        FileNumberCurrentAsInt);
+                }
+
+                if (result == ERROR.NoError && device.DesfireFileSettings != null)
+                {
+                    LastFileSettingsComparison = BuildFileSettingsComparison(device.DesfireFileSettings);
+                    LogFileSettingsComparison(LastFileSettingsComparison);
+
+                    CurrentTaskErrorLevel = LastFileSettingsComparison.Matches ? ERROR.NoError : ERROR.IsNotTrue;
+                    StatusText += string.Format(
+                        "{0}: File settings for App {1}, File {2}: {3}.\n",
+                        DateTime.Now,
+                        AppNumberCurrentAsInt,
+                        FileNumberCurrentAsInt,
+                        LastFileSettingsComparison.Matches ? "PASS" : "FAIL");
+                }
+                else
+                {
+                    CurrentTaskErrorLevel = result == ERROR.NoError ? ERROR.TransportError : result;
+                    StatusText += string.Format(
+                        "{0}: Unable to read settings for App {1}, File {2}: {3}.\n",
+                        DateTime.Now,
+                        AppNumberCurrentAsInt,
+                        FileNumberCurrentAsInt,
+                        CurrentTaskErrorLevel);
+                }
+            }
+
+            await FinalizeTaskAsync();
+        }
+
+        /// <summary>
+        /// Validates every input needed for a read-only file-settings comparison.
+        /// </summary>
+        private bool HasValidFileSettingsCheckInput()
+        {
+            return IsValidAppNumberCurrent == true &&
+                   AppNumberCurrentAsInt > 0 &&
+                   IsValidFileNumberCurrent == true &&
+                   IsValidFileSizeCurrent == true &&
+                   FileSizeCurrentAsInt >= 0 &&
+                   selectedDesfireAppKeyNumberCurrentAsInt >= 0 &&
+                   selectedDesfireAppKeyNumberCurrentAsInt <= 13 &&
+                   CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(
+                       DesfireAppKeyCurrent,
+                       SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR;
+        }
+
+        /// <summary>
+        /// Creates a key-free expected/actual snapshot from settings returned by the active provider.
+        /// </summary>
+        private DesfireFileSettingsComparison BuildFileSettingsComparison(DESFireFileSettings actual)
+        {
+            var actualRights0 = actual.accessRights != null && actual.accessRights.Length > 0 ? actual.accessRights[0] : -1;
+            var actualRights1 = actual.accessRights != null && actual.accessRights.Length > 1 ? actual.accessRights[1] : -1;
+            var comparison = new DesfireFileSettingsComparison
+            {
+                ApplicationId = AppNumberCurrentAsInt,
+                FileNumber = FileNumberCurrentAsInt,
+                ExpectedFileType = (int)SelectedDesfireFileType,
+                ActualFileType = actual.FileType,
+                ExpectedFileSize = FileSizeCurrentAsInt,
+                ActualFileSize = actual.dataFile.fileSize,
+                ExpectedCommunicationMode = (int)SelectedDesfireFileCryptoMode,
+                ActualCommunicationMode = actual.comSett,
+                ExpectedAccessRights0 = (int)SelectedDesfireFileAccessRightRead |
+                                        ((int)SelectedDesfireFileAccessRightWrite << 4),
+                ActualAccessRights0 = actualRights0,
+                ExpectedAccessRights1 = (int)SelectedDesfireFileAccessRightReadWrite |
+                                        ((int)SelectedDesfireFileAccessRightChange << 4),
+                ActualAccessRights1 = actualRights1
+            };
+
+            comparison.Matches =
+                comparison.ExpectedFileType == comparison.ActualFileType &&
+                comparison.ExpectedFileSize == comparison.ActualFileSize &&
+                comparison.ExpectedCommunicationMode == comparison.ActualCommunicationMode &&
+                comparison.ExpectedAccessRights0 == comparison.ActualAccessRights0 &&
+                comparison.ExpectedAccessRights1 == comparison.ActualAccessRights1;
+            return comparison;
+        }
+
+        /// <summary>
+        /// Writes only key-free file-settings metadata to the structured application log.
+        /// </summary>
+        private void LogFileSettingsComparison(DesfireFileSettingsComparison comparison)
+        {
+            Log.ForContext<MifareDesfireSetupViewModel>().Information(
+                "DESFire file settings compared for TaskId {TaskId} AppId {AppId} FileNumber {FileNumber}: " +
+                "ExpectedType {ExpectedType} ActualType {ActualType} ExpectedSize {ExpectedSize} ActualSize {ActualSize} " +
+                "ExpectedMode {ExpectedMode} ActualMode {ActualMode} ExpectedRights0 {ExpectedRights0} ActualRights0 {ActualRights0} " +
+                "ExpectedRights1 {ExpectedRights1} ActualRights1 {ActualRights1} Matches {Matches}.",
+                CurrentTaskIndex,
+                comparison.ApplicationId,
+                comparison.FileNumber,
+                comparison.ExpectedFileType,
+                comparison.ActualFileType,
+                comparison.ExpectedFileSize,
+                comparison.ActualFileSize,
+                comparison.ExpectedCommunicationMode,
+                comparison.ActualCommunicationMode,
+                comparison.ExpectedAccessRights0,
+                comparison.ActualAccessRights0,
+                comparison.ExpectedAccessRights1,
+                comparison.ActualAccessRights1,
+                comparison.Matches);
+        }
 
         /// <summary>
         /// Reads the actual max-key count from the card application and compares it to the expected value.

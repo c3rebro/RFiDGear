@@ -176,6 +176,7 @@ namespace RFiDGear.ViewModel.DialogFactories
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateApplication ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.DeleteFile ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.CreateFile ||
+                        sender.SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadData ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.WriteData ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.ChangeFileSettings)
