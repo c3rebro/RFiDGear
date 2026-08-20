@@ -3596,7 +3596,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             string newKey,
             DESFireKeyType newKeyType)
         {
-            var verificationResult = await device.AuthToMifareDesfireApplication(
+            var verificationResult = await device.VerifyMifareDesfireKeyChange(
                 newKey,
                 newKeyType,
                 keyNumber,

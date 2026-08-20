@@ -847,6 +847,13 @@ namespace RFiDGear.Tests
                 return Task.FromResult(ChangeKeyCalls > 0 ? PostChangeAuthenticationResult : ERROR.NoError);
             }
 
+            public override Task<ERROR> VerifyMifareDesfireKeyChange(
+                string applicationKey,
+                DESFireKeyType keyType,
+                int keyNumber,
+                int appId = 0) =>
+                AuthToMifareDesfireApplication(applicationKey, keyType, keyNumber, appId);
+
             public override Task<ERROR> ChangeMifareDesfireKeyAsync(
                 uint appId,
                 byte targetKeyNo,

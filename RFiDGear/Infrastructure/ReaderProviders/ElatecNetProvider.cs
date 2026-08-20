@@ -548,6 +548,54 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
         }
 
+        /// <inheritdoc />
+        public override async Task<ERROR> VerifyMifareDesfireKeyChange(
+            string applicationKey,
+            DESFireKeyType keyType,
+            int keyNumber,
+            int appId = 0)
+        {
+            await _comPortLock.WaitAsync();
+            try
+            {
+                if (readerDevice == null)
+                {
+                    return ERROR.TransportError;
+                }
+
+                // The ELATEC SDK can retain the authenticated DESFire session after ChangeKey.
+                // A same-session Authenticate call can therefore report success without proving
+                // that the supplied new key is present. Reconnect before the authoritative check.
+                if (readerDevice.IsConnected)
+                {
+                    await readerDevice.DisconnectAsync();
+                }
+
+                if (!await readerDevice.ConnectAsync())
+                {
+                    return ERROR.TransportError;
+                }
+
+                return await AuthToMifareDesfireApplicationCore(
+                    applicationKey,
+                    keyType,
+                    keyNumber,
+                    appId);
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<ElatecNetProvider>().Error(e,
+                    "Elatec DESFire fresh-session key verification failed for AppId {AppId} KeyNo {KeyNumber}.",
+                    appId,
+                    keyNumber);
+                return ERROR.TransportError;
+            }
+            finally
+            {
+                _comPortLock.Release();
+            }
+        }
+
         protected virtual async Task<ERROR> AuthToMifareDesfireApplicationCore(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
             if (!IsConnected)
