@@ -74,6 +74,20 @@
                         Visibility="{Binding ShowChangeFileSettingsButton, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileMasteringChangeFileSettings'}" />
                     <Button
+                        Grid.Row="7"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="6"
+                        Height="26"
+                        Padding="5,2"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Command="{Binding CheckFileSettingsRelayCommand}"
+                        Visibility="{Binding ShowCheckFileSettingsButton, Converter={StaticResource BoolToVisConv}}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireFileMasteringCheckFileSettings'}" />
+                    <Button
                         Grid.Row="6"
                         Grid.Column="0"
                         Grid.ColumnSpan="6"
