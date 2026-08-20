@@ -565,11 +565,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 // The ELATEC SDK can retain the authenticated DESFire session after ChangeKey.
                 // A same-session Authenticate call can therefore report success without proving
-                // that the supplied new key is present. Reconnect before the authoritative check.
+                // that the supplied new key is present. Reset the TWN4/RF context before the
+                // authoritative check; reconnecting the transport alone does not clear it.
                 if (readerDevice.IsConnected)
                 {
+                    await readerDevice.ResetAsync();
                     await readerDevice.DisconnectAsync();
                 }
+
+                await Task.Delay(250);
 
                 if (!await readerDevice.ConnectAsync())
                 {
