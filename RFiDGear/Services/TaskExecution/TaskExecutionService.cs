@@ -869,6 +869,19 @@ namespace RFiDGear.Services.TaskExecution
 
             try
             {
+                var comparison = taskModel.GetType().GetProperty("LastFileSettingsComparison")?.GetValue(taskModel);
+                if (comparison != null)
+                {
+                    metadata["FileSettingsComparison"] = comparison;
+                }
+            }
+            catch
+            {
+                // Diagnostic metadata must never affect task execution.
+            }
+
+            try
+            {
                 var outputPath = taskModel.GetType().GetProperty("DesfireReadDataFilePath")?.GetValue(taskModel) as string;
                 if (outputPath != null)
                 {

@@ -865,6 +865,9 @@ Wird benötigt von:
   <data name="buttonContentMifareDesfireFileMasteringChangeFileSettings" xml:space="preserve">
     <value>Dateieinstellungen ändern</value>
   </data>
+  <data name="buttonContentMifareDesfireFileMasteringCheckFileSettings" xml:space="preserve">
+    <value>Dateieinstellungen prüfen</value>
+  </data>
   <data name="buttonContentMifareDesfireFileMasteringDeleteFile" xml:space="preserve">
     <value>Datei löschen</value>
   </data>
@@ -1200,6 +1203,9 @@ Wird benötigt von:
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.CheckAppKeyCount" xml:space="preserve">
     <value>Prüfung: App Schlüsselanzahl</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.CheckFileSettings" xml:space="preserve">
+    <value>Prüfung: Dateieinstellungen</value>
   </data>
   <data name="ENUM.ERROR.OutOfMemory" xml:space="preserve">
     <value>Nicht genügend Speicher</value>
