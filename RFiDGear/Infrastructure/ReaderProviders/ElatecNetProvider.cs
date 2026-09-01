@@ -1151,13 +1151,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <inheritdoc />
-        public async override Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyTypePiccMasterKey, uint _appID)
+        public async override Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, uint _appID)
         {
             await _comPortLock.WaitAsync();
             try
             {
-            if (readerDevice.IsConnected)
-            {
+                if (!readerDevice.IsConnected)
+                {
+                    return ERROR.TransportError;
+                }
+
                 try
                 {
                     await readerDevice.SearchTagAsync();
@@ -1167,33 +1170,76 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     return ERROR.TransportError;
                 }
 
+                var authResult = await AuthToMifareDesfireApplicationCore(
+                    _applicationMasterKey, _keyType, 0, (int)_appID);
+                if (authResult != ERROR.NoError)
+                {
+                    return authResult;
+                }
+
                 try
                 {
-                    if (await AuthToMifareDesfireApplicationCore(_applicationMasterKey, _keyTypePiccMasterKey, 0, 0) == ERROR.NoError)
-                    {
-                        await readerDevice.MifareDesfire_DeleteApplicationAsync(_appID);
-                    }
-                    else
-                    {
-                        await readerDevice.MifareDesfire_DeleteApplicationAsync(_appID);
-                    }
+                    await readerDevice.MifareDesfire_DeleteApplicationAsync(_appID);
+                    return ERROR.NoError;
                 }
                 catch
                 {
-                    return ERROR.AuthFailure;
+                    // Some ELATEC firmware/SDK combinations throw after the card has already
+                    // completed the delete. Only accept that ambiguous outcome after a fresh,
+                    // unauthenticated PICC inventory proves the exact target AID is absent.
+                    return await VerifyApplicationAbsentAfterDeleteAsync(_appID)
+                        ? ERROR.NoError
+                        : ERROR.AuthFailure;
                 }
-                return ERROR.NoError;
-            }
-
-            else
-            {
-                return ERROR.TransportError;
-            }
             }
             finally
             {
                 _comPortLock.Release();
             }
+        }
+
+        private async Task<bool> VerifyApplicationAbsentAfterDeleteAsync(uint appId)
+        {
+            Exception lastException = null;
+            const int maxAttempts = 3;
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    var tag = await readerDevice.SearchTagAsync();
+                    if (tag == null)
+                    {
+                        throw new InvalidOperationException("SearchTag did not return a tag while verifying DeleteApplication.");
+                    }
+
+                    await readerDevice.MifareDesfire_SelectApplicationAsync(0);
+                    var applicationIds = await readerDevice.MifareDesfire_GetAppIDsAsync();
+                    if (applicationIds != null && !applicationIds.Contains(appId))
+                    {
+                        Log.ForContext<ElatecNetProvider>().Warning(
+                            "DeleteApplication for AppId {AppId} reported an error, but a fresh PICC inventory proves the target application is absent; accepting the verified final state.",
+                            appId);
+                        return true;
+                    }
+
+                    return false;
+                }
+                catch (Exception exception)
+                {
+                    lastException = exception;
+                    if (attempt < maxAttempts)
+                    {
+                        await Task.Delay(100);
+                    }
+                }
+            }
+
+            if (lastException != null)
+            {
+                Log.ForContext<ElatecNetProvider>().Warning(lastException,
+                    "Unable to verify final PICC inventory after DeleteApplication for AppId {AppId}.", appId);
+            }
+            return false;
         }
 
         /// <inheritdoc />
