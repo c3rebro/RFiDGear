@@ -23,7 +23,7 @@ namespace RFiDGear.Tests
                 newTargetKeyVersion: 0x01,
                 masterKeyHex: MasterKeyHex,
                 masterKeyType: DESFireKeyType.DF_KEY_AES,
-                keySettings: DESFireKeySettings.ChangeKeyWithMasterKey);
+                currentKeySettings: DESFireKeySettings.ChangeKeyWithMasterKey);
 
             Assert.Equal("00 11 22 33 44 55 66 77 88 99 AA BB CC DD EE FF", resolved.OldTargetKeyHex);
             Assert.Equal(resolved.OldTargetKeyHex, resolved.AuthKeyHex);
@@ -42,9 +42,31 @@ namespace RFiDGear.Tests
                 newTargetKeyVersion: 0x01,
                 masterKeyHex: MasterKeyHex,
                 masterKeyType: DESFireKeyType.DF_KEY_AES,
-                keySettings: DESFireKeySettings.ChangeKeyWithTargetedKeyNumber));
+                currentKeySettings: DESFireKeySettings.ChangeKeyWithTargetedKeyNumber));
 
             Assert.Equal("currentTargetKeyHex", exception.ParamName);
         }
+        [Fact]
+        public void Resolve_PreservesCompleteCurrentSettingsAsProviderContext()
+        {
+            var currentSettings = DESFireKeySettings.ChangeKeyWithTargetedKeyNumber |
+                                  DESFireKeySettings.AllowChangeMasterKey |
+                                  DESFireKeySettings.ConfigurationChangeable;
+
+            var resolved = DesfireKeyChangeInputs.Resolve(
+                appId: 1,
+                targetKeyNo: 2,
+                targetKeyType: DESFireKeyType.DF_KEY_AES,
+                currentTargetKeyHex: MasterKeyHex,
+                newTargetKeyHex: NewKeyHex,
+                newTargetKeyVersion: 0x01,
+                masterKeyHex: MasterKeyHex,
+                masterKeyType: DESFireKeyType.DF_KEY_AES,
+                currentKeySettings: currentSettings);
+
+            Assert.Equal((byte)currentSettings, resolved.CurrentKeySettingsContext);
+            Assert.Equal((byte)2, resolved.AuthKeyNo);
+        }
+
     }
 }

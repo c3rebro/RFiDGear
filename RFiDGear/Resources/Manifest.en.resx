@@ -1753,4 +1753,10 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="menuItemReadAppWithKey" xml:space="preserve">
     <value>Read App with Key…</value>
   </data>
+  <data name="labelCurrentDesfireKeySettingsContext" xml:space="preserve">
+    <value>Current key settings (ChangeKey context; not modified)</value>
+  </data>
+  <data name="labelTargetDesfireKeySettings" xml:space="preserve">
+    <value>New key settings to apply</value>
+  </data>
 </root>

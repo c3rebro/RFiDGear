@@ -898,7 +898,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             byte newTargetKeyVersion,
             string masterKeyHex,
             DESFireKeyType masterKeyType,
-            AccessControl.DESFireKeySettings keySettings)
+            AccessControl.DESFireKeySettings currentKeySettings)
         {
             await _comPortLock.WaitAsync();
             try
@@ -920,7 +920,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     newTargetKeyVersion,
                     masterKeyHex,
                     masterKeyType,
-                    keySettings);
+                    currentKeySettings);
 
                 // Scope selection: appId==0 selects PICC; appId>0 selects that application.
                 await readerDevice.MifareDesfire_SelectApplicationAsync(resolved.AppId);
@@ -958,11 +958,14 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         : (MaxNumberOfAppKeys > 0 ? MaxNumberOfAppKeys : (byte)15);
                 }
 
+                // The ELATEC SDK requires the current settings, key count and key type as builder
+                // context for ChangeKey. This value describes the existing card policy; this
+                // operation does not issue ChangeKeySettings or modify that policy.
                 await readerDevice.MifareDesfire_ChangeKeyAsync(
                     resolved.OldTargetKeyHex,
                     resolved.NewTargetKeyHex,
                     resolved.NewTargetKeyVersion,
-                    resolved.KeySettingsByteOnWire,
+                    resolved.CurrentKeySettingsContext,
                     resolved.TargetKeyNo,
                     (uint)keyCount,
                     ToElatecKeyType(keyTypeForContext));
