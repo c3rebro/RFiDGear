@@ -406,10 +406,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public abstract Task<ERROR> ChangeMifareDesfireFileSettings(string changeKeyHex, DESFireKeyType changeKeyType, int changeKeyNo, DESFireAccessRights newAccessRights, EncryptionMode newEncMode, int appId = 0, int fileNo = 0);
 
         /// <summary>
-        /// Deletes a MIFARE DESFire application after authenticating to PICC Lvl (AppID = 0, KeyNo = 0).
+        /// Deletes a MIFARE DESFire application after authenticating to the target application with key 0.
         /// </summary>
-        /// <param name="_applicationMasterKey">The 16 byte PICC master key, used to authenticate.</param>
-        /// <param name="_keyType">The PICC MasterKey Type (byte): 3DES, 3K3DES, AES</param>
+        /// <param name="_applicationMasterKey">The target application's master key (key 0), used to authenticate.</param>
+        /// <param name="_keyType">The application master key type (byte): 3DES, 3K3DES, AES</param>
         /// <param name="_appID">The AppId to delete</param>
         /// <returns></returns>
         public abstract Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, uint _appID);

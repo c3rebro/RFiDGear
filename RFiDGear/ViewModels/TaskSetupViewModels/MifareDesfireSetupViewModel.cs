@@ -3222,18 +3222,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
                     {
-                        var result = await device.AuthToMifareDesfireApplication(
-                                DesfireMasterKeyCurrent,
-                                SelectedDesfireMasterKeyEncryptionTypeCurrent,
-                                0);
-
-                        if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
+                        if (IsValidAppNumberCurrent != false)
                         {
-                            StatusText += string.Format("{0}: Successfully Authenticated to PICC Master App 0\n", DateTime.Now);
-
-                            result = await device.DeleteMifareDesfireApplication(
-                                DesfireMasterKeyCurrent,
-                                SelectedDesfireMasterKeyEncryptionTypeCurrent,
+                            var result = await device.DeleteMifareDesfireApplication(
+                                DesfireAppKeyCurrent,
+                                SelectedDesfireAppKeyEncryptionTypeCurrent,
                                 (uint)AppNumberNewAsInt);
 
                             if (await SetOperationResultAsync(
@@ -3242,27 +3235,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                     new object[] { DateTime.Now, AppNumberNewAsInt },
                                     "{0}: Unable to Remove AppID {1}: {2}\n",
                                     new object[] { DateTime.Now, AppNumberNewAsInt, result.ToString() }))
-                            {
-                                return;
-                            }
-                            return;
-                        }
-
-                        else
-                        {
-                            StatusText += string.Format("{0}: Authentication to PICC failed. Try without Authentication...\n", DateTime.Now);
-
-                            result = await device.DeleteMifareDesfireApplication(
-                                DesfireMasterKeyCurrent,
-                                SelectedDesfireMasterKeyEncryptionTypeCurrent,
-                                (uint)AppNumberNewAsInt);
-
-                            if (await SetOperationResultAsync(
-                                    result,
-                                    "{0}: Successfully deleted AppID {1}\n",
-                                    new object[] { DateTime.Now, AppNumberNewAsInt },
-                                    "{0}: Unable to deleted App: {1}\n",
-                                    new object[] { DateTime.Now, result.ToString() }))
                             {
                                 return;
                             }

@@ -1900,23 +1900,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         {
             try
             {
-                // The excepted memory tree
-                DESFireLocation location = new DESFireLocation
-                {
-                    // The Application ID to use
-                    aid = _appID,
-                    // File communication requires encryption
-                    securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT
-                };
-
-                // IDESFireEV1Commands cmd;
-                // Keys to use for authentication
                 var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyType, _applicationMasterKey);
-
                 if (await tryInitReader())
                 {
                     card = readerUnit.getSingleChip();
-
                     if (card.getCardType() == "DESFire" ||
                         card.getCardType() == "DESFireEV1" ||
                         card.getCardType() == "DESFireEV2" ||
@@ -1925,35 +1912,18 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         var cmd = card.getCommands() as DESFireCommands;
                         try
                         {
-                            cmd.selectApplication(0);
+                            cmd.selectApplication(_appID);
                             cmd.authenticate(0, masterKey);
-
                             cmd.deleteApplication(_appID);
                             return ERROR.NoError;
                         }
-                        catch
+                        catch (Exception e)
                         {
-                            try
+                            if (e.Message != null && e.Message.Contains("status does not allow the requested command"))
                             {
-                                cmd.selectApplication(_appID);
-                                cmd.authenticate(0, masterKey);
-                                cmd.deleteApplication(_appID);
-                                return ERROR.NoError;
+                                return ERROR.AuthFailure;
                             }
-
-                            catch (Exception e)
-                            {
-                                if (e.Message != "" && e.Message.Contains("same number already exists"))
-                                {
-                                    return ERROR.ProtocolConstraint;
-                                }
-                                else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
-                                {
-                                    return ERROR.AuthFailure;
-                                }
-                                else
-                                    return ERROR.TransportError;
-                            }
+                            return ERROR.TransportError;
                         }
                     }
                     return ERROR.TransportError;
