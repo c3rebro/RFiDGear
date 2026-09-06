@@ -1696,7 +1696,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             byte newTargetKeyVersion,   // not used by LibLogicalAccess changeKey; kept for API symmetry
             string masterKeyHex,
             DESFireKeyType masterKeyType,
-            AccessControl.DESFireKeySettings keySettings)
+            AccessControl.DESFireKeySettings currentKeySettings)
         {
             try
             {
@@ -1709,7 +1709,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     newTargetKeyVersion,
                     masterKeyHex,
                     masterKeyType,
-                    keySettings);
+                    currentKeySettings);
 
                 // Build authentication key (either master key or target key depending on policy).
                 // resolved.*Hex is already space-separated uppercase from DesfireKeyChangeInputs.NormalizeKeyHex,

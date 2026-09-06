@@ -122,7 +122,7 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
-        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, true, false)]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, true, true)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover, false, true)]
         [InlineData(TaskType_MifareDesfireTask.ChangeDefault, false, false)]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false)]
@@ -166,7 +166,7 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
-        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover, true, false)]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover, true, true)]
         [InlineData(TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover, false, true)]
         [InlineData(TaskType_MifareDesfireTask.ChangeDefault, false, false)]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false)]
@@ -185,6 +185,36 @@ namespace RFiDGear.Tests
 
                 Assert.Equal(showTarget, viewModel.ShowPiccMasterKeyTargetInputs);
                 Assert.Equal(showSettings, viewModel.ShowPiccMasterKeySettingsInputs);
+            });
+        }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, false)]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover, true)]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover, false)]
+        public async Task SelectedTaskType_ShowsApplicationSettingsActionOnlyForSettingsChange(
+            TaskType_MifareDesfireTask taskType,
+            bool expected)
+        {
+            await RunOnStaThreadAsync(() =>
+            {
+                var viewModel = new MifareDesfireSetupViewModel { SelectedTaskType = taskType };
+                Assert.Equal(expected, viewModel.ShowAppKeySettingsEditButton);
+            });
+        }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover, false)]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover, true)]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, false)]
+        public async Task SelectedTaskType_ShowsPiccSettingsActionOnlyForSettingsChange(
+            TaskType_MifareDesfireTask taskType,
+            bool expected)
+        {
+            await RunOnStaThreadAsync(() =>
+            {
+                var viewModel = new MifareDesfireSetupViewModel { SelectedTaskType = taskType };
+                Assert.Equal(expected, viewModel.ShowPiccMasterKeySettingsEditButton);
             });
         }
 
@@ -483,7 +513,9 @@ namespace RFiDGear.Tests
                     keyNumberForChange: 0,
                     authKeyHex: "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
                     oldKeyForTargetSlot: "00000000000000000000000000000000",
-                    keySettings: DESFireKeySettings.ChangeKeyWithMasterKey);
+                    currentKeySettings: DESFireKeySettings.ChangeKeyWithTargetedKeyNumber |
+                                        DESFireKeySettings.AllowChangeMasterKey |
+                                        DESFireKeySettings.ConfigurationChangeable);
 
                 Assert.Equal((uint)1, payload.AppId);
                 Assert.Equal((byte)0, payload.TargetKeyNo);
@@ -493,7 +525,11 @@ namespace RFiDGear.Tests
                 Assert.Equal((byte)0x01, payload.NewTargetKeyVersion);
                 Assert.Equal("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", payload.MasterKeyHex);
                 Assert.Equal(DESFireKeyType.DF_KEY_DES, payload.MasterKeyType);
-                Assert.Equal(DESFireKeySettings.ChangeKeyWithMasterKey, payload.KeySettings);
+                Assert.Equal(
+                    DESFireKeySettings.ChangeKeyWithTargetedKeyNumber |
+                    DESFireKeySettings.AllowChangeMasterKey |
+                    DESFireKeySettings.ConfigurationChangeable,
+                    payload.CurrentKeySettings);
             });
         }
 
@@ -517,14 +553,18 @@ namespace RFiDGear.Tests
             });
         }
 
-        [Fact]
-        public async Task GetPiccMasterKeyChangeSettings_UsesMinimalChangeKeyWithMasterKey()
+        [Theory]
+        [InlineData(DESFireKeySettings.ChangeKeyWithMasterKey, false)]
+        [InlineData(DESFireKeySettings.ChangeKeyWithTargetedKeyNumber, false)]
+        [InlineData(DESFireKeySettings.ChangeKeyFrozen, true)]
+        [InlineData(DESFireKeySettings.ChangeKeyFrozen | DESFireKeySettings.ConfigurationChangeable, true)]
+        public async Task IsChangeKeyFrozen_RecognizesFrozenPolicy(
+            DESFireKeySettings currentKeySettings,
+            bool expected)
         {
             await RunOnStaThreadAsync(() =>
             {
-                var settings = MifareDesfireSetupViewModel.GetPiccMasterKeyChangeSettings();
-
-                Assert.Equal(DESFireKeySettings.ChangeKeyWithMasterKey, settings);
+                Assert.Equal(expected, MifareDesfireSetupViewModel.IsChangeKeyFrozen(currentKeySettings));
             });
         }
         private readonly ITestOutputHelper _output;
@@ -857,6 +897,8 @@ namespace RFiDGear.Tests
         [InlineData(0, DESFireKeySettings.ChangeKeyWithMasterKey, 5, 0)]
         [InlineData(1, DESFireKeySettings.ChangeKeyWithMasterKey, 5, 0)]
         [InlineData(1, DESFireKeySettings.ChangeKeyWithTargetedKeyNumber, 5, 5)]
+        [InlineData(1, DESFireKeySettings.ChangeKeyWithTargetedKeyNumber | DESFireKeySettings.ConfigurationChangeable, 5, 5)]
+        [InlineData(1, DESFireKeySettings.ChangeKeyFrozen, 5, 0)]
         public async Task GetAuthKeyNumberForChangeAppKey_MatchesPolicy(
             int appId,
             DESFireKeySettings changeKeyMode,

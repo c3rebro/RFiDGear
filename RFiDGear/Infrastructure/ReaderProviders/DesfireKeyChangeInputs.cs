@@ -18,7 +18,7 @@ internal static class DesfireKeyChangeInputs
         byte AuthKeyNo,
         DESFireKeyType AuthKeyType,
         string AuthKeyHex,
-        byte KeySettingsByteOnWire);
+        byte CurrentKeySettingsContext);
 
     /// <summary>
     /// Resolves authentication parameters and normalizes key material for a DESFire key change.
@@ -26,7 +26,7 @@ internal static class DesfireKeyChangeInputs
     /// <remarks>
     /// <para>
     /// This method applies your in-app policy for selecting the authentication key number from
-    /// <paramref name="keySettings"/>:
+    /// <paramref name="currentKeySettings"/>:
     /// </para>
     /// <list type="bullet">
     ///   <item><description>Authenticate with key 0 (master) unless "change-with-targeted-key" policy is active.</description></item>
@@ -49,7 +49,8 @@ internal static class DesfireKeyChangeInputs
     /// <param name="masterKeyHex">Master key value (key 0) for the selected scope.</param>
     /// <param name="masterKeyType">Type of the master key.</param>
     /// <param name="keySettings">
-    /// Current key settings for the selected scope; used to derive the authentication key number.
+    /// Current key settings for the selected scope. They select the authentication key and provide
+    /// provider-specific ChangeKey builder context; they are never treated as target settings.
     /// </param>
     /// <returns>A resolved structure describing authentication and payload inputs.</returns>
     /// <exception cref="ArgumentException">
@@ -64,7 +65,7 @@ internal static class DesfireKeyChangeInputs
         byte newTargetKeyVersion,
         string masterKeyHex,
         DESFireKeyType masterKeyType,
-        AccessControl.DESFireKeySettings keySettings)
+        AccessControl.DESFireKeySettings currentKeySettings)
     {
         if (string.IsNullOrWhiteSpace(masterKeyHex))
             throw new ArgumentException("Master key must be provided.", nameof(masterKeyHex));
@@ -75,7 +76,7 @@ internal static class DesfireKeyChangeInputs
         if (string.IsNullOrWhiteSpace(newTargetKeyHex))
             throw new ArgumentException("New target key must be provided.", nameof(newTargetKeyHex));
 
-        var changeKeyMode = keySettings & AccessControl.DESFireKeySettings.ChangeKeyFrozen;
+        var changeKeyMode = currentKeySettings & AccessControl.DESFireKeySettings.ChangeKeyFrozen;
         var authKeyNo = changeKeyMode == AccessControl.DESFireKeySettings.ChangeKeyWithTargetedKeyNumber
             ? targetKeyNo
             : (byte)0;
@@ -86,8 +87,8 @@ internal static class DesfireKeyChangeInputs
 
         // Preserve your existing on-wire masking behavior at PICC level.
         var keySettingsByte = appId == 0
-            ? (byte)((byte)keySettings & 0x0F)
-            : (byte)keySettings;
+            ? (byte)((byte)currentKeySettings & 0x0F)
+            : (byte)currentKeySettings;
 
         return new Resolved(
             appId,

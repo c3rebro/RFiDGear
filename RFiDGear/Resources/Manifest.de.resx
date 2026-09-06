@@ -1775,4 +1775,10 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="menuItemReadAppWithKey" xml:space="preserve">
     <value>App mit Schlüssel lesen…</value>
   </data>
+  <data name="labelCurrentDesfireKeySettingsContext" xml:space="preserve">
+    <value>Aktuelle Schlüsseleinstellungen (ChangeKey-Kontext; werden nicht geändert)</value>
+  </data>
+  <data name="labelTargetDesfireKeySettings" xml:space="preserve">
+    <value>Neue anzuwendende Schlüsseleinstellungen</value>
+  </data>
 </root>
