@@ -1845,15 +1845,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             get => appNumberTarget;
             set
             {
-                try
-                {
-                    appNumberTarget = value.Length > 8 ? value.ToUpper().Remove(8) : value;
-                }
-                catch
-                {
-                    appNumberTarget = value.ToUpper();
-                }
-                IsValidAppNumberTarget = (int.TryParse(value, out appNumberTargetAsInt) && appNumberTargetAsInt <= (int)0xFFFFFF);
+                appNumberTarget = value?.Trim().ToUpperInvariant();
+                IsValidAppNumberTarget = TryParseDesfireAppId(appNumberTarget, out appNumberTargetAsInt);
                 OnPropertyChanged(nameof(AppNumberTarget));
             }
         }
@@ -3007,7 +3000,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 oldKeyForTargetSlot,
                                 keySettings);
 
-                            result = await device.ChangeMifareDesfireKeyAsync(
+                            var changeCommandResult = await device.ChangeMifareDesfireKeyAsync(
                                 payload.AppId,
                                 payload.TargetKeyNo,
                                 payload.TargetKeyType,
@@ -3017,6 +3010,23 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 payload.MasterKeyHex,
                                 payload.MasterKeyType,
                                 payload.KeySettings);
+
+                            // Verify the change by authenticating with the new key in a fresh session.
+                            // This is the authoritative result — some providers report AuthFailure from
+                            // ChangeKey even when the card accepted the new key material.
+                            result = await VerifyChangedApplicationKeyAsync(
+                                device,
+                                (int)payload.AppId,
+                                payload.TargetKeyNo,
+                                payload.NewTargetKeyHex,
+                                payload.TargetKeyType);
+
+                            if (changeCommandResult != ERROR.NoError && result == ERROR.NoError)
+                            {
+                                Log.ForContext<MifareDesfireSetupViewModel>().Warning(
+                                    "ChangeKey reported {CommandOutcome} but fresh authentication succeeded for AppId={AppId} KeyNo={KeyNo}; treating as success.",
+                                    changeCommandResult, payload.AppId, payload.TargetKeyNo);
+                            }
 
                             if (await SetOperationResultAsync(
                                     result,
@@ -3051,6 +3061,39 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             await FinalizeTaskAsync();
             return;
+        }
+
+        /// <summary>
+        /// Verifies a reported key change by authenticating to the same scope and key slot with the new
+        /// key via a fresh provider session. The provider's <see cref="ReaderDevice.VerifyMifareDesfireKeyChange"/>
+        /// handles any SDK session invalidation needed before the authoritative check.
+        /// </summary>
+        /// <param name="device">Reader device that performed the key change.</param>
+        /// <param name="appId">Application identifier, or 0 for PICC scope.</param>
+        /// <param name="keyNumber">Changed key slot.</param>
+        /// <param name="newKey">New key value.</param>
+        /// <param name="newKeyType">Cryptographic type of the new key.</param>
+        /// <returns>Authoritative post-change authentication result.</returns>
+        private async Task<ERROR> VerifyChangedApplicationKeyAsync(
+            ReaderDevice device,
+            int appId,
+            int keyNumber,
+            string newKey,
+            DESFireKeyType newKeyType)
+        {
+            var verificationResult = await device.VerifyMifareDesfireKeyChange(newKey, newKeyType, keyNumber, appId);
+
+            Log.ForContext<MifareDesfireSetupViewModel>().Information(
+                "VerifyChangedApplicationKey: AppId={AppId} KeyNo={KeyNumber} KeyType={KeyType} Outcome={Outcome}",
+                appId, keyNumber, newKeyType, verificationResult);
+
+            StatusText += verificationResult == ERROR.NoError
+                ? string.Format("{0}: Verified changed key {1} of AppID {2} by fresh authentication\n",
+                    DateTime.Now, keyNumber, appId)
+                : string.Format("{0}: Unable to verify changed key {1} of AppID {2}: {3}\n",
+                    DateTime.Now, keyNumber, appId, verificationResult);
+
+            return verificationResult;
         }
 
         /// <summary>

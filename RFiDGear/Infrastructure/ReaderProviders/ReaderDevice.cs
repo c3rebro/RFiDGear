@@ -248,6 +248,20 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public abstract Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0);
 
         /// <summary>
+        /// Verifies that a key change took effect by authenticating with the new key in a fresh session.
+        /// The base implementation re-uses <see cref="AuthToMifareDesfireApplication"/> directly.
+        /// Providers that keep an authenticated session alive across <c>ChangeKey</c> (e.g. ELATEC) must
+        /// override this method and invalidate that session before the authoritative authentication.
+        /// </summary>
+        /// <param name="applicationKey">New key value to authenticate with.</param>
+        /// <param name="keyType">Cryptographic type of the new key.</param>
+        /// <param name="keyNumber">Changed key slot number.</param>
+        /// <param name="appId">Application identifier, or 0 for PICC scope.</param>
+        /// <returns>Result of the authoritative post-change authentication attempt.</returns>
+        public virtual Task<ERROR> VerifyMifareDesfireKeyChange(string applicationKey, DESFireKeyType keyType, int keyNumber, int appId = 0) =>
+            AuthToMifareDesfireApplication(applicationKey, keyType, keyNumber, appId);
+
+        /// <summary>
         /// Tries to get the settings of a MIFARE DESFire application.
         /// </summary>
         /// <param name="_applicationMasterKey">The 16-bytes long key of the application.<</param>
