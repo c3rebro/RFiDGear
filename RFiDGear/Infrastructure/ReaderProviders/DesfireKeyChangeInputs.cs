@@ -48,7 +48,7 @@ internal static class DesfireKeyChangeInputs
     /// <param name="newTargetKeyVersion">Version byte for the new key.</param>
     /// <param name="masterKeyHex">Master key value (key 0) for the selected scope.</param>
     /// <param name="masterKeyType">Type of the master key.</param>
-    /// <param name="keySettings">
+    /// <param name="currentKeySettings">
     /// Current key settings for the selected scope. They select the authentication key and provide
     /// provider-specific ChangeKey builder context; they are never treated as target settings.
     /// </param>
@@ -85,8 +85,8 @@ internal static class DesfireKeyChangeInputs
         var authKeyHex = authKeyNo == 0 ? masterKeyHex : currentTargetKeyHex;
         var authKeyType = authKeyNo == 0 ? masterKeyType : targetKeyType;
 
-        // Preserve your existing on-wire masking behavior at PICC level.
-        var keySettingsByte = appId == 0
+        // ELATEC only needs the PICC general flags; the upper change-key mode is application context.
+        var currentSettingsContext = appId == 0
             ? (byte)((byte)currentKeySettings & 0x0F)
             : (byte)currentKeySettings;
 
@@ -100,7 +100,7 @@ internal static class DesfireKeyChangeInputs
             authKeyNo,
             authKeyType,
             NormalizeKeyHex(authKeyHex),
-            keySettingsByte);
+            currentSettingsContext);
     }
 
     /// <summary>

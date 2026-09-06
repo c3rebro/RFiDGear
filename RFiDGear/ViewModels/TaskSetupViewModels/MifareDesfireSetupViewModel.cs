@@ -674,7 +674,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// Determines the authentication key number for change-app-key operations.
         /// </summary>
         /// <param name="appId">Current application identifier.</param>
-        /// <param name="changeKeyMode">Selected change-key policy for the app.</param>
+        /// <param name="currentKeySettings">Complete current key settings for the selected scope.</param>
         /// <param name="appKeyNumber">Selected application key number.</param>
         internal static int GetAuthKeyNumberForChangeAppKey(int appId, DESFireKeySettings currentKeySettings, int appKeyNumber)
         {
@@ -707,7 +707,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// Appends authentication diagnostic status lines for change-app-key operations.
         /// </summary>
         /// <param name="authKeyNo">Authentication key number used for the app.</param>
-        /// <param name="changeKeyMode">Selected change-key policy for the app.</param>
+        /// <param name="currentKeySettings">Complete current settings used as ChangeKey context.</param>
         private void AppendChangeAppKeyAuthStatusLine(int authKeyNo, DESFireKeySettings currentKeySettings)
         {
             StatusText += BuildChangeAppKeyAuthStatusLine(
