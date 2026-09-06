@@ -849,6 +849,9 @@ Recommended Setting (FOR PICC LAYER ONLY)</value>
   <data name="buttonContentMifareDesfireFileMasteringChangeFileSettings" xml:space="preserve">
     <value>Change File Settings</value>
   </data>
+  <data name="buttonContentMifareDesfireFileMasteringCheckFileSettings" xml:space="preserve">
+    <value>Check File Settings</value>
+  </data>
   <data name="buttonContentMifareDesfireFileMasteringDeleteFile" xml:space="preserve">
     <value>Delete File</value>
   </data>
@@ -1193,6 +1196,9 @@ Needed by:
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.CheckAppKeyCount" xml:space="preserve">
     <value>Check: App Key Count</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.CheckFileSettings" xml:space="preserve">
+    <value>Check: File Settings</value>
   </data>
   <data name="ENUM.ERROR.OutOfMemory" xml:space="preserve">
     <value>Out Of Memory Error</value>
