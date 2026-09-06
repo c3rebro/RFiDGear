@@ -248,6 +248,18 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public abstract Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0);
 
         /// <summary>
+        /// Verifies changed DESFire key material in a provider-appropriate fresh authentication context.
+        /// Providers whose SDK keeps an authenticated card session alive must override this method and
+        /// invalidate that session before authenticating with the expected new key.
+        /// </summary>
+        public virtual Task<ERROR> VerifyMifareDesfireKeyChange(
+            string applicationKey,
+            DESFireKeyType keyType,
+            int keyNumber,
+            int appId = 0) =>
+            AuthToMifareDesfireApplication(applicationKey, keyType, keyNumber, appId);
+
+        /// <summary>
         /// Tries to get the settings of a MIFARE DESFire application.
         /// </summary>
         /// <param name="_applicationMasterKey">The 16-bytes long key of the application.<</param>
