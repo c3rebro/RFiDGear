@@ -852,6 +852,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowCreateApplicationInputs));
                 OnPropertyChanged(nameof(ShowDeleteApplicationInputs));
                 OnPropertyChanged(nameof(ShowAppKeyCurrentInputs));
+                OnPropertyChanged(nameof(ShowAppKeyNumberInput));
                 OnPropertyChanged(nameof(ShowAppKeyOldInputs));
                 OnPropertyChanged(nameof(ShowFileAccessRights));
                 OnPropertyChanged(nameof(ShowFileAuthoringCommands));
@@ -888,7 +889,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                                && SelectedTaskType != TaskType_MifareDesfireTask.DeleteFile
                                                && SelectedTaskType != TaskType_MifareDesfireTask.ReadData
                                                && SelectedTaskType != TaskType_MifareDesfireTask.WriteData
-                                               && SelectedTaskType != TaskType_MifareDesfireTask.ChangeFileSettings;
+                                               && SelectedTaskType != TaskType_MifareDesfireTask.ChangeFileSettings
+                                               && SelectedTaskType != TaskType_MifareDesfireTask.DeleteApplication;
 
         /// <summary>
         /// Gets a value indicating whether UI elements for supplying the current application key should be shown.
@@ -897,6 +899,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         [XmlIgnore]
         public bool ShowAppKeyCurrentInputs => SelectedTaskType != TaskType_MifareDesfireTask.ReadData
                                                && SelectedTaskType != TaskType_MifareDesfireTask.WriteData;
+
+        /// <summary>
+        /// Gets a value indicating whether the key-number selector should be shown.
+        /// Hidden for <see cref="TaskType_MifareDesfireTask.DeleteApplication"/> with
+        /// <see cref="DesfireDeleteAuthMethod.ApplicationMasterKey0"/>: key 0 is always used.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowAppKeyNumberInput => !(SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication
+                                               && SelectedDesfireDeleteAuthMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0)
+                                             && ShowAppKeyCurrentInputs;
 
         /// <summary>
         /// Gets a value indicating whether UI elements for providing a target PICC master key should be shown.
@@ -1430,6 +1442,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 selectedDesfireDeleteAuthMethod = value;
                 OnPropertyChanged(nameof(SelectedDesfireDeleteAuthMethod));
+                OnPropertyChanged(nameof(ShowAppKeyNumberInput));
                 if (SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication)
                     ApplyDeleteApplicationTabs();
             }

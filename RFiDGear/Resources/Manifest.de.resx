@@ -801,7 +801,7 @@ Wird benötigt von:
     <value>PICC Masterkey</value>
   </data>
   <data name="ENUM.DesfireDeleteAuthMethod.ApplicationMasterKey0" xml:space="preserve">
-    <value>App Masterkey 0</value>
+    <value>App Masterkey</value>
   </data>
   <data name="buttonContentMifareDesfireKeyChangeAuthenticate" xml:space="preserve">
     <value>Mit App Schlüssel Authentifizieren</value>
