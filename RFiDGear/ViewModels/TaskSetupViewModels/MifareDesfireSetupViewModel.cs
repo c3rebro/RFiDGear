@@ -904,7 +904,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         [XmlIgnore]
         public bool ShowPiccMasterKeyCurrentSection => SelectedTaskType != TaskType_MifareDesfireTask.ReadAppSettings
-                                                       && SelectedTaskType != TaskType_MifareDesfireTask.CheckAppKeyCount;
+                                                       && SelectedTaskType != TaskType_MifareDesfireTask.CheckAppKeyCount
+                                                       && !(SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication
+                                                            && SelectedDesfireDeleteAuthMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0);
 
         /// <summary>
         /// Gets a value indicating whether the "Update Key Settings" edit button should be shown.
@@ -934,7 +936,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         [XmlIgnore]
         public bool ShowAppLevelCurrentPanel => SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings
-                                                || SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount;
+                                                || SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount
+                                                || (SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication
+                                                    && SelectedDesfireDeleteAuthMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0);
 
         /// <summary>
         /// Gets a value indicating whether the expected key count input and compare button should be shown.
@@ -1409,6 +1413,24 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
         private AccessCondition_MifareDesfireAppCreation selectedDesfireAppKeySettingsTarget;
+
+        /// <summary>
+        /// Selects which principal authenticates before <c>DeleteApplication</c>.
+        /// Persisted so project files remember the chosen method.
+        /// Defaults to <see cref="DesfireDeleteAuthMethod.PiccMasterKey"/> for backward compatibility.
+        /// </summary>
+        public DesfireDeleteAuthMethod SelectedDesfireDeleteAuthMethod
+        {
+            get => selectedDesfireDeleteAuthMethod;
+            set
+            {
+                selectedDesfireDeleteAuthMethod = value;
+                OnPropertyChanged(nameof(SelectedDesfireDeleteAuthMethod));
+                OnPropertyChanged(nameof(ShowPiccMasterKeyCurrentSection));
+                OnPropertyChanged(nameof(ShowAppLevelCurrentPanel));
+            }
+        }
+        private DesfireDeleteAuthMethod selectedDesfireDeleteAuthMethod = DesfireDeleteAuthMethod.PiccMasterKey;
 
         /// <summary>
         ///
@@ -3220,54 +3242,35 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
+                    string authKey;
+                    DESFireKeyType authKeyType;
+
+                    if (SelectedDesfireDeleteAuthMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0)
                     {
-                        var result = await device.AuthToMifareDesfireApplication(
-                                DesfireMasterKeyCurrent,
-                                SelectedDesfireMasterKeyEncryptionTypeCurrent,
-                                0);
+                        authKey = DesfireAppKeyCurrent;
+                        authKeyType = SelectedDesfireAppKeyEncryptionTypeCurrent;
+                    }
+                    else
+                    {
+                        authKey = DesfireMasterKeyCurrent;
+                        authKeyType = SelectedDesfireMasterKeyEncryptionTypeCurrent;
+                    }
 
-                        if (IsValidAppNumberCurrent != false && result == ERROR.NoError)
-                        {
-                            StatusText += string.Format("{0}: Successfully Authenticated to PICC Master App 0\n", DateTime.Now);
+                    if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(authKey, authKeyType) == KEY_ERROR.NO_ERROR
+                        && IsValidAppNumberNew != false)
+                    {
+                        var result = await device.DeleteMifareDesfireApplication(
+                            authKey,
+                            authKeyType,
+                            (uint)AppNumberNewAsInt,
+                            SelectedDesfireDeleteAuthMethod);
 
-                            result = await device.DeleteMifareDesfireApplication(
-                                DesfireMasterKeyCurrent,
-                                SelectedDesfireMasterKeyEncryptionTypeCurrent,
-                                (uint)AppNumberNewAsInt);
-
-                            if (await SetOperationResultAsync(
-                                    result,
-                                    "{0}: Successfully Deleted AppID {1}\n",
-                                    new object[] { DateTime.Now, AppNumberNewAsInt },
-                                    "{0}: Unable to Remove AppID {1}: {2}\n",
-                                    new object[] { DateTime.Now, AppNumberNewAsInt, result.ToString() }))
-                            {
-                                return;
-                            }
-                            return;
-                        }
-
-                        else
-                        {
-                            StatusText += string.Format("{0}: Authentication to PICC failed. Try without Authentication...\n", DateTime.Now);
-
-                            result = await device.DeleteMifareDesfireApplication(
-                                DesfireMasterKeyCurrent,
-                                SelectedDesfireMasterKeyEncryptionTypeCurrent,
-                                (uint)AppNumberNewAsInt);
-
-                            if (await SetOperationResultAsync(
-                                    result,
-                                    "{0}: Successfully deleted AppID {1}\n",
-                                    new object[] { DateTime.Now, AppNumberNewAsInt },
-                                    "{0}: Unable to deleted App: {1}\n",
-                                    new object[] { DateTime.Now, result.ToString() }))
-                            {
-                                return;
-                            }
-                            return;
-                        }
+                        await SetOperationResultAsync(
+                            result,
+                            "{0}: Successfully deleted AppID {1}\n",
+                            new object[] { DateTime.Now, AppNumberNewAsInt },
+                            "{0}: Unable to delete AppID {1}: {2}\n",
+                            new object[] { DateTime.Now, AppNumberNewAsInt, result.ToString() });
                     }
                 }
                 else
@@ -3279,7 +3282,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
 
             await FinalizeTaskAsync();
-            return;
         }
 
         /// <summary>

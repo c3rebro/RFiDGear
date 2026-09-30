@@ -199,6 +199,27 @@
                         Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
                         Command="{Binding CreateAppCommand}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireAppCreationCreateApp'}" />
+                    <Label
+                        Grid.Row="4"
+                        Margin="8,0,8,4"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
+                        Visibility="{Binding ShowDeleteApplicationInputs, Converter={StaticResource BoolToVisConv}}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelDesfireDeleteAuthMethod'}" />
+                    <ComboBox
+                        Grid.Row="4"
+                        Grid.Column="1"
+                        Grid.ColumnSpan="2"
+                        Height="26"
+                        Margin="8,0,8,4"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowDeleteApplicationInputs, Converter={StaticResource BoolToVisConv}}"
+                        ItemsSource="{dal:Enumerate {x:Type dal:DesfireDeleteAuthMethod}}"
+                        SelectedItem="{Binding SelectedDesfireDeleteAuthMethod, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:DesfireDeleteAuthMethod}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <Button
                         Grid.Row="5"
                         Grid.ColumnSpan="3"

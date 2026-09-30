@@ -1188,13 +1188,14 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <inheritdoc />
-        public async override Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyTypePiccMasterKey, uint _appID)
+        public async override Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyTypePiccMasterKey, uint _appID, DesfireDeleteAuthMethod _authMethod = DesfireDeleteAuthMethod.PiccMasterKey)
         {
             await _comPortLock.WaitAsync();
             try
             {
-            if (readerDevice.IsConnected)
-            {
+                if (!readerDevice.IsConnected)
+                    return ERROR.TransportError;
+
                 try
                 {
                     await readerDevice.SearchTagAsync();
@@ -1206,26 +1207,20 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 try
                 {
-                    if (await AuthToMifareDesfireApplicationCore(_applicationMasterKey, _keyTypePiccMasterKey, 0, 0) == ERROR.NoError)
-                    {
-                        await readerDevice.MifareDesfire_DeleteApplicationAsync(_appID);
-                    }
-                    else
-                    {
-                        await readerDevice.MifareDesfire_DeleteApplicationAsync(_appID);
-                    }
+                    // For PICC-level auth: select AID=0 (appId=0).
+                    // For app-level auth: select the target AID so the card accepts deletion with the app master key.
+                    var authAppId = _authMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0 ? (int)_appID : 0;
+
+                    if (await AuthToMifareDesfireApplicationCore(_applicationMasterKey, _keyTypePiccMasterKey, 0, authAppId) != ERROR.NoError)
+                        return ERROR.AuthFailure;
+
+                    await readerDevice.MifareDesfire_DeleteApplicationAsync(_appID);
+                    return ERROR.NoError;
                 }
                 catch
                 {
                     return ERROR.AuthFailure;
                 }
-                return ERROR.NoError;
-            }
-
-            else
-            {
-                return ERROR.TransportError;
-            }
             }
             finally
             {

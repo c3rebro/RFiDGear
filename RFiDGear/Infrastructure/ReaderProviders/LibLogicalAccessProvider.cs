@@ -1896,21 +1896,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         }
 
         /// <inheritdoc />
-        public override async Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, uint _appID = 0)
+        public override async Task<ERROR> DeleteMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, uint _appID = 0, DesfireDeleteAuthMethod _authMethod = DesfireDeleteAuthMethod.PiccMasterKey)
         {
             try
             {
-                // The excepted memory tree
-                DESFireLocation location = new DESFireLocation
-                {
-                    // The Application ID to use
-                    aid = _appID,
-                    // File communication requires encryption
-                    securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT
-                };
-
-                // IDESFireEV1Commands cmd;
-                // Keys to use for authentication
                 var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyType, _applicationMasterKey);
 
                 if (await tryInitReader())
@@ -1925,35 +1914,25 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         var cmd = card.getCommands() as DESFireCommands;
                         try
                         {
-                            cmd.selectApplication(0);
+                            // For PICC-level auth: select AID=0 and authenticate with PICC master key.
+                            // For app-level auth: select the target AID and authenticate with its master key 0.
+                            if (_authMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0)
+                            {
+                                cmd.selectApplication(_appID);
+                            }
+                            else
+                            {
+                                cmd.selectApplication(0);
+                            }
                             cmd.authenticate(0, masterKey);
-
                             cmd.deleteApplication(_appID);
                             return ERROR.NoError;
                         }
-                        catch
+                        catch (Exception e)
                         {
-                            try
-                            {
-                                cmd.selectApplication(_appID);
-                                cmd.authenticate(0, masterKey);
-                                cmd.deleteApplication(_appID);
-                                return ERROR.NoError;
-                            }
-
-                            catch (Exception e)
-                            {
-                                if (e.Message != "" && e.Message.Contains("same number already exists"))
-                                {
-                                    return ERROR.ProtocolConstraint;
-                                }
-                                else if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
-                                {
-                                    return ERROR.AuthFailure;
-                                }
-                                else
-                                    return ERROR.TransportError;
-                            }
+                            if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+                                return ERROR.AuthFailure;
+                            return ERROR.AuthFailure;
                         }
                     }
                     return ERROR.TransportError;

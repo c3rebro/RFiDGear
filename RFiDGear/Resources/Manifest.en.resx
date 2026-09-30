@@ -778,6 +778,15 @@ Needed by:
   <data name="buttonContentMifareDesfireAppCreationDeleteApp" xml:space="preserve">
     <value>Delete Application</value>
   </data>
+  <data name="labelDesfireDeleteAuthMethod" xml:space="preserve">
+    <value>Authentication method</value>
+  </data>
+  <data name="ENUM.DesfireDeleteAuthMethod.PiccMasterKey" xml:space="preserve">
+    <value>PICC master key</value>
+  </data>
+  <data name="ENUM.DesfireDeleteAuthMethod.ApplicationMasterKey0" xml:space="preserve">
+    <value>Application master key 0</value>
+  </data>
   <data name="buttonContentMifareDesfireKeyChangeAuthenticate" xml:space="preserve">
     <value>Authenticate with App Key</value>
   </data>

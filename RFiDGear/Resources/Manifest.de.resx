@@ -794,6 +794,15 @@ Wird benötigt von:
   <data name="buttonContentMifareDesfireAppCreationDeleteApp" xml:space="preserve">
     <value>Applikation löschen</value>
   </data>
+  <data name="labelDesfireDeleteAuthMethod" xml:space="preserve">
+    <value>Authentifizierungsmethode</value>
+  </data>
+  <data name="ENUM.DesfireDeleteAuthMethod.PiccMasterKey" xml:space="preserve">
+    <value>PICC-Hauptschlüssel</value>
+  </data>
+  <data name="ENUM.DesfireDeleteAuthMethod.ApplicationMasterKey0" xml:space="preserve">
+    <value>Anwendungs-Hauptschlüssel 0</value>
+  </data>
   <data name="buttonContentMifareDesfireKeyChangeAuthenticate" xml:space="preserve">
     <value>Mit App Schlüssel Authentifizieren</value>
   </data>

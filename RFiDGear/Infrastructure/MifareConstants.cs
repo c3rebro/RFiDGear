@@ -22,6 +22,25 @@ namespace RFiDGear.Infrastructure
     }
 
     /// <summary>
+    /// Determines which principal authenticates before a <c>DeleteApplication</c> command.
+    /// Controlled by PICC master key settings bit 2 (datasheet §4.3.2).
+    /// </summary>
+    public enum DesfireDeleteAuthMethod
+    {
+        /// <summary>
+        /// Select AID 0x00 and authenticate with the PICC master key before deleting.
+        /// Required when PICC key-settings bit 2 is 0.
+        /// </summary>
+        PiccMasterKey,
+
+        /// <summary>
+        /// Select the target AID and authenticate with its application master key 0 before deleting.
+        /// Permitted when PICC key-settings bit 2 is 1 (the factory default).
+        /// </summary>
+        ApplicationMasterKey0
+    }
+
+    /// <summary>
     /// Supported DESFire key cryptographic types.
     /// </summary>
     [Flags]
