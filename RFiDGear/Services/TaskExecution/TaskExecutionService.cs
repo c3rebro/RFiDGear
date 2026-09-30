@@ -548,23 +548,23 @@ namespace RFiDGear.Services.TaskExecution
 
         private async Task<ChipHydrationResult> HydrateChipAsync(ReaderDevice device, CancellationToken cancellationToken)
         {
-            var genericChip = device?.GenericChip ?? new GenericChipModel();
-
-            if (device != null)
+            if (device == null)
             {
-                if (device.GenericChip != null && !string.IsNullOrEmpty(device.GenericChip.UID))
-                {
-                    if (genericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
-                    {
-                        await device.GetMiFareDESFireChipAppIDs();
-                        genericChip = device.GenericChip;
-                    }
-                }
-                else
-                {
-                    await device.ReadChipPublic();
-                    genericChip = device.GenericChip;
-                }
+                cancellationToken.ThrowIfCancellationRequested();
+                return new ChipHydrationResult(new GenericChipModel());
+            }
+
+            // Always ReadChipPublic first: it reconnects the reader if the session
+            // has lapsed since the last read (required by the Elatec SDK before any
+            // DESFire command — connect then search-tag).
+            await device.ReadChipPublic();
+            var genericChip = device.GenericChip ?? new GenericChipModel();
+
+            if (!string.IsNullOrEmpty(genericChip.UID) &&
+                genericChip.CardType.ToString().ToLower(CultureInfo.CurrentCulture).Contains("desfire"))
+            {
+                await device.GetMiFareDESFireChipAppIDs();
+                genericChip = device.GenericChip ?? genericChip;
             }
 
             cancellationToken.ThrowIfCancellationRequested();
