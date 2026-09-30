@@ -19,16 +19,13 @@ namespace RFiDGear.HIL.Tests
 
         /// <summary>
         /// Creates a task collection that creates the test application on the card.
+        /// PICC authentication always uses the factory-default DES master key.
         /// </summary>
         /// <param name="appId">The AID to create.</param>
         /// <param name="appKeyType">Key type for the new application.</param>
-        /// <param name="piccMasterKey">Current PICC master key (hex).</param>
-        /// <param name="piccKeyType">PICC master key type.</param>
         public static IEnumerable<object> BuildCreateApplication(
             uint appId,
-            DESFireKeyType appKeyType,
-            string piccMasterKey,
-            DESFireKeyType piccKeyType)
+            DESFireKeyType appKeyType)
         {
             var task = new MifareDesfireSetupViewModel
             {
@@ -37,8 +34,9 @@ namespace RFiDGear.HIL.Tests
                 SelectedDesfireAppKeyEncryptionTypeCreateNewApp = appKeyType,
                 SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK,
                 SelectedDesfireAppMaxNumberOfKeys = "2",
-                DesfireMasterKeyCurrent = piccMasterKey,
-                SelectedDesfireMasterKeyEncryptionTypeCurrent = piccKeyType,
+                // Factory default PICC master key is always DES (2K3DES, 16 bytes all-zero).
+                DesfireMasterKeyCurrent = HilConstants.DefaultKeyDes,
+                SelectedDesfireMasterKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_DES,
                 CurrentTaskIndex = "0",
                 SelectedExecuteConditionErrorLevel = ERROR.Empty,
             };
@@ -86,24 +84,24 @@ namespace RFiDGear.HIL.Tests
         /// <summary>
         /// Builds the full HIL workflow task sequence:
         /// CreateApp → CreateFile → Write → Read → ChangeKey → Read with new key → DeleteFile → DeleteApp.
+        /// PICC authentication always uses the factory-default DES master key.
+        /// DeleteApplication always authenticates as PICC master key (DESFire EV1+ protocol requirement).
         /// </summary>
         /// <param name="appId">AID to create and delete.</param>
         /// <param name="keyType">Key type for application keys.</param>
         /// <param name="defaultKey">Zero-value key in the correct format for <paramref name="keyType"/>.</param>
         /// <param name="changedKey">New key value used after key-change step.</param>
-        /// <param name="deleteAuthMethod">Auth method for the final delete-application step.</param>
         /// <param name="writePayloadPath">Path to a temp file containing the hex write payload.</param>
         public static IEnumerable<object> BuildFullWorkflow(
             uint appId,
             DESFireKeyType keyType,
             string defaultKey,
             string changedKey,
-            DesfireDeleteAuthMethod deleteAuthMethod,
             string writePayloadPath)
         {
             var aidStr = HexAid(appId);
 
-            // 0 — CreateApplication
+            // 0 — CreateApplication (factory PICC master key is always DES)
             yield return new MifareDesfireSetupViewModel
             {
                 SelectedTaskType = TaskType_MifareDesfireTask.CreateApplication,
@@ -111,8 +109,8 @@ namespace RFiDGear.HIL.Tests
                 SelectedDesfireAppKeyEncryptionTypeCreateNewApp = keyType,
                 SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK,
                 SelectedDesfireAppMaxNumberOfKeys = "2",
-                DesfireMasterKeyCurrent = defaultKey,
-                SelectedDesfireMasterKeyEncryptionTypeCurrent = keyType,
+                DesfireMasterKeyCurrent = HilConstants.DefaultKeyDes,
+                SelectedDesfireMasterKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_DES,
                 CurrentTaskIndex = "0",
                 SelectedExecuteConditionErrorLevel = ERROR.Empty,
             };
@@ -203,29 +201,19 @@ namespace RFiDGear.HIL.Tests
                 SelectedExecuteConditionErrorLevel = ERROR.Empty,
             };
 
-            // 7 — DeleteApplication
-            var deleteTask = new MifareDesfireSetupViewModel
+            // 7 — DeleteApplication via PICC master key.
+            // DESFire EV1+ requires PICC-level auth for DeleteApplication; authenticating at app
+            // level and issuing the command from there is rejected by the card.
+            yield return new MifareDesfireSetupViewModel
             {
                 SelectedTaskType = TaskType_MifareDesfireTask.DeleteApplication,
                 AppNumberNew = aidStr,
-                SelectedDesfireDeleteAuthMethod = deleteAuthMethod,
+                SelectedDesfireDeleteAuthMethod = DesfireDeleteAuthMethod.PiccMasterKey,
+                DesfireMasterKeyCurrent = HilConstants.DefaultKeyDes,
+                SelectedDesfireMasterKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_DES,
                 CurrentTaskIndex = "7",
                 SelectedExecuteConditionErrorLevel = ERROR.Empty,
             };
-
-            if (deleteAuthMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0)
-            {
-                deleteTask.DesfireAppKeyCurrent = changedKey;
-                deleteTask.SelectedDesfireAppKeyEncryptionTypeCurrent = keyType;
-            }
-            else
-            {
-                // PiccMasterKey — PICC master key is always the default (unchanged)
-                deleteTask.DesfireMasterKeyCurrent = defaultKey;
-                deleteTask.SelectedDesfireMasterKeyEncryptionTypeCurrent = keyType;
-            }
-
-            yield return deleteTask;
         }
 
         // ── Utilities ─────────────────────────────────────────────────────────

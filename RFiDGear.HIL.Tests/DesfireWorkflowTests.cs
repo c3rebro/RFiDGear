@@ -27,32 +27,24 @@ namespace RFiDGear.HIL.Tests
         // ── Theory data ───────────────────────────────────────────────────────
 
         /// <summary>
-        /// Combinations of (keyType, defaultKey, changedKey, deleteAuthMethod).
+        /// Combinations of (keyType, defaultKey, changedKey).
         /// Each row produces a separate test case.
+        /// Deletion always uses the PICC master key (DESFire EV1+ protocol requirement).
         /// </summary>
-        public static TheoryData<DESFireKeyType, string, string, DesfireDeleteAuthMethod> WorkflowCases =>
-            new TheoryData<DESFireKeyType, string, string, DesfireDeleteAuthMethod>
+        public static TheoryData<DESFireKeyType, string, string> WorkflowCases =>
+            new TheoryData<DESFireKeyType, string, string>
             {
-                // AES — delete via App master key 0
+                // AES (programmed state)
                 {
                     DESFireKeyType.DF_KEY_AES,
                     HilConstants.DefaultKeyAes,
-                    "0102030405060708090A0B0C0D0E0F10",
-                    DesfireDeleteAuthMethod.ApplicationMasterKey0
+                    "0102030405060708090A0B0C0D0E0F10"
                 },
-                // 3K3DES — delete via App master key 0
-                {
-                    DESFireKeyType.DF_KEY_3K3DES,
-                    HilConstants.DefaultKey3K3Des,
-                    "0102030405060708090A0B0C0D0E0F101112131415161718",
-                    DesfireDeleteAuthMethod.ApplicationMasterKey0
-                },
-                // DES — delete via PICC master key (factory default behavior)
+                // DES / 2K3DES (factory transport configuration; changedKey = 32 hex chars = 16 bytes)
                 {
                     DESFireKeyType.DF_KEY_DES,
                     HilConstants.DefaultKeyDes,
-                    "0102030405060708",
-                    DesfireDeleteAuthMethod.PiccMasterKey
+                    "0102030405060708090A0B0C0D0E0F10"
                 },
             };
 
@@ -68,8 +60,7 @@ namespace RFiDGear.HIL.Tests
         public async Task FullCrudWorkflow(
             DESFireKeyType keyType,
             string defaultKey,
-            string changedKey,
-            DesfireDeleteAuthMethod deleteAuthMethod)
+            string changedKey)
         {
             _fixture.SkipIfNoHardware();
 
@@ -86,7 +77,6 @@ namespace RFiDGear.HIL.Tests
                         keyType,
                         defaultKey,
                         changedKey,
-                        deleteAuthMethod,
                         payloadPath);
 
                     _fixture.Host!.Project.ReplaceTaskCollection(tasks);
@@ -112,10 +102,9 @@ namespace RFiDGear.HIL.Tests
         /// Verifies that the fixture can successfully create and then delete a test application.
         /// </summary>
         [Theory]
-        [InlineData(DESFireKeyType.DF_KEY_AES, HilConstants.DefaultKeyAes)]
-        [InlineData(DESFireKeyType.DF_KEY_3K3DES, HilConstants.DefaultKey3K3Des)]
-        [InlineData(DESFireKeyType.DF_KEY_DES, HilConstants.DefaultKeyDes)]
-        public async Task CreateAndDeleteApplication(DESFireKeyType keyType, string defaultKey)
+        [InlineData(DESFireKeyType.DF_KEY_AES)]
+        [InlineData(DESFireKeyType.DF_KEY_DES)]
+        public async Task CreateAndDeleteApplication(DESFireKeyType keyType)
         {
             _fixture.SkipIfNoHardware();
 
@@ -126,7 +115,7 @@ namespace RFiDGear.HIL.Tests
                 // Create
                 _fixture.Host!.Project.ReplaceTaskCollection(
                     HilTaskBuilder.BuildCreateApplication(
-                        HilConstants.TestAppId, keyType, defaultKey, keyType));
+                        HilConstants.TestAppId, keyType));
 
                 var createResult = await _fixture.Host.Execution.ExecuteAllAsync();
                 var createDiag = _fixture.Host.GetTaskErrorSummary();
@@ -135,13 +124,13 @@ namespace RFiDGear.HIL.Tests
                 Assert.True(createResult.Outcome == ExecutionOutcome.Success,
                     $"CreateApplication failed — keyType={keyType}\n{createDiag}");
 
-                // Delete
+                // Delete via PICC master key (factory default, never changed by tests).
                 _fixture.Host.Project.ReplaceTaskCollection(
                     HilTaskBuilder.BuildDeleteApplication(
                         HilConstants.TestAppId,
-                        keyType,
-                        defaultKey,
-                        DesfireDeleteAuthMethod.ApplicationMasterKey0));
+                        DESFireKeyType.DF_KEY_DES,
+                        HilConstants.DefaultKeyDes,
+                        DesfireDeleteAuthMethod.PiccMasterKey));
 
                 var deleteResult = await _fixture.Host.Execution.ExecuteAllAsync();
                 var deleteDiag = _fixture.Host.GetTaskErrorSummary();

@@ -76,11 +76,13 @@ namespace RFiDGear.HIL.Tests
 
             try
             {
+                // Always use PICC master key for cleanup: the app key type may vary across tests,
+                // but the factory PICC master key (DES, all-zero) is never changed by the tests.
                 var tasks = HilTaskBuilder.BuildDeleteApplication(
                     HilConstants.TestAppId,
-                    DESFireKeyType.DF_KEY_AES,
-                    HilConstants.DefaultKeyAes,
-                    DesfireDeleteAuthMethod.ApplicationMasterKey0);
+                    DESFireKeyType.DF_KEY_DES,
+                    HilConstants.DefaultKeyDes,
+                    DesfireDeleteAuthMethod.PiccMasterKey);
 
                 Host.Project.ReplaceTaskCollection(tasks);
                 // Ignore the result — the app may not exist.
