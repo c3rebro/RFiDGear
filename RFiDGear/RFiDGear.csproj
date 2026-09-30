@@ -179,4 +179,7 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RFiDGear.Contracts\RFiDGear.Contracts.csproj" />
+  </ItemGroup>
 </Project>

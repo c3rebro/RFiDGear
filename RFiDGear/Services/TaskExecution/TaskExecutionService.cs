@@ -268,6 +268,12 @@ namespace RFiDGear.Services.TaskExecution
         public string ReportTemplateFile { get; set; }
         public object SelectedSetupViewModel { get; set; }
         public bool RunSelectedOnly { get; set; }
+
+        /// <summary>
+        /// Terminal classification of the run. <c>null</c> when execution did not reach the task loop
+        /// (e.g. device discovery failed before any task ran).
+        /// </summary>
+        public TaskLoopTerminalStatus? TerminalStatus { get; set; }
     }
 
     /// <summary>
@@ -369,7 +375,7 @@ namespace RFiDGear.Services.TaskExecution
 
                 if (descriptors.Count > 0 && descriptors.All(d => d.ExecuteAsync != null))
                 {
-                    await ExecuteStageWithTimeout(
+                    result.TerminalStatus = await ExecuteStageWithTimeout(
                         "TaskLoop",
                         () => RunTaskLoopAsync(request, result, descriptors, null, null, runId, cancellationToken),
                         request.Timeouts?.TaskLoopTimeout,
@@ -406,7 +412,7 @@ namespace RFiDGear.Services.TaskExecution
                             cancellationToken,
                         runId);
 
-                        await ExecuteStageWithTimeout(
+                        result.TerminalStatus = await ExecuteStageWithTimeout(
                             "TaskLoop",
                             () => RunTaskLoopAsync(request, result, descriptors, hydrationResult.Chip, device, runId, cancellationToken),
                             request.Timeouts?.TaskLoopTimeout,
