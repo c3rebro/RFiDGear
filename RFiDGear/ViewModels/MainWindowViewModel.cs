@@ -37,9 +37,12 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
+using RFiDGear.Infrastructure.ExtensionHost;
 using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
+using RFiDGear.Contracts;
+using System.ComponentModel.Composition;
 
 namespace RFiDGear.ViewModel
 {
@@ -68,6 +71,8 @@ namespace RFiDGear.ViewModel
         private readonly ITimerFactory timerFactory;
         private readonly ITaskServiceInitializer taskServiceInitializer;
         private readonly IMenuInitializer menuInitializer;
+
+        private HeadlessExtensionHost extensionHost;
 
         private protected MainWindow mw;
         private protected DatabaseReaderWriter databaseReaderWriter;
@@ -200,6 +205,13 @@ namespace RFiDGear.ViewModel
             taskDialogFactory = taskServices.TaskDialogFactory;
             taskExecutionService = taskServices.TaskExecutionService;
 
+            extensionHost = new HeadlessExtensionHost(
+                databaseReaderWriter,
+                taskExecutionService,
+                () => taskHandler,
+                () => OnPropertyChanged(nameof(ChipTasks)),
+                string.Empty);
+
             var deleteSelectedCommand = new RelayCommand(() =>
             {
                 taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
@@ -252,6 +264,17 @@ namespace RFiDGear.ViewModel
         public ObservableCollection<IDialogViewModel> Dialogs => dialogs;
 
         #endregion Dialogs
+
+        #region Extension host
+
+        /// <summary>
+        /// Stable host service importable by MEF extensions. Provides project, execution,
+        /// reader, and auto-mode access without requiring a direct reference to this view model.
+        /// </summary>
+        [Export(typeof(IRFiDGearExtensionHost))]
+        public IRFiDGearExtensionHost ExtensionHost => extensionHost;
+
+        #endregion Extension host
 
         #region Localization
         [ExportViewModel("Culture")]

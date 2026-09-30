@@ -42,8 +42,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         }
 
         /// <summary>
-        /// Creates a headless host using caller-supplied services. Useful when the main application
-        /// wants to share its already-initialized services with the host.
+        /// Creates a headless host using caller-supplied services. Suitable for non-UI automation
+        /// where the live task model IS the database reader/writer's setup model.
         /// </summary>
         /// <param name="dbRW">Initialized database reader/writer.</param>
         /// <param name="execService">Running task execution service.</param>
@@ -54,6 +54,34 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             string readerName)
         {
             _project = new ProjectHostImpl(dbRW ?? throw new ArgumentNullException(nameof(dbRW)));
+            _execution = new TaskExecHostImpl(
+                execService ?? throw new ArgumentNullException(nameof(execService)),
+                _project);
+            _reader = new ReaderHostImpl(readerName ?? string.Empty);
+            _autoMode = new NullAutoModeHost();
+        }
+
+        /// <summary>
+        /// Creates a host wired to the main application's live view-model state.
+        /// The <paramref name="liveModelAccessor"/> delegate always returns the current
+        /// <c>taskHandler</c>, keeping the host in sync even when the task collection is replaced.
+        /// </summary>
+        /// <param name="dbRW">Used for load/save operations.</param>
+        /// <param name="execService">The application's running task execution service.</param>
+        /// <param name="liveModelAccessor">Always returns the authoritative <c>ChipTaskHandlerModel</c>.</param>
+        /// <param name="notifyCollectionReplaced">Called when <see cref="IProjectHost.ReplaceTaskCollection"/> changes the collection.</param>
+        /// <param name="readerName">Display name of the configured reader.</param>
+        public HeadlessExtensionHost(
+            DatabaseReaderWriter dbRW,
+            ITaskExecutionService execService,
+            Func<Models.ChipTaskHandlerModel> liveModelAccessor,
+            Action notifyCollectionReplaced,
+            string readerName)
+        {
+            _project = new ProjectHostImpl(
+                dbRW ?? throw new ArgumentNullException(nameof(dbRW)),
+                liveModelAccessor ?? throw new ArgumentNullException(nameof(liveModelAccessor)),
+                notifyCollectionReplaced ?? (() => { }));
             _execution = new TaskExecHostImpl(
                 execService ?? throw new ArgumentNullException(nameof(execService)),
                 _project);
