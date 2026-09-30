@@ -1,7 +1,10 @@
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ReaderProviders;
 
+using Serilog;
+
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -37,6 +40,8 @@ namespace RFiDGear.HIL.Tests
         /// <inheritdoc/>
         public async Task InitializeAsync()
         {
+            ConfigureSerilog();
+
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
                 // Try Elatec TWN4 first (auto-discovers USB readers).
@@ -89,6 +94,22 @@ namespace RFiDGear.HIL.Tests
         }
 
         // ── private helpers ──────────────────────────────────────────────────
+
+        private static void ConfigureSerilog()
+        {
+            var logDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "RFiDGear", "log");
+            Directory.CreateDirectory(logDir);
+
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.File(
+                    Path.Combine(logDir, "hil-log-.txt"),
+                    rollingInterval: RollingInterval.Day,
+                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}")
+                .CreateLogger();
+        }
 
         private async Task<bool> TryConnectReaderAsync(ReaderTypes readerType)
         {

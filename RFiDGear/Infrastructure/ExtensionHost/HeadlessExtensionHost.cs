@@ -1,8 +1,10 @@
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.FileAccess;
+using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Services.TaskExecution;
 
 using System;
+using System.Text;
 
 namespace RFiDGear.Infrastructure.ExtensionHost
 {
@@ -106,6 +108,27 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// Call this from the main application's reader polling loop.
         /// </summary>
         public void NotifyReaderStateChanged() => _reader.RaiseStateChanged();
+
+        /// <summary>
+        /// Returns a one-line-per-task summary of the last run's error levels and success flags.
+        /// Useful for diagnostic messages in test assertions.
+        /// </summary>
+        public string GetTaskErrorSummary()
+        {
+            var tasks = _project.SetupModel?.TaskCollection;
+            if (tasks == null || tasks.Count == 0)
+                return "(no tasks in collection)";
+
+            var sb = new StringBuilder();
+            int i = 0;
+            foreach (var item in tasks)
+            {
+                if (item is IGenericTask t)
+                    sb.AppendLine($"  task[{i}] index={t.CurrentTaskIndex} error={t.CurrentTaskErrorLevel} success={t.IsTaskCompletedSuccessfully}");
+                i++;
+            }
+            return sb.ToString();
+        }
 
         /// <inheritdoc/>
         public void Dispose()

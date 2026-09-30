@@ -17,8 +17,8 @@ namespace RFiDGear.HIL.Tests
         /// <summary>File size in bytes for the test data file.</summary>
         public const uint TestFileSize = 16;
 
-        /// <summary>Default key value for DES (8 bytes zero-padded).</summary>
-        public const string DefaultKeyDes = "0000000000000000";
+        /// <summary>Default key value for DES / 2K3DES (16 bytes zero-padded). DF_KEY_DES in this codebase is 2-key 3DES.</summary>
+        public const string DefaultKeyDes = "00000000000000000000000000000000";
 
         /// <summary>Default key value for AES and 3K3DES (16 bytes / 24 bytes zero).</summary>
         public const string DefaultKeyAes = "00000000000000000000000000000000";

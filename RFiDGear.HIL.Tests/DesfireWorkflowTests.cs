@@ -92,7 +92,9 @@ namespace RFiDGear.HIL.Tests
                     _fixture.Host!.Project.ReplaceTaskCollection(tasks);
                     var result = await _fixture.Host.Execution.ExecuteAllAsync();
 
-                    Assert.Equal(ExecutionOutcome.Success, result.Outcome);
+                    var diag = _fixture.Host.GetTaskErrorSummary();
+                    Assert.True(result.Outcome == ExecutionOutcome.Success,
+                        $"Outcome={result.Outcome} Failed={result.FailedTasks}/{result.TotalTasks} keyType={keyType}\n{diag}");
                     Assert.Equal(0, result.FailedTasks);
                 }
                 finally
@@ -127,9 +129,11 @@ namespace RFiDGear.HIL.Tests
                         HilConstants.TestAppId, keyType, defaultKey, keyType));
 
                 var createResult = await _fixture.Host.Execution.ExecuteAllAsync();
+                var createDiag = _fixture.Host.GetTaskErrorSummary();
                 _fixture.Host.Execution.ResetStatus();
 
-                Assert.Equal(ExecutionOutcome.Success, createResult.Outcome);
+                Assert.True(createResult.Outcome == ExecutionOutcome.Success,
+                    $"CreateApplication failed — keyType={keyType}\n{createDiag}");
 
                 // Delete
                 _fixture.Host.Project.ReplaceTaskCollection(
@@ -140,9 +144,11 @@ namespace RFiDGear.HIL.Tests
                         DesfireDeleteAuthMethod.ApplicationMasterKey0));
 
                 var deleteResult = await _fixture.Host.Execution.ExecuteAllAsync();
+                var deleteDiag = _fixture.Host.GetTaskErrorSummary();
                 _fixture.Host.Execution.ResetStatus();
 
-                Assert.Equal(ExecutionOutcome.Success, deleteResult.Outcome);
+                Assert.True(deleteResult.Outcome == ExecutionOutcome.Success,
+                    $"DeleteApplication failed — keyType={keyType}\n{deleteDiag}");
             });
         }
     }
