@@ -42,6 +42,8 @@ using RFiDGear.UI.MVVMDialogs.ViewModels;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Contracts;
+using RFiDGear.UI.UIExtensions;
+using RFiDGear.UI.UIExtensions.Interfaces;
 using System.ComponentModel.Composition;
 
 namespace RFiDGear.ViewModel
@@ -275,6 +277,88 @@ namespace RFiDGear.ViewModel
         public IRFiDGearExtensionHost ExtensionHost => extensionHost;
 
         #endregion Extension host
+
+        #region Application-level UI extensions
+
+        /// <summary>
+        /// Receives all <see cref="IUIExtension"/> exports from the MEF container.
+        /// The setter filters to <see cref="HostPlacement.Application"/> and builds
+        /// <see cref="ApplicationExtensionMenuItems"/>.
+        /// </summary>
+        [ImportMany()]
+        public Lazy<IUIExtension, IUIExtensionDetails>[] ApplicationExtensionItems
+        {
+            get => _applicationExtensionItems;
+            set
+            {
+                _applicationExtensionItems = (from g in value
+                                              where g.Metadata.HostPlacement == HostPlacement.Application
+                                              orderby g.Metadata.SortOrder, g.Metadata.Name
+                                              select g).ToArray();
+
+                _applicationExtensionMenuItems.Clear();
+                foreach (var ext in _applicationExtensionItems)
+                {
+                    var uri = ext.Metadata.Uri;
+                    var name = ext.Metadata.Name;
+                    _applicationExtensionMenuItems.Add(new ExtensionMenuItem(
+                        name,
+                        new RelayCommand(() => OpenApplicationExtension(uri, name))));
+                }
+
+                OnPropertyChanged(nameof(ApplicationExtensionItems));
+                OnPropertyChanged(nameof(HasApplicationExtensions));
+            }
+        }
+        private Lazy<IUIExtension, IUIExtensionDetails>[] _applicationExtensionItems = Array.Empty<Lazy<IUIExtension, IUIExtensionDetails>>();
+
+        private readonly ObservableCollection<ExtensionMenuItem> _applicationExtensionMenuItems = new ObservableCollection<ExtensionMenuItem>();
+
+        /// <summary>
+        /// Menu items for application-level extensions; bound to the Extensions menu in the main window.
+        /// </summary>
+        public ObservableCollection<ExtensionMenuItem> ApplicationExtensionMenuItems => _applicationExtensionMenuItems;
+
+        /// <summary>
+        /// True when at least one application-level extension is loaded; controls Extensions menu visibility.
+        /// </summary>
+        public bool HasApplicationExtensions => _applicationExtensionMenuItems.Count > 0;
+
+        private static void OpenApplicationExtension(string uri, string title)
+        {
+            var frame = new System.Windows.Controls.Frame
+            {
+                NavigationUIVisibility = System.Windows.Navigation.NavigationUIVisibility.Hidden
+            };
+            var window = new Window
+            {
+                Title = title ?? string.Empty,
+                Width = 900,
+                Height = 600,
+                Content = frame
+            };
+            frame.Source = new Uri(uri);
+            window.Show();
+        }
+
+        /// <summary>
+        /// Simple data object representing one application-level extension in the Extensions menu.
+        /// </summary>
+        public sealed class ExtensionMenuItem
+        {
+            /// <summary>Gets the display name shown in the menu.</summary>
+            public string Header { get; }
+            /// <summary>Gets the command that opens the extension view.</summary>
+            public ICommand Command { get; }
+
+            internal ExtensionMenuItem(string header, ICommand command)
+            {
+                Header = header;
+                Command = command;
+            }
+        }
+
+        #endregion Application-level UI extensions
 
         #region Localization
         [ExportViewModel("Culture")]

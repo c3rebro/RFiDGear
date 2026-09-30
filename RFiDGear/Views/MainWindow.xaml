@@ -56,6 +56,7 @@
     <Window.Resources>
         <dal:BindingProxy x:Key="proxy" Data="{Binding}" />
         <dal:ResourceLoader x:Key="Localization" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <ContextMenu x:Key="EmptySpaceMenu" ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Window}, Path=DataContext.EmptySpaceContextMenu}">
             <ContextMenu.ItemContainerStyle>
                 <Style TargetType="MenuItem">
@@ -557,6 +558,20 @@
                     </MenuItem>
                 </MenuItem>
                 <!--  Options  -->
+                <MenuItem
+                    VerticalAlignment="Top"
+                    VerticalContentAlignment="Center"
+                    Header="_Extensions"
+                    ItemsSource="{Binding ApplicationExtensionMenuItems}"
+                    Visibility="{Binding HasApplicationExtensions, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <MenuItem.ItemContainerStyle>
+                        <Style TargetType="MenuItem">
+                            <Setter Property="Header" Value="{Binding Header}" />
+                            <Setter Property="Command" Value="{Binding Command}" />
+                        </Style>
+                    </MenuItem.ItemContainerStyle>
+                </MenuItem>
+                <!--  Extensions  -->
                 <MenuItem
                     VerticalAlignment="Top"
                     VerticalContentAlignment="Center"

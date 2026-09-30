@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using RFiDGear.UI.UIExtensions;
 using RFiDGear.UI.UIExtensions.Interfaces;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using Xunit;
@@ -83,6 +84,8 @@ namespace RFiDGear.Tests
             public string Uri { get; }
 
             public int SortOrder => 0;
+
+            public HostPlacement HostPlacement => HostPlacement.CardTask;
         }
     }
 }

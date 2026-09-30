@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.Composition;
+﻿using RFiDGear.UI.UIExtensions;
 
 namespace RFiDGear.UI.UIExtensions.Interfaces
 {
@@ -12,6 +12,12 @@ namespace RFiDGear.UI.UIExtensions.Interfaces
         string Uri { get; }
 
         int SortOrder { get; }
+
+        /// <summary>
+        /// Host region the extension targets. Defaults to <see cref="UIExtensions.HostPlacement.CardTask"/>
+        /// for extensions compiled against earlier versions of the attribute.
+        /// </summary>
+        HostPlacement HostPlacement { get; }
     }
 
 }

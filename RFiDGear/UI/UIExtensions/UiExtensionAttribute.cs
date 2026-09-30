@@ -20,6 +20,11 @@ namespace RFiDGear.UI.UIExtensions
         public string Name { get; set; }
         public int SortOrder { get; set; }
         public string Uri { get; set; }
+        /// <summary>
+        /// Declares which host region this extension targets.
+        /// Defaults to <see cref="HostPlacement.CardTask"/> for backward compatibility.
+        /// </summary>
+        public HostPlacement HostPlacement { get; set; }
     }
 
 }

@@ -24,6 +24,7 @@ using RFiDGear.Infrastructure.Tasks;
 using Serilog;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
+using RFiDGear.UI.UIExtensions;
 using RFiDGear.UI.UIExtensions.Interfaces;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 namespace RFiDGear.ViewModel.TaskSetupViewModels
@@ -234,6 +235,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 items = (from g in value
+                         where g.Metadata.HostPlacement != HostPlacement.Application
                          orderby g.Metadata.SortOrder, g.Metadata.Name
                          select g).ToArray();
 
