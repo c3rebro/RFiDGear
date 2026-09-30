@@ -464,6 +464,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             SelectFirstVisibleTab();
         }
 
+        private void ApplyDeleteApplicationTabs()
+        {
+            if (SelectedDesfireDeleteAuthMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0)
+                SetTabAvailability(false, false, false, false, true, true, true);
+            else
+                SetTabAvailability(false, false, true, true, false, false, true);
+        }
+
         private void SelectFirstVisibleTab()
         {
             if (IsDesfirePICCAuthoringTabEnabled) SelectedTabIndex = 0;
@@ -797,7 +805,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         break;
 
                     case TaskType_MifareDesfireTask.DeleteApplication:
-                        SetTabAvailability(false, false, true, true, false, false, true);
+                        ApplyDeleteApplicationTabs();
                         break;
 
                     case TaskType_MifareDesfireTask.DeleteFile:
@@ -904,9 +912,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         [XmlIgnore]
         public bool ShowPiccMasterKeyCurrentSection => SelectedTaskType != TaskType_MifareDesfireTask.ReadAppSettings
-                                                       && SelectedTaskType != TaskType_MifareDesfireTask.CheckAppKeyCount
-                                                       && !(SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication
-                                                            && SelectedDesfireDeleteAuthMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0);
+                                                       && SelectedTaskType != TaskType_MifareDesfireTask.CheckAppKeyCount;
 
         /// <summary>
         /// Gets a value indicating whether the "Update Key Settings" edit button should be shown.
@@ -936,9 +942,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         [XmlIgnore]
         public bool ShowAppLevelCurrentPanel => SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings
-                                                || SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount
-                                                || (SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication
-                                                    && SelectedDesfireDeleteAuthMethod == DesfireDeleteAuthMethod.ApplicationMasterKey0);
+                                                || SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount;
 
         /// <summary>
         /// Gets a value indicating whether the expected key count input and compare button should be shown.
@@ -1426,8 +1430,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 selectedDesfireDeleteAuthMethod = value;
                 OnPropertyChanged(nameof(SelectedDesfireDeleteAuthMethod));
-                OnPropertyChanged(nameof(ShowPiccMasterKeyCurrentSection));
-                OnPropertyChanged(nameof(ShowAppLevelCurrentPanel));
+                if (SelectedTaskType == TaskType_MifareDesfireTask.DeleteApplication)
+                    ApplyDeleteApplicationTabs();
             }
         }
         private DesfireDeleteAuthMethod selectedDesfireDeleteAuthMethod = DesfireDeleteAuthMethod.PiccMasterKey;

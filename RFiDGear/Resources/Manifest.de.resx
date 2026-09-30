@@ -798,10 +798,10 @@ Wird benötigt von:
     <value>Authentifizierungsmethode</value>
   </data>
   <data name="ENUM.DesfireDeleteAuthMethod.PiccMasterKey" xml:space="preserve">
-    <value>PICC-Hauptschlüssel</value>
+    <value>PICC Masterkey</value>
   </data>
   <data name="ENUM.DesfireDeleteAuthMethod.ApplicationMasterKey0" xml:space="preserve">
-    <value>Anwendungs-Hauptschlüssel 0</value>
+    <value>App Masterkey 0</value>
   </data>
   <data name="buttonContentMifareDesfireKeyChangeAuthenticate" xml:space="preserve">
     <value>Mit App Schlüssel Authentifizieren</value>
