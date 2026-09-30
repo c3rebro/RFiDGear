@@ -92,7 +92,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     await Initialize();
                 }
 
-                else if (readerDevice != null)
+                if (readerDevice != null)
                 {
 
                     if (!readerDevice.IsConnected)
