@@ -18,6 +18,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         private readonly TaskExecHostImpl _execution;
         private readonly ReaderHostImpl _reader;
         private readonly NullAutoModeHost _autoMode;
+        private readonly AppContextImpl _appContext;
         private bool _disposed;
 
         /// <summary>
@@ -29,7 +30,11 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public HeadlessExtensionHost(string readerName = "")
         {
             var dbRW = new DatabaseReaderWriter();
-            _project = new ProjectHostImpl(dbRW);
+
+            // Lazy execution-running check: _execution is assigned after _project, so we capture
+            // it via a local ref to avoid a forward reference at construction time.
+            TaskExecHostImpl? execRef = null;
+            _project = new ProjectHostImpl(dbRW, isExecutionRunning: () => execRef?.IsRunning ?? false);
 
             var timerReadChip = new NullDispatcherTimerAdapter();
             var timerTimeout = new NullDispatcherTimerAdapter();
@@ -39,8 +44,11 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 timerTimeout);
 
             _execution = new TaskExecHostImpl(execService, _project);
+            execRef = _execution;
+
             _reader = new ReaderHostImpl(readerName);
             _autoMode = new NullAutoModeHost();
+            _appContext = new AppContextImpl();
         }
 
         /// <summary>
@@ -55,12 +63,17 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             ITaskExecutionService execService,
             string readerName)
         {
-            _project = new ProjectHostImpl(dbRW ?? throw new ArgumentNullException(nameof(dbRW)));
+            TaskExecHostImpl? execRef = null;
+            _project = new ProjectHostImpl(
+                dbRW ?? throw new ArgumentNullException(nameof(dbRW)),
+                isExecutionRunning: () => execRef?.IsRunning ?? false);
             _execution = new TaskExecHostImpl(
                 execService ?? throw new ArgumentNullException(nameof(execService)),
                 _project);
+            execRef = _execution;
             _reader = new ReaderHostImpl(readerName ?? string.Empty);
             _autoMode = new NullAutoModeHost();
+            _appContext = new AppContextImpl();
         }
 
         /// <summary>
@@ -80,15 +93,19 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             Action notifyCollectionReplaced,
             string readerName)
         {
+            TaskExecHostImpl? execRef = null;
             _project = new ProjectHostImpl(
                 dbRW ?? throw new ArgumentNullException(nameof(dbRW)),
                 liveModelAccessor ?? throw new ArgumentNullException(nameof(liveModelAccessor)),
-                notifyCollectionReplaced ?? (() => { }));
+                notifyCollectionReplaced ?? (() => { }),
+                isExecutionRunning: () => execRef?.IsRunning ?? false);
             _execution = new TaskExecHostImpl(
                 execService ?? throw new ArgumentNullException(nameof(execService)),
                 _project);
+            execRef = _execution;
             _reader = new ReaderHostImpl(readerName ?? string.Empty);
             _autoMode = new NullAutoModeHost();
+            _appContext = new AppContextImpl();
         }
 
         /// <inheritdoc/>
@@ -102,6 +119,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
         /// <inheritdoc/>
         public IAutoModeHost AutoMode => _autoMode;
+
+        /// <inheritdoc/>
+        public IAppContext AppContext => _appContext;
 
         /// <summary>
         /// Notifies the reader host that connection or card state may have changed.

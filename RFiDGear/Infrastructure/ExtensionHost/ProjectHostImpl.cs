@@ -5,6 +5,8 @@ using RFiDGear.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RFiDGear.Infrastructure.ExtensionHost
@@ -15,23 +17,21 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     internal sealed class ProjectHostImpl : IProjectHost
     {
         private readonly DatabaseReaderWriter _dbRW;
-
-        // When set, this overrides dbRW.SetupModel as the live task collection source.
-        // Used in the main-app context where ChipTasks (taskHandler) is the authoritative model.
         private readonly Func<ChipTaskHandlerModel>? _liveModelAccessor;
-
-        // Optional notification callback for when ReplaceTaskCollection is called from outside.
         private readonly Action? _notifyCollectionReplaced;
-
+        private readonly Func<bool>? _isExecutionRunning;
         private string? _currentPath;
 
         /// <summary>
         /// Headless constructor: the live model is always <see cref="DatabaseReaderWriter.SetupModel"/>.
         /// Suitable for HIL tests and non-UI scenarios.
         /// </summary>
-        public ProjectHostImpl(DatabaseReaderWriter dbRW)
+        /// <param name="dbRW">Initialized database reader/writer.</param>
+        /// <param name="isExecutionRunning">Optional delegate that returns <c>true</c> when a run is in progress.</param>
+        public ProjectHostImpl(DatabaseReaderWriter dbRW, Func<bool>? isExecutionRunning = null)
         {
             _dbRW = dbRW ?? throw new ArgumentNullException(nameof(dbRW));
+            _isExecutionRunning = isExecutionRunning;
         }
 
         /// <summary>
@@ -40,17 +40,18 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// </summary>
         /// <param name="dbRW">Used for load and save operations.</param>
         /// <param name="liveModelAccessor">Returns the authoritative live <see cref="ChipTaskHandlerModel"/>.</param>
-        /// <param name="notifyCollectionReplaced">
-        /// Called after <see cref="ReplaceTaskCollection"/> so the host VM can propagate the change to the UI.
-        /// </param>
+        /// <param name="notifyCollectionReplaced">Called after <see cref="ReplaceTaskCollection"/> so the host VM can propagate the change to the UI.</param>
+        /// <param name="isExecutionRunning">Delegate that returns <c>true</c> when a run is in progress; used to reject load-during-run.</param>
         public ProjectHostImpl(
             DatabaseReaderWriter dbRW,
             Func<ChipTaskHandlerModel> liveModelAccessor,
-            Action notifyCollectionReplaced)
+            Action notifyCollectionReplaced,
+            Func<bool>? isExecutionRunning = null)
         {
             _dbRW = dbRW ?? throw new ArgumentNullException(nameof(dbRW));
             _liveModelAccessor = liveModelAccessor ?? throw new ArgumentNullException(nameof(liveModelAccessor));
             _notifyCollectionReplaced = notifyCollectionReplaced;
+            _isExecutionRunning = isExecutionRunning;
         }
 
         /// <inheritdoc/>
@@ -64,7 +65,57 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             _liveModelAccessor != null ? _liveModelAccessor() : _dbRW.SetupModel;
 
         /// <inheritdoc/>
-        public event EventHandler ProjectChanged;
+        public event EventHandler? ProjectChanged;
+
+        /// <inheritdoc/>
+        public async Task<Contracts.ProjectOpenResult> LoadAsync(string path, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.PathNotFound);
+
+            if (_isExecutionRunning?.Invoke() == true)
+                return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Busy);
+
+            if (!File.Exists(path))
+                return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.PathNotFound);
+
+            ct.ThrowIfCancellationRequested();
+
+            try
+            {
+                await _dbRW.ReadDatabase(path).ConfigureAwait(false);
+                _currentPath = path;
+                ProjectChanged?.Invoke(this, EventArgs.Empty);
+                return Contracts.ProjectOpenResult.Ok(path, TaskCount);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (NotSupportedException)
+            {
+                return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.UnsupportedFormat);
+            }
+            catch
+            {
+                return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Unknown);
+            }
+        }
+
+        /// <inheritdoc/>
+#pragma warning disable CS0618
+        public void Load(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException("Path must not be empty.", nameof(path));
+
+            // Blocks synchronously. On a WPF STA thread this can deadlock if ReadDatabase
+            // dispatches back to the UI thread. Use LoadAsync() from WPF code instead.
+            Task.Run(() => _dbRW.ReadDatabase(path)).GetAwaiter().GetResult();
+            _currentPath = path;
+            ProjectChanged?.Invoke(this, EventArgs.Empty);
+        }
+#pragma warning restore CS0618
 
         /// <inheritdoc/>
         public void New()
@@ -72,20 +123,6 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             _dbRW.SetupModel = new ChipTaskHandlerModel();
             _dbRW.TreeViewModel = new ObservableCollection<ViewModel.RFiDChipParentLayerViewModel>();
             _currentPath = null;
-            ProjectChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <inheritdoc/>
-        public void Load(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-                throw new ArgumentException("Path must not be empty.", nameof(path));
-
-            // ReadDatabase is async but the headless host blocks synchronously via GetAwaiter().
-            // Intentional: extensions and tests call Load() from non-UI threads where
-            // blocking is acceptable and a WPF SynchronizationContext is not present.
-            Task.Run(() => _dbRW.ReadDatabase(path)).GetAwaiter().GetResult();
-            _currentPath = path;
             ProjectChanged?.Invoke(this, EventArgs.Empty);
         }
 
@@ -116,7 +153,6 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             var model = SetupModel ?? new ChipTaskHandlerModel();
             model.TaskCollection = collection;
 
-            // In headless mode, also keep dbRW.SetupModel in sync.
             if (_liveModelAccessor == null)
                 _dbRW.SetupModel = model;
 

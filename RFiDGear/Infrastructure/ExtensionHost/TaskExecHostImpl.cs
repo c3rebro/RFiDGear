@@ -30,20 +30,27 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public bool IsRunning => _running != 0;
 
         /// <inheritdoc/>
-        public event EventHandler<ExecResult> ExecutionCompleted;
+        public event EventHandler<ExecResult>? ExecutionCompleted;
 
         /// <inheritdoc/>
-        public async Task<ExecResult> ExecuteAllAsync(CancellationToken ct = default)
+        public async Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, CancellationToken ct = default)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+
             if (Interlocked.CompareExchange(ref _running, 1, 0) != 0)
                 throw new InvalidOperationException("An execution is already in progress.");
 
+            var startedAt = DateTimeOffset.UtcNow;
             try
             {
-                var request = new TaskExecutionRequest
+                var variablesFromArgs = new Dictionary<string, string>(
+                    request.Variables,
+                    StringComparer.OrdinalIgnoreCase);
+
+                var taskRequest = new TaskExecutionRequest
                 {
                     TaskHandler = _project.SetupModel,
-                    VariablesFromArgs = new Dictionary<string, string>(),
+                    VariablesFromArgs = variablesFromArgs,
                     UpdateSelectedSetupViewModel = _ => { },
                     UpdateReaderBusy = _ => { },
                     NotifyTreeViewChanged = () => { },
@@ -51,11 +58,22 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     RunSelectedOnly = false,
                 };
 
-                var rawResult = await _execService.ExecuteOnceAsync(request, ct).ConfigureAwait(false);
+                var rawResult = await _execService.ExecuteOnceAsync(taskRequest, ct).ConfigureAwait(false);
 
-                var outcome = Map(rawResult.TerminalStatus);
-                var failedCount = CountFailed(_project.SetupModel?.TaskCollection);
-                var execResult = new ExecResult(outcome, _project.TaskCount, failedCount);
+                var completedAt = DateTimeOffset.UtcNow;
+                var outcome = MapOutcome(rawResult.TerminalStatus);
+                var taskOutcomes = BuildTaskOutcomes(_project.SetupModel?.TaskCollection);
+                var failedCount = taskOutcomes.Count(t => t.IsSuccess == false);
+                var runId = rawResult.RunId ?? Guid.NewGuid().ToString("N");
+
+                var execResult = new ExecResult(
+                    runId,
+                    outcome,
+                    _project.TaskCount,
+                    failedCount,
+                    startedAt,
+                    completedAt,
+                    taskOutcomes);
 
                 ExecutionCompleted?.Invoke(this, execResult);
                 return execResult;
@@ -65,6 +83,12 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 Interlocked.Exchange(ref _running, 0);
             }
         }
+
+        /// <inheritdoc/>
+#pragma warning disable CS0618 // implementing the obsolete interface member
+        public Task<ExecResult> ExecuteAllAsync(CancellationToken ct = default) =>
+            ExecuteAllAsync(ExecutionRequest.Empty, ct);
+#pragma warning restore CS0618
 
         /// <inheritdoc/>
         public void ResetStatus()
@@ -79,17 +103,37 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             }
         }
 
-        private static ExecutionOutcome Map(TaskLoopTerminalStatus? status) => status switch
+        // ── private helpers ──────────────────────────────────────────────────
+
+        private static ExecutionOutcome MapOutcome(TaskLoopTerminalStatus? status) => status switch
         {
-            TaskLoopTerminalStatus.Success                        => ExecutionOutcome.Success,
+            TaskLoopTerminalStatus.Success                          => ExecutionOutcome.Success,
             TaskLoopTerminalStatus.CompletedWithIntentionalFailures => ExecutionOutcome.CompletedWithIntentionalFailures,
-            _                                                    => ExecutionOutcome.Failure,
+            _                                                       => ExecutionOutcome.Failure,
         };
 
-        private static int CountFailed(System.Collections.ObjectModel.ObservableCollection<object>? collection)
+        private static IReadOnlyList<TaskOutcome> BuildTaskOutcomes(
+            System.Collections.ObjectModel.ObservableCollection<object>? collection)
         {
-            if (collection == null) return 0;
-            return collection.OfType<IGenericTask>().Count(t => t.IsTaskCompletedSuccessfully == false);
+            if (collection == null || collection.Count == 0)
+                return Array.Empty<TaskOutcome>();
+
+            var outcomes = new List<TaskOutcome>(collection.Count);
+            int position = 0;
+            foreach (var item in collection)
+            {
+                if (item is IGenericTask t)
+                {
+                    outcomes.Add(new TaskOutcome(
+                        position,
+                        t.CurrentTaskIndex ?? position.ToString(),
+                        item.GetType().Name,
+                        t.IsTaskCompletedSuccessfully,
+                        t.CurrentTaskErrorLevel.ToString()));
+                }
+                position++;
+            }
+            return outcomes;
         }
     }
 }
