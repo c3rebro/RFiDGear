@@ -869,6 +869,45 @@ namespace RFiDGear.Tests
             });
         }
 
+        [Fact]
+        public async Task DeleteApplicationCommand_WhenAuthMethodIsApplicationKey_UsesAppMasterKey()
+        {
+            await RunOnStaThreadAsync(async () =>
+            {
+                var fakeProvider = new FakeElatecNetProvider();
+                var viewModel = new MifareDesfireSetupViewModel
+                {
+                    AppNumberNew = "1",
+                    DesfireMasterKeyCurrent = "11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11",
+                    SelectedDesfireMasterKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_3K3DES,
+                    DesfireAppKeyCurrent = "22 22 22 22 22 22 22 22 22 22 22 22 22 22 22 22",
+                    SelectedDesfireAppKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_AES,
+                    SelectedDesfireDeleteAuthMethod = DesfireDeleteAuthMethod.ApplicationMasterKey0
+                };
+
+                var originalReader = ReaderDevice.Reader;
+                var originalInstance = GetReaderDeviceInstance();
+                try
+                {
+                    ReaderDevice.Reader = ReaderTypes.Elatec;
+                    SetReaderDeviceInstance(fakeProvider);
+
+                    await viewModel.DeleteSignleCardApplicationCommand.ExecuteAsync(null);
+
+                    Assert.Null(fakeProvider.LastAuthKey);
+                    Assert.Equal(viewModel.DesfireAppKeyCurrent, fakeProvider.LastDeleteApplicationKey);
+                    Assert.Equal(DESFireKeyType.DF_KEY_AES, fakeProvider.LastDeleteApplicationKeyType);
+                    Assert.Equal((uint)1, fakeProvider.LastDeletedApplicationId);
+                    Assert.Equal(1, fakeProvider.DeleteApplicationCalls);
+                }
+                finally
+                {
+                    ReaderDevice.Reader = originalReader;
+                    SetReaderDeviceInstance(originalInstance);
+                }
+            });
+        }
+
         private static ReaderDevice GetReaderDeviceInstance()
         {
             return typeof(ReaderDevice).GetField("instance", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) as ReaderDevice;
@@ -898,6 +937,10 @@ namespace RFiDGear.Tests
             public int CreateFileCalls { get; private set; }
             public string LastCreateApplicationKey { get; private set; }
             public int CreateApplicationCalls { get; private set; }
+            public string LastDeleteApplicationKey { get; private set; }
+            public DESFireKeyType LastDeleteApplicationKeyType { get; private set; }
+            public uint LastDeletedApplicationId { get; private set; }
+            public int DeleteApplicationCalls { get; private set; }
 
             public override Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID = 0)
             {
@@ -997,6 +1040,16 @@ namespace RFiDGear.Tests
                 return Task.FromResult(OperationResult.Success(
                     operation: nameof(CreateMifareDesfireApplication),
                     wasAuthenticated: authenticateToPICCFirst));
+            }
+
+            public override Task<ERROR> DeleteMifareDesfireApplication(string applicationMasterKey,
+                DESFireKeyType keyType, uint appID, DesfireDeleteAuthMethod authMethod = DesfireDeleteAuthMethod.PiccMasterKey)
+            {
+                LastDeleteApplicationKey = applicationMasterKey;
+                LastDeleteApplicationKeyType = keyType;
+                LastDeletedApplicationId = appID;
+                DeleteApplicationCalls++;
+                return Task.FromResult(ERROR.NoError);
             }
         }
 

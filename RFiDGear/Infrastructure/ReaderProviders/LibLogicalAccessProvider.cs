@@ -1930,9 +1930,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         }
                         catch (Exception e)
                         {
-                            if (e.Message != "" && e.Message.Contains("status does not allow the requested command"))
+                            if (e.Message != null && e.Message.Contains("status does not allow the requested command"))
                                 return ERROR.AuthFailure;
-                            return ERROR.AuthFailure;
+                            return ERROR.TransportError;
                         }
                     }
                     return ERROR.TransportError;
