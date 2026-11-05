@@ -268,6 +268,62 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task StructuredLogs_CorrelateKeyFreeFileSettingsComparisonWithRun()
+        {
+            var logger = new CapturingTaskExecutionLogger();
+            var task = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "21",
+                SelectedTaskType = "CheckFileSettings",
+                FileNumberCurrentAsInt = 2,
+                FileSizeCurrentAsInt = 16,
+                LastFileSettingsComparison = new DesfireFileSettingsComparison
+                {
+                    ApplicationId = 1,
+                    FileNumber = 2,
+                    ExpectedFileType = 0,
+                    ActualFileType = 0,
+                    ExpectedFileSize = 16,
+                    ActualFileSize = 16,
+                    ExpectedCommunicationMode = 3,
+                    ActualCommunicationMode = 3,
+                    ExpectedAccessRights0 = 0x10,
+                    ActualAccessRights0 = 0x10,
+                    ExpectedAccessRights1 = 0x32,
+                    ActualAccessRights1 = 0x32,
+                    Matches = true
+                }
+            };
+
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, task, ct =>
+                {
+                    task.CurrentTaskErrorLevel = ERROR.NoError;
+                    task.IsTaskCompletedSuccessfully = true;
+                    return Task.CompletedTask;
+                })
+            };
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await BuildService(logger).ExecuteOnceAsync(BuildRequest(descriptors));
+            });
+
+            var outcome = Assert.Single(logger.Entries.Where(entry => entry.Stage == "Task.Outcome"));
+            using var document = JsonDocument.Parse(outcome.DetailsJson);
+            var comparison = document.RootElement
+                .GetProperty("IO")
+                .GetProperty("FileSettingsComparison");
+
+            Assert.False(string.IsNullOrWhiteSpace(document.RootElement.GetProperty("RunId").GetString()));
+            Assert.True(comparison.GetProperty("Matches").GetBoolean());
+            Assert.Equal(0x32, comparison.GetProperty("ActualAccessRights1").GetInt32());
+            Assert.DoesNotContain("Key", comparison.GetRawText(), StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Payload", comparison.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
         public async Task StructuredLogs_RecordSanitizedTaskExceptionAndFailureSummary()
         {
             const string secret = "FFEEDDCCBBAA99887766554433221100";
@@ -357,6 +413,9 @@ namespace RFiDGear.Tests
             public string SelectedTaskType { get; set; }
             public string SelectedTaskDescription { get; set; }
             public string DesfireAppKeyCurrent { get; set; }
+            public int FileNumberCurrentAsInt { get; set; }
+            public int FileSizeCurrentAsInt { get; set; }
+            public DesfireFileSettingsComparison? LastFileSettingsComparison { get; set; }
         }
 
         private sealed class StubReaderDeviceProvider : IReaderDeviceProvider
