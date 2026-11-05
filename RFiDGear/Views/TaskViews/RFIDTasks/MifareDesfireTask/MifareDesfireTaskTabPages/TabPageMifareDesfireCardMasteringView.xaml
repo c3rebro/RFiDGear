@@ -163,7 +163,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
                         Visibility="{Binding ShowPiccMasterKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
-                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireAppSetupKeySettings'}">
+                        Header="{Binding KeySettingsPanelHeader}">
                         <StackPanel Margin="8,4,8,4">
                             <CheckBox
                                 Margin="0,4,0,4"

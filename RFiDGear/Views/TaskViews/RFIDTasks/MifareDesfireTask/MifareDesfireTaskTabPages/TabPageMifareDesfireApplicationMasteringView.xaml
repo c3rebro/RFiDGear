@@ -139,7 +139,7 @@
                         Margin="8,8,8,8"
                         VerticalAlignment="Stretch"
                         Visibility="{Binding ShowAppKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
-                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelMifareDesfireAppSetupKeySettings'}">
+                        Header="{Binding KeySettingsPanelHeader}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="auto" />
@@ -252,7 +252,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Command="{Binding ChangeAppKeySettingsCommand}"
-                        Visibility="{Binding ShowAppKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
+                        Visibility="{Binding ShowAppKeySettingsEditButton, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfireKeyChangeUpdateKeySettings'}" />
                     <Button
                         Grid.Row="6"

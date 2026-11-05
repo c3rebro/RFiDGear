@@ -347,15 +347,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// <param name="masterKeyHex">
         /// The master key value (key 0) for the selected scope (PICC master key when <paramref name="appId"/> is 0,
         /// application master key when <paramref name="appId"/> &gt; 0).
-        /// This is used when <paramref name="keySettings"/> requires authenticating with key 0 (master key).
+        /// This is used when <paramref name="currentKeySettings"/> requires authenticating with key 0 (master key).
         /// </param>
         /// <param name="masterKeyType">
         /// Cryptographic type of the master key value in <paramref name="masterKeyHex"/>.
         /// </param>
-        /// <param name="keySettings">
-        /// The (current) key settings for the selected scope, used to determine which key number must be authenticated
-        /// before changing keys (e.g., master-key policy vs self-key policy).
-        /// This value should reflect the card/app configuration, not an intended "new settings" value.
+        /// <param name="currentKeySettings">
+        /// Current key settings of the selected PICC or application. They determine which key must authorize
+        /// ChangeKey and may be required by a provider to construct the command.
+        /// This is context only: implementations must not modify key settings here. Key settings are changed
+        /// exclusively through <see cref="ChangeMifareDesfireApplicationKeySettings"/>.
         /// </param>
         /// <returns>
         /// <see cref="ERROR.NoError"/> on success; otherwise an <see cref="ERROR"/> describing the failure.
@@ -369,7 +370,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             byte newTargetKeyVersion,
             string masterKeyHex,
             DESFireKeyType masterKeyType,
-            AccessControl.DESFireKeySettings keySettings);
+            AccessControl.DESFireKeySettings currentKeySettings);
 
         /// <summary>
         /// Updates DESFire key settings without changing key material. Implementations must authenticate with key 0 of
