@@ -3577,6 +3577,16 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                                 if (result == ERROR.NoError)
                                 {
+                                    result = await VerifyChangedApplicationKeyAsync(
+                                        device,
+                                        0,
+                                        0,
+                                        DesfireMasterKeyTarget,
+                                        SelectedDesfireMasterKeyEncryptionTypeTarget);
+                                }
+
+                                if (result == ERROR.NoError)
+                                {
                                     StatusText += string.Format("{0}: Keychange Successfull\n", DateTime.Now);
                                     CurrentTaskErrorLevel = result;
                                     await UpdateReaderStatusCommand.ExecuteAsync(false);
