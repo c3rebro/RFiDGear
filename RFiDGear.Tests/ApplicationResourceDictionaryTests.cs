@@ -7,6 +7,15 @@ using Xunit;
 
 namespace RFiDGear.Tests
 {
+    /// <summary>
+    /// Isolates all tests that create or depend on a WPF Application singleton so they do not
+    /// run concurrently with tests that call DatabaseReaderWriter (which checks Application.Current
+    /// to decide whether to use the WPF dispatcher in ExecuteOnStaThread).
+    /// </summary>
+    [CollectionDefinition("WpfApplication", DisableParallelization = true)]
+    public class WpfApplicationCollection { }
+
+    [Collection("WpfApplication")]
     public class ApplicationResourceDictionaryTests
     {
         [Fact]

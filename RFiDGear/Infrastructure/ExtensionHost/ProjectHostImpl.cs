@@ -2,6 +2,7 @@
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Models;
+using RFiDGear.ViewModel;
 
 using System;
 using System.Collections.Generic;
@@ -18,9 +19,18 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     internal sealed class ProjectHostImpl : IProjectHost
     {
         private readonly DatabaseReaderWriter _dbRW;
+        private readonly ExtensionOperationCoordinator _coordinator;
         private readonly Func<ChipTaskHandlerModel>? _liveModelAccessor;
-        private readonly Action? _notifyCollectionReplaced;
-        private readonly Func<bool>? _isExecutionRunning;
+
+        // Dispatches an Action on the thread that owns bound UI collections
+        // (WPF dispatcher in main-app mode, inline in headless mode).
+        private readonly Func<Action, Task> _dispatch;
+
+        // Called inside the dispatched commit to sync the loaded model into the live app state.
+        // Receives the newly deserialized task model and tree collection.
+        // null in headless mode (we just update _dbRW directly).
+        private readonly Action<ChipTaskHandlerModel, ObservableCollection<RFiDChipParentLayerViewModel>>? _applyToLiveApp;
+
         private string? _currentPath;
 
         /// <summary>
@@ -28,34 +38,44 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// Suitable for HIL tests and non-UI scenarios.
         /// </summary>
         /// <param name="dbRW">Initialized database reader/writer.</param>
-        /// <param name="isExecutionRunning">Optional delegate that returns <c>true</c> when a run is in progress.</param>
-        public ProjectHostImpl(DatabaseReaderWriter dbRW, Func<bool>? isExecutionRunning = null)
+        /// <param name="coordinator">Shared admission gate; prevents load/execute races.</param>
+        public ProjectHostImpl(DatabaseReaderWriter dbRW, ExtensionOperationCoordinator coordinator)
         {
             _dbRW = dbRW ?? throw new ArgumentNullException(nameof(dbRW));
-            _isExecutionRunning = isExecutionRunning;
+            _coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
+            _dispatch = action => { action(); return Task.CompletedTask; };
         }
 
         /// <summary>
-        /// Main-app constructor: <paramref name="liveModelAccessor"/> always returns the current
-        /// <c>taskHandler</c> field, independent of any <c>DatabaseReaderWriter.SetupModel</c> state.
-        /// After a successful <see cref="LoadAsync"/>, the task collection from the newly read
-        /// <see cref="DatabaseReaderWriter.SetupModel"/> is copied into the live model so that the
-        /// task execution host immediately sees the updated tasks.
+        /// Main-app constructor: the live model is the <paramref name="liveModelAccessor"/> delegate's result.
+        /// Loaded projects are committed through <paramref name="dispatch"/> so WPF-bound collections are
+        /// updated on the UI thread.
         /// </summary>
         /// <param name="dbRW">Used for load and save operations.</param>
-        /// <param name="liveModelAccessor">Returns the authoritative live <see cref="ChipTaskHandlerModel"/>.</param>
-        /// <param name="notifyCollectionReplaced">Called after task-collection sync so the host VM can propagate the change to the UI.</param>
-        /// <param name="isExecutionRunning">Delegate that returns <c>true</c> when a run is in progress; used to reject load-during-run.</param>
+        /// <param name="coordinator">Shared admission gate; prevents load/execute races.</param>
+        /// <param name="liveModelAccessor">Always returns the authoritative live <see cref="ChipTaskHandlerModel"/>.</param>
+        /// <param name="dispatch">
+        /// Invokes the supplied <see cref="Action"/> on the WPF dispatcher thread and returns a <see cref="Task"/>
+        /// that completes when the action has finished. In the main application, pass
+        /// <c>action => Application.Current.Dispatcher.InvokeAsync(action).Task</c>.
+        /// </param>
+        /// <param name="applyToLiveApp">
+        /// Called inside <paramref name="dispatch"/> after a successful read to apply the loaded
+        /// <see cref="ChipTaskHandlerModel"/> and tree collection to live application state
+        /// (task collection, <c>TreeViewParentNodes</c>, property notifications, etc.).
+        /// </param>
         public ProjectHostImpl(
             DatabaseReaderWriter dbRW,
+            ExtensionOperationCoordinator coordinator,
             Func<ChipTaskHandlerModel> liveModelAccessor,
-            Action notifyCollectionReplaced,
-            Func<bool>? isExecutionRunning = null)
+            Func<Action, Task> dispatch,
+            Action<ChipTaskHandlerModel, ObservableCollection<RFiDChipParentLayerViewModel>> applyToLiveApp)
         {
             _dbRW = dbRW ?? throw new ArgumentNullException(nameof(dbRW));
+            _coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
             _liveModelAccessor = liveModelAccessor ?? throw new ArgumentNullException(nameof(liveModelAccessor));
-            _notifyCollectionReplaced = notifyCollectionReplaced;
-            _isExecutionRunning = isExecutionRunning;
+            _dispatch = dispatch ?? throw new ArgumentNullException(nameof(dispatch));
+            _applyToLiveApp = applyToLiveApp ?? throw new ArgumentNullException(nameof(applyToLiveApp));
         }
 
         /// <inheritdoc/>
@@ -77,61 +97,72 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             if (string.IsNullOrWhiteSpace(path))
                 return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.PathNotFound);
 
-            if (_isExecutionRunning?.Invoke() == true)
-                return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Busy);
-
             if (!File.Exists(path))
                 return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.PathNotFound);
 
             ct.ThrowIfCancellationRequested();
 
-            DatabaseReaderWriter.DatabaseReadResult result;
+            // Atomically reserve the load slot. Fails immediately if load or execution is in progress.
+            if (!_coordinator.TryBeginLoad())
+                return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Busy);
+
             try
             {
-                result = await _dbRW.ReadDatabase(path).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (NotSupportedException)
-            {
-                return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.UnsupportedFormat);
-            }
-            catch
-            {
-                return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Unknown);
-            }
+                // Read into a temporary DatabaseReaderWriter so that a parsing failure leaves
+                // the current project (SetupModel, TreeViewModel, _currentPath) fully intact.
+                var tempDbRW = new DatabaseReaderWriter();
+                DatabaseReaderWriter.DatabaseReadResult result;
 
-            if (!result.Success)
-            {
-                // IsSupportedVersion=false means the manifest version is newer than supported.
-                return !result.IsSupportedVersion
-                    ? Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.UnsupportedFormat)
-                    : Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Unknown);
-            }
-
-            var canonicalPath = Path.GetFullPath(path);
-            _currentPath = canonicalPath;
-
-            // In main-app mode, copy the loaded tasks into the live model so that the execution
-            // host sees the updated collection. The normal MWViewModel load flow does this copy
-            // explicitly; we replicate it here so extension-triggered loads are consistent.
-            if (_liveModelAccessor != null)
-            {
-                var liveModel = _liveModelAccessor();
-                if (liveModel != null)
+                try
                 {
-                    var loaded = _dbRW.SetupModel?.TaskCollection;
-                    liveModel.TaskCollection = loaded != null
-                        ? new ObservableCollection<object>(loaded)
-                        : new ObservableCollection<object>();
+                    result = await tempDbRW.ReadDatabase(path).ConfigureAwait(false);
                 }
-            }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (NotSupportedException)
+                {
+                    return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.UnsupportedFormat);
+                }
+                catch
+                {
+                    return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Unknown);
+                }
 
-            _notifyCollectionReplaced?.Invoke();
-            ProjectChanged?.Invoke(this, EventArgs.Empty);
-            return Contracts.ProjectOpenResult.Ok(canonicalPath, TaskCount);
+                ct.ThrowIfCancellationRequested();
+
+                // Check version before success: a newer-manifest project may parse without error
+                // but still be incompatible. These are distinct conditions.
+                if (!result.IsSupportedVersion)
+                    return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.UnsupportedFormat);
+
+                if (!result.Success)
+                    return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Unknown);
+
+                var canonicalPath = Path.GetFullPath(path);
+
+                // Commit atomically on the correct thread. In main-app mode this is the WPF
+                // dispatcher, keeping ObservableCollection mutations on the UI thread.
+                await _dispatch(() =>
+                {
+                    // Keep the backing store in sync regardless of mode.
+                    _dbRW.SetupModel = tempDbRW.SetupModel;
+                    _dbRW.TreeViewModel = tempDbRW.TreeViewModel;
+                    _currentPath = canonicalPath;
+
+                    // In main-app mode, push task collection and tree into bound properties.
+                    _applyToLiveApp?.Invoke(tempDbRW.SetupModel, tempDbRW.TreeViewModel);
+
+                    ProjectChanged?.Invoke(this, EventArgs.Empty);
+                }).ConfigureAwait(false);
+
+                return Contracts.ProjectOpenResult.Ok(canonicalPath, TaskCount);
+            }
+            finally
+            {
+                _coordinator.EndLoad();
+            }
         }
 
         /// <inheritdoc/>
@@ -153,7 +184,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public void New()
         {
             _dbRW.SetupModel = new ChipTaskHandlerModel();
-            _dbRW.TreeViewModel = new ObservableCollection<ViewModel.RFiDChipParentLayerViewModel>();
+            _dbRW.TreeViewModel = new ObservableCollection<RFiDChipParentLayerViewModel>();
             _currentPath = null;
             ProjectChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -188,7 +219,6 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             if (_liveModelAccessor == null)
                 _dbRW.SetupModel = model;
 
-            _notifyCollectionReplaced?.Invoke();
             ProjectChanged?.Invoke(this, EventArgs.Empty);
         }
     }

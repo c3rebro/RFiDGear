@@ -210,9 +210,27 @@ namespace RFiDGear.ViewModel
             extensionHost = new HeadlessExtensionHost(
                 databaseReaderWriter,
                 taskExecutionService,
-                () => taskHandler,
-                () => OnPropertyChanged(nameof(ChipTasks)),
-                string.Empty,
+                liveModelAccessor: () => taskHandler,
+                dispatch: action => Application.Current.Dispatcher.InvokeAsync(action).Task,
+                applyToLiveApp: (loadedModel, loadedTree) =>
+                {
+                    // Runs on the WPF dispatcher thread — safe to mutate bound collections.
+                    TreeViewParentNodes.Clear();
+                    foreach (var vm in loadedTree)
+                        TreeViewParentNodes.Add(vm);
+
+                    if (taskHandler.TaskCollection != null)
+                        taskHandler.TaskCollection.Clear();
+                    else
+                        taskHandler.TaskCollection = new System.Collections.ObjectModel.ObservableCollection<object>();
+
+                    foreach (var task in loadedModel?.TaskCollection ?? System.Linq.Enumerable.Empty<object>())
+                        taskHandler.TaskCollection.Add(task);
+
+                    OnPropertyChanged(nameof(ChipTasks));
+                    OnPropertyChanged(nameof(TreeViewParentNodes));
+                },
+                readerName: string.Empty,
                 getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english");
 
             var deleteSelectedCommand = new RelayCommand(() =>

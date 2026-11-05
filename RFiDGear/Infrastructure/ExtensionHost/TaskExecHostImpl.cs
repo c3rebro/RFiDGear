@@ -21,16 +21,20 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     {
         private readonly ITaskExecutionService _execService;
         private readonly ProjectHostImpl _project;
-        private int _running;
+        private readonly ExtensionOperationCoordinator _coordinator;
 
-        public TaskExecHostImpl(ITaskExecutionService execService, ProjectHostImpl project)
+        public TaskExecHostImpl(
+            ITaskExecutionService execService,
+            ProjectHostImpl project,
+            ExtensionOperationCoordinator coordinator)
         {
             _execService = execService ?? throw new ArgumentNullException(nameof(execService));
             _project = project ?? throw new ArgumentNullException(nameof(project));
+            _coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
         }
 
         /// <inheritdoc/>
-        public bool IsRunning => _running != 0;
+        public bool IsRunning => _coordinator.IsExecuting;
 
         /// <inheritdoc/>
         public event EventHandler<ExecResult>? ExecutionCompleted;
@@ -40,10 +44,18 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
 
-            if (Interlocked.CompareExchange(ref _running, 1, 0) != 0)
-                throw new InvalidOperationException("An execution is already in progress.");
+            if (!_coordinator.TryBeginExecution())
+                throw new InvalidOperationException(
+                    _coordinator.IsLoading
+                        ? "A project load is in progress. Wait for LoadAsync to complete before executing."
+                        : "An execution is already in progress.");
 
+            // Allocate the RunId before the call so result, logs, and the execution service
+            // all share the same identity regardless of where or when the run ends.
+            var runId = Guid.NewGuid().ToString("N");
             var startedAt = DateTimeOffset.UtcNow;
+
+            ExecResult execResult;
             try
             {
                 var variablesFromArgs = new Dictionary<string, string>(
@@ -52,6 +64,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
                 var taskRequest = new TaskExecutionRequest
                 {
+                    RunId = runId,
                     TaskHandler = _project.SetupModel,
                     VariablesFromArgs = variablesFromArgs,
                     UpdateSelectedSetupViewModel = _ => { },
@@ -67,9 +80,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 var outcome = MapOutcome(rawResult.TerminalStatus);
                 var taskOutcomes = BuildTaskOutcomes(_project.SetupModel?.TaskCollection);
                 var failedCount = taskOutcomes.Count(t => t.IsSuccess == false);
-                var runId = rawResult.RunId ?? Guid.NewGuid().ToString("N");
 
-                var execResult = new ExecResult(
+                execResult = new ExecResult(
                     runId,
                     outcome,
                     _project.TaskCount,
@@ -77,36 +89,34 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     startedAt,
                     completedAt,
                     taskOutcomes);
-
-                ExecutionCompleted?.Invoke(this, execResult);
-                return execResult;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Cancelled or faulted runs still produce a terminal ExecResult so callers
-                // can distinguish "never completed" from "failed" without inspecting exceptions.
-                // The OperationCanceledException is NOT re-thrown; the caller checks
-                // ct.IsCancellationRequested to determine why the run failed.
+                // Cancelled or faulted runs still produce a terminal ExecResult. Preserve
+                // partial task outcomes so the caller can correlate completed tasks with logs.
                 var completedAt = DateTimeOffset.UtcNow;
-                var outcome = ex is OperationCanceledException
-                    ? ExecutionOutcome.Failure
-                    : ExecutionOutcome.Failure;
-                var failureResult = new ExecResult(
-                    Guid.NewGuid().ToString("N"),
-                    outcome,
+                var taskOutcomes = BuildTaskOutcomes(_project.SetupModel?.TaskCollection);
+                var failedCount = taskOutcomes.Count(t => t.IsSuccess == false);
+
+                execResult = new ExecResult(
+                    runId,
+                    ExecutionOutcome.Failure,
                     _project.TaskCount,
-                    _project.TaskCount,
+                    failedCount,
                     startedAt,
                     completedAt,
-                    Array.Empty<TaskOutcome>());
-
-                ExecutionCompleted?.Invoke(this, failureResult);
-                return failureResult;
+                    taskOutcomes);
             }
             finally
             {
-                Interlocked.Exchange(ref _running, 0);
+                _coordinator.EndExecution();
             }
+
+            // Raise outside both try and finally so that:
+            // 1. The coordinator is already released before subscribers run.
+            // 2. A throwing subscriber cannot cause a second publication.
+            ExecutionCompleted?.Invoke(this, execResult);
+            return execResult;
         }
 
         /// <inheritdoc/>

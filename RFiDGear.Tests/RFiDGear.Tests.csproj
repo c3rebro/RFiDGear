@@ -18,4 +18,9 @@
     <ProjectReference Include="..\RFiDGear.Extensions\DesfirePluginSample\RFiDGear.Extensions.DesfirePluginSample.csproj" />
     <ProjectReference Include="..\\RFiDGear\\RFiDGear.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Fixtures\minimal.rfPrj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

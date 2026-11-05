@@ -3,8 +3,10 @@ using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Services.TaskExecution;
+using RFiDGear.ViewModel;
 
 using System;
+using System.Collections.ObjectModel;
 using System.Text;
 
 namespace RFiDGear.Infrastructure.ExtensionHost
@@ -31,11 +33,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public HeadlessExtensionHost(string readerName = "")
         {
             var dbRW = new DatabaseReaderWriter();
+            var coordinator = new ExtensionOperationCoordinator();
 
-            // Lazy execution-running check: _execution is assigned after _project, so we capture
-            // it via a local ref to avoid a forward reference at construction time.
-            TaskExecHostImpl? execRef = null;
-            _project = new ProjectHostImpl(dbRW, isExecutionRunning: () => execRef?.IsRunning ?? false);
+            _project = new ProjectHostImpl(dbRW, coordinator);
 
             var timerReadChip = new NullDispatcherTimerAdapter();
             var timerTimeout = new NullDispatcherTimerAdapter();
@@ -44,9 +44,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 timerReadChip,
                 timerTimeout);
 
-            _execution = new TaskExecHostImpl(execService, _project);
-            execRef = _execution;
-
+            _execution = new TaskExecHostImpl(execService, _project, coordinator);
             _reader = new ReaderHostImpl(readerName);
             _autoMode = new NullAutoModeHost();
             _appContext = new AppContextImpl();
@@ -64,14 +62,14 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             ITaskExecutionService execService,
             string readerName)
         {
-            TaskExecHostImpl? execRef = null;
+            var coordinator = new ExtensionOperationCoordinator();
             _project = new ProjectHostImpl(
                 dbRW ?? throw new ArgumentNullException(nameof(dbRW)),
-                isExecutionRunning: () => execRef?.IsRunning ?? false);
+                coordinator);
             _execution = new TaskExecHostImpl(
                 execService ?? throw new ArgumentNullException(nameof(execService)),
-                _project);
-            execRef = _execution;
+                _project,
+                coordinator);
             _reader = new ReaderHostImpl(readerName ?? string.Empty);
             _autoMode = new NullAutoModeHost();
             _appContext = new AppContextImpl();
@@ -79,37 +77,44 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
         /// <summary>
         /// Creates a host wired to the main application's live view-model state.
-        /// The <paramref name="liveModelAccessor"/> delegate always returns the current
-        /// <c>taskHandler</c>, keeping the host in sync even when the task collection is replaced.
         /// </summary>
         /// <param name="dbRW">Used for load/save operations.</param>
         /// <param name="execService">The application's running task execution service.</param>
-        /// <param name="liveModelAccessor">Always returns the authoritative <c>ChipTaskHandlerModel</c>.</param>
-        /// <param name="notifyCollectionReplaced">Called when the task collection is replaced or synced after load.</param>
+        /// <param name="liveModelAccessor">Always returns the authoritative live <c>ChipTaskHandlerModel</c>.</param>
+        /// <param name="dispatch">
+        /// Invokes an <see cref="Action"/> on the WPF dispatcher thread and returns a <see cref="System.Threading.Tasks.Task"/>
+        /// that completes when the action has run.
+        /// Typically: <c>action => Application.Current.Dispatcher.InvokeAsync(action).Task</c>.
+        /// </param>
+        /// <param name="applyToLiveApp">
+        /// Called on the dispatcher thread after a successful load to push the loaded task model
+        /// and tree collection into WPF-bound properties.
+        /// </param>
         /// <param name="readerName">Display name of the configured reader.</param>
         /// <param name="getConfiguredLanguage">
         /// Optional delegate returning <c>"german"</c> or <c>"english"</c> from application settings.
-        /// When provided, <see cref="IAppContext.UICultureName"/> reflects the user's language choice
-        /// rather than the OS UI culture.
+        /// When provided, <see cref="IAppContext.UICultureName"/> reflects the user's language choice.
         /// </param>
         public HeadlessExtensionHost(
             DatabaseReaderWriter dbRW,
             ITaskExecutionService execService,
             Func<Models.ChipTaskHandlerModel> liveModelAccessor,
-            Action notifyCollectionReplaced,
+            Func<Action, System.Threading.Tasks.Task> dispatch,
+            Action<Models.ChipTaskHandlerModel, ObservableCollection<RFiDChipParentLayerViewModel>> applyToLiveApp,
             string readerName,
             Func<string?>? getConfiguredLanguage = null)
         {
-            TaskExecHostImpl? execRef = null;
+            var coordinator = new ExtensionOperationCoordinator();
             _project = new ProjectHostImpl(
                 dbRW ?? throw new ArgumentNullException(nameof(dbRW)),
+                coordinator,
                 liveModelAccessor ?? throw new ArgumentNullException(nameof(liveModelAccessor)),
-                notifyCollectionReplaced ?? (() => { }),
-                isExecutionRunning: () => execRef?.IsRunning ?? false);
+                dispatch ?? throw new ArgumentNullException(nameof(dispatch)),
+                applyToLiveApp ?? throw new ArgumentNullException(nameof(applyToLiveApp)));
             _execution = new TaskExecHostImpl(
                 execService ?? throw new ArgumentNullException(nameof(execService)),
-                _project);
-            execRef = _execution;
+                _project,
+                coordinator);
             _reader = new ReaderHostImpl(readerName ?? string.Empty);
             _autoMode = new NullAutoModeHost();
             _appContext = getConfiguredLanguage != null

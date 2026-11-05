@@ -256,6 +256,13 @@ namespace RFiDGear.Services.TaskExecution
         public IDictionary<ERROR, string> ErrorRouting { get; set; } = new Dictionary<ERROR, string>();
         public IDictionary<string, string> AlternateExecutionKeys { get; set; }
         public Action<IGenericTask, IDictionary<string, string>> ConfigureTaskStrategy { get; set; }
+
+        /// <summary>
+        /// Optional correlation identifier to use for this run's structured log events.
+        /// When non-empty, <see cref="TaskExecutionService"/> uses this value instead of generating a new GUID,
+        /// so the extension host result and the service logs share one identity.
+        /// </summary>
+        public string RunId { get; set; }
     }
 
     /// <summary>
@@ -362,7 +369,8 @@ namespace RFiDGear.Services.TaskExecution
             };
 
             var descriptors = BuildTaskDescriptors(request);
-            var runId = Guid.NewGuid().ToString("N");
+            // Use the caller-supplied RunId so the extension host and structured logs share one identity.
+            var runId = !string.IsNullOrEmpty(request.RunId) ? request.RunId : Guid.NewGuid().ToString("N");
             result.RunId = runId;
 
 #if DEBUG
