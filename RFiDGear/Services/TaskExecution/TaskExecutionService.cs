@@ -270,6 +270,11 @@ namespace RFiDGear.Services.TaskExecution
         public bool RunSelectedOnly { get; set; }
 
         /// <summary>
+        /// Gets the correlation identifier shared by all structured log events of this execution pass.
+        /// </summary>
+        public string RunId { get; internal set; }
+
+        /// <summary>
         /// Terminal classification of the run. <c>null</c> when execution did not reach the task loop
         /// (e.g. device discovery failed before any task ran).
         /// </summary>
@@ -358,6 +363,7 @@ namespace RFiDGear.Services.TaskExecution
 
             var descriptors = BuildTaskDescriptors(request);
             var runId = Guid.NewGuid().ToString("N");
+            result.RunId = runId;
 
 #if DEBUG
             taskTimeout.IsEnabled = false;
@@ -380,7 +386,8 @@ namespace RFiDGear.Services.TaskExecution
                         () => RunTaskLoopAsync(request, result, descriptors, null, null, runId, cancellationToken),
                         request.Timeouts?.TaskLoopTimeout,
                         cancellationToken,
-                        runId);
+                        runId,
+                        successEventName: status => "TaskLoop." + status);
                 }
                 else
                 {
@@ -608,9 +615,8 @@ namespace RFiDGear.Services.TaskExecution
             }
 
             var loggedTaskPositions = new HashSet<int>();
-            var counters = new TaskRunCounters();
-            var failedTaskRecords = new List<(string descriptorId, ERROR errorLevel)>();
-            var terminalStatus = TaskLoopTerminalStatus.Failure;
+            var observations = new List<TaskExecutionObservation>();
+            TaskLoopRunResult taskLoopResult = null;
 
             try
             {
@@ -687,33 +693,22 @@ namespace RFiDGear.Services.TaskExecution
                     {
                         if (loggedTaskPositions.Add(taskPosition))
                         {
-                            counters.Executed++;
-                            counters.Failed++;
-                            failedTaskRecords.Add((descriptor.Id, taskModel?.CurrentTaskErrorLevel ?? ERROR.Unknown));
+                            observations.Add(CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", false));
                             LogTaskOutcome(runId, descriptor, taskModel, "Executed", "Failed", null, ex);
                         }
 
                         throw;
                     }
 
-                    if (executedTask && taskModel != null)
+                    if (executedTask)
                     {
                         RecordTaskAttempt(taskModel);
                         ApplyErrorRouting(taskModel, request, descriptors);
 
                         if (loggedTaskPositions.Add(taskPosition))
                         {
-                            counters.Executed++;
                             var success = GetTaskSuccess(taskModel);
-                            if (success == true)
-                            {
-                                counters.Successful++;
-                            }
-                            else if (success == false)
-                            {
-                                counters.Failed++;
-                                failedTaskRecords.Add((descriptor.Id, taskModel.CurrentTaskErrorLevel));
-                            }
+                            observations.Add(CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", success));
 
                             LogTaskOutcome(
                                 runId,
@@ -725,14 +720,15 @@ namespace RFiDGear.Services.TaskExecution
                     }
                     else if (!executedTask && CurrentTaskIndex != taskPosition && loggedTaskPositions.Add(taskPosition))
                     {
-                        counters.Skipped++;
+                        var skipReason = GetSkipReason(taskModel);
+                        observations.Add(CreateTaskObservation(taskPosition, descriptor, taskModel, "Skipped", null, skipReason));
                         LogTaskOutcome(
                             runId,
                             descriptor,
                             taskModel,
                             "Skipped",
                             "Skipped",
-                            GetSkipReason(taskModel));
+                            skipReason);
                     }
 
                     if (request.RunSelectedOnly)
@@ -747,76 +743,46 @@ namespace RFiDGear.Services.TaskExecution
             {
                 request.NotifyTreeViewChanged?.Invoke();
                 taskTimeout.Stop();
-
-                var unknownCount = Math.Max(0, counters.Executed - counters.Failed - counters.Successful);
-
-                if (counters.Failed == 0 && unknownCount == 0)
-                    terminalStatus = TaskLoopTerminalStatus.Success;
-                else if (unknownCount == 0 && AllFailuresIntentional(failedTaskRecords, descriptors))
-                    terminalStatus = TaskLoopTerminalStatus.CompletedWithIntentionalFailures;
-                else
-                    terminalStatus = TaskLoopTerminalStatus.Failure;
-
-                var intentionalFailures = terminalStatus == TaskLoopTerminalStatus.CompletedWithIntentionalFailures
-                    ? counters.Failed : 0;
-
+                taskLoopResult = TaskLoopTerminalEvaluator.Evaluate(
+                    descriptors?.Count ?? 0,
+                    observations,
+                    request?.ErrorRouting);
                 logger.LogInformation("TaskLoop.Summary", new
                 {
                     RunId = runId,
-                    TotalTasks = descriptors?.Count ?? 0,
-                    Executed = counters.Executed,
-                    Skipped = counters.Skipped,
-                    Failed = counters.Failed,
-                    Successful = counters.Successful,
-                    Unknown = unknownCount,
-                    IntentionalFailures = intentionalFailures,
-                    UnexpectedFailures = counters.Failed - intentionalFailures,
-                    TerminalStatus = terminalStatus.ToString(),
+                    taskLoopResult.TotalTasks,
+                    taskLoopResult.Executed,
+                    taskLoopResult.Skipped,
+                    taskLoopResult.Failed,
+                    taskLoopResult.Successful,
+                    taskLoopResult.Unknown,
+                    taskLoopResult.AcceptedFailures,
+                    taskLoopResult.UnhandledFailures,
+                    taskLoopResult.InvalidSkips,
+                    TerminalStatus = taskLoopResult.TerminalStatus.ToString(),
                     Timestamp = DateTimeOffset.UtcNow
                 });
             }
 
-            return terminalStatus;
+            return taskLoopResult.TerminalStatus;
         }
 
-        /// <summary>
-        /// Returns <see langword="true"/> when every entry in <paramref name="failures"/> has at least
-        /// one downstream task whose <see cref="IGenericTask.SelectedExecuteConditionTaskIndex"/> and
-        /// <see cref="IGenericTask.SelectedExecuteConditionErrorLevel"/> match the failed descriptor and
-        /// error level — meaning the failure was anticipated and handled by the project author.
-        /// </summary>
-        private static bool AllFailuresIntentional(
-            IReadOnlyList<(string descriptorId, ERROR errorLevel)> failures,
-            IReadOnlyList<TaskDescriptor> descriptors)
+        private static TaskExecutionObservation CreateTaskObservation(
+            int taskPosition,
+            TaskDescriptor descriptor,
+            IGenericTask taskModel,
+            string decision,
+            bool? wasSuccessful,
+            string skipReason = null)
         {
-            if (failures.Count == 0) return true;
-            if (descriptors == null) return false;
-
-            foreach (var (descriptorId, errorLevel) in failures)
-            {
-                var hasHandler = false;
-                foreach (var d in descriptors)
-                {
-                    if (d.Task == null) continue;
-                    if (d.Task.SelectedExecuteConditionErrorLevel != errorLevel) continue;
-                    if (d.Task.SelectedExecuteConditionTaskIndex != descriptorId) continue;
-                    hasHandler = true;
-                    break;
-                }
-                if (!hasHandler) return false;
-            }
-            return true;
-        }
-
-        private sealed class TaskRunCounters
-        {
-            public int Executed { get; set; }
-
-            public int Skipped { get; set; }
-
-            public int Failed { get; set; }
-
-            public int Successful { get; set; }
+            return new TaskExecutionObservation(
+                taskPosition,
+                descriptor?.Id ?? taskModel?.CurrentTaskIndex,
+                taskModel,
+                decision,
+                wasSuccessful,
+                taskModel?.CurrentTaskErrorLevel ?? ERROR.Empty,
+                skipReason);
         }
 
         private void LogTaskOutcome(
