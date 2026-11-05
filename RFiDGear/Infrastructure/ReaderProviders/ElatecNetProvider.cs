@@ -29,6 +29,8 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         private bool _disposed;
         private readonly SemaphoreSlim _comPortLock = new SemaphoreSlim(1, 1);
 
+        private bool IsMultiTechReader => ReaderUnitVersion?.Contains("CCF") == true;
+
         #region Constructor
 
         private async Task Initialize()
@@ -107,7 +109,32 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     {
                         if ((MifareChipSubType)((byte)(tmpTag as MifareChip).SubType & 0xF0) == MifareChipSubType.MifareClassic)
                         {
-                            hfTag = new MifareClassicChipModel(tmpTag.UIDHexString, (CARD_TYPE)((short)(tmpTag as MifareChip).SubType << 8));
+                            var subType = (tmpTag as MifareChip).SubType;
+
+                            if (subType == MifareChipSubType.SmartMX_Mifare_1K ||
+                                subType == MifareChipSubType.SmartMX_Mifare_2K ||
+                                subType == MifareChipSubType.SmartMX_Mifare_4K)
+                            {
+                                var versionL4 = await TryDetectSmartMXDesFireEmulationAsync((tmpTag as MifareChip).UID);
+
+                                if (versionL4 != null)
+                                {
+                                    hfTag = new MifareDesfireChipModel(
+                                        tmpTag.UIDHexString,
+                                        MapSmartMXVersionToCardType(versionL4),
+                                        ByteArrayConverter.GetStringFrom((tmpTag as MifareChip).SAK),
+                                        ByteArrayConverter.GetStringFrom((tmpTag as MifareChip).ATS),
+                                        ByteArrayConverter.GetStringFrom(versionL4));
+                                }
+                                else
+                                {
+                                    hfTag = new MifareClassicChipModel(tmpTag.UIDHexString, (CARD_TYPE)((short)subType << 8));
+                                }
+                            }
+                            else
+                            {
+                                hfTag = new MifareClassicChipModel(tmpTag.UIDHexString, (CARD_TYPE)((short)(tmpTag as MifareChip).SubType << 8));
+                            }
                         }
                         else if ((MifareChipSubType)((byte)(tmpTag as MifareChip).SubType & 0x40) == MifareChipSubType.DESFire)
                         {
@@ -1678,6 +1705,90 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
                 _comPortLock.Release();
             }
+        }
+
+        #endregion
+
+        #region SmartMX Detection
+
+        /// <summary>
+        /// Attempts an ISO 14443-4 VersionL4 activation to detect SmartMX DESFire emulation.
+        /// </summary>
+        /// <remarks>
+        /// On MultiTech (CCF) readers the card must be re-selected via SearchMultiTag and SelectTag
+        /// before the L4 exchange succeeds. On Legic (CCB) readers the SearchTag context is
+        /// sufficient. Returns null when the card does not respond as a DESFire emulation or when
+        /// communication fails (non-fatal; caller falls back to Classic classification).
+        /// </remarks>
+        private async Task<byte[]?> TryDetectSmartMXDesFireEmulationAsync(byte[] uidBytes)
+        {
+            try
+            {
+                if (IsMultiTechReader)
+                {
+                    var uids = await readerDevice.ISO14443A_SearchMultiTagAsync();
+                    if (uids == null || uids.Count == 0)
+                        return null;
+
+                    var target = uids.FirstOrDefault(u =>
+                        u.Length == uidBytes.Length && u.SequenceEqual(uidBytes)) ?? uids[0];
+
+                    if (!await readerDevice.ISO14443A_SelectTagAsync(target))
+                        return null;
+                }
+
+                var version = await readerDevice.ISO14443_4_TdxAsync(new byte[] { 0x60 });
+
+                // Response: [0]=AF (more frames), [1]=04 (NXP vendor), [2]=type (0x01=native, 0x81=emulated)
+                if (version == null || version.Length < 7 || version[2] != 0x81)
+                    return null;
+
+                return version;
+            }
+            catch (Exception e)
+            {
+                Log.ForContext<ElatecNetProvider>().Debug(e, "SmartMX DESFire emulation probe failed (non-fatal).");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Maps a raw VersionL4 GetVersion response (0x60 command) to the matching SmartMX DESFire CARD_TYPE.
+        /// </summary>
+        /// <remarks>
+        /// Mirrors the EV-generation and storage-size decoding in the Elatec SDK DetectMifareSubType.
+        /// version[4] low nibble = EV generation (0=EV0, 1=EV1, 2=EV2, 3=EV3).
+        /// version[6] = storage size byte (0x10=256B, 0x16=2K, 0x18=4K, 0x1A=8K, 0x1C=16K, 0x1E=32K).
+        /// </remarks>
+        private static CARD_TYPE MapSmartMXVersionToCardType(byte[] version)
+        {
+            int evGen = version[4] & 0x0F;
+            byte sizeByte = version[6];
+
+            return (evGen, sizeByte) switch
+            {
+                (0, 0x10) => CARD_TYPE.SmartMX_DESFireEV0_256,
+                (0, _)    => CARD_TYPE.SmartMX_DESFireEV0_4K,
+
+                (1, 0x10) => CARD_TYPE.SmartMX_DESFireEV1_256,
+                (1, 0x16) => CARD_TYPE.SmartMX_DESFireEV1_2K,
+                (1, 0x18) => CARD_TYPE.SmartMX_DESFireEV1_4K,
+                (1, _)    => CARD_TYPE.SmartMX_DESFireEV1_8K,
+
+                (2, 0x16) => CARD_TYPE.SmartMX_DESFireEV2_2K,
+                (2, 0x18) => CARD_TYPE.SmartMX_DESFireEV2_4K,
+                (2, 0x1A) => CARD_TYPE.SmartMX_DESFireEV2_8K,
+                (2, 0x1C) => CARD_TYPE.SmartMX_DESFireEV2_16K,
+                (2, _)    => CARD_TYPE.SmartMX_DESFireEV2_32K,
+
+                (3, 0x16) => CARD_TYPE.SmartMX_DESFireEV3_2K,
+                (3, 0x18) => CARD_TYPE.SmartMX_DESFireEV3_4K,
+                (3, 0x1A) => CARD_TYPE.SmartMX_DESFireEV3_8K,
+                (3, 0x1C) => CARD_TYPE.SmartMX_DESFireEV3_16K,
+                (3, _)    => CARD_TYPE.SmartMX_DESFireEV3_32K,
+
+                _ => CARD_TYPE.SmartMX_DESFire,
+            };
         }
 
         #endregion
