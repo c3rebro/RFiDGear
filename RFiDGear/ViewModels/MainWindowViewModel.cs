@@ -212,7 +212,8 @@ namespace RFiDGear.ViewModel
                 taskExecutionService,
                 () => taskHandler,
                 () => OnPropertyChanged(nameof(ChipTasks)),
-                string.Empty);
+                string.Empty,
+                getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english");
 
             var deleteSelectedCommand = new RelayCommand(() =>
             {

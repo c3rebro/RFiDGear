@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace RFiDGear.Contracts
 {
@@ -22,7 +23,8 @@ namespace RFiDGear.Contracts
         /// <summary>Creates a request with no runtime variables.</summary>
         public ExecutionRequest()
         {
-            Variables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            Variables = new ReadOnlyDictionary<string, string>(
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
         }
 
         /// <summary>Creates a request from an existing variable collection.</summary>
@@ -34,7 +36,7 @@ namespace RFiDGear.Contracts
             var d = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var kv in variables)
                 d[kv.Key] = kv.Value;
-            Variables = d;
+            Variables = new ReadOnlyDictionary<string, string>(d);
         }
     }
 }

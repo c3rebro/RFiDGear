@@ -15,10 +15,15 @@ namespace RFiDGear.Contracts
     /// String representation of the task's normalized error level (e.g. <c>NoError</c>, <c>AuthFailure</c>).
     /// Never contains key material or payload data.
     /// </param>
+    /// <param name="SkipReason">
+    /// Human-readable token explaining why a task was not executed, or <c>null</c> when the task ran.
+    /// Example values: <c>"NotStarted"</c> (dependency condition not met or execution stopped early).
+    /// </param>
     public record TaskOutcome(
         int Position,
         string ProjectTaskIndex,
         string TaskTypeName,
         bool? IsSuccess,
-        string NormalizedErrorCode);
+        string NormalizedErrorCode,
+        string? SkipReason = null);
 }

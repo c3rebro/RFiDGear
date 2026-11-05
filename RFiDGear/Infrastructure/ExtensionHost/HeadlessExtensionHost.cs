@@ -1,3 +1,4 @@
+#nullable enable
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
@@ -84,14 +85,20 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <param name="dbRW">Used for load/save operations.</param>
         /// <param name="execService">The application's running task execution service.</param>
         /// <param name="liveModelAccessor">Always returns the authoritative <c>ChipTaskHandlerModel</c>.</param>
-        /// <param name="notifyCollectionReplaced">Called when <see cref="IProjectHost.ReplaceTaskCollection"/> changes the collection.</param>
+        /// <param name="notifyCollectionReplaced">Called when the task collection is replaced or synced after load.</param>
         /// <param name="readerName">Display name of the configured reader.</param>
+        /// <param name="getConfiguredLanguage">
+        /// Optional delegate returning <c>"german"</c> or <c>"english"</c> from application settings.
+        /// When provided, <see cref="IAppContext.UICultureName"/> reflects the user's language choice
+        /// rather than the OS UI culture.
+        /// </param>
         public HeadlessExtensionHost(
             DatabaseReaderWriter dbRW,
             ITaskExecutionService execService,
             Func<Models.ChipTaskHandlerModel> liveModelAccessor,
             Action notifyCollectionReplaced,
-            string readerName)
+            string readerName,
+            Func<string?>? getConfiguredLanguage = null)
         {
             TaskExecHostImpl? execRef = null;
             _project = new ProjectHostImpl(
@@ -105,7 +112,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             execRef = _execution;
             _reader = new ReaderHostImpl(readerName ?? string.Empty);
             _autoMode = new NullAutoModeHost();
-            _appContext = new AppContextImpl();
+            _appContext = getConfiguredLanguage != null
+                ? new AppContextImpl(getConfiguredLanguage)
+                : new AppContextImpl();
         }
 
         /// <inheritdoc/>

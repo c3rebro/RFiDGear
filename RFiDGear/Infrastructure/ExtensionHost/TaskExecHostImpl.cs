@@ -1,9 +1,12 @@
+#nullable enable
 using RFiDGear.Contracts;
+using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Services.TaskExecution;
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -78,6 +81,28 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 ExecutionCompleted?.Invoke(this, execResult);
                 return execResult;
             }
+            catch (Exception ex)
+            {
+                // Cancelled or faulted runs still produce a terminal ExecResult so callers
+                // can distinguish "never completed" from "failed" without inspecting exceptions.
+                // The OperationCanceledException is NOT re-thrown; the caller checks
+                // ct.IsCancellationRequested to determine why the run failed.
+                var completedAt = DateTimeOffset.UtcNow;
+                var outcome = ex is OperationCanceledException
+                    ? ExecutionOutcome.Failure
+                    : ExecutionOutcome.Failure;
+                var failureResult = new ExecResult(
+                    Guid.NewGuid().ToString("N"),
+                    outcome,
+                    _project.TaskCount,
+                    _project.TaskCount,
+                    startedAt,
+                    completedAt,
+                    Array.Empty<TaskOutcome>());
+
+                ExecutionCompleted?.Invoke(this, failureResult);
+                return failureResult;
+            }
             finally
             {
                 Interlocked.Exchange(ref _running, 0);
@@ -113,7 +138,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         };
 
         private static IReadOnlyList<TaskOutcome> BuildTaskOutcomes(
-            System.Collections.ObjectModel.ObservableCollection<object>? collection)
+            ObservableCollection<object>? collection)
         {
             if (collection == null || collection.Count == 0)
                 return Array.Empty<TaskOutcome>();
@@ -124,12 +149,17 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             {
                 if (item is IGenericTask t)
                 {
+                    var skipReason = t.ExecutionState == TaskExecutionState.NotStarted
+                        ? "NotStarted"
+                        : null;
+
                     outcomes.Add(new TaskOutcome(
                         position,
                         t.CurrentTaskIndex ?? position.ToString(),
                         item.GetType().Name,
                         t.IsTaskCompletedSuccessfully,
-                        t.CurrentTaskErrorLevel.ToString()));
+                        t.CurrentTaskErrorLevel.ToString(),
+                        skipReason));
                 }
                 position++;
             }

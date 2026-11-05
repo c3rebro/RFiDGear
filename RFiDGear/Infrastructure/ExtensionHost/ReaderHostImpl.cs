@@ -1,3 +1,4 @@
+#nullable enable
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.ReaderProviders;
 
@@ -31,13 +32,13 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public bool IsConnected => ReaderDevice.Instance?.IsConnected ?? false;
 
         /// <inheritdoc/>
-        public event EventHandler ReaderStateChanged;
+        public event EventHandler ReaderStateChanged = delegate { };
 
         /// <summary>
         /// Called by the main application when reader or card state changes so that
         /// registered listeners receive <see cref="ReaderStateChanged"/>.
         /// </summary>
         internal void RaiseStateChanged() =>
-            ReaderStateChanged?.Invoke(this, EventArgs.Empty);
+            ReaderStateChanged.Invoke(this, EventArgs.Empty);
     }
 }
