@@ -538,7 +538,9 @@ namespace RFiDGear.Tests
                         events.Add("apply");
                         live.TaskCollection.Clear();
                         foreach (var task in loaded.TaskCollection)
+                        {
                             live.TaskCollection.Add(task);
+                        }
                     });
                 host.ProjectChanged += (_, _) => events.Add($"changed:{host.TaskCount}");
 
@@ -779,7 +781,9 @@ namespace RFiDGear.Tests
         public void Dispose()
         {
             foreach (var file in _files)
+            {
                 File.Delete(file);
+            }
             foreach (var directory in _scratchDirectories.Append(_root))
             {
                 if (Directory.Exists(directory))
@@ -1323,7 +1327,9 @@ namespace RFiDGear.Tests
                 {
                     live.TaskCollection.Clear();
                     foreach (var task in loaded.TaskCollection)
+                    {
                         live.TaskCollection.Add(task);
+                    }
                 });
 
             Volatile.Write(ref parkNextRead, 1);

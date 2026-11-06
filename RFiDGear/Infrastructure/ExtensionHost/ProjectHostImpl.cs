@@ -125,7 +125,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 // A save in progress owns the shared staging files; wait for the caller to retry.
                 fileGateHeld = TryEnterFileGate();
                 if (!fileGateHeld)
+                {
                     return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Busy);
+                }
 
                 // ReadProjectAsync returns the model without touching _dbRW, so a parsing failure
                 // leaves the current project (SetupModel, _currentPath) fully intact, and no
@@ -191,7 +193,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             finally
             {
                 if (fileGateHeld)
+                {
                     ExitFileGate();
+                }
 
                 _coordinator.EndLoad();
             }
