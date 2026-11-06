@@ -1123,15 +1123,17 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task LoadAsync_ExtractsIntoTheInjectedRoot()
+        public async Task LoadAsync_Archive_ExtractsNothingIntoTheInjectedRoot()
         {
             var file = Track(ProjectFixtures.CreateProject(1));
             var (host, manager) = CreateIsolatedHost();
+            var before = ProjectArchiveReadTests.EntriesBelow(_root);
 
             Assert.True((await LoadAsync(host, file)).Success);
 
-            // The read used the injected reader's ProjectManager, not a fresh default one.
-            Assert.True(File.Exists(manager.TaskDatabasePath));
+            // Issue 217: the project is read in memory; opening it writes nothing to the shared folder.
+            Assert.Equal(before, ProjectArchiveReadTests.EntriesBelow(_root));
+            Assert.False(File.Exists(manager.TaskDatabasePath));
         }
 
         [Fact]

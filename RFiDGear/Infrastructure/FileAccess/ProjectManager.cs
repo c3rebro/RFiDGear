@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using RFiDGear.Models;
@@ -329,16 +330,45 @@ namespace RFiDGear.Infrastructure.FileAccess
                 settingsPath: resolvedPath);
         }
 
+        /// <summary>
+        /// The most entries a project archive may hold. The application writes exactly one, so the limit only
+        /// stops a crafted archive from making the loader walk a huge directory.
+        /// </summary>
+        internal int MaxArchiveEntries { get; set; } = 64;
+
+        /// <summary>
+        /// The most uncompressed bytes read from the project entry of an archive (64 MiB by default). It is
+        /// enforced while reading, so a header that understates the size does not get around it.
+        /// </summary>
+        internal long MaxProjectEntryBytes { get; set; } = 64L * 1024 * 1024;
+
         private ProjectLoadResult PrepareCompressedProject(FileInfo file, Version appVersion)
         {
-            var xmlPath = ExtractCompressedProject(file.FullName, file.Name);
+            CleanTemporaryFiles();
 
-            if (string.IsNullOrEmpty(xmlPath) || !File.Exists(xmlPath))
+            // Only the project entry is read, in memory. Nothing from the archive is written to disk, so no
+            // other entry (settings.xml, a report template, a path with ..) can reach the shared folder.
+            var projectXml = ReadProjectEntry(file.FullName, file.Name);
+
+            if (string.IsNullOrEmpty(projectXml))
             {
                 return ProjectLoadResult.Failed();
             }
 
-            return CreateXmlLoadResult(xmlPath, appVersion, ProjectFileType.Archive);
+            return CreateTextLoadResult(projectXml, appVersion, ProjectFileType.Archive);
+        }
+
+        private ProjectLoadResult CreateTextLoadResult(string projectXml, Version appVersion, ProjectFileType projectFileType)
+        {
+            var manifestText = ReadManifestVersionTextFromXml(projectXml);
+            var isSupportedVersion = ValidateManifestVersion(manifestText, appVersion);
+
+            return new ProjectLoadResult(
+                success: true,
+                manifestVersion: ToDiagnosticNumber(manifestText),
+                isSupportedVersion: isSupportedVersion,
+                reader: new StringReader(projectXml),
+                fileType: projectFileType);
         }
 
         private ProjectLoadResult CreateXmlLoadResult(string path, Version appVersion, ProjectFileType projectFileType)
@@ -365,6 +395,23 @@ namespace RFiDGear.Infrastructure.FileAccess
         }
 
         /// <summary>
+        /// Reads the <c>ManifestVersion</c> element of project text that came out of an archive, or <c>null</c> if
+        /// it has none. The text is not trusted: a document type declaration (the way to write an entity
+        /// expansion bomb) is refused and nothing external is resolved.
+        /// </summary>
+        private static string ReadManifestVersionTextFromXml(string projectXml)
+        {
+            var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
+
+            using var text = new StringReader(projectXml);
+            using var xmlReader = XmlReader.Create(text, settings);
+            var doc = new XmlDocument { XmlResolver = null };
+            doc.Load(xmlReader);
+
+            return doc.SelectSingleNode("//ManifestVersion")?.InnerText.Trim();
+        }
+
+        /// <summary>
         /// The concatenated-digit number that results and logs have always carried (<c>1.10.9054</c> becomes
         /// 1109054). It is for display only; it is not used to decide whether a file is supported.
         /// </summary>
@@ -373,60 +420,77 @@ namespace RFiDGear.Infrastructure.FileAccess
                 ? number
                 : 0;
 
-        private string ExtractCompressedProject(string archivePath, string archiveFileName)
+        /// <summary>
+        /// Reads the project text out of an archive without extracting anything. The entry is chosen from the
+        /// archive's own entries, never by looking for a file that happens to be in the shared folder: the
+        /// entry named like the archive itself (the oldest layout) if there is one, otherwise
+        /// <c>taskdatabase.xml</c>. Entries in subfolders never match.
+        /// </summary>
+        /// <param name="archivePath">Full path of the <c>.rfPrj</c> archive.</param>
+        /// <param name="archiveFileName">The archive's file name, used to find the oldest layout's entry.</param>
+        /// <returns>The project XML, or <c>null</c> when the archive contains no project entry.</returns>
+        /// <exception cref="InvalidDataException">
+        /// The file is not a ZIP archive, holds more than <see cref="MaxArchiveEntries"/> entries, or the project
+        /// entry is larger than <see cref="MaxProjectEntryBytes"/> once uncompressed.
+        /// </exception>
+        private string ReadProjectEntry(string archivePath, string archiveFileName)
         {
-            CleanTemporaryFiles();
+            using var archive = ZipFile.OpenRead(archivePath);
 
-            // The payload is chosen from the archive's own entries, never by looking for a file that happens
-            // to be in the shared folder. Anything left there by an earlier load or save, including a
-            // same-named entry from a different archive with the same file name, must not be mistaken for
-            // this archive's project.
-            var payloadEntry = FindProjectEntryName(archivePath, archiveFileName);
-
-            if (payloadEntry == null)
+            if (archive.Entries.Count > MaxArchiveEntries)
             {
-                return string.Empty;
+                throw new InvalidDataException("The archive holds more entries than a project archive does.");
             }
 
-            // Extraction overwrites, so the payload on disk is exactly this archive's entry.
-            ExtractArchive(archivePath);
+            ZipArchiveEntry projectEntry = null;
 
-            var payloadPath = Path.Combine(AppDataPath, payloadEntry);
-
-            return File.Exists(payloadPath) ? payloadPath : string.Empty;
-        }
-
-        /// <summary>
-        /// Finds the entry that holds the project: the entry named like the archive itself (the oldest layout)
-        /// if there is one, otherwise <c>taskdatabase.xml</c>.
-        /// </summary>
-        /// <returns>The entry's name, or <c>null</c> when the archive contains no project entry.</returns>
-        private static string FindProjectEntryName(string archivePath, string archiveFileName)
-        {
-            string taskDatabaseEntry = null;
-
-            using (var archive = ZipFile.OpenRead(archivePath))
+            foreach (var entry in archive.Entries)
             {
-                foreach (var entry in archive.Entries)
+                if (entry.FullName.Equals(archiveFileName, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (entry.FullName.Equals(archiveFileName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return entry.FullName;
-                    }
+                    projectEntry = entry;
+                    break;
+                }
 
-                    if (entry.FullName.Equals(TaskDatabaseFileName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        taskDatabaseEntry = entry.FullName;
-                    }
+                if (entry.FullName.Equals(TaskDatabaseFileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    projectEntry = entry;
                 }
             }
 
-            return taskDatabaseEntry;
+            return projectEntry == null ? null : ReadEntryText(projectEntry);
         }
 
-        private void ExtractArchive(string archivePath)
+        /// <summary>
+        /// Reads one entry as text, giving up as soon as it grows past <see cref="MaxProjectEntryBytes"/>. The
+        /// limit is checked on the bytes actually produced, not on the size the archive claims.
+        /// </summary>
+        private string ReadEntryText(ZipArchiveEntry entry)
         {
-            ZipFile.ExtractToDirectory(archivePath, AppDataPath, overwriteFiles: true);
+            using var source = entry.Open();
+            using var buffer = new MemoryStream();
+            var chunk = new byte[81920];
+            long total = 0;
+            int read;
+
+            while ((read = source.Read(chunk, 0, chunk.Length)) > 0)
+            {
+                total += read;
+
+                if (total > MaxProjectEntryBytes)
+                {
+                    throw new InvalidDataException("The project entry is larger than a project can be.");
+                }
+
+                buffer.Write(chunk, 0, read);
+            }
+
+            buffer.Position = 0;
+
+            // Same decoding as the plain-file path: UTF-8 unless a byte-order mark says otherwise.
+            using var reader = new StreamReader(buffer, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+
+            return reader.ReadToEnd();
         }
 
         private void CleanTemporaryFiles()
