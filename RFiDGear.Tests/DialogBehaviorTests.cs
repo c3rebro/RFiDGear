@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using System.Windows;
 using RFiDGear.UI.MVVMDialogs.Behaviors;
 using Xunit;
 
@@ -13,6 +14,7 @@ namespace RFiDGear.Tests
 
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
+                _ = Application.Current ?? new Application();
                 DialogBehavior.SetResourceDictionary(source);
                 DialogBehavior.SetResourceDictionary(source);
             });

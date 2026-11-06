@@ -73,8 +73,13 @@ namespace RFiDGear.Tests
                 var newProjectPath = Path.Combine(tempRoot, "new.xml");
                 var settingsDirectory = Path.Combine(tempRoot, "settings");
                 var settingsPath = Path.Combine(settingsDirectory, "settings.xml");
-                var originalOldProjectContent = "<Project><ManifestVersion>1.0.0</ManifestVersion></Project>";
-                var originalNewProjectContent = "<Project><ManifestVersion>1.0.0</ManifestVersion></Project>";
+                const string validProjectContent = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                    + "<ChipTaskHandlerModel xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+                    + "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">"
+                    + "<ManifestVersion>1.0.0</ManifestVersion><TaskCollection />"
+                    + "<!-- original fixture marker --></ChipTaskHandlerModel>";
+                var originalOldProjectContent = validProjectContent;
+                var originalNewProjectContent = validProjectContent;
                 File.WriteAllText(oldProjectPath, originalOldProjectContent);
                 File.WriteAllText(newProjectPath, originalNewProjectContent);
                 Directory.CreateDirectory(settingsDirectory);

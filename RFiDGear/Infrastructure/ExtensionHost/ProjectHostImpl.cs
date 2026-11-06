@@ -141,6 +141,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     {
                         DatabaseReaderWriter.DatabaseReadFailureReason.UnsupportedVersion =>
                             Contracts.ProjectOpenError.UnsupportedFormat,
+                        DatabaseReaderWriter.DatabaseReadFailureReason.UnsupportedFormat =>
+                            Contracts.ProjectOpenError.UnsupportedFormat,
+                        DatabaseReaderWriter.DatabaseReadFailureReason.DeserializationFailed =>
+                            Contracts.ProjectOpenError.UnsupportedFormat,
                         _ => Contracts.ProjectOpenError.Unknown,
                     };
                     return Contracts.ProjectOpenResult.Fail(openError);

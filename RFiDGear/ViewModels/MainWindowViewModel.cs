@@ -209,11 +209,12 @@ namespace RFiDGear.ViewModel
             taskExecutionService = taskServices.TaskExecutionService;
 
             _coordinator = new ExtensionOperationCoordinator();
+            var owningDispatcher = Dispatcher.CurrentDispatcher;
             extensionHost = new HeadlessExtensionHost(
                 databaseReaderWriter,
                 taskExecutionService,
                 liveModelAccessor: () => taskHandler,
-                dispatch: action => Application.Current.Dispatcher.InvokeAsync(action).Task,
+                dispatch: action => owningDispatcher.InvokeAsync(action).Task,
                 applyToLiveApp: (loadedModel, loadedTree) =>
                 {
                     // Runs on the WPF dispatcher thread — safe to mutate bound collections.
@@ -446,55 +447,29 @@ namespace RFiDGear.ViewModel
         {
             using (var settings = settingsReaderWriterFactory())
             {
-                var autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
-                string lastUsedDBPath;
-
-                if (string.IsNullOrEmpty(projectFileToUse))
-                {
-                    lastUsedDBPath = settings.DefaultSpecification.LastUsedProjectPath;
-                }
-                else
-                {
-                    lastUsedDBPath = projectFileToUse;
-                    settings.DefaultSpecification.LastUsedProjectPath = projectFileToUse;
-                    await settings.SaveSettings();
-                }
+                var projectPath = string.IsNullOrEmpty(projectFileToUse)
+                    ? settings.DefaultSpecification.LastUsedProjectPath
+                    : projectFileToUse;
 
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
-                if (!_coordinator.TryBeginLoad())
-                    return;
-
-                try
+                var result = await extensionHost.Project.LoadAsync(projectPath);
+                if (!result.Success)
                 {
-                    if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
-                    {
-                        ChipTasks.TaskCollection.Clear();
-                    }
-
-                    await databaseReaderWriter.ReadDatabase(lastUsedDBPath);
-
-                    foreach (var vm in databaseReaderWriter.TreeViewModel)
-                    {
-                        TreeViewParentNodes.Add(vm);
-                    }
-
-                    foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
-                    {
-                        ChipTasks.TaskCollection.Add(setup);
-                    }
-
+                    LogProjectOpenFailure(projectPath, result.Error);
                     if (Dialogs.Any())
-                    {
                         Dialogs.RemoveAt(0);
-                    }
+                    return;
+                }
 
-                    OnPropertyChanged(nameof(ChipTasks));
-                }
-                finally
+                if (!string.IsNullOrEmpty(projectFileToUse))
                 {
-                    _coordinator.EndLoad();
+                    settings.DefaultSpecification.LastUsedProjectPath = result.CanonicalPath;
+                    await settings.SaveSettings();
                 }
+
+                if (Dialogs.Any())
+                    Dialogs.RemoveAt(0);
             }
         }
         #endregion
@@ -1120,34 +1095,6 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand WriteToChipOnceCommand => new AsyncRelayCommand(OnNewWriteToChipOnceCommand);
         private async Task OnNewWriteToChipOnceCommand()
         {
-            Mouse.OverrideCursor = Cursors.AppStarting;
-
-            if (!_runSelectedOnly)
-            {
-                await OnNewResetTaskStatusCommand();
-            }
-
-            await OnNewReadChipCommand();
-            OnPropertyChanged(nameof(TreeViewParentNodes));
-            OnPropertyChanged(nameof(ChipTasks));
-
-            var request = new TaskExecutionRequest
-            {
-                TaskHandler = taskHandler,
-                TreeViewParentNodes = treeViewParentNodes,
-                VariablesFromArgs = variablesFromArgs,
-                Dialogs = Dialogs,
-                ReportReaderWriter = reportReaderWriter,
-                ReportOutputPath = reportOutputPath,
-                ReportTemplateFile = reportTemplateFile,
-                SelectedSetupViewModel = SelectedSetupViewModel,
-                RunSelectedOnly = _runSelectedOnly,
-                UpdateSelectedSetupViewModel = vm => SelectedSetupViewModel = vm,
-                UpdateReaderBusy = status => IsReaderBusy = status,
-                NotifyTreeViewChanged = () => OnPropertyChanged(nameof(TreeViewParentNodes)),
-                NotifyTasksChanged = () => OnPropertyChanged(nameof(ChipTasks)),
-            };
-
             if (!_coordinator.TryBeginExecution())
             {
                 Mouse.OverrideCursor = null;
@@ -1156,6 +1103,32 @@ namespace RFiDGear.ViewModel
 
             try
             {
+                Mouse.OverrideCursor = Cursors.AppStarting;
+
+                if (!_runSelectedOnly)
+                    await OnNewResetTaskStatusCommand();
+
+                await OnNewReadChipCommand();
+                OnPropertyChanged(nameof(TreeViewParentNodes));
+                OnPropertyChanged(nameof(ChipTasks));
+
+                var request = new TaskExecutionRequest
+                {
+                    TaskHandler = taskHandler,
+                    TreeViewParentNodes = treeViewParentNodes,
+                    VariablesFromArgs = variablesFromArgs,
+                    Dialogs = Dialogs,
+                    ReportReaderWriter = reportReaderWriter,
+                    ReportOutputPath = reportOutputPath,
+                    ReportTemplateFile = reportTemplateFile,
+                    SelectedSetupViewModel = SelectedSetupViewModel,
+                    RunSelectedOnly = _runSelectedOnly,
+                    UpdateSelectedSetupViewModel = vm => SelectedSetupViewModel = vm,
+                    UpdateReaderBusy = status => IsReaderBusy = status,
+                    NotifyTreeViewChanged = () => OnPropertyChanged(nameof(TreeViewParentNodes)),
+                    NotifyTasksChanged = () => OnPropertyChanged(nameof(ChipTasks)),
+                };
+
                 var result = await taskExecutionService.ExecuteOnceAsync(request, CancellationToken.None);
 
                 reportReaderWriter = result.ReportReaderWriter;
@@ -1368,17 +1341,11 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand NewOpenFileDialogCommand => new AsyncRelayCommand(OnNewOpenFileDialog);
         private async Task OnNewOpenFileDialog()
         {
-            bool autoLoadLastUsedDB;
-            string lastUsedDBPath;
-
             using (var settings = settingsReaderWriterFactory())
             {
                 CurrentReader = string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
                     ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                     : settings.DefaultSpecification.DefaultReaderName;
-
-                autoLoadLastUsedDB = settings.DefaultSpecification.AutoLoadProjectOnStart;
-                lastUsedDBPath = settings.DefaultSpecification.LastUsedProjectPath;
 
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
@@ -1393,51 +1360,31 @@ namespace RFiDGear.ViewModel
 
                 if (dlg.Show(Dialogs) && dlg.FileName != null)
                 {
-                    if (!_coordinator.TryBeginLoad())
-                    {
-                        await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-                            Mouse.OverrideCursor = null));
-                        return;
-                    }
-
+                    Mouse.OverrideCursor = Cursors.AppStarting;
                     try
                     {
-                        Mouse.OverrideCursor = Cursors.AppStarting;
-
-                        if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
+                        var result = await extensionHost.Project.LoadAsync(dlg.FileName);
+                        if (!result.Success)
                         {
-                            ChipTasks.TaskCollection.Clear();
+                            LogProjectOpenFailure(dlg.FileName, result.Error);
+                            return;
                         }
 
-                        await databaseReaderWriter.ReadDatabase(dlg.FileName).ConfigureAwait(false);
-
-                        settings.DefaultSpecification.LastUsedProjectPath = dlg.FileName;
+                        settings.DefaultSpecification.LastUsedProjectPath = result.CanonicalPath;
                         await settings.SaveSettings();
-
-                        foreach (var vm in databaseReaderWriter.TreeViewModel)
-                        {
-                            TreeViewParentNodes.Add(vm);
-                        }
-
-                        foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
-                        {
-                            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => ChipTasks.TaskCollection.Add(setup)));
-                        }
                     }
                     finally
                     {
-                        _coordinator.EndLoad();
+                        Mouse.OverrideCursor = null;
                     }
                 }
             }
-
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-            {
-                Mouse.OverrideCursor = null;
-            }));
-
-            OnPropertyChanged(nameof(ChipTasks));
         }
+
+        /// <summary>Logs a project-open failure without changing the currently loaded project.</summary>
+        private static void LogProjectOpenFailure(string path, ProjectOpenError error) =>
+            Log.ForContext<MainWindowViewModel>()
+                .Warning("Project open rejected for {ProjectPath} with {ProjectOpenError}", path, error);
 
         /// <summary>
         /// Exposes the command to save the current project, falling back to Save As

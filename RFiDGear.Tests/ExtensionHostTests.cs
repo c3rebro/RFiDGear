@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -336,6 +337,48 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task LoadAsync_WellFormedArchiveWithInvalidProjectXml_PreservesExistingProject()
+        {
+            var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "minimal.rfPrj");
+            Assert.True(File.Exists(fixturePath), $"Test fixture not found: {fixturePath}");
+
+            var (host, _) = CreatePair();
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var initial = await host.LoadAsync(fixturePath);
+                Assert.True(initial.Success);
+            });
+            host.ReplaceTaskCollection(new object[] { new StubTask() });
+
+            var originalPath = host.CurrentPath;
+            var malformedPath = Path.Combine(Path.GetTempPath(), $"rfidgear-malformed-{Guid.NewGuid():N}.rfPrj");
+            try
+            {
+                using (var archive = ZipFile.Open(malformedPath, ZipArchiveMode.Create))
+                {
+                    var entry = archive.CreateEntry("taskdatabase.xml");
+                    using var writer = new StreamWriter(entry.Open(), new UTF8Encoding(false));
+                    writer.Write("<?xml version=\"1.0\" encoding=\"utf-8\"?><InvalidProject><ManifestVersion>0</ManifestVersion></InvalidProject>");
+                }
+
+                ProjectOpenResult result = null!;
+                await StaTestRunner.RunOnStaThreadAsync(async () =>
+                {
+                    result = await host.LoadAsync(malformedPath);
+                });
+
+                Assert.False(result.Success);
+                Assert.Equal(ProjectOpenError.UnsupportedFormat, result.Error);
+                Assert.Equal(originalPath, host.CurrentPath);
+                Assert.Equal(1, host.TaskCount);
+            }
+            finally
+            {
+                File.Delete(malformedPath);
+            }
+        }
+
+        [Fact]
         public async Task LoadAsync_CancellationBeforeRead_ThrowsOperationCanceled()
         {
             var tmp = Path.GetTempFileName();
@@ -586,23 +629,29 @@ namespace RFiDGear.Tests
                 var variables = new[]
                 {
                     new KeyValuePair<string, string>("REPORTTARGETPATH", @"C:\Reports\out.pdf"),
-                    new KeyValuePair<string, string>("JOBNUMBER", "JOB-001"),
-                    new KeyValuePair<string, string>("CHIPNUMBER", "CHIP-042"),
+                    new KeyValuePair<string, string>("$JOBNUMBER", "JOB-001"),
+                    new KeyValuePair<string, string>("$CHIPNUMBER", "CHIP-042"),
                 };
                 var execResult = await host.Execution.ExecuteAllAsync(new ExecutionRequest(variables));
 
                 // The execution service received the full variables dictionary.
                 Assert.NotNull(execService.CapturedRequest);
                 Assert.Equal(@"C:\Reports\out.pdf", execService.CapturedRequest!.VariablesFromArgs["REPORTTARGETPATH"]);
-                Assert.Equal("JOB-001", execService.CapturedRequest!.VariablesFromArgs["JOBNUMBER"]);
-                Assert.Equal("CHIP-042", execService.CapturedRequest!.VariablesFromArgs["CHIPNUMBER"]);
+                Assert.Equal("JOB-001", execService.CapturedRequest!.VariablesFromArgs["$JOBNUMBER"]);
+                Assert.Equal("CHIP-042", execService.CapturedRequest!.VariablesFromArgs["$CHIPNUMBER"]);
 
                 // TotalTasks reflects the one task loaded from the fixture.
                 Assert.Equal(1, execResult.TotalTasks);
 
                 // Exactly one ordered TaskOutcome was built from the task collection.
                 Assert.Single(execResult.TaskOutcomes);
-                Assert.Equal("CommonTaskViewModel", execResult.TaskOutcomes[0].TaskTypeName);
+                var taskOutcome = execResult.TaskOutcomes[0];
+                Assert.Equal(0, taskOutcome.Position);
+                Assert.Equal("0", taskOutcome.ProjectTaskIndex);
+                Assert.Equal("CommonTaskViewModel", taskOutcome.TaskTypeName);
+                Assert.True(taskOutcome.IsSuccess);
+                Assert.Equal(ERROR.NoError.ToString(), taskOutcome.NormalizedErrorCode);
+                Assert.Null(taskOutcome.SkipReason);
 
                 // RunId was pre-allocated and shared with the execution service.
                 Assert.NotEmpty(execResult.RunId);
@@ -720,6 +769,14 @@ namespace RFiDGear.Tests
             TaskExecutionRequest request, CancellationToken ct = default)
         {
             CapturedRequest = request;
+            foreach (var task in request.TaskHandler?.TaskCollection?.OfType<IGenericTask>()
+                ?? Enumerable.Empty<IGenericTask>())
+            {
+                task.ExecutionState = TaskExecutionState.Completed;
+                task.IsTaskCompletedSuccessfully = true;
+                task.CurrentTaskErrorLevel = ERROR.NoError;
+            }
+
             return Task.FromResult(new TaskExecutionResult
             {
                 RunId = request.RunId,

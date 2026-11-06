@@ -87,6 +87,11 @@ namespace RFiDGear.Infrastructure.FileAccess
 
             var file = new FileInfo(_fileName);
 
+            if (projectManager.GetProjectFileType(file) == ProjectFileType.Unknown)
+            {
+                return DatabaseReadResult.Failed(DatabaseReadFailureReason.UnsupportedFormat);
+            }
+
             return await Task.Run(() =>
             {
                 try
@@ -95,7 +100,7 @@ namespace RFiDGear.Infrastructure.FileAccess
 
                     if (!projectLoadResult.Success)
                     {
-                        return DatabaseReadResult.Failed(DatabaseReadFailureReason.IoFailure);
+                        return DatabaseReadResult.Failed(DatabaseReadFailureReason.UnsupportedFormat);
                     }
 
                     if (!projectLoadResult.IsSupportedVersion)
@@ -109,6 +114,21 @@ namespace RFiDGear.Infrastructure.FileAccess
                         ? DatabaseReadFailureReason.None
                         : DatabaseReadFailureReason.UnsupportedVersion;
                     return new DatabaseReadResult(true, projectLoadResult.ManifestVersion, projectLoadResult.IsSupportedVersion, reason);
+                }
+                catch (InvalidDataException e)
+                {
+                    logger.Error(e, "Project archive format is invalid {DatabaseFile}", _fileName);
+                    return DatabaseReadResult.Failed(DatabaseReadFailureReason.UnsupportedFormat);
+                }
+                catch (IOException e)
+                {
+                    logger.Error(e, "Failed to access database file {DatabaseFile}", _fileName);
+                    return DatabaseReadResult.Failed(DatabaseReadFailureReason.IoFailure);
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    logger.Error(e, "Access to database file was denied {DatabaseFile}", _fileName);
+                    return DatabaseReadResult.Failed(DatabaseReadFailureReason.IoFailure);
                 }
                 catch (Exception e)
                 {
@@ -141,6 +161,7 @@ namespace RFiDGear.Infrastructure.FileAccess
                 catch (Exception e)
                 {
                     logger.Error(e, "Failed to deserialize project manifest from {ManifestFile}", projectLoadResult?.Reader?.ToString());
+                    throw;
                 }
             }
         }
@@ -175,7 +196,7 @@ namespace RFiDGear.Infrastructure.FileAccess
 
             var dispatcher = Application.Current?.Dispatcher;
 
-            if (dispatcher != null)
+            if (dispatcher != null && !dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished)
             {
                 if (dispatcher.CheckAccess())
                 {
@@ -320,6 +341,9 @@ namespace RFiDGear.Infrastructure.FileAccess
 
             /// <summary>The project file's manifest version is newer than the application supports.</summary>
             UnsupportedVersion,
+
+            /// <summary>The file extension or archive structure is not a supported project format.</summary>
+            UnsupportedFormat,
 
             /// <summary>The project XML could not be deserialized (malformed, schema mismatch, etc.).</summary>
             DeserializationFailed,
