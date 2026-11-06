@@ -127,9 +127,12 @@ namespace RFiDGear.Tests
         public async Task LoadAsync_ProjectEntryWithAByteOrderMark_StillLoads(string encoding)
         {
             // Older releases did not always write UTF-8 without a mark; the file-based reader coped, so this must too.
+            // A UTF-16 document declares utf-16, as the serializer wrote it; the fixture helper rewrites that to utf-8.
+            var utf16Xml = Project(2).Replace("encoding=\"utf-8\"", "encoding=\"utf-16\"", StringComparison.Ordinal);
+            Assert.Contains("encoding=\"utf-16\"", utf16Xml, StringComparison.Ordinal);
             var bytes = encoding == "utf8-bom"
                 ? System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(Project(2))).ToArray()
-                : System.Text.Encoding.Unicode.GetPreamble().Concat(System.Text.Encoding.Unicode.GetBytes(Project(2))).ToArray();
+                : System.Text.Encoding.Unicode.GetPreamble().Concat(System.Text.Encoding.Unicode.GetBytes(utf16Xml)).ToArray();
             var (host, _) = CreateIsolatedHost();
             var file = Track(ProjectFixtures.CreateArchiveWithRawEntry("taskdatabase.xml", bytes));
 
@@ -137,6 +140,113 @@ namespace RFiDGear.Tests
 
             Assert.True(result.Success, $"LoadAsync failed: {result.Error}");
             Assert.Equal(2, result.TaskCount);
+        }
+
+        [Theory]
+        [InlineData("comment")]
+        [InlineData("text")]
+        public async Task LoadAsync_ProjectEntryWithAnInvalidUtf8Byte_IsRejectedNotRepaired(string where)
+        {
+            // The byte-based XML check rejects it. Decoding to text first would turn the byte into U+FFFD and
+            // load a project whose data is not what the file says.
+            var xml = Project(2);
+            var afterDeclaration = xml.IndexOf("?>", StringComparison.Ordinal) + 2;
+            var afterRootStartTag = afterDeclaration + xml[afterDeclaration..].IndexOf('>', StringComparison.Ordinal) + 1;
+            // A comment right after the declaration, or character data right after the root element's start tag.
+            var splitAt = where == "comment" ? afterDeclaration : afterRootStartTag;
+            var bytes = new List<byte>(System.Text.Encoding.UTF8.GetBytes(xml[..splitAt]));
+            bytes.AddRange(where == "comment"
+                ? new byte[] { 0x3C, 0x21, 0x2D, 0x2D, 0xFF, 0x2D, 0x2D, 0x3E }   // <!--[0xFF]-->
+                : new byte[] { 0xFF });
+            bytes.AddRange(System.Text.Encoding.UTF8.GetBytes(xml[splitAt..]));
+
+            var (host, _) = CreateIsolatedHost();
+            var good = Track(ProjectFixtures.CreateProject(1));
+            Assert.True((await LoadAsync(host, good)).Success);
+            var file = Track(ProjectFixtures.CreateArchiveWithRawEntry("taskdatabase.xml", bytes.ToArray()));
+
+            var result = await LoadAsync(host, file);
+
+            Assert.False(result.Success);
+            Assert.Equal(ProjectOpenError.UnsupportedFormat, result.Error);
+            Assert.Equal(1, host.TaskCount);
+        }
+
+        [Fact]
+        public void PrepareProject_ArchiveDeclaringTooManyEntries_IsRejectedBeforeTheDirectoryIsRead()
+        {
+            var manager = new ProjectManager(_root);
+            var file = Track(ProjectFixtures.CreateProject(1));
+            var bytes = File.ReadAllBytes(file);
+            var record = LastIndexOfEndOfCentralDirectory(bytes);
+            // Claim 5000 entries on this disk and in total; the directory itself still holds one.
+            bytes[record + 8] = bytes[record + 10] = 0x88;
+            bytes[record + 9] = bytes[record + 11] = 0x13;
+            File.WriteAllBytes(file, bytes);
+
+            var exception = Assert.Throws<InvalidDataException>(
+                () => manager.PrepareProject(new FileInfo(file), new Version(2, 0, 10)));
+
+            // Our own message: the library's complaint about a count that does not match comes later.
+            Assert.Contains("more entries", exception.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void PrepareProject_ArchiveUnderstatingItsEntryCount_IsNotAccepted()
+        {
+            // The end record says 2 entries, the directory holds 7: the declared count cannot be trusted alone.
+            var manager = new ProjectManager(_root) { MaxArchiveEntries = 5 };
+            var file = Track(ProjectFixtures.CreateArchiveWithEntries(EntriesWithProjectLast(count: 7)));
+            var bytes = File.ReadAllBytes(file);
+            var record = LastIndexOfEndOfCentralDirectory(bytes);
+            bytes[record + 8] = bytes[record + 10] = 2;
+            bytes[record + 9] = bytes[record + 11] = 0;
+            File.WriteAllBytes(file, bytes);
+
+            Assert.Throws<InvalidDataException>(() => manager.PrepareProject(new FileInfo(file), new Version(2, 0, 10)));
+        }
+
+        [Fact]
+        public void ReadDeclaredEntryCount_ReadsTheCountFromTheEndOfTheFile()
+        {
+            var three = Track(ProjectFixtures.CreateArchiveWithEntries(("a.txt", "a"), ("b.txt", "b"), ("taskdatabase.xml", Project(1))));
+
+            Assert.Equal(3, ProjectManager.ReadDeclaredEntryCount(three));
+        }
+
+        [Fact]
+        public void ReadDeclaredEntryCount_FindsTheRecordBehindATrailingComment()
+        {
+            var file = Track(ProjectFixtures.CreateProject(1));
+            using (var stream = new FileStream(file, FileMode.Append, System.IO.FileAccess.Write))
+            {
+                stream.Write(System.Text.Encoding.ASCII.GetBytes(new string('x', 300)));
+            }
+
+            Assert.Equal(1, ProjectManager.ReadDeclaredEntryCount(file));
+        }
+
+        [Fact]
+        public void ReadDeclaredEntryCount_WhenThereIsNoRecord_ReturnsNull()
+        {
+            var notAnArchive = Track(ProjectFixtures.CreateNotAnArchive());
+            var empty = Track(ProjectFixtures.CreateEmptyFile(".rfPrj"));
+
+            Assert.Null(ProjectManager.ReadDeclaredEntryCount(notAnArchive));
+            Assert.Null(ProjectManager.ReadDeclaredEntryCount(empty));
+        }
+
+        private static int LastIndexOfEndOfCentralDirectory(byte[] zip)
+        {
+            for (var i = zip.Length - 22; i >= 0; i--)
+            {
+                if (zip[i] == 0x50 && zip[i + 1] == 0x4B && zip[i + 2] == 0x05 && zip[i + 3] == 0x06)
+                {
+                    return i;
+                }
+            }
+
+            throw new InvalidOperationException("The fixture has no end-of-central-directory record.");
         }
 
         [Fact]
