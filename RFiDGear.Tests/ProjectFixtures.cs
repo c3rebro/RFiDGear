@@ -36,9 +36,10 @@ namespace RFiDGear.Tests
         /// format older versions wrote and the open dialog still offers.
         /// </summary>
         /// <param name="taskCount">Number of tasks to serialize.</param>
+        /// <param name="manifestVersion">Optional manifest version, for example one written by an older release.</param>
         /// <returns>Full path of the generated file in the system temp directory.</returns>
-        public static string CreatePlainXmlProject(int taskCount) =>
-            CreateTextFile(".xml", SerializeProject(taskCount, manifestVersion: null));
+        public static string CreatePlainXmlProject(int taskCount, string? manifestVersion = null) =>
+            CreateTextFile(".xml", SerializeProject(taskCount, manifestVersion));
 
         /// <summary>
         /// Creates a ZIP archive whose file name ends in <c>.xml</c>, as versions between 2022 and 2025 wrote
