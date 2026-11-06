@@ -770,13 +770,26 @@ namespace RFiDGear.Tests
     {
         protected readonly string _root = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
         private readonly List<string> _files = new();
+        private readonly List<string> _scratchDirectories = new();
 
         public void Dispose()
         {
             foreach (var file in _files)
                 File.Delete(file);
-            if (Directory.Exists(_root))
-                Directory.Delete(_root, recursive: true);
+            foreach (var directory in _scratchDirectories.Append(_root))
+            {
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, recursive: true);
+            }
+        }
+
+        /// <summary>Creates an empty folder outside the isolated root that is deleted when the test ends.</summary>
+        protected string NewScratchDirectory()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            _scratchDirectories.Add(directory);
+            return directory;
         }
 
         /// <summary>Registers a file for deletion when the test ends and returns its path.</summary>
@@ -921,6 +934,51 @@ namespace RFiDGear.Tests
             Assert.Equal(ProjectOpenError.UnsupportedFormat, result.Error);
             Assert.Equal(0, host.TaskCount);
             Assert.Null(host.CurrentPath);
+        }
+
+        [Fact]
+        public async Task LoadAsync_SecondArchiveWithTheSameFileName_LoadsItsOwnProjectNotTheFirstOnesPayload()
+        {
+            // Both archives are called job.rfPrj. The first stores its project in an entry named like the
+            // archive (the oldest layout), which extraction leaves in the shared folder as job.rfPrj.
+            var first = Track(ProjectFixtures.CreateArchiveAt(
+                NewScratchDirectory(), "job.rfPrj", entryName: "job.rfPrj",
+                ProjectFixtures.SerializeProject(2, manifestVersion: null)));
+            var second = Track(ProjectFixtures.CreateArchiveAt(
+                NewScratchDirectory(), "job.rfPrj", entryName: "taskdatabase.xml",
+                ProjectFixtures.SerializeProject(1, manifestVersion: null)));
+            var (host, _) = CreateIsolatedHost();
+            var firstResult = await LoadAsync(host, first);
+            Assert.True(firstResult.Success, $"LoadAsync failed: {firstResult.Error}");
+            Assert.Equal(2, firstResult.TaskCount);
+
+            var result = await LoadAsync(host, second);
+
+            Assert.True(result.Success, $"LoadAsync failed: {result.Error}");
+            Assert.Equal(1, result.TaskCount);   // not the 2 tasks left behind by the first archive
+            Assert.Equal(1, host.TaskCount);
+            Assert.Equal(Path.GetFullPath(second), host.CurrentPath);
+        }
+
+        [Fact]
+        public async Task LoadAsync_SecondArchiveWithTheSameFileNameButNoProjectEntry_IsRejectedAndKeepsTheProject()
+        {
+            var first = Track(ProjectFixtures.CreateArchiveAt(
+                NewScratchDirectory(), "job.rfPrj", entryName: "job.rfPrj",
+                ProjectFixtures.SerializeProject(2, manifestVersion: null)));
+            var second = Track(ProjectFixtures.CreateArchiveAt(
+                NewScratchDirectory(), "job.rfPrj", entryName: "unrelated.xml", "<unrelated />"));
+            var (host, _) = CreateIsolatedHost();
+            Assert.True((await LoadAsync(host, first)).Success);
+            var pathBefore = host.CurrentPath;
+
+            var result = await LoadAsync(host, second);
+
+            // It has no project of its own, so it must not succeed on the first archive's leftovers.
+            Assert.False(result.Success);
+            Assert.Equal(ProjectOpenError.UnsupportedFormat, result.Error);
+            Assert.Equal(pathBefore, host.CurrentPath);
+            Assert.Equal(2, host.TaskCount);
         }
 
         [Fact]
@@ -1223,6 +1281,79 @@ namespace RFiDGear.Tests
 
             Assert.Equal(0, host.TaskCount);
             Assert.Equal(2, calls);
+        }
+
+        [Fact]
+        public async Task WhileASaveIsSerializing_NewAndReplaceAreRejected_SoTheSaveKeepsItsPathAndData()
+        {
+            var output = NewOutputPath(".rfPrj");
+            var live = new ChipTaskHandlerModel();
+            live.TaskCollection.Add(new CommonTaskViewModel { CurrentTaskIndex = "0" });
+            using var entered = new ManualResetEventSlim(false);
+            using var release = new ManualResetEventSlim(false);
+            var parkNextRead = 0;
+
+            // The save reads the live model through this accessor while it owns the gate, so parking the
+            // accessor parks the save mid-write, deterministically.
+            var host = new ProjectHostImpl(
+                new DatabaseReaderWriter(new ProjectManager(_root)),
+                new ExtensionOperationCoordinator(),
+                () =>
+                {
+                    if (Interlocked.Exchange(ref parkNextRead, 0) == 1)
+                    {
+                        entered.Set();
+                        release.Wait(TimeSpan.FromSeconds(10));
+                    }
+
+                    return live;
+                },
+                action => { action(); return Task.CompletedTask; },
+                loaded =>
+                {
+                    live.TaskCollection.Clear();
+                    foreach (var task in loaded.TaskCollection)
+                        live.TaskCollection.Add(task);
+                });
+
+            Volatile.Write(ref parkNextRead, 1);
+            var saving = Task.Run(() => host.SaveAs(output));
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(10)), "The save never reached the live model.");
+
+            // An edit that slipped in here would clear the path and swap the collection mid-serialization,
+            // and the finishing save would then write the old project's path back.
+            Assert.Throws<InvalidOperationException>(() => host.New());
+            Assert.Throws<InvalidOperationException>(() => host.ReplaceTaskCollection(new object[] { new StubTask() }));
+
+            release.Set();
+            await saving;
+
+            Assert.Equal(Path.GetFullPath(output), host.CurrentPath);
+            Assert.Equal(1, host.TaskCount);
+
+            // Once the save is done, edits work again and the rejected ones left nothing behind.
+            host.New();
+            Assert.Null(host.CurrentPath);
+            Assert.Equal(0, host.TaskCount);
+        }
+
+        [Fact]
+        public async Task ProjectChanged_SubscriberFault_IsLoggedWithoutLeakingSecretsFromItsMessage()
+        {
+            const string secret = "00112233445566778899AABBCCDDEEFF";   // key-sized hex
+            var project = Track(ProjectFixtures.CreateProject(1));
+            var (host, _) = CreateIsolatedHost();
+            host.ProjectChanged += (_, _) => throw new InvalidOperationException("Key=" + secret + " also " + secret);
+            using var logs = CapturedLogs.Install();
+
+            Assert.True((await LoadAsync(host, project)).Success);
+
+            var entry = Assert.Single(logs.From(nameof(ProjectHostImpl)), e => e.Level == Serilog.Events.LogEventLevel.Error);
+            Assert.Null(entry.Exception);   // the raw exception is not attached
+            var written = CapturedLogs.EverythingWrittenFor(entry);
+            Assert.DoesNotContain(secret, written, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("[REDACTED", written);
+            Assert.Contains(nameof(InvalidOperationException), written);
         }
 
         // ── save: the path that was actually written ──
@@ -1761,6 +1892,100 @@ namespace RFiDGear.Tests
             Assert.Contains("REPORTTEMPLATEFILE", ex.Message);
             Assert.Null(execService.CapturedRequest);
             Assert.False(host.IsRunning);
+        }
+
+        [Theory]
+        [InlineData("existing-folder")]
+        [InlineData("folder-with-trailing-separator")]
+        [InlineData("relative-path-with-folder")]
+        [InlineData("bare-file-name")]
+        public async Task ExecuteAllAsync_ReportTargetThatCannotBeAFile_ThrowsBeforeAcceptingRun(string kind)
+        {
+            var dir = CreateTempDirectory();
+            try
+            {
+                var target = kind switch
+                {
+                    // The folder exists, so a folder-only check lets all of these through.
+                    "existing-folder" => dir,
+                    "folder-with-trailing-separator" => dir + Path.DirectorySeparatorChar,
+                    "relative-path-with-folder" => Path.Combine("reports", "out.pdf"),
+                    "bare-file-name" => "out.pdf",
+                    _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+                };
+                var execService = new CapturingExecService();
+                var (_, host, _) = CreateTriple(execService);
+                var eventCount = 0;
+                host.ExecutionCompleted += (_, _) => eventCount++;
+
+                var ex = await Assert.ThrowsAsync<ArgumentException>(
+                    () => host.ExecuteAllAsync(Vars(("REPORTTARGETPATH", target))));
+
+                Assert.Contains("REPORTTARGETPATH", ex.Message);
+                Assert.Null(execService.CapturedRequest);   // no card operation was started
+                Assert.Equal(0, eventCount);
+                Assert.False(host.IsRunning);
+            }
+            finally
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_FaultLog_DoesNotRepeatSecretsFromTheExceptionMessage()
+        {
+            const string secret = "00112233445566778899AABBCCDDEEFF";   // key-sized hex
+            var (_, host, _) = CreateTriple(new ThrowingExecService(
+                () => new InvalidOperationException("Key=" + secret + " and again " + secret)));
+            using var logs = CapturedLogs.Install();
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Equal(ExecutionFailureReason.Faulted, result.FailureReason);
+            var entry = Assert.Single(logs.From(nameof(TaskExecHostImpl)), e => e.Level == Serilog.Events.LogEventLevel.Error);
+            // The execution service redacts these messages; attaching the raw exception here would write
+            // the original text a second time.
+            Assert.Null(entry.Exception);
+            var written = CapturedLogs.EverythingWrittenFor(entry);
+            Assert.DoesNotContain(secret, written, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("[REDACTED", written);
+            Assert.Contains(nameof(InvalidOperationException), written);
+            Assert.Contains(result.RunId, written);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_TimeoutLog_DoesNotRepeatSecretsFromTheExceptionMessage()
+        {
+            const string secret = "00112233445566778899AABBCCDDEEFF";
+            var (_, host, _) = CreateTriple(new ThrowingExecService(
+                () => new TimeoutException("Key=" + secret)));
+            using var logs = CapturedLogs.Install();
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Equal(ExecutionFailureReason.TimedOut, result.FailureReason);
+            var entry = Assert.Single(logs.From(nameof(TaskExecHostImpl)), e => e.Level == Serilog.Events.LogEventLevel.Warning);
+            Assert.Null(entry.Exception);
+            Assert.DoesNotContain(secret, CapturedLogs.EverythingWrittenFor(entry), StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_SubscriberFault_IsLoggedWithoutLeakingSecretsFromItsMessage()
+        {
+            const string secret = "00112233445566778899AABBCCDDEEFF";
+            var (_, host, _) = CreateTriple(new CapturingExecService());
+            host.ExecutionCompleted += (_, _) => throw new InvalidOperationException("Key=" + secret);
+            using var logs = CapturedLogs.Install();
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Equal(ExecutionOutcome.Success, result.Outcome);   // the run is unaffected
+            var entry = Assert.Single(logs.From(nameof(TaskExecHostImpl)), e => e.Level == Serilog.Events.LogEventLevel.Error);
+            Assert.Null(entry.Exception);
+            var written = CapturedLogs.EverythingWrittenFor(entry);
+            Assert.DoesNotContain(secret, written, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("[REDACTED", written);
         }
     }
 

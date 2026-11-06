@@ -15,9 +15,9 @@ namespace RFiDGear.Contracts
     /// Report variables, interpreted exactly as the equivalent startup arguments are:
     /// <list type="bullet">
     /// <item><description>
-    /// <c>REPORTTARGETPATH</c> (alias <c>REPORTOUTPUTPATH</c>): full path of the report file to create.
-    /// Its directory must already exist. A <c>?</c>, <c>??</c>, or <c>???</c> in the path is replaced by the next
-    /// free number in that directory. A project that contains a "create report" task needs this variable;
+    /// <c>REPORTTARGETPATH</c> (alias <c>REPORTOUTPUTPATH</c>): fully qualified path of the report <em>file</em> to
+    /// create, not a folder. Its folder must already exist. A <c>?</c>, <c>??</c>, or <c>???</c> in the path is
+    /// replaced by the next free number in that folder. A project that contains a "create report" task needs this variable;
     /// without it the report task cannot run unattended and the run ends with <see cref="ExecutionFailureReason.Faulted"/>.
     /// </description></item>
     /// <item><description>

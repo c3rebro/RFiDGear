@@ -294,24 +294,51 @@ namespace RFiDGear.Infrastructure.FileAccess
         {
             CleanTemporaryFiles();
 
-            // A staging file left by an earlier load or save must never be mistaken for this archive's
-            // content: the fallback below would otherwise silently open the previous project when the
-            // archive lacks the expected entry.
-            if (File.Exists(TaskDatabasePath))
+            // The payload is chosen from the archive's own entries, never by looking for a file that happens
+            // to be in the shared folder. Anything left there by an earlier load or save, including a
+            // same-named entry from a different archive with the same file name, must not be mistaken for
+            // this archive's project.
+            var payloadEntry = FindProjectEntryName(archivePath, archiveFileName);
+
+            if (payloadEntry == null)
             {
-                File.Delete(TaskDatabasePath);
+                return string.Empty;
             }
 
+            // Extraction overwrites, so the payload on disk is exactly this archive's entry.
             ExtractArchive(archivePath);
 
-            var archiveContentPath = Path.Combine(AppDataPath, archiveFileName);
+            var payloadPath = Path.Combine(AppDataPath, payloadEntry);
 
-            if (File.Exists(archiveContentPath))
+            return File.Exists(payloadPath) ? payloadPath : string.Empty;
+        }
+
+        /// <summary>
+        /// Finds the entry that holds the project: the entry named like the archive itself (the oldest layout)
+        /// if there is one, otherwise <c>taskdatabase.xml</c>.
+        /// </summary>
+        /// <returns>The entry's name, or <c>null</c> when the archive contains no project entry.</returns>
+        private static string FindProjectEntryName(string archivePath, string archiveFileName)
+        {
+            string taskDatabaseEntry = null;
+
+            using (var archive = ZipFile.OpenRead(archivePath))
             {
-                return archiveContentPath;
+                foreach (var entry in archive.Entries)
+                {
+                    if (entry.FullName.Equals(archiveFileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return entry.FullName;
+                    }
+
+                    if (entry.FullName.Equals(TaskDatabaseFileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        taskDatabaseEntry = entry.FullName;
+                    }
+                }
             }
 
-            return File.Exists(TaskDatabasePath) ? TaskDatabasePath : string.Empty;
+            return taskDatabaseEntry;
         }
 
         private void ExtractArchive(string archivePath)

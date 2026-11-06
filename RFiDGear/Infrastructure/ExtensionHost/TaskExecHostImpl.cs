@@ -22,7 +22,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     /// </summary>
     internal sealed class TaskExecHostImpl : ITaskExecHost
     {
-        private static readonly ILogger Logger = Log.ForContext<TaskExecHostImpl>();
+        // Resolved on each use, not cached, so the logger configured at startup (and the one tests install)
+        // is the one that is used even if this type was touched before logging was configured.
+        private static ILogger Logger => Log.ForContext<TaskExecHostImpl>();
 
         private readonly ITaskExecutionService _execService;
         private readonly ProjectHostImpl _project;
@@ -187,18 +189,28 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             _                                                           => ExecutionFailureReason.Faulted,
         };
 
+        /// <summary>
+        /// Logs a run that ended abnormally. The exception is described through <see cref="SanitizedException"/>
+        /// and never attached, so key material in its message cannot reach the log a second time.
+        /// </summary>
         private static void LogFailedRun(string runId, ExecutionFailureReason reason, Exception ex)
         {
+            var error = new SanitizedException(ex);
+
             switch (reason)
             {
                 case ExecutionFailureReason.Cancelled:
                     Logger.Information("Extension-triggered run {RunId} was cancelled at a task boundary", runId);
                     break;
                 case ExecutionFailureReason.TimedOut:
-                    Logger.Warning(ex, "Extension-triggered run {RunId} timed out", runId);
+                    Logger.Warning(
+                        "Extension-triggered run {RunId} timed out: {ExceptionType}: {ExceptionMessage}",
+                        runId, error.TypeName, error.Message);
                     break;
                 default:
-                    Logger.Error(ex, "Extension-triggered run {RunId} faulted", runId);
+                    Logger.Error(
+                        "Extension-triggered run {RunId} faulted: {ExceptionType}: {ExceptionMessage} {ExceptionStackTrace}",
+                        runId, error.TypeName, error.Message, error.StackTrace);
                     break;
             }
         }
@@ -222,7 +234,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, "ExecutionCompleted subscriber threw for run {RunId}; the exception was not propagated", result.RunId);
+                    var error = new SanitizedException(ex);
+                    Logger.Error(
+                        "ExecutionCompleted subscriber threw for run {RunId}; the exception was not propagated. {ExceptionType}: {ExceptionMessage} {ExceptionStackTrace}",
+                        result.RunId, error.TypeName, error.Message, error.StackTrace);
                 }
             }
         }
@@ -264,9 +279,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
             if (TryGetFirstNonBlank(variables, out var targetKey, out var target, "REPORTTARGETPATH", "REPORTOUTPUTPATH"))
             {
-                reportOutputPath = StartupArgumentProcessor.NormalizeReportTargetPath(target)
-                    ?? throw new ArgumentException(
-                        $"Variable {targetKey} must be a file path whose directory exists.", "request");
+                reportOutputPath = ResolveReportTarget(targetKey, target);
             }
 
             if (TryGetFirstNonBlank(variables, out var templateKey, out var template, "REPORTTEMPLATEFILE", "REPORTTEMPLATEPATH"))
@@ -275,6 +288,36 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     throw new ArgumentException($"Variable {templateKey} must name an existing file.", "request");
 
                 reportTemplateFile = template;
+            }
+        }
+
+        /// <summary>
+        /// Validates a report target before the run is accepted: it must be a fully qualified path that names a
+        /// file (not a folder) in a folder that exists. <see cref="StartupArgumentProcessor.NormalizeReportTargetPath"/>
+        /// only checks the folder, so an existing folder or a path ending in a separator would pass it and the
+        /// run would perform card operations before the report step discovered it cannot write anything.
+        /// </summary>
+        /// <returns>The path to create, with any <c>?</c> placeholder resolved to the next free number.</returns>
+        /// <exception cref="ArgumentException">The target cannot be used as a report file.</exception>
+        private static string ResolveReportTarget(string key, string target)
+        {
+            try
+            {
+                if (!Path.IsPathFullyQualified(target))
+                    throw new ArgumentException($"Variable {key} must be a full (absolute) file path.", "request");
+
+                var resolved = StartupArgumentProcessor.NormalizeReportTargetPath(target)
+                    ?? throw new ArgumentException($"Variable {key} must be a file path whose folder exists.", "request");
+
+                if (string.IsNullOrEmpty(Path.GetFileName(resolved)) || Directory.Exists(resolved))
+                    throw new ArgumentException($"Variable {key} must name a file, not a folder.", "request");
+
+                return resolved;
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is NotSupportedException)
+            {
+                // Looking at the folder failed (unreadable, name too long, ...): the target cannot be used either.
+                throw new ArgumentException($"Variable {key} cannot be used as a report file path.", "request");
             }
         }
 

@@ -60,6 +60,26 @@ namespace RFiDGear.Tests
             CreateArchive(".rfPrj", entryName, xml);
 
         /// <summary>
+        /// Creates a project archive with a chosen file name in a chosen folder, so two different archives can
+        /// share one file name (as projects named <c>job.rfPrj</c> in different folders do).
+        /// </summary>
+        /// <param name="directory">Existing folder to create the archive in.</param>
+        /// <param name="fileName">File name of the archive, for example <c>job.rfPrj</c>.</param>
+        /// <param name="entryName">Name of the single archive entry.</param>
+        /// <param name="xml">Content of the entry.</param>
+        /// <returns>Full path of the generated archive.</returns>
+        public static string CreateArchiveAt(string directory, string fileName, string entryName, string xml)
+        {
+            var path = Path.Combine(directory, fileName);
+            using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
+            var entry = archive.CreateEntry(entryName);
+            using var entryStream = entry.Open();
+            using var writer = new StreamWriter(entryStream, new UTF8Encoding(false));
+            writer.Write(StripEncodingDeclaration(xml));
+            return path;
+        }
+
+        /// <summary>
         /// Creates a valid chip-tree XML document (what "Save Chip" writes), which is not a task project.
         /// </summary>
         /// <returns>Full path of the generated <c>.xml</c> file in the system temp directory.</returns>

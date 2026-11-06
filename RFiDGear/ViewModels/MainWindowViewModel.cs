@@ -1393,25 +1393,41 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand SaveTaskDialogCommand => new AsyncRelayCommand(OnNewSaveTaskDialogCommand);
         private async Task OnNewSaveTaskDialogCommand()
         {
-            // Save to the project that is actually open (last loaded or saved); only fall back to the
-            // remembered default when none is, e.g. right after startup without an auto-loaded project.
-            var targetPath = extensionHost.Project.CurrentPath;
+            var targetPath = ResolveProjectSaveTarget();
 
-            if (!IsValidProjectSavePath(targetPath))
-            {
-                using (var settings = settingsReaderWriterFactory())
-                {
-                    targetPath = settings.DefaultSpecification.LastUsedProjectPath;
-                }
-            }
-
-            if (!IsValidProjectSavePath(targetPath))
+            if (targetPath == null)
             {
                 await OnNewSaveTaskAsDialogCommand();
                 return;
             }
 
             TrySaveProject(targetPath);
+        }
+
+        /// <summary>
+        /// Decides which file a plain Save writes to, or <c>null</c> when the user has to choose one (Save As).
+        /// <para>
+        /// When a project is open, Save only ever writes that project. If its file has since been moved or
+        /// deleted the answer is <c>null</c>: falling back to the remembered default here would silently write
+        /// this project's contents over a different project. The remembered default is consulted only when no
+        /// project is open at all, e.g. right after startup without an auto-loaded project.
+        /// </para>
+        /// </summary>
+        /// <returns>An existing project file path, or <c>null</c> if Save As should be offered.</returns>
+        internal string ResolveProjectSaveTarget()
+        {
+            var openProjectPath = extensionHost.Project.CurrentPath;
+
+            if (openProjectPath != null)
+            {
+                return IsValidProjectSavePath(openProjectPath) ? openProjectPath : null;
+            }
+
+            using (var settings = settingsReaderWriterFactory())
+            {
+                var rememberedPath = settings.DefaultSpecification.LastUsedProjectPath;
+                return IsValidProjectSavePath(rememberedPath) ? rememberedPath : null;
+            }
         }
 
         /// <summary>

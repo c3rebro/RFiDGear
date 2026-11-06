@@ -20,7 +20,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     /// </summary>
     internal sealed class ProjectHostImpl : IProjectHost
     {
-        private static readonly ILogger Logger = Log.ForContext<ProjectHostImpl>();
+        // Resolved on each use, not cached, so the logger configured at startup (and the one tests install)
+        // is the one that is used even if this type was touched before logging was configured.
+        private static ILogger Logger => Log.ForContext<ProjectHostImpl>();
 
         private readonly DatabaseReaderWriter _dbRW;
         private readonly ExtensionOperationCoordinator _coordinator;
@@ -34,9 +36,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         // notifications). null in headless mode (we just update _dbRW directly).
         private readonly Action<ChipTaskHandlerModel>? _applyToLiveApp;
 
-        // Load and save both stage files in the shared application data folder, so they must never
-        // overlap. Unlike the coordinator this is not blocked by a task run: saving while a run is
-        // in progress has always been allowed. 0 = free, 1 = a load or save owns the staging files.
+        // A load, a save, and a project edit (New, ReplaceTaskCollection) must never overlap: load and save
+        // stage files in the shared application data folder, and a save serializes the live collection and
+        // records CurrentPath. Unlike the coordinator this is not blocked by a task run: saving while a run
+        // is in progress has always been allowed. 0 = free, 1 = one of those operations owns it.
         private int _fileOperationActive;
 
         private string? _currentPath;
@@ -218,12 +221,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             });
 
         /// <inheritdoc/>
-        public void Save()
-        {
-            var path = _currentPath
-                ?? throw new InvalidOperationException("No path set. Use SaveAs(path) for unsaved projects.");
-            WriteProject(path);
-        }
+        public void Save() => WriteProject(null);
 
         /// <inheritdoc/>
         public void SaveAs(string path)
@@ -290,13 +288,24 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                             ? "A task run is in progress. Wait for it to complete."
                             : "Another project edit is in progress.");
 
+            var fileGateHeld = false;
             try
             {
+                // Saves serialize the live collection and record CurrentPath, so an edit must never run
+                // beside one. The coordinator alone cannot guarantee that: a save only checks it before it
+                // starts, so both sides take the same atomic gate instead.
+                fileGateHeld = TryEnterFileGate();
+                if (!fileGateHeld)
+                    throw new InvalidOperationException("A project save is in progress. Wait for it to complete.");
+
                 edit();
                 RaiseProjectChanged();
             }
             finally
             {
+                if (fileGateHeld)
+                    ExitFileGate();
+
                 _coordinator.EndProjectOperation();
             }
         }
@@ -306,18 +315,25 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// extension the writer appended) as <see cref="CurrentPath"/>. Allowed while a task run is in
         /// progress; refused while a load or a project edit is.
         /// </summary>
-        private void WriteProject(string path)
+        private void WriteProject(string? path)
         {
             if (_coordinator.IsMutating)
                 throw new InvalidOperationException("A project edit is in progress. Wait for it to complete.");
 
+            // Edits and loads hold this gate for their whole duration, so once it is ours no edit can
+            // replace the collection mid-serialization or clear CurrentPath behind our back.
             if (!TryEnterFileGate())
-                throw new InvalidOperationException("A project load or save is in progress. Wait for it to complete.");
+                throw new InvalidOperationException("A project load, edit, or save is in progress. Wait for it to complete.");
 
             try
             {
-                var written = _dbRW.WriteDatabase(SetupModel, path)
-                    ?? throw new IOException($"The project could not be written to '{path}'.");
+                // Resolved under the gate: reading CurrentPath earlier could pick up a path that an edit
+                // clears before the write.
+                var target = path ?? _currentPath
+                    ?? throw new InvalidOperationException("No path set. Use SaveAs(path) for unsaved projects.");
+
+                var written = _dbRW.WriteDatabase(SetupModel, target)
+                    ?? throw new IOException($"The project could not be written to '{target}'.");
 
                 _currentPath = Path.GetFullPath(written);
             }
@@ -352,7 +368,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, "ProjectChanged subscriber threw; the exception was not propagated");
+                    var error = new SanitizedException(ex);
+                    Logger.Error(
+                        "ProjectChanged subscriber threw; the exception was not propagated. {ExceptionType}: {ExceptionMessage} {ExceptionStackTrace}",
+                        error.TypeName, error.Message, error.StackTrace);
                 }
             }
         }

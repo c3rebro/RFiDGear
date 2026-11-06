@@ -431,6 +431,73 @@ namespace RFiDGear.Tests
                 }
             });
         }
+
+        [Fact]
+        public async Task Save_WhenTheOpenProjectsFileIsGone_DoesNotWriteItIntoTheRememberedProject()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                var rememberedProject = ProjectFixtures.CreateProject(2);
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot);
+                    await OpenProjectAsync(viewModel, rememberedProject);
+
+                    // Project B is now the open one; A stays the remembered default.
+                    var openProject = Path.Combine(tempRoot, "b.rfPrj");
+                    await viewModel.SaveProjectAsAsync(openProject, setAsDefault: false);
+                    var rememberedBytes = File.ReadAllBytes(rememberedProject);
+                    File.Delete(openProject);   // B was moved or deleted
+
+                    // Falling back to A would silently overwrite it with B's contents.
+                    Assert.Null(viewModel.ResolveProjectSaveTarget());
+
+                    await viewModel.SaveTaskDialogCommand.ExecuteAsync(null);
+
+                    Assert.Equal(rememberedBytes, File.ReadAllBytes(rememberedProject));
+                    Assert.False(File.Exists(openProject));
+                    Assert.Single(viewModel.Dialogs);   // Save As was offered instead
+                }
+                finally
+                {
+                    File.Delete(rememberedProject);
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task ResolveProjectSaveTarget_WithNoProjectOpen_UsesTheRememberedDefault()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                var rememberedProject = ProjectFixtures.CreateProject(1);
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot);
+                    Assert.Null(viewModel.ExtensionHost.Project.CurrentPath);   // nothing is open
+
+                    using (var settings = new SettingsReaderWriter(Path.Combine(tempRoot, "settings")))
+                    {
+                        settings.DefaultSpecification.LastUsedProjectPath = rememberedProject;
+                        await settings.SaveSettings();
+                    }
+
+                    Assert.Equal(rememberedProject, viewModel.ResolveProjectSaveTarget());
+
+                    // A remembered path that no longer exists means there is nothing to save to.
+                    File.Delete(rememberedProject);
+                    Assert.Null(viewModel.ResolveProjectSaveTarget());
+                }
+                finally
+                {
+                    File.Delete(rememberedProject);
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
     }
 
     internal class DeferredSettingsBootstrapper : ISettingsBootstrapper
