@@ -28,26 +28,83 @@ namespace RFiDGear.Infrastructure.FileAccess
 
         public string SettingsPath => Path.Combine(AppDataPath, SettingsFileName);
 
+        /// <summary>
+        /// Creates a manager rooted at the per-user application data folder (<c>%LocalAppData%\RFiDGear</c>).
+        /// </summary>
         public ProjectManager()
+            : this(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear"))
         {
-            AppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RFiDGear");
+        }
+
+        /// <summary>
+        /// Creates a manager rooted at <paramref name="appDataPath"/>. Project archives are extracted and
+        /// staging files are written below this folder, so tests can pass an isolated temporary root.
+        /// </summary>
+        /// <param name="appDataPath">Folder used for extraction and staging; created if missing.</param>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="appDataPath"/> is null, empty, or whitespace.</exception>
+        public ProjectManager(string appDataPath)
+        {
+            if (string.IsNullOrWhiteSpace(appDataPath))
+            {
+                throw new ArgumentException("The application data path must not be empty.", nameof(appDataPath));
+            }
+
+            AppDataPath = appDataPath;
 
             EnsureAppDataDirectory();
         }
 
+        /// <summary>
+        /// Classifies a project file. <c>.rfPrj</c> is always an archive. <c>.xml</c> is plain XML unless the
+        /// file starts with a ZIP header: versions between 2022 and 2025 saved archives under whatever
+        /// extension the user typed, so a ZIP named <c>.xml</c> must be opened as an archive.
+        /// </summary>
+        /// <param name="file">The file to classify.</param>
+        /// <returns>The project file type, or <see cref="ProjectFileType.Unknown"/> for other extensions.</returns>
         public ProjectFileType GetProjectFileType(FileInfo file)
         {
-            if (file.Extension.Equals(".xml", StringComparison.OrdinalIgnoreCase))
-            {
-                return ProjectFileType.Xml;
-            }
-
             if (file.Extension.Equals(".rfprj", StringComparison.OrdinalIgnoreCase))
             {
                 return ProjectFileType.Archive;
             }
 
+            if (file.Extension.Equals(".xml", StringComparison.OrdinalIgnoreCase))
+            {
+                return StartsWithZipHeader(file) ? ProjectFileType.Archive : ProjectFileType.Xml;
+            }
+
             return ProjectFileType.Unknown;
+        }
+
+        /// <summary>
+        /// Checks for the local-file-header signature <c>PK\x03\x04</c>. Any I/O problem falls back to
+        /// "not a ZIP" so classification never throws; the real read then reports the failure.
+        /// </summary>
+        private static bool StartsWithZipHeader(FileInfo file)
+        {
+            try
+            {
+                using var stream = new FileStream(
+                    file.FullName,
+                    FileMode.Open,
+                    System.IO.FileAccess.Read, // qualified: the RFiDGear.Infrastructure.FileAccess namespace shadows the enum
+                    FileShare.ReadWrite | FileShare.Delete);
+
+                Span<byte> header = stackalloc byte[4];
+                return stream.Read(header) == header.Length
+                    && header[0] == 0x50
+                    && header[1] == 0x4B
+                    && header[2] == 0x03
+                    && header[3] == 0x04;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
         }
 
         public ProjectLoadResult PrepareProject(FileInfo file, Version appVersion)
@@ -236,16 +293,52 @@ namespace RFiDGear.Infrastructure.FileAccess
         private string ExtractCompressedProject(string archivePath, string archiveFileName)
         {
             CleanTemporaryFiles();
-            ExtractArchive(archivePath);
 
-            var archiveContentPath = Path.Combine(AppDataPath, archiveFileName);
+            // The payload is chosen from the archive's own entries, never by looking for a file that happens
+            // to be in the shared folder. Anything left there by an earlier load or save, including a
+            // same-named entry from a different archive with the same file name, must not be mistaken for
+            // this archive's project.
+            var payloadEntry = FindProjectEntryName(archivePath, archiveFileName);
 
-            if (File.Exists(archiveContentPath))
+            if (payloadEntry == null)
             {
-                return archiveContentPath;
+                return string.Empty;
             }
 
-            return File.Exists(TaskDatabasePath) ? TaskDatabasePath : string.Empty;
+            // Extraction overwrites, so the payload on disk is exactly this archive's entry.
+            ExtractArchive(archivePath);
+
+            var payloadPath = Path.Combine(AppDataPath, payloadEntry);
+
+            return File.Exists(payloadPath) ? payloadPath : string.Empty;
+        }
+
+        /// <summary>
+        /// Finds the entry that holds the project: the entry named like the archive itself (the oldest layout)
+        /// if there is one, otherwise <c>taskdatabase.xml</c>.
+        /// </summary>
+        /// <returns>The entry's name, or <c>null</c> when the archive contains no project entry.</returns>
+        private static string FindProjectEntryName(string archivePath, string archiveFileName)
+        {
+            string taskDatabaseEntry = null;
+
+            using (var archive = ZipFile.OpenRead(archivePath))
+            {
+                foreach (var entry in archive.Entries)
+                {
+                    if (entry.FullName.Equals(archiveFileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return entry.FullName;
+                    }
+
+                    if (entry.FullName.Equals(TaskDatabaseFileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        taskDatabaseEntry = entry.FullName;
+                    }
+                }
+            }
+
+            return taskDatabaseEntry;
         }
 
         private void ExtractArchive(string archivePath)

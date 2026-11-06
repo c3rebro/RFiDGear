@@ -64,6 +64,7 @@ namespace RFiDGear.ViewModel
         private ITaskExecutionService taskExecutionService;
         private readonly ISettingsBootstrapper settingsBootstrapper;
         private readonly Func<SettingsReaderWriter> settingsReaderWriterFactory;
+        private readonly Func<DatabaseReaderWriter> databaseReaderWriterFactory;
         private readonly IUpdateNotifier updateNotifier;
         private readonly IContextMenuBuilder contextMenuBuilder;
         private readonly IStartupArgumentProcessor startupArgumentProcessor;
@@ -127,7 +128,8 @@ namespace RFiDGear.ViewModel
             IUpdateScheduler updateScheduler,
             IReaderMonitor readerMonitor,
             IProjectBootstrapper projectBootstrapper,
-            Func<SettingsReaderWriter> settingsReaderWriterFactory = null)
+            Func<SettingsReaderWriter> settingsReaderWriterFactory = null,
+            Func<DatabaseReaderWriter> databaseReaderWriterFactory = null)
         {
             this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
             this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
@@ -140,6 +142,7 @@ namespace RFiDGear.ViewModel
             this.readerMonitor = readerMonitor ?? throw new ArgumentNullException(nameof(readerMonitor));
             this.projectBootstrapper = projectBootstrapper ?? throw new ArgumentNullException(nameof(projectBootstrapper));
             this.settingsReaderWriterFactory = settingsReaderWriterFactory ?? (() => new SettingsReaderWriter());
+            this.databaseReaderWriterFactory = databaseReaderWriterFactory ?? (() => new DatabaseReaderWriter());
 
             if (appStartupInitializer == null)
             {
@@ -194,7 +197,7 @@ namespace RFiDGear.ViewModel
 
             ReaderStatus = "";
             DateTimeStatusBar = "";
-            databaseReaderWriter = new DatabaseReaderWriter();
+            databaseReaderWriter = databaseReaderWriterFactory();
             resLoader = new ResourceLoader();
 
             var taskServices = taskServiceInitializer.Initialize(
@@ -215,13 +218,11 @@ namespace RFiDGear.ViewModel
                 taskExecutionService,
                 liveModelAccessor: () => taskHandler,
                 dispatch: action => owningDispatcher.InvokeAsync(action).Task,
-                applyToLiveApp: (loadedModel, loadedTree) =>
+                applyToLiveApp: loadedModel =>
                 {
                     // Runs on the WPF dispatcher thread — safe to mutate bound collections.
-                    TreeViewParentNodes.Clear();
-                    foreach (var vm in loadedTree)
-                        TreeViewParentNodes.Add(vm);
-
+                    // TreeViewParentNodes is deliberately left alone: it shows the cards detected by
+                    // the reader, which are not part of a project, and must survive opening one.
                     if (taskHandler.TaskCollection != null)
                         taskHandler.TaskCollection.Clear();
                     else
@@ -231,7 +232,6 @@ namespace RFiDGear.ViewModel
                         taskHandler.TaskCollection.Add(task);
 
                     OnPropertyChanged(nameof(ChipTasks));
-                    OnPropertyChanged(nameof(TreeViewParentNodes));
                 },
                 readerName: string.Empty,
                 coordinator: _coordinator,
@@ -1393,16 +1393,40 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand SaveTaskDialogCommand => new AsyncRelayCommand(OnNewSaveTaskDialogCommand);
         private async Task OnNewSaveTaskDialogCommand()
         {
+            var targetPath = ResolveProjectSaveTarget();
+
+            if (targetPath == null)
+            {
+                await OnNewSaveTaskAsDialogCommand();
+                return;
+            }
+
+            TrySaveProject(targetPath);
+        }
+
+        /// <summary>
+        /// Decides which file a plain Save writes to, or <c>null</c> when the user has to choose one (Save As).
+        /// <para>
+        /// When a project is open, Save only ever writes that project. If its file has since been moved or
+        /// deleted the answer is <c>null</c>: falling back to the remembered default here would silently write
+        /// this project's contents over a different project. The remembered default is consulted only when no
+        /// project is open at all, e.g. right after startup without an auto-loaded project.
+        /// </para>
+        /// </summary>
+        /// <returns>An existing project file path, or <c>null</c> if Save As should be offered.</returns>
+        internal string ResolveProjectSaveTarget()
+        {
+            var openProjectPath = extensionHost.Project.CurrentPath;
+
+            if (openProjectPath != null)
+            {
+                return IsValidProjectSavePath(openProjectPath) ? openProjectPath : null;
+            }
+
             using (var settings = settingsReaderWriterFactory())
             {
-                var targetPath = settings.DefaultSpecification.LastUsedProjectPath;
-                if (!IsValidProjectSavePath(targetPath))
-                {
-                    await OnNewSaveTaskAsDialogCommand();
-                    return;
-                }
-
-                databaseReaderWriter.WriteDatabase(ChipTasks, targetPath);
+                var rememberedPath = settings.DefaultSpecification.LastUsedProjectPath;
+                return IsValidProjectSavePath(rememberedPath) ? rememberedPath : null;
             }
         }
 
@@ -1437,18 +1461,58 @@ namespace RFiDGear.ViewModel
                 Buttons = MessageBoxButton.YesNo
             };
 
-            if (mbox.Show(Dialogs) == MessageBoxResult.Yes)
+            var setAsDefault = mbox.Show(Dialogs) == MessageBoxResult.Yes;
+
+            await SaveProjectAsAsync(fileName, setAsDefault);
+        }
+
+        /// <summary>
+        /// Saves the project to <paramref name="fileName"/> through the extension host and, only after the file
+        /// was written, remembers the file as the default project when asked to. The remembered path is the one
+        /// the writer actually produced: a name typed without an extension is saved as <c>name.rfPrj</c>, and
+        /// remembering the typed name would leave a path that is never valid. A failed write changes nothing.
+        /// </summary>
+        /// <param name="fileName">The path chosen in the Save As dialog.</param>
+        /// <param name="setAsDefault">Whether to store the written file as <c>LastUsedProjectPath</c>.</param>
+        /// <returns>A task that completes once the project is saved and the default path is stored.</returns>
+        internal async Task SaveProjectAsAsync(string fileName, bool setAsDefault)
+        {
+            if (string.IsNullOrEmpty(fileName) || !TrySaveProject(fileName))
+            {
+                return;
+            }
+
+            if (setAsDefault)
             {
                 using (var settings = settingsReaderWriterFactory())
                 {
-                    settings.DefaultSpecification.LastUsedProjectPath = fileName;
+                    settings.DefaultSpecification.LastUsedProjectPath = extensionHost.Project.CurrentPath;
                     await settings.SaveSettings();
                 }
             }
+        }
 
-            if (!string.IsNullOrEmpty(fileName))
+        /// <summary>
+        /// Writes the project through the extension host, which also keeps its current path in step. Failures
+        /// (a load or edit in progress, an unwritable location) are logged and shown instead of escaping the command.
+        /// </summary>
+        private bool TrySaveProject(string path)
+        {
+            try
             {
-                databaseReaderWriter.WriteDatabase(ChipTasks, fileName);
+                extensionHost.Project.SaveAs(path);
+                return true;
+            }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is IOException || ex is UnauthorizedAccessException)
+            {
+                Log.ForContext<MainWindowViewModel>().Error(ex, "Saving the project to {ProjectPath} failed.", path);
+                Dialogs.Add(new CustomDialogViewModel
+                {
+                    Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                    Message = ex.Message,
+                    OnOk = sender => sender.Close()
+                });
+                return false;
             }
         }
 

@@ -3,10 +3,8 @@ using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Services.TaskExecution;
-using RFiDGear.ViewModel;
 
 using System;
-using System.Collections.ObjectModel;
 using System.Text;
 
 namespace RFiDGear.Infrastructure.ExtensionHost
@@ -88,7 +86,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// </param>
         /// <param name="applyToLiveApp">
         /// Called on the dispatcher thread after a successful load to push the loaded task model
-        /// and tree collection into WPF-bound properties.
+        /// into WPF-bound properties. It must leave state that is not part of the project untouched,
+        /// such as the chip tree that shows cards detected by the reader.
         /// </param>
         /// <param name="readerName">Display name of the configured reader.</param>
         /// <param name="coordinator">
@@ -105,7 +104,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             ITaskExecutionService execService,
             Func<Models.ChipTaskHandlerModel> liveModelAccessor,
             Func<Action, System.Threading.Tasks.Task> dispatch,
-            Action<Models.ChipTaskHandlerModel, ObservableCollection<RFiDChipParentLayerViewModel>> applyToLiveApp,
+            Action<Models.ChipTaskHandlerModel> applyToLiveApp,
             string readerName,
             ExtensionOperationCoordinator coordinator,
             Func<string?>? getConfiguredLanguage = null)

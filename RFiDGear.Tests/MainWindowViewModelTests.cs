@@ -16,6 +16,7 @@ using RFiDGear.Services.Interfaces;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel;
 using RFiDGear.ViewModel.DialogFactories;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 using Xunit;
 
 namespace RFiDGear.Tests
@@ -151,6 +152,352 @@ namespace RFiDGear.Tests
             });
         }
 
+        [Fact]
+        public async Task OpenProject_LoadsIntoLiveTaskModel_KeepsChipTree_AndRejectedOpenKeepsIt()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+                var settingsDirectory = Path.Combine(tempRoot, "settings");
+                var settingsPath = Path.Combine(settingsDirectory, "settings.xml");
+                Directory.CreateDirectory(settingsDirectory);
+
+                var projectPath = ProjectFixtures.CreateProject(2);
+                var corruptPath = ProjectFixtures.CreateNotAnArchive();
+
+                using (var settings = new SettingsReaderWriter(settingsDirectory, loadSettings: false))
+                {
+                    settings.DefaultSpecification = new DefaultSpecification(true);
+                    settings.SaveSettings(settings.DefaultSpecification, settingsPath);
+                }
+
+                try
+                {
+                    var bootstrapper = new DeferredSettingsBootstrapper();
+                    var viewModel = new MainWindowViewModel(
+                        bootstrapper,
+                        new NoopUpdateNotifier(),
+                        new FakeContextMenuBuilder(),
+                        new FakeAppStartupInitializer(),
+                        new FakeTimerFactory(),
+                        new FakeTaskServiceInitializer(),
+                        new FakeMenuInitializer(),
+                        new FakeStartupArgumentProcessor(),
+                        new NoopUpdateScheduler(),
+                        new FakeReaderMonitor(),
+                        new FakeProjectBootstrapper(),
+                        () => new SettingsReaderWriter(settingsDirectory),
+                        // Hermetic: project extraction and staging stay in this test's folder.
+                        () => new DatabaseReaderWriter(new ProjectManager(Path.Combine(tempRoot, "appdata"))));
+
+                    var initializationTask = viewModel.InitializeAsync();
+                    bootstrapper.Complete(new SettingsBootstrapResult
+                    {
+                        CurrentReaderName = "Reader",
+                        DefaultReaderProvider = ReaderTypes.None,
+                        Culture = CultureInfo.InvariantCulture
+                    });
+                    await initializationTask;
+
+                    // A card detected by the reader: not part of any project, so opening one must not drop it.
+                    var detectedChip = new RFiDChipParentLayerViewModel("detected chip");
+                    viewModel.TreeViewParentNodes.Add(detectedChip);
+
+                    var openProject = typeof(MainWindowViewModel).GetMethod(
+                        "OpenLastProjectFile",
+                        BindingFlags.Instance | BindingFlags.NonPublic,
+                        null,
+                        new[] { typeof(string) },
+                        null);
+                    Assert.NotNull(openProject);
+
+                    await (Task)openProject!.Invoke(viewModel, new object[] { projectPath })!;
+
+                    // The live, bound task model and the extension host facade both show the project.
+                    Assert.Equal(2, viewModel.ChipTasks.TaskCollection.Count);
+                    Assert.All(viewModel.ChipTasks.TaskCollection, t => Assert.IsType<CommonTaskViewModel>(t));
+                    Assert.Equal(2, viewModel.ExtensionHost.Project.TaskCount);
+                    Assert.Equal(Path.GetFullPath(projectPath), viewModel.ExtensionHost.Project.CurrentPath);
+                    Assert.Same(detectedChip, Assert.Single(viewModel.TreeViewParentNodes));
+
+                    // A rejected open leaves the live project and the remembered path untouched.
+                    await (Task)openProject.Invoke(viewModel, new object[] { corruptPath })!;
+
+                    Assert.Same(detectedChip, Assert.Single(viewModel.TreeViewParentNodes));
+                    Assert.Equal(2, viewModel.ChipTasks.TaskCollection.Count);
+                    Assert.Equal(2, viewModel.ExtensionHost.Project.TaskCount);
+                    Assert.Equal(Path.GetFullPath(projectPath), viewModel.ExtensionHost.Project.CurrentPath);
+
+                    using (var settings = new SettingsReaderWriter(settingsDirectory))
+                    {
+                        Assert.Equal(Path.GetFullPath(projectPath), settings.DefaultSpecification.LastUsedProjectPath);
+                    }
+                }
+                finally
+                {
+                    File.Delete(projectPath);
+                    File.Delete(corruptPath);
+                    if (Directory.Exists(tempRoot))
+                    {
+                        Directory.Delete(tempRoot, recursive: true);
+                    }
+                }
+            });
+        }
+        // ── Save / Save As ──
+
+        /// <summary>
+        /// Creates and initializes a view model whose settings and project staging live below <paramref name="tempRoot"/>.
+        /// </summary>
+        private static async Task<MainWindowViewModel> CreateInitializedViewModelAsync(string tempRoot)
+        {
+            var settingsDirectory = Path.Combine(tempRoot, "settings");
+            Directory.CreateDirectory(settingsDirectory);
+
+            using (var settings = new SettingsReaderWriter(settingsDirectory, loadSettings: false))
+            {
+                settings.DefaultSpecification = new DefaultSpecification(true);
+                settings.SaveSettings(settings.DefaultSpecification, Path.Combine(settingsDirectory, "settings.xml"));
+            }
+
+            var bootstrapper = new DeferredSettingsBootstrapper();
+            var viewModel = new MainWindowViewModel(
+                bootstrapper,
+                new NoopUpdateNotifier(),
+                new FakeContextMenuBuilder(),
+                new FakeAppStartupInitializer(),
+                new FakeTimerFactory(),
+                new FakeTaskServiceInitializer(),
+                new FakeMenuInitializer(),
+                new FakeStartupArgumentProcessor(),
+                new NoopUpdateScheduler(),
+                new FakeReaderMonitor(),
+                new FakeProjectBootstrapper(),
+                () => new SettingsReaderWriter(settingsDirectory),
+                () => new DatabaseReaderWriter(new ProjectManager(Path.Combine(tempRoot, "appdata"))));
+
+            var initializationTask = viewModel.InitializeAsync();
+            bootstrapper.Complete(new SettingsBootstrapResult
+            {
+                CurrentReaderName = "Reader",
+                DefaultReaderProvider = ReaderTypes.None,
+                Culture = CultureInfo.InvariantCulture
+            });
+            await initializationTask;
+
+            return viewModel;
+        }
+
+        private static async Task OpenProjectAsync(MainWindowViewModel viewModel, string path)
+        {
+            var openProject = typeof(MainWindowViewModel).GetMethod(
+                "OpenLastProjectFile",
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                null,
+                new[] { typeof(string) },
+                null);
+            Assert.NotNull(openProject);
+
+            await (Task)openProject!.Invoke(viewModel, new object[] { path })!;
+        }
+
+        private static string RememberedProjectPath(string tempRoot)
+        {
+            using (var settings = new SettingsReaderWriter(Path.Combine(tempRoot, "settings")))
+            {
+                return settings.DefaultSpecification.LastUsedProjectPath;
+            }
+        }
+
+        private static string NewTempRoot()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempRoot);
+            return tempRoot;
+        }
+
+        [Fact]
+        public async Task SaveProjectAs_WithoutExtension_RemembersTheFileThatWasActuallyWritten()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                var projectPath = ProjectFixtures.CreateProject(2);
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot);
+                    await OpenProjectAsync(viewModel, projectPath);
+                    var typed = Path.Combine(tempRoot, "saved");   // no extension, as typed in the dialog
+
+                    await viewModel.SaveProjectAsAsync(typed, setAsDefault: true);
+
+                    var written = Path.GetFullPath(typed + ".rfPrj");
+                    Assert.True(File.Exists(written));
+                    Assert.Equal(written, viewModel.ExtensionHost.Project.CurrentPath);
+                    // The typed name would never be a valid save path; the written file is remembered instead.
+                    Assert.Equal(written, RememberedProjectPath(tempRoot));
+                }
+                finally
+                {
+                    File.Delete(projectPath);
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task SaveProjectAs_WithoutSettingDefault_MovesTheOpenProjectButKeepsTheRememberedOne()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                var projectPath = ProjectFixtures.CreateProject(2);
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot);
+                    await OpenProjectAsync(viewModel, projectPath);
+                    var target = Path.Combine(tempRoot, "copy.rfPrj");
+
+                    await viewModel.SaveProjectAsAsync(target, setAsDefault: false);
+
+                    Assert.True(File.Exists(target));
+                    Assert.Equal(Path.GetFullPath(target), viewModel.ExtensionHost.Project.CurrentPath);
+                    Assert.Equal(Path.GetFullPath(projectPath), RememberedProjectPath(tempRoot));
+                }
+                finally
+                {
+                    File.Delete(projectPath);
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task SaveProjectAs_WhenTheWriteFails_ChangesNothingAndShowsAMessage()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                var projectPath = ProjectFixtures.CreateProject(2);
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot);
+                    await OpenProjectAsync(viewModel, projectPath);
+                    var unwritable = Path.Combine(tempRoot, "no-such-directory", "p.rfPrj");
+
+                    await viewModel.SaveProjectAsAsync(unwritable, setAsDefault: true);   // must not throw
+
+                    Assert.Equal(Path.GetFullPath(projectPath), viewModel.ExtensionHost.Project.CurrentPath);
+                    Assert.Equal(Path.GetFullPath(projectPath), RememberedProjectPath(tempRoot));
+                    Assert.Single(viewModel.Dialogs);
+                }
+                finally
+                {
+                    File.Delete(projectPath);
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task Save_AfterSaveAsWithoutSettingDefault_WritesTheOpenProjectAndNotTheOldDefault()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                var projectPath = ProjectFixtures.CreateProject(2);
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot);
+                    await OpenProjectAsync(viewModel, projectPath);
+                    var copy = Path.Combine(tempRoot, "copy.rfPrj");
+                    await viewModel.SaveProjectAsAsync(copy, setAsDefault: false);
+                    var originalBytes = File.ReadAllBytes(projectPath);
+
+                    // Edit the project, then plain Save.
+                    viewModel.ChipTasks.TaskCollection.Add(new CommonTaskViewModel { CurrentTaskIndex = "2" });
+                    await viewModel.SaveTaskDialogCommand.ExecuteAsync(null);
+
+                    // The old default was not overwritten; the open project (the copy) now has three tasks.
+                    Assert.Equal(originalBytes, File.ReadAllBytes(projectPath));
+                    var reloaded = await viewModel.ExtensionHost.Project.LoadAsync(copy);
+                    Assert.True(reloaded.Success, $"LoadAsync failed: {reloaded.Error}");
+                    Assert.Equal(3, reloaded.TaskCount);
+                }
+                finally
+                {
+                    File.Delete(projectPath);
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task Save_WhenTheOpenProjectsFileIsGone_DoesNotWriteItIntoTheRememberedProject()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                var rememberedProject = ProjectFixtures.CreateProject(2);
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot);
+                    await OpenProjectAsync(viewModel, rememberedProject);
+
+                    // Project B is now the open one; A stays the remembered default.
+                    var openProject = Path.Combine(tempRoot, "b.rfPrj");
+                    await viewModel.SaveProjectAsAsync(openProject, setAsDefault: false);
+                    var rememberedBytes = File.ReadAllBytes(rememberedProject);
+                    File.Delete(openProject);   // B was moved or deleted
+
+                    // Falling back to A would silently overwrite it with B's contents.
+                    Assert.Null(viewModel.ResolveProjectSaveTarget());
+
+                    await viewModel.SaveTaskDialogCommand.ExecuteAsync(null);
+
+                    Assert.Equal(rememberedBytes, File.ReadAllBytes(rememberedProject));
+                    Assert.False(File.Exists(openProject));
+                    Assert.Single(viewModel.Dialogs);   // Save As was offered instead
+                }
+                finally
+                {
+                    File.Delete(rememberedProject);
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task ResolveProjectSaveTarget_WithNoProjectOpen_UsesTheRememberedDefault()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                var rememberedProject = ProjectFixtures.CreateProject(1);
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot);
+                    Assert.Null(viewModel.ExtensionHost.Project.CurrentPath);   // nothing is open
+
+                    using (var settings = new SettingsReaderWriter(Path.Combine(tempRoot, "settings")))
+                    {
+                        settings.DefaultSpecification.LastUsedProjectPath = rememberedProject;
+                        await settings.SaveSettings();
+                    }
+
+                    Assert.Equal(rememberedProject, viewModel.ResolveProjectSaveTarget());
+
+                    // A remembered path that no longer exists means there is nothing to save to.
+                    File.Delete(rememberedProject);
+                    Assert.Null(viewModel.ResolveProjectSaveTarget());
+                }
+                finally
+                {
+                    File.Delete(rememberedProject);
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
     }
 
     internal class DeferredSettingsBootstrapper : ISettingsBootstrapper

@@ -109,9 +109,11 @@ namespace RFiDGear.Services.TaskExecution
     /// </summary>
     internal static class TaskLoopTerminalEvaluator
     {
-        private const string ExecutedDecision = "Executed";
-        private const string SkippedDecision = "Skipped";
-        private const string ConditionalSkipReason = "ExecuteConditionNotMet";
+        /// <summary>The decision recorded for a task the loop ran.</summary>
+        internal const string ExecutedDecision = "Executed";
+
+        /// <summary>The decision recorded for a task the loop deliberately skipped.</summary>
+        internal const string SkippedDecision = "Skipped";
 
         /// <summary>
         /// Evaluates the terminal state of a task loop from its collected observations.
@@ -202,7 +204,10 @@ namespace RFiDGear.Services.TaskExecution
             TaskExecutionObservation skippedTask,
             IReadOnlyCollection<TaskExecutionObservation> observations)
         {
-            if (!string.Equals(skippedTask.SkipReason, ConditionalSkipReason, StringComparison.Ordinal) ||
+            if (!string.Equals(
+                    skippedTask.SkipReason,
+                    Contracts.TaskSkipReasons.ExecuteConditionNotMet,
+                    StringComparison.Ordinal) ||
                 skippedTask.Task == null ||
                 skippedTask.Task.SelectedExecuteConditionErrorLevel == ERROR.Empty)
             {

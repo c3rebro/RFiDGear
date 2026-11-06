@@ -6,8 +6,29 @@ namespace RFiDGear.Contracts
 {
     /// <summary>
     /// Immutable runtime parameters supplied to <see cref="ITaskExecHost.ExecuteAllAsync(ExecutionRequest, System.Threading.CancellationToken)"/>.
-    /// Variables are matched case-insensitively. Supported keys include
-    /// <c>REPORTTARGETPATH</c>, <c>REPORTTEMPLATEFILE</c>, <c>$JOBNUMBER</c>, and <c>$CHIPNUMBER</c>.
+    /// Variables are matched case-insensitively.
+    /// <para>
+    /// Placeholder variables: keys containing <c>$</c> (for example <c>$JOBNUMBER</c> and <c>$CHIPNUMBER</c>)
+    /// are substituted into task text and report fields that contain the same token.
+    /// </para>
+    /// <para>
+    /// Report variables, interpreted exactly as the equivalent startup arguments are:
+    /// <list type="bullet">
+    /// <item><description>
+    /// <c>REPORTTARGETPATH</c> (alias <c>REPORTOUTPUTPATH</c>): fully qualified path of the report <em>file</em> to
+    /// create, not a folder. Its folder must already exist. A <c>?</c>, <c>??</c>, or <c>???</c> in the path is
+    /// replaced by the next free number in that folder. A project that contains a "create report" task needs this variable;
+    /// without it the report task cannot run unattended and the run ends with <see cref="ExecutionFailureReason.Faulted"/>.
+    /// </description></item>
+    /// <item><description>
+    /// <c>REPORTTEMPLATEFILE</c> (alias <c>REPORTTEMPLATEPATH</c>): path of an existing PDF template to use for the report.
+    /// </description></item>
+    /// </list>
+    /// A report variable that is supplied but cannot be honoured (missing directory or file) makes
+    /// <see cref="ITaskExecHost.ExecuteAllAsync(ExecutionRequest, System.Threading.CancellationToken)"/> throw
+    /// <see cref="ArgumentException"/> before the run is accepted, so no card operation happens only to fail at the report step.
+    /// A blank value is treated as "not supplied".
+    /// </para>
     /// Do not include secret key material in variables; values may appear in structured logs.
     /// </summary>
     public sealed class ExecutionRequest

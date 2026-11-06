@@ -4,6 +4,12 @@ namespace RFiDGear.Contracts
 {
     /// <summary>
     /// Controls the continuous automatic card-processing mode (see also issue #192).
+    /// <para>
+    /// <strong>Known limitation:</strong> in this release the host exposes a stub implementation, including in
+    /// the main application. <see cref="IsAutoModeEnabled"/> is always <c>false</c>, <see cref="Stop"/> does nothing,
+    /// and <see cref="Start"/> throws <see cref="NotSupportedException"/>. Full auto-mode wiring is tracked in
+    /// issue #192 and is out of scope until then; extensions must not depend on it.
+    /// </para>
     /// </summary>
     public interface IAutoModeHost
     {
