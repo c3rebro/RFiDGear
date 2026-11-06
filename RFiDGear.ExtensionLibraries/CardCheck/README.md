@@ -9,9 +9,36 @@ analysing the PDF reports, choosing the report template, keeping the settings
 and importing the settings of the old assistant. The WPF extension
 (`RFiDGear.Extensions.CardCheckAssistant`) uses it; nothing else does.
 
-This first change only lays the ground: the result types, the log abstraction,
-the status and language values and the guard tests. The services follow one
-at a time, each with its own tests.
+So far it holds the result types, the log abstraction, the status and
+language values, the template rules and the guard tests. The other services
+follow one at a time, each with its own tests.
+
+**Template rules** (`TemplateRules`, `ProjectVariants`, `LsmTemplate`):
+
+- The catalog of 13 report templates was generated from the old assistant's
+  table by a script, not retyped. The placeholder row `N/A` is not a template
+  and is left out. `MD10000L_AV` needs 3232 bytes, as its own text says; the
+  old table said 1760 there, a copy of the row above. A test checks every size
+  against the number in the template's own display text.
+- `ParseFreeMemory` reads the free-memory field of the first report. A first
+  word that is a whole number means a DESFire chip and the number is its free
+  bytes; otherwise the comma-separated entries that contain a digit are the
+  free sectors of a Classic chip. The text is trimmed. Empty, `N/A`, text
+  without a digit and numbers too large for an `int` are unknown memory, which
+  counts as not enough: the old assistant took such a field for a Classic chip
+  with one sector and offered the smallest template. No culture is used.
+- A DESFire chip needs at least 225 free bytes (the old gate; the smallest
+  template needs 224), a Classic chip at least one free sector.
+- `Classify` gives every combination a verdict. Not programmable is not
+  supported, whatever the supported flag says. Programmable but not supported
+  is indeterminate: the report contradicts itself and nothing is assumed.
+  Supported and programmable is programmable with memory for a template and
+  supported-only without.
+- `AvailableTemplates` keeps the templates of the chip's family that need no
+  more than the chip has. `DefaultTemplate` prefers `MD4000L_AV`, then
+  `MC1000L_AV`, then the first.
+- `ProjectVariants.Resolve` picks `name.deutsch.rfPrj` or `name.englisch.rfPrj`
+  next to the default project if that file exists, else the default project.
 
 **Rules that keep it loadable and safe:**
 
