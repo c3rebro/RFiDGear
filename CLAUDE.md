@@ -86,11 +86,22 @@ Serilog with rolling file sink; logs written to `%LocalAppData%\RFiDGear\log\`, 
 
 MEF enables extensions. `RFiDGear.Extensions.DesfirePluginSample` is the reference plugin project. Extensions export ViewModels and task implementations using the same `[ExportViewModel]` / MEF attributes as the host.
 
-The extension contract is split in two assemblies, and an extension references only these (never `RFiDGear.exe`):
-- `RFiDGear.Contracts` is the host service API (`IRFiDGearExtensionHost` and the project, execution, reader and culture services). It has no MEF dependency.
-- `RFiDGear.ExtensionSdk` is the MEF-facing ABI: `[UiExtension]`, `HostPlacement`, `IUIExtension`, `IUIExtensionDetails`. It is versioned on its own (see its README). `RFiDGear.exe` forwards the old locations of these types so already-built extensions keep working.
+The extension contract is split in two assemblies. An extension references
+only these, never `RFiDGear.exe`:
 
-Both public surfaces are frozen by approved snapshots under `RFiDGear.Tests/ApiSurface/`; a change fails the test and is accepted by regenerating the snapshot (`RFIDGEAR_UPDATE_API_SNAPSHOT=1`). Extensions are discovered once at start-up from `%ProgramData%\RFiDGear\Extensions`, so adding one needs an app restart.
+- `RFiDGear.Contracts` is the host service API (`IRFiDGearExtensionHost` and
+  the project, execution, reader and culture services). It has no MEF
+  dependency.
+- `RFiDGear.ExtensionSdk` is the MEF-facing ABI: `[UiExtension]`,
+  `HostPlacement`, `IUIExtension`, `IUIExtensionDetails`. It is versioned on
+  its own (see its README). `RFiDGear.exe` forwards the old locations of
+  these types so already-built extensions keep working.
+
+Both public surfaces are frozen by approved snapshots under
+`RFiDGear.Tests/ApiSurface/`; a change fails the test and is accepted by
+regenerating the snapshot (`RFIDGEAR_UPDATE_API_SNAPSHOT=1`). Extensions are
+discovered once at start-up from `%ProgramData%\RFiDGear\Extensions`, so
+adding one needs an app restart.
 
 ### UI Structure
 
