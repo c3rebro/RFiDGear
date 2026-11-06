@@ -16,6 +16,7 @@ using RFiDGear.Services.Interfaces;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel;
 using RFiDGear.ViewModel.DialogFactories;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 using Xunit;
 
 namespace RFiDGear.Tests
@@ -151,6 +152,90 @@ namespace RFiDGear.Tests
             });
         }
 
+        [Fact]
+        public async Task OpenProject_LoadsIntoLiveTaskModel_AndRejectedOpenKeepsIt()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+                var settingsDirectory = Path.Combine(tempRoot, "settings");
+                var settingsPath = Path.Combine(settingsDirectory, "settings.xml");
+                Directory.CreateDirectory(settingsDirectory);
+
+                var projectPath = ProjectFixtures.CreateProject(2);
+                var corruptPath = ProjectFixtures.CreateNotAnArchive();
+
+                using (var settings = new SettingsReaderWriter(settingsDirectory, loadSettings: false))
+                {
+                    settings.DefaultSpecification = new DefaultSpecification(true);
+                    settings.SaveSettings(settings.DefaultSpecification, settingsPath);
+                }
+
+                try
+                {
+                    var bootstrapper = new DeferredSettingsBootstrapper();
+                    var viewModel = new MainWindowViewModel(
+                        bootstrapper,
+                        new NoopUpdateNotifier(),
+                        new FakeContextMenuBuilder(),
+                        new FakeAppStartupInitializer(),
+                        new FakeTimerFactory(),
+                        new FakeTaskServiceInitializer(),
+                        new FakeMenuInitializer(),
+                        new FakeStartupArgumentProcessor(),
+                        new NoopUpdateScheduler(),
+                        new FakeReaderMonitor(),
+                        new FakeProjectBootstrapper(),
+                        () => new SettingsReaderWriter(settingsDirectory));
+
+                    var initializationTask = viewModel.InitializeAsync();
+                    bootstrapper.Complete(new SettingsBootstrapResult
+                    {
+                        CurrentReaderName = "Reader",
+                        DefaultReaderProvider = ReaderTypes.None,
+                        Culture = CultureInfo.InvariantCulture
+                    });
+                    await initializationTask;
+
+                    var openProject = typeof(MainWindowViewModel).GetMethod(
+                        "OpenLastProjectFile",
+                        BindingFlags.Instance | BindingFlags.NonPublic,
+                        null,
+                        new[] { typeof(string) },
+                        null);
+                    Assert.NotNull(openProject);
+
+                    await (Task)openProject!.Invoke(viewModel, new object[] { projectPath })!;
+
+                    // The live, bound task model and the extension host facade both show the project.
+                    Assert.Equal(2, viewModel.ChipTasks.TaskCollection.Count);
+                    Assert.All(viewModel.ChipTasks.TaskCollection, t => Assert.IsType<CommonTaskViewModel>(t));
+                    Assert.Equal(2, viewModel.ExtensionHost.Project.TaskCount);
+                    Assert.Equal(Path.GetFullPath(projectPath), viewModel.ExtensionHost.Project.CurrentPath);
+
+                    // A rejected open leaves the live project and the remembered path untouched.
+                    await (Task)openProject.Invoke(viewModel, new object[] { corruptPath })!;
+
+                    Assert.Equal(2, viewModel.ChipTasks.TaskCollection.Count);
+                    Assert.Equal(2, viewModel.ExtensionHost.Project.TaskCount);
+                    Assert.Equal(Path.GetFullPath(projectPath), viewModel.ExtensionHost.Project.CurrentPath);
+
+                    using (var settings = new SettingsReaderWriter(settingsDirectory))
+                    {
+                        Assert.Equal(Path.GetFullPath(projectPath), settings.DefaultSpecification.LastUsedProjectPath);
+                    }
+                }
+                finally
+                {
+                    File.Delete(projectPath);
+                    File.Delete(corruptPath);
+                    if (Directory.Exists(tempRoot))
+                    {
+                        Directory.Delete(tempRoot, recursive: true);
+                    }
+                }
+            });
+        }
     }
 
     internal class DeferredSettingsBootstrapper : ISettingsBootstrapper

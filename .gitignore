@@ -41,3 +41,4 @@ RFiDGear/.claude/settings.local.json
 /RFiDGear.Contracts/obj
 /RFiDGear.HIL.Tests/bin
 /RFiDGear.HIL.Tests/obj
+/RFiDGear.Tests/TestResults

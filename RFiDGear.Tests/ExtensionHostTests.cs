@@ -143,6 +143,20 @@ namespace RFiDGear.Tests
         }
     }
 
+    // ── ExecResult ────────────────────────────────────────────────────────────
+
+    public class ExecResultTests
+    {
+        [Fact]
+        public void FailureReason_DefaultsToNone()
+        {
+            var now = DateTimeOffset.UtcNow;
+            var result = new ExecResult("run", ExecutionOutcome.Success, 0, 0, now, now, Array.Empty<TaskOutcome>());
+
+            Assert.Equal(ExecutionFailureReason.None, result.FailureReason);
+        }
+    }
+
     // ── ProjectHostImpl (headless) ────────────────────────────────────────────
 
     /// <summary>
@@ -231,8 +245,9 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task LoadAsync_InvalidXmlFile_ReturnsFailureWithoutSettingCurrentPath()
+        public async Task LoadAsync_UnknownExtension_ReturnsUnsupportedFormatWithoutSettingCurrentPath()
         {
+            // GetTempFileName() yields a ".tmp" file, which is rejected on its extension alone.
             var tmp = Path.GetTempFileName();
             try
             {
@@ -246,9 +261,7 @@ namespace RFiDGear.Tests
                 });
 
                 Assert.False(result.Success);
-                Assert.True(
-                    result.Error is ProjectOpenError.UnsupportedFormat or ProjectOpenError.Unknown,
-                    $"Expected UnsupportedFormat or Unknown, got {result.Error}");
+                Assert.Equal(ProjectOpenError.UnsupportedFormat, result.Error);
                 Assert.Null(host.CurrentPath);
             }
             finally
@@ -408,6 +421,252 @@ namespace RFiDGear.Tests
 
             Assert.False(fired);
         }
+
+        /// <summary>Loads through an STA dispatcher thread, the way a WPF caller would.</summary>
+        private static async Task<ProjectOpenResult> LoadOnStaAsync(ProjectHostImpl host, string path)
+        {
+            ProjectOpenResult result = null!;
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                result = await host.LoadAsync(path);
+            });
+            return result;
+        }
+
+        [Fact]
+        public async Task LoadAsync_NotAZipArchive_ReturnsUnsupportedFormatAndPreservesProject()
+        {
+            var good = ProjectFixtures.CreateProject(2);
+            var bad = ProjectFixtures.CreateNotAnArchive();
+            try
+            {
+                var (host, _) = CreatePair();
+                Assert.True((await LoadOnStaAsync(host, good)).Success);
+                var pathBefore = host.CurrentPath;
+
+                var result = await LoadOnStaAsync(host, bad);
+
+                Assert.False(result.Success);
+                Assert.Equal(ProjectOpenError.UnsupportedFormat, result.Error);
+                Assert.Equal(pathBefore, host.CurrentPath);
+                Assert.Equal(2, host.TaskCount);
+            }
+            finally
+            {
+                File.Delete(good);
+                File.Delete(bad);
+            }
+        }
+
+        [Fact]
+        public async Task LoadAsync_ManifestNewerThanApp_ReturnsUnsupportedFormatAndPreservesProject()
+        {
+            var good = ProjectFixtures.CreateProject(2);
+            var tooNew = ProjectFixtures.CreateProject(1, manifestVersion: "99.0.0");
+            try
+            {
+                var (host, _) = CreatePair();
+                Assert.True((await LoadOnStaAsync(host, good)).Success);
+                var pathBefore = host.CurrentPath;
+
+                var result = await LoadOnStaAsync(host, tooNew);
+
+                Assert.False(result.Success);
+                Assert.Equal(ProjectOpenError.UnsupportedFormat, result.Error);
+                Assert.Equal(pathBefore, host.CurrentPath);
+                Assert.Equal(2, host.TaskCount);
+            }
+            finally
+            {
+                File.Delete(good);
+                File.Delete(tooNew);
+            }
+        }
+
+        [Fact]
+        public async Task LoadAsync_BusyDuringExecution_PreservesExistingProject()
+        {
+            var first = ProjectFixtures.CreateProject(2);
+            var second = ProjectFixtures.CreateProject(1);
+            try
+            {
+                var (host, coordinator) = CreatePair();
+                Assert.True((await LoadOnStaAsync(host, first)).Success);
+                var pathBefore = host.CurrentPath;
+
+                Assert.True(coordinator.TryBeginExecution());
+                var result = await LoadOnStaAsync(host, second);
+                coordinator.EndExecution();
+
+                Assert.False(result.Success);
+                Assert.Equal(ProjectOpenError.Busy, result.Error);
+                Assert.Equal(pathBefore, host.CurrentPath);
+                Assert.Equal(2, host.TaskCount);
+            }
+            finally
+            {
+                File.Delete(first);
+                File.Delete(second);
+            }
+        }
+
+        // ── main-app mode: commit into the live application model ──
+
+        [Fact]
+        public async Task LoadAsync_MainAppMode_CommitsToLiveModelBeforeRaisingProjectChanged()
+        {
+            var path = ProjectFixtures.CreateProject(2);
+            try
+            {
+                var live = new ChipTaskHandlerModel();
+                live.TaskCollection.Add(new StubTask());
+                var events = new List<string>();
+                var dispatchCount = 0;
+
+                var host = new ProjectHostImpl(
+                    new DatabaseReaderWriter(),
+                    new ExtensionOperationCoordinator(),
+                    () => live,
+                    action =>
+                    {
+                        dispatchCount++;
+                        action();
+                        return Task.CompletedTask;
+                    },
+                    (loaded, _) =>
+                    {
+                        events.Add("apply");
+                        live.TaskCollection.Clear();
+                        foreach (var task in loaded.TaskCollection)
+                            live.TaskCollection.Add(task);
+                    });
+                host.ProjectChanged += (_, _) => events.Add($"changed:{host.TaskCount}");
+
+                var result = await LoadOnStaAsync(host, path);
+
+                Assert.True(result.Success, $"LoadAsync failed: {result.Error}");
+                Assert.Equal(2, result.TaskCount);
+                Assert.Equal(1, dispatchCount);
+                // The live model is updated first; subscribers then see the new project.
+                Assert.Equal(new[] { "apply", "changed:2" }, events);
+                Assert.Equal(2, live.TaskCollection.Count);
+                Assert.All(live.TaskCollection, t => Assert.IsType<CommonTaskViewModel>(t));
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public async Task LoadAsync_MainAppMode_FailedLoadNeverTouchesLiveModel()
+        {
+            var bad = ProjectFixtures.CreateNotAnArchive();
+            try
+            {
+                var live = new ChipTaskHandlerModel();
+                var original = new StubTask();
+                live.TaskCollection.Add(original);
+                var dispatchCount = 0;
+                var applyCount = 0;
+
+                var host = new ProjectHostImpl(
+                    new DatabaseReaderWriter(),
+                    new ExtensionOperationCoordinator(),
+                    () => live,
+                    action =>
+                    {
+                        dispatchCount++;
+                        action();
+                        return Task.CompletedTask;
+                    },
+                    (_, _) => applyCount++);
+
+                var result = await LoadOnStaAsync(host, bad);
+
+                Assert.False(result.Success);
+                Assert.Equal(0, dispatchCount);
+                Assert.Equal(0, applyCount);
+                Assert.Same(original, Assert.Single(live.TaskCollection));
+                Assert.Null(host.CurrentPath);
+            }
+            finally
+            {
+                File.Delete(bad);
+            }
+        }
+
+        // ── obsolete synchronous Load(): pinned behavior ──
+
+#pragma warning disable CS0618 // exercising the obsolete compatibility wrapper on purpose
+        [Fact]
+        public void Load_SyncWrapper_ValidProject_LoadsAndSetsCanonicalPath()
+        {
+            var path = ProjectFixtures.CreateProject(1);
+            try
+            {
+                var (host, _) = CreatePair();
+
+                host.Load(path);
+
+                Assert.Equal(Path.GetFullPath(path), host.CurrentPath);
+                Assert.Equal(1, host.TaskCount);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void Load_SyncWrapper_FailedLoad_ThrowsAndPreservesProject()
+        {
+            var good = ProjectFixtures.CreateProject(2);
+            var bad = ProjectFixtures.CreateNotAnArchive();
+            try
+            {
+                var (host, _) = CreatePair();
+                host.Load(good);
+                var pathBefore = host.CurrentPath;
+
+                Assert.Throws<InvalidOperationException>(() => host.Load(bad));
+
+                Assert.Equal(pathBefore, host.CurrentPath);
+                Assert.Equal(2, host.TaskCount);
+            }
+            finally
+            {
+                File.Delete(good);
+                File.Delete(bad);
+            }
+        }
+
+        [Fact]
+        public void Load_SyncWrapper_WhileExecuting_ThrowsInvalidOperation()
+        {
+            var path = ProjectFixtures.CreateProject(1);
+            try
+            {
+                var (host, coordinator) = CreatePair();
+                Assert.True(coordinator.TryBeginExecution());
+
+                Assert.Throws<InvalidOperationException>(() => host.Load(path));
+                Assert.Null(host.CurrentPath);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void Load_SyncWrapper_EmptyPath_ThrowsArgumentException()
+        {
+            var (host, _) = CreatePair();
+
+            Assert.Throws<ArgumentException>(() => host.Load("  "));
+        }
+#pragma warning restore CS0618
     }
 
     // ── TaskExecHostImpl — lifecycle ──────────────────────────────────────────
@@ -425,7 +684,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task ExecuteAllAsync_WhenServiceThrowsOperationCanceled_ReturnsFailureResult()
+        public async Task ExecuteAllAsync_WhenCallerCancels_ReturnsFailureWithCancelledReason()
         {
             var execService = new CancellingExecService();
             var (_, host, _) = CreateTriple(execService);
@@ -433,16 +692,32 @@ namespace RFiDGear.Tests
             ExecResult? raisedResult = null;
             host.ExecutionCompleted += (_, r) => raisedResult = r;
 
-            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty, cts.Token);
 
             Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.Cancelled, result.FailureReason);
             Assert.False(host.IsRunning, "Running flag must be released on cancellation.");
             Assert.NotNull(raisedResult);
             Assert.Equal(ExecutionOutcome.Failure, raisedResult!.Outcome);
+            Assert.Equal(ExecutionFailureReason.Cancelled, raisedResult.FailureReason);
         }
 
         [Fact]
-        public async Task ExecuteAllAsync_WhenServiceThrowsGenericException_ReturnsFailureResult()
+        public async Task ExecuteAllAsync_WhenServiceThrowsBareOperationCanceled_ReportsFaultedNotCancelled()
+        {
+            // The caller never cancelled, so this is not a caller cancellation.
+            var (_, host, _) = CreateTriple(new CancellingExecService());
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.Faulted, result.FailureReason);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_WhenServiceThrowsGenericException_ReturnsFailureWithFaultedReason()
         {
             var execService = new FaultingExecService();
             var (_, host, _) = CreateTriple(execService);
@@ -453,8 +728,42 @@ namespace RFiDGear.Tests
             var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
 
             Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.Faulted, result.FailureReason);
             Assert.False(host.IsRunning, "Running flag must be released on fault.");
             Assert.NotNull(raisedResult);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_WhenServiceTimesOut_ReportsTimedOut()
+        {
+            var (_, host, _) = CreateTriple(new ThrowingExecService(() => new TimeoutException("stage timeout")));
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.TimedOut, result.FailureReason);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_WhenServiceReturnsNoTerminalStatus_ReportsFaulted()
+        {
+            var (_, host, _) = CreateTriple(new NullStatusExecService());
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.Faulted, result.FailureReason);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_OnSuccess_FailureReasonIsNone()
+        {
+            var (_, host, _) = CreateTriple(new CapturingExecService());
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Equal(ExecutionOutcome.Success, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.None, result.FailureReason);
         }
 
         [Fact]
@@ -472,7 +781,12 @@ namespace RFiDGear.Tests
                 () => host.ExecuteAllAsync(ExecutionRequest.Empty));
 
             execService.Unblock();
-            await firstRunTask;
+            var firstResult = await firstRunTask;
+
+            // The rejected second call must not have disturbed the active run.
+            Assert.Equal(ExecutionOutcome.Success, firstResult.Outcome);
+            Assert.Equal(ExecutionFailureReason.None, firstResult.FailureReason);
+            Assert.False(host.IsRunning);
         }
 
         [Fact]
@@ -530,48 +844,409 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task ExecuteAllAsync_ThrowingSubscriber_EventFiredExactlyOnceAndCoordinatorReleased()
+        public async Task ExecuteAllAsync_ThrowingSubscriber_DoesNotLoseResultOrStarveOtherSubscribers()
         {
             var execService = new CapturingExecService();
             var (_, host, _) = CreateTriple(execService);
 
-            int eventCount = 0;
+            int throwingCalls = 0;
+            ExecResult? laterSubscriberResult = null;
+            bool runningInsideHandler = true;
+
             host.ExecutionCompleted += (_, _) =>
             {
-                Interlocked.Increment(ref eventCount);
+                Interlocked.Increment(ref throwingCalls);
                 throw new InvalidOperationException("subscriber fault");
             };
+            host.ExecutionCompleted += (_, r) =>
+            {
+                laterSubscriberResult = r;
+                runningInsideHandler = host.IsRunning;
+            };
 
-            // The subscriber's exception propagates out of ExecuteAllAsync.
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => host.ExecuteAllAsync(ExecutionRequest.Empty));
+            // The run already happened, so the caller must still receive its result.
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
 
-            Assert.Equal(1, eventCount);
+            Assert.Equal(ExecutionOutcome.Success, result.Outcome);
+            Assert.Equal(1, throwingCalls);
+            Assert.Same(result, laterSubscriberResult);
+            Assert.False(runningInsideHandler, "Subscribers must observe IsRunning == false.");
             Assert.False(host.IsRunning, "Coordinator must be released even when subscriber throws.");
         }
 
         [Fact]
-        public async Task ExecuteAllAsync_WhenCancelled_PartialTaskOutcomesPreserved()
+        public async Task ExecuteAllAsync_WhenCancelledMidRun_PartialTaskOutcomesPreserved()
         {
-            // Seed one task already marked as completed before the "cancellation" hits.
-            var execService = new CancellingExecService();
+            // The service completes the first task, then observes the cancellation.
+            var execService = new ThrowingExecService(
+                () => new OperationCanceledException(),
+                beforeThrow: request =>
+                {
+                    var first = request.TaskHandler.TaskCollection.OfType<IGenericTask>().First();
+                    first.ExecutionState = TaskExecutionState.Completed;
+                    first.IsTaskCompletedSuccessfully = true;
+                    first.CurrentTaskErrorLevel = ERROR.NoError;
+                });
             var (project, host, _) = CreateTriple(execService);
-
-            var completedTask = new StubTask
+            project.ReplaceTaskCollection(new object[]
             {
-                IsTaskCompletedSuccessfully = true,
-                CurrentTaskErrorLevel = ERROR.NoError,
+                new StubTask { CurrentTaskIndex = "0" },
+                new StubTask { CurrentTaskIndex = "1" },
+            });
+
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty, cts.Token);
+
+            Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.Cancelled, result.FailureReason);
+            Assert.Equal(2, result.TaskOutcomes.Count);
+            Assert.True(result.TaskOutcomes[0].IsSuccess);
+            Assert.Null(result.TaskOutcomes[0].SkipReason);
+            Assert.Null(result.TaskOutcomes[1].IsSuccess);
+            Assert.Equal("NotStarted", result.TaskOutcomes[1].SkipReason);
+        }
+
+        // ── fresh state: results never leak from an earlier run ──
+
+        [Fact]
+        public async Task ExecuteAllAsync_SecondRun_DoesNotReportStateLeftByFirstRun()
+        {
+            var execService = new CapturingExecService();
+            var (project, host, _) = CreateTriple(execService);
+            project.ReplaceTaskCollection(new object[]
+            {
+                new StubTask { CurrentTaskIndex = "0" },
+                new StubTask { CurrentTaskIndex = "1" },
+            });
+
+            var first = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+            Assert.All(first.TaskOutcomes, o => Assert.True(o.IsSuccess));
+
+            // Second run: the service executes nothing, as if every task were skipped by its condition.
+            execService.MarkTasksCompleted = false;
+            var second = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Equal(2, second.TaskOutcomes.Count);
+            Assert.All(second.TaskOutcomes, o =>
+            {
+                Assert.Null(o.IsSuccess);
+                Assert.Equal("NotStarted", o.SkipReason);
+                Assert.Equal(ERROR.Empty.ToString(), o.NormalizedErrorCode);
+            });
+            Assert.Equal(0, second.FailedTasks);
+        }
+
+        [Fact]
+        public void ResetStatus_ClearsCompletionFlagErrorLevelAndExecutionState()
+        {
+            var (project, host, _) = CreateTriple();
+            var task = new StubTask
+            {
+                IsTaskCompletedSuccessfully = false,
+                CurrentTaskErrorLevel = ERROR.AuthFailure,
                 ExecutionState = TaskExecutionState.Completed,
-                CurrentTaskIndex = "0"
             };
-            project.ReplaceTaskCollection(new object[] { completedTask });
+            project.ReplaceTaskCollection(new object[] { task });
+
+            host.ResetStatus();
+
+            Assert.Null(task.IsTaskCompletedSuccessfully);
+            Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+            Assert.Equal(TaskExecutionState.NotStarted, task.ExecutionState);
+        }
+
+        // ── obsolete parameterless overload: pinned behavior ──
+
+#pragma warning disable CS0618 // exercising the obsolete compatibility wrapper on purpose
+        [Fact]
+        public async Task ExecuteAllAsync_ParameterlessOverload_RunsWithEmptyVariablesAndReturnsResult()
+        {
+            var execService = new CapturingExecService();
+            var (_, host, _) = CreateTriple(execService);
+            ITaskExecHost api = host;
+
+            var result = await api.ExecuteAllAsync();
+
+            Assert.Equal(ExecutionOutcome.Success, result.Outcome);
+            Assert.NotEmpty(result.RunId);
+            Assert.NotNull(execService.CapturedRequest);
+            Assert.Empty(execService.CapturedRequest!.VariablesFromArgs);
+            Assert.False(api.IsRunning);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_ParameterlessOverload_ReportsCancellationAsFailureResultNotException()
+        {
+            var (_, host, _) = CreateTriple(new CancellingExecService());
+            ITaskExecHost api = host;
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            var result = await api.ExecuteAllAsync(cts.Token);
+
+            Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.Cancelled, result.FailureReason);
+        }
+#pragma warning restore CS0618
+
+        // ── report variables: same meaning as the equivalent startup arguments ──
+
+        private static string CreateTempDirectory()
+        {
+            var dir = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        private static ExecutionRequest Vars(params (string Key, string Value)[] pairs) =>
+            new ExecutionRequest(pairs.Select(p => new KeyValuePair<string, string>(p.Key, p.Value)));
+
+        [Theory]
+        [InlineData("REPORTTARGETPATH")]
+        [InlineData("REPORTOUTPUTPATH")]
+        [InlineData("reporttargetpath")]
+        public async Task ExecuteAllAsync_ReportTarget_ReachesReportOutputPath(string key)
+        {
+            var dir = CreateTempDirectory();
+            try
+            {
+                var execService = new CapturingExecService();
+                var (_, host, _) = CreateTriple(execService);
+                var target = Path.Combine(dir, "report.pdf");
+
+                await host.ExecuteAllAsync(Vars((key, target)));
+
+                Assert.Equal(target, execService.CapturedRequest!.ReportOutputPath);
+                // The raw variable stays available to the task layer as well.
+                Assert.Equal(target, execService.CapturedRequest.VariablesFromArgs[key]);
+            }
+            finally
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_ReportTargetWithNumberPlaceholder_ResolvesNextFreeNumber()
+        {
+            var dir = CreateTempDirectory();
+            try
+            {
+                var execService = new CapturingExecService();
+                var (_, host, _) = CreateTriple(execService);
+
+                await host.ExecuteAllAsync(Vars(("REPORTTARGETPATH", Path.Combine(dir, "report_???.pdf"))));
+
+                Assert.Equal(Path.Combine(dir, "report_001.pdf"), execService.CapturedRequest!.ReportOutputPath);
+            }
+            finally
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+        }
+
+        [Theory]
+        [InlineData("REPORTTEMPLATEFILE")]
+        [InlineData("REPORTTEMPLATEPATH")]
+        public async Task ExecuteAllAsync_ReportTemplate_ReachesReportTemplateFile(string key)
+        {
+            var dir = CreateTempDirectory();
+            try
+            {
+                var template = Path.Combine(dir, "template.pdf");
+                await File.WriteAllBytesAsync(template, new byte[] { 1 });
+                var execService = new CapturingExecService();
+                var (_, host, _) = CreateTriple(execService);
+
+                await host.ExecuteAllAsync(Vars((key, template)));
+
+                Assert.Equal(template, execService.CapturedRequest!.ReportTemplateFile);
+            }
+            finally
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_WithoutReportVariables_LeavesReportPathsUnset()
+        {
+            var execService = new CapturingExecService();
+            var (_, host, _) = CreateTriple(execService);
+
+            await host.ExecuteAllAsync(Vars(("$JOBNUMBER", "J1")));
+
+            Assert.Null(execService.CapturedRequest!.ReportOutputPath);
+            Assert.Null(execService.CapturedRequest.ReportTemplateFile);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task ExecuteAllAsync_BlankReportVariables_AreTreatedAsNotSupplied(string blank)
+        {
+            var execService = new CapturingExecService();
+            var (_, host, _) = CreateTriple(execService);
+
+            await host.ExecuteAllAsync(Vars(("REPORTTARGETPATH", blank), ("REPORTTEMPLATEFILE", blank)));
+
+            Assert.Null(execService.CapturedRequest!.ReportOutputPath);
+            Assert.Null(execService.CapturedRequest.ReportTemplateFile);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_ReportTargetInMissingDirectory_ThrowsBeforeAcceptingRun()
+        {
+            var execService = new CapturingExecService();
+            var (_, host, _) = CreateTriple(execService);
+            var eventCount = 0;
+            host.ExecutionCompleted += (_, _) => eventCount++;
+            var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "report.pdf");
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(
+                () => host.ExecuteAllAsync(Vars(("REPORTTARGETPATH", missing))));
+
+            Assert.Contains("REPORTTARGETPATH", ex.Message);
+            Assert.Null(execService.CapturedRequest);   // nothing was started
+            Assert.Equal(0, eventCount);                 // no run was accepted, so no terminal result
+            Assert.False(host.IsRunning);
+
+            // The gate was never taken, so a valid request is still accepted afterwards.
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+            Assert.Equal(ExecutionOutcome.Success, result.Outcome);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_MissingReportTemplate_ThrowsBeforeAcceptingRun()
+        {
+            var execService = new CapturingExecService();
+            var (_, host, _) = CreateTriple(execService);
+            var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "template.pdf");
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(
+                () => host.ExecuteAllAsync(Vars(("REPORTTEMPLATEFILE", missing))));
+
+            Assert.Contains("REPORTTEMPLATEFILE", ex.Message);
+            Assert.Null(execService.CapturedRequest);
+            Assert.False(host.IsRunning);
+        }
+    }
+
+    // ── TaskExecHostImpl driving the real TaskExecutionService ───────────────
+
+    /// <summary>
+    /// Runs the host against the real <see cref="TaskExecutionService"/> loop (task descriptors with
+    /// executor lambdas, so no reader is needed) to cover behavior the fakes cannot: the cancellation
+    /// check at task boundaries and ordered outcomes across several tasks.
+    /// </summary>
+    [Collection("AppDataPath")]
+    public class TaskExecHostRealServiceTests
+    {
+        private static (ProjectHostImpl project, TaskExecHostImpl host) Create(ITaskExecutionService service)
+        {
+            var coordinator = new ExtensionOperationCoordinator();
+            var project = new ProjectHostImpl(new DatabaseReaderWriter(), coordinator);
+            return (project, new TaskExecHostImpl(service, project, coordinator));
+        }
+
+        private static IEnumerable<object> NewTasks(int count) =>
+            Enumerable.Range(0, count).Select(i => (object)new StubTask { CurrentTaskIndex = i.ToString() });
+
+        private static void MarkSuccess(IGenericTask task)
+        {
+            task.ExecutionState = TaskExecutionState.Completed;
+            task.IsTaskCompletedSuccessfully = true;
+            task.CurrentTaskErrorLevel = ERROR.NoError;
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_ThreeTasks_RunsInOrderAndReportsOrderedOutcomes()
+        {
+            var executed = new List<int>();
+            var service = new DescriptorInjectingService((i, task) => ct =>
+            {
+                executed.Add(i);
+                MarkSuccess(task);
+                return Task.CompletedTask;
+            });
+            var (project, host) = Create(service);
+            project.ReplaceTaskCollection(NewTasks(3));
+            var completed = new List<ExecResult>();
+            host.ExecutionCompleted += (_, r) => completed.Add(r);
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Equal(ExecutionOutcome.Success, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.None, result.FailureReason);
+            Assert.Equal(new[] { 0, 1, 2 }, executed);
+            Assert.Equal(new[] { 0, 1, 2 }, result.TaskOutcomes.Select(o => o.Position));
+            Assert.Equal(new[] { "0", "1", "2" }, result.TaskOutcomes.Select(o => o.ProjectTaskIndex));
+            Assert.All(result.TaskOutcomes, o =>
+            {
+                Assert.True(o.IsSuccess);
+                Assert.Null(o.SkipReason);
+            });
+            Assert.Equal(3, result.TotalTasks);
+            Assert.Equal(0, result.FailedTasks);
+
+            // One terminal result per accepted run, correlated with the service's log identity.
+            Assert.Equal(result.RunId, service.CapturedRunId);
+            Assert.Same(result, Assert.Single(completed));
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_CancelledDuringFirstTask_StopsAtTaskBoundary()
+        {
+            using var cts = new CancellationTokenSource();
+            var executed = new List<int>();
+            var service = new DescriptorInjectingService((i, task) => ct =>
+            {
+                executed.Add(i);
+                MarkSuccess(task);
+                if (i == 0)
+                    cts.Cancel();   // cancellation arrives while task 0 is running
+                return Task.CompletedTask;
+            });
+            var (project, host) = Create(service);
+            project.ReplaceTaskCollection(NewTasks(3));
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty, cts.Token);
+
+            // Task 0 ran to completion; the loop stopped before task 1 started.
+            Assert.Equal(new[] { 0 }, executed);
+            Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.Cancelled, result.FailureReason);
+            Assert.Equal(3, result.TaskOutcomes.Count);
+            Assert.True(result.TaskOutcomes[0].IsSuccess);
+            Assert.All(result.TaskOutcomes.Skip(1), o =>
+            {
+                Assert.Null(o.IsSuccess);
+                Assert.Equal("NotStarted", o.SkipReason);
+            });
+            Assert.False(host.IsRunning);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_TaskThrows_ReportsFaultedWithPartialOutcomes()
+        {
+            var service = new DescriptorInjectingService((i, task) => ct =>
+            {
+                if (i == 1)
+                    throw new InvalidOperationException("task blew up");
+                MarkSuccess(task);
+                return Task.CompletedTask;
+            });
+            var (project, host) = Create(service);
+            project.ReplaceTaskCollection(NewTasks(3));
 
             var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
 
             Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
-            Assert.Single(result.TaskOutcomes);
-            // The pre-seeded completed state was read by BuildTaskOutcomes in the catch block.
-            Assert.Equal(true, result.TaskOutcomes[0].IsSuccess);
+            Assert.Equal(ExecutionFailureReason.Faulted, result.FailureReason);
+            Assert.True(result.TaskOutcomes[0].IsSuccess);
+            Assert.Null(result.TaskOutcomes[2].IsSuccess);
+            Assert.False(host.IsRunning);
         }
     }
 
@@ -610,7 +1285,11 @@ namespace RFiDGear.Tests
         public async Task LoadThenExecute_WithNonEmptyFixture_VariablesOutcomesAndRunIdCorrelated()
         {
             // Generate a fixture with one CommonTaskViewModel so we exercise a non-trivial load.
-            var fixturePath = GenerateSingleCommonTaskFixture();
+            var fixturePath = ProjectFixtures.CreateProject(1);
+            // REPORTTARGETPATH must name a file in an existing directory.
+            var reportDir = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(reportDir);
+            var reportTarget = Path.Combine(reportDir, "out.pdf");
             try
             {
                 var dbRW = new DatabaseReaderWriter();
@@ -628,7 +1307,7 @@ namespace RFiDGear.Tests
 
                 var variables = new[]
                 {
-                    new KeyValuePair<string, string>("REPORTTARGETPATH", @"C:\Reports\out.pdf"),
+                    new KeyValuePair<string, string>("REPORTTARGETPATH", reportTarget),
                     new KeyValuePair<string, string>("$JOBNUMBER", "JOB-001"),
                     new KeyValuePair<string, string>("$CHIPNUMBER", "CHIP-042"),
                 };
@@ -636,7 +1315,8 @@ namespace RFiDGear.Tests
 
                 // The execution service received the full variables dictionary.
                 Assert.NotNull(execService.CapturedRequest);
-                Assert.Equal(@"C:\Reports\out.pdf", execService.CapturedRequest!.VariablesFromArgs["REPORTTARGETPATH"]);
+                Assert.Equal(reportTarget, execService.CapturedRequest!.VariablesFromArgs["REPORTTARGETPATH"]);
+                Assert.Equal(reportTarget, execService.CapturedRequest.ReportOutputPath);
                 Assert.Equal("JOB-001", execService.CapturedRequest!.VariablesFromArgs["$JOBNUMBER"]);
                 Assert.Equal("CHIP-042", execService.CapturedRequest!.VariablesFromArgs["$CHIPNUMBER"]);
 
@@ -663,33 +1343,44 @@ namespace RFiDGear.Tests
             finally
             {
                 File.Delete(fixturePath);
+                Directory.Delete(reportDir, recursive: true);
             }
         }
 
-        /// <summary>
-        /// Generates a temporary <c>.rfPrj</c> archive containing one <see cref="CommonTaskViewModel"/>.
-        /// The archive is written to a uniquely-named file in the system temp directory.
-        /// Caller is responsible for deleting the returned path when the test completes.
-        /// </summary>
-        /// <returns>Full path of the generated fixture file.</returns>
-        private static string GenerateSingleCommonTaskFixture()
+        [Fact(Timeout = 10_000)]
+        public async Task LoadThenExecute_WithThreeTasks_OutcomesOrderedAndOneTerminalResult()
         {
-            var model = new ChipTaskHandlerModel();
-            model.TaskCollection.Add(new CommonTaskViewModel());
-
-            var path = Path.Combine(Path.GetTempPath(), $"rfidgear-test-{Guid.NewGuid():N}.rfPrj");
-            var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-            using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
+            var fixturePath = ProjectFixtures.CreateProject(3);
+            try
             {
-                var entry = archive.CreateEntry("taskdatabase.xml");
-                using var entryStream = entry.Open();
-                // Serialize directly to a UTF-8 StreamWriter so the XML declaration
-                // matches the byte encoding and XmlDocument.Load succeeds.
-                using var writer = new StreamWriter(entryStream, new UTF8Encoding(false));
-                serializer.Serialize(writer, model);
-            }
+                var execService = new CapturingExecService();
+                using var host = new HeadlessExtensionHost(new DatabaseReaderWriter(), execService, string.Empty);
+                var completed = new List<ExecResult>();
+                host.Execution.ExecutionCompleted += (_, r) => completed.Add(r);
 
-            return path;
+                ProjectOpenResult loadResult = null!;
+                await StaTestRunner.RunOnStaThreadAsync(async () =>
+                {
+                    loadResult = await host.Project.LoadAsync(fixturePath);
+                });
+                Assert.True(loadResult.Success, $"LoadAsync failed: {loadResult.Error}");
+                Assert.Equal(3, loadResult.TaskCount);
+
+                var execResult = await host.Execution.ExecuteAllAsync(new ExecutionRequest());
+
+                Assert.Equal(3, execResult.TotalTasks);
+                Assert.Equal(new[] { 0, 1, 2 }, execResult.TaskOutcomes.Select(o => o.Position));
+                Assert.Equal(new[] { "0", "1", "2" }, execResult.TaskOutcomes.Select(o => o.ProjectTaskIndex));
+                Assert.All(execResult.TaskOutcomes, o => Assert.Equal("CommonTaskViewModel", o.TaskTypeName));
+
+                // Exactly one terminal result, and its RunId is the one the service logged under.
+                Assert.Same(execResult, Assert.Single(completed));
+                Assert.Equal(execResult.RunId, execService.CapturedRequest!.RunId);
+            }
+            finally
+            {
+                File.Delete(fixturePath);
+            }
         }
     }
 
@@ -729,6 +1420,97 @@ namespace RFiDGear.Tests
         public void HandleTaskTimeout() { }
     }
 
+    /// <summary>Throws a caller-supplied exception, optionally after doing partial work on the request.</summary>
+    internal sealed class ThrowingExecService : ITaskExecutionService
+    {
+        private readonly Func<Exception> _exception;
+        private readonly Action<TaskExecutionRequest>? _beforeThrow;
+
+        public ThrowingExecService(Func<Exception> exception, Action<TaskExecutionRequest>? beforeThrow = null)
+        {
+            _exception = exception;
+            _beforeThrow = beforeThrow;
+        }
+
+        public event EventHandler<TaskExecutionCompletedEventArgs> ExecutionCompleted
+        {
+            add { }
+            remove { }
+        }
+
+        public int CurrentTaskIndex => 0;
+
+        public Task<TaskExecutionResult> ExecuteOnceAsync(
+            TaskExecutionRequest request, CancellationToken ct = default)
+        {
+            _beforeThrow?.Invoke(request);
+            throw _exception();
+        }
+
+        public void HandleTaskTimeout() { }
+    }
+
+    /// <summary>Returns a result that never reached the task loop's terminal evaluation.</summary>
+    internal sealed class NullStatusExecService : ITaskExecutionService
+    {
+        public event EventHandler<TaskExecutionCompletedEventArgs> ExecutionCompleted
+        {
+            add { }
+            remove { }
+        }
+
+        public int CurrentTaskIndex => 0;
+
+        public Task<TaskExecutionResult> ExecuteOnceAsync(
+            TaskExecutionRequest request, CancellationToken ct = default)
+            => Task.FromResult(new TaskExecutionResult { RunId = request.RunId });
+
+        public void HandleTaskTimeout() { }
+    }
+
+    /// <summary>
+    /// Wraps the real <see cref="TaskExecutionService"/> and replaces the request's tasks with
+    /// descriptors that run caller-supplied executors, so the real loop (boundary checks, ordering,
+    /// terminal evaluation) runs without a reader.
+    /// </summary>
+    internal sealed class DescriptorInjectingService : ITaskExecutionService
+    {
+        private readonly TaskExecutionService _inner = new TaskExecutionService(
+            new ReaderDeviceProvider(),
+            new NullDispatcherTimerAdapter(),
+            new NullDispatcherTimerAdapter());
+        private readonly Func<int, IGenericTask, Func<CancellationToken, Task>> _executorFor;
+
+        public DescriptorInjectingService(Func<int, IGenericTask, Func<CancellationToken, Task>> executorFor)
+        {
+            _executorFor = executorFor;
+        }
+
+        /// <summary>The RunId the host allocated for the most recent run.</summary>
+        public string? CapturedRunId { get; private set; }
+
+        public event EventHandler<TaskExecutionCompletedEventArgs> ExecutionCompleted
+        {
+            add { _inner.ExecutionCompleted += value; }
+            remove { _inner.ExecutionCompleted -= value; }
+        }
+
+        public int CurrentTaskIndex => _inner.CurrentTaskIndex;
+
+        public Task<TaskExecutionResult> ExecuteOnceAsync(
+            TaskExecutionRequest request, CancellationToken ct = default)
+        {
+            CapturedRunId = request.RunId;
+            request.TaskDescriptors = request.TaskHandler.TaskCollection
+                .OfType<IGenericTask>()
+                .Select((task, index) => new TaskDescriptor(index, task, _executorFor(index, task)))
+                .ToList();
+            return _inner.ExecuteOnceAsync(request, ct);
+        }
+
+        public void HandleTaskTimeout() => _inner.HandleTaskTimeout();
+    }
+
     internal sealed class BlockingExecService : ITaskExecutionService
     {
         private readonly TaskCompletionSource<bool> _tcs = new();
@@ -757,6 +1539,11 @@ namespace RFiDGear.Tests
     {
         public TaskExecutionRequest? CapturedRequest { get; private set; }
 
+        /// <summary>
+        /// When <c>false</c> the service leaves task state untouched, as if every task had been skipped.
+        /// </summary>
+        public bool MarkTasksCompleted { get; set; } = true;
+
         public event EventHandler<TaskExecutionCompletedEventArgs> ExecutionCompleted
         {
             add { }
@@ -769,8 +1556,9 @@ namespace RFiDGear.Tests
             TaskExecutionRequest request, CancellationToken ct = default)
         {
             CapturedRequest = request;
-            foreach (var task in request.TaskHandler?.TaskCollection?.OfType<IGenericTask>()
-                ?? Enumerable.Empty<IGenericTask>())
+            foreach (var task in MarkTasksCompleted
+                ? request.TaskHandler?.TaskCollection?.OfType<IGenericTask>() ?? Enumerable.Empty<IGenericTask>()
+                : Enumerable.Empty<IGenericTask>())
             {
                 task.ExecutionState = TaskExecutionState.Completed;
                 task.IsTaskCompletedSuccessfully = true;

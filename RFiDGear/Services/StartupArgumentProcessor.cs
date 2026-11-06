@@ -108,7 +108,14 @@ namespace RFiDGear.Services
             return true;
         }
 
-        private static string NormalizeReportTargetPath(string path)
+        /// <summary>
+        /// Resolves a <c>REPORTTARGETPATH</c> value: verifies that its directory exists and replaces a
+        /// <c>?</c>, <c>??</c>, or <c>???</c> placeholder with the next free number in that directory.
+        /// Shared with the extension host so both entry points interpret the variable identically.
+        /// </summary>
+        /// <param name="path">The report target path as supplied.</param>
+        /// <returns>The resolved path, or <c>null</c> when the directory does not exist.</returns>
+        internal static string NormalizeReportTargetPath(string path)
         {
             if (!FilePathHasExistingDirectory(path))
             {

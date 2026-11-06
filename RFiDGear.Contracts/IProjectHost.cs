@@ -34,11 +34,19 @@ namespace RFiDGear.Contracts
 
         /// <summary>
         /// Synchronously loads a project from <paramref name="path"/>.
+        /// <para>
+        /// Delegates to <see cref="LoadAsync(string, CancellationToken)"/>, so it has the same safety guarantees
+        /// (busy rejection, prior project kept on failure). Unlike earlier versions it no longer ignores failures:
+        /// it throws <see cref="InvalidOperationException"/> whenever <see cref="LoadAsync(string, CancellationToken)"/>
+        /// would return a failed result, and <see cref="CurrentPath"/> becomes the canonical (absolute) path.
+        /// </para>
         /// <para><strong>Warning:</strong> calling this method from a WPF STA thread can deadlock
         /// if the underlying file reader dispatches back to the UI thread.
         /// Use <see cref="LoadAsync(string, CancellationToken)"/> instead.</para>
         /// </summary>
         /// <param name="path">Absolute path to the .rfPrj file.</param>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="path"/> is null, empty, or whitespace.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the load fails or is rejected (for example because a run is in progress).</exception>
         [Obsolete("Calling Load() from the WPF STA thread can deadlock. Use LoadAsync() instead.")]
         void Load(string path);
 
@@ -59,7 +67,18 @@ namespace RFiDGear.Contracts
         /// <param name="tasks">New ordered task collection.</param>
         void ReplaceTaskCollection(IEnumerable<object> tasks);
 
-        /// <summary>Raised after the project is loaded, replaced, or reset.</summary>
+        /// <summary>
+        /// Raised after the project is loaded, replaced, or reset.
+        /// <para>
+        /// Ordering: for a load, the event is raised only after the new project has been committed to the live
+        /// application state, so <see cref="TaskCount"/> and <see cref="CurrentPath"/> already reflect it.
+        /// It is not raised for a failed, rejected, or cancelled load.
+        /// </para>
+        /// <para>
+        /// Threading: raised on the thread that commits the project, which is the WPF dispatcher thread in
+        /// the main application. Subscribers must not block on a long operation.
+        /// </para>
+        /// </summary>
         event EventHandler ProjectChanged;
     }
 }

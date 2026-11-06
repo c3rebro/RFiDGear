@@ -17,8 +17,15 @@ namespace RFiDGear.Contracts
     /// <param name="StartedAt">UTC timestamp when execution was accepted and began.</param>
     /// <param name="CompletedAt">UTC timestamp when the terminal result was produced.</param>
     /// <param name="TaskOutcomes">
-    /// Ordered per-task results, one entry per task in execution order.
-    /// Always non-null; may be empty when execution failed before the task loop started.
+    /// Per-task results in project order, one entry per task. Always non-null and never stale: task
+    /// state is reset when a run is accepted, so tasks that were not executed in <em>this</em> run
+    /// report <c>IsSuccess == null</c> with a <c>SkipReason</c>. May be empty when the project has no tasks.
+    /// </param>
+    /// <param name="FailureReason">
+    /// Why the run ended without a terminal evaluation of its task loop, or
+    /// <see cref="ExecutionFailureReason.None"/> when it reached one. When this is not
+    /// <see cref="ExecutionFailureReason.None"/>, <paramref name="Outcome"/> is always
+    /// <see cref="ExecutionOutcome.Failure"/> and <paramref name="TaskOutcomes"/> shows how far the run got.
     /// </param>
     public record ExecResult(
         string RunId,
@@ -27,5 +34,6 @@ namespace RFiDGear.Contracts
         int FailedTasks,
         DateTimeOffset StartedAt,
         DateTimeOffset CompletedAt,
-        IReadOnlyList<TaskOutcome> TaskOutcomes);
+        IReadOnlyList<TaskOutcome> TaskOutcomes,
+        ExecutionFailureReason FailureReason = ExecutionFailureReason.None);
 }
