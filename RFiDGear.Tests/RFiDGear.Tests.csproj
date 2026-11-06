@@ -22,5 +22,9 @@
     <Content Include="Fixtures\minimal.rfPrj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- The approved public surface of RFiDGear.Contracts, compared by ApiSurface/ContractsApiSurfaceTests. -->
+    <Content Include="ApiSurface\RFiDGear.Contracts.api.approved">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>
