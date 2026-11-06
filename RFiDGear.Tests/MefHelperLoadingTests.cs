@@ -158,7 +158,7 @@ namespace RFiDGear.Tests
         {
             using var folder = new ExtensionsFolder();
             folder.Touch(BadFile);
-            ThrowingConstructorExtension.Constructed = 0;
+            ThrowingConstructorExtension.ResetConstructed();
 
             var factory = FactoryFor(new Dictionary<string, Func<ComposablePartCatalog>>
             {
@@ -339,7 +339,12 @@ namespace RFiDGear.Tests
             public IReadOnlyList<string> Names =>
                 Extensions.Select(e => e.Metadata.Name).OrderBy(n => n, StringComparer.Ordinal).ToList();
 
-            public void Dispose() => ((IDisposable)Helper).Dispose();
+            public void Dispose()
+            {
+                // MefHelper implements IDisposable explicitly, so it is only reachable through the interface.
+                IDisposable helper = Helper;
+                helper.Dispose();
+            }
         }
 
         /// <summary>Stands in for the host's own import, which the real MainWindowViewModel cannot be used for.</summary>
@@ -381,12 +386,9 @@ namespace RFiDGear.Tests
                 {
                     Directory.Delete(FullPath, true);
                 }
-                catch (IOException)
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
                 {
                     // A loaded assembly keeps its file mapped; the OS temp cleanup removes the folder later.
-                }
-                catch (UnauthorizedAccessException)
-                {
                 }
             }
         }
@@ -428,13 +430,18 @@ namespace RFiDGear.Tests
         [UiExtension(Name = "Throwing constructor")]
         public sealed class ThrowingConstructorExtension : IUIExtension
         {
-            public static int Constructed;
+            private static int _constructed;
 
             public ThrowingConstructorExtension()
             {
-                Interlocked.Increment(ref Constructed);
+                Interlocked.Increment(ref _constructed);
                 throw new InvalidOperationException("The constructor always fails.");
             }
+
+            /// <summary>How many times MEF has run the constructor since <see cref="ResetConstructed"/>.</summary>
+            public static int Constructed => Volatile.Read(ref _constructed);
+
+            public static void ResetConstructed() => Volatile.Write(ref _constructed, 0);
         }
 
         [UiExtension(Name = "Unsatisfied import")]
