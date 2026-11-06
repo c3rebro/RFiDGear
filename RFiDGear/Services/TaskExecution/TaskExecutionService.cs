@@ -258,6 +258,16 @@ namespace RFiDGear.Services.TaskExecution
         public Action<IGenericTask, IDictionary<string, string>> ConfigureTaskStrategy { get; set; }
 
         /// <summary>
+        /// Optional caller-owned sink that receives one observation per task decision, in the order the
+        /// loop reached the tasks. It is append-only and meant for one run: use a fresh list each time.
+        /// The terminal evaluation never reads it, so a pre-populated sink cannot change the result.
+        /// Unlike <see cref="TaskExecutionResult"/>, it survives cancellation and faults, where
+        /// <see cref="ITaskExecutionService.ExecuteOnceAsync"/> throws and returns no result.
+        /// Internal because the observation type is.
+        /// </summary>
+        internal List<TaskExecutionObservation> Observations { get; set; }
+
+        /// <summary>
         /// Optional correlation identifier to use for this run's structured log events.
         /// When non-empty, <see cref="TaskExecutionService"/> uses this value instead of generating a new GUID,
         /// so the extension host result and the service logs share one identity.
@@ -701,7 +711,7 @@ namespace RFiDGear.Services.TaskExecution
                     {
                         if (loggedTaskPositions.Add(taskPosition))
                         {
-                            observations.Add(CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", false));
+                            RecordObservation(observations, request, CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", false));
                             LogTaskOutcome(runId, descriptor, taskModel, "Executed", "Failed", null, ex);
                         }
 
@@ -716,7 +726,7 @@ namespace RFiDGear.Services.TaskExecution
                         if (loggedTaskPositions.Add(taskPosition))
                         {
                             var success = GetTaskSuccess(taskModel);
-                            observations.Add(CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", success));
+                            RecordObservation(observations, request, CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", success));
 
                             LogTaskOutcome(
                                 runId,
@@ -729,7 +739,7 @@ namespace RFiDGear.Services.TaskExecution
                     else if (!executedTask && CurrentTaskIndex != taskPosition && loggedTaskPositions.Add(taskPosition))
                     {
                         var skipReason = GetSkipReason(taskModel);
-                        observations.Add(CreateTaskObservation(taskPosition, descriptor, taskModel, "Skipped", null, skipReason));
+                        RecordObservation(observations, request, CreateTaskObservation(taskPosition, descriptor, taskModel, "Skipped", null, skipReason));
                         LogTaskOutcome(
                             runId,
                             descriptor,
@@ -773,6 +783,20 @@ namespace RFiDGear.Services.TaskExecution
             }
 
             return taskLoopResult.TerminalStatus;
+        }
+
+        /// <summary>
+        /// Adds an observation to the loop's own list, which feeds the terminal evaluation, and mirrors it
+        /// into the caller's optional sink. Keeping the two separate means a caller's sink can never
+        /// influence the evaluated result.
+        /// </summary>
+        private static void RecordObservation(
+            List<TaskExecutionObservation> evaluated,
+            TaskExecutionRequest request,
+            TaskExecutionObservation observation)
+        {
+            evaluated.Add(observation);
+            request.Observations?.Add(observation);
         }
 
         private static TaskExecutionObservation CreateTaskObservation(
@@ -845,12 +869,12 @@ namespace RFiDGear.Services.TaskExecution
         {
             if (taskModel == null)
             {
-                return "TaskModelUnavailable";
+                return Contracts.TaskSkipReasons.TaskModelUnavailable;
             }
 
             return taskModel.SelectedExecuteConditionErrorLevel != ERROR.Empty
-                ? "ExecuteConditionNotMet"
-                : "NotExecuted";
+                ? Contracts.TaskSkipReasons.ExecuteConditionNotMet
+                : Contracts.TaskSkipReasons.NotExecuted;
         }
 
         private static string GetTaskTypeName(IGenericTask taskModel)

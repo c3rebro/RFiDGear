@@ -9,7 +9,6 @@ using Serilog;
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -68,6 +67,11 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             var runId = Guid.NewGuid().ToString("N");
             var startedAt = DateTimeOffset.UtcNow;
 
+            // The sink is owned here so the observations survive cancellation and faults, where the
+            // execution service throws and returns nothing. One fresh list per run.
+            var observations = new List<TaskExecutionObservation>();
+            IReadOnlyList<object?> snapshot = Array.Empty<object?>();
+
             ExecResult execResult;
             try
             {
@@ -75,9 +79,14 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 // results from an earlier run would be reported for tasks skipped in this one.
                 ResetTaskState();
 
+                // Observation positions index into the collection as it was when the run started; the
+                // live collection can change while the run is in progress.
+                snapshot = _project.SetupModel?.TaskCollection?.ToList<object?>() ?? new List<object?>();
+
                 var taskRequest = new TaskExecutionRequest
                 {
                     RunId = runId,
+                    Observations = observations,
                     TaskHandler = _project.SetupModel,
                     VariablesFromArgs = variablesFromArgs,
                     ReportOutputPath = reportOutputPath,
@@ -101,13 +110,13 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     Logger.Warning("Extension-triggered run {RunId} ended without a terminal evaluation", runId);
                 }
 
-                var taskOutcomes = BuildTaskOutcomes(_project.SetupModel?.TaskCollection);
+                var taskOutcomes = TaskOutcomeMapper.Build(snapshot, observations);
                 var failedCount = taskOutcomes.Count(t => t.IsSuccess == false);
 
                 execResult = new ExecResult(
                     runId,
                     outcome,
-                    _project.TaskCount,
+                    snapshot.Count,
                     failedCount,
                     startedAt,
                     completedAt,
@@ -122,13 +131,13 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 LogFailedRun(runId, failureReason, ex);
 
                 var completedAt = DateTimeOffset.UtcNow;
-                var taskOutcomes = BuildTaskOutcomes(_project.SetupModel?.TaskCollection);
+                var taskOutcomes = TaskOutcomeMapper.Build(snapshot, observations);
                 var failedCount = taskOutcomes.Count(t => t.IsSuccess == false);
 
                 execResult = new ExecResult(
                     runId,
                     ExecutionOutcome.Failure,
-                    _project.TaskCount,
+                    snapshot.Count,
                     failedCount,
                     startedAt,
                     completedAt,
@@ -286,35 +295,6 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             key = string.Empty;
             value = string.Empty;
             return false;
-        }
-
-        private static IReadOnlyList<TaskOutcome> BuildTaskOutcomes(
-            ObservableCollection<object>? collection)
-        {
-            if (collection == null || collection.Count == 0)
-                return Array.Empty<TaskOutcome>();
-
-            var outcomes = new List<TaskOutcome>(collection.Count);
-            foreach (var item in collection)
-            {
-                if (item is IGenericTask t)
-                {
-                    var skipReason = t.ExecutionState == TaskExecutionState.NotStarted
-                        ? "NotStarted"
-                        : null;
-
-                    // Position counts emitted outcomes so it stays gap-free and matches the list index.
-                    var position = outcomes.Count;
-                    outcomes.Add(new TaskOutcome(
-                        position,
-                        t.CurrentTaskIndex ?? position.ToString(),
-                        item.GetType().Name,
-                        t.IsTaskCompletedSuccessfully,
-                        t.CurrentTaskErrorLevel.ToString(),
-                        skipReason));
-                }
-            }
-            return outcomes;
         }
     }
 }

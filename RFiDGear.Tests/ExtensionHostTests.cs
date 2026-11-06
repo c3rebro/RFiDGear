@@ -130,16 +130,16 @@ namespace RFiDGear.Tests
         [Fact]
         public void SkipReason_CanBeProvided()
         {
-            var outcome = new TaskOutcome(1, "1", "SomeTask", null, "NoError", "NotStarted");
-            Assert.Equal("NotStarted", outcome.SkipReason);
+            var outcome = new TaskOutcome(1, "1", "SomeTask", null, "NoError", TaskSkipReasons.NotReached);
+            Assert.Equal(TaskSkipReasons.NotReached, outcome.SkipReason);
         }
 
         [Fact]
         public void IsSuccess_NullWithSkipReason_IndicatesNotExecuted()
         {
-            var outcome = new TaskOutcome(0, "0", "SomeTask", null, "NoError", "NotStarted");
+            var outcome = new TaskOutcome(0, "0", "SomeTask", null, "NoError", TaskSkipReasons.NotReached);
             Assert.Null(outcome.IsSuccess);
-            Assert.Equal("NotStarted", outcome.SkipReason);
+            Assert.Equal(TaskSkipReasons.NotReached, outcome.SkipReason);
         }
     }
 
@@ -1162,6 +1162,7 @@ namespace RFiDGear.Tests
                     first.ExecutionState = TaskExecutionState.Completed;
                     first.IsTaskCompletedSuccessfully = true;
                     first.CurrentTaskErrorLevel = ERROR.NoError;
+                    request.Observations!.Add(TestObservations.Executed(0, first, success: true));
                 });
             var (project, host, _) = CreateTriple(execService);
             project.ReplaceTaskCollection(new object[]
@@ -1180,7 +1181,7 @@ namespace RFiDGear.Tests
             Assert.True(result.TaskOutcomes[0].IsSuccess);
             Assert.Null(result.TaskOutcomes[0].SkipReason);
             Assert.Null(result.TaskOutcomes[1].IsSuccess);
-            Assert.Equal("NotStarted", result.TaskOutcomes[1].SkipReason);
+            Assert.Equal(TaskSkipReasons.NotReached, result.TaskOutcomes[1].SkipReason);
         }
 
         // ── fresh state: results never leak from an earlier run ──
@@ -1207,7 +1208,7 @@ namespace RFiDGear.Tests
             Assert.All(second.TaskOutcomes, o =>
             {
                 Assert.Null(o.IsSuccess);
-                Assert.Equal("NotStarted", o.SkipReason);
+                Assert.Equal(TaskSkipReasons.NotReached, o.SkipReason);
                 Assert.Equal(ERROR.Empty.ToString(), o.NormalizedErrorCode);
             });
             Assert.Equal(0, second.FailedTasks);
@@ -1498,7 +1499,7 @@ namespace RFiDGear.Tests
             Assert.All(result.TaskOutcomes.Skip(1), o =>
             {
                 Assert.Null(o.IsSuccess);
-                Assert.Equal("NotStarted", o.SkipReason);
+                Assert.Equal(TaskSkipReasons.NotReached, o.SkipReason);
             });
             Assert.False(host.IsRunning);
         }
@@ -1520,8 +1521,17 @@ namespace RFiDGear.Tests
 
             Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
             Assert.Equal(ExecutionFailureReason.Faulted, result.FailureReason);
+            Assert.Equal(3, result.TaskOutcomes.Count);
             Assert.True(result.TaskOutcomes[0].IsSuccess);
+
+            // The task that threw is a failure, not an unknown: it ran and did not complete.
+            Assert.False(result.TaskOutcomes[1].IsSuccess);
+            Assert.Null(result.TaskOutcomes[1].SkipReason);
+            Assert.Equal(1, result.FailedTasks);
+
+            // The run never got to the third task.
             Assert.Null(result.TaskOutcomes[2].IsSuccess);
+            Assert.Equal(TaskSkipReasons.NotReached, result.TaskOutcomes[2].SkipReason);
             Assert.False(host.IsRunning);
         }
     }
@@ -1658,6 +1668,216 @@ namespace RFiDGear.Tests
                 File.Delete(fixturePath);
             }
         }
+    }
+
+    // ── TaskOutcomeMapper: what the loop did becomes the outcome list ─────────
+
+    public class TaskOutcomeMapperTests
+    {
+        private static StubTask Task(string index) => new StubTask { CurrentTaskIndex = index };
+
+        [Fact]
+        public void SkipReasonTokens_AreStableContractValues()
+        {
+            Assert.Equal("ExecuteConditionNotMet", TaskSkipReasons.ExecuteConditionNotMet);
+            Assert.Equal("NotExecuted", TaskSkipReasons.NotExecuted);
+            Assert.Equal("TaskModelUnavailable", TaskSkipReasons.TaskModelUnavailable);
+            Assert.Equal("NotReached", TaskSkipReasons.NotReached);
+        }
+
+        [Fact]
+        public void ConditionSkippedTask_ReportsTheRealReasonEvenThoughItsStateSaysCompleted()
+        {
+            // Handlers mark a task Completed after skipping it, so state cannot tell skip from run.
+            var ran = Task("0");
+            var skipped = Task("1");
+            skipped.ExecutionState = TaskExecutionState.Completed;
+            var observations = new[]
+            {
+                TestObservations.Executed(0, ran, success: true),
+                TestObservations.Skipped(1, skipped, TaskSkipReasons.ExecuteConditionNotMet),
+            };
+
+            var outcomes = TaskOutcomeMapper.Build(new object?[] { ran, skipped }, observations);
+
+            Assert.Equal(TaskSkipReasons.ExecuteConditionNotMet, outcomes[1].SkipReason);
+            Assert.Null(outcomes[1].IsSuccess);
+            Assert.Equal(1, outcomes[1].Position);
+        }
+
+        [Fact]
+        public void ExecutedTask_WhoseExecutionStateWasNeverUpdated_HasNoSkipReason()
+        {
+            // Generic-chip tasks run without ever touching ExecutionState.
+            var chipCheck = Task("0");
+            Assert.Equal(TaskExecutionState.NotStarted, chipCheck.ExecutionState);
+
+            var outcomes = TaskOutcomeMapper.Build(
+                new object?[] { chipCheck },
+                new[] { TestObservations.Executed(0, chipCheck, success: true) });
+
+            var outcome = Assert.Single(outcomes);
+            Assert.True(outcome.IsSuccess);
+            Assert.Null(outcome.SkipReason);
+        }
+
+        [Fact]
+        public void ExecutedTask_WhoseSuccessIsUnknown_IsNullWithNoSkipReason()
+        {
+            var task = Task("0");
+
+            var outcome = Assert.Single(TaskOutcomeMapper.Build(
+                new object?[] { task },
+                new[] { TestObservations.Executed(0, task, success: null, error: ERROR.Empty) }));
+
+            Assert.Null(outcome.IsSuccess);
+            Assert.Null(outcome.SkipReason);
+        }
+
+        [Fact]
+        public void FailedTask_IsReportedAsFailure()
+        {
+            var task = Task("0");
+
+            var outcome = Assert.Single(TaskOutcomeMapper.Build(
+                new object?[] { task },
+                new[] { TestObservations.Executed(0, task, success: false, error: ERROR.AuthFailure) }));
+
+            Assert.False(outcome.IsSuccess);
+            Assert.Equal(ERROR.AuthFailure.ToString(), outcome.NormalizedErrorCode);
+        }
+
+        [Fact]
+        public void OutOfOrderObservations_AreReportedInExecutionOrderThenUnvisitedTasks()
+        {
+            var tasks = new object?[] { Task("0"), Task("1"), Task("2") };
+            // The run jumped from task 0 straight to task 2.
+            var observations = new[]
+            {
+                TestObservations.Executed(0, (IGenericTask)tasks[0]!, success: true),
+                TestObservations.Executed(2, (IGenericTask)tasks[2]!, success: true),
+            };
+
+            var outcomes = TaskOutcomeMapper.Build(tasks, observations);
+
+            Assert.Equal(new[] { "0", "2", "1" }, outcomes.Select(o => o.ProjectTaskIndex));
+            Assert.Equal(new[] { 0, 1, 2 }, outcomes.Select(o => o.Position));
+            Assert.Equal(TaskSkipReasons.NotReached, outcomes[2].SkipReason);
+            Assert.Null(outcomes[2].IsSuccess);
+            Assert.Equal(ERROR.Empty.ToString(), outcomes[2].NormalizedErrorCode);
+        }
+
+        [Fact]
+        public void ObservationWithoutTaskModel_UsesUnknownTypeNameAndThePositionAsIndex()
+        {
+            var observation = new TaskExecutionObservation(
+                1, taskId: null!, task: null!, TaskLoopTerminalEvaluator.SkippedDecision,
+                wasSuccessful: null, ERROR.Empty, TaskSkipReasons.TaskModelUnavailable);
+
+            var outcome = Assert.Single(TaskOutcomeMapper.Build(new object?[] { null, null }, new[] { observation }),
+                o => o.SkipReason == TaskSkipReasons.TaskModelUnavailable);
+
+            Assert.Equal("Unknown", outcome.TaskTypeName);
+            Assert.Equal("1", outcome.ProjectTaskIndex);
+        }
+
+        [Fact]
+        public void WithoutObservations_EveryTaskIsNotReached()
+        {
+            var tasks = new object?[] { Task("0"), Task("1") };
+
+            var outcomes = TaskOutcomeMapper.Build(tasks, Array.Empty<TaskExecutionObservation>());
+
+            Assert.Equal(2, outcomes.Count);
+            Assert.All(outcomes, o =>
+            {
+                Assert.Null(o.IsSuccess);
+                Assert.Equal(TaskSkipReasons.NotReached, o.SkipReason);
+            });
+        }
+
+        [Fact]
+        public void EveryProjectTask_AppearsExactlyOnce()
+        {
+            var tasks = Enumerable.Range(0, 5).Select(i => (object?)Task(i.ToString())).ToArray();
+            var observations = new[]
+            {
+                TestObservations.Executed(4, (IGenericTask)tasks[4]!, success: true),
+                TestObservations.Executed(1, (IGenericTask)tasks[1]!, success: false, error: ERROR.TransportError),
+            };
+
+            var outcomes = TaskOutcomeMapper.Build(tasks, observations);
+
+            Assert.Equal(5, outcomes.Count);
+            Assert.Equal(new[] { "0", "1", "2", "3", "4" }, outcomes.Select(o => o.ProjectTaskIndex).OrderBy(i => i));
+            Assert.Equal(Enumerable.Range(0, 5), outcomes.Select(o => o.Position));
+        }
+
+        [Fact]
+        public void NonTaskItemInTheProject_IsReportedAsNotReachedWithItsTypeName()
+        {
+            var outcome = Assert.Single(TaskOutcomeMapper.Build(
+                new object?[] { new object() },
+                Array.Empty<TaskExecutionObservation>()));
+
+            Assert.Equal("Object", outcome.TaskTypeName);
+            Assert.Equal("0", outcome.ProjectTaskIndex);
+        }
+    }
+
+    // ── TaskExecutionService: the observation sink ────────────────────────────
+
+    public class TaskExecutionObservationSinkTests
+    {
+        [Fact]
+        public async Task PrePopulatedSink_KeepsItsEntries_ButNeverInfluencesTheTerminalStatus()
+        {
+            var task = new StubTask { CurrentTaskIndex = "0" };
+            // A failure the run did not produce. If the evaluation read the sink it would report Failure.
+            var foreign = TestObservations.Executed(9, new StubTask { CurrentTaskIndex = "9" }, success: false, error: ERROR.TransportError);
+            var sink = new List<TaskExecutionObservation> { foreign };
+            var service = new TaskExecutionService(
+                new ReaderDeviceProvider(), new NullDispatcherTimerAdapter(), new NullDispatcherTimerAdapter());
+            var request = new TaskExecutionRequest
+            {
+                TaskDescriptors = new[]
+                {
+                    new TaskDescriptor(0, task, ct =>
+                    {
+                        task.ExecutionState = TaskExecutionState.Completed;
+                        task.IsTaskCompletedSuccessfully = true;
+                        task.CurrentTaskErrorLevel = ERROR.NoError;
+                        return Task.CompletedTask;
+                    }),
+                },
+                Observations = sink,
+            };
+
+            TaskExecutionResult result = null!;
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                result = await service.ExecuteOnceAsync(request);
+            });
+
+            Assert.Equal(TaskLoopTerminalStatus.Success, result.TerminalStatus);
+            Assert.Equal(2, sink.Count);
+            Assert.Same(foreign, sink[0]);
+            Assert.Equal(TaskLoopTerminalEvaluator.ExecutedDecision, sink[1].Decision);
+        }
+    }
+
+    /// <summary>Builds the observations the real task loop records, for use in test doubles.</summary>
+    internal static class TestObservations
+    {
+        public static TaskExecutionObservation Executed(
+            int position, IGenericTask task, bool? success, ERROR error = ERROR.NoError) =>
+            new TaskExecutionObservation(
+                position, task.CurrentTaskIndex, task, TaskLoopTerminalEvaluator.ExecutedDecision, success, error);
+
+        public static TaskExecutionObservation Skipped(int position, IGenericTask task, string reason) =>
+            new TaskExecutionObservation(
+                position, task.CurrentTaskIndex, task, TaskLoopTerminalEvaluator.SkippedDecision,
+                wasSuccessful: null, task.CurrentTaskErrorLevel, reason);
     }
 
     // ── Stub ITaskExecutionService implementations ────────────────────────────
@@ -1832,13 +2052,23 @@ namespace RFiDGear.Tests
             TaskExecutionRequest request, CancellationToken ct = default)
         {
             CapturedRequest = request;
-            foreach (var task in MarkTasksCompleted
-                ? request.TaskHandler?.TaskCollection?.OfType<IGenericTask>() ?? Enumerable.Empty<IGenericTask>()
-                : Enumerable.Empty<IGenericTask>())
+
+            var position = 0;
+            foreach (var item in MarkTasksCompleted
+                ? request.TaskHandler?.TaskCollection ?? new ObservableCollection<object>()
+                : new ObservableCollection<object>())
             {
-                task.ExecutionState = TaskExecutionState.Completed;
-                task.IsTaskCompletedSuccessfully = true;
-                task.CurrentTaskErrorLevel = ERROR.NoError;
+                if (item is IGenericTask task)
+                {
+                    task.ExecutionState = TaskExecutionState.Completed;
+                    task.IsTaskCompletedSuccessfully = true;
+                    task.CurrentTaskErrorLevel = ERROR.NoError;
+
+                    // Record what the real loop would: one observation per executed task.
+                    request.Observations?.Add(TestObservations.Executed(position, task, success: true));
+                }
+
+                position++;
             }
 
             return Task.FromResult(new TaskExecutionResult

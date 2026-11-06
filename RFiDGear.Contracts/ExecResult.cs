@@ -17,9 +17,12 @@ namespace RFiDGear.Contracts
     /// <param name="StartedAt">UTC timestamp when execution was accepted and began.</param>
     /// <param name="CompletedAt">UTC timestamp when the terminal result was produced.</param>
     /// <param name="TaskOutcomes">
-    /// Per-task results in project order, one entry per task. Always non-null and never stale: task
-    /// state is reset when a run is accepted, so tasks that were not executed in <em>this</em> run
-    /// report <c>IsSuccess == null</c> with a <c>SkipReason</c>. May be empty when the project has no tasks.
+    /// One entry per project task: first the tasks the run reached, in the order it reached them (each with
+    /// its real result or skip reason), then the tasks it never reached in project order, marked
+    /// <see cref="TaskSkipReasons.NotReached"/>. A <c>NotReached</c> entry alone does not mean failure, because
+    /// error routing can bypass tasks on purpose; check <paramref name="Outcome"/> and
+    /// <paramref name="FailureReason"/>. Always non-null and never stale: it is built from what <em>this</em>
+    /// run did, even when the run was cancelled or faulted. Empty when the project has no tasks.
     /// </param>
     /// <param name="FailureReason">
     /// Why the run ended without a terminal evaluation of its task loop, or
