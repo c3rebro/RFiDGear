@@ -59,12 +59,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             ResolveReportVariables(variablesFromArgs, out var reportOutputPath, out var reportTemplateFile);
 
             if (!_coordinator.TryBeginExecution())
-                throw new InvalidOperationException(
-                    _coordinator.IsLoading
-                        ? "A project load is in progress. Wait for LoadAsync to complete before executing."
-                        : _coordinator.IsMutating
-                            ? "A project edit is in progress. Wait for it to complete before executing."
-                            : "An execution is already in progress.");
+                throw new InvalidOperationException(BusyMessage(
+                    whenLoading: "A project load is in progress. Wait for LoadAsync to complete before executing.",
+                    whenEditing: "A project edit is in progress. Wait for it to complete before executing.",
+                    whenRunning: "An execution is already in progress."));
 
             // Allocate the RunId before the call so result, logs, and the execution service
             // all share the same identity regardless of where or when the run ends.
@@ -166,9 +164,37 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 #pragma warning restore CS0618
 
         /// <inheritdoc/>
-        public void ResetStatus() => ResetTaskState();
+        public void ResetStatus()
+        {
+            // The project-edit slot is the right gate: it is refused while a run, a load or another edit is
+            // active (clearing state under a running task loop is what breaks the one-attempt rule), and while
+            // it is held no run can start in the middle of the reset.
+            if (!_coordinator.TryBeginProjectOperation())
+                throw new InvalidOperationException(BusyMessage(
+                    whenLoading: "A project load is in progress. Wait for LoadAsync to complete before resetting the task status.",
+                    whenEditing: "A project edit is in progress. Wait for it to complete before resetting the task status.",
+                    whenRunning: "A task run is in progress. Reset the task status after it has completed."));
+
+            try
+            {
+                ResetTaskState();
+            }
+            finally
+            {
+                _coordinator.EndProjectOperation();
+            }
+        }
 
         // ── private helpers ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// Picks the message that matches what the coordinator is busy with. The state can change between the
+        /// refused attempt and this read, in which case the last message is used.
+        /// </summary>
+        private string BusyMessage(string whenLoading, string whenEditing, string whenRunning) =>
+            _coordinator.IsLoading ? whenLoading
+            : _coordinator.IsMutating ? whenEditing
+            : whenRunning;
 
         private static ExecutionOutcome MapOutcome(TaskLoopTerminalStatus? status) => status switch
         {

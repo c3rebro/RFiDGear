@@ -1789,6 +1789,91 @@ namespace RFiDGear.Tests
             Assert.Equal(TaskExecutionState.NotStarted, task.ExecutionState);
         }
 
+        [Fact]
+        public async Task ResetStatus_WhileARealRunIsInFlight_IsRefusedAndTheRunIsUndisturbed()
+        {
+            var service = new BlockingExecService();
+            var (project, host, coordinator) = CreateTriple(service);
+            var task = new StubTask();
+            project.ReplaceTaskCollection(new object[] { task });
+
+            var run = host.ExecuteAllAsync(ExecutionRequest.Empty);   // parks inside the execution service
+            Assert.True(host.IsRunning);
+
+            // The run has meanwhile finished the task. A reset now would clear what the loop still reads.
+            task.IsTaskCompletedSuccessfully = true;
+            task.CurrentTaskErrorLevel = ERROR.AuthFailure;
+            task.ExecutionState = TaskExecutionState.Completed;
+
+            var refused = Assert.Throws<InvalidOperationException>(() => host.ResetStatus());
+
+            Assert.Contains("task run is in progress", refused.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.True(task.IsTaskCompletedSuccessfully);
+            Assert.Equal(ERROR.AuthFailure, task.CurrentTaskErrorLevel);
+            Assert.Equal(TaskExecutionState.Completed, task.ExecutionState);
+            Assert.True(host.IsRunning, "A refused reset must not release the run's slot.");
+
+            service.Unblock();
+            var result = await run;
+            Assert.Equal(ExecutionOutcome.Success, result.Outcome);
+            Assert.False(host.IsRunning);
+
+            // With the run over, the same call is accepted.
+            host.ResetStatus();
+            Assert.Null(task.IsTaskCompletedSuccessfully);
+            Assert.True(coordinator.TryBeginExecution(), "The reset must leave the coordinator idle.");
+            coordinator.EndExecution();
+        }
+
+        [Theory]
+        [InlineData("load", "project load")]
+        [InlineData("edit", "project edit")]
+        [InlineData("run", "task run")]
+        public void ResetStatus_WhileAnotherOperationOwnsTheCoordinator_IsRefusedAndKeepsThatOperationsSlot(string operation, string expectedInMessage)
+        {
+            var (project, host, coordinator) = CreateTriple();
+            var task = new StubTask
+            {
+                IsTaskCompletedSuccessfully = true,
+                CurrentTaskErrorLevel = ERROR.AuthFailure,
+                ExecutionState = TaskExecutionState.Completed,
+            };
+            project.ReplaceTaskCollection(new object[] { task });
+
+            var admitted = operation switch
+            {
+                "load" => coordinator.TryBeginLoad(),
+                "edit" => coordinator.TryBeginProjectOperation(),
+                _ => coordinator.TryBeginExecution(),
+            };
+            Assert.True(admitted);
+
+            var refused = Assert.Throws<InvalidOperationException>(() => host.ResetStatus());
+
+            Assert.Contains(expectedInMessage, refused.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.True(task.IsTaskCompletedSuccessfully);
+            Assert.Equal(ERROR.AuthFailure, task.CurrentTaskErrorLevel);
+            Assert.Equal(TaskExecutionState.Completed, task.ExecutionState);
+
+            // The refused call must not have released the slot it never owned.
+            Assert.Equal(operation == "load", coordinator.IsLoading);
+            Assert.Equal(operation == "edit", coordinator.IsMutating);
+            Assert.Equal(operation == "run", coordinator.IsExecuting);
+        }
+
+        [Fact]
+        public void ResetStatus_WhenClearingFailsPartWay_StillReleasesTheCoordinator()
+        {
+            var (project, host, coordinator) = CreateTriple();
+            var task = new StubTask { OnExecutionStateAssigned = () => throw new InvalidOperationException("boom") };
+            project.ReplaceTaskCollection(new object[] { task });
+
+            Assert.Throws<InvalidOperationException>(() => host.ResetStatus());
+
+            Assert.True(coordinator.TryBeginExecution(), "A failed reset must not leave the host busy forever.");
+            coordinator.EndExecution();
+        }
+
         // ── obsolete parameterless overload: pinned behavior ──
 
 #pragma warning disable CS0618 // exercising the obsolete compatibility wrapper on purpose
@@ -2830,6 +2915,19 @@ namespace RFiDGear.Tests
         public string CurrentTaskIndex { get; set; } = "0";
         public int SelectedTaskIndexAsInt => 0;
         public ObservableCollection<TaskAttemptResult> AttemptResults { get; } = new();
-        public TaskExecutionState ExecutionState { get; set; } = TaskExecutionState.NotStarted;
+        private TaskExecutionState _executionState = TaskExecutionState.NotStarted;
+
+        /// <summary>Runs whenever <see cref="ExecutionState"/> is assigned, so a test can make a reset fail part-way.</summary>
+        public Action? OnExecutionStateAssigned { get; set; }
+
+        public TaskExecutionState ExecutionState
+        {
+            get => _executionState;
+            set
+            {
+                OnExecutionStateAssigned?.Invoke();
+                _executionState = value;
+            }
+        }
     }
 }
