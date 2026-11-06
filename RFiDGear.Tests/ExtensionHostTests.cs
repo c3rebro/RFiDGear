@@ -1051,7 +1051,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task New_AndReplaceTaskCollection_AreRejectedDuringARunAndLeaveTheProjectUnchanged()
+        public void New_AndReplaceTaskCollection_AreRejectedDuringARunAndLeaveTheProjectUnchanged()
         {
             var (host, _, coordinator) = CreateIsolatedHostWithCoordinator();
             host.ReplaceTaskCollection(new object[] { new StubTask() });
@@ -1069,7 +1069,6 @@ namespace RFiDGear.Tests
             // Rejection must not leak the slot.
             host.New();
             Assert.Equal(0, host.TaskCount);
-            await Task.CompletedTask;
         }
 
         [Fact]
@@ -1086,16 +1085,16 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public void ExecuteAllAsync_IsRejectedWhileAProjectEditIsInProgress()
+        public async Task ExecuteAllAsync_IsRejectedWhileAProjectEditIsInProgress()
         {
             var coordinator = new ExtensionOperationCoordinator();
             var project = new ProjectHostImpl(new DatabaseReaderWriter(new ProjectManager(_root)), coordinator);
             var exec = new TaskExecHostImpl(new CapturingExecService(), project, coordinator);
             Assert.True(coordinator.TryBeginProjectOperation());
 
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(() => exec.ExecuteAllAsync(ExecutionRequest.Empty));
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => exec.ExecuteAllAsync(ExecutionRequest.Empty));
 
-            Assert.Contains("project edit", ex.Result.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("project edit", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
