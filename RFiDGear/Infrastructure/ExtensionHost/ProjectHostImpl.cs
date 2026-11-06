@@ -2,7 +2,6 @@
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Models;
-using RFiDGear.ViewModel;
 
 using System;
 using System.Collections.Generic;
@@ -27,9 +26,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         private readonly Func<Action, Task> _dispatch;
 
         // Called inside the dispatched commit to sync the loaded model into the live app state.
-        // Receives the newly deserialized task model and tree collection.
+        // Receives the newly deserialized task model.
         // null in headless mode (we just update _dbRW directly).
-        private readonly Action<ChipTaskHandlerModel, ObservableCollection<RFiDChipParentLayerViewModel>>? _applyToLiveApp;
+        private readonly Action<ChipTaskHandlerModel>? _applyToLiveApp;
 
         private string? _currentPath;
 
@@ -61,15 +60,16 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// </param>
         /// <param name="applyToLiveApp">
         /// Called inside <paramref name="dispatch"/> after a successful read to apply the loaded
-        /// <see cref="ChipTaskHandlerModel"/> and tree collection to live application state
-        /// (task collection, <c>TreeViewParentNodes</c>, property notifications, etc.).
+        /// <see cref="ChipTaskHandlerModel"/> to live application state (task collection and property
+        /// notifications). It must not touch state that is not part of the project, such as the
+        /// chip tree that shows cards detected by the reader.
         /// </param>
         public ProjectHostImpl(
             DatabaseReaderWriter dbRW,
             ExtensionOperationCoordinator coordinator,
             Func<ChipTaskHandlerModel> liveModelAccessor,
             Func<Action, Task> dispatch,
-            Action<ChipTaskHandlerModel, ObservableCollection<RFiDChipParentLayerViewModel>> applyToLiveApp)
+            Action<ChipTaskHandlerModel> applyToLiveApp)
         {
             _dbRW = dbRW ?? throw new ArgumentNullException(nameof(dbRW));
             _coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
@@ -108,14 +108,15 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
             try
             {
-                // Read into a temporary DatabaseReaderWriter so that a parsing failure leaves
-                // the current project (SetupModel, TreeViewModel, _currentPath) fully intact.
-                var tempDbRW = new DatabaseReaderWriter();
+                // ReadProjectAsync returns the model without touching _dbRW, so a parsing failure
+                // leaves the current project (SetupModel, _currentPath) fully intact, and no
+                // throwaway reader runs its destructive constructor on every load.
                 DatabaseReaderWriter.DatabaseReadResult result;
+                ChipTaskHandlerModel? model;
 
                 try
                 {
-                    result = await tempDbRW.ReadDatabase(path).ConfigureAwait(false);
+                    (result, model) = await _dbRW.ReadProjectAsync(path).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -150,7 +151,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     return Contracts.ProjectOpenResult.Fail(openError);
                 }
 
-                if (!result.IsSupportedVersion)
+                if (!result.IsSupportedVersion || model == null)
                     return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.UnsupportedFormat);
 
                 var canonicalPath = Path.GetFullPath(path);
@@ -159,13 +160,16 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 // dispatcher, keeping ObservableCollection mutations on the UI thread.
                 await _dispatch(() =>
                 {
-                    // Keep the backing store in sync regardless of mode.
-                    _dbRW.SetupModel = tempDbRW.SetupModel;
-                    _dbRW.TreeViewModel = tempDbRW.TreeViewModel;
+                    if (_applyToLiveApp == null)
+                    {
+                        // Headless: the database reader's model is the live model.
+                        _dbRW.SetupModel = model;
+                    }
+
                     _currentPath = canonicalPath;
 
-                    // In main-app mode, push task collection and tree into bound properties.
-                    _applyToLiveApp?.Invoke(tempDbRW.SetupModel, tempDbRW.TreeViewModel);
+                    // Main-app mode: push the task collection into the bound live model.
+                    _applyToLiveApp?.Invoke(model);
 
                     ProjectChanged?.Invoke(this, EventArgs.Empty);
                 }).ConfigureAwait(false);
@@ -199,7 +203,6 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public void New()
         {
             _dbRW.SetupModel = new ChipTaskHandlerModel();
-            _dbRW.TreeViewModel = new ObservableCollection<RFiDChipParentLayerViewModel>();
             _currentPath = null;
             ProjectChanged?.Invoke(this, EventArgs.Empty);
         }

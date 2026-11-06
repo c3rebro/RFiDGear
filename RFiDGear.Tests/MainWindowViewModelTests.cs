@@ -153,7 +153,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task OpenProject_LoadsIntoLiveTaskModel_AndRejectedOpenKeepsIt()
+        public async Task OpenProject_LoadsIntoLiveTaskModel_KeepsChipTree_AndRejectedOpenKeepsIt()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
@@ -186,7 +186,9 @@ namespace RFiDGear.Tests
                         new NoopUpdateScheduler(),
                         new FakeReaderMonitor(),
                         new FakeProjectBootstrapper(),
-                        () => new SettingsReaderWriter(settingsDirectory));
+                        () => new SettingsReaderWriter(settingsDirectory),
+                        // Hermetic: project extraction and staging stay in this test's folder.
+                        () => new DatabaseReaderWriter(new ProjectManager(Path.Combine(tempRoot, "appdata"))));
 
                     var initializationTask = viewModel.InitializeAsync();
                     bootstrapper.Complete(new SettingsBootstrapResult
@@ -196,6 +198,10 @@ namespace RFiDGear.Tests
                         Culture = CultureInfo.InvariantCulture
                     });
                     await initializationTask;
+
+                    // A card detected by the reader: not part of any project, so opening one must not drop it.
+                    var detectedChip = new RFiDChipParentLayerViewModel("detected chip");
+                    viewModel.TreeViewParentNodes.Add(detectedChip);
 
                     var openProject = typeof(MainWindowViewModel).GetMethod(
                         "OpenLastProjectFile",
@@ -212,10 +218,12 @@ namespace RFiDGear.Tests
                     Assert.All(viewModel.ChipTasks.TaskCollection, t => Assert.IsType<CommonTaskViewModel>(t));
                     Assert.Equal(2, viewModel.ExtensionHost.Project.TaskCount);
                     Assert.Equal(Path.GetFullPath(projectPath), viewModel.ExtensionHost.Project.CurrentPath);
+                    Assert.Same(detectedChip, Assert.Single(viewModel.TreeViewParentNodes));
 
                     // A rejected open leaves the live project and the remembered path untouched.
                     await (Task)openProject.Invoke(viewModel, new object[] { corruptPath })!;
 
+                    Assert.Same(detectedChip, Assert.Single(viewModel.TreeViewParentNodes));
                     Assert.Equal(2, viewModel.ChipTasks.TaskCollection.Count);
                     Assert.Equal(2, viewModel.ExtensionHost.Project.TaskCount);
                     Assert.Equal(Path.GetFullPath(projectPath), viewModel.ExtensionHost.Project.CurrentPath);

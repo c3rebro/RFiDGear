@@ -423,7 +423,7 @@ namespace RFiDGear.Tests
         }
 
         /// <summary>Loads through an STA dispatcher thread, the way a WPF caller would.</summary>
-        private static async Task<ProjectOpenResult> LoadOnStaAsync(ProjectHostImpl host, string path)
+        internal static async Task<ProjectOpenResult> LoadOnStaAsync(ProjectHostImpl host, string path)
         {
             ProjectOpenResult result = null!;
             await StaTestRunner.RunOnStaThreadAsync(async () =>
@@ -533,7 +533,7 @@ namespace RFiDGear.Tests
                         action();
                         return Task.CompletedTask;
                     },
-                    (loaded, _) =>
+                    loaded =>
                     {
                         events.Add("apply");
                         live.TaskCollection.Clear();
@@ -580,7 +580,7 @@ namespace RFiDGear.Tests
                         action();
                         return Task.CompletedTask;
                     },
-                    (_, _) => applyCount++);
+                    _ => applyCount++);
 
                 var result = await LoadOnStaAsync(host, bad);
 
@@ -667,6 +667,282 @@ namespace RFiDGear.Tests
             Assert.Throws<ArgumentException>(() => host.Load("  "));
         }
 #pragma warning restore CS0618
+    }
+
+    // ── ProjectManager: injectable root and file classification ───────────────
+
+    public sealed class ProjectManagerTests : IDisposable
+    {
+        private readonly string _root = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+        private readonly List<string> _files = new();
+
+        public void Dispose()
+        {
+            foreach (var file in _files)
+                File.Delete(file);
+            if (Directory.Exists(_root))
+                Directory.Delete(_root, recursive: true);
+        }
+
+        private string Track(string path)
+        {
+            _files.Add(path);
+            return path;
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public void Ctor_BlankRoot_Throws(string? root)
+        {
+            Assert.Throws<ArgumentException>(() => new ProjectManager(root!));
+        }
+
+        [Fact]
+        public void Ctor_CreatesInjectedRootAndExposesItAsAppDataPath()
+        {
+            var manager = new ProjectManager(_root);
+
+            Assert.Equal(_root, manager.AppDataPath);
+            Assert.True(Directory.Exists(_root));
+            Assert.Equal(Path.Combine(_root, "taskdatabase.xml"), manager.TaskDatabasePath);
+        }
+
+        [Fact]
+        public void GetProjectFileType_PlainXml_IsXml()
+        {
+            var file = Track(ProjectFixtures.CreatePlainXmlProject(1));
+
+            Assert.Equal(ProjectFileType.Xml, new ProjectManager(_root).GetProjectFileType(new FileInfo(file)));
+        }
+
+        [Fact]
+        public void GetProjectFileType_ZipNamedXml_IsArchive()
+        {
+            var file = Track(ProjectFixtures.CreateZipNamedXml(1));
+
+            Assert.Equal(ProjectFileType.Archive, new ProjectManager(_root).GetProjectFileType(new FileInfo(file)));
+        }
+
+        [Fact]
+        public void GetProjectFileType_RfPrjWithPlainXmlContent_StaysArchive()
+        {
+            // The extension decides for .rfPrj; bad content is reported later as UnsupportedFormat.
+            var file = Track(ProjectFixtures.CreateNotAnArchive());
+
+            Assert.Equal(ProjectFileType.Archive, new ProjectManager(_root).GetProjectFileType(new FileInfo(file)));
+        }
+
+        [Fact]
+        public void GetProjectFileType_FileShorterThanZipHeader_IsXml()
+        {
+            var file = Track(ProjectFixtures.CreateEmptyFile(".xml"));
+
+            Assert.Equal(ProjectFileType.Xml, new ProjectManager(_root).GetProjectFileType(new FileInfo(file)));
+        }
+
+        [Fact]
+        public void GetProjectFileType_MissingXmlFile_FallsBackToXmlWithoutThrowing()
+        {
+            var missing = Path.Combine(_root, "does-not-exist.xml");
+
+            Assert.Equal(ProjectFileType.Xml, new ProjectManager(_root).GetProjectFileType(new FileInfo(missing)));
+        }
+
+        [Fact]
+        public void GetProjectFileType_OtherExtension_IsUnknown()
+        {
+            Assert.Equal(
+                ProjectFileType.Unknown,
+                new ProjectManager(_root).GetProjectFileType(new FileInfo(Path.Combine(_root, "project.txt"))));
+        }
+    }
+
+    // ── Project load pipeline: formats, isolation, stale-file safety ──────────
+
+    /// <summary>
+    /// Runs the real load path against an isolated <see cref="ProjectManager"/> root so it neither
+    /// depends on nor modifies the user's <c>%LocalAppData%\RFiDGear</c> folder.
+    /// </summary>
+    [Collection("AppDataPath")]
+    public sealed class ProjectLoadPipelineTests : IDisposable
+    {
+        private readonly string _root = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+        private readonly List<string> _files = new();
+
+        public void Dispose()
+        {
+            foreach (var file in _files)
+                File.Delete(file);
+            if (Directory.Exists(_root))
+                Directory.Delete(_root, recursive: true);
+        }
+
+        private string Track(string path)
+        {
+            _files.Add(path);
+            return path;
+        }
+
+        private (ProjectHostImpl host, ProjectManager manager) CreateIsolatedHost()
+        {
+            var manager = new ProjectManager(_root);
+            return (new ProjectHostImpl(new DatabaseReaderWriter(manager), new ExtensionOperationCoordinator()), manager);
+        }
+
+        private static Task<ProjectOpenResult> LoadAsync(ProjectHostImpl host, string path) =>
+            ProjectHostImplTests.LoadOnStaAsync(host, path);
+
+        [Fact]
+        public async Task LoadAsync_PlainXmlProject_LoadsAllTasks()
+        {
+            var file = Track(ProjectFixtures.CreatePlainXmlProject(3));
+            var (host, _) = CreateIsolatedHost();
+
+            var result = await LoadAsync(host, file);
+
+            Assert.True(result.Success, $"LoadAsync failed: {result.Error}");
+            Assert.Equal(3, result.TaskCount);
+            Assert.Equal(3, host.TaskCount);
+            Assert.Equal(Path.GetFullPath(file), host.CurrentPath);
+        }
+
+        [Fact]
+        public async Task LoadAsync_ZipSavedWithXmlExtension_LoadsAllTasks()
+        {
+            var file = Track(ProjectFixtures.CreateZipNamedXml(2));
+            var (host, _) = CreateIsolatedHost();
+
+            var result = await LoadAsync(host, file);
+
+            Assert.True(result.Success, $"LoadAsync failed: {result.Error}");
+            Assert.Equal(2, host.TaskCount);
+        }
+
+        [Fact]
+        public async Task LoadAsync_ChipTreeXml_ReturnsUnsupportedFormatAndPreservesProject()
+        {
+            var good = Track(ProjectFixtures.CreateProject(2));
+            var chipTree = Track(ProjectFixtures.CreateChipTreeXml());
+            var (host, _) = CreateIsolatedHost();
+            Assert.True((await LoadAsync(host, good)).Success);
+            var pathBefore = host.CurrentPath;
+
+            var result = await LoadAsync(host, chipTree);
+
+            Assert.False(result.Success);
+            Assert.Equal(ProjectOpenError.UnsupportedFormat, result.Error);
+            Assert.Equal(pathBefore, host.CurrentPath);
+            Assert.Equal(2, host.TaskCount);
+        }
+
+        [Fact]
+        public async Task LoadAsync_NilRootXml_ReturnsUnsupportedFormat()
+        {
+            var file = Track(ProjectFixtures.CreateNilRootXml());
+            var (host, _) = CreateIsolatedHost();
+
+            var result = await LoadAsync(host, file);
+
+            Assert.False(result.Success);
+            Assert.Equal(ProjectOpenError.UnsupportedFormat, result.Error);
+            Assert.Null(host.CurrentPath);
+        }
+
+        [Fact]
+        public async Task LoadAsync_EmptyXmlFile_ReturnsUnsupportedFormat()
+        {
+            var file = Track(ProjectFixtures.CreateEmptyFile(".xml"));
+            var (host, _) = CreateIsolatedHost();
+
+            var result = await LoadAsync(host, file);
+
+            Assert.False(result.Success);
+            Assert.Equal(ProjectOpenError.UnsupportedFormat, result.Error);
+            Assert.Null(host.CurrentPath);
+        }
+
+        [Fact]
+        public async Task LoadAsync_ExtractsIntoTheInjectedRoot()
+        {
+            var file = Track(ProjectFixtures.CreateProject(1));
+            var (host, manager) = CreateIsolatedHost();
+
+            Assert.True((await LoadAsync(host, file)).Success);
+
+            // The read used the injected reader's ProjectManager, not a fresh default one.
+            Assert.True(File.Exists(manager.TaskDatabasePath));
+        }
+
+        [Fact]
+        public async Task LoadAsync_DoesNotRunTheDestructiveResetOnEveryLoad()
+        {
+            var file = Track(ProjectFixtures.CreateProject(1));
+            var (host, _) = CreateIsolatedHost();
+            // Created after the host: the reader's constructor deletes *.rfprj in its root once.
+            var sentinel = Path.Combine(_root, "sentinel.rfprj");
+            await File.WriteAllTextAsync(sentinel, "keep me");
+
+            Assert.True((await LoadAsync(host, file)).Success);
+            Assert.True((await LoadAsync(host, file)).Success);
+
+            Assert.True(File.Exists(sentinel), "A load must not delete unrelated project files.");
+        }
+
+        [Fact]
+        public async Task LoadAsync_ArchiveWithoutTaskDatabaseEntry_IgnoresStaleStagingFile()
+        {
+            var (host, manager) = CreateIsolatedHost();
+            // A previous save or load left a valid project behind in the staging slot.
+            await File.WriteAllTextAsync(manager.TaskDatabasePath, ProjectFixtures.SerializeProject(5, manifestVersion: null));
+            var file = Track(ProjectFixtures.CreateArchiveWithEntry("unrelated.xml", "<unrelated />"));
+
+            var result = await LoadAsync(host, file);
+
+            // Must not silently open the stale 5-task project.
+            Assert.False(result.Success);
+            Assert.Equal(ProjectOpenError.UnsupportedFormat, result.Error);
+            Assert.Equal(0, host.TaskCount);
+            Assert.Null(host.CurrentPath);
+        }
+
+        [Fact]
+        public async Task ReadDatabase_Wrapper_AssignsSetupModelOnSuccessAndKeepsItOnFailure()
+        {
+            var good = Track(ProjectFixtures.CreateProject(2));
+            var bad = Track(ProjectFixtures.CreateNotAnArchive());
+            var reader = new DatabaseReaderWriter(new ProjectManager(_root));
+
+            var ok = await reader.ReadDatabase(good);
+            Assert.True(ok.Success);
+            Assert.Equal(2, reader.SetupModel.TaskCollection.Count);
+
+            var failed = await reader.ReadDatabase(bad);
+            Assert.False(failed.Success);
+            Assert.Equal(2, reader.SetupModel.TaskCollection.Count);
+        }
+
+        [Theory]
+        [InlineData(".rfPrj")]
+        [InlineData(".xml")]
+        public async Task SaveAs_ThenLoadAsync_RoundTripsTheProject(string extension)
+        {
+            var output = Track(Path.Combine(Path.GetTempPath(), $"rfidgear-test-{Guid.NewGuid():N}{extension}"));
+            var (writer, _) = CreateIsolatedHost();
+            var (reader, _) = CreateIsolatedHost();
+            writer.ReplaceTaskCollection(new object[]
+            {
+                new CommonTaskViewModel { CurrentTaskIndex = "0" },
+                new CommonTaskViewModel { CurrentTaskIndex = "1" },
+            });
+
+            writer.SaveAs(output);
+            var result = await LoadAsync(reader, output);
+
+            Assert.True(result.Success, $"LoadAsync failed: {result.Error}");
+            Assert.Equal(2, reader.TaskCount);
+        }
     }
 
     // ── TaskExecHostImpl — lifecycle ──────────────────────────────────────────

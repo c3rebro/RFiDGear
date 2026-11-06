@@ -64,6 +64,7 @@ namespace RFiDGear.ViewModel
         private ITaskExecutionService taskExecutionService;
         private readonly ISettingsBootstrapper settingsBootstrapper;
         private readonly Func<SettingsReaderWriter> settingsReaderWriterFactory;
+        private readonly Func<DatabaseReaderWriter> databaseReaderWriterFactory;
         private readonly IUpdateNotifier updateNotifier;
         private readonly IContextMenuBuilder contextMenuBuilder;
         private readonly IStartupArgumentProcessor startupArgumentProcessor;
@@ -127,7 +128,8 @@ namespace RFiDGear.ViewModel
             IUpdateScheduler updateScheduler,
             IReaderMonitor readerMonitor,
             IProjectBootstrapper projectBootstrapper,
-            Func<SettingsReaderWriter> settingsReaderWriterFactory = null)
+            Func<SettingsReaderWriter> settingsReaderWriterFactory = null,
+            Func<DatabaseReaderWriter> databaseReaderWriterFactory = null)
         {
             this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
             this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
@@ -140,6 +142,7 @@ namespace RFiDGear.ViewModel
             this.readerMonitor = readerMonitor ?? throw new ArgumentNullException(nameof(readerMonitor));
             this.projectBootstrapper = projectBootstrapper ?? throw new ArgumentNullException(nameof(projectBootstrapper));
             this.settingsReaderWriterFactory = settingsReaderWriterFactory ?? (() => new SettingsReaderWriter());
+            this.databaseReaderWriterFactory = databaseReaderWriterFactory ?? (() => new DatabaseReaderWriter());
 
             if (appStartupInitializer == null)
             {
@@ -194,7 +197,7 @@ namespace RFiDGear.ViewModel
 
             ReaderStatus = "";
             DateTimeStatusBar = "";
-            databaseReaderWriter = new DatabaseReaderWriter();
+            databaseReaderWriter = databaseReaderWriterFactory();
             resLoader = new ResourceLoader();
 
             var taskServices = taskServiceInitializer.Initialize(
@@ -215,13 +218,11 @@ namespace RFiDGear.ViewModel
                 taskExecutionService,
                 liveModelAccessor: () => taskHandler,
                 dispatch: action => owningDispatcher.InvokeAsync(action).Task,
-                applyToLiveApp: (loadedModel, loadedTree) =>
+                applyToLiveApp: loadedModel =>
                 {
                     // Runs on the WPF dispatcher thread — safe to mutate bound collections.
-                    TreeViewParentNodes.Clear();
-                    foreach (var vm in loadedTree)
-                        TreeViewParentNodes.Add(vm);
-
+                    // TreeViewParentNodes is deliberately left alone: it shows the cards detected by
+                    // the reader, which are not part of a project, and must survive opening one.
                     if (taskHandler.TaskCollection != null)
                         taskHandler.TaskCollection.Clear();
                     else
@@ -231,7 +232,6 @@ namespace RFiDGear.ViewModel
                         taskHandler.TaskCollection.Add(task);
 
                     OnPropertyChanged(nameof(ChipTasks));
-                    OnPropertyChanged(nameof(TreeViewParentNodes));
                 },
                 readerName: string.Empty,
                 coordinator: _coordinator,

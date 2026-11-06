@@ -40,7 +40,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private MifareUltralightChipModel chipModel;
         private MifareUltralightPageModel pageModel;
 
-        private DatabaseReaderWriter databaseReaderWriter;
         private SettingsReaderWriter settings = new SettingsReaderWriter();
 
         #endregion fields
@@ -73,8 +72,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 MefHelper.Instance.EnsureCompose();
                 MefHelper.Instance.Container?.ComposeParts(this); //Load Plugins
-
-                databaseReaderWriter = new DatabaseReaderWriter();
 
                 chipModel = new MifareUltralightChipModel(string.Format("Task Description: {0}", SelectedTaskDescription), CARD_TYPE.MifareUltralight);
 
