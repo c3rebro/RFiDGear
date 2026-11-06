@@ -77,6 +77,7 @@ namespace RFiDGear.ViewModel
 
         private HeadlessExtensionHost extensionHost;
         private ExtensionOperationCoordinator _coordinator;
+        private readonly IApplicationExtensionLauncher applicationExtensionLauncher;
 
         private protected MainWindow mw;
         private protected DatabaseReaderWriter databaseReaderWriter;
@@ -129,7 +130,8 @@ namespace RFiDGear.ViewModel
             IReaderMonitor readerMonitor,
             IProjectBootstrapper projectBootstrapper,
             Func<SettingsReaderWriter> settingsReaderWriterFactory = null,
-            Func<DatabaseReaderWriter> databaseReaderWriterFactory = null)
+            Func<DatabaseReaderWriter> databaseReaderWriterFactory = null,
+            IApplicationExtensionLauncher applicationExtensionLauncher = null)
         {
             this.settingsBootstrapper = settingsBootstrapper ?? throw new ArgumentNullException(nameof(settingsBootstrapper));
             this.updateNotifier = updateNotifier ?? throw new ArgumentNullException(nameof(updateNotifier));
@@ -143,6 +145,7 @@ namespace RFiDGear.ViewModel
             this.projectBootstrapper = projectBootstrapper ?? throw new ArgumentNullException(nameof(projectBootstrapper));
             this.settingsReaderWriterFactory = settingsReaderWriterFactory ?? (() => new SettingsReaderWriter());
             this.databaseReaderWriterFactory = databaseReaderWriterFactory ?? (() => new DatabaseReaderWriter());
+            this.applicationExtensionLauncher = applicationExtensionLauncher ?? new ApplicationExtensionLauncher(ShowExtensionError);
 
             if (appStartupInitializer == null)
             {
@@ -236,7 +239,12 @@ namespace RFiDGear.ViewModel
                 readerName: string.Empty,
                 coordinator: _coordinator,
                 getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english",
-                isOnUiThread: () => owningDispatcher.CheckAccess());
+                isOnUiThread: () => owningDispatcher.CheckAccess(),
+                getReaderName: () => CurrentReader);
+
+            // The Extensions menu entries were built when MEF composed this view model, before the host existed, and
+            // stay disabled until now.
+            NotifyApplicationExtensionCommandsCanExecuteChanged();
 
             var deleteSelectedCommand = new RelayCommand(() =>
             {
@@ -294,10 +302,14 @@ namespace RFiDGear.ViewModel
         #region Extension host
 
         /// <summary>
-        /// Stable host service importable by MEF extensions. Provides project, execution,
-        /// reader, and auto-mode access without requiring a direct reference to this view model.
+        /// Stable host service for extensions. Provides project, execution, reader, and auto-mode access without
+        /// requiring a direct reference to this view model. It is <c>null</c> until start-up has built it.
         /// </summary>
-        [Export(typeof(IRFiDGearExtensionHost))]
+        /// <remarks>
+        /// Deliberately not a MEF export: it did not exist yet when MEF composed the extensions, so an import was
+        /// empty. Application extensions receive it as the argument of
+        /// <c>IApplicationUIExtension.CreateContent</c> when the user opens them.
+        /// </remarks>
         public IRFiDGearExtensionHost ExtensionHost => extensionHost;
 
         #endregion Extension host
@@ -321,13 +333,14 @@ namespace RFiDGear.ViewModel
                                               select g).ToArray();
 
                 _applicationExtensionMenuItems.Clear();
+                _applicationExtensionCommands.Clear();
                 foreach (var ext in _applicationExtensionItems)
                 {
-                    var uri = ext.Metadata.Uri;
-                    var name = ext.Metadata.Name;
-                    _applicationExtensionMenuItems.Add(new ExtensionMenuItem(
-                        name,
-                        new RelayCommand(() => OpenApplicationExtension(uri, name))));
+                    // Only the metadata is read here. The exported class is created when the user opens the entry.
+                    var extension = ext;
+                    var command = new RelayCommand(() => OpenApplicationExtension(extension), () => extensionHost != null);
+                    _applicationExtensionCommands.Add(command);
+                    _applicationExtensionMenuItems.Add(new ExtensionMenuItem(ext.Metadata.Name, command));
                 }
 
                 OnPropertyChanged(nameof(ApplicationExtensionItems));
@@ -337,6 +350,7 @@ namespace RFiDGear.ViewModel
         private Lazy<IUIExtension, IUIExtensionDetails>[] _applicationExtensionItems = Array.Empty<Lazy<IUIExtension, IUIExtensionDetails>>();
 
         private readonly ObservableCollection<ExtensionMenuItem> _applicationExtensionMenuItems = new ObservableCollection<ExtensionMenuItem>();
+        private readonly List<RelayCommand> _applicationExtensionCommands = new List<RelayCommand>();
 
         /// <summary>
         /// Menu items for application-level extensions; bound to the Extensions menu in the main window.
@@ -348,21 +362,60 @@ namespace RFiDGear.ViewModel
         /// </summary>
         public bool HasApplicationExtensions => _applicationExtensionMenuItems.Count > 0;
 
-        private static void OpenApplicationExtension(string uri, string title)
+        /// <summary>
+        /// Opens one application extension. The menu entry is disabled until the host service exists, but a command
+        /// can still be executed directly, so this checks it too: an extension must never be handed a missing host.
+        /// </summary>
+        private void OpenApplicationExtension(Lazy<IUIExtension, IUIExtensionDetails> extension)
         {
-            var frame = new System.Windows.Controls.Frame
+            var host = extensionHost;
+            if (host == null)
             {
-                NavigationUIVisibility = System.Windows.Navigation.NavigationUIVisibility.Hidden
-            };
-            var window = new Window
+                Log.ForContext<MainWindowViewModel>().Warning(
+                    "Application extension {ExtensionName} was opened before the host service was ready",
+                    extension.Metadata.Name);
+                ShowExtensionError(extension.Metadata.Name);
+                return;
+            }
+
+            applicationExtensionLauncher.Open(extension, host);
+        }
+
+        /// <summary>
+        /// Re-evaluates whether the Extensions menu entries can be used. Called once the host service exists.
+        /// </summary>
+        private void NotifyApplicationExtensionCommandsCanExecuteChanged()
+        {
+            foreach (var command in _applicationExtensionCommands)
             {
-                Title = title ?? string.Empty,
-                Width = 900,
-                Height = 600,
-                Content = frame
-            };
-            frame.Source = new Uri(uri);
-            window.Show();
+                command.NotifyCanExecuteChanged();
+            }
+        }
+
+        /// <summary>Resource key of the caption of the "extension could not be opened" dialog.</summary>
+        internal const string ExtensionOpenFailedCaptionKey = "messageBoxExtensionOpenFailedCaption";
+
+        /// <summary>Resource key of the message of that dialog; its <c>{0}</c> is the extension's name.</summary>
+        internal const string ExtensionOpenFailedMessageKey = "messageBoxExtensionOpenFailedMessage";
+
+        /// <summary>
+        /// Tells the user that an application extension could not be opened. The details are in the log.
+        /// </summary>
+        /// <param name="extensionName">The extension's display name.</param>
+        private void ShowExtensionError(string extensionName)
+        {
+            const string fallbackMessage = "The extension '{0}' could not be opened. Details are in the application log.";
+
+            var template = ResourceLoader.GetResource(ExtensionOpenFailedMessageKey);
+            Dialogs.Add(new CustomDialogViewModel
+            {
+                Caption = ResourceLoader.GetResource(ExtensionOpenFailedCaptionKey),
+                Message = string.Format(
+                    CultureInfo.CurrentCulture,
+                    string.IsNullOrWhiteSpace(template) ? fallbackMessage : template,
+                    extensionName),
+                OnOk = sender => sender.Close()
+            });
         }
 
         /// <summary>
@@ -1298,11 +1351,13 @@ namespace RFiDGear.ViewModel
 
                         sender.SaveSettings.ExecuteAsync(null);
 
+                        // Switch the provider first: setting the name announces the change to extensions, and they read
+                        // the connection and card state of whichever provider is current when that happens.
+                        ReaderDevice.Reader = sender.SelectedReader;
+
                         CurrentReader = string.IsNullOrWhiteSpace(sender.SelectedReaderName)
                             ? Enum.GetName(typeof(ReaderTypes), sender.SelectedReader)
                             : sender.SelectedReaderName;
-
-                        ReaderDevice.Reader = sender.SelectedReader;
 
                         sender.Close();
 
@@ -1713,8 +1768,16 @@ namespace RFiDGear.ViewModel
             get => currentReader;
             set
             {
+                var changed = !string.Equals(currentReader, value, StringComparison.Ordinal);
                 currentReader = value;
                 OnPropertyChanged(nameof(CurrentReader));
+
+                // Extensions read the name through IReaderHost; tell them it moved. Before start-up has built the host
+                // there is nobody to tell, and the host reads the current name when it is asked.
+                if (changed)
+                {
+                    extensionHost?.NotifyReaderStateChanged();
+                }
             }
         }
         private string currentReader;

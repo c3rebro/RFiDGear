@@ -103,6 +103,15 @@ regenerating the snapshot (`RFIDGEAR_UPDATE_API_SNAPSHOT=1`). Extensions are
 discovered once at start-up from `%ProgramData%\RFiDGear\Extensions`, so
 adding one needs an app restart.
 
+An application extension (`HostPlacement.Application`) implements
+`IApplicationUIExtension` from the SDK. RFiDGear creates the exported class on
+the first click on its Extensions menu entry, never at start-up, and calls
+`CreateContent(IRFiDGearExtensionHost host)` every time it is opened; the
+service arrives as that argument because it does not exist yet when MEF
+composes. It is deliberately not a MEF export. `ApplicationExtensionLauncher`
+disposes the content when the window closes. An extension that sets `Uri`
+still opens that page in a frame as before, without creating its class.
+
 A broken extension never stops the others or the application. `MefHelper`
 probes each DLL (parts, export metadata, imports) before adding it to the
 container, logs a failure with Serilog and skips that file. If the extensions

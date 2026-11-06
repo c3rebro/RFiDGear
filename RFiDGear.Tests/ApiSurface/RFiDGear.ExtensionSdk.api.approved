@@ -5,6 +5,9 @@ public enum RFiDGear.UI.UIExtensions.HostPlacement : int
     CardTask = 0
     Application = 1
 
+public interface RFiDGear.UI.UIExtensions.Interfaces.IApplicationUIExtension : IUIExtension
+    public System.Windows.FrameworkElement CreateContent(RFiDGear.Contracts.IRFiDGearExtensionHost host)
+
 public interface RFiDGear.UI.UIExtensions.Interfaces.IUIExtension
 
 public interface RFiDGear.UI.UIExtensions.Interfaces.IUIExtensionDetails

@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using System.ComponentModel.Composition.Hosting;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -281,7 +281,23 @@ namespace RFiDGear.Tests
         /// <summary>
         /// Creates and initializes a view model whose settings and project staging live below <paramref name="tempRoot"/>.
         /// </summary>
-        internal static async Task<MainWindowViewModel> CreateInitializedViewModelAsync(string tempRoot, CultureInfo? culture = null)
+        internal static async Task<MainWindowViewModel> CreateInitializedViewModelAsync(
+            string tempRoot,
+            CultureInfo? culture = null,
+            IApplicationExtensionLauncher? launcher = null)
+        {
+            var (viewModel, initialize) = CreateUninitializedViewModel(tempRoot, launcher);
+            await initialize(culture);
+            return viewModel;
+        }
+
+        /// <summary>
+        /// Creates a view model whose start-up has begun but not finished, for tests that arrange state before the
+        /// host service exists. Call the returned delegate to let start-up complete.
+        /// </summary>
+        internal static (MainWindowViewModel ViewModel, Func<CultureInfo?, Task> Initialize) CreateUninitializedViewModel(
+            string tempRoot,
+            IApplicationExtensionLauncher? launcher = null)
         {
             var settingsDirectory = Path.Combine(tempRoot, "settings");
             Directory.CreateDirectory(settingsDirectory);
@@ -306,18 +322,20 @@ namespace RFiDGear.Tests
                 new FakeReaderMonitor(),
                 new FakeProjectBootstrapper(),
                 () => new SettingsReaderWriter(settingsDirectory),
-                () => new DatabaseReaderWriter(new ProjectManager(Path.Combine(tempRoot, "appdata"))));
+                () => new DatabaseReaderWriter(new ProjectManager(Path.Combine(tempRoot, "appdata"))),
+                launcher);
 
-            var initializationTask = viewModel.InitializeAsync();
-            bootstrapper.Complete(new SettingsBootstrapResult
+            return (viewModel, async culture =>
             {
-                CurrentReaderName = "Reader",
-                DefaultReaderProvider = ReaderTypes.None,
-                Culture = culture ?? CultureInfo.InvariantCulture
+                var initializationTask = viewModel.InitializeAsync();
+                bootstrapper.Complete(new SettingsBootstrapResult
+                {
+                    CurrentReaderName = "Reader",
+                    DefaultReaderProvider = ReaderTypes.None,
+                    Culture = culture ?? CultureInfo.InvariantCulture
+                });
+                await initializationTask;
             });
-            await initializationTask;
-
-            return viewModel;
         }
 
         private static async Task OpenProjectAsync(MainWindowViewModel viewModel, string path)
@@ -532,13 +550,6 @@ namespace RFiDGear.Tests
         }
         // ── extension host as an extension sees it ──
 
-        /// <summary>Stands in for an extension: it only declares the import the contract documents.</summary>
-        public sealed class HostImporter
-        {
-            [Import]
-            public IRFiDGearExtensionHost? Host { get; set; }
-        }
-
         [Theory]
         [InlineData("de-DE", "de-DE")]
         [InlineData("en-US", "en-US")]
@@ -625,7 +636,23 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task ExtensionHost_CanBeImportedThroughMef_AsAnExtensionDoesIt()
+        public void ExtensionHost_IsNotAMefExport()
+        {
+            // The host service is created while the main window starts, which can be after MEF composed the
+            // extensions, so an import was empty or null. Extensions receive it as the argument of
+            // IApplicationUIExtension.CreateContent instead; an export here would invite the broken pattern back.
+            var property = typeof(MainWindowViewModel).GetProperty(nameof(MainWindowViewModel.ExtensionHost))!;
+
+            Assert.Empty(property.GetCustomAttributes(typeof(ExportAttribute), inherit: true));
+            Assert.Empty(typeof(MainWindowViewModel)
+                .GetMembers(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                .SelectMany(member => member.GetCustomAttributes(typeof(ExportAttribute), inherit: true))
+                .Cast<ExportAttribute>()
+                .Where(export => export.ContractType == typeof(IRFiDGearExtensionHost)));
+        }
+
+        [Fact]
+        public async Task ExtensionHost_WhenHandedToAnExtension_ServesTheFirstCallsAnExtensionMakes()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
@@ -633,23 +660,13 @@ namespace RFiDGear.Tests
                 try
                 {
                     var viewModel = await CreateInitializedViewModelAsync(tempRoot);
-                    var extension = new HostImporter();
+                    IRFiDGearExtensionHost host = viewModel.ExtensionHost;
 
-                    // The host application exports the service from its view model; an extension imports it.
-                    using var container = new CompositionContainer();
-                    var batch = new CompositionBatch();
-                    batch.AddPart(viewModel);
-                    batch.AddPart(extension);
-                    container.Compose(batch);
-
-                    Assert.Same(viewModel.ExtensionHost, extension.Host);
-
-                    // The first things an extension does with it.
-                    Assert.Equal(0, extension.Host!.Project.TaskCount);
-                    Assert.Null(extension.Host.Project.CurrentPath);
-                    Assert.False(extension.Host.Execution.IsRunning);
-                    Assert.False(string.IsNullOrWhiteSpace(extension.Host.AppContext.RFiDGearVersion));
-                    Assert.False(extension.Host.AutoMode.IsAutoModeEnabled);
+                    Assert.Equal(0, host.Project.TaskCount);
+                    Assert.Null(host.Project.CurrentPath);
+                    Assert.False(host.Execution.IsRunning);
+                    Assert.False(string.IsNullOrWhiteSpace(host.AppContext.RFiDGearVersion));
+                    Assert.False(host.AutoMode.IsAutoModeEnabled);
                 }
                 finally
                 {

@@ -175,6 +175,12 @@ slot of an available reader</value>
   <data name="messageBoxRestartRequiredMessage" xml:space="preserve">
     <value>The Software needs to be restarted in Order to apply these changes. Click 'OK' to proceed.</value>
   </data>
+  <data name="messageBoxExtensionOpenFailedCaption" xml:space="preserve">
+    <value>Extension</value>
+  </data>
+  <data name="messageBoxExtensionOpenFailedMessage" xml:space="preserve">
+    <value>The extension '{0}' could not be opened. Details are in the application log.</value>
+  </data>
   <data name="menuItemFileHeader" xml:space="preserve">
     <value>_File</value>
   </data>
