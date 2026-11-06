@@ -241,9 +241,10 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         private static bool HasUnusableFolderName(string fullPath)
         {
             var folders = fullPath.Substring(Path.GetPathRoot(fullPath)?.Length ?? 0);
+            var separators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
             return folders
-                .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .Split(separators)
                 .Any(folder => folder.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0);
         }
     }
