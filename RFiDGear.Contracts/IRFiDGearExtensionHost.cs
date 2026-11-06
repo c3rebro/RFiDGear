@@ -1,16 +1,20 @@
 namespace RFiDGear.Contracts
 {
     /// <summary>
-    /// Top-level host service exported by RFiDGear and importable by extensions via MEF.
+    /// Top-level host service that RFiDGear offers to extensions.
     /// Provides stable, supported access to project lifecycle, task execution, reader state,
     /// and automatic mode — without requiring a direct reference to internal view models.
     /// <para>
-    /// Obtain this service in an extension by declaring a MEF import:
-    /// <code>[Import] public IRFiDGearExtensionHost Host { get; set; }</code>
+    /// Obtain this service in an application extension from the argument of <c>CreateContent</c>, the method of
+    /// <c>IApplicationUIExtension</c> (in the <c>RFiDGear.ExtensionSdk</c> assembly) that RFiDGear calls each time the
+    /// user opens the extension.
     /// </para>
     /// <para>
-    /// Availability: the host is created while the main window initializes. Until then, and for good if start-up
-    /// fails, the MEF export is <c>null</c>, so an extension must not import it before start-up has completed.
+    /// Availability: the service is created while the main window initializes, which can be after MEF has composed
+    /// the extensions, and an extension can only be opened after that. <c>CreateContent</c> therefore always receives
+    /// an initialized service, never <c>null</c>, and the same instance for the whole session. Do not declare a MEF
+    /// <c>[Import]</c> for this interface: it is not exported, and MEF leaves out, without an error, an extension
+    /// with an import it cannot satisfy.
     /// </para>
     /// <para>
     /// Threading: once the host exists, each sub-host property below returns the same instance for the lifetime

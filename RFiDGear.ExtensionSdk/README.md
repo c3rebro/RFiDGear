@@ -18,6 +18,11 @@ types an extension uses to be discovered and placed by RFiDGear. Host services
   a marker interface.
 - `IUIExtensionDetails` (`RFiDGear.UI.UIExtensions.Interfaces`): the metadata
   view the host imports as `Lazy<IUIExtension, IUIExtensionDetails>`.
+- `IApplicationUIExtension` (`RFiDGear.UI.UIExtensions.Interfaces`): the page
+  factory of an application extension. `CreateContent(IRFiDGearExtensionHost
+  host)` runs on the UI thread each time the user opens the extension and
+  returns a new control for its window. The host disposes that content, and a
+  different `IDisposable` data context, once when the window closes.
 
 **Rules:**
 
@@ -47,3 +52,13 @@ types an extension uses to be discovered and placed by RFiDGear. Host services
   hot loading: adding or removing an extension needs an application restart.
 - `RFiDGear.Contracts.dll`, `RFiDGear.ExtensionSdk.dll` and the MEF runtime
   are owned by the host. An extension must not carry private copies of them.
+- Do not `[Import]` `IRFiDGearExtensionHost`. The service does not exist yet
+  when MEF composes the extensions, so it is not exported, and MEF leaves out
+  an extension with an import it cannot satisfy without any error. Take the
+  service from the argument of `CreateContent`.
+- The exported class is created on the first click, not at start-up, and is
+  shared afterwards: keep it stateless and put per-window state in the
+  content. A constructor or `CreateContent` that throws is logged and shown to
+  the user, and the next click tries again.
+- An extension that only needs a page can keep naming it with `Uri` and
+  implement just `IUIExtension`; it opens in a frame as before.
