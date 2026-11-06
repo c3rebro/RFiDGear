@@ -36,6 +36,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         // notifications). null in headless mode (we just update _dbRW directly).
         private readonly Action<ChipTaskHandlerModel>? _applyToLiveApp;
 
+        // Tells whether the calling thread is the UI thread of the main application. null in headless mode,
+        // where no thread is special. Only the synchronous Load needs it.
+        private readonly Func<bool>? _isOnUiThread;
+
         // A load, a save, and a project edit (New, ReplaceTaskCollection) must never overlap: load and save
         // stage files in the shared application data folder, and a save serializes the live collection and
         // records CurrentPath. Unlike the coordinator this is not blocked by a task run: saving while a run
@@ -77,18 +81,25 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// the UI thread. It must not touch state that is not part of the project, such as the chip tree that
         /// shows cards detected by the reader.
         /// </param>
+        /// <param name="isOnUiThread">
+        /// Returns <c>true</c> when the calling thread is the UI thread. The obsolete synchronous <see cref="Load"/>
+        /// uses it to refuse, instead of deadlocking, when it is called there. When omitted, <see cref="Load"/> does
+        /// not check the thread.
+        /// </param>
         public ProjectHostImpl(
             DatabaseReaderWriter dbRW,
             ExtensionOperationCoordinator coordinator,
             Func<ChipTaskHandlerModel> liveModelAccessor,
             Func<Action, Task> dispatch,
-            Action<ChipTaskHandlerModel> applyToLiveApp)
+            Action<ChipTaskHandlerModel> applyToLiveApp,
+            Func<bool>? isOnUiThread = null)
         {
             _dbRW = dbRW ?? throw new ArgumentNullException(nameof(dbRW));
             _coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
             _liveModelAccessor = liveModelAccessor ?? throw new ArgumentNullException(nameof(liveModelAccessor));
             _dispatch = dispatch ?? throw new ArgumentNullException(nameof(dispatch));
             _applyToLiveApp = applyToLiveApp ?? throw new ArgumentNullException(nameof(applyToLiveApp));
+            _isOnUiThread = isOnUiThread;
         }
 
         /// <inheritdoc/>
@@ -208,9 +219,16 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             if (string.IsNullOrWhiteSpace(path))
                 throw new ArgumentException("Path must not be empty.", nameof(path));
 
+            // Refuse before anything is reserved or read. Reading a project parses it on the UI thread (its
+            // view models must be created there), so blocking that thread here waits for work only it can do:
+            // the call would never return and the host would stay busy.
+            if (_isOnUiThread?.Invoke() == true)
+                throw new InvalidOperationException(
+                    "Project.Load cannot be called on the UI thread of the main application: it blocks the thread " +
+                    "that reading the project needs, so it would never return. Use LoadAsync instead.");
+
             // Delegate to LoadAsync so all safety checks (coordinator, detached read,
-            // dispatcher commit) apply. Blocks synchronously — avoid calling from a WPF
-            // STA thread that owns the dispatcher (deadlock risk); use LoadAsync() instead.
+            // dispatcher commit) apply. Blocks the calling thread until the load has finished.
             var result = Task.Run(() => LoadAsync(path)).GetAwaiter().GetResult();
             if (!result.Success)
                 throw new InvalidOperationException(

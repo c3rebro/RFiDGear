@@ -668,6 +668,123 @@ namespace RFiDGear.Tests
 
             Assert.Throws<ArgumentException>(() => host.Load("  "));
         }
+
+        // ── Load() on the main application's UI thread: refused instead of deadlocking ──
+
+        private static (ProjectHostImpl host, ExtensionOperationCoordinator coordinator, int[] touched) CreateMainAppHost(Func<bool>? isOnUiThread)
+        {
+            var live = new ChipTaskHandlerModel();
+            var coordinator = new ExtensionOperationCoordinator();
+            var touched = new int[2]; // [0] = dispatches, [1] = applies
+            var host = new ProjectHostImpl(
+                new DatabaseReaderWriter(),
+                coordinator,
+                () => live,
+                action =>
+                {
+                    touched[0]++;
+                    action();
+                    return Task.CompletedTask;
+                },
+                loaded =>
+                {
+                    touched[1]++;
+                    live.TaskCollection.Clear();
+                    foreach (var task in loaded.TaskCollection)
+                    {
+                        live.TaskCollection.Add(task);
+                    }
+                },
+                isOnUiThread);
+            return (host, coordinator, touched);
+        }
+
+        [Theory]
+        [InlineData("valid-project", false)]
+        [InlineData("missing-file", false)]
+        [InlineData("valid-project", true)] // busy as well: the thread check comes first
+        public void Load_SyncWrapper_OnTheUiThread_ThrowsAtOnceAndTouchesNothing(string file, bool hostIsBusy)
+        {
+            var path = file == "valid-project"
+                ? ProjectFixtures.CreateProject(1)
+                : Path.Combine(Path.GetTempPath(), $"rfidgear-test-missing-{Guid.NewGuid():N}.rfPrj");
+            try
+            {
+                var (host, coordinator, touched) = CreateMainAppHost(isOnUiThread: () => true);
+                if (hostIsBusy)
+                {
+                    Assert.True(coordinator.TryBeginExecution());
+                }
+
+                var refused = Assert.Throws<InvalidOperationException>(() => host.Load(path));
+
+                Assert.Contains("UI thread", refused.Message, StringComparison.Ordinal);
+                Assert.Contains("LoadAsync", refused.Message, StringComparison.Ordinal);
+                Assert.Equal(new[] { 0, 0 }, touched);
+                Assert.Null(host.CurrentPath);
+                Assert.Equal(0, host.TaskCount);
+                // Nothing was reserved: the coordinator is exactly as the test left it.
+                Assert.Equal(hostIsBusy, coordinator.IsExecuting);
+                Assert.False(coordinator.IsLoading);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void Load_SyncWrapper_OnTheUiThread_EmptyPathStillThrowsArgumentException()
+        {
+            var (host, _, _) = CreateMainAppHost(isOnUiThread: () => true);
+
+            Assert.Throws<ArgumentException>(() => host.Load("  "));
+        }
+
+        [Fact]
+        public void Load_SyncWrapper_OffTheUiThread_LoadsIntoTheLiveModel()
+        {
+            var path = ProjectFixtures.CreateProject(2);
+            try
+            {
+                var (host, _, touched) = CreateMainAppHost(isOnUiThread: () => false);
+
+                host.Load(path);
+
+                Assert.Equal(Path.GetFullPath(path), host.CurrentPath);
+                Assert.Equal(2, host.TaskCount);
+                Assert.Equal(new[] { 1, 1 }, touched);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void Load_SyncWrapper_AsksWhetherItIsOnTheUiThreadFromTheCallingThread()
+        {
+            // The probe must run on the caller's thread: asked from inside the worker the load uses, it would
+            // always answer "not the UI thread" and the guard would never fire.
+            var path = ProjectFixtures.CreateProject(1);
+            try
+            {
+                var askedOnThread = -1;
+                var (host, _, _) = CreateMainAppHost(isOnUiThread: () =>
+                {
+                    askedOnThread = Environment.CurrentManagedThreadId;
+                    return false;
+                });
+
+                host.Load(path);
+
+                Assert.Equal(Environment.CurrentManagedThreadId, askedOnThread);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
 #pragma warning restore CS0618
     }
 

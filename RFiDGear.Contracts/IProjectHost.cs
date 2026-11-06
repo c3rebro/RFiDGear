@@ -93,20 +93,23 @@ namespace RFiDGear.Contracts
         /// <see cref="LoadAsync(string, CancellationToken)"/> would return a failed result (an empty path throws
         /// <see cref="ArgumentException"/>), and <see cref="CurrentPath"/> becomes the canonical (absolute) path.
         /// </para>
-        /// <para><strong>Warning:</strong> do not call this method on the UI thread of the main application. It blocks
-        /// that thread until the load finishes, but reading a project parses it on that same thread (the project's
-        /// view models must be created there) and the result is then committed through the dispatcher, so the call
-        /// deadlocks and the host stays busy. Only calls that fail before the file content has been parsed throw
-        /// without blocking: an empty path, a missing file, a file whose extension is neither <c>.rfPrj</c> nor
-        /// <c>.xml</c>, a busy host, and a file that cannot be opened, is not a valid archive, or is not well-formed
-        /// XML. A well-formed file that is merely not a supported task project (for example a chip-tree export, or a
-        /// project from a newer version) is only recognized after it has been parsed, so it deadlocks like a valid
-        /// project. Use <see cref="LoadAsync(string, CancellationToken)"/> instead.</para>
+        /// <para>
+        /// Threading: the call blocks the calling thread until the load has finished, so prefer
+        /// <see cref="LoadAsync(string, CancellationToken)"/>. In the main application it refuses to run on the UI
+        /// thread: it throws <see cref="InvalidOperationException"/> straight away, before it looks at the file or at
+        /// whether the host is busy, so nothing is loaded and the host is left as it was. Blocking the UI thread there
+        /// could never work: reading a project parses it on that same thread (the project's view models must be
+        /// created there), so the call would never return and the host would stay busy. Called from any other thread
+        /// of the main application, and from any thread of a headless host, it blocks and then returns normally.
+        /// </para>
         /// </summary>
         /// <param name="path">Absolute path to the .rfPrj or .xml project file.</param>
         /// <exception cref="ArgumentException">Thrown when <paramref name="path"/> is null, empty, or whitespace.</exception>
-        /// <exception cref="InvalidOperationException">Thrown when the load fails or is rejected (for example because a run is in progress).</exception>
-        [Obsolete("Calling Load() from the WPF STA thread can deadlock. Use LoadAsync() instead.")]
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the load fails or is rejected (for example because a run is in progress), and in the main
+        /// application when the call is made on the UI thread.
+        /// </exception>
+        [Obsolete("Load() blocks the calling thread and throws on the main application's UI thread. Use LoadAsync() instead.")]
         void Load(string path);
 
         /// <summary>

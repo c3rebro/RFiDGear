@@ -99,6 +99,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// Optional delegate returning <c>"german"</c> or <c>"english"</c> from application settings.
         /// When provided, <see cref="IAppContext.UICultureName"/> reflects the user's language choice.
         /// </param>
+        /// <param name="isOnUiThread">
+        /// Optional delegate returning <c>true</c> when the calling thread is the UI thread. When provided, the obsolete
+        /// synchronous <c>Project.Load</c> throws on that thread instead of deadlocking.
+        /// </param>
         public HeadlessExtensionHost(
             DatabaseReaderWriter dbRW,
             ITaskExecutionService execService,
@@ -107,14 +111,16 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             Action<Models.ChipTaskHandlerModel> applyToLiveApp,
             string readerName,
             ExtensionOperationCoordinator coordinator,
-            Func<string?>? getConfiguredLanguage = null)
+            Func<string?>? getConfiguredLanguage = null,
+            Func<bool>? isOnUiThread = null)
         {
             _project = new ProjectHostImpl(
                 dbRW ?? throw new ArgumentNullException(nameof(dbRW)),
                 coordinator ?? throw new ArgumentNullException(nameof(coordinator)),
                 liveModelAccessor ?? throw new ArgumentNullException(nameof(liveModelAccessor)),
                 dispatch ?? throw new ArgumentNullException(nameof(dispatch)),
-                applyToLiveApp ?? throw new ArgumentNullException(nameof(applyToLiveApp)));
+                applyToLiveApp ?? throw new ArgumentNullException(nameof(applyToLiveApp)),
+                isOnUiThread);
             _execution = new TaskExecHostImpl(
                 execService ?? throw new ArgumentNullException(nameof(execService)),
                 _project,

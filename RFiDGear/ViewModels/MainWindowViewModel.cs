@@ -235,7 +235,8 @@ namespace RFiDGear.ViewModel
                 },
                 readerName: string.Empty,
                 coordinator: _coordinator,
-                getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english");
+                getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english",
+                isOnUiThread: () => owningDispatcher.CheckAccess());
 
             var deleteSelectedCommand = new RelayCommand(() =>
             {

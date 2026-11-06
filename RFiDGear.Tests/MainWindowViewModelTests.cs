@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.ExtensionHost;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Models;
 using RFiDGear.Services;
@@ -247,6 +248,33 @@ namespace RFiDGear.Tests
                 }
             });
         }
+        [Fact]
+        public async Task ExtensionHost_SynchronousLoad_IsToldWhichThreadIsTheUiThread()
+        {
+            // Project.Load would deadlock on the UI thread, so the host must know which thread that is. Calling
+            // Load here would hang the test if the wiring were missing, so the probe is checked directly.
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(tempRoot);
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot);
+                    const BindingFlags privateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+                    var project = typeof(HeadlessExtensionHost).GetField("_project", privateInstance)!.GetValue(viewModel.ExtensionHost)!;
+                    var probe = (Func<bool>?)project.GetType().GetField("_isOnUiThread", privateInstance)!.GetValue(project);
+
+                    Assert.NotNull(probe);
+                    Assert.True(probe!(), "The thread the view model lives on is the UI thread.");
+                    Assert.False(await Task.Run(probe), "Any other thread is not.");
+                }
+                finally
+                {
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
+
         // ── Save / Save As ──
 
         /// <summary>
