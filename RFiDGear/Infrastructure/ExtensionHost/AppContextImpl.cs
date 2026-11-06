@@ -47,7 +47,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <param name="getConfiguredLanguage">
         /// Delegate returning <c>"german"</c> or <c>"english"</c> (the values stored in
         /// <c>settings.DefaultSpecification.DefaultLanguage</c>). May return <c>null</c> when
-        /// settings are not yet initialized; the OS UI culture is used as fallback in that case.
+        /// settings are not yet initialized; the OS UI culture is used as fallback in that case. It is called once
+        /// here, on the constructing thread, to record the language <see cref="CultureChanged"/> is measured against.
         /// </param>
         public AppContextImpl(Func<string?> getConfiguredLanguage)
         {

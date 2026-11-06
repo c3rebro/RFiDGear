@@ -36,6 +36,10 @@ namespace RFiDGear.Contracts
         /// <see cref="ExecutionOutcome.Failure"/> with <see cref="ExecutionFailureReason.None"/>, while tasks that
         /// error routing jumped over do not make a run a failure.
         /// </para>
+        /// <para>
+        /// In this release the host does not configure error routing, so a <c>NotReached</c> entry always comes with
+        /// <see cref="ExecutionOutcome.Failure"/>.
+        /// </para>
         /// </summary>
         public static string NotReached { get; } = "NotReached";
     }

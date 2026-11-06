@@ -12,7 +12,7 @@ namespace RFiDGear.Contracts
     {
         /// <summary>
         /// All executed tasks completed successfully and the run got to its last task. Tasks that error routing
-        /// jumped over on purpose do not count against it.
+        /// jumped over on purpose, where error routing is in use, do not count against it.
         /// </summary>
         Success,
 

@@ -112,8 +112,8 @@ namespace RFiDGear.Contracts
         /// Clearing the state under a running task loop would make execute conditions that depend on an earlier task
         /// see a cleared (<c>Empty</c>) error level, and for Mifare Classic, DESFire and common tasks (create report,
         /// check logic condition, run program) it can make a task that already finished run a second time, which
-        /// breaks the one-attempt rule. While the reset itself runs, a run, load, or edit started at the same moment
-        /// is rejected as busy.
+        /// breaks the one-attempt rule. While the reset itself runs it counts as a project edit: a run, load, save or
+        /// edit started at the same moment is rejected as busy.
         /// </para>
         /// <para>
         /// This check covers calls through this interface. The reset commands in the main window's own menus are

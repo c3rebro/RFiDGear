@@ -1810,8 +1810,10 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task ExecuteAllAsync_WhenTheLoopStoppedBeforeItsLastTask_ReportsFailureWithTheUnreachedTasksListed()
         {
-            // A run the loop left unfinished (for example the Release watchdog stopped it) is a failure even though
-            // no task that ran failed: Outcome is the field a caller trusts, and it must not say Success here.
+            // Pins what the host reports when the loop says Failure for a run it left unfinished (for example the
+            // Release watchdog stopped it) although no task that ran failed: the outcome is Failure with no reason and
+            // no failed task, and the tasks never reached are listed. That the loop says Failure is tested on the
+            // evaluator and through the real loop (TaskExecutionServiceTests).
             var (project, host, _) = CreateTriple(new EarlyEndExecService(reached: 1));
             project.ReplaceTaskCollection(new object[]
             {
@@ -2104,6 +2106,31 @@ namespace RFiDGear.Tests
             Assert.Equal(operation == "load", coordinator.IsLoading);
             Assert.Equal(operation == "edit", coordinator.IsMutating);
             Assert.Equal(operation == "run", coordinator.IsExecuting);
+        }
+
+        [Fact]
+        public void ResetStatus_HoldsTheCoordinatorWhileItClears_SoNothingCanStartInTheMiddle()
+        {
+            var (project, host, coordinator) = CreateTriple();
+            var admittedDuringReset = new List<string>();
+            var editSlotHeldDuringReset = false;
+            var task = new StubTask
+            {
+                // Runs inside the reset, between clearing two fields of the task.
+                OnExecutionStateAssigned = () =>
+                {
+                    editSlotHeldDuringReset = coordinator.IsMutating;
+                    if (coordinator.TryBeginExecution()) { admittedDuringReset.Add("run"); coordinator.EndExecution(); }
+                    if (coordinator.TryBeginLoad()) { admittedDuringReset.Add("load"); coordinator.EndLoad(); }
+                    if (coordinator.TryBeginProjectOperation()) { admittedDuringReset.Add("edit"); coordinator.EndProjectOperation(); }
+                },
+            };
+            project.ReplaceTaskCollection(new object[] { task });
+
+            host.ResetStatus();
+
+            Assert.True(editSlotHeldDuringReset, "The reset must hold the edit slot while it clears task state.");
+            Assert.Empty(admittedDuringReset);
         }
 
         [Fact]

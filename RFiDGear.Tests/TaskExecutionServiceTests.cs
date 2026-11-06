@@ -621,6 +621,72 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task ARunThatEndsBeforeItsLastTask_InARealRun_ReturnsFailureAndLogsTheUnreachedTail()
+        {
+            // The Release watchdog that ends a run early is compiled out of this build, so an error-routing target
+            // outside the task list stands in for it: the loop leaves the list after the first task and never
+            // returns to the other two. Every task that ran succeeded, so only the unreached tail can fail the run.
+            var first = new StubTaskModel { CurrentTaskIndex = "10" };
+            var second = new StubTaskModel { CurrentTaskIndex = "11" };
+            var outsideTheList = new StubTaskModel { CurrentTaskIndex = "90" };
+            var logger = new CapturingTaskExecutionLogger();
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, first, ct =>
+                {
+                    first.CurrentTaskErrorLevel = ERROR.ProtocolConstraint;   // routed
+                    first.IsTaskCompletedSuccessfully = true;
+                    return Task.CompletedTask;
+                }),
+                new TaskDescriptor(1, second, ct => Task.CompletedTask),
+                new TaskDescriptor(7, outsideTheList, ct => Task.CompletedTask), // Index 7 is past the end of the list
+            };
+            var request = BuildRequest(descriptors);
+            request.ErrorRouting = new Dictionary<ERROR, string> { [ERROR.ProtocolConstraint] = "90" };
+
+            TaskExecutionResult? result = null;
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                result = await BuildService(logger).ExecuteOnceAsync(request);
+            });
+
+            Assert.NotNull(result);
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+            var summary = Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Summary"));
+            Assert.Equal(2, GetIntProperty(summary.DetailsJson, "NotReached"));
+            Assert.Equal(0, GetIntProperty(summary.DetailsJson, "UnhandledFailures"));
+        }
+
+        [Fact]
+        public async Task ARunCutShortByAFault_LogsHowManyTasksWereNeverReached()
+        {
+            var logger = new CapturingTaskExecutionLogger();
+            var tasks = new[]
+            {
+                new StubTaskModel { CurrentTaskIndex = "10" },
+                new StubTaskModel { CurrentTaskIndex = "11" },
+                new StubTaskModel { CurrentTaskIndex = "12" }
+            };
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, tasks[0], ct => { tasks[0].IsTaskCompletedSuccessfully = true; return Task.CompletedTask; }),
+                new TaskDescriptor(1, tasks[1], ct => throw new InvalidOperationException("reader gone")),
+                new TaskDescriptor(2, tasks[2], ct => Task.CompletedTask)
+            };
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => BuildService(logger).ExecuteOnceAsync(BuildRequest(descriptors)));
+            });
+
+            // The summary is written even when the loop throws; the third task was never started.
+            var summary = Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Summary"));
+            Assert.Equal(1, GetIntProperty(summary.DetailsJson, "NotReached"));
+            Assert.Equal("Failure", GetStringProperty(summary.DetailsJson, "TerminalStatus"));
+        }
+
+        [Fact]
         public async Task RunSelectedOnly_InARealRun_IsNotAFailureBecauseTheOtherTasksDidNotRun()
         {
             var tasks = new[]

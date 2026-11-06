@@ -10,7 +10,8 @@ namespace RFiDGear.Contracts
     /// <para>
     /// Project operations never overlap: a load, a project edit (<see cref="New"/>, <see cref="ReplaceTaskCollection"/>),
     /// and a task run exclude one another, and a save is excluded by a load or an edit but, unlike them, is allowed
-    /// while a task run is in progress. Each member below says how a rejected call is reported.
+    /// while a task run is in progress. A task-status reset (<see cref="ITaskExecHost.ResetStatus"/>) counts as a
+    /// project edit here, for as long as it runs. Each member below says how a rejected call is reported.
     /// </para>
     /// <para>
     /// Sensitive data: a project file holds whatever key values the tasks contain, and
@@ -99,8 +100,13 @@ namespace RFiDGear.Contracts
         /// thread: it throws <see cref="InvalidOperationException"/> straight away, before it looks at the file or at
         /// whether the host is busy, so nothing is loaded and the host is left as it was. Blocking the UI thread there
         /// could never work: reading a project parses it on that same thread (the project's view models must be
-        /// created there), so the call would never return and the host would stay busy. Called from any other thread
-        /// of the main application, and from any thread of a headless host, it blocks and then returns normally.
+        /// created there), so the call would never return and the host would stay busy. Called from a thread other
+        /// than the UI thread, it blocks until the load has finished and then returns or throws as described above.
+        /// That holds only while the UI thread is not itself waiting for this call: in the main application the load
+        /// needs the UI thread to parse and commit the project, so if the UI thread is blocked on the calling thread
+        /// (for example <c>Task.Run(() =&gt; host.Load(path)).Wait()</c> on the UI thread) the call never returns and
+        /// the host stays busy. Code on the UI thread must use
+        /// <see cref="LoadAsync(string, CancellationToken)"/>.
         /// </para>
         /// </summary>
         /// <param name="path">Absolute path to the .rfPrj or .xml project file.</param>

@@ -98,6 +98,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <param name="getConfiguredLanguage">
         /// Optional delegate returning <c>"german"</c> or <c>"english"</c> from application settings.
         /// When provided, <see cref="IAppContext.UICultureName"/> reflects the user's language choice.
+        /// The delegate is called once, on the constructing thread, while the host is being created, to record the
+        /// language that <see cref="IAppContext.CultureChanged"/> is measured against; it must be safe to call then.
         /// </param>
         /// <param name="isOnUiThread">
         /// Optional delegate returning <c>true</c> when the calling thread is the UI thread. When provided, the obsolete

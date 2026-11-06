@@ -5,8 +5,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 {
     /// <summary>
     /// Shared admission gate for <see cref="ProjectHostImpl"/> and <see cref="TaskExecHostImpl"/>.
-    /// Guarantees that at most one load, one execution, or one project edit (New, ReplaceTaskCollection)
-    /// is in progress at any time, eliminating the TOCTOU race between checking a flag and replacing the task collection.
+    /// Guarantees that at most one load, one execution, or one project edit (New, ReplaceTaskCollection, or a
+    /// task-status reset) is in progress at any time, eliminating the TOCTOU race between checking a flag and replacing the task collection.
     /// </summary>
     public sealed class ExtensionOperationCoordinator
     {
@@ -47,7 +47,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             Interlocked.Exchange(ref _state, Idle);
 
         /// <summary>
-        /// Attempts to begin a project edit that replaces the task collection (New, ReplaceTaskCollection).
+        /// Attempts to begin a project edit: one that replaces the task collection (New, ReplaceTaskCollection) or one
+        /// that clears the state of every task (a task-status reset).
         /// Returns <c>true</c> if the edit was admitted; returns <c>false</c> if a load, an execution, or
         /// another edit is already in progress, so the collection can never change under a running task loop.
         /// Callers must pair each <c>true</c> return with a call to <see cref="EndProjectOperation"/>.
@@ -68,7 +69,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <summary><c>true</c> when a project load is in progress.</summary>
         public bool IsLoading => Volatile.Read(ref _state) == Loading;
 
-        /// <summary><c>true</c> when a project edit (New, ReplaceTaskCollection) is in progress.</summary>
+        /// <summary><c>true</c> when a project edit (New, ReplaceTaskCollection, or a task-status reset) is in progress.</summary>
         public bool IsMutating => Volatile.Read(ref _state) == Mutating;
     }
 }

@@ -24,8 +24,8 @@ namespace RFiDGear.Contracts
     /// <param name="TaskOutcomes">
     /// One entry per project task: first the tasks the run reached, in the order it reached them (each with
     /// its real result or skip reason), then the tasks it never reached in project order, marked
-    /// <see cref="TaskSkipReasons.NotReached"/>. A <c>NotReached</c> entry does not say why: error routing can jump
-    /// over tasks on purpose, whereas a run that stops before its last task is reported as
+    /// <see cref="TaskSkipReasons.NotReached"/>. A <c>NotReached</c> entry does not say why: error routing, where it
+    /// is in use, can jump over tasks on purpose, whereas a run that stops before its last task is reported as
     /// <see cref="ExecutionOutcome.Failure"/>; check <paramref name="Outcome"/> and
     /// <paramref name="FailureReason"/>. Always non-null and never stale: it is built from what <em>this</em>
     /// run did, even when the run was cancelled or faulted. Empty when the project has no tasks.
