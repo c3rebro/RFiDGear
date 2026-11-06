@@ -63,14 +63,19 @@ namespace RFiDGear.Contracts
         /// <see cref="ExecutionCompleted"/> payload. The one free-text field is
         /// <see cref="TaskOutcome.ProjectTaskIndex"/>, which is the task index exactly as stored in the project, so
         /// do not put secrets in task indexes. Failures are logged under the <see cref="ExecResult.RunId"/>.
-        /// Exception messages and stack traces written to those logs pass through a best-effort filter: a value after
-        /// <c>key</c>, <c>masterkey</c>, <c>picckey</c>, <c>appkey</c>, <c>readkey</c>, <c>writekey</c> or
-        /// <c>payload</c> followed by <c>:</c> or <c>=</c> is replaced, as is any run of exactly 32 or 48 hexadecimal
-        /// digits (16- and 24-byte keys), and message and stack trace are each cut to 256 characters. Other formats are
-        /// not filtered, for example 6-byte MIFARE Classic keys or 8-byte DES keys (12 and 16 hex digits), separated
-        /// hex, or other labels such as <c>KeyA</c> or <c>password</c>. Lines written by task code itself are outside
-        /// this guarantee. Runtime variable values go to the execution service and may be substituted into task text
-        /// and reports, so do not put secrets in them (see <see cref="ExecutionRequest"/>).
+        /// Exception messages and stack traces written to those logs pass through a best-effort filter. It replaces
+        /// (1) the value after any word that contains <c>key</c>, <c>secret</c>, <c>password</c>, <c>passwd</c>,
+        /// <c>pwd</c>, <c>passphrase</c>, <c>token</c>, <c>credential</c> or <c>payload</c> (for example <c>Key</c>,
+        /// <c>KeyA</c>, <c>MasterKey</c>, <c>Password</c>) when it is followed by <c>:</c> or <c>=</c>, up to the next
+        /// space, comma or semicolon, or the whole value if it is quoted; (2) any run of exactly 12, 16, 32 or 48
+        /// hexadecimal digits (6-byte MIFARE Classic keys, 8-byte DES keys, 16- and 24-byte keys); and (3) six or more
+        /// hexadecimal bytes written as pairs with spaces, colons, dashes or commas between them, with or without
+        /// <c>0x</c>. Message and stack trace are each cut to 256 characters afterwards. The filter is deliberately
+        /// greedy and also removes harmless text of the same shape, such as a MAC address or the last 12 digits of a
+        /// GUID. It does not recognise a secret that has neither a label nor one of those shapes: a Base64 key, decimal
+        /// bytes, hexadecimal of another length, or an unlabelled password. Lines written by task code itself are
+        /// outside this guarantee. Runtime variable values go to the execution service and may be substituted into
+        /// task text and reports, so do not put secrets in them (see <see cref="ExecutionRequest"/>).
         /// </para>
         /// </summary>
         /// <param name="request">Runtime variables and execution parameters. Use <see cref="ExecutionRequest.Empty"/> for a plain run.</param>
