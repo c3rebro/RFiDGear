@@ -235,7 +235,8 @@ namespace RFiDGear.ViewModel
                 },
                 readerName: string.Empty,
                 coordinator: _coordinator,
-                getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english");
+                getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english",
+                isOnUiThread: () => owningDispatcher.CheckAccess());
 
             var deleteSelectedCommand = new RelayCommand(() =>
             {
@@ -387,6 +388,18 @@ namespace RFiDGear.ViewModel
         [ExportViewModel("Culture")]
         private protected CultureInfo culture;
 
+        /// <summary>
+        /// Records the language the application now works with and lets extensions know if it differs from before
+        /// (<c>IAppContext.CultureChanged</c>). Runs on the thread that changes the language, normally the UI thread.
+        /// Before start-up has built the extension host there is nobody to tell, so the language is just stored.
+        /// </summary>
+        /// <param name="value">The culture that matches the language read from the settings.</param>
+        private void ApplyCulture(CultureInfo value)
+        {
+            culture = value;
+            extensionHost?.NotifyCultureMayHaveChanged();
+        }
+
         private protected ResourceLoader resLoader;
 
         /// <summary>
@@ -451,7 +464,7 @@ namespace RFiDGear.ViewModel
                     ? settings.DefaultSpecification.LastUsedProjectPath
                     : projectFileToUse;
 
-                culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
+                ApplyCulture((settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US"));
 
                 var result = await extensionHost.Project.LoadAsync(projectPath);
                 if (!result.Success)
@@ -1347,7 +1360,7 @@ namespace RFiDGear.ViewModel
                     ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                     : settings.DefaultSpecification.DefaultReaderName;
 
-                culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
+                ApplyCulture((settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US"));
 
 
                 var dlg = new OpenFileDialogViewModel
@@ -2059,7 +2072,7 @@ namespace RFiDGear.ViewModel
                 SetCurrentReader = value => CurrentReader = value,
                 SetReaderProvider = value => ReaderDevice.Reader = value,
                 SetReaderPort = value => ReaderDevice.PortNumber = value,
-                SetCulture = value => culture = value
+                SetCulture = ApplyCulture
             });
 
             if (startupArguments.AutoMode && !IsWriteToAllChipAutoChecked)

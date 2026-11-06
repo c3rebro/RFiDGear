@@ -63,14 +63,22 @@ namespace RFiDGear.Contracts
         /// <see cref="ExecutionCompleted"/> payload. The one free-text field is
         /// <see cref="TaskOutcome.ProjectTaskIndex"/>, which is the task index exactly as stored in the project, so
         /// do not put secrets in task indexes. Failures are logged under the <see cref="ExecResult.RunId"/>.
-        /// Exception messages and stack traces written to those logs pass through a best-effort filter: a value after
-        /// <c>key</c>, <c>masterkey</c>, <c>picckey</c>, <c>appkey</c>, <c>readkey</c>, <c>writekey</c> or
-        /// <c>payload</c> followed by <c>:</c> or <c>=</c> is replaced, as is any run of exactly 32 or 48 hexadecimal
-        /// digits (16- and 24-byte keys), and message and stack trace are each cut to 256 characters. Other formats are
-        /// not filtered, for example 6-byte MIFARE Classic keys or 8-byte DES keys (12 and 16 hex digits), separated
-        /// hex, or other labels such as <c>KeyA</c> or <c>password</c>. Lines written by task code itself are outside
-        /// this guarantee. Runtime variable values go to the execution service and may be substituted into task text
-        /// and reports, so do not put secrets in them (see <see cref="ExecutionRequest"/>).
+        /// Exception messages and stack traces written to those logs pass through a best-effort filter. It replaces
+        /// (1) the value after any word that contains <c>key</c>, <c>secret</c>, <c>password</c>, <c>passwd</c>,
+        /// <c>pwd</c>, <c>passphrase</c>, <c>token</c>, <c>credential</c> or <c>payload</c> (for example <c>Key</c>,
+        /// <c>KeyA</c>, <c>MasterKey</c>, <c>Password</c>) when it is directly followed by <c>:</c> or <c>=</c> (a
+        /// closing quote may sit between, as in JSON), up to the next space, comma or semicolon, or the whole value if it
+        /// is quoted; (2) any run of exactly 12, 16, 32 or 48 hexadecimal digits (6-byte MIFARE Classic keys, 8-byte DES
+        /// keys, 16- and 24-byte keys); and (3) six or more hexadecimal bytes written as pairs with spaces, colons,
+        /// dashes or commas between them, with or without <c>0x</c>. The hexadecimal rules run first, so a labelled key
+        /// written as separate bytes is removed whole. Message and stack trace are each cut to 256 characters
+        /// afterwards. The filter is deliberately greedy and also removes harmless text of the same shape, such as a
+        /// MAC address, the last 12 digits of a GUID, or a variable called <c>keyboard</c>. It does not recognise a
+        /// secret that has neither a label directly followed by <c>:</c> or <c>=</c> nor one of those shapes: a Base64
+        /// key, bytes written in decimal, hexadecimal of another length or written in groups of more than one byte, a
+        /// password in a sentence (<c>password is ...</c>) or in an XML element. Lines written by task code itself are
+        /// outside this guarantee. Runtime variable values go to the execution service and may be substituted into
+        /// task text and reports, so do not put secrets in them (see <see cref="ExecutionRequest"/>).
         /// </para>
         /// </summary>
         /// <param name="request">Runtime variables and execution parameters. Use <see cref="ExecutionRequest.Empty"/> for a plain run.</param>
@@ -96,19 +104,26 @@ namespace RFiDGear.Contracts
         /// <summary>
         /// Resets the completion flag, error level, and execution state of every task to their initial values.
         /// <see cref="ExecuteAllAsync(ExecutionRequest, CancellationToken)"/> does this automatically; call it
-        /// only to clear results between runs, and only when <see cref="IsRunning"/> is <c>false</c>.
+        /// only to clear results between runs.
         /// <para>
-        /// Busy behavior: it is not synchronized with a run. Calling it while <see cref="IsRunning"/> is <c>true</c>
-        /// neither waits for the run nor is refused. It clears state the run is still reading and writing: execute
-        /// conditions that depend on an earlier task then see a cleared (<c>Empty</c>) error level, so the dependent
-        /// task is skipped, and the completion flags the run reads are cleared. For Mifare Classic, DESFire and
-        /// common tasks (create report, check logic condition, run program), resetting the execution state after the
-        /// task finished but before the loop moves on makes it run a second time, which breaks the one-attempt rule.
+        /// Busy behavior: it is refused while a task run (<see cref="IsRunning"/>), a project load, or a project edit
+        /// (<c>New</c> / <c>ReplaceTaskCollection</c>) is in progress. The call then throws
+        /// <see cref="InvalidOperationException"/> and changes nothing; the active operation is not interrupted.
+        /// Clearing the state under a running task loop would make execute conditions that depend on an earlier task
+        /// see a cleared (<c>Empty</c>) error level, and for Mifare Classic, DESFire and common tasks (create report,
+        /// check logic condition, run program) it can make a task that already finished run a second time, which
+        /// breaks the one-attempt rule. While the reset itself runs it counts as a project edit: a run, load, save or
+        /// edit started at the same moment is rejected as busy.
+        /// </para>
+        /// <para>
+        /// This check covers calls through this interface. The reset commands in the main window's own menus are
+        /// separate and are not subject to it.
         /// </para>
         /// <para>
         /// Threading: in the main application it changes UI-bound task state, so call it on the UI thread.
         /// </para>
         /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown when a run, a project load, or a project edit is in progress.</exception>
         void ResetStatus();
 
         /// <summary>

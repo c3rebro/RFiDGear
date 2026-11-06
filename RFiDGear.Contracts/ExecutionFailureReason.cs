@@ -36,10 +36,12 @@ namespace RFiDGear.Contracts
         /// as failed and stops the loop from starting further tasks. It does not interrupt the running operation: the
         /// run ends only once that operation returns, and the task's own result replaces the flag. This is never
         /// reported as <c>TimedOut</c>. The run normally ends with <see cref="None"/> (in rare timing cases
-        /// <see cref="Faulted"/>), the tasks that did not get to run are reported as
-        /// <see cref="TaskSkipReasons.NotReached"/>, and the run can even end as <see cref="ExecutionOutcome.Success"/>.
-        /// So with <see cref="None"/>, check the per-task outcomes for <c>NotReached</c> entries, not only
-        /// <see cref="ExecResult.Outcome"/>.
+        /// <see cref="Faulted"/>), and the tasks that did not get to run are reported as
+        /// <see cref="TaskSkipReasons.NotReached"/>. A run that stopped before its last task is evaluated as
+        /// <see cref="ExecutionOutcome.Failure"/>, so <see cref="ExecResult.Outcome"/> can be trusted here; the
+        /// unreached tasks are not counted in <see cref="ExecResult.FailedTasks"/>. If the stopped task's own
+        /// operation then completes successfully and it was the last task, nothing was left unreached and the
+        /// run can still end as <see cref="ExecutionOutcome.Success"/>.
         /// </para>
         /// </summary>
         TimedOut,

@@ -10,7 +10,8 @@ namespace RFiDGear.Contracts
     /// <para>
     /// Project operations never overlap: a load, a project edit (<see cref="New"/>, <see cref="ReplaceTaskCollection"/>),
     /// and a task run exclude one another, and a save is excluded by a load or an edit but, unlike them, is allowed
-    /// while a task run is in progress. Each member below says how a rejected call is reported.
+    /// while a task run is in progress. A task-status reset (<see cref="ITaskExecHost.ResetStatus"/>) counts as a
+    /// project edit here, for as long as it runs. Each member below says how a rejected call is reported.
     /// </para>
     /// <para>
     /// Sensitive data: a project file holds whatever key values the tasks contain, and
@@ -93,20 +94,28 @@ namespace RFiDGear.Contracts
         /// <see cref="LoadAsync(string, CancellationToken)"/> would return a failed result (an empty path throws
         /// <see cref="ArgumentException"/>), and <see cref="CurrentPath"/> becomes the canonical (absolute) path.
         /// </para>
-        /// <para><strong>Warning:</strong> do not call this method on the UI thread of the main application. It blocks
-        /// that thread until the load finishes, but reading a project parses it on that same thread (the project's
-        /// view models must be created there) and the result is then committed through the dispatcher, so the call
-        /// deadlocks and the host stays busy. Only calls that fail before the file content has been parsed throw
-        /// without blocking: an empty path, a missing file, a file whose extension is neither <c>.rfPrj</c> nor
-        /// <c>.xml</c>, a busy host, and a file that cannot be opened, is not a valid archive, or is not well-formed
-        /// XML. A well-formed file that is merely not a supported task project (for example a chip-tree export, or a
-        /// project from a newer version) is only recognized after it has been parsed, so it deadlocks like a valid
-        /// project. Use <see cref="LoadAsync(string, CancellationToken)"/> instead.</para>
+        /// <para>
+        /// Threading: the call blocks the calling thread until the load has finished, so prefer
+        /// <see cref="LoadAsync(string, CancellationToken)"/>. In the main application it refuses to run on the UI
+        /// thread: it throws <see cref="InvalidOperationException"/> straight away, before it looks at the file or at
+        /// whether the host is busy, so nothing is loaded and the host is left as it was. Blocking the UI thread there
+        /// could never work: reading a project parses it on that same thread (the project's view models must be
+        /// created there), so the call would never return and the host would stay busy. Called from a thread other
+        /// than the UI thread, it blocks until the load has finished and then returns or throws as described above.
+        /// That holds only while the UI thread is not itself waiting for this call: in the main application the load
+        /// needs the UI thread to parse and commit the project, so if the UI thread is blocked on the calling thread
+        /// (for example <c>Task.Run(() =&gt; host.Load(path)).Wait()</c> on the UI thread) the call never returns and
+        /// the host stays busy. Code on the UI thread must use
+        /// <see cref="LoadAsync(string, CancellationToken)"/>.
+        /// </para>
         /// </summary>
         /// <param name="path">Absolute path to the .rfPrj or .xml project file.</param>
         /// <exception cref="ArgumentException">Thrown when <paramref name="path"/> is null, empty, or whitespace.</exception>
-        /// <exception cref="InvalidOperationException">Thrown when the load fails or is rejected (for example because a run is in progress).</exception>
-        [Obsolete("Calling Load() from the WPF STA thread can deadlock. Use LoadAsync() instead.")]
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the load fails or is rejected (for example because a run is in progress), and in the main
+        /// application when the call is made on the UI thread.
+        /// </exception>
+        [Obsolete("Load() blocks the calling thread and throws on the main application's UI thread. Use LoadAsync() instead.")]
         void Load(string path);
 
         /// <summary>

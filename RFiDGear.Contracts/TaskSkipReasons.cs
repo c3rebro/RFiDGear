@@ -28,10 +28,18 @@ namespace RFiDGear.Contracts
 
         /// <summary>
         /// The run never reached the task: it was cancelled or faulted before getting there, it ended early (for
-        /// example the per-task watchdog in the main application stopped the loop), or error routing bypassed it.
-        /// Alone this does not mean failure; check <see cref="ExecResult.Outcome"/> and
-        /// <see cref="ExecResult.FailureReason"/>, and with <see cref="ExecutionFailureReason.None"/> also check
-        /// the results of the other tasks.
+        /// example the per-task watchdog in the main application stopped the loop), or error routing jumped over it
+        /// on purpose. The entry itself does not say which.
+        /// <para>
+        /// What it means for the run is in <see cref="ExecResult.Outcome"/> and <see cref="ExecResult.FailureReason"/>:
+        /// a run that completed normally but stopped before its last task is reported as
+        /// <see cref="ExecutionOutcome.Failure"/> with <see cref="ExecutionFailureReason.None"/>, while tasks that
+        /// error routing jumped over do not make a run a failure.
+        /// </para>
+        /// <para>
+        /// In this release the host does not configure error routing, so a <c>NotReached</c> entry always comes with
+        /// <see cref="ExecutionOutcome.Failure"/>.
+        /// </para>
         /// </summary>
         public static string NotReached { get; } = "NotReached";
     }

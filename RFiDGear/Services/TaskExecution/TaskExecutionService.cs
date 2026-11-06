@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Windows.Threading;
 
 using RFiDGear.Models;
@@ -176,29 +175,6 @@ namespace RFiDGear.Services.TaskExecution
     /// <summary>
     /// Serilog-backed logger used when no external task execution logger is provided.
     /// </summary>
-    internal static class TaskExecutionLogSanitizer
-    {
-        private static readonly Regex SensitiveAssignmentPattern = new Regex(
-            @"(?i)\b(?:key|masterkey|picckey|appkey|readkey|writekey|payload)\b\s*[:=]\s*[^\s,;]+",
-            RegexOptions.Compiled);
-
-        private static readonly Regex KeyLikeHexPattern = new Regex(
-            @"(?i)(?<![0-9a-f])(?:[0-9a-f]{48}|[0-9a-f]{32})(?![0-9a-f])",
-            RegexOptions.Compiled);
-
-        public static string Sanitize(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return value;
-            }
-
-            var sanitized = SensitiveAssignmentPattern.Replace(value, "[REDACTED]");
-            sanitized = KeyLikeHexPattern.Replace(sanitized, "[REDACTED_HEX]");
-            return sanitized.Length > 256 ? sanitized.Substring(0, 256) : sanitized;
-        }
-    }
-
     public class NullTaskExecutionLogger : ITaskExecutionLogger
     {
         private readonly ILogger logger = Log.ForContext<NullTaskExecutionLogger>();
@@ -764,7 +740,8 @@ namespace RFiDGear.Services.TaskExecution
                 taskLoopResult = TaskLoopTerminalEvaluator.Evaluate(
                     descriptors?.Count ?? 0,
                     observations,
-                    request?.ErrorRouting);
+                    request?.ErrorRouting,
+                    selectedTaskOnly: request?.RunSelectedOnly ?? false);
                 logger.LogInformation("TaskLoop.Summary", new
                 {
                     RunId = runId,
@@ -777,6 +754,7 @@ namespace RFiDGear.Services.TaskExecution
                     taskLoopResult.AcceptedFailures,
                     taskLoopResult.UnhandledFailures,
                     taskLoopResult.InvalidSkips,
+                    taskLoopResult.NotReached,
                     TerminalStatus = taskLoopResult.TerminalStatus.ToString(),
                     Timestamp = DateTimeOffset.UtcNow
                 });

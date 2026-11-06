@@ -68,6 +68,109 @@ namespace RFiDGear.Tests
             var ctx = new AppContextImpl();
             Assert.False(string.IsNullOrWhiteSpace(ctx.RFiDGearVersion));
         }
+
+        // ── CultureChanged ──
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_WhenTheLanguageChanged_RaisesOnceAndSubscribersSeeTheNewLanguage()
+        {
+            var language = "english";
+            var ctx = new AppContextImpl(() => language);
+            var seen = new List<string>();
+            object? sender = null;
+            ctx.CultureChanged += (s, _) =>
+            {
+                sender = s;
+                seen.Add(ctx.UICultureName);
+            };
+
+            language = "german";
+            ctx.NotifyCultureMayHaveChanged();
+
+            Assert.Equal(new[] { "de-DE" }, seen);
+            Assert.Same(ctx, sender);
+        }
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_WhenTheLanguageIsTheSame_RaisesNothing()
+        {
+            var language = "german";
+            var ctx = new AppContextImpl(() => language);
+            var raised = 0;
+            ctx.CultureChanged += (_, _) => raised++;
+
+            ctx.NotifyCultureMayHaveChanged();
+            ctx.NotifyCultureMayHaveChanged();
+
+            Assert.Equal(0, raised);
+        }
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_RaisesOncePerChange_NotOncePerNotification()
+        {
+            var language = "english";
+            var ctx = new AppContextImpl(() => language);
+            var seen = new List<string>();
+            ctx.CultureChanged += (_, _) => seen.Add(ctx.UICultureName);
+
+            language = "german";
+            ctx.NotifyCultureMayHaveChanged();
+            ctx.NotifyCultureMayHaveChanged();   // nothing new since the last notification
+            language = "english";
+            ctx.NotifyCultureMayHaveChanged();
+
+            Assert.Equal(new[] { "de-DE", "en-US" }, seen);
+        }
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_WithoutAConfiguredLanguageSource_NeverRaises()
+        {
+            var ctx = new AppContextImpl();
+            var raised = 0;
+            ctx.CultureChanged += (_, _) => raised++;
+
+            ctx.NotifyCultureMayHaveChanged();
+
+            Assert.Equal(0, raised);
+        }
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_AfterUnsubscribing_DoesNotCallTheHandler()
+        {
+            var language = "english";
+            var ctx = new AppContextImpl(() => language);
+            var raised = 0;
+            EventHandler handler = (_, _) => raised++;
+            ctx.CultureChanged += handler;
+            ctx.CultureChanged -= handler;
+
+            language = "german";
+            ctx.NotifyCultureMayHaveChanged();
+
+            Assert.Equal(0, raised);
+        }
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_WhenASubscriberThrows_LogsItWithoutTheSecretAndStillCallsTheRest()
+        {
+            const string secret = "00112233445566778899AABBCCDDEEFF";
+            using var logs = CapturedLogs.Install();
+            var language = "english";
+            var ctx = new AppContextImpl(() => language);
+            var later = 0;
+            ctx.CultureChanged += (_, _) => throw new InvalidOperationException($"Key={secret}");
+            ctx.CultureChanged += (_, _) => later++;
+
+            language = "german";
+            ctx.NotifyCultureMayHaveChanged();   // must not throw
+
+            Assert.Equal(1, later);
+            var entry = Assert.Single(logs.From(nameof(AppContextImpl)));
+            var written = CapturedLogs.EverythingWrittenFor(entry);
+            Assert.Contains(nameof(InvalidOperationException), written);
+            Assert.Contains("[REDACTED", written);
+            Assert.DoesNotContain(secret, written, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     // ── ExecutionRequest ─────────────────────────────────────────────────────
@@ -667,6 +770,123 @@ namespace RFiDGear.Tests
             var (host, _) = CreatePair();
 
             Assert.Throws<ArgumentException>(() => host.Load("  "));
+        }
+
+        // ── Load() on the main application's UI thread: refused instead of deadlocking ──
+
+        private static (ProjectHostImpl host, ExtensionOperationCoordinator coordinator, int[] touched) CreateMainAppHost(Func<bool>? isOnUiThread)
+        {
+            var live = new ChipTaskHandlerModel();
+            var coordinator = new ExtensionOperationCoordinator();
+            var touched = new int[2]; // [0] = dispatches, [1] = applies
+            var host = new ProjectHostImpl(
+                new DatabaseReaderWriter(),
+                coordinator,
+                () => live,
+                action =>
+                {
+                    touched[0]++;
+                    action();
+                    return Task.CompletedTask;
+                },
+                loaded =>
+                {
+                    touched[1]++;
+                    live.TaskCollection.Clear();
+                    foreach (var task in loaded.TaskCollection)
+                    {
+                        live.TaskCollection.Add(task);
+                    }
+                },
+                isOnUiThread);
+            return (host, coordinator, touched);
+        }
+
+        [Theory]
+        [InlineData("valid-project", false)]
+        [InlineData("missing-file", false)]
+        [InlineData("valid-project", true)] // busy as well: the thread check comes first
+        public void Load_SyncWrapper_OnTheUiThread_ThrowsAtOnceAndTouchesNothing(string file, bool hostIsBusy)
+        {
+            var path = file == "valid-project"
+                ? ProjectFixtures.CreateProject(1)
+                : Path.Combine(Path.GetTempPath(), $"rfidgear-test-missing-{Guid.NewGuid():N}.rfPrj");
+            try
+            {
+                var (host, coordinator, touched) = CreateMainAppHost(isOnUiThread: () => true);
+                if (hostIsBusy)
+                {
+                    Assert.True(coordinator.TryBeginExecution());
+                }
+
+                var refused = Assert.Throws<InvalidOperationException>(() => host.Load(path));
+
+                Assert.Contains("UI thread", refused.Message, StringComparison.Ordinal);
+                Assert.Contains("LoadAsync", refused.Message, StringComparison.Ordinal);
+                Assert.Equal(new[] { 0, 0 }, touched);
+                Assert.Null(host.CurrentPath);
+                Assert.Equal(0, host.TaskCount);
+                // Nothing was reserved: the coordinator is exactly as the test left it.
+                Assert.Equal(hostIsBusy, coordinator.IsExecuting);
+                Assert.False(coordinator.IsLoading);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void Load_SyncWrapper_OnTheUiThread_EmptyPathStillThrowsArgumentException()
+        {
+            var (host, _, _) = CreateMainAppHost(isOnUiThread: () => true);
+
+            Assert.Throws<ArgumentException>(() => host.Load("  "));
+        }
+
+        [Fact]
+        public void Load_SyncWrapper_OffTheUiThread_LoadsIntoTheLiveModel()
+        {
+            var path = ProjectFixtures.CreateProject(2);
+            try
+            {
+                var (host, _, touched) = CreateMainAppHost(isOnUiThread: () => false);
+
+                host.Load(path);
+
+                Assert.Equal(Path.GetFullPath(path), host.CurrentPath);
+                Assert.Equal(2, host.TaskCount);
+                Assert.Equal(new[] { 1, 1 }, touched);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void Load_SyncWrapper_AsksWhetherItIsOnTheUiThreadFromTheCallingThread()
+        {
+            // The probe must run on the caller's thread: asked from inside the worker the load uses, it would
+            // always answer "not the UI thread" and the guard would never fire.
+            var path = ProjectFixtures.CreateProject(1);
+            try
+            {
+                var askedOnThread = -1;
+                var (host, _, _) = CreateMainAppHost(isOnUiThread: () =>
+                {
+                    askedOnThread = Environment.CurrentManagedThreadId;
+                    return false;
+                });
+
+                host.Load(path);
+
+                Assert.Equal(Environment.CurrentManagedThreadId, askedOnThread);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
         }
 #pragma warning restore CS0618
     }
@@ -1588,6 +1808,33 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task ExecuteAllAsync_WhenTheLoopStoppedBeforeItsLastTask_ReportsFailureWithTheUnreachedTasksListed()
+        {
+            // Pins what the host reports when the loop says Failure for a run it left unfinished (for example the
+            // Release watchdog stopped it) although no task that ran failed: the outcome is Failure with no reason and
+            // no failed task, and the tasks never reached are listed. That the loop says Failure is tested on the
+            // evaluator and through the real loop (TaskExecutionServiceTests).
+            var (project, host, _) = CreateTriple(new EarlyEndExecService(reached: 1));
+            project.ReplaceTaskCollection(new object[]
+            {
+                new StubTask { CurrentTaskIndex = "10" },
+                new StubTask { CurrentTaskIndex = "11" },
+                new StubTask { CurrentTaskIndex = "12" },
+            });
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.None, result.FailureReason);
+            Assert.Equal(3, result.TotalTasks);
+            Assert.Equal(0, result.FailedTasks);
+            Assert.Equal(new bool?[] { true, null, null }, result.TaskOutcomes.Select(o => o.IsSuccess));
+            Assert.Equal(
+                new string?[] { null, TaskSkipReasons.NotReached, TaskSkipReasons.NotReached },
+                result.TaskOutcomes.Select(o => o.SkipReason));
+        }
+
+        [Fact]
         public async Task ExecuteAllAsync_OnSuccess_FailureReasonIsNone()
         {
             var (_, host, _) = CreateTriple(new CapturingExecService());
@@ -1787,6 +2034,116 @@ namespace RFiDGear.Tests
             Assert.Null(task.IsTaskCompletedSuccessfully);
             Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
             Assert.Equal(TaskExecutionState.NotStarted, task.ExecutionState);
+        }
+
+        [Fact]
+        public async Task ResetStatus_WhileARealRunIsInFlight_IsRefusedAndTheRunIsUndisturbed()
+        {
+            var service = new BlockingExecService();
+            var (project, host, coordinator) = CreateTriple(service);
+            var task = new StubTask();
+            project.ReplaceTaskCollection(new object[] { task });
+
+            var run = host.ExecuteAllAsync(ExecutionRequest.Empty);   // parks inside the execution service
+            Assert.True(host.IsRunning);
+
+            // The run has meanwhile finished the task. A reset now would clear what the loop still reads.
+            task.IsTaskCompletedSuccessfully = true;
+            task.CurrentTaskErrorLevel = ERROR.AuthFailure;
+            task.ExecutionState = TaskExecutionState.Completed;
+
+            var refused = Assert.Throws<InvalidOperationException>(() => host.ResetStatus());
+
+            Assert.Contains("task run is in progress", refused.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.True(task.IsTaskCompletedSuccessfully);
+            Assert.Equal(ERROR.AuthFailure, task.CurrentTaskErrorLevel);
+            Assert.Equal(TaskExecutionState.Completed, task.ExecutionState);
+            Assert.True(host.IsRunning, "A refused reset must not release the run's slot.");
+
+            service.Unblock();
+            var result = await run;
+            Assert.Equal(ExecutionOutcome.Success, result.Outcome);
+            Assert.False(host.IsRunning);
+
+            // With the run over, the same call is accepted.
+            host.ResetStatus();
+            Assert.Null(task.IsTaskCompletedSuccessfully);
+            Assert.True(coordinator.TryBeginExecution(), "The reset must leave the coordinator idle.");
+            coordinator.EndExecution();
+        }
+
+        [Theory]
+        [InlineData("load", "project load")]
+        [InlineData("edit", "project edit")]
+        [InlineData("run", "task run")]
+        public void ResetStatus_WhileAnotherOperationOwnsTheCoordinator_IsRefusedAndKeepsThatOperationsSlot(string operation, string expectedInMessage)
+        {
+            var (project, host, coordinator) = CreateTriple();
+            var task = new StubTask
+            {
+                IsTaskCompletedSuccessfully = true,
+                CurrentTaskErrorLevel = ERROR.AuthFailure,
+                ExecutionState = TaskExecutionState.Completed,
+            };
+            project.ReplaceTaskCollection(new object[] { task });
+
+            var admitted = operation switch
+            {
+                "load" => coordinator.TryBeginLoad(),
+                "edit" => coordinator.TryBeginProjectOperation(),
+                _ => coordinator.TryBeginExecution(),
+            };
+            Assert.True(admitted);
+
+            var refused = Assert.Throws<InvalidOperationException>(() => host.ResetStatus());
+
+            Assert.Contains(expectedInMessage, refused.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.True(task.IsTaskCompletedSuccessfully);
+            Assert.Equal(ERROR.AuthFailure, task.CurrentTaskErrorLevel);
+            Assert.Equal(TaskExecutionState.Completed, task.ExecutionState);
+
+            // The refused call must not have released the slot it never owned.
+            Assert.Equal(operation == "load", coordinator.IsLoading);
+            Assert.Equal(operation == "edit", coordinator.IsMutating);
+            Assert.Equal(operation == "run", coordinator.IsExecuting);
+        }
+
+        [Fact]
+        public void ResetStatus_HoldsTheCoordinatorWhileItClears_SoNothingCanStartInTheMiddle()
+        {
+            var (project, host, coordinator) = CreateTriple();
+            var admittedDuringReset = new List<string>();
+            var editSlotHeldDuringReset = false;
+            var task = new StubTask
+            {
+                // Runs inside the reset, between clearing two fields of the task.
+                OnExecutionStateAssigned = () =>
+                {
+                    editSlotHeldDuringReset = coordinator.IsMutating;
+                    if (coordinator.TryBeginExecution()) { admittedDuringReset.Add("run"); coordinator.EndExecution(); }
+                    if (coordinator.TryBeginLoad()) { admittedDuringReset.Add("load"); coordinator.EndLoad(); }
+                    if (coordinator.TryBeginProjectOperation()) { admittedDuringReset.Add("edit"); coordinator.EndProjectOperation(); }
+                },
+            };
+            project.ReplaceTaskCollection(new object[] { task });
+
+            host.ResetStatus();
+
+            Assert.True(editSlotHeldDuringReset, "The reset must hold the edit slot while it clears task state.");
+            Assert.Empty(admittedDuringReset);
+        }
+
+        [Fact]
+        public void ResetStatus_WhenClearingFailsPartWay_StillReleasesTheCoordinator()
+        {
+            var (project, host, coordinator) = CreateTriple();
+            var task = new StubTask { OnExecutionStateAssigned = () => throw new InvalidOperationException("boom") };
+            project.ReplaceTaskCollection(new object[] { task });
+
+            Assert.Throws<InvalidOperationException>(() => host.ResetStatus());
+
+            Assert.True(coordinator.TryBeginExecution(), "A failed reset must not leave the host busy forever.");
+            coordinator.EndExecution();
         }
 
         // ── obsolete parameterless overload: pinned behavior ──
@@ -2745,6 +3102,55 @@ namespace RFiDGear.Tests
         public void HandleTaskTimeout() => _inner.HandleTaskTimeout();
     }
 
+    /// <summary>
+    /// Behaves like a task loop that stopped after its first <c>reached</c> tasks: it observed only those and
+    /// reports the terminal status the real evaluator gives a run that was left unfinished, <c>Failure</c>.
+    /// </summary>
+    internal sealed class EarlyEndExecService : ITaskExecutionService
+    {
+        private readonly int _reached;
+
+        public EarlyEndExecService(int reached) => _reached = reached;
+
+        public event EventHandler<TaskExecutionCompletedEventArgs> ExecutionCompleted
+        {
+            add { }
+            remove { }
+        }
+
+        public int CurrentTaskIndex => 0;
+
+        public Task<TaskExecutionResult> ExecuteOnceAsync(
+            TaskExecutionRequest request, CancellationToken ct = default)
+        {
+            var position = 0;
+            foreach (var item in request.TaskHandler?.TaskCollection ?? new ObservableCollection<object>())
+            {
+                if (position >= _reached)
+                {
+                    break;
+                }
+
+                if (item is IGenericTask task)
+                {
+                    task.IsTaskCompletedSuccessfully = true;
+                    task.CurrentTaskErrorLevel = ERROR.NoError;
+                    request.Observations?.Add(TestObservations.Executed(position, task, success: true));
+                }
+
+                position++;
+            }
+
+            return Task.FromResult(new TaskExecutionResult
+            {
+                RunId = request.RunId,
+                TerminalStatus = TaskLoopTerminalStatus.Failure
+            });
+        }
+
+        public void HandleTaskTimeout() { }
+    }
+
     internal sealed class BlockingExecService : ITaskExecutionService
     {
         private readonly TaskCompletionSource<bool> _tcs = new();
@@ -2830,6 +3236,19 @@ namespace RFiDGear.Tests
         public string CurrentTaskIndex { get; set; } = "0";
         public int SelectedTaskIndexAsInt => 0;
         public ObservableCollection<TaskAttemptResult> AttemptResults { get; } = new();
-        public TaskExecutionState ExecutionState { get; set; } = TaskExecutionState.NotStarted;
+        private TaskExecutionState _executionState = TaskExecutionState.NotStarted;
+
+        /// <summary>Runs whenever <see cref="ExecutionState"/> is assigned, so a test can make a reset fail part-way.</summary>
+        public Action? OnExecutionStateAssigned { get; set; }
+
+        public TaskExecutionState ExecutionState
+        {
+            get => _executionState;
+            set
+            {
+                OnExecutionStateAssigned?.Invoke();
+                _executionState = value;
+            }
+        }
     }
 }

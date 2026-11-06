@@ -98,6 +98,12 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <param name="getConfiguredLanguage">
         /// Optional delegate returning <c>"german"</c> or <c>"english"</c> from application settings.
         /// When provided, <see cref="IAppContext.UICultureName"/> reflects the user's language choice.
+        /// The delegate is called once, on the constructing thread, while the host is being created, to record the
+        /// language that <see cref="IAppContext.CultureChanged"/> is measured against; it must be safe to call then.
+        /// </param>
+        /// <param name="isOnUiThread">
+        /// Optional delegate returning <c>true</c> when the calling thread is the UI thread. When provided, the obsolete
+        /// synchronous <c>Project.Load</c> throws on that thread instead of deadlocking.
         /// </param>
         public HeadlessExtensionHost(
             DatabaseReaderWriter dbRW,
@@ -107,14 +113,16 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             Action<Models.ChipTaskHandlerModel> applyToLiveApp,
             string readerName,
             ExtensionOperationCoordinator coordinator,
-            Func<string?>? getConfiguredLanguage = null)
+            Func<string?>? getConfiguredLanguage = null,
+            Func<bool>? isOnUiThread = null)
         {
             _project = new ProjectHostImpl(
                 dbRW ?? throw new ArgumentNullException(nameof(dbRW)),
                 coordinator ?? throw new ArgumentNullException(nameof(coordinator)),
                 liveModelAccessor ?? throw new ArgumentNullException(nameof(liveModelAccessor)),
                 dispatch ?? throw new ArgumentNullException(nameof(dispatch)),
-                applyToLiveApp ?? throw new ArgumentNullException(nameof(applyToLiveApp)));
+                applyToLiveApp ?? throw new ArgumentNullException(nameof(applyToLiveApp)),
+                isOnUiThread);
             _execution = new TaskExecHostImpl(
                 execService ?? throw new ArgumentNullException(nameof(execService)),
                 _project,
@@ -146,6 +154,14 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// Call this from the main application's reader polling loop.
         /// </summary>
         public void NotifyReaderStateChanged() => _reader.RaiseStateChanged();
+
+        /// <summary>
+        /// Tells the host that the application has just changed the language it works with. If
+        /// <see cref="IAppContext.UICultureName"/> now reports a different language than before,
+        /// <see cref="IAppContext.CultureChanged"/> is raised once, synchronously on the calling thread; otherwise
+        /// nothing happens. Call this on the UI thread right after assigning the language.
+        /// </summary>
+        internal void NotifyCultureMayHaveChanged() => _appContext.NotifyCultureMayHaveChanged();
 
         /// <summary>
         /// Returns a one-line-per-task summary of the last run's error levels and success flags.
