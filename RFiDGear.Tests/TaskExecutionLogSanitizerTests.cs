@@ -145,7 +145,7 @@ namespace RFiDGear.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Sanitize_ReturnsNullEmptyAndBlankTextAsTheyAre(string text)
+        public void Sanitize_ReturnsNullEmptyAndBlankTextAsTheyAre(string? text)
         {
             Assert.Equal(text, TaskExecutionLogSanitizer.Sanitize(text));
         }

@@ -606,12 +606,13 @@ namespace RFiDGear.Tests
             request.ErrorRouting = new Dictionary<ERROR, string> { [ERROR.AuthFailure] = "90" };
             request.Observations = observations;
 
-            TaskExecutionResult result = null;
+            TaskExecutionResult? result = null;
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
                 result = await BuildService(logger).ExecuteOnceAsync(request);
             });
 
+            Assert.NotNull(result);
             Assert.Equal(0, jumpedOverRan);
             Assert.Equal(new[] { 0, 2 }, observations.Select(o => o.TaskPosition));
             Assert.Equal(TaskLoopTerminalStatus.CompletedWithIntentionalFailures, result.TerminalStatus);
@@ -649,12 +650,13 @@ namespace RFiDGear.Tests
             request.RunSelectedOnly = true;
             request.SelectedSetupViewModel = tasks[1];
 
-            TaskExecutionResult result = null;
+            TaskExecutionResult? result = null;
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
                 result = await BuildService().ExecuteOnceAsync(request);
             });
 
+            Assert.NotNull(result);
             Assert.Equal(new[] { 0, 1, 0 }, invokeCounts);
             Assert.Equal(TaskLoopTerminalStatus.Success, result.TerminalStatus);
         }
