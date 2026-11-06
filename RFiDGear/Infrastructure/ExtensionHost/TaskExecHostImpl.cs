@@ -170,10 +170,12 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             // active (clearing state under a running task loop is what breaks the one-attempt rule), and while
             // it is held no run can start in the middle of the reset.
             if (!_coordinator.TryBeginProjectOperation())
+            {
                 throw new InvalidOperationException(BusyMessage(
                     whenLoading: "A project load is in progress. Wait for LoadAsync to complete before resetting the task status.",
                     whenEditing: "A project edit is in progress. Wait for it to complete before resetting the task status.",
                     whenRunning: "A task run is in progress. Reset the task status after it has completed."));
+            }
 
             try
             {

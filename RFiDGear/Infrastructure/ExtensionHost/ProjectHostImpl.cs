@@ -223,9 +223,11 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             // view models must be created there), so blocking that thread here waits for work only it can do:
             // the call would never return and the host would stay busy.
             if (_isOnUiThread?.Invoke() == true)
+            {
                 throw new InvalidOperationException(
                     "Project.Load cannot be called on the UI thread of the main application: it blocks the thread " +
                     "that reading the project needs, so it would never return. Use LoadAsync instead.");
+            }
 
             // Delegate to LoadAsync so all safety checks (coordinator, detached read,
             // dispatcher commit) apply. Blocks the calling thread until the load has finished.
