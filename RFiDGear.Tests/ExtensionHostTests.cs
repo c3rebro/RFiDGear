@@ -1372,6 +1372,61 @@ namespace RFiDGear.Tests
             Assert.Contains(nameof(InvalidOperationException), written);
         }
 
+        [Fact]
+        public async Task LoadAsync_WhileARealRunIsInFlight_IsRejectedAsBusyAndTheRunIsUndisturbed()
+        {
+            var project = Track(ProjectFixtures.CreateProject(1));
+            var service = new BlockingExecService();
+            var coordinator = new ExtensionOperationCoordinator();
+            var host = new ProjectHostImpl(new DatabaseReaderWriter(new ProjectManager(_root)), coordinator);
+            var exec = new TaskExecHostImpl(service, host, coordinator);
+
+            var run = exec.ExecuteAllAsync(ExecutionRequest.Empty);   // parks inside the execution service
+            Assert.True(exec.IsRunning);
+
+            var rejected = await host.LoadAsync(project);
+
+            Assert.False(rejected.Success);
+            Assert.Equal(ProjectOpenError.Busy, rejected.Error);
+            Assert.Null(host.CurrentPath);
+
+            service.Unblock();
+            var result = await run;
+            Assert.Equal(ExecutionOutcome.Success, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.None, result.FailureReason);
+
+            // With the run over, the same load is accepted.
+            Assert.True((await LoadAsync(host, project)).Success);
+        }
+
+        [Theory]
+        [InlineData("null")]
+        [InlineData("whitespace")]
+        [InlineData("missing-file")]
+        public async Task LoadAsync_PathNotFound_LeavesThePriorProjectIntact(string kind)
+        {
+            var project = Track(ProjectFixtures.CreateProject(2));
+            var (host, _) = CreateIsolatedHost();
+            Assert.True((await LoadAsync(host, project)).Success);
+            var pathBefore = host.CurrentPath;
+            var raised = 0;
+            host.ProjectChanged += (_, _) => raised++;
+            var path = kind switch
+            {
+                "null" => null!,
+                "whitespace" => "   ",
+                _ => Path.Combine(_root, "does-not-exist.rfPrj"),
+            };
+
+            var result = await host.LoadAsync(path);
+
+            Assert.False(result.Success);
+            Assert.Equal(ProjectOpenError.PathNotFound, result.Error);
+            Assert.Equal(pathBefore, host.CurrentPath);
+            Assert.Equal(2, host.TaskCount);
+            Assert.Equal(0, raised);
+        }
+
         // ── save: the path that was actually written ──
 
         [Fact]
@@ -1949,6 +2004,61 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task ExecuteAllAsync_Timestamps_AreUtcAndBracketTheRun()
+        {
+            var (_, host, _) = CreateTriple(new CapturingExecService());
+            var before = DateTimeOffset.UtcNow;
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            var after = DateTimeOffset.UtcNow;
+            Assert.InRange(result.StartedAt, before, after);
+            Assert.InRange(result.CompletedAt, result.StartedAt, after);
+            Assert.Equal(TimeSpan.Zero, result.StartedAt.Offset);
+            Assert.Equal(TimeSpan.Zero, result.CompletedAt.Offset);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_FailedRun_StillCarriesUtcTimestamps()
+        {
+            var (_, host, _) = CreateTriple(new FaultingExecService());
+            var before = DateTimeOffset.UtcNow;
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            var after = DateTimeOffset.UtcNow;
+            Assert.InRange(result.StartedAt, before, after);
+            Assert.InRange(result.CompletedAt, result.StartedAt, after);
+            Assert.Equal(TimeSpan.Zero, result.CompletedAt.Offset);
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_CancelledRun_RaisesExactlyOneTerminalResult()
+        {
+            var (_, host, _) = CreateTriple(new CancellingExecService());
+            var raised = new List<ExecResult>();
+            host.ExecutionCompleted += (_, r) => raised.Add(r);
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty, cts.Token);
+
+            Assert.Same(result, Assert.Single(raised));
+        }
+
+        [Fact]
+        public async Task ExecuteAllAsync_FaultedRun_RaisesExactlyOneTerminalResult()
+        {
+            var (_, host, _) = CreateTriple(new FaultingExecService());
+            var raised = new List<ExecResult>();
+            host.ExecutionCompleted += (_, r) => raised.Add(r);
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Same(result, Assert.Single(raised));
+        }
+
+        [Fact]
         public async Task ExecuteAllAsync_FaultLog_DoesNotRepeatSecretsFromTheExceptionMessage()
         {
             const string secret = "00112233445566778899AABBCCDDEEFF";   // key-sized hex
@@ -2229,6 +2339,35 @@ namespace RFiDGear.Tests
             {
                 File.Delete(fixturePath);
                 Directory.Delete(reportDir, recursive: true);
+            }
+        }
+
+        [Theory]
+        [InlineData("german", "de-DE")]
+        [InlineData("english", "en-US")]
+        public void AppContext_ThroughTheHostInterface_ReportsTheConfiguredLanguage(string configured, string expected)
+        {
+            var appData = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+            try
+            {
+                var live = new ChipTaskHandlerModel();
+                using var host = new HeadlessExtensionHost(
+                    new DatabaseReaderWriter(new ProjectManager(appData)),
+                    new CapturingExecService(),
+                    () => live,
+                    action => { action(); return Task.CompletedTask; },
+                    _ => { },
+                    string.Empty,
+                    new ExtensionOperationCoordinator(),
+                    () => configured);
+                IRFiDGearExtensionHost api = host;
+
+                Assert.Equal(expected, api.AppContext.UICultureName);
+                Assert.False(string.IsNullOrWhiteSpace(api.AppContext.RFiDGearVersion));
+            }
+            finally
+            {
+                Directory.Delete(appData, recursive: true);
             }
         }
 

@@ -14,7 +14,11 @@ namespace RFiDGear.Contracts
         /// <summary>The file exists but is not a supported project format or version.</summary>
         UnsupportedFormat,
 
-        /// <summary>A task execution is in progress; the project cannot be replaced while the reader is busy.</summary>
+        /// <summary>
+        /// The project cannot be replaced right now because a task execution, another load, a project edit
+        /// (<c>New</c> / <c>ReplaceTaskCollection</c>), or a save is in progress. The prior project is untouched;
+        /// retry once the other operation has finished.
+        /// </summary>
         Busy,
 
         /// <summary>An unexpected error occurred. See the application log for details.</summary>
@@ -23,6 +27,10 @@ namespace RFiDGear.Contracts
 
     /// <summary>
     /// Result of an asynchronous project load operation initiated through <see cref="IProjectHost.LoadAsync"/>.
+    /// <para>
+    /// Sensitive data: it carries only the canonical path of the file the caller named, the task count, and a
+    /// fixed error code. It never contains project content, key values, or exception text.
+    /// </para>
     /// </summary>
     public sealed class ProjectOpenResult
     {

@@ -9,7 +9,10 @@ namespace RFiDGear.Contracts
     /// </para>
     /// </summary>
     /// <param name="Position">Zero-based index of this entry in <see cref="ExecResult.TaskOutcomes"/>: the order the run reached the task, continuing in project order for tasks it never reached.</param>
-    /// <param name="ProjectTaskIndex">Task index string as stored in the project file (matches <c>IGenericTask.CurrentTaskIndex</c>).</param>
+    /// <param name="ProjectTaskIndex">
+    /// Task index string exactly as stored in the project file (matches <c>IGenericTask.CurrentTaskIndex</c>). It is normally
+    /// a small integer, but it is free text that is neither validated nor filtered, so do not put secrets in task indexes.
+    /// </param>
     /// <param name="TaskTypeName">Short type name of the task view model (e.g. <c>MifareDesfireSetupViewModel</c>), or <c>Unknown</c> when the task model was unavailable.</param>
     /// <param name="IsSuccess">
     /// <c>true</c> = the task ran and succeeded; <c>false</c> = it ran and failed (including by throwing);
