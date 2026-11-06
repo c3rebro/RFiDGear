@@ -103,6 +103,12 @@ regenerating the snapshot (`RFIDGEAR_UPDATE_API_SNAPSHOT=1`). Extensions are
 discovered once at start-up from `%ProgramData%\RFiDGear\Extensions`, so
 adding one needs an app restart.
 
+A broken extension never stops the others or the application. `MefHelper`
+probes each DLL (parts, export metadata, imports) before adding it to the
+container, logs a failure with Serilog and skips that file. If the extensions
+that passed still break the export queries, it rebuilds the container from the
+host alone. `MefHelper.LastLoadResults` records the outcome per file.
+
 ### UI Structure
 
 Views are organized under `Views/` by task category: `CommonTask/`, `GenericChipTask/`, `MifareClassicTask/`, `MifareDesfireTask/`, `MifareUltralightTask/`. Dialog flows use the **MVVM Dialogs** library for message boxes and file pickers.
