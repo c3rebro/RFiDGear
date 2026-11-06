@@ -1,0 +1,80 @@
+---
+title: RFiDGear.ExtensionLibraries.CardCheck
+---
+
+RFiDGear.ExtensionLibraries.CardCheck is the support library of the Card Check
+Assistant extension. It holds everything the assistant does that is not user
+interface: reading and finalizing orders in the order database, preparing and
+analysing the PDF reports, choosing the report template, keeping the settings
+and importing the settings of the old assistant. The WPF extension
+(`RFiDGear.Extensions.CardCheckAssistant`) uses it; nothing else does.
+
+This first change only lays the ground: the result types, the log abstraction,
+the status and language values and the guard tests. The services follow one
+at a time, each with its own tests.
+
+**Rules that keep it loadable and safe:**
+
+- The name is `RFiDGear.ExtensionLibraries.<Name>` and never starts with
+  `RFiDGear.Extensions`. The host hands every `RFiDGear.Extensions*.dll` in
+  the extensions folder to MEF, so a name like `RFiDGear.ExtensionsNative` or
+  `RFiDGear.ExtensionSupport` would be loaded as an extension at every
+  start-up.
+- Plain `net8.0`: no WPF, no WinUI, no reader SDK, no reference to any
+  RFiDGear project, no Windows event log, no console. It never starts a
+  process.
+- Serilog and GemBox.Pdf belong to the host. The library compiles against the
+  same versions (`ExcludeAssets="runtime;native"`, `PrivateAssets="all"`), so
+  the loaded copy is the host's and no private copy is built next to it.
+- Only `Logging/SerilogCardCheckLog.cs` names Serilog. Everything else logs
+  through `ICardCheckLog`, which takes no exception: a boundary turns an
+  exception into a `Failure` and logs only the type, the HResult and the stack
+  trace (`UnexpectedFault`), never the message or the data. Messages and
+  failures never carry a server, user, connection string or report content.
+- Operations return `Result` or `Result<T>` with a `Failure`; nothing is
+  swallowed and nothing is thrown across the boundary on purpose.
+- No mutable static state. Every window creates its own services.
+- The public surface is interfaces, records and `CardCheckServices`. The
+  implementations are internal and reach the tests through
+  `InternalsVisibleTo`.
+- `CardCheckCoreBoundaryTests` check all of this on the project file, the
+  built assembly and the sources.
+
+**Where it goes at run time:**
+
+- Beside the extension, flat, in `%ProgramData%\RFiDGear\Extensions`. The
+  host's own resolve hook only serves names that start with
+  `RFiDGear.Extensions`, and it does not need to serve this one: .NET finds
+  a managed library and its native files next to an assembly that was loaded
+  with `Assembly.LoadFrom`, which is how MEF loads an extension.
+- The exported class of the extension must not use library types in its
+  members or its constructor. MEF's checks cannot see a missing library; the
+  failure would appear when the class is created or used. When the extension
+  uses the library (a later change), it is to check for it when its window
+  opens and show a "component missing" page.
+
+**What was measured before this library was built** (scratch harness with the
+host's package versions and MEF 10.0.1, x64 and x86, every negative control
+failed as it should):
+
+- A library and `System.Data.SqlClient.dll` beside an extension that MEF
+  loaded are found without any host change; the host's resolve hook is asked,
+  returns nothing, and .NET's own `LoadFrom` resolver finds them. A subfolder
+  is not searched.
+- `sni.dll` beside `System.Data.SqlClient.dll` is found. Without it the first
+  connection fails with a `DllNotFoundException`. The `netcoreapp2.1` build of
+  `System.Data.SqlClient` is a stub that throws `PlatformNotSupported`; the
+  real one comes from the runtime-specific publish assets. `sni.dll` has one
+  file name for x86 and x64 and a different file for each.
+- Exactly one copy of Serilog and one of GemBox.Pdf are loaded, both from the
+  host folder. A line logged by the library reached the host's logger. A
+  second `ComponentInfo.SetLicense` call is harmless.
+- GemBox.Pdf 17.0.1300 (the old assistant) and 2025.12.101 (the host) read the
+  same form fields the same way: a ticked check box reads as the text `Yes`,
+  a missing field is a null field, writing `Off` reads back as nothing, and the
+  read-only flag survives a save. Only the exact text `Yes` means ticked.
+- A restore reports no warnings and no known vulnerable package. The payload
+  of the library plus the SQL driver is three files per platform: the
+  library, `System.Data.SqlClient.dll` and `sni.dll`.
+- With the library missing, MEF still finds the part and the export; only
+  creating or using the class fails.

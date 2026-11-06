@@ -120,6 +120,20 @@ container, logs a failure with Serilog and skips that file. If the extensions
 that passed still break the export queries, it rebuilds the container from the
 host alone. `MefHelper.LastLoadResults` records the outcome per file.
 
+An extension that needs more than the contract (services, a database driver,
+a PDF engine) keeps that code in a support library named
+`RFiDGear.ExtensionLibraries.<Name>`; the first is
+`RFiDGear.ExtensionLibraries.CardCheck`. **The name must never start with
+`RFiDGear.Extensions`, in any letter case.** `MefHelper` scans the extensions
+folder for `RFiDGear.Extensions*.dll` and hands every match to MEF, so a library
+called `RFiDGear.ExtensionsNative.*` or `RFiDGear.ExtensionSupport.*` would be
+loaded as an extension at every start-up. A support library is plain `net8.0`
+(no WPF), references no other RFiDGear project, compiles against host-owned
+packages (Serilog, GemBox.Pdf) without shipping a copy of them, and sits flat
+next to the extension that uses it: .NET finds it there, the host needs no
+change for that. `CardCheckCoreBoundaryTests` pin the rules, including the
+name, against the host's own scan.
+
 ### UI Structure
 
 Views are organized under `Views/` by task category: `CommonTask/`, `GenericChipTask/`, `MifareClassicTask/`, `MifareDesfireTask/`, `MifareUltralightTask/`. Dialog flows use the **MVVM Dialogs** library for message boxes and file pickers.

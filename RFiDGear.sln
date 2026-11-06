@@ -26,6 +26,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.Contracts", "RFiDG
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.ExtensionSdk", "RFiDGear.ExtensionSdk\RFiDGear.ExtensionSdk.csproj", "{87025BBF-C676-4046-8EA5-C7FBB3051D33}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.ExtensionLibraries.CardCheck", "RFiDGear.ExtensionLibraries\CardCheck\RFiDGear.ExtensionLibraries.CardCheck.csproj", "{1DE12B36-2393-4224-9180-CC0AFDBDC56F}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.Extensions.CardCheckAssistant", "RFiDGear.Extensions\CardCheckAssistant\RFiDGear.Extensions.CardCheckAssistant.csproj", "{49648882-244D-4222-9B41-757AAF064F35}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RFiDGear.HIL.Tests", "RFiDGear.HIL.Tests\RFiDGear.HIL.Tests.csproj", "{84CCA31C-5E88-4EA7-B662-DF56A0D028B6}"
@@ -187,6 +189,24 @@ Global
 		{87025BBF-C676-4046-8EA5-C7FBB3051D33}.Release|x64.Build.0 = Release|x64
 		{87025BBF-C676-4046-8EA5-C7FBB3051D33}.Release|x86.ActiveCfg = Release|x86
 		{87025BBF-C676-4046-8EA5-C7FBB3051D33}.Release|x86.Build.0 = Release|x86
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug(without args)|Any CPU.ActiveCfg = Debug|Any CPU
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug(without args)|Any CPU.Build.0 = Debug|Any CPU
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug(without args)|x64.ActiveCfg = Debug|x64
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug(without args)|x64.Build.0 = Debug|x64
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug(without args)|x86.ActiveCfg = Debug|x86
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug(without args)|x86.Build.0 = Debug|x86
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug|x64.ActiveCfg = Debug|x64
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug|x64.Build.0 = Debug|x64
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug|x86.ActiveCfg = Debug|x86
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Debug|x86.Build.0 = Debug|x86
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Release|x64.ActiveCfg = Release|x64
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Release|x64.Build.0 = Release|x64
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Release|x86.ActiveCfg = Release|x86
+		{1DE12B36-2393-4224-9180-CC0AFDBDC56F}.Release|x86.Build.0 = Release|x86
 		{49648882-244D-4222-9B41-757AAF064F35}.Debug(without args)|Any CPU.ActiveCfg = Debug|Any CPU
 		{49648882-244D-4222-9B41-757AAF064F35}.Debug(without args)|Any CPU.Build.0 = Debug|Any CPU
 		{49648882-244D-4222-9B41-757AAF064F35}.Debug(without args)|x64.ActiveCfg = Debug|x64

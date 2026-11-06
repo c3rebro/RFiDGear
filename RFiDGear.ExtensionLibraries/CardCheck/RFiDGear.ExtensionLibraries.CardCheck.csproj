@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Plain net8.0 on purpose: no WPF, no windows-only API. The boundary tests pin this. -->
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU;x64;x86</Platforms>
+    <AssemblyName>RFiDGear.ExtensionLibraries.CardCheck</AssemblyName>
+    <RootNamespace>RFiDGear.ExtensionLibraries.CardCheck</RootNamespace>
+    <!-- Versioned with the extension, not with the application. -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <!-- Build output holds only this library; whatever it needs next to it is decided by the payload step, not by
+         a build that copies the whole package closure. -->
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Keep equal to the version in RFiDGear.csproj. The host owns the copy that is loaded; this reference is for
+         compiling only, so no private copy can end up next to the library. -->
+    <PackageReference Include="Serilog" Version="4.3.0" ExcludeAssets="runtime;native" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="RFiDGear.Tests" />
+  </ItemGroup>
+</Project>
