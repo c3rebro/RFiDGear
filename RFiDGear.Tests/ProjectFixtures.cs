@@ -81,6 +81,45 @@ namespace RFiDGear.Tests
         }
 
         /// <summary>
+        /// Creates a <c>.rfPrj</c> archive with several entries whose names are used exactly as given (including
+        /// names with <c>..</c>, drive letters or folders, which a ZIP file may contain).
+        /// </summary>
+        /// <param name="entries">Entry name and text content, in archive order.</param>
+        /// <returns>Full path of the generated archive in the system temp directory.</returns>
+        public static string CreateArchiveWithEntries(params (string Name, string Content)[] entries)
+        {
+            var path = NewTempPath(".rfPrj");
+            using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
+
+            foreach (var (name, content) in entries)
+            {
+                var entry = archive.CreateEntry(name);
+                using var entryStream = entry.Open();
+                using var writer = new StreamWriter(entryStream, new UTF8Encoding(false));
+                writer.Write(StripEncodingDeclaration(content));
+            }
+
+            return path;
+        }
+
+        /// <summary>
+        /// Creates a <c>.rfPrj</c> archive whose single entry holds exactly the given bytes, for encodings and
+        /// byte-order marks that a text writer would not produce.
+        /// </summary>
+        /// <param name="entryName">Name of the single archive entry.</param>
+        /// <param name="bytes">Raw content of the entry.</param>
+        /// <returns>Full path of the generated archive in the system temp directory.</returns>
+        public static string CreateArchiveWithRawEntry(string entryName, byte[] bytes)
+        {
+            var path = NewTempPath(".rfPrj");
+            using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
+            var entry = archive.CreateEntry(entryName);
+            using var entryStream = entry.Open();
+            entryStream.Write(bytes, 0, bytes.Length);
+            return path;
+        }
+
+        /// <summary>
         /// Creates a valid chip-tree XML document (what "Save Chip" writes), which is not a task project.
         /// </summary>
         /// <returns>Full path of the generated <c>.xml</c> file in the system temp directory.</returns>

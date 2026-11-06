@@ -1,8 +1,10 @@
 using System;
+using System.Buffers.Binary;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using RFiDGear.Models;
@@ -329,16 +331,58 @@ namespace RFiDGear.Infrastructure.FileAccess
                 settingsPath: resolvedPath);
         }
 
+        /// <summary>
+        /// The most entries a project archive may hold. The application writes exactly one, so the limit only
+        /// stops a crafted archive from making the loader walk a huge directory.
+        /// </summary>
+        internal int MaxArchiveEntries { get; set; } = 64;
+
+        /// <summary>
+        /// The most uncompressed bytes read from the project entry of an archive (64 MiB by default). It is
+        /// enforced while reading, so a header that understates the size does not get around it.
+        /// </summary>
+        internal long MaxProjectEntryBytes { get; set; } = 64L * 1024 * 1024;
+
         private ProjectLoadResult PrepareCompressedProject(FileInfo file, Version appVersion)
         {
-            var xmlPath = ExtractCompressedProject(file.FullName, file.Name);
+            CleanTemporaryFiles();
 
-            if (string.IsNullOrEmpty(xmlPath) || !File.Exists(xmlPath))
+            // Only the project entry is read, in memory. Nothing from the archive is written to disk, so no
+            // other entry (settings.xml, a report template, a path with ..) can reach the shared folder.
+            var projectBytes = ReadProjectEntry(file.FullName, file.Name);
+
+            if (projectBytes == null || projectBytes.Length == 0)
             {
                 return ProjectLoadResult.Failed();
             }
 
-            return CreateXmlLoadResult(xmlPath, appVersion, ProjectFileType.Archive);
+            return CreateBufferLoadResult(projectBytes, appVersion, ProjectFileType.Archive);
+        }
+
+        private ProjectLoadResult CreateBufferLoadResult(byte[] projectBytes, Version appVersion, ProjectFileType projectFileType)
+        {
+            // Validated as bytes first (strict about the encoding, as the file-based path is), so a damaged byte
+            // is rejected instead of being replaced by U+FFFD when the text is decoded below.
+            var manifestText = ReadManifestVersionTextFromBytes(projectBytes);
+            var isSupportedVersion = ValidateManifestVersion(manifestText, appVersion);
+
+            return new ProjectLoadResult(
+                success: true,
+                manifestVersion: ToDiagnosticNumber(manifestText),
+                isSupportedVersion: isSupportedVersion,
+                reader: DecodeText(projectBytes),
+                fileType: projectFileType);
+        }
+
+        /// <summary>
+        /// Decodes project bytes the way the plain-file path does: UTF-8 unless a byte-order mark says otherwise.
+        /// </summary>
+        private static StringReader DecodeText(byte[] projectBytes)
+        {
+            using var buffer = new MemoryStream(projectBytes, writable: false);
+            using var reader = new StreamReader(buffer, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+
+            return new StringReader(reader.ReadToEnd());
         }
 
         private ProjectLoadResult CreateXmlLoadResult(string path, Version appVersion, ProjectFileType projectFileType)
@@ -365,6 +409,24 @@ namespace RFiDGear.Infrastructure.FileAccess
         }
 
         /// <summary>
+        /// Reads the <c>ManifestVersion</c> element of project bytes that came out of an archive, or <c>null</c> if
+        /// it has none. The whole document is parsed from the bytes, so an encoding error anywhere is an
+        /// <see cref="XmlException"/> (not a silent replacement character). The content is not trusted: a document
+        /// type declaration (the way to write an entity expansion bomb) is refused and nothing external is resolved.
+        /// </summary>
+        private static string ReadManifestVersionTextFromBytes(byte[] projectBytes)
+        {
+            var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
+
+            using var bytes = new MemoryStream(projectBytes, writable: false);
+            using var xmlReader = XmlReader.Create(bytes, settings);
+            var doc = new XmlDocument { XmlResolver = null };
+            doc.Load(xmlReader);
+
+            return doc.SelectSingleNode("//ManifestVersion")?.InnerText.Trim();
+        }
+
+        /// <summary>
         /// The concatenated-digit number that results and logs have always carried (<c>1.10.9054</c> becomes
         /// 1109054). It is for display only; it is not used to decide whether a file is supported.
         /// </summary>
@@ -373,60 +435,119 @@ namespace RFiDGear.Infrastructure.FileAccess
                 ? number
                 : 0;
 
-        private string ExtractCompressedProject(string archivePath, string archiveFileName)
+        /// <summary>
+        /// Reads the project text out of an archive without extracting anything. The entry is chosen from the
+        /// archive's own entries, never by looking for a file that happens to be in the shared folder: the
+        /// entry named like the archive itself (the oldest layout) if there is one, otherwise
+        /// <c>taskdatabase.xml</c>. Entries in subfolders never match.
+        /// </summary>
+        /// <param name="archivePath">Full path of the <c>.rfPrj</c> archive.</param>
+        /// <param name="archiveFileName">The archive's file name, used to find the oldest layout's entry.</param>
+        /// <returns>The project XML as bytes, or <c>null</c> when the archive contains no project entry.</returns>
+        /// <exception cref="InvalidDataException">
+        /// The file is not a ZIP archive, holds more than <see cref="MaxArchiveEntries"/> entries, or the project
+        /// entry is larger than <see cref="MaxProjectEntryBytes"/> once uncompressed.
+        /// </exception>
+        private byte[] ReadProjectEntry(string archivePath, string archiveFileName)
         {
-            CleanTemporaryFiles();
-
-            // The payload is chosen from the archive's own entries, never by looking for a file that happens
-            // to be in the shared folder. Anything left there by an earlier load or save, including a
-            // same-named entry from a different archive with the same file name, must not be mistaken for
-            // this archive's project.
-            var payloadEntry = FindProjectEntryName(archivePath, archiveFileName);
-
-            if (payloadEntry == null)
+            // The entry count is declared in the record at the end of the file. Reading it first rejects a huge
+            // directory before ZipArchive.Entries allocates an object for every entry in it. The declared count is
+            // authoritative: ZipArchive itself rejects an archive whose directory holds a different number (pinned
+            // by a test), so there is no second check on Entries.Count.
+            if (ReadDeclaredEntryCount(archivePath) > MaxArchiveEntries)
             {
-                return string.Empty;
+                throw new InvalidDataException("The archive holds more entries than a project archive does.");
             }
 
-            // Extraction overwrites, so the payload on disk is exactly this archive's entry.
-            ExtractArchive(archivePath);
+            using var archive = ZipFile.OpenRead(archivePath);
 
-            var payloadPath = Path.Combine(AppDataPath, payloadEntry);
+            ZipArchiveEntry projectEntry = null;
 
-            return File.Exists(payloadPath) ? payloadPath : string.Empty;
-        }
-
-        /// <summary>
-        /// Finds the entry that holds the project: the entry named like the archive itself (the oldest layout)
-        /// if there is one, otherwise <c>taskdatabase.xml</c>.
-        /// </summary>
-        /// <returns>The entry's name, or <c>null</c> when the archive contains no project entry.</returns>
-        private static string FindProjectEntryName(string archivePath, string archiveFileName)
-        {
-            string taskDatabaseEntry = null;
-
-            using (var archive = ZipFile.OpenRead(archivePath))
+            foreach (var entry in archive.Entries)
             {
-                foreach (var entry in archive.Entries)
+                if (entry.FullName.Equals(archiveFileName, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (entry.FullName.Equals(archiveFileName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return entry.FullName;
-                    }
+                    projectEntry = entry;
+                    break;
+                }
 
-                    if (entry.FullName.Equals(TaskDatabaseFileName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        taskDatabaseEntry = entry.FullName;
-                    }
+                if (entry.FullName.Equals(TaskDatabaseFileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    projectEntry = entry;
                 }
             }
 
-            return taskDatabaseEntry;
+            return projectEntry == null ? null : ReadEntryBytes(projectEntry);
         }
 
-        private void ExtractArchive(string archivePath)
+        /// <summary>
+        /// Reads the number of entries a ZIP file declares in its end-of-central-directory record, without
+        /// parsing the directory itself.
+        /// </summary>
+        /// <param name="archivePath">Full path of the file.</param>
+        /// <returns>
+        /// The declared count (65535 also stands for "ZIP64, more than that"), or <c>null</c> when the file ends
+        /// with no such record, in which case opening it as an archive reports the problem.
+        /// </returns>
+        internal static int? ReadDeclaredEntryCount(string archivePath)
         {
-            ZipFile.ExtractToDirectory(archivePath, AppDataPath, overwriteFiles: true);
+            const int recordLength = 22;
+            const int maxCommentLength = ushort.MaxValue;
+
+            using var stream = new FileStream(
+                archivePath,
+                FileMode.Open,
+                System.IO.FileAccess.Read, // qualified: the RFiDGear.Infrastructure.FileAccess namespace shadows the enum
+                FileShare.ReadWrite | FileShare.Delete);
+
+            var tailLength = (int)Math.Min(stream.Length, recordLength + maxCommentLength);
+
+            if (tailLength < recordLength)
+            {
+                return null;
+            }
+
+            var tail = new byte[tailLength];
+            stream.Seek(-tailLength, SeekOrigin.End);
+            stream.ReadExactly(tail);
+
+            // The record ends the file, followed only by its comment, so the last signature is the real one.
+            for (var i = tailLength - recordLength; i >= 0; i--)
+            {
+                if (tail[i] == 0x50 && tail[i + 1] == 0x4B && tail[i + 2] == 0x05 && tail[i + 3] == 0x06)
+                {
+                    return BinaryPrimitives.ReadUInt16LittleEndian(tail.AsSpan(i + 10, 2));
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Reads one entry, giving up as soon as it grows past <see cref="MaxProjectEntryBytes"/>. The limit is
+        /// checked on the bytes actually produced, not on the size the archive claims.
+        /// </summary>
+        private byte[] ReadEntryBytes(ZipArchiveEntry entry)
+        {
+            using var source = entry.Open();
+            using var buffer = new MemoryStream();
+            var chunk = new byte[81920];
+            long total = 0;
+            int read;
+
+            while ((read = source.Read(chunk, 0, chunk.Length)) > 0)
+            {
+                total += read;
+
+                if (total > MaxProjectEntryBytes)
+                {
+                    throw new InvalidDataException("The project entry is larger than a project can be.");
+                }
+
+                buffer.Write(chunk, 0, read);
+            }
+
+            return buffer.ToArray();
         }
 
         private void CleanTemporaryFiles()

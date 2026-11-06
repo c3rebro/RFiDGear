@@ -209,7 +209,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task LoadAsync_ManifestThatIsNotAVersion_FailsCleanlyWithoutLockingTheStagingFile()
+        public async Task LoadAsync_ManifestThatIsNotAVersion_FailsCleanlyAndLeavesNothingBehind()
         {
             var good = Track(ProjectFixtures.CreateProject(2));
             var garbled = Track(ProjectFixtures.CreateProject(1, manifestVersion: "not-a-version"));
@@ -221,8 +221,8 @@ namespace RFiDGear.Tests
             Assert.False(result.Success);
             Assert.Equal(2, host.TaskCount);
 
-            // A reader left open on the extracted file would make this delete (and the test's cleanup) fail.
-            File.Delete(Path.Combine(_root, "taskdatabase.xml"));
+            // The archive is read in memory, so a failed read has no file to leave open or behind.
+            Assert.False(File.Exists(Path.Combine(_root, "taskdatabase.xml")));
         }
 
         [Theory]
