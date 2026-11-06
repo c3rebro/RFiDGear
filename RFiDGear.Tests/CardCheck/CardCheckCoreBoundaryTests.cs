@@ -219,6 +219,9 @@ namespace RFiDGear.Tests.CardCheck
                     case EventInfo evt when evt.AddMethod?.IsPublic ?? false:
                         found.Add(evt.EventHandlerType!);
                         break;
+                    default:
+                        // A member that is not visible outside the type (private, internal, a nested type).
+                        break;
                 }
             }
 
