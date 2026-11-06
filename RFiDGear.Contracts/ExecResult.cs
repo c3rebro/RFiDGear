@@ -5,7 +5,8 @@ namespace RFiDGear.Contracts
 {
     /// <summary>
     /// Immutable summary of a completed task-loop execution returned by <see cref="ITaskExecHost"/>.
-    /// Does not contain key material, payload bytes, or card data.
+    /// Does not contain key material, payload bytes, or card data. The one free-text field in it is
+    /// <see cref="TaskOutcome.ProjectTaskIndex"/>, which is the task index as stored in the project.
     /// </summary>
     /// <param name="RunId">
     /// Unique identifier for this execution pass. Correlates all <see cref="TaskOutcomes"/> entries

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel.Composition;
+using System.ComponentModel.Composition.Hosting;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -7,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using RFiDGear.Contracts;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Models;
@@ -249,7 +252,7 @@ namespace RFiDGear.Tests
         /// <summary>
         /// Creates and initializes a view model whose settings and project staging live below <paramref name="tempRoot"/>.
         /// </summary>
-        private static async Task<MainWindowViewModel> CreateInitializedViewModelAsync(string tempRoot)
+        private static async Task<MainWindowViewModel> CreateInitializedViewModelAsync(string tempRoot, CultureInfo? culture = null)
         {
             var settingsDirectory = Path.Combine(tempRoot, "settings");
             Directory.CreateDirectory(settingsDirectory);
@@ -281,7 +284,7 @@ namespace RFiDGear.Tests
             {
                 CurrentReaderName = "Reader",
                 DefaultReaderProvider = ReaderTypes.None,
-                Culture = CultureInfo.InvariantCulture
+                Culture = culture ?? CultureInfo.InvariantCulture
             });
             await initializationTask;
 
@@ -494,6 +497,71 @@ namespace RFiDGear.Tests
                 finally
                 {
                     File.Delete(rememberedProject);
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
+        // ── extension host as an extension sees it ──
+
+        /// <summary>Stands in for an extension: it only declares the import the contract documents.</summary>
+        public sealed class HostImporter
+        {
+            [Import]
+            public IRFiDGearExtensionHost? Host { get; set; }
+        }
+
+        [Theory]
+        [InlineData("de-DE", "de-DE")]
+        [InlineData("en-US", "en-US")]
+        public async Task ExtensionHost_AppContext_FollowsTheApplicationCulture(string applicationCulture, string expected)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot, new CultureInfo(applicationCulture));
+
+                    IRFiDGearExtensionHost api = viewModel.ExtensionHost;
+
+                    Assert.Equal(expected, api.AppContext.UICultureName);
+                }
+                finally
+                {
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task ExtensionHost_CanBeImportedThroughMef_AsAnExtensionDoesIt()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot);
+                    var extension = new HostImporter();
+
+                    // The host application exports the service from its view model; an extension imports it.
+                    using var container = new CompositionContainer();
+                    var batch = new CompositionBatch();
+                    batch.AddPart(viewModel);
+                    batch.AddPart(extension);
+                    container.Compose(batch);
+
+                    Assert.Same(viewModel.ExtensionHost, extension.Host);
+
+                    // The first things an extension does with it.
+                    Assert.Equal(0, extension.Host!.Project.TaskCount);
+                    Assert.Null(extension.Host.Project.CurrentPath);
+                    Assert.False(extension.Host.Execution.IsRunning);
+                    Assert.False(string.IsNullOrWhiteSpace(extension.Host.AppContext.RFiDGearVersion));
+                    Assert.False(extension.Host.AutoMode.IsAutoModeEnabled);
+                }
+                finally
+                {
                     Directory.Delete(tempRoot, recursive: true);
                 }
             });

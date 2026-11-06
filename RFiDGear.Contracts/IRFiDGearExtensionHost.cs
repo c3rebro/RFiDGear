@@ -8,6 +8,17 @@ namespace RFiDGear.Contracts
     /// Obtain this service in an extension by declaring a MEF import:
     /// <code>[Import] public IRFiDGearExtensionHost Host { get; set; }</code>
     /// </para>
+    /// <para>
+    /// Availability: the host is created while the main window initializes. Until then, and for good if start-up
+    /// fails, the MEF export is <c>null</c>, so an extension must not import it before start-up has completed.
+    /// </para>
+    /// <para>
+    /// Threading: once the host exists, each sub-host property below returns the same instance for the lifetime
+    /// of the host and may be read from any thread. The host does not marshal events to the UI thread on your
+    /// behalf: <c>ExecutionCompleted</c> is raised on the thread that completes the run (typically a thread-pool
+    /// thread), and <c>ProjectChanged</c> on the thread that commits the project, which is the WPF dispatcher thread
+    /// in the main application. Each member documents whether it must be called on the UI thread.
+    /// </para>
     /// </summary>
     public interface IRFiDGearExtensionHost
     {
