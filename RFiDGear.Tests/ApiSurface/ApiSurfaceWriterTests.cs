@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,6 +26,8 @@ namespace RFiDGear.Tests.ApiSurface
         B = 2,
     }
 
+    // A ref parameter is one of the details the writer must be able to render, so the sample needs one.
+    [SuppressMessage("Major Code Smell", "S3874:\"out\" and \"ref\" parameters should not be used", Justification = "The writer must render ref parameters.")]
     public interface ISampleHost
     {
         string Name { get; }
@@ -51,6 +54,8 @@ namespace RFiDGear.Tests.ApiSurface
         IReadOnlyDictionary<string, IReadOnlyList<string?>> Lookup();
     }
 
+    // Public constants are one of the details the writer must be able to render, so the sample needs some.
+    [SuppressMessage("Major Code Smell", "S2339:Public constant members should not be used", Justification = "The writer must render constants.")]
     public abstract class SampleBase
     {
         public const int Limit = 7;
@@ -69,9 +74,7 @@ namespace RFiDGear.Tests.ApiSurface
 
         public abstract void Step();
 
-        internal void NotPartOfTheSurface()
-        {
-        }
+        internal int NotPartOfTheSurface() => 0;
     }
 
     public sealed class SampleDerived : SampleBase

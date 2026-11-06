@@ -339,14 +339,14 @@ namespace RFiDGear.Tests.ApiSurface
             return parts.Count == 0 ? string.Empty : string.Join(" ", parts) + " ";
         }
 
-        private static string Member(MemberInfo member, string text) =>
-            AttributePrefix(member.GetCustomAttributesData()) + text;
+        private static string Member(MemberInfo owner, string text) =>
+            AttributePrefix(owner.GetCustomAttributesData()) + text;
 
         // ── parameters, types, constraints ────────────────────────────────────
 
-        private string Parameters(ParameterInfo[] parameters, string open = "(", string close = ")")
+        private string Parameters(ParameterInfo[] list, string open = "(", string close = ")")
         {
-            var rendered = parameters.Select(p =>
+            var rendered = list.Select(p =>
             {
                 var type = p.ParameterType.IsByRef ? p.ParameterType.GetElementType()! : p.ParameterType;
                 var prefix = p.ParameterType.IsByRef
