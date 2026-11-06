@@ -132,13 +132,22 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
                 ct.ThrowIfCancellationRequested();
 
-                // Check version before success: a newer-manifest project may parse without error
-                // but still be incompatible. These are distinct conditions.
+                // Check success first: Failed() now carries an explicit FailureReason so we can
+                // distinguish I/O and deserialization failures from version-mismatch cases.
+                // A version-too-new result has Success=true and IsSupportedVersion=false.
+                if (!result.Success)
+                {
+                    var openError = result.FailureReason switch
+                    {
+                        DatabaseReaderWriter.DatabaseReadFailureReason.UnsupportedVersion =>
+                            Contracts.ProjectOpenError.UnsupportedFormat,
+                        _ => Contracts.ProjectOpenError.Unknown,
+                    };
+                    return Contracts.ProjectOpenResult.Fail(openError);
+                }
+
                 if (!result.IsSupportedVersion)
                     return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.UnsupportedFormat);
-
-                if (!result.Success)
-                    return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Unknown);
 
                 var canonicalPath = Path.GetFullPath(path);
 
@@ -172,11 +181,13 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             if (string.IsNullOrWhiteSpace(path))
                 throw new ArgumentException("Path must not be empty.", nameof(path));
 
-            // Blocks synchronously. On a WPF STA thread this can deadlock if ReadDatabase
-            // dispatches back to the UI thread. Use LoadAsync() from WPF code instead.
-            Task.Run(() => _dbRW.ReadDatabase(path)).GetAwaiter().GetResult();
-            _currentPath = Path.GetFullPath(path);
-            ProjectChanged?.Invoke(this, EventArgs.Empty);
+            // Delegate to LoadAsync so all safety checks (coordinator, detached read,
+            // dispatcher commit) apply. Blocks synchronously — avoid calling from a WPF
+            // STA thread that owns the dispatcher (deadlock risk); use LoadAsync() instead.
+            var result = Task.Run(() => LoadAsync(path)).GetAwaiter().GetResult();
+            if (!result.Success)
+                throw new InvalidOperationException(
+                    $"Failed to load project '{path}': {result.Error}");
         }
 #pragma warning restore CS0618
 

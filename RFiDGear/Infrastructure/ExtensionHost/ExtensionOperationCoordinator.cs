@@ -8,7 +8,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     /// Guarantees that at most one load OR one execution is in progress at any time,
     /// eliminating the TOCTOU race between checking <c>IsRunning</c> and replacing the task collection.
     /// </summary>
-    internal sealed class ExtensionOperationCoordinator
+    public sealed class ExtensionOperationCoordinator
     {
         // Possible states of the coordinator.
         private const int Idle = 0;

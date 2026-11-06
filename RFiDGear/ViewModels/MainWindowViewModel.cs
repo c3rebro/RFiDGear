@@ -75,6 +75,7 @@ namespace RFiDGear.ViewModel
         private readonly IMenuInitializer menuInitializer;
 
         private HeadlessExtensionHost extensionHost;
+        private ExtensionOperationCoordinator _coordinator;
 
         private protected MainWindow mw;
         private protected DatabaseReaderWriter databaseReaderWriter;
@@ -207,6 +208,7 @@ namespace RFiDGear.ViewModel
             taskDialogFactory = taskServices.TaskDialogFactory;
             taskExecutionService = taskServices.TaskExecutionService;
 
+            _coordinator = new ExtensionOperationCoordinator();
             extensionHost = new HeadlessExtensionHost(
                 databaseReaderWriter,
                 taskExecutionService,
@@ -231,6 +233,7 @@ namespace RFiDGear.ViewModel
                     OnPropertyChanged(nameof(TreeViewParentNodes));
                 },
                 readerName: string.Empty,
+                coordinator: _coordinator,
                 getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english");
 
             var deleteSelectedCommand = new RelayCommand(() =>
@@ -459,30 +462,39 @@ namespace RFiDGear.ViewModel
 
                 culture = (settings.DefaultSpecification.DefaultLanguage == "german") ? new CultureInfo("de-DE") : new CultureInfo("en-US");
 
-                if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
+                if (!_coordinator.TryBeginLoad())
+                    return;
+
+                try
                 {
-                    ChipTasks.TaskCollection.Clear();
+                    if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
+                    {
+                        ChipTasks.TaskCollection.Clear();
+                    }
+
+                    await databaseReaderWriter.ReadDatabase(lastUsedDBPath);
+
+                    foreach (var vm in databaseReaderWriter.TreeViewModel)
+                    {
+                        TreeViewParentNodes.Add(vm);
+                    }
+
+                    foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
+                    {
+                        ChipTasks.TaskCollection.Add(setup);
+                    }
+
+                    if (Dialogs.Any())
+                    {
+                        Dialogs.RemoveAt(0);
+                    }
+
+                    OnPropertyChanged(nameof(ChipTasks));
                 }
-
-                await databaseReaderWriter.ReadDatabase(lastUsedDBPath);
-
-                foreach (var vm in databaseReaderWriter.TreeViewModel)
+                finally
                 {
-                    TreeViewParentNodes.Add(vm);
+                    _coordinator.EndLoad();
                 }
-
-
-                foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
-                {
-                    ChipTasks.TaskCollection.Add(setup);
-                }
-
-                if (Dialogs.Any())
-                {
-                    Dialogs.RemoveAt(0);
-                }
-
-                OnPropertyChanged(nameof(ChipTasks));
             }
         }
         #endregion
@@ -1136,6 +1148,12 @@ namespace RFiDGear.ViewModel
                 NotifyTasksChanged = () => OnPropertyChanged(nameof(ChipTasks)),
             };
 
+            if (!_coordinator.TryBeginExecution())
+            {
+                Mouse.OverrideCursor = null;
+                return;
+            }
+
             try
             {
                 var result = await taskExecutionService.ExecuteOnceAsync(request, CancellationToken.None);
@@ -1158,6 +1176,7 @@ namespace RFiDGear.ViewModel
             }
             finally
             {
+                _coordinator.EndExecution();
                 Mouse.OverrideCursor = null;
             }
         }
@@ -1374,26 +1393,40 @@ namespace RFiDGear.ViewModel
 
                 if (dlg.Show(Dialogs) && dlg.FileName != null)
                 {
-                    Mouse.OverrideCursor = Cursors.AppStarting;
-
-                    if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
+                    if (!_coordinator.TryBeginLoad())
                     {
-                        ChipTasks.TaskCollection.Clear();
+                        await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                            Mouse.OverrideCursor = null));
+                        return;
                     }
 
-                    await databaseReaderWriter.ReadDatabase(dlg.FileName).ConfigureAwait(false);
-
-                    settings.DefaultSpecification.LastUsedProjectPath = dlg.FileName;
-                    await settings.SaveSettings();
-
-                    foreach (var vm in databaseReaderWriter.TreeViewModel)
+                    try
                     {
-                        TreeViewParentNodes.Add(vm);
+                        Mouse.OverrideCursor = Cursors.AppStarting;
+
+                        if (ChipTasks.TaskCollection != null && ChipTasks.TaskCollection.Count > 0)
+                        {
+                            ChipTasks.TaskCollection.Clear();
+                        }
+
+                        await databaseReaderWriter.ReadDatabase(dlg.FileName).ConfigureAwait(false);
+
+                        settings.DefaultSpecification.LastUsedProjectPath = dlg.FileName;
+                        await settings.SaveSettings();
+
+                        foreach (var vm in databaseReaderWriter.TreeViewModel)
+                        {
+                            TreeViewParentNodes.Add(vm);
+                        }
+
+                        foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
+                        {
+                            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => ChipTasks.TaskCollection.Add(setup)));
+                        }
                     }
-
-                    foreach (var setup in databaseReaderWriter.SetupModel.TaskCollection)
+                    finally
                     {
-                        await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => ChipTasks.TaskCollection.Add(setup)));
+                        _coordinator.EndLoad();
                     }
                 }
             }

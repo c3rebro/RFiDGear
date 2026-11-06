@@ -95,23 +95,25 @@ namespace RFiDGear.Infrastructure.FileAccess
 
                     if (!projectLoadResult.Success)
                     {
-                        return DatabaseReadResult.Failed();
+                        return DatabaseReadResult.Failed(DatabaseReadFailureReason.IoFailure);
                     }
 
                     if (!projectLoadResult.IsSupportedVersion)
                     {
                         LogNewerManifest(projectLoadResult.ManifestVersion);
-
                     }
 
                     DeserializeProject(projectLoadResult);
 
-                    return new DatabaseReadResult(true, projectLoadResult.ManifestVersion, projectLoadResult.IsSupportedVersion);
+                    var reason = projectLoadResult.IsSupportedVersion
+                        ? DatabaseReadFailureReason.None
+                        : DatabaseReadFailureReason.UnsupportedVersion;
+                    return new DatabaseReadResult(true, projectLoadResult.ManifestVersion, projectLoadResult.IsSupportedVersion, reason);
                 }
                 catch (Exception e)
                 {
                     logger.Error(e, "Failed to process database file {DatabaseFile}", _fileName);
-                    return DatabaseReadResult.Failed();
+                    return DatabaseReadResult.Failed(DatabaseReadFailureReason.DeserializationFailed);
                 }
             }).ConfigureAwait(false);
         }
@@ -306,25 +308,68 @@ namespace RFiDGear.Infrastructure.FileAccess
             File.Delete(projectManager.ChipDatabasePath);
         }
 
+        /// <summary>
+        /// Identifies the root cause of a failed <see cref="DatabaseReadResult"/>.
+        /// Used by callers to map internal read failures to user-facing error codes without
+        /// inferring cause from <see cref="DatabaseReadResult.IsSupportedVersion"/>.
+        /// </summary>
+        public enum DatabaseReadFailureReason
+        {
+            /// <summary>No failure; the read completed successfully.</summary>
+            None,
+
+            /// <summary>The project file's manifest version is newer than the application supports.</summary>
+            UnsupportedVersion,
+
+            /// <summary>The project XML could not be deserialized (malformed, schema mismatch, etc.).</summary>
+            DeserializationFailed,
+
+            /// <summary>An I/O or preparation error prevented the file from being read.</summary>
+            IoFailure,
+        }
+
         public class DatabaseReadResult
         {
-            public DatabaseReadResult(bool success, int manifestVersion, bool isSupportedVersion)
+            /// <summary>
+            /// Initializes a new result.
+            /// </summary>
+            /// <param name="success">Whether the read succeeded.</param>
+            /// <param name="manifestVersion">The numeric manifest version extracted from the file.</param>
+            /// <param name="isSupportedVersion">Whether the manifest version is within the supported range.</param>
+            /// <param name="failureReason">Root-cause classification; <see cref="DatabaseReadFailureReason.None"/> on success.</param>
+            public DatabaseReadResult(bool success, int manifestVersion, bool isSupportedVersion,
+                DatabaseReadFailureReason failureReason = DatabaseReadFailureReason.None)
             {
                 Success = success;
                 ManifestVersion = manifestVersion;
                 IsSupportedVersion = isSupportedVersion;
+                FailureReason = failureReason;
             }
 
+            /// <summary>Whether the read completed without error.</summary>
             public bool Success { get; }
 
+            /// <summary>Numeric manifest version extracted from the file, or 0 on failure.</summary>
             public int ManifestVersion { get; }
 
+            /// <summary>
+            /// <c>true</c> when the file's manifest version is within the range this application supports.
+            /// <c>false</c> on a version-mismatch (<see cref="DatabaseReadFailureReason.UnsupportedVersion"/>)
+            /// or when <see cref="Success"/> is <c>false</c>.
+            /// </summary>
             public bool IsSupportedVersion { get; }
 
-            public static DatabaseReadResult Failed()
-            {
-                return new DatabaseReadResult(false, 0, false);
-            }
+            /// <summary>
+            /// Root-cause classification when <see cref="Success"/> is <c>false</c>, or
+            /// <see cref="DatabaseReadFailureReason.UnsupportedVersion"/> when the file loaded but
+            /// its version is not supported. <see cref="DatabaseReadFailureReason.None"/> on success.
+            /// </summary>
+            public DatabaseReadFailureReason FailureReason { get; }
+
+            /// <summary>Creates a failure result with an explicit cause.</summary>
+            /// <param name="reason">Root-cause classification for the failure.</param>
+            public static DatabaseReadResult Failed(DatabaseReadFailureReason reason = DatabaseReadFailureReason.IoFailure)
+                => new DatabaseReadResult(false, 0, false, reason);
         }
     }
 }

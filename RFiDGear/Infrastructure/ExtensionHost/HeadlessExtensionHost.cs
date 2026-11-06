@@ -91,6 +91,11 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// and tree collection into WPF-bound properties.
         /// </param>
         /// <param name="readerName">Display name of the configured reader.</param>
+        /// <param name="coordinator">
+        /// Application-scoped admission gate shared with the host UI's own load and execute operations.
+        /// Passing a coordinator owned by <c>MainWindowViewModel</c> ensures that extension operations
+        /// and direct UI calls cannot interleave.
+        /// </param>
         /// <param name="getConfiguredLanguage">
         /// Optional delegate returning <c>"german"</c> or <c>"english"</c> from application settings.
         /// When provided, <see cref="IAppContext.UICultureName"/> reflects the user's language choice.
@@ -102,12 +107,12 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             Func<Action, System.Threading.Tasks.Task> dispatch,
             Action<Models.ChipTaskHandlerModel, ObservableCollection<RFiDChipParentLayerViewModel>> applyToLiveApp,
             string readerName,
+            ExtensionOperationCoordinator coordinator,
             Func<string?>? getConfiguredLanguage = null)
         {
-            var coordinator = new ExtensionOperationCoordinator();
             _project = new ProjectHostImpl(
                 dbRW ?? throw new ArgumentNullException(nameof(dbRW)),
-                coordinator,
+                coordinator ?? throw new ArgumentNullException(nameof(coordinator)),
                 liveModelAccessor ?? throw new ArgumentNullException(nameof(liveModelAccessor)),
                 dispatch ?? throw new ArgumentNullException(nameof(dispatch)),
                 applyToLiveApp ?? throw new ArgumentNullException(nameof(applyToLiveApp)));

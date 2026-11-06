@@ -6,13 +6,17 @@ using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Models;
 using RFiDGear.Services.TaskExecution;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.IO.Compression;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 using Xunit;
 
@@ -557,6 +561,86 @@ namespace RFiDGear.Tests
             Assert.NotEmpty(execResult.RunId);
             // 0 tasks from the empty fixture → TotalTasks == 0.
             Assert.Equal(0, execResult.TotalTasks);
+        }
+
+        [Fact(Timeout = 10_000)]
+        public async Task LoadThenExecute_WithNonEmptyFixture_VariablesOutcomesAndRunIdCorrelated()
+        {
+            // Generate a fixture with one CommonTaskViewModel so we exercise a non-trivial load.
+            var fixturePath = GenerateSingleCommonTaskFixture();
+            try
+            {
+                var dbRW = new DatabaseReaderWriter();
+                var execService = new CapturingExecService();
+                using var host = new HeadlessExtensionHost(dbRW, execService, string.Empty);
+
+                ProjectOpenResult loadResult = null!;
+                await StaTestRunner.RunOnStaThreadAsync(async () =>
+                {
+                    loadResult = await host.Project.LoadAsync(fixturePath);
+                });
+
+                Assert.True(loadResult.Success, $"LoadAsync failed: {loadResult.Error}");
+                Assert.Equal(1, loadResult.TaskCount);
+
+                var variables = new[]
+                {
+                    new KeyValuePair<string, string>("REPORTTARGETPATH", @"C:\Reports\out.pdf"),
+                    new KeyValuePair<string, string>("JOBNUMBER", "JOB-001"),
+                    new KeyValuePair<string, string>("CHIPNUMBER", "CHIP-042"),
+                };
+                var execResult = await host.Execution.ExecuteAllAsync(new ExecutionRequest(variables));
+
+                // The execution service received the full variables dictionary.
+                Assert.NotNull(execService.CapturedRequest);
+                Assert.Equal(@"C:\Reports\out.pdf", execService.CapturedRequest!.VariablesFromArgs["REPORTTARGETPATH"]);
+                Assert.Equal("JOB-001", execService.CapturedRequest!.VariablesFromArgs["JOBNUMBER"]);
+                Assert.Equal("CHIP-042", execService.CapturedRequest!.VariablesFromArgs["CHIPNUMBER"]);
+
+                // TotalTasks reflects the one task loaded from the fixture.
+                Assert.Equal(1, execResult.TotalTasks);
+
+                // Exactly one ordered TaskOutcome was built from the task collection.
+                Assert.Single(execResult.TaskOutcomes);
+                Assert.Equal("CommonTaskViewModel", execResult.TaskOutcomes[0].TaskTypeName);
+
+                // RunId was pre-allocated and shared with the execution service.
+                Assert.NotEmpty(execResult.RunId);
+                Assert.Equal(execResult.RunId, execService.CapturedRequest!.RunId);
+
+                // Coordinator was released — no state leak.
+                Assert.False(host.Execution.IsRunning);
+            }
+            finally
+            {
+                File.Delete(fixturePath);
+            }
+        }
+
+        /// <summary>
+        /// Generates a temporary <c>.rfPrj</c> archive containing one <see cref="CommonTaskViewModel"/>.
+        /// The archive is written to a uniquely-named file in the system temp directory.
+        /// Caller is responsible for deleting the returned path when the test completes.
+        /// </summary>
+        /// <returns>Full path of the generated fixture file.</returns>
+        private static string GenerateSingleCommonTaskFixture()
+        {
+            var model = new ChipTaskHandlerModel();
+            model.TaskCollection.Add(new CommonTaskViewModel());
+
+            var path = Path.Combine(Path.GetTempPath(), $"rfidgear-test-{Guid.NewGuid():N}.rfPrj");
+            var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
+            using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry("taskdatabase.xml");
+                using var entryStream = entry.Open();
+                // Serialize directly to a UTF-8 StreamWriter so the XML declaration
+                // matches the byte encoding and XmlDocument.Load succeeds.
+                using var writer = new StreamWriter(entryStream, new UTF8Encoding(false));
+                serializer.Serialize(writer, model);
+            }
+
+            return path;
         }
     }
 
