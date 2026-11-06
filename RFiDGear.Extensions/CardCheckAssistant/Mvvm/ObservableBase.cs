@@ -8,7 +8,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Mvvm
     /// The smallest base class a view model needs: change notification, with the equality check in one place. The
     /// extension keeps its own so it does not have to carry a toolkit next to the host's.
     /// </summary>
-    public abstract class ObservableBase : INotifyPropertyChanged
+    internal abstract class ObservableBase : INotifyPropertyChanged
     {
         /// <inheritdoc/>
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -26,7 +26,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Mvvm
         /// <param name="value">The new value.</param>
         /// <param name="propertyName">The property; filled in by the compiler from the calling member.</param>
         /// <returns><c>true</c> if the value changed.</returns>
-        protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+        internal bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
         {
             if (EqualityComparer<T>.Default.Equals(field, value))
             {

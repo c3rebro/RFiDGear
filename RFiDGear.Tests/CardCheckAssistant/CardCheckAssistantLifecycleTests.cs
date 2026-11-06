@@ -124,10 +124,10 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 var host = new FakeExtensionHost();
                 var weak = OpenAndCloseOnePage(host);
 
-                for (var attempt = 0; attempt < 3 && weak.IsAlive; attempt++)
+                for (var attempt = 0; attempt < 5 && weak.IsAlive; attempt++)
                 {
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
+                    // Waits for a full collection and the finalizers it queued before it returns.
+                    GC.GetTotalMemory(forceFullCollection: true);
                 }
 
                 Assert.False(weak.IsAlive, "the host still holds a closed page through one of its events");

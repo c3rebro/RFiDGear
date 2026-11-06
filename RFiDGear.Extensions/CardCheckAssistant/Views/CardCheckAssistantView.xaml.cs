@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -11,6 +12,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Views
     /// The page of the Card Check Assistant. It keeps its window from closing in the middle of a run and, when the host
     /// disposes it after the window closed, lets go of everything it listened to.
     /// </summary>
+    [SuppressMessage("Minor Code Smell", "S2333:Partial is gratuitous in this context", Justification = "The other part is generated from the XAML.")]
     internal sealed partial class CardCheckAssistantView : UserControl, IDisposable
     {
         private readonly CardCheckAssistantViewModel _viewModel;

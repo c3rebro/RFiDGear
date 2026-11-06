@@ -28,7 +28,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
     /// A checker that waits to be released and remembers which thread it ran on, to show that the checks happen off the
     /// UI thread and that the window stays responsive meanwhile.
     /// </summary>
-    internal sealed class BlockingPathChecker : IPathChecker
+    internal sealed class BlockingPathChecker : IPathChecker, IDisposable
     {
         private readonly ManualResetEventSlim _release = new ManualResetEventSlim(false);
         private int _started;
@@ -39,6 +39,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public int ThreadId => Volatile.Read(ref _threadId);
 
         public void Release() => _release.Set();
+
+        public void Dispose() => _release.Dispose();
 
         public ProjectPathCheck CheckProject(string? path)
         {

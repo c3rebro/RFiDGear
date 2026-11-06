@@ -92,8 +92,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 }
                 finally
                 {
-                    ((IDisposable)first).Dispose();
-                    ((IDisposable)second).Dispose();
+                    (first as IDisposable)?.Dispose();
+                    (second as IDisposable)?.Dispose();
                 }
 
                 Assert.Equal(0, host.PageSubscriberCount);
@@ -444,7 +444,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 }
                 finally
                 {
-                    ((IDisposable)content).Dispose();
+                    (content as IDisposable)?.Dispose();
                 }
             });
 

@@ -167,7 +167,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
                 var host = new FakeExtensionHost();
-                var checker = new BlockingPathChecker();
+                using var checker = new BlockingPathChecker();
                 using var viewModel = new CardCheckAssistantViewModel(
                     host, System.Windows.Threading.Dispatcher.CurrentDispatcher, new FakeFileDialogService(), checker);
                 viewModel.ProjectPath = area.ProjectPath;
