@@ -12,8 +12,8 @@ namespace RFiDGear.Services.TaskExecution
     /// <para>
     /// It is deliberately greedy: harmless text of the same shape, such as a MAC address, the last 12 digits of a
     /// GUID, or a variable called <c>keyboard=...</c>, is redacted too. It cannot recognise a secret that has
-    /// neither a label nor a key-like shape, for example a Base64 key, decimal bytes, or hexadecimal of another
-    /// length.
+    /// neither a label directly followed by <c>:</c> or <c>=</c> nor a key-like shape, for example a Base64 key,
+    /// decimal bytes, hexadecimal of another length or in groups, <c>password is ...</c>, or an XML element.
     /// </para>
     /// </summary>
     internal static class TaskExecutionLogSanitizer
@@ -21,11 +21,13 @@ namespace RFiDGear.Services.TaskExecution
         /// <summary>The longest text <see cref="Sanitize"/> returns.</summary>
         internal const int MaxLength = 256;
 
-        // A word that names secret material, directly followed by ':' or '='. The word may be part of a longer
-        // identifier (KeyA, MasterKey, CardKey2, UserPassword). The value is a quoted string or runs up to the next
-        // space, comma or semicolon.
+        // A word that names secret material, followed by ':' or '=' (a closing quote may sit in between, as in
+        // JSON: "password":"x"). The word may be part of a longer identifier (KeyA, MasterKey, CardKey2,
+        // UserPassword). The value is a quoted string, with backslash escapes, that ends at a space, comma,
+        // semicolon, closing bracket or the end of the text; any other value runs up to the next space, comma or
+        // semicolon, so key="abc"def is taken whole.
         private static readonly Regex SensitiveAssignmentPattern = new Regex(
-            @"(?i)\b\w*(?:key|secret|passw(?:or)?d|pwd|passphrase|token|credential|payload)\w*\s*[:=]\s*(?:""[^""]*""|'[^']*'|[^\s,;]+)",
+            @"(?i)\b\w*(?:key|secret|passw(?:or)?d|pwd|passphrase|token|credential|payload)\w*[""']?\s*[:=]\s*(?:""(?:\\.|[^""\\])*""(?=[\s,;)}\]]|$)|'(?:\\.|[^'\\])*'(?=[\s,;)}\]]|$)|[^\s,;]+)",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         // Six or more bytes written as pairs of hex digits with separators, with or without 0x:
@@ -56,9 +58,12 @@ namespace RFiDGear.Services.TaskExecution
                 return value;
             }
 
-            var sanitized = SensitiveAssignmentPattern.Replace(value, "[REDACTED]");
-            sanitized = SeparatedHexPattern.Replace(sanitized, "[REDACTED_HEX]");
+            // Hex first, labels last. A label's value ends at the first space or comma, so if the label rule ran
+            // first, "Key: A0 A1 A2 A3 A4 A5" would lose only the first byte and leave five behind. With the hex
+            // rules first the whole key is already one token and the label rule replaces that.
+            var sanitized = SeparatedHexPattern.Replace(value, "[REDACTED_HEX]");
             sanitized = KeyLikeHexPattern.Replace(sanitized, "[REDACTED_HEX]");
+            sanitized = SensitiveAssignmentPattern.Replace(sanitized, "[REDACTED]");
             return sanitized.Length > MaxLength ? sanitized.Substring(0, MaxLength) : sanitized;
         }
     }

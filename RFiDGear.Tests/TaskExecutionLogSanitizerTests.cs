@@ -56,6 +56,38 @@ namespace RFiDGear.Tests
             Assert.EndsWith(" after", result, StringComparison.Ordinal);
         }
 
+        [Theory]
+        [InlineData("password=\"ab\\\"cd ef\" after")]       // a backslash-escaped quote inside the value
+        [InlineData("key=\"abc\"def after")]                  // text glued to the closing quote belongs to the value
+        [InlineData("key='abc'def after")]
+        public void Sanitize_RedactsAQuotedValueWithEdgesAsAWhole(string text)
+        {
+            Assert.Equal("[REDACTED] after", TaskExecutionLogSanitizer.Sanitize(text));
+        }
+
+        [Fact]
+        public void Sanitize_RedactsAJsonStyleLabelAndKeepsTheRestOfTheDocument()
+        {
+            var result = TaskExecutionLogSanitizer.Sanitize("{\"password\":\"hunter2\",\"user\":\"bob\"}");
+
+            Assert.DoesNotContain("hunter2", result, StringComparison.Ordinal);
+            Assert.Contains("\"user\":\"bob\"}", result, StringComparison.Ordinal);
+        }
+
+        [Theory]
+        [InlineData("Authentication failed for key: FF FF FF FF FF FF", "Authentication failed for [REDACTED]")]
+        [InlineData("Key=A0 A1 A2 A3 A4 A5 (sector 3)", "[REDACTED] (sector 3)")]
+        [InlineData("KeyA = A0, A1, A2, A3, A4, A5", "[REDACTED]")]
+        [InlineData("Key=0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5", "[REDACTED]")]
+        [InlineData("password=FF FF FF FF FF FF", "[REDACTED]")]
+        [InlineData("Key: [FF FF FF FF FF FF]", "[REDACTED]")]
+        public void Sanitize_RedactsAWholeLabelledKeyWrittenAsSeparatedBytes(string text, string expected)
+        {
+            // The label's own value stops at the first space or comma. If the label rule ran before the hex rules,
+            // this would remove one byte and leave the other five in the log.
+            Assert.Equal(expected, TaskExecutionLogSanitizer.Sanitize(text));
+        }
+
         [Fact]
         public void Sanitize_RedactsEveryLabelInOneMessage()
         {
@@ -176,14 +208,31 @@ namespace RFiDGear.Tests
         // ── what the filter does not recognise, pinned so the documentation stays true ──
 
         [Theory]
-        [InlineData("AQIDBAUGBwgJCgsMDQ4PEA==")]    // a Base64 key with no label
-        [InlineData("1 2 3 4 5")]                    // decimal bytes, fewer than six
-        [InlineData("hunter2")]                      // a bare secret with no label
+        [InlineData("AQIDBAUGBwgJCgsMDQ4PEA==")]         // a Base64 key with no label
+        [InlineData("255 255 255 255 255 255")]           // six bytes in decimal
+        [InlineData("hunter2")]                           // a bare secret with no label
+        [InlineData("FFFF FFFF FFFF")]                    // a 6-byte key written in groups of two bytes
+        [InlineData("00112233 44556677 8899AABB CCDDEEFF")] // a 16-byte key written in groups of four bytes
+        [InlineData("password is hunter2")]               // a label not followed by ':' or '='
+        [InlineData("key 'hunter2'")]
+        [InlineData("<Password>hunter2</Password>")]      // an XML element
         public void Sanitize_DoesNotRecogniseSecretsWithNeitherALabelNorAKeyLikeShape(string text)
         {
             var message = $"value was {text}";
 
             Assert.Equal(message, TaskExecutionLogSanitizer.Sanitize(message));
+        }
+
+        // ── harmless text of the same shape that is removed too, as documented ──
+
+        [Theory]
+        [InlineData("guid 3f2504e0-4f89-11d3-9a0c-0305e82c3301 end", "guid 3f2504e0-4f89-11d3-9a0c-[REDACTED_HEX] end")]
+        [InlineData("mac 00:1A:2B:3C:4D:5E end", "mac [REDACTED_HEX] end")]
+        [InlineData("counts 10 20 30 40 50 60 end", "counts [REDACTED_HEX] end")]
+        [InlineData("keyboard=abc end", "[REDACTED] end")]
+        public void Sanitize_AlsoRemovesHarmlessTextOfTheSameShape(string text, string expected)
+        {
+            Assert.Equal(expected, TaskExecutionLogSanitizer.Sanitize(text));
         }
     }
 }
