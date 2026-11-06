@@ -226,6 +226,9 @@ namespace RFiDGear.Infrastructure.FileAccess
         /// Compares concatenated digits, which orders versions wrongly (<c>1.10.9054</c> becomes 1109054 and looks
         /// newer than <c>2.0.10</c>, which becomes 2010). Kept only for callers that still hold the number.
         /// </summary>
+        /// <param name="manifestVersion">The manifest's digits run together, as in <see cref="ProjectLoadResult.ManifestVersion"/>.</param>
+        /// <param name="appVersion">The running application's version.</param>
+        /// <returns><c>true</c> when the run-together number is not larger than the application's.</returns>
         [Obsolete("Compares concatenated digits, so 1.10.9054 sorts after 2.0.10. Use ValidateManifestVersion(string, Version).")]
         public bool ValidateManifestVersion(int manifestVersion, Version appVersion)
         {
