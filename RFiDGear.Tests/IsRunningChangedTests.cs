@@ -395,17 +395,14 @@ namespace RFiDGear.Tests
 
             public CallbackExecService(Action work) => _work = work;
 
-            public event EventHandler<TaskExecutionCompletedEventArgs> ExecutionCompleted
-            {
-                add { }
-                remove { }
-            }
+            public event EventHandler<TaskExecutionCompletedEventArgs>? ExecutionCompleted;
 
             public int CurrentTaskIndex => 0;
 
             public Task<TaskExecutionResult> ExecuteOnceAsync(
                 TaskExecutionRequest request, CancellationToken ct = default)
             {
+                ct.ThrowIfCancellationRequested();
                 _work();
                 return Task.FromResult(new TaskExecutionResult
                 {
@@ -414,9 +411,8 @@ namespace RFiDGear.Tests
                 });
             }
 
-            public void HandleTaskTimeout()
-            {
-            }
+            public void HandleTaskTimeout() =>
+                ExecutionCompleted?.Invoke(this, new TaskExecutionCompletedEventArgs(new TaskExecutionResult()));
         }
     }
 }
