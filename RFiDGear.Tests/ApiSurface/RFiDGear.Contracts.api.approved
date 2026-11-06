@@ -68,6 +68,7 @@ public interface RFiDGear.Contracts.IReaderHost
 public interface RFiDGear.Contracts.ITaskExecHost
     public bool IsRunning { get; }
     public event System.EventHandler<ExecResult> ExecutionCompleted
+    public event System.EventHandler IsRunningChanged
     [Obsolete("Use ExecuteAllAsync(ExecutionRequest, CancellationToken) to supply runtime variables. This overload passes an empty variable set.")] public System.Threading.Tasks.Task<ExecResult> ExecuteAllAsync(System.Threading.CancellationToken ct = default)
     public System.Threading.Tasks.Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, System.Threading.CancellationToken ct = default)
     public void ResetStatus()

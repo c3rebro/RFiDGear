@@ -22,6 +22,43 @@ namespace RFiDGear.Contracts
         bool IsRunning { get; }
 
         /// <summary>
+        /// Raised each time <see cref="IsRunning"/> changes: once, with <see cref="IsRunning"/> already <c>true</c>,
+        /// when a run is accepted, and once, with it already <c>false</c>, when that run has ended. It covers runs
+        /// started from the main window as well as runs started through
+        /// <see cref="ExecuteAllAsync(ExecutionRequest, CancellationToken)"/>, because both share one admission gate.
+        /// <para>
+        /// Not raised: for a call that is refused (busy, or an argument error before admission), for a project load,
+        /// or for a project edit. Those do not change <see cref="IsRunning"/>.
+        /// </para>
+        /// <para>
+        /// Ordering: for a run started through this interface, the change to <c>true</c> comes before any task work,
+        /// and the change to <c>false</c> comes before <see cref="ExecutionCompleted"/>, which comes before the
+        /// returned task completes.
+        /// </para>
+        /// <para>
+        /// Threading: raised synchronously on the thread that makes the change, and never marshalled. A main-window
+        /// run changes it on the UI thread both times. A run started through this interface changes it to
+        /// <c>true</c> on the calling thread and to <c>false</c> on whichever thread finishes the run (typically a
+        /// thread-pool thread). A subscriber that updates UI must marshal to its own dispatcher. Keep handlers short:
+        /// a run does not start, and its result is not delivered, until they return. A handler that calls
+        /// <c>ExecuteAllAsync</c> in response to the change to <c>true</c> is refused as busy.
+        /// </para>
+        /// <para>
+        /// Reading the state: subscribe first, then read <see cref="IsRunning"/> for the initial value. Inside the
+        /// handler, or inside a callback it queues, read <see cref="IsRunning"/> again instead of assuming the
+        /// direction of the change: queued callbacks can run late or in a different order, but the property is
+        /// always current. The event carries no payload for that reason.
+        /// </para>
+        /// <para>
+        /// Failures: an exception thrown by an ordinary (non-async) subscriber is logged (type name, redacted
+        /// message, and the start of the redacted stack trace) and is <em>not</em> propagated to the code that started
+        /// or ended the run, nor to the other subscribers. The host cannot catch exceptions from an <c>async void</c>
+        /// handler; see <see cref="ExecutionCompleted"/> for what happens to those.
+        /// </para>
+        /// </summary>
+        event EventHandler IsRunningChanged;
+
+        /// <summary>
         /// Executes all tasks in the current project once using the supplied runtime variables
         /// and returns a complete run summary including per-task outcomes.
         /// <para>
@@ -55,7 +92,8 @@ namespace RFiDGear.Contracts
         /// </para>
         /// <para>
         /// Event ordering: <see cref="ExecutionCompleted"/> is raised exactly once for every accepted run,
-        /// after <see cref="IsRunning"/> has returned to <c>false</c> and before the returned task completes.
+        /// after <see cref="IsRunning"/> has returned to <c>false</c> (and <see cref="IsRunningChanged"/> has been
+        /// raised for it) and before the returned task completes.
         /// </para>
         /// <para>
         /// Sensitive data: the host adds no key values, payload bytes, card data, or task descriptions to the

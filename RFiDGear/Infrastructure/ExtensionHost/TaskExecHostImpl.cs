@@ -38,10 +38,17 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             _execService = execService ?? throw new ArgumentNullException(nameof(execService));
             _project = project ?? throw new ArgumentNullException(nameof(project));
             _coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
+
+            // The coordinator is shared with the main window, so this also republishes its runs. The host and the
+            // coordinator live for the whole session, which is why there is nothing to unsubscribe.
+            _coordinator.IsExecutingChanged += OnCoordinatorIsExecutingChanged;
         }
 
         /// <inheritdoc/>
         public bool IsRunning => _coordinator.IsExecuting;
+
+        /// <inheritdoc/>
+        public event EventHandler? IsRunningChanged;
 
         /// <inheritdoc/>
         public event EventHandler<ExecResult>? ExecutionCompleted;
@@ -240,6 +247,37 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                         "Extension-triggered run {RunId} faulted: {ExceptionType}: {ExceptionMessage} {ExceptionStackTrace}",
                         runId, error.TypeName, error.Message, error.StackTrace);
                     break;
+            }
+        }
+
+        private void OnCoordinatorIsExecutingChanged(object? sender, EventArgs e) => RaiseIsRunningChanged();
+
+        /// <summary>
+        /// Raises <see cref="IsRunningChanged"/> to each subscriber in isolation, with this host as the sender (never
+        /// the internal coordinator): a throwing subscriber is logged and must not break admission or release of the
+        /// run, nor starve the subscribers after it.
+        /// </summary>
+        private void RaiseIsRunningChanged()
+        {
+            var handlers = IsRunningChanged;
+            if (handlers == null)
+            {
+                return;
+            }
+
+            foreach (var handler in handlers.GetInvocationList().Cast<EventHandler>())
+            {
+                try
+                {
+                    handler(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    var error = new SanitizedException(ex);
+                    Logger.Error(
+                        "IsRunningChanged subscriber threw; the exception was not propagated. {ExceptionType}: {ExceptionMessage} {ExceptionStackTrace}",
+                        error.TypeName, error.Message, error.StackTrace);
+                }
             }
         }
 
