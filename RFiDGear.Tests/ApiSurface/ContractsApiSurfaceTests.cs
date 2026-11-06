@@ -19,7 +19,7 @@ namespace RFiDGear.Tests.ApiSurface
     /// signature, nullable annotation, default value, enum value or constant breaks extensions that are already built.
     /// <para>
     /// The test compares the surface, rendered by <see cref="ApiSurfaceWriter"/>, with the approved snapshot checked in
-    /// next to it (<c>RFiDGear.Contracts.api.txt</c>). A difference fails the test and prints what changed. To accept an
+    /// next to it (<c>RFiDGear.Contracts.api.approved</c>). A difference fails the test and prints what changed. To accept an
     /// intended change, run the test once with the environment variable <c>RFIDGEAR_UPDATE_API_SNAPSHOT=1</c>; it
     /// rewrites the snapshot (and fails, so that a CI run with the variable set can never pass silently). Review the
     /// <c>git diff</c> of the snapshot and commit it with the change.
@@ -28,7 +28,7 @@ namespace RFiDGear.Tests.ApiSurface
     public class ContractsApiSurfaceTests
     {
         private const string UpdateVariable = "RFIDGEAR_UPDATE_API_SNAPSHOT";
-        private const string BaselineFileName = "RFiDGear.Contracts.api.txt";
+        private const string BaselineFileName = "RFiDGear.Contracts.api.approved";
         private const string CommentPrefix = "//";
 
         private static readonly Assembly Contracts = typeof(IRFiDGearExtensionHost).Assembly;
