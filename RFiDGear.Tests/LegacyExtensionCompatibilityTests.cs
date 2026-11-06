@@ -156,6 +156,50 @@ namespace RFiDGear.Tests
             }
         }
 
+        // ── the executable forwards the moved types to the SDK ──
+
+        [Theory]
+        [InlineData("RFiDGear.UI.UIExtensions.UiExtensionAttribute")]
+        [InlineData("RFiDGear.UI.UIExtensions.HostPlacement")]
+        [InlineData("RFiDGear.UI.UIExtensions.Interfaces.IUIExtension")]
+        [InlineData("RFiDGear.UI.UIExtensions.Interfaces.IUIExtensionDetails")]
+        public void OldTypeName_ResolvesThroughTheExecutable_ToTheSdk(string fullName)
+        {
+            // This is the lookup the runtime performs for a binary compiled against the old location.
+            var resolved = Type.GetType(fullName + ", RFiDGear", throwOnError: true)!;
+
+            Assert.Equal("RFiDGear.ExtensionSdk", resolved.Assembly.GetName().Name);
+            Assert.Equal(fullName, resolved.FullName);
+        }
+
+        [Fact]
+        public void Executable_ForwardsAllFourTypes_AndDeclaresNoneOfThem()
+        {
+            var names = new[]
+            {
+                "RFiDGear.UI.UIExtensions.UiExtensionAttribute",
+                "RFiDGear.UI.UIExtensions.HostPlacement",
+                "RFiDGear.UI.UIExtensions.Interfaces.IUIExtension",
+                "RFiDGear.UI.UIExtensions.Interfaces.IUIExtensionDetails",
+            };
+            var executable = typeof(RFiDGear.ViewModel.MainWindowViewModel).Assembly;
+
+            var forwarded = executable.GetForwardedTypes().Select(t => t.FullName).ToList();
+            var declared = executable.GetExportedTypes().Select(t => t.FullName).ToList();
+
+            Assert.All(names, name => Assert.Contains(name, forwarded));
+            Assert.All(names, name => Assert.DoesNotContain(name, declared));
+        }
+
+        [Fact]
+        public void Sdk_IsVersionedOnItsOwn_NotWithTheApplication()
+        {
+            var sdk = typeof(UiExtensionAttribute).Assembly.GetName();
+
+            Assert.Equal("RFiDGear.ExtensionSdk", sdk.Name);
+            Assert.Equal(new Version(1, 0, 0, 0), sdk.Version);
+        }
+
         // ── helpers ──
 
         private static string FixturePath(string file) =>

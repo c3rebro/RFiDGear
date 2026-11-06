@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Platforms>AnyCPU;x64;x86</Platforms>
+    <AssemblyName>RFiDGear.ExtensionSdk</AssemblyName>
+    <RootNamespace>RFiDGear.UI.UIExtensions</RootNamespace>
+    <!-- The SDK is the extension ABI, versioned on its own: bump the major only for a breaking change, never with
+         the application version, so an extension compiled once keeps binding to it. -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <!-- Nullable stays off on purpose: the moved types are nullable-oblivious and their public shape must not change. -->
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Keep equal to the version in RFiDGear.csproj: a lower one gives NU1605. -->
+    <PackageReference Include="System.ComponentModel.Composition" Version="10.0.1" />
+  </ItemGroup>
+</Project>

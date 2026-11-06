@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\RFiDGear.Extensions\DesfirePluginSample\RFiDGear.Extensions.DesfirePluginSample.csproj" />
     <ProjectReference Include="..\\RFiDGear\\RFiDGear.csproj" />
+    <ProjectReference Include="..\RFiDGear.ExtensionSdk\RFiDGear.ExtensionSdk.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Fixtures\minimal.rfPrj">
