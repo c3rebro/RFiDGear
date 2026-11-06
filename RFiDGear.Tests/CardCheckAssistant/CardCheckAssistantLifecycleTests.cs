@@ -363,6 +363,32 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         [Fact]
+        public async Task ChangingTheLanguage_TellsEveryRowOnShowToReadItsTextAgain()
+        {
+            using var area = new TempArea();
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var host = new FakeExtensionHost("de-DE");
+                using var viewModel = Create(host);
+                viewModel.ProjectPath = area.ProjectPath;
+                await viewModel.RunCommand.ExecuteAsync();
+                Assert.Equal(2, viewModel.Rows.Count);
+
+                // The rows work out their text when it is read, so only the notification makes the list redraw it.
+                var told = new List<string?>();
+                foreach (var row in viewModel.Rows)
+                {
+                    row.PropertyChanged += (_, e) => told.Add(e.PropertyName);
+                }
+
+                host.Context.ChangeCulture("en-US");
+                await Flush();
+
+                Assert.Equal(new[] { "ResultText", "ResultText" }, told);
+            });
+        }
+
+        [Fact]
         public async Task AnErrorThatIsOnShow_IsWrittenAgainInTheNewLanguage()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>

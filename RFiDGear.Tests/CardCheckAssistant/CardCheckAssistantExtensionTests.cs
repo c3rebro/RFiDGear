@@ -117,7 +117,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
             {
                 using var parts = new PartSet(typeof(CardCheckAssistantExtension));
                 var errors = new List<string>();
-                var launcher = new ApplicationExtensionLauncher(errors.Add);
+                var navigated = new List<string>();
+                var launcher = CreateLauncher(errors, navigated);
                 var host = new FakeExtensionHost();
 
                 var first = launcher.Open(parts.Single, host)!;
@@ -138,6 +139,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 second.Close();
                 Assert.Equal(0, host.PageSubscriberCount);
                 Assert.Empty(errors);
+                Assert.Empty(navigated);   // a page that names a Uri would be opened as that page, not asked for content
             });
         }
 
@@ -149,7 +151,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
             {
                 using var parts = new PartSet(typeof(CardCheckAssistantExtension));
                 var errors = new List<string>();
-                var launcher = new ApplicationExtensionLauncher(errors.Add);
+                var navigated = new List<string>();
+                var launcher = CreateLauncher(errors, navigated);
                 var host = new FakeExtensionHost();
                 host.ExecutionHost.RunGate = NewGate();
                 var window = launcher.Open(parts.Single, host)!;
@@ -173,6 +176,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.False(window.IsVisible);
                 Assert.Equal(0, host.PageSubscriberCount);
                 Assert.Empty(errors);
+                Assert.Empty(navigated);   // a page that names a Uri would be opened as that page, not asked for content
             });
         }
 
@@ -341,6 +345,19 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             Assert.Equal(before, CountProcesses());
         }
+
+        /// <summary>
+        /// A launcher whose page-navigation path only records where it was sent, so a regression that makes the host open
+        /// a page fails an assertion instead of trying to load a page that does not exist.
+        /// </summary>
+        private static ApplicationExtensionLauncher CreateLauncher(List<string> errors, List<string> navigatedTo) =>
+            new ApplicationExtensionLauncher(
+                errors.Add,
+                (uri, _) =>
+                {
+                    navigatedTo.Add(uri);
+                    return null;
+                });
 
         private static int CountProcesses() =>
             Process.GetProcessesByName("RFiDGear").Length + Process.GetProcessesByName("CardCheckAssistant").Length;
