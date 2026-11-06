@@ -61,4 +61,6 @@ types an extension uses to be discovered and placed by RFiDGear. Host services
   content. A constructor or `CreateContent` that throws is logged and shown to
   the user, and the next click tries again.
 - An extension that only needs a page can keep naming it with `Uri` and
-  implement just `IUIExtension`; it opens in a frame as before.
+  implement just `IUIExtension`; it opens in a frame as before and its class
+  is never created. So do not set `Uri` on an extension that implements
+  `IApplicationUIExtension`: the page wins and `CreateContent` is not called.

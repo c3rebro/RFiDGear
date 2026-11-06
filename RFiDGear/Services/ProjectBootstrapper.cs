@@ -41,13 +41,14 @@ namespace RFiDGear.Services
 
                     settings.InitUpdateFile();
 
+                    // This is the authoritative settings read immediately before AUTORUN.
+                    // Keep the static provider in sync, not just the UI label. The provider is set first because
+                    // setting the label announces the change to extensions, which then read the provider's state.
+                    request.SetReaderProvider?.Invoke(settings.DefaultSpecification.DefaultReaderProvider);
+
                     request.SetCurrentReader?.Invoke(string.IsNullOrWhiteSpace(settings.DefaultSpecification.DefaultReaderName)
                         ? Enum.GetName(typeof(ReaderTypes), settings.DefaultSpecification.DefaultReaderProvider)
                         : settings.DefaultSpecification.DefaultReaderName);
-
-                    // This is the authoritative settings read immediately before AUTORUN.
-                    // Keep the static provider in sync, not just the UI label.
-                    request.SetReaderProvider?.Invoke(settings.DefaultSpecification.DefaultReaderProvider);
 
                     if (int.TryParse(settings.DefaultSpecification.LastUsedComPort, out var portNumber))
                     {

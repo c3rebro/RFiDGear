@@ -109,8 +109,8 @@ the first click on its Extensions menu entry, never at start-up, and calls
 `CreateContent(IRFiDGearExtensionHost host)` every time it is opened; the
 service arrives as that argument because it does not exist yet when MEF
 composes. It is deliberately not a MEF export. `ApplicationExtensionLauncher`
-disposes the content when the window closes. An extension that only names a
-page (`Uri`) still opens in a frame as before.
+disposes the content when the window closes. An extension that sets `Uri`
+still opens that page in a frame as before, without creating its class.
 
 A broken extension never stops the others or the application. `MefHelper`
 probes each DLL (parts, export metadata, imports) before adding it to the

@@ -392,6 +392,12 @@ namespace RFiDGear.ViewModel
             }
         }
 
+        /// <summary>Resource key of the caption of the "extension could not be opened" dialog.</summary>
+        internal const string ExtensionOpenFailedCaptionKey = "messageBoxExtensionOpenFailedCaption";
+
+        /// <summary>Resource key of the message of that dialog; its <c>{0}</c> is the extension's name.</summary>
+        internal const string ExtensionOpenFailedMessageKey = "messageBoxExtensionOpenFailedMessage";
+
         /// <summary>
         /// Tells the user that an application extension could not be opened. The details are in the log.
         /// </summary>
@@ -400,10 +406,10 @@ namespace RFiDGear.ViewModel
         {
             const string fallbackMessage = "The extension '{0}' could not be opened. Details are in the application log.";
 
-            var template = ResourceLoader.GetResource("messageBoxExtensionOpenFailedMessage");
+            var template = ResourceLoader.GetResource(ExtensionOpenFailedMessageKey);
             Dialogs.Add(new CustomDialogViewModel
             {
-                Caption = ResourceLoader.GetResource("messageBoxExtensionOpenFailedCaption"),
+                Caption = ResourceLoader.GetResource(ExtensionOpenFailedCaptionKey),
                 Message = string.Format(
                     CultureInfo.CurrentCulture,
                     string.IsNullOrWhiteSpace(template) ? fallbackMessage : template,
@@ -1345,11 +1351,13 @@ namespace RFiDGear.ViewModel
 
                         sender.SaveSettings.ExecuteAsync(null);
 
+                        // Switch the provider first: setting the name announces the change to extensions, and they read
+                        // the connection and card state of whichever provider is current when that happens.
+                        ReaderDevice.Reader = sender.SelectedReader;
+
                         CurrentReader = string.IsNullOrWhiteSpace(sender.SelectedReaderName)
                             ? Enum.GetName(typeof(ReaderTypes), sender.SelectedReader)
                             : sender.SelectedReaderName;
-
-                        ReaderDevice.Reader = sender.SelectedReader;
 
                         sender.Close();
 

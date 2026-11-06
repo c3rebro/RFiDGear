@@ -16,6 +16,11 @@ namespace RFiDGear.UI.UIExtensions.Interfaces
     /// the same instance for the whole session.
     /// </para>
     /// <para>
+    /// Do not set <c>Uri</c> in the <c>[UiExtension]</c> attribute of an extension that implements this interface: a
+    /// <c>Uri</c> is the older way to name a page, and when it is set RFiDGear opens that page and never creates the
+    /// class or calls <see cref="CreateContent"/>.
+    /// </para>
+    /// <para>
     /// Instance lifetime: the exported instance is shared and long-lived, so keep it stateless. Put everything that
     /// belongs to one opened window in the content (or its <see cref="FrameworkElement.DataContext"/>), which is
     /// created fresh by every call.

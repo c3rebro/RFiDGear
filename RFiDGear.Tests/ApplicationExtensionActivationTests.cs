@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Globalization;
 using System.IO;
@@ -209,7 +208,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task Open_WhenTheContentCannotBeShown_DisposesIt()
+        public async Task Open_RejectsContentThatAlreadyBelongsToAnotherElement_AndLeavesItAlone()
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
@@ -219,13 +218,63 @@ namespace RFiDGear.Tests
 
                 var window = launcher.Open(parts.Single, new HeadlessExtensionHost());
 
-                // The content already belongs to another element, so the window refuses it. A window that never
-                // showed never raises Closed, so the launcher has to clean up itself.
+                // Another element, possibly a window that is still on screen, is showing this content. It is not the
+                // launcher's to show or to dispose, so it is reported and left exactly as it was.
                 Assert.Null(window);
                 Assert.Equal(new[] { "Parented content" }, errors);
                 var created = Assert.Single(ParentedContentFactory.Recorder.Created);
+                Assert.Equal(0, created.Content.DisposeCount);
+                Assert.Equal(0, Assert.IsType<ProbeDataContext>(created.Content.DataContext).DisposeCount);
+            });
+        }
+
+        [Fact]
+        public async Task Open_WhenShowFails_ClosesTheWindow_AndDisposesTheContentExactlyOnce()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                ExplodingLayoutFactory.Recorder.Reset();
+                using var parts = new PartSet(typeof(ExplodingLayoutFactory));
+                var (launcher, errors, _) = CreateLauncher();
+
+                // The content throws during the first layout, which runs inside Show() after the window already
+                // exists and is visible.
+                var window = launcher.Open(parts.Single, new HeadlessExtensionHost());
+
+                Assert.Null(window);
+                Assert.Equal(new[] { "Exploding layout" }, errors);
+                var created = Assert.Single(ExplodingLayoutFactory.Recorder.Created);
+                var dataContext = Assert.IsType<ProbeDataContext>(created.Content.DataContext);
                 Assert.Equal(1, created.Content.DisposeCount);
-                Assert.Equal(1, Assert.IsType<ProbeDataContext>(created.Content.DataContext).DisposeCount);
+                Assert.Equal(1, dataContext.DisposeCount);
+                Assert.True(
+                    Window.GetWindow(created.Content)?.IsVisible != true,
+                    "no empty window may stay open after the failure");
+
+                // Nothing is left that could dispose the content a second time.
+                Window.GetWindow(created.Content)?.Close();
+                Assert.Equal(1, created.Content.DisposeCount);
+                Assert.Equal(1, dataContext.DisposeCount);
+            });
+        }
+
+        [Fact]
+        public async Task Open_ForAnExtensionThatNamesAPage_NeverCreatesItsClass()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                PageNamingExtension.Recorder.Reset();
+                using var parts = new PartSet(typeof(PageNamingExtension));
+                var (launcher, errors, legacy) = CreateLauncher();
+
+                launcher.Open(parts.Single, new HeadlessExtensionHost());
+
+                // The class would fail to construct, and also implements the factory interface; the page wins and
+                // an extension that worked as a bare marker before keeps working.
+                Assert.Empty(errors);
+                var opened = Assert.Single(legacy);
+                Assert.Equal(PageNamingExtension.PageUri, opened.Uri);
+                Assert.Equal(0, PageNamingExtension.Recorder.Constructed);
             });
         }
 
@@ -368,6 +417,8 @@ namespace RFiDGear.Tests
                 Assert.Empty(launcher.Calls);
                 var dialog = Assert.IsType<CustomDialogViewModel>(Assert.Single(viewModel.Dialogs));
                 Assert.Contains("Recording app", dialog.Message);
+                Assert.DoesNotContain("{0}", dialog.Message);
+                Assert.False(string.IsNullOrWhiteSpace(dialog.Caption), "a wrong caption key would leave this empty");
                 await initialize(null);
             });
         }
@@ -558,8 +609,8 @@ namespace RFiDGear.Tests
         {
             var culture = new CultureInfo(language);
 
-            var caption = Manifest.GetString("messageBoxExtensionOpenFailedCaption", culture);
-            var message = Manifest.GetString("messageBoxExtensionOpenFailedMessage", culture);
+            var caption = Manifest.GetString(MainWindowViewModel.ExtensionOpenFailedCaptionKey, culture);
+            var message = Manifest.GetString(MainWindowViewModel.ExtensionOpenFailedMessageKey, culture);
 
             Assert.False(string.IsNullOrWhiteSpace(caption));
             Assert.Contains("{0}", message);
@@ -573,11 +624,11 @@ namespace RFiDGear.Tests
             var english = new CultureInfo("en");
 
             Assert.NotEqual(
-                Manifest.GetString("messageBoxExtensionOpenFailedMessage", english),
-                Manifest.GetString("messageBoxExtensionOpenFailedMessage", german));
+                Manifest.GetString(MainWindowViewModel.ExtensionOpenFailedMessageKey, english),
+                Manifest.GetString(MainWindowViewModel.ExtensionOpenFailedMessageKey, german));
             Assert.NotEqual(
-                Manifest.GetString("messageBoxExtensionOpenFailedCaption", english),
-                Manifest.GetString("messageBoxExtensionOpenFailedCaption", german));
+                Manifest.GetString(MainWindowViewModel.ExtensionOpenFailedCaptionKey, english),
+                Manifest.GetString(MainWindowViewModel.ExtensionOpenFailedCaptionKey, german));
         }
 
         private static ResourceManager Manifest { get; } =
@@ -659,15 +710,22 @@ namespace RFiDGear.Tests
     public sealed class ProbeContent : UserControl, IDisposable
     {
         private readonly bool _throwOnDispose;
+        private readonly bool _throwOnLayout;
         private int _disposeCount;
 
-        public ProbeContent(bool throwOnDispose = false)
+        public ProbeContent(bool throwOnDispose = false, bool throwOnLayout = false)
         {
             _throwOnDispose = throwOnDispose;
+            _throwOnLayout = throwOnLayout;
             DataContext = new ProbeDataContext();
         }
 
         public int DisposeCount => Volatile.Read(ref _disposeCount);
+
+        protected override Size MeasureOverride(Size constraint) =>
+            _throwOnLayout
+                ? throw new InvalidOperationException("Layout failed.")
+                : base.MeasureOverride(constraint);
 
         public void Dispose()
         {
@@ -756,6 +814,37 @@ namespace RFiDGear.Tests
             _ = new StackPanel { Children = { content } };
             return content;
         }
+    }
+
+    /// <summary>Content whose first layout throws, which happens inside <c>Window.Show()</c>.</summary>
+    [UiExtension(Name = "Exploding layout", HostPlacement = HostPlacement.Application)]
+    public sealed class ExplodingLayoutFactory : IApplicationUIExtension
+    {
+        public static ActivationRecorder Recorder { get; } = new ActivationRecorder();
+
+        public FrameworkElement CreateContent(IRFiDGearExtensionHost host)
+        {
+            var content = new ProbeContent(throwOnLayout: true);
+            Recorder.RecordContent(host, content);
+            return content;
+        }
+    }
+
+    /// <summary>Names a page and also looks like a factory whose class cannot be constructed.</summary>
+    [UiExtension(Name = "Page naming", HostPlacement = HostPlacement.Application, Uri = PageNamingExtension.PageUri)]
+    public sealed class PageNamingExtension : IApplicationUIExtension
+    {
+        public const string PageUri = "pack://application:,,,/RFiDGear.Tests;component/Named.xaml";
+
+        public PageNamingExtension()
+        {
+            Recorder.RecordConstruction();
+            throw new InvalidOperationException("The constructor always fails.");
+        }
+
+        public static ActivationRecorder Recorder { get; } = new ActivationRecorder();
+
+        public FrameworkElement CreateContent(IRFiDGearExtensionHost host) => new ProbeContent();
     }
 
     [UiExtension(Name = "Uri only", HostPlacement = HostPlacement.Application, Uri = UriOnlyExtension.PageUri)]
