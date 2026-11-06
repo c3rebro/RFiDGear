@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- WPF only for IApplicationUIExtension, which hands the host a FrameworkElement. -->
+    <UseWPF>true</UseWPF>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <AssemblyName>RFiDGear.ExtensionSdk</AssemblyName>
     <RootNamespace>RFiDGear.UI.UIExtensions</RootNamespace>
@@ -16,5 +18,10 @@
   <ItemGroup>
     <!-- Keep equal to the version in RFiDGear.csproj: a lower one gives NU1605. -->
     <PackageReference Include="System.ComponentModel.Composition" Version="10.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The host contract an application extension receives in CreateContent. It is MEF-free and frozen by its own
+         approved snapshot, so this reference does not change what the SDK exposes beyond that one parameter type. -->
+    <ProjectReference Include="..\RFiDGear.Contracts\RFiDGear.Contracts.csproj" />
   </ItemGroup>
 </Project>

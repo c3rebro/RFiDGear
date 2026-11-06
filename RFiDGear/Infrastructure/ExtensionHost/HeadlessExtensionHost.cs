@@ -11,7 +11,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 {
     /// <summary>
     /// <see cref="IRFiDGearExtensionHost"/> implementation that runs without a WPF window.
-    /// Used directly by the HIL test project and exported via MEF for UI extensions.
+    /// Used directly by the HIL test project; the main application creates one and passes it to an application
+    /// extension when the user opens it (<c>IApplicationUIExtension.CreateContent</c>).
     /// </summary>
     public sealed class HeadlessExtensionHost : IRFiDGearExtensionHost, IDisposable
     {
@@ -105,6 +106,12 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// Optional delegate returning <c>true</c> when the calling thread is the UI thread. When provided, the obsolete
         /// synchronous <c>Project.Load</c> throws on that thread instead of deadlocking.
         /// </param>
+        /// <param name="getReaderName">
+        /// Optional delegate returning the display name of the reader the user has selected. When provided it is read
+        /// each time <see cref="IReaderHost.ReaderName"/> is, and <paramref name="readerName"/> is ignored, so the name
+        /// follows the reader the user selects while the application runs. Pair it with
+        /// <see cref="NotifyReaderStateChanged"/> to tell extensions when it changes.
+        /// </param>
         public HeadlessExtensionHost(
             DatabaseReaderWriter dbRW,
             ITaskExecutionService execService,
@@ -114,7 +121,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             string readerName,
             ExtensionOperationCoordinator coordinator,
             Func<string?>? getConfiguredLanguage = null,
-            Func<bool>? isOnUiThread = null)
+            Func<bool>? isOnUiThread = null,
+            Func<string?>? getReaderName = null)
         {
             _project = new ProjectHostImpl(
                 dbRW ?? throw new ArgumentNullException(nameof(dbRW)),
@@ -127,7 +135,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 execService ?? throw new ArgumentNullException(nameof(execService)),
                 _project,
                 coordinator);
-            _reader = new ReaderHostImpl(readerName ?? string.Empty);
+            _reader = getReaderName != null
+                ? new ReaderHostImpl(getReaderName)
+                : new ReaderHostImpl(readerName ?? string.Empty);
             _autoMode = new NullAutoModeHost();
             _appContext = getConfiguredLanguage != null
                 ? new AppContextImpl(getConfiguredLanguage)
