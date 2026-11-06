@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.ExtensionHost;
@@ -128,8 +129,18 @@ namespace RFiDGear.Tests
                 var window = launcher.Open(parts.Single, new HeadlessExtensionHost())!;
                 var created = Assert.Single(ThrowingDisposeFactory.Recorder.Created);
 
-                window.Close();   // must not throw
+                // The window raises Closed from the message pump, so an exception that escaped the handler would not
+                // come back through Close(): it would reach the dispatcher and end the process.
+                Exception? escaped = null;
+                Dispatcher.CurrentDispatcher.UnhandledException += (_, e) =>
+                {
+                    escaped = e.Exception;
+                    e.Handled = true;
+                };
 
+                window.Close();
+
+                Assert.Null(escaped);
                 Assert.Empty(errors);
                 Assert.Equal(1, created.Content.DisposeCount);
                 Assert.Equal(1, Assert.IsType<ProbeDataContext>(created.Content.DataContext).DisposeCount);
