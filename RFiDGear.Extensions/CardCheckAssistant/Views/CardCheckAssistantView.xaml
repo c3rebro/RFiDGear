@@ -73,7 +73,7 @@
         </StackPanel>
 
         <!-- the values of the run -->
-        <StackPanel Grid.Row="1" IsEnabled="{Binding InputsEnabled}">
+        <StackPanel x:Name="FieldsPanel" Grid.Row="1" IsEnabled="{Binding InputsEnabled}">
             <Label Content="{Binding Strings[ProjectLabel]}" Target="{Binding ElementName=ProjectBox}" Padding="0,0,0,2" />
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -81,9 +81,9 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="ProjectBox" Grid.Column="0" Text="{Binding ProjectPath, UpdateSourceTrigger=PropertyChanged}" />
-                <Button Grid.Column="1" Margin="6,0,0,0" Padding="12,2" Content="{Binding Strings[Browse]}" Command="{Binding BrowseCommand}" />
+                <Button x:Name="BrowseButton" Grid.Column="1" Margin="6,0,0,0" Padding="12,2" Content="{Binding Strings[Browse]}" Command="{Binding BrowseCommand}" />
             </Grid>
-            <TextBlock Style="{StaticResource ErrorText}" Text="{Binding ProjectError}"
+            <TextBlock x:Name="ProjectErrorText" Style="{StaticResource ErrorText}" Text="{Binding ProjectError}"
                        Visibility="{Binding HasProjectError, Converter={StaticResource BoolToVisibility}}" />
 
             <Grid Margin="0,8,0,0">
@@ -104,21 +104,21 @@
 
             <Label Content="{Binding Strings[ReportTargetLabel]}" Target="{Binding ElementName=ReportBox}" Padding="0,8,0,2" />
             <TextBox x:Name="ReportBox" Text="{Binding ReportTargetPath, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBlock Style="{StaticResource ErrorText}" Text="{Binding ReportTargetError}"
+            <TextBlock x:Name="ReportErrorText" Style="{StaticResource ErrorText}" Text="{Binding ReportTargetError}"
                        Visibility="{Binding HasReportTargetError, Converter={StaticResource BoolToVisibility}}" />
         </StackPanel>
 
         <!-- run, progress, and what is wrong with the run as a whole -->
         <StackPanel Grid.Row="2" Margin="0,12,0,0">
             <StackPanel Orientation="Horizontal">
-                <Button MinWidth="130" Padding="12,4" IsDefault="True" Content="{Binding Strings[RunButton]}" Command="{Binding RunCommand}" />
-                <ProgressBar Width="140" Height="14" Margin="12,0,0,0" IsIndeterminate="True"
+                <Button x:Name="RunButton" MinWidth="130" Padding="12,4" Content="{Binding Strings[RunButton]}" Command="{Binding RunCommand}" />
+                <ProgressBar x:Name="ProgressIndicator" Width="140" Height="14" Margin="12,0,0,0" IsIndeterminate="True"
                              Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVisibility}}" />
                 <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Text="{Binding StatusText}" />
             </StackPanel>
-            <TextBlock Style="{StaticResource ErrorText}" Text="{Binding RunError}"
+            <TextBlock x:Name="RunErrorText" Style="{StaticResource ErrorText}" Text="{Binding RunError}"
                        Visibility="{Binding HasRunError, Converter={StaticResource BoolToVisibility}}" />
-            <TextBlock Margin="0,4,0,0" TextWrapping="Wrap" Foreground="DarkOrange" Text="{Binding CloseHintText}"
+            <TextBlock x:Name="CloseHint" Margin="0,4,0,0" TextWrapping="Wrap" FontWeight="SemiBold" Text="{Binding CloseHintText}"
                        Visibility="{Binding ShowCloseHint, Converter={StaticResource BoolToVisibility}}" />
         </StackPanel>
 
@@ -147,16 +147,18 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" SharedSizeGroup="Result" />
                         <ColumnDefinition Width="Auto" SharedSizeGroup="ErrorCode" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[ColumnPosition]}" />
                     <TextBlock Grid.Column="1" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[ColumnTaskIndex]}" />
                     <TextBlock Grid.Column="2" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[ColumnType]}" />
                     <TextBlock Grid.Column="3" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[ColumnResult]}" />
                     <TextBlock Grid.Column="4" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[ColumnErrorCode]}" />
+                    <Border Grid.Column="5" Width="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" />
                 </Grid>
             </Border>
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource OutcomeRow}" />
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Visible">
+                <ItemsControl x:Name="ResultList" ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource OutcomeRow}" />
             </ScrollViewer>
         </Grid>
     </Grid>

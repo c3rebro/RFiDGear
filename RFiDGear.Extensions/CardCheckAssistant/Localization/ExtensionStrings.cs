@@ -28,6 +28,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string ChipNumberLabel = "ChipNumberLabel";
             public const string ReportTargetLabel = "ReportTargetLabel";
             public const string RunButton = "RunButton";
+            public const string StatusChecking = "StatusChecking";
             public const string StatusLoading = "StatusLoading";
             public const string StatusRunning = "StatusRunning";
             public const string StatusRunningElsewhere = "StatusRunningElsewhere";
@@ -86,6 +87,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.ChipNumberLabel] = "Chip number",
             [Keys.ReportTargetLabel] = "Report file (optional, full path)",
             [Keys.RunButton] = "Run once",
+            [Keys.StatusChecking] = "Checking the entries...",
             [Keys.StatusLoading] = "Loading the project...",
             [Keys.StatusRunning] = "Running the tasks...",
             [Keys.StatusRunningElsewhere] = "RFiDGear is running tasks. Wait until it has finished.",
@@ -144,6 +146,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.ChipNumberLabel] = "Chipnummer",
             [Keys.ReportTargetLabel] = "Berichtsdatei (optional, vollständiger Pfad)",
             [Keys.RunButton] = "Einmal ausführen",
+            [Keys.StatusChecking] = "Die Eingaben werden geprüft...",
             [Keys.StatusLoading] = "Das Projekt wird geladen...",
             [Keys.StatusRunning] = "Die Aufgaben werden ausgeführt...",
             [Keys.StatusRunningElsewhere] = "RFiDGear führt gerade Aufgaben aus. Bitte warten Sie, bis es fertig ist.",

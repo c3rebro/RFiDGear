@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 
@@ -21,6 +22,33 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Requests.Add((currentPath, title, filter));
             return Answer;
         }
+    }
+
+    /// <summary>
+    /// A checker that waits to be released and remembers which thread it ran on, to show that the checks happen off the
+    /// UI thread and that the window stays responsive meanwhile.
+    /// </summary>
+    internal sealed class BlockingPathChecker : IPathChecker
+    {
+        private readonly ManualResetEventSlim _release = new ManualResetEventSlim(false);
+        private int _started;
+        private int _threadId = -1;
+
+        public bool Started => Volatile.Read(ref _started) == 1;
+
+        public int ThreadId => Volatile.Read(ref _threadId);
+
+        public void Release() => _release.Set();
+
+        public ProjectPathCheck CheckProject(string? path)
+        {
+            Volatile.Write(ref _threadId, Environment.CurrentManagedThreadId);
+            Volatile.Write(ref _started, 1);
+            _release.Wait(TimeSpan.FromSeconds(10));
+            return ProjectPathCheck.Valid;
+        }
+
+        public ReportTargetCheck CheckReportTarget(string? target) => ReportTargetCheck.None;
     }
 
     /// <summary>A folder with a project file in it and room for a report, removed when disposed.</summary>

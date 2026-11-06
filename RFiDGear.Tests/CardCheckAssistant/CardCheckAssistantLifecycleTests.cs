@@ -241,6 +241,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 var viewModel = Create(host);
                 viewModel.ProjectPath = area.ProjectPath;
                 var run = viewModel.RunCommand.ExecuteAsync();
+                await WaitUntil(() => host.ProjectHost.LoadedPaths.Count == 1, "the load to start");
 
                 viewModel.Dispose();
                 Assert.True(host.ProjectHost.LoadTokens[0].IsCancellationRequested, "the load was told to stop");
@@ -265,8 +266,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 var viewModel = Create(host);
                 viewModel.ProjectPath = area.ProjectPath;
                 var run = viewModel.RunCommand.ExecuteAsync();
-                await Flush();
-                Assert.Single(host.ExecutionHost.Requests);
+                await WaitUntil(() => host.ExecutionHost.Requests.Count == 1, "the run to start");
 
                 viewModel.Dispose();
                 Assert.True(host.ExecutionHost.RunTokens[0].IsCancellationRequested, "the run was told to stop at its next safe point");
@@ -295,12 +295,13 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.False(viewModel.ShowCloseHint);
 
                 var run = viewModel.RunCommand.ExecuteAsync();
+                await WaitUntil(() => host.ProjectHost.LoadedPaths.Count == 1, "the load to start");
                 Assert.False(viewModel.TryRequestClose());   // loading
                 Assert.True(viewModel.ShowCloseHint);
                 Assert.Equal("A run is in progress. Wait until it has finished before closing this window.", viewModel.CloseHintText);
 
                 host.ProjectHost.LoadGate.SetResult(true);
-                await Flush();
+                await WaitUntil(() => host.ExecutionHost.Requests.Count == 1, "the run to start");
                 Assert.False(viewModel.TryRequestClose());   // running
 
                 host.ExecutionHost.RunGate.SetResult(true);

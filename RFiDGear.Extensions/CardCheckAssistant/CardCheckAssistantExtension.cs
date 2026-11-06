@@ -34,9 +34,33 @@ namespace RFiDGear.Extensions.CardCheckAssistant
                 throw new ArgumentNullException(nameof(host));
             }
 
+            return CreatePage(host, viewModel => new CardCheckAssistantView(viewModel));
+        }
+
+        /// <summary>
+        /// Builds a page: a view model for the calling thread's dispatcher, and the view that shows it. The view model
+        /// subscribes to the host as soon as it exists, so if the view cannot be built it is disposed here; nobody else
+        /// holds it, and it would go on listening to the host for the rest of the session.
+        /// </summary>
+        /// <param name="host">The initialized host service.</param>
+        /// <param name="createView">Builds the view for a view model.</param>
+        /// <returns>The view.</returns>
+        internal static FrameworkElement CreatePage(
+            IRFiDGearExtensionHost host,
+            Func<CardCheckAssistantViewModel, FrameworkElement> createView)
+        {
             // Called on the UI thread, so this is the dispatcher of the window the page will live in.
             var viewModel = new CardCheckAssistantViewModel(host, Dispatcher.CurrentDispatcher, new OpenFileDialogService());
-            return new CardCheckAssistantView(viewModel);
+
+            try
+            {
+                return createView(viewModel);
+            }
+            catch (Exception)
+            {
+                viewModel.Dispose();
+                throw;
+            }
         }
     }
 }

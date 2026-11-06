@@ -124,6 +124,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
                 var run = viewModel.RunCommand.ExecuteAsync();
 
+                await WaitUntil(() => host.ProjectHost.LoadedPaths.Count == 1, "the load to start");
+
                 // Loading: the host has not been asked to run anything yet.
                 Assert.True(viewModel.IsBusy);
                 Assert.False(viewModel.InputsEnabled);
@@ -138,7 +140,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.Single(host.ProjectHost.LoadedPaths);
 
                 host.ProjectHost.LoadGate.SetResult(true);
-                await Flush();
+                await WaitUntil(() => host.ExecutionHost.Requests.Count == 1, "the run to start");
 
                 // Running.
                 Assert.True(viewModel.IsBusy);
@@ -155,6 +157,39 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.False(viewModel.ShowProgress);
                 Assert.Equal(string.Empty, viewModel.StatusText);
                 Assert.True(viewModel.HasResult);
+            });
+        }
+
+        [Fact]
+        public async Task ThePathChecks_RunOffTheUiThread_WhileThePageSaysSoAndTheWindowStaysResponsive()
+        {
+            using var area = new TempArea();
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var host = new FakeExtensionHost();
+                var checker = new BlockingPathChecker();
+                using var viewModel = new CardCheckAssistantViewModel(
+                    host, System.Windows.Threading.Dispatcher.CurrentDispatcher, new FakeFileDialogService(), checker);
+                viewModel.ProjectPath = area.ProjectPath;
+                var uiThread = Environment.CurrentManagedThreadId;
+
+                var run = viewModel.RunCommand.ExecuteAsync();
+                await WaitUntil(() => checker.Started, "the path check to start");
+                await Flush();   // returns only because the UI thread is free; a check on it would still be blocking
+
+                Assert.NotEqual(uiThread, checker.ThreadId);
+                Assert.True(viewModel.IsBusy);
+                Assert.False(viewModel.InputsEnabled);
+                Assert.Equal("Checking the entries...", viewModel.StatusText);
+                Assert.False(viewModel.RunCommand.CanExecute(null));
+                Assert.Empty(host.ProjectHost.LoadedPaths);
+
+                checker.Release();
+                await run;
+
+                Assert.Single(host.ProjectHost.LoadedPaths);
+                Assert.True(viewModel.HasResult);
+                Assert.False(viewModel.IsBusy);
             });
         }
 

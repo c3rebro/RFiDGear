@@ -45,8 +45,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
             try
             {
                 var directory = Path.GetDirectoryName(currentPath.Trim());
-                if (!string.IsNullOrEmpty(directory) && Directory.Exists(directory))
+                if (!string.IsNullOrEmpty(directory))
                 {
+                    // Not checked for existence: that would be a file-system call on the UI thread, which on an
+                    // unreachable network path freezes the window. The dialog copes with a folder that is not there.
                     dialog.InitialDirectory = directory;
                     dialog.FileName = Path.GetFileName(currentPath.Trim());
                 }

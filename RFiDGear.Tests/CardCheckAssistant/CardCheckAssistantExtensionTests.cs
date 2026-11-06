@@ -160,8 +160,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 view.ViewModel.ProjectPath = area.ProjectPath;
                 await Flush();   // let the window load, which is when the page hooks the closing event
                 var run = view.ViewModel.RunCommand.ExecuteAsync();
-                await Flush();
-                Assert.Single(host.ExecutionHost.Requests);
+                await WaitUntil(() => host.ExecutionHost.Requests.Count == 1, "the run to start");
 
                 window.Close();
 
@@ -233,6 +232,112 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
 
             Assert.Empty(listener.Messages);
+        }
+
+        [Fact]
+        public async Task WhenTheViewCannotBeBuilt_NothingStaysSubscribedToTheHost()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var host = new FakeExtensionHost();
+
+                var failure = Assert.Throws<InvalidOperationException>(
+                    () => CardCheckAssistantExtension.CreatePage(host, _ => throw new InvalidOperationException("the page is broken")));
+
+                Assert.Equal("the page is broken", failure.Message);   // the original failure, not a replacement
+                Assert.Equal(0, host.PageSubscriberCount);
+            });
+        }
+
+        [Fact]
+        public async Task TheView_IsWiredToTheViewModel_ControlByControl()
+        {
+            using var area = new TempArea();
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var host = new FakeExtensionHost();
+                var content = new CardCheckAssistantExtension().CreateContent(host);
+                var window = new Window { Content = content, Width = 900, Height = 600 };
+                window.Show();
+                try
+                {
+                    var view = (CardCheckAssistantView)content;
+                    var viewModel = view.ViewModel;
+                    await Flush();
+
+                    var run = Named<System.Windows.Controls.Button>(view, "RunButton");
+                    var browse = Named<System.Windows.Controls.Button>(view, "BrowseButton");
+                    var fields = Named<System.Windows.Controls.Panel>(view, "FieldsPanel");
+                    var projectError = Named<System.Windows.Controls.TextBlock>(view, "ProjectErrorText");
+                    var reportError = Named<System.Windows.Controls.TextBlock>(view, "ReportErrorText");
+                    var progress = Named<System.Windows.Controls.ProgressBar>(view, "ProgressIndicator");
+                    var closeHint = Named<System.Windows.Controls.TextBlock>(view, "CloseHint");
+
+                    // The buttons do what the view model says, and Enter inside a text box must not start a card run.
+                    Assert.Same(viewModel.RunCommand, run.Command);
+                    Assert.Same(viewModel.BrowseCommand, browse.Command);
+                    Assert.All(Descendants<System.Windows.Controls.Button>(view), button => Assert.False(button.IsDefault));
+
+                    // Idle: fields usable, nothing to report, no progress.
+                    Assert.True(fields.IsEnabled);
+                    Assert.Equal(Visibility.Collapsed, projectError.Visibility);
+                    Assert.Equal(Visibility.Collapsed, reportError.Visibility);
+                    Assert.Equal(Visibility.Collapsed, progress.Visibility);
+                    Assert.Equal(Visibility.Collapsed, closeHint.Visibility);
+
+                    // A report error appears under the report field only.
+                    viewModel.ProjectPath = area.ProjectPath;
+                    viewModel.ReportTargetPath = "relative.pdf";
+                    await viewModel.RunCommand.ExecuteAsync();
+                    Assert.Equal(Visibility.Visible, reportError.Visibility);
+                    Assert.Equal(viewModel.ReportTargetError, reportError.Text);
+                    Assert.Equal(Visibility.Collapsed, projectError.Visibility);
+
+                    // And a project error under the project field only.
+                    viewModel.ReportTargetPath = string.Empty;
+                    viewModel.ProjectPath = string.Empty;
+                    await viewModel.RunCommand.ExecuteAsync();
+                    Assert.Equal(Visibility.Visible, projectError.Visibility);
+                    Assert.Equal(viewModel.ProjectError, projectError.Text);
+                    Assert.Equal(Visibility.Collapsed, reportError.Visibility);
+
+                    // A run: the list shows one line per task.
+                    viewModel.ProjectPath = area.ProjectPath;
+                    await viewModel.RunCommand.ExecuteAsync();
+                    window.UpdateLayout();
+                    await Flush();
+                    var list = Named<System.Windows.Controls.ItemsControl>(view, "ResultList");
+                    Assert.Equal(viewModel.Rows.Count, list.Items.Count);
+                    Assert.Equal(
+                        viewModel.Rows.Count,
+                        Descendants<System.Windows.Controls.TextBlock>(list).Count(block => block.Text == "OK"));
+
+                    // Another run holds the host: the fields are disabled and progress shows.
+                    host.ExecutionHost.SetRunning(true);
+                    await Flush();
+                    Assert.False(fields.IsEnabled);
+                    Assert.Equal(Visibility.Visible, progress.Visibility);
+
+                    host.ExecutionHost.SetRunning(false);
+                    await Flush();
+                    Assert.True(fields.IsEnabled);
+
+                    // The hint that the window cannot close appears when the page is busy and asked to close.
+                    host.ProjectHost.LoadGate = NewGate();
+                    var pending = viewModel.RunCommand.ExecuteAsync();
+                    await WaitUntil(() => host.ProjectHost.LoadedPaths.Count > 0, "the load to start");
+                    Assert.False(viewModel.TryRequestClose());
+                    await Flush();
+                    Assert.Equal(Visibility.Visible, closeHint.Visibility);
+                    host.ProjectHost.LoadGate.SetResult(true);
+                    await pending;
+                }
+                finally
+                {
+                    host.ExecutionHost.SetRunningQuietly(false);
+                    window.Close();
+                }
+            });
         }
 
         // ── what the assembly may depend on ──
@@ -358,6 +463,32 @@ namespace RFiDGear.Tests.CardCheckAssistant
                     navigatedTo.Add(uri);
                     return null;
                 });
+
+        private static T Named<T>(FrameworkElement root, string name)
+            where T : class
+        {
+            var found = root.FindName(name);
+            Assert.NotNull(found);
+            return Assert.IsAssignableFrom<T>(found);
+        }
+
+        private static IEnumerable<T> Descendants<T>(DependencyObject root)
+            where T : DependencyObject
+        {
+            for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+                if (child is T match)
+                {
+                    yield return match;
+                }
+
+                foreach (var nested in Descendants<T>(child))
+                {
+                    yield return nested;
+                }
+            }
+        }
 
         private static int CountProcesses() =>
             Process.GetProcessesByName("RFiDGear").Length + Process.GetProcessesByName("CardCheckAssistant").Length;

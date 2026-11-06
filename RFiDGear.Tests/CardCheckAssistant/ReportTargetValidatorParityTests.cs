@@ -14,9 +14,10 @@ namespace RFiDGear.Tests.CardCheckAssistant
 {
     /// <summary>
     /// The page checks the report file before it asks the host to run, so the user sees what is wrong next to the field.
-    /// The host stays the authority and refuses a bad target before any card operation. If the two ever disagreed the
-    /// page would either block a run the host accepts or promise a run the host then refuses, so they are compared here
-    /// over a table of paths.
+    /// The host stays the authority and refuses a bad target before any card operation. The page must never promise a
+    /// run the host then refuses, so everything the host refuses the page refuses too. It must not block a run the host
+    /// accepts either, except for the rows marked below: names Windows cannot create and read-only reports pass the
+    /// host, whose report step then only logs the failure, and the page deliberately refuses them.
     /// </summary>
     [Collection("AppDataPath")]
     public class ReportTargetValidatorParityTests
@@ -30,37 +31,61 @@ namespace RFiDGear.Tests.CardCheckAssistant
             File.WriteAllText(existingFile, "already there");
             var separator = Path.DirectorySeparatorChar;
 
-            var cases = new (string Description, string Target)[]
+            var readOnlyReport = Path.Combine(area.Directory, "read-only.pdf");
+            File.WriteAllText(readOnlyReport, "locked");
+            File.SetAttributes(readOnlyReport, FileAttributes.ReadOnly);
+
+            // PageMayBeStricter: the host accepts, the page refuses on purpose.
+            var cases = new (string Description, string Target, bool PageMayBeStricter)[]
             {
-                ("blank", string.Empty),
-                ("only spaces", "   "),
-                ("relative file", "report.pdf"),
-                ("relative with a folder", "sub" + separator + "report.pdf"),
-                ("drive-relative", "C:report.pdf"),
-                ("new file in an existing folder", Path.Combine(area.Directory, "new.pdf")),
-                ("existing file", existingFile),
-                ("file in a subfolder", Path.Combine(area.Directory, "sub", "report.pdf")),
-                ("placeholder ???", Path.Combine(area.Directory, "Report_???.pdf")),
-                ("placeholder ?", Path.Combine(area.Directory, "Report_?.pdf")),
-                ("folder without separator", area.Directory),
-                ("folder with separator", area.Directory + separator),
-                ("subfolder as the target", Path.Combine(area.Directory, "sub")),
-                ("folder that does not exist", Path.Combine(area.Directory, "missing", "report.pdf")),
-                ("a file used as a folder", Path.Combine(existingFile, "report.pdf")),
-                ("drive root", "C:" + separator),
+                ("blank", string.Empty, false),
+                ("only spaces", "   ", false),
+                ("relative file", "report.pdf", false),
+                ("relative with a folder", "sub" + separator + "report.pdf", false),
+                ("drive-relative", "C:report.pdf", false),
+                ("new file in an existing folder", Path.Combine(area.Directory, "new.pdf"), false),
+                ("existing file", existingFile, false),
+                ("file in a subfolder", Path.Combine(area.Directory, "sub", "report.pdf"), false),
+                ("placeholder ???", Path.Combine(area.Directory, "Report_???.pdf"), false),
+                ("placeholder ?", Path.Combine(area.Directory, "Report_?.pdf"), false),
+                ("folder without separator", area.Directory, false),
+                ("folder with separator", area.Directory + separator, false),
+                ("subfolder as the target", Path.Combine(area.Directory, "sub"), false),
+                ("folder that does not exist", Path.Combine(area.Directory, "missing", "report.pdf"), false),
+                ("a file used as a folder", Path.Combine(existingFile, "report.pdf"), false),
+                ("drive root", "C:" + separator, false),
+                ("a forbidden character in the name", Path.Combine(area.Directory, "report*.pdf"), true),
+                ("a device name", Path.Combine(area.Directory, "NUL.pdf"), true),
+                ("a name ending in a dot", Path.Combine(area.Directory, "report."), true),
+                ("an existing read-only report", readOnlyReport, true),
             };
 
             var disagreements = new List<string>();
-            foreach (var (description, target) in cases)
+            try
             {
-                var sent = target.Trim();   // what the page sends
-                var pageRejects = ReportTargetValidator.Check(sent) is not (ReportTargetCheck.None or ReportTargetCheck.Valid);
-                var hostRefuses = await HostRefuses(sent);
-
-                if (pageRejects != hostRefuses)
+                foreach (var (description, target, pageMayBeStricter) in cases)
                 {
-                    disagreements.Add($"{description} ({target}): page rejects={pageRejects}, host refuses={hostRefuses}");
+                    var sent = target.Trim();   // what the page sends
+                    var pageRejects = ReportTargetValidator.Check(sent) is not (ReportTargetCheck.None or ReportTargetCheck.Valid);
+                    var hostRefuses = await HostRefuses(sent);
+
+                    if (hostRefuses && !pageRejects)
+                    {
+                        disagreements.Add($"{description} ({target}): the host refuses it but the page would let the run start");
+                    }
+                    else if (pageMayBeStricter && !pageRejects)
+                    {
+                        disagreements.Add($"{description} ({target}): the page is meant to refuse this");
+                    }
+                    else if (!pageMayBeStricter && pageRejects && !hostRefuses)
+                    {
+                        disagreements.Add($"{description} ({target}): the page blocks a run the host accepts");
+                    }
                 }
+            }
+            finally
+            {
+                File.SetAttributes(readOnlyReport, FileAttributes.Normal);
             }
 
             Assert.Empty(disagreements);
@@ -77,13 +102,14 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 ReportTargetValidator.Check("report.pdf"),
                 ReportTargetValidator.Check(Path.Combine(area.Directory, "missing", "report.pdf")),
                 ReportTargetValidator.Check(area.Directory),
+                ReportTargetValidator.Check(Path.Combine(area.Directory, "NUL.pdf")),
             };
 
             Assert.Equal(
                 new[]
                 {
                     ReportTargetCheck.None, ReportTargetCheck.Valid, ReportTargetCheck.NotFullyQualified,
-                    ReportTargetCheck.FolderMissing, ReportTargetCheck.NotAFile
+                    ReportTargetCheck.FolderMissing, ReportTargetCheck.NotAFile, ReportTargetCheck.Unusable
                 },
                 verdicts);
         }

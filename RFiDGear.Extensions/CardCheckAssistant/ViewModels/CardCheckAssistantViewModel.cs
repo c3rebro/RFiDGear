@@ -20,6 +20,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>Nothing.</summary>
         Idle,
 
+        /// <summary>Checking the entered paths against the file system, off the UI thread.</summary>
+        Checking,
+
         /// <summary>Loading the chosen project into RFiDGear.</summary>
         Loading,
 
@@ -50,6 +53,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private readonly IRFiDGearExtensionHost _host;
         private readonly Dispatcher _dispatcher;
         private readonly IFileDialogService _dialogs;
+        private readonly IPathChecker _pathChecker;
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
         private readonly ObservableCollection<TaskOutcomeRowViewModel> _rows = new ObservableCollection<TaskOutcomeRowViewModel>();
 
@@ -70,11 +74,17 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <param name="host">The initialized host service.</param>
         /// <param name="dispatcher">The dispatcher of the window; every change the page shows is made on it.</param>
         /// <param name="dialogs">The file picker.</param>
-        public CardCheckAssistantViewModel(IRFiDGearExtensionHost host, Dispatcher dispatcher, IFileDialogService dialogs)
+        /// <param name="pathChecker">The file-system checks of a run; the real ones when omitted.</param>
+        public CardCheckAssistantViewModel(
+            IRFiDGearExtensionHost host,
+            Dispatcher dispatcher,
+            IFileDialogService dialogs,
+            IPathChecker? pathChecker = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _dialogs = dialogs ?? throw new ArgumentNullException(nameof(dialogs));
+            _pathChecker = pathChecker ?? new FileSystemPathChecker();
 
             Strings = new LocalizedStrings(SafeRead(() => host.AppContext.UICultureName, string.Empty));
             RunCommand = new AsyncCommand(RunAsync, () => CanRun, OnUnhandledRunFailure);
@@ -176,6 +186,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         {
             get
             {
+                if (_phase == RunPhase.Checking)
+                {
+                    return Strings[Keys.StatusChecking];
+                }
+
                 if (_phase == RunPhase.Loading)
                 {
                     return Strings[Keys.StatusLoading];
@@ -351,21 +366,30 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             }
 
             ClearResultAndErrors();
-
-            var projectCheck = ProjectPathValidator.Check(ProjectPath);
-            var reportCheck = ReportTargetValidator.Check(ReportTargetPath);
-            _projectError = ProjectMessage(projectCheck);
-            _reportTargetError = ReportMessage(reportCheck);
-            RaiseErrorProperties();
-            if (_projectError != null || _reportTargetError != null)
-            {
-                return;
-            }
-
-            SetPhase(RunPhase.Loading);
+            SetPhase(RunPhase.Checking);
 
             try
             {
+                // The checks touch the disk, and on an unreachable network path that blocks for a long time, so they
+                // run on a worker thread while the controls stay disabled and the window stays responsive.
+                var projectText = ProjectPath;
+                var reportText = ReportTargetPath;
+                var (projectCheck, reportCheck) = await Task.Run(
+                    () => (_pathChecker.CheckProject(projectText), _pathChecker.CheckReportTarget(reportText)));
+                if (IsDisposed)
+                {
+                    return;
+                }
+
+                _projectError = ProjectMessage(projectCheck);
+                _reportTargetError = ReportMessage(reportCheck);
+                if (_projectError != null || _reportTargetError != null)
+                {
+                    RaiseErrorProperties();
+                    return;
+                }
+
+                SetPhase(RunPhase.Loading);
                 var token = _cancellation.Token;
                 var load = await _host.Project.LoadAsync(ProjectPath.Trim(), token);
                 if (IsDisposed)
