@@ -22,6 +22,7 @@
     <ProjectReference Include="..\RFiDGear.Extensions\CardCheckAssistant\RFiDGear.Extensions.CardCheckAssistant.csproj" />
     <ProjectReference Include="..\\RFiDGear\\RFiDGear.csproj" />
     <ProjectReference Include="..\RFiDGear.ExtensionSdk\RFiDGear.ExtensionSdk.csproj" />
+    <ProjectReference Include="..\RFiDGear.ExtensionLibraries\CardCheck\RFiDGear.ExtensionLibraries.CardCheck.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Fixtures\minimal.rfPrj">

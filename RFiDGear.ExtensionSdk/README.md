@@ -60,6 +60,16 @@ types an extension uses to be discovered and placed by RFiDGear. Host services
   shared afterwards: keep it stateless and put per-window state in the
   content. A constructor or `CreateContent` that throws is logged and shown to
   the user, and the next click tries again.
+- Code an extension needs besides the contract (services, a database driver,
+  a PDF engine) goes in a support library named
+  `RFiDGear.ExtensionLibraries.<Name>`. The name must never start with
+  `RFiDGear.Extensions`, in any letter case: the scan above hands every
+  `RFiDGear.Extensions*.dll` to MEF, so `RFiDGear.ExtensionsNative.*` or
+  `RFiDGear.ExtensionSupport.*` would be loaded as an extension at every
+  start-up. Copy the library next to the extension; .NET finds it there. Keep
+  library types out of the members and the constructor of the exported class:
+  MEF's checks cannot see a missing library, and the failure then shows up
+  when the class is created or used, not when the DLL is probed.
 - An extension that only needs a page can keep naming it with `Uri` and
   implement just `IUIExtension`; it opens in a frame as before and its class
   is never created. So do not set `Uri` on an extension that implements
