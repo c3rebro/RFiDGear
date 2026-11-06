@@ -10,8 +10,34 @@ and importing the settings of the old assistant. The WPF extension
 (`RFiDGear.Extensions.CardCheckAssistant`) uses it; nothing else does.
 
 So far it holds the result types, the log abstraction, the status and
-language values, the template rules and the guard tests. The other services
-follow one at a time, each with its own tests.
+language values, the template rules, the report file handling and the guard
+tests. The other services follow one at a time, each with its own tests.
+
+**Report files** (`IReportFiles`, created by
+`CardCheckServices.CreateReportFiles`):
+
+- `Resolve` is the only place a report path is built. It gives the paths
+  `<root>\[<job>\]<job>-<chip>` plus `.step1.pdf`, `.step2.pdf`, `.step3.pdf`,
+  `_final.pdf`, and `.download.pdf` and `.edit.pdf` for a report fetched for
+  editing. For ordinary numbers the names are exactly those of the old
+  assistant. The old assistant kept every downloaded report under one fixed
+  name, so one order could open the report of another; here they are per order.
+- A job or chip number becomes one file name. A character Windows forbids
+  becomes `_` and four hex digits of the SHA-256 of the original are added, so
+  `A/B` and `A?B` stay different and `..\..` cannot leave the folder. A name
+  that is empty, ends in a dot (so also `.` and `..`) or starts with a device
+  name such as `NUL` is refused. The root must be a full path without
+  characters Windows cannot create, and no path may be longer than 259
+  characters. Tests check every path against the extension's own report-target
+  check.
+- `EnsureOrderFolder` creates the order's folder and never the output folder.
+  `PrepareStep` deletes a step report an earlier attempt left behind, before
+  the run that writes it, so an old file is never read as the new result.
+- `Cleanup` removes working reports and never throws because of a file. Not
+  supported: steps 1 and 2 if the setting is on. Supported only: nothing.
+  Programmed: steps 1, 2 and 3 if the setting is on (the old assistant forgot
+  step 1). Re-edit: the downloaded report and its copy, always. The final
+  report is never removed. A failure is logged by kind, not by path.
 
 **Template rules** (`TemplateRules`, `ProjectVariants`, `LsmTemplate`):
 
