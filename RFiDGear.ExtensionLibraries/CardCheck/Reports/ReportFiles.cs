@@ -11,6 +11,9 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         /// <summary>The longest full path accepted; longer ones fail on a default Windows setup.</summary>
         internal const int MaxPathLength = 259;
 
+        /// <summary>What joins the job number and the chip number in a file name.</summary>
+        internal const string JobChipSeparator = "-";
+
         private readonly ICardCheckLog _log;
 
         /// <summary>Creates the service.</summary>
@@ -42,7 +45,9 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 return Result<OrderReportPaths>.Fail(job.Failure!);
             }
 
-            var chip = ReportNames.ToSegment(chipNumber, "chip");
+            // The chip number may not contain the hyphen that joins it to the job number: with it, job "A-B" and chip "C"
+            // would name the same files as job "A" and chip "B-C". Without it the stem splits at its last hyphen only one way.
+            var chip = ReportNames.ToSegment(chipNumber, "chip", alsoNotAllowed: JobChipSeparator);
 
             if (!chip.IsSuccess)
             {
@@ -50,7 +55,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             }
 
             var folder = location.CreateSubdirectory ? Path.Combine(root.Value, job.Value) : root.Value;
-            var stem = Path.Combine(folder, job.Value + "-" + chip.Value);
+            var stem = Path.Combine(folder, job.Value + JobChipSeparator + chip.Value);
             var paths = new OrderReportPaths(
                 root.Value,
                 folder,
@@ -189,11 +194,24 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             }
         }
 
+        // File.Exists would say "no" for a folder in the way and for a path it is not allowed to look at, and the caller
+        // would take that for "nothing to delete". Only "not found" means absent; everything else reaches the caller.
         private static bool DeleteIfPresent(string path)
         {
-            if (!File.Exists(path))
+            FileAttributes attributes;
+
+            try
+            {
+                attributes = File.GetAttributes(path);
+            }
+            catch (Exception ex) when (ex is FileNotFoundException || ex is DirectoryNotFoundException)
             {
                 return false;
+            }
+
+            if (attributes.HasFlag(FileAttributes.Directory))
+            {
+                throw new IOException("A folder is where the report should be.");
             }
 
             // A report someone marked read-only would otherwise refuse to be deleted.
@@ -236,10 +254,17 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             }
         }
 
-        // .NET lets a path with a quote, a wildcard or an angle bracket through; Windows cannot create such a folder, and
-        // a question mark is the host's numbering placeholder. The drive or share in front is not a folder name.
+        // .NET lets a path with a quote, a wildcard, an angle bracket or a bar through; Windows cannot create such a
+        // folder, and a question mark is the host's numbering placeholder. None of them belongs anywhere in the path,
+        // not even in the drive, the share or an extended-length prefix such as \\?\ in front. Inside the folder names
+        // the colon and the control characters are refused too.
         private static bool HasUnusableFolderName(string fullPath)
         {
+            if (fullPath.IndexOfAny(new[] { '?', '*', '<', '>', '"', '|' }) >= 0)
+            {
+                return true;
+            }
+
             var folders = fullPath.Substring(Path.GetPathRoot(fullPath)?.Length ?? 0);
             var separators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 

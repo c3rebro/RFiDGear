@@ -1,33 +1,52 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace RFiDGear.ExtensionLibraries.CardCheck
 {
     /// <summary>
-    /// Turns a job or chip number into one file-name segment. Pure: nothing is read or written.
+    /// Turns a job or chip number into one file-name segment, so that two different numbers never share a name.
+    /// Pure: nothing is read or written.
     /// </summary>
     internal static class ReportNames
     {
-        private static readonly string[] ReservedDeviceNames =
-        {
-            "CON", "PRN", "AUX", "NUL",
-            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
-        };
+        /// <summary>The character that marks a name that had to be changed. A number that contains it is changed too.</summary>
+        internal const char EscapeMarker = '~';
+
+        /// <summary>How many hex digits of the hash follow the marker.</summary>
+        internal const int HashLength = 8;
+
+        // The superscript digits one, two and three (U+00B9, U+00B2, U+00B3), which Windows treats like 1, 2 and 3 in
+        // COM and LPT names. Given as character codes so that the source holds no invisible look-alikes.
+        private static readonly string[] SuperscriptDigits = new[] { 0x00B9, 0x00B2, 0x00B3 }
+            .Select(code => ((char)code).ToString())
+            .ToArray();
+
+        // The device names Windows reserves, with or without an extension: the classic ones, COM and LPT with 0-9 and
+        // with the superscript digits 1-3, and the console handles.
+        private static readonly string[] ReservedDeviceNames = new[] { "CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$" }
+            .Concat(new[] { "COM", "LPT" }.SelectMany(prefix =>
+                Enumerable.Range(0, 10).Select(digit => prefix + digit.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                    .Concat(SuperscriptDigits.Select(superscript => prefix + superscript))))
+            .ToArray();
 
         /// <summary>
-        /// A name made only of characters Windows allows is used exactly as it is (after trimming blanks). Each
-        /// character it forbids (which includes the control characters up to 31) becomes <c>_</c>, and <c>~</c> plus
-        /// four hex digits of the SHA-256 of the original are appended, so <c>A/B</c> and <c>A?B</c> do not collide.
-        /// A name that is empty, ends in a dot (so also <c>.</c> and <c>..</c>), or starts with a device name such
-        /// as <c>NUL</c> (with or without a dot and an extension) is refused.
+        /// A name made only of characters that are allowed is used exactly as it is (after trimming blanks). Each
+        /// character that is not allowed, and the escape marker itself, becomes <c>_</c>, and the marker plus
+        /// <see cref="HashLength"/> hex digits of the SHA-256 of the original are appended. Because the marker only
+        /// ever appears for a changed name, a changed name cannot equal an unchanged one, and two different originals
+        /// have different names unless their hashes collide. A name that is empty, ends in a dot (so also <c>.</c>
+        /// and <c>..</c>), or starts with a device name such as <c>NUL</c> (with or without a dot and an extension)
+        /// is refused.
         /// </summary>
         /// <param name="value">The job or chip number as entered.</param>
         /// <param name="what">The word used in failure codes, <c>job</c> or <c>chip</c>.</param>
+        /// <param name="alsoNotAllowed">Further characters that are treated as not allowed, for example the hyphen that
+        /// separates job and chip in a file name.</param>
         /// <returns>The segment, or why the value cannot name a file.</returns>
-        public static Result<string> ToSegment(string? value, string what)
+        public static Result<string> ToSegment(string? value, string what, string alsoNotAllowed = "")
         {
             var original = value?.Trim();
 
@@ -45,11 +64,11 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
             var invalid = Path.GetInvalidFileNameChars();
             var replaced = false;
-            var builder = new StringBuilder(original.Length + 5);
+            var builder = new StringBuilder(original.Length + HashLength + 1);
 
             foreach (var c in original)
             {
-                if (Array.IndexOf(invalid, c) >= 0)
+                if (Array.IndexOf(invalid, c) >= 0 || c == EscapeMarker || alsoNotAllowed.IndexOf(c) >= 0)
                 {
                     builder.Append('_');
                     replaced = true;
@@ -62,7 +81,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
             if (replaced)
             {
-                builder.Append('~').Append(ShortHash(original));
+                builder.Append(EscapeMarker).Append(ShortHash(original));
             }
 
             return Result<string>.Ok(builder.ToString());
@@ -81,7 +100,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         {
             var hash = SHA256.HashData(Encoding.UTF8.GetBytes(original));
 
-            return Convert.ToHexString(hash, 0, 2).ToLowerInvariant();
+            return Convert.ToHexString(hash, 0, HashLength / 2).ToLowerInvariant();
         }
     }
 }

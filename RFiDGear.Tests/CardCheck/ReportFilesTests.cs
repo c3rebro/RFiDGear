@@ -123,6 +123,60 @@ namespace RFiDGear.Tests.CardCheck
             yield return new object?[] { Path.Combine(Path.GetTempPath(), "a<b"), FailureKind.InvalidConfiguration, "report.root.invalid" };
             // Not Path.Combine: it would take "a:b" for a new drive-relative root and drop the folder in front of it.
             yield return new object?[] { Path.Combine(Path.GetTempPath(), "ok") + Path.DirectorySeparatorChar + "a:b", FailureKind.InvalidConfiguration, "report.root.invalid" };
+            // An extended-length prefix is a root to Path.GetPathRoot, but the host would replace its "?" by a number.
+            yield return new object?[] { @"\\?\" + Path.GetTempPath(), FailureKind.InvalidConfiguration, "report.root.invalid" };
+            yield return new object?[] { @"\\?\UNC\server\share\reports", FailureKind.InvalidConfiguration, "report.root.invalid" };
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Resolve_JobAndChipThatDifferOnlyInWhereTheHyphenIs_NeverShareAFile(bool subfolder)
+        {
+            // "A-B" + "C" and "A" + "B-C" both used to be A-B-C.*, so cleaning up one order deleted the other's reports.
+            var one = Service().Resolve(new ReportLocation(_root.Path, subfolder), "A-B", "C").Value;
+            var two = Service().Resolve(new ReportLocation(_root.Path, subfolder), "A", "B-C").Value;
+
+            var pathsOfOne = AllFiles.Select(one.PathOf).ToList();
+            var pathsOfTwo = AllFiles.Select(two.PathOf).ToList();
+            Assert.Empty(pathsOfOne.Intersect(pathsOfTwo, StringComparer.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public void Resolve_TheHyphenOfAChipNumberIsEscaped_TheHyphenOfAJobNumberIsKept()
+        {
+            var paths = Service().Resolve(new ReportLocation(_root.Path, false), "KP-000005", "B-C").Value;
+            var name = Path.GetFileName(paths.Step1);
+
+            Assert.StartsWith("KP-000005-B_C~", name, StringComparison.Ordinal);
+            Assert.EndsWith(".step1.pdf", name, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void Resolve_NoTwoOrdersOfAnAlphabetOfTroublemakersShareAnyFile()
+        {
+            var alphabet = new[] { "a", "-", "/", "~", "_", "?" };
+            var seen = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var numbers = alphabet.SelectMany(x => alphabet.Select(y => x + y)).Concat(alphabet).ToList();
+
+            foreach (var job in numbers)
+            {
+                foreach (var chip in numbers)
+                {
+                    var result = Service().Resolve(new ReportLocation(_root.Path, false), job, chip);
+
+                    foreach (var file in AllFiles.Where(_ => result.IsSuccess))
+                    {
+                        var path = result.Value.PathOf(file);
+                        var order = $"job '{job}' chip '{chip}' {file}";
+
+                        Assert.False(seen.TryGetValue(path, out var other), $"{order} and {other} both are {path}");
+                        seen[path] = order;
+                    }
+                }
+            }
+
+            Assert.True(seen.Count > 1000);
         }
 
         [Theory]
@@ -307,6 +361,35 @@ namespace RFiDGear.Tests.CardCheck
         public void PrepareStep_WhenThereIsNothingToRemove_Succeeds()
         {
             Assert.True(Service().PrepareStep(Paths(), ReportFile.Step3).IsSuccess);
+        }
+
+        [Fact]
+        public void PrepareStep_WhenAFolderIsWhereTheReportShouldBe_Fails_ItIsNotNothingToRemove()
+        {
+            var paths = Paths();
+            Directory.CreateDirectory(paths.Step3);
+
+            var result = Service().PrepareStep(paths, ReportFile.Step3);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(FailureKind.Io, result.Failure!.Kind);
+            Assert.Equal("report.stale.io", result.Failure.Code);
+            Assert.True(Directory.Exists(paths.Step3));
+        }
+
+        [Fact]
+        public void Cleanup_WhenAFolderIsWhereAReportShouldBe_ReportsItAsFailedAndStillRemovesTheRest()
+        {
+            var paths = Paths();
+            Directory.CreateDirectory(paths.Step1);
+            Touch(paths.Step2);
+
+            var report = Service().Cleanup(paths, CleanupScope.NotSupported, removeTemporaryReports: true);
+
+            Assert.Equal(new[] { ReportFile.Step2 }, report.Removed);
+            Assert.Equal(new[] { ReportFile.Step1 }, report.Failed);
+            Assert.True(Directory.Exists(paths.Step1));
+            Assert.Contains("Step1", _log.Everything, StringComparison.Ordinal);
         }
 
         [Fact]
