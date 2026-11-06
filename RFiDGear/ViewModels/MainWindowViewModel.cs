@@ -1393,17 +1393,25 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand SaveTaskDialogCommand => new AsyncRelayCommand(OnNewSaveTaskDialogCommand);
         private async Task OnNewSaveTaskDialogCommand()
         {
-            using (var settings = settingsReaderWriterFactory())
-            {
-                var targetPath = settings.DefaultSpecification.LastUsedProjectPath;
-                if (!IsValidProjectSavePath(targetPath))
-                {
-                    await OnNewSaveTaskAsDialogCommand();
-                    return;
-                }
+            // Save to the project that is actually open (last loaded or saved); only fall back to the
+            // remembered default when none is, e.g. right after startup without an auto-loaded project.
+            var targetPath = extensionHost.Project.CurrentPath;
 
-                databaseReaderWriter.WriteDatabase(ChipTasks, targetPath);
+            if (!IsValidProjectSavePath(targetPath))
+            {
+                using (var settings = settingsReaderWriterFactory())
+                {
+                    targetPath = settings.DefaultSpecification.LastUsedProjectPath;
+                }
             }
+
+            if (!IsValidProjectSavePath(targetPath))
+            {
+                await OnNewSaveTaskAsDialogCommand();
+                return;
+            }
+
+            TrySaveProject(targetPath);
         }
 
         /// <summary>
@@ -1437,18 +1445,58 @@ namespace RFiDGear.ViewModel
                 Buttons = MessageBoxButton.YesNo
             };
 
-            if (mbox.Show(Dialogs) == MessageBoxResult.Yes)
+            var setAsDefault = mbox.Show(Dialogs) == MessageBoxResult.Yes;
+
+            await SaveProjectAsAsync(fileName, setAsDefault);
+        }
+
+        /// <summary>
+        /// Saves the project to <paramref name="fileName"/> through the extension host and, only after the file
+        /// was written, remembers the file as the default project when asked to. The remembered path is the one
+        /// the writer actually produced: a name typed without an extension is saved as <c>name.rfPrj</c>, and
+        /// remembering the typed name would leave a path that is never valid. A failed write changes nothing.
+        /// </summary>
+        /// <param name="fileName">The path chosen in the Save As dialog.</param>
+        /// <param name="setAsDefault">Whether to store the written file as <c>LastUsedProjectPath</c>.</param>
+        /// <returns>A task that completes once the project is saved and the default path is stored.</returns>
+        internal async Task SaveProjectAsAsync(string fileName, bool setAsDefault)
+        {
+            if (string.IsNullOrEmpty(fileName) || !TrySaveProject(fileName))
+            {
+                return;
+            }
+
+            if (setAsDefault)
             {
                 using (var settings = settingsReaderWriterFactory())
                 {
-                    settings.DefaultSpecification.LastUsedProjectPath = fileName;
+                    settings.DefaultSpecification.LastUsedProjectPath = extensionHost.Project.CurrentPath;
                     await settings.SaveSettings();
                 }
             }
+        }
 
-            if (!string.IsNullOrEmpty(fileName))
+        /// <summary>
+        /// Writes the project through the extension host, which also keeps its current path in step. Failures
+        /// (a load or edit in progress, an unwritable location) are logged and shown instead of escaping the command.
+        /// </summary>
+        private bool TrySaveProject(string path)
+        {
+            try
             {
-                databaseReaderWriter.WriteDatabase(ChipTasks, fileName);
+                extensionHost.Project.SaveAs(path);
+                return true;
+            }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is IOException || ex is UnauthorizedAccessException)
+            {
+                Log.ForContext<MainWindowViewModel>().Error(ex, "Saving the project to {ProjectPath} failed.", path);
+                Dialogs.Add(new CustomDialogViewModel
+                {
+                    Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                    Message = ex.Message,
+                    OnOk = sender => sender.Close()
+                });
+                return false;
             }
         }
 

@@ -297,7 +297,18 @@ namespace RFiDGear.Infrastructure.FileAccess
             }
         }
 
-        public void WriteDatabase(ChipTaskHandlerModel objModel, string _path = "")
+        /// <summary>
+        /// Writes a task project: plain XML for a <c>.xml</c> path, otherwise a ZIP archive containing
+        /// <c>taskdatabase.xml</c>. A path without an extension gets <c>.rfPrj</c> appended; an empty path
+        /// writes to the application data folder.
+        /// </summary>
+        /// <param name="objModel">The project to write.</param>
+        /// <param name="_path">Target path as chosen by the user or caller.</param>
+        /// <returns>
+        /// The path that was actually written, which differs from <paramref name="_path"/> when an extension
+        /// was appended, or <c>null</c> when the project could not be serialized (the failure is logged).
+        /// </returns>
+        public string WriteDatabase(ChipTaskHandlerModel objModel, string _path = "")
         {
             try
             {
@@ -319,7 +330,7 @@ namespace RFiDGear.Infrastructure.FileAccess
 
                 if (saveAsXml)
                 {
-                    return;
+                    return _path;
                 }
 
                 var archivePath = string.IsNullOrWhiteSpace(_path)
@@ -341,10 +352,12 @@ namespace RFiDGear.Infrastructure.FileAccess
                         CompressionLevel.Optimal);
                 }
 
+                return archivePath;
             }
             catch (XmlException e)
             {
                 logger.Error(e, "Failed to write task database archive");
+                return null;
             }
         }
 

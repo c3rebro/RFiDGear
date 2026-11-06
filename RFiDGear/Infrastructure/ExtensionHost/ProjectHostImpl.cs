@@ -3,10 +3,13 @@ using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Models;
 
+using Serilog;
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,6 +20,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     /// </summary>
     internal sealed class ProjectHostImpl : IProjectHost
     {
+        private static readonly ILogger Logger = Log.ForContext<ProjectHostImpl>();
+
         private readonly DatabaseReaderWriter _dbRW;
         private readonly ExtensionOperationCoordinator _coordinator;
         private readonly Func<ChipTaskHandlerModel>? _liveModelAccessor;
@@ -25,10 +30,14 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         // (WPF dispatcher in main-app mode, inline in headless mode).
         private readonly Func<Action, Task> _dispatch;
 
-        // Called inside the dispatched commit to sync the loaded model into the live app state.
-        // Receives the newly deserialized task model.
-        // null in headless mode (we just update _dbRW directly).
+        // Called to apply a project model to the live app state (task collection and property
+        // notifications). null in headless mode (we just update _dbRW directly).
         private readonly Action<ChipTaskHandlerModel>? _applyToLiveApp;
+
+        // Load and save both stage files in the shared application data folder, so they must never
+        // overlap. Unlike the coordinator this is not blocked by a task run: saving while a run is
+        // in progress has always been allowed. 0 = free, 1 = a load or save owns the staging files.
+        private int _fileOperationActive;
 
         private string? _currentPath;
 
@@ -59,10 +68,11 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <c>action => Application.Current.Dispatcher.InvokeAsync(action).Task</c>.
         /// </param>
         /// <param name="applyToLiveApp">
-        /// Called inside <paramref name="dispatch"/> after a successful read to apply the loaded
-        /// <see cref="ChipTaskHandlerModel"/> to live application state (task collection and property
-        /// notifications). It must not touch state that is not part of the project, such as the
-        /// chip tree that shows cards detected by the reader.
+        /// Applies a project model to live application state (task collection and property
+        /// notifications). <see cref="LoadAsync"/> calls it inside <paramref name="dispatch"/>; <see cref="New"/>
+        /// and <see cref="ReplaceTaskCollection"/> call it inline on the caller's thread, which must therefore be
+        /// the UI thread. It must not touch state that is not part of the project, such as the chip tree that
+        /// shows cards detected by the reader.
         /// </param>
         public ProjectHostImpl(
             DatabaseReaderWriter dbRW,
@@ -102,12 +112,18 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
             ct.ThrowIfCancellationRequested();
 
-            // Atomically reserve the load slot. Fails immediately if load or execution is in progress.
+            // Atomically reserve the load slot. Fails immediately if load, execution, or edit is in progress.
             if (!_coordinator.TryBeginLoad())
                 return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Busy);
 
+            var fileGateHeld = false;
             try
             {
+                // A save in progress owns the shared staging files; wait for the caller to retry.
+                fileGateHeld = TryEnterFileGate();
+                if (!fileGateHeld)
+                    return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Busy);
+
                 // ReadProjectAsync returns the model without touching _dbRW, so a parsing failure
                 // leaves the current project (SetupModel, _currentPath) fully intact, and no
                 // throwaway reader runs its destructive constructor on every load.
@@ -160,24 +176,18 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 // dispatcher, keeping ObservableCollection mutations on the UI thread.
                 await _dispatch(() =>
                 {
-                    if (_applyToLiveApp == null)
-                    {
-                        // Headless: the database reader's model is the live model.
-                        _dbRW.SetupModel = model;
-                    }
-
+                    ApplyModel(model);
                     _currentPath = canonicalPath;
-
-                    // Main-app mode: push the task collection into the bound live model.
-                    _applyToLiveApp?.Invoke(model);
-
-                    ProjectChanged?.Invoke(this, EventArgs.Empty);
+                    RaiseProjectChanged();
                 }).ConfigureAwait(false);
 
                 return Contracts.ProjectOpenResult.Ok(canonicalPath, TaskCount);
             }
             finally
             {
+                if (fileGateHeld)
+                    ExitFileGate();
+
                 _coordinator.EndLoad();
             }
         }
@@ -200,19 +210,19 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 #pragma warning restore CS0618
 
         /// <inheritdoc/>
-        public void New()
-        {
-            _dbRW.SetupModel = new ChipTaskHandlerModel();
-            _currentPath = null;
-            ProjectChanged?.Invoke(this, EventArgs.Empty);
-        }
+        public void New() =>
+            RunProjectOperation(() =>
+            {
+                ApplyModel(new ChipTaskHandlerModel());
+                _currentPath = null;
+            });
 
         /// <inheritdoc/>
         public void Save()
         {
-            if (_currentPath == null)
-                throw new InvalidOperationException("No path set. Use SaveAs(path) for unsaved projects.");
-            _dbRW.WriteDatabase(SetupModel, _currentPath);
+            var path = _currentPath
+                ?? throw new InvalidOperationException("No path set. Use SaveAs(path) for unsaved projects.");
+            WriteProject(path);
         }
 
         /// <inheritdoc/>
@@ -220,8 +230,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         {
             if (string.IsNullOrWhiteSpace(path))
                 throw new ArgumentException("Path must not be empty.", nameof(path));
-            _dbRW.WriteDatabase(SetupModel, path);
-            _currentPath = path;
+
+            WriteProject(path);
         }
 
         /// <inheritdoc/>
@@ -231,13 +241,120 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 throw new ArgumentNullException(nameof(tasks));
 
             var collection = new ObservableCollection<object>(tasks);
-            var model = SetupModel ?? new ChipTaskHandlerModel();
-            model.TaskCollection = collection;
 
-            if (_liveModelAccessor == null)
+            RunProjectOperation(() =>
+            {
+                if (_applyToLiveApp != null)
+                {
+                    // Same instance-preserving apply as a load, so bound views are notified identically.
+                    _applyToLiveApp(new ChipTaskHandlerModel { TaskCollection = collection });
+                    return;
+                }
+
+                // Headless: keep the model instance and swap only its task collection.
+                var model = _dbRW.SetupModel ?? new ChipTaskHandlerModel();
+                model.TaskCollection = collection;
                 _dbRW.SetupModel = model;
+            });
+        }
 
-            ProjectChanged?.Invoke(this, EventArgs.Empty);
+        // ── private helpers ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// Makes <paramref name="model"/> the live project: headless hosts adopt it as their model,
+        /// the main application copies it into its bound live model.
+        /// </summary>
+        private void ApplyModel(ChipTaskHandlerModel model)
+        {
+            if (_applyToLiveApp != null)
+            {
+                _applyToLiveApp(model);
+            }
+            else
+            {
+                _dbRW.SetupModel = model;
+            }
+        }
+
+        /// <summary>
+        /// Runs a project edit under the coordinator so it can never overlap a load or a task run, then
+        /// raises <see cref="ProjectChanged"/> while the slot is still held (as a load does).
+        /// </summary>
+        private void RunProjectOperation(Action edit)
+        {
+            if (!_coordinator.TryBeginProjectOperation())
+                throw new InvalidOperationException(
+                    _coordinator.IsLoading
+                        ? "A project load is in progress. Wait for LoadAsync to complete."
+                        : _coordinator.IsExecuting
+                            ? "A task run is in progress. Wait for it to complete."
+                            : "Another project edit is in progress.");
+
+            try
+            {
+                edit();
+                RaiseProjectChanged();
+            }
+            finally
+            {
+                _coordinator.EndProjectOperation();
+            }
+        }
+
+        /// <summary>
+        /// Writes the live project and records the file that was actually written (canonical, with any
+        /// extension the writer appended) as <see cref="CurrentPath"/>. Allowed while a task run is in
+        /// progress; refused while a load or a project edit is.
+        /// </summary>
+        private void WriteProject(string path)
+        {
+            if (_coordinator.IsMutating)
+                throw new InvalidOperationException("A project edit is in progress. Wait for it to complete.");
+
+            if (!TryEnterFileGate())
+                throw new InvalidOperationException("A project load or save is in progress. Wait for it to complete.");
+
+            try
+            {
+                var written = _dbRW.WriteDatabase(SetupModel, path)
+                    ?? throw new IOException($"The project could not be written to '{path}'.");
+
+                _currentPath = Path.GetFullPath(written);
+            }
+            finally
+            {
+                ExitFileGate();
+            }
+        }
+
+        private bool TryEnterFileGate() =>
+            Interlocked.CompareExchange(ref _fileOperationActive, 1, 0) == 0;
+
+        private void ExitFileGate() =>
+            Volatile.Write(ref _fileOperationActive, 0);
+
+        /// <summary>
+        /// Raises <see cref="ProjectChanged"/> to each subscriber in isolation: by then the project has already
+        /// been replaced, so a throwing subscriber is logged and must not turn a completed load or edit into
+        /// an exception, nor starve the subscribers after it.
+        /// </summary>
+        private void RaiseProjectChanged()
+        {
+            var handlers = ProjectChanged;
+            if (handlers == null)
+                return;
+
+            foreach (var handler in handlers.GetInvocationList().Cast<EventHandler>())
+            {
+                try
+                {
+                    handler(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "ProjectChanged subscriber threw; the exception was not propagated");
+                }
+            }
         }
     }
 }

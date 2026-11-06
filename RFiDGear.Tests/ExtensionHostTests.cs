@@ -762,13 +762,13 @@ namespace RFiDGear.Tests
     // ── Project load pipeline: formats, isolation, stale-file safety ──────────
 
     /// <summary>
-    /// Runs the real load path against an isolated <see cref="ProjectManager"/> root so it neither
-    /// depends on nor modifies the user's <c>%LocalAppData%\RFiDGear</c> folder.
+    /// Shared plumbing for tests that run the real project host against an isolated
+    /// <see cref="ProjectManager"/> root, so they neither depend on nor modify the user's
+    /// <c>%LocalAppData%\RFiDGear</c> folder. Deletes the root and every tracked file afterwards.
     /// </summary>
-    [Collection("AppDataPath")]
-    public sealed class ProjectLoadPipelineTests : IDisposable
+    public abstract class IsolatedProjectTestBase : IDisposable
     {
-        private readonly string _root = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
+        protected readonly string _root = Path.Combine(Path.GetTempPath(), "RFiDGear.Tests", Guid.NewGuid().ToString("N"));
         private readonly List<string> _files = new();
 
         public void Dispose()
@@ -779,20 +779,36 @@ namespace RFiDGear.Tests
                 Directory.Delete(_root, recursive: true);
         }
 
-        private string Track(string path)
+        /// <summary>Registers a file for deletion when the test ends and returns its path.</summary>
+        protected string Track(string path)
         {
             _files.Add(path);
             return path;
         }
 
-        private (ProjectHostImpl host, ProjectManager manager) CreateIsolatedHost()
+        internal (ProjectHostImpl host, ProjectManager manager) CreateIsolatedHost()
         {
-            var manager = new ProjectManager(_root);
-            return (new ProjectHostImpl(new DatabaseReaderWriter(manager), new ExtensionOperationCoordinator()), manager);
+            var (host, manager, _) = CreateIsolatedHostWithCoordinator();
+            return (host, manager);
         }
 
-        private static Task<ProjectOpenResult> LoadAsync(ProjectHostImpl host, string path) =>
+        internal (ProjectHostImpl host, ProjectManager manager, ExtensionOperationCoordinator coordinator) CreateIsolatedHostWithCoordinator()
+        {
+            var manager = new ProjectManager(_root);
+            var coordinator = new ExtensionOperationCoordinator();
+            return (new ProjectHostImpl(new DatabaseReaderWriter(manager), coordinator), manager, coordinator);
+        }
+
+        internal static Task<ProjectOpenResult> LoadAsync(ProjectHostImpl host, string path) =>
             ProjectHostImplTests.LoadOnStaAsync(host, path);
+    }
+
+    /// <summary>
+    /// Runs the real load path against an isolated <see cref="ProjectManager"/> root.
+    /// </summary>
+    [Collection("AppDataPath")]
+    public sealed class ProjectLoadPipelineTests : IsolatedProjectTestBase
+    {
 
         [Fact]
         public async Task LoadAsync_PlainXmlProject_LoadsAllTasks()
@@ -942,6 +958,345 @@ namespace RFiDGear.Tests
 
             Assert.True(result.Success, $"LoadAsync failed: {result.Error}");
             Assert.Equal(2, reader.TaskCount);
+        }
+    }
+
+    // ── ExtensionOperationCoordinator ─────────────────────────────────────────
+
+    public class ExtensionOperationCoordinatorTests
+    {
+        [Fact]
+        public void ProjectOperation_WhenIdle_IsAdmittedAndReleased()
+        {
+            var coordinator = new ExtensionOperationCoordinator();
+
+            Assert.True(coordinator.TryBeginProjectOperation());
+            Assert.True(coordinator.IsMutating);
+
+            coordinator.EndProjectOperation();
+            Assert.False(coordinator.IsMutating);
+            Assert.True(coordinator.TryBeginProjectOperation());
+        }
+
+        [Fact]
+        public void ProjectOperation_IsRejectedWhileLoadingExecutingOrMutating()
+        {
+            var loading = new ExtensionOperationCoordinator();
+            Assert.True(loading.TryBeginLoad());
+            Assert.False(loading.TryBeginProjectOperation());
+
+            var executing = new ExtensionOperationCoordinator();
+            Assert.True(executing.TryBeginExecution());
+            Assert.False(executing.TryBeginProjectOperation());
+
+            var mutating = new ExtensionOperationCoordinator();
+            Assert.True(mutating.TryBeginProjectOperation());
+            Assert.False(mutating.TryBeginProjectOperation());
+        }
+
+        [Fact]
+        public void LoadAndExecution_AreRejectedWhileAProjectOperationIsInProgress()
+        {
+            var coordinator = new ExtensionOperationCoordinator();
+            Assert.True(coordinator.TryBeginProjectOperation());
+
+            Assert.False(coordinator.TryBeginLoad());
+            Assert.False(coordinator.TryBeginExecution());
+            Assert.False(coordinator.IsLoading);
+            Assert.False(coordinator.IsExecuting);
+        }
+    }
+
+    // ── Project operations: edits, saves, current path ────────────────────────
+
+    [Collection("AppDataPath")]
+    public sealed class ProjectOperationTests : IsolatedProjectTestBase
+    {
+        private ProjectHostImpl CreateLiveHost(
+            ChipTaskHandlerModel live,
+            ExtensionOperationCoordinator coordinator,
+            Func<Action, Task>? dispatch = null,
+            Action<ChipTaskHandlerModel>? apply = null) =>
+            new ProjectHostImpl(
+                new DatabaseReaderWriter(new ProjectManager(_root)),
+                coordinator,
+                () => live,
+                dispatch ?? (action => { action(); return Task.CompletedTask; }),
+                apply ?? (loaded =>
+                {
+                    live.TaskCollection.Clear();
+                    foreach (var task in loaded.TaskCollection)
+                        live.TaskCollection.Add(task);
+                }));
+
+        private string NewOutputPath(string extension) =>
+            Track(Path.Combine(Path.GetTempPath(), $"rfidgear-test-{Guid.NewGuid():N}{extension}"));
+
+        // ── New / ReplaceTaskCollection ──
+
+        [Fact]
+        public async Task New_ClearsProjectAndPath_AndRaisesProjectChangedOnce()
+        {
+            var project = Track(ProjectFixtures.CreateProject(2));
+            var (host, _) = CreateIsolatedHost();
+            Assert.True((await LoadAsync(host, project)).Success);
+            var raised = 0;
+            host.ProjectChanged += (_, _) => raised++;
+
+            host.New();
+
+            Assert.Equal(0, host.TaskCount);
+            Assert.Null(host.CurrentPath);
+            Assert.Equal(1, raised);
+        }
+
+        [Fact]
+        public async Task New_AndReplaceTaskCollection_AreRejectedDuringARunAndLeaveTheProjectUnchanged()
+        {
+            var (host, _, coordinator) = CreateIsolatedHostWithCoordinator();
+            host.ReplaceTaskCollection(new object[] { new StubTask() });
+            var raised = 0;
+            host.ProjectChanged += (_, _) => raised++;
+
+            Assert.True(coordinator.TryBeginExecution());
+            Assert.Throws<InvalidOperationException>(() => host.New());
+            Assert.Throws<InvalidOperationException>(() => host.ReplaceTaskCollection(new object[] { new StubTask(), new StubTask() }));
+            coordinator.EndExecution();
+
+            Assert.Equal(1, host.TaskCount);
+            Assert.Equal(0, raised);
+
+            // Rejection must not leak the slot.
+            host.New();
+            Assert.Equal(0, host.TaskCount);
+            await Task.CompletedTask;
+        }
+
+        [Fact]
+        public void New_AndReplaceTaskCollection_AreRejectedDuringALoad()
+        {
+            var (host, _, coordinator) = CreateIsolatedHostWithCoordinator();
+            host.ReplaceTaskCollection(new object[] { new StubTask() });
+
+            Assert.True(coordinator.TryBeginLoad());
+            Assert.Throws<InvalidOperationException>(() => host.New());
+            Assert.Throws<InvalidOperationException>(() => host.ReplaceTaskCollection(new object[0]));
+
+            Assert.Equal(1, host.TaskCount);
+        }
+
+        [Fact]
+        public void ExecuteAllAsync_IsRejectedWhileAProjectEditIsInProgress()
+        {
+            var coordinator = new ExtensionOperationCoordinator();
+            var project = new ProjectHostImpl(new DatabaseReaderWriter(new ProjectManager(_root)), coordinator);
+            var exec = new TaskExecHostImpl(new CapturingExecService(), project, coordinator);
+            Assert.True(coordinator.TryBeginProjectOperation());
+
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(() => exec.ExecuteAllAsync(ExecutionRequest.Empty));
+
+            Assert.Contains("project edit", ex.Result.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task New_InMainAppMode_AppliesAnEmptyModelInlineAndClearsThePath()
+        {
+            var project = Track(ProjectFixtures.CreateProject(2));
+            var live = new ChipTaskHandlerModel();
+            var applied = new List<ChipTaskHandlerModel>();
+            var host = CreateLiveHost(
+                live,
+                new ExtensionOperationCoordinator(),
+                apply: model =>
+                {
+                    applied.Add(model);
+                    live.TaskCollection.Clear();
+                    foreach (var task in model.TaskCollection)
+                        live.TaskCollection.Add(task);
+                });
+            Assert.True((await LoadAsync(host, project)).Success);
+            Assert.Equal(2, live.TaskCollection.Count);
+            applied.Clear();
+
+            host.New();
+
+            Assert.Empty(Assert.Single(applied).TaskCollection);
+            Assert.Empty(live.TaskCollection);
+            Assert.Equal(0, host.TaskCount);
+            Assert.Null(host.CurrentPath);
+        }
+
+        [Fact]
+        public void ReplaceTaskCollection_InMainAppMode_AppliesThroughTheSameCallbackAsALoad()
+        {
+            var live = new ChipTaskHandlerModel();
+            live.TaskCollection.Add(new StubTask());
+            var originalCollection = live.TaskCollection;
+            var host = CreateLiveHost(live, new ExtensionOperationCoordinator());
+            var replacements = new object[] { new StubTask { CurrentTaskIndex = "7" }, new StubTask { CurrentTaskIndex = "8" } };
+
+            host.ReplaceTaskCollection(replacements);
+
+            Assert.Same(originalCollection, live.TaskCollection);   // bound collection instance is kept
+            Assert.Equal(replacements, live.TaskCollection);
+            Assert.Equal(2, host.TaskCount);
+        }
+
+        // ── file gate: a load and a save never overlap ──
+
+        [Fact]
+        public async Task WhileALoadIsCommitting_SaveNewAndLoadAreRejected_ThenEverythingWorksAgain()
+        {
+            var first = Track(ProjectFixtures.CreateProject(1));
+            var second = Track(ProjectFixtures.CreateProject(2));
+            var output = NewOutputPath(".rfPrj");
+            var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var host = CreateLiveHost(
+                new ChipTaskHandlerModel(),
+                new ExtensionOperationCoordinator(),
+                dispatch: async action =>
+                {
+                    entered.SetResult();
+                    await release.Task;
+                    action();
+                });
+
+            var loading = LoadAsync(host, first);
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            // The load owns the staging files and the project: nothing else may touch either.
+            Assert.Throws<InvalidOperationException>(() => host.SaveAs(output));
+            Assert.Throws<InvalidOperationException>(() => host.New());
+            Assert.Equal(ProjectOpenError.Busy, (await host.LoadAsync(second)).Error);
+
+            release.SetResult();
+            Assert.True((await loading).Success);
+
+            host.SaveAs(output);
+            Assert.True(File.Exists(output));
+        }
+
+        [Fact]
+        public void Save_DuringATaskRun_IsAllowed()
+        {
+            var (host, _, coordinator) = CreateIsolatedHostWithCoordinator();
+            host.ReplaceTaskCollection(new object[] { new CommonTaskViewModel { CurrentTaskIndex = "0" } });
+            var output = NewOutputPath(".rfPrj");
+            Assert.True(coordinator.TryBeginExecution());
+
+            host.SaveAs(output);
+
+            Assert.True(File.Exists(output));
+            Assert.Equal(Path.GetFullPath(output), host.CurrentPath);
+        }
+
+        [Fact]
+        public void Save_DuringAProjectEdit_IsRejected()
+        {
+            var (host, _, coordinator) = CreateIsolatedHostWithCoordinator();
+            var output = NewOutputPath(".rfPrj");
+            Assert.True(coordinator.TryBeginProjectOperation());
+
+            Assert.Throws<InvalidOperationException>(() => host.SaveAs(output));
+
+            Assert.False(File.Exists(output));
+        }
+
+        // ── events ──
+
+        [Fact]
+        public async Task ProjectChanged_ThrowingSubscriber_DoesNotFailLoadOrEditAndLaterSubscribersRun()
+        {
+            var project = Track(ProjectFixtures.CreateProject(1));
+            var (host, _) = CreateIsolatedHost();
+            var calls = 0;
+            host.ProjectChanged += (_, _) => throw new InvalidOperationException("subscriber fault");
+            host.ProjectChanged += (_, _) => calls++;
+
+            var result = await LoadAsync(host, project);
+
+            Assert.True(result.Success, $"LoadAsync failed: {result.Error}");
+            Assert.Equal(1, host.TaskCount);
+            Assert.Equal(1, calls);
+
+            host.New();   // must not throw either
+
+            Assert.Equal(0, host.TaskCount);
+            Assert.Equal(2, calls);
+        }
+
+        // ── save: the path that was actually written ──
+
+        [Fact]
+        public void SaveAs_WithoutExtension_AppendsRfPrjAndRecordsTheCanonicalWrittenPath()
+        {
+            var (host, _) = CreateIsolatedHost();
+            host.ReplaceTaskCollection(new object[] { new CommonTaskViewModel { CurrentTaskIndex = "0" } });
+            var typed = Path.Combine(Path.GetTempPath(), $"rfidgear-test-{Guid.NewGuid():N}");
+            var written = Track(typed + ".rfPrj");
+
+            host.SaveAs(typed);
+
+            Assert.True(File.Exists(written));
+            Assert.Equal(Path.GetFullPath(written), host.CurrentPath);
+        }
+
+        [Fact]
+        public void SaveAs_WithXmlExtension_WritesPlainXmlAndRecordsThatPath()
+        {
+            var (host, _) = CreateIsolatedHost();
+            host.ReplaceTaskCollection(new object[] { new CommonTaskViewModel { CurrentTaskIndex = "0" } });
+            var output = NewOutputPath(".xml");
+
+            host.SaveAs(output);
+
+            Assert.StartsWith("<?xml", File.ReadAllText(output));
+            Assert.Equal(Path.GetFullPath(output), host.CurrentPath);
+        }
+
+        [Fact]
+        public async Task SaveAs_WhenTheWriteFails_ThrowsKeepsCurrentPathAndReleasesTheGate()
+        {
+            var project = Track(ProjectFixtures.CreateProject(1));
+            var (host, _) = CreateIsolatedHost();
+            Assert.True((await LoadAsync(host, project)).Success);
+            var pathBefore = host.CurrentPath;
+            var unwritable = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "missing-directory", "p.rfPrj");
+
+            Assert.ThrowsAny<IOException>(() => host.SaveAs(unwritable));
+
+            Assert.Equal(pathBefore, host.CurrentPath);
+            host.SaveAs(NewOutputPath(".rfPrj"));   // the gate was released, so a later save works
+        }
+
+        [Fact]
+        public async Task Save_WritesToTheCurrentPath_AfterSaveAs()
+        {
+            var (writer, _) = CreateIsolatedHost();
+            var (reader, _) = CreateIsolatedHost();
+            var output = NewOutputPath(".rfPrj");
+            writer.ReplaceTaskCollection(new object[] { new CommonTaskViewModel { CurrentTaskIndex = "0" } });
+            writer.SaveAs(output);
+
+            writer.ReplaceTaskCollection(new object[]
+            {
+                new CommonTaskViewModel { CurrentTaskIndex = "0" },
+                new CommonTaskViewModel { CurrentTaskIndex = "1" },
+                new CommonTaskViewModel { CurrentTaskIndex = "2" },
+            });
+            writer.Save();
+
+            Assert.True((await LoadAsync(reader, output)).Success);
+            Assert.Equal(3, reader.TaskCount);
+        }
+
+        [Fact]
+        public void Save_WithoutAPath_Throws()
+        {
+            var (host, _) = CreateIsolatedHost();
+
+            Assert.Throws<InvalidOperationException>(() => host.Save());
         }
     }
 

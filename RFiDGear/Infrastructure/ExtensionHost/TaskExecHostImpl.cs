@@ -60,7 +60,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 throw new InvalidOperationException(
                     _coordinator.IsLoading
                         ? "A project load is in progress. Wait for LoadAsync to complete before executing."
-                        : "An execution is already in progress.");
+                        : _coordinator.IsMutating
+                            ? "A project edit is in progress. Wait for it to complete before executing."
+                            : "An execution is already in progress.");
 
             // Allocate the RunId before the call so result, logs, and the execution service
             // all share the same identity regardless of where or when the run ends.
