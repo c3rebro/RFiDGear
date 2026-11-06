@@ -1,13 +1,11 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
 
 using RFiDGear.Contracts;
+using RFiDGear.UI.UIExtensions;
 
 using Xunit;
 
@@ -18,44 +16,26 @@ namespace RFiDGear.Tests.ApiSurface
     /// change to a public type or member is a change to a contract: an addition is usually fine, a removal or a changed
     /// signature, nullable annotation, default value, enum value or constant breaks extensions that are already built.
     /// <para>
-    /// The test compares the surface, rendered by <see cref="ApiSurfaceWriter"/>, with the approved snapshot checked in
-    /// next to it (<c>RFiDGear.Contracts.api.approved</c>). A difference fails the test and prints what changed. To accept an
-    /// intended change, run the test once with the environment variable <c>RFIDGEAR_UPDATE_API_SNAPSHOT=1</c>; it
-    /// rewrites the snapshot (and fails, so that a CI run with the variable set can never pass silently). Review the
-    /// <c>git diff</c> of the snapshot and commit it with the change.
+    /// The comparison and the way to accept an intended change are described on <see cref="ApiSurfaceGuard"/>. The
+    /// approved snapshot is <c>RFiDGear.Contracts.api.approved</c>.
     /// </para>
     /// </summary>
     public class ContractsApiSurfaceTests
     {
-        private const string UpdateVariable = "RFIDGEAR_UPDATE_API_SNAPSHOT";
         private const string BaselineFileName = "RFiDGear.Contracts.api.approved";
-        private const string CommentPrefix = "//";
 
         private static readonly Assembly Contracts = typeof(IRFiDGearExtensionHost).Assembly;
 
         [Fact]
         public void PublicSurface_MatchesTheApprovedSnapshot()
         {
-            var actual = ApiSurfaceWriter.Describe(Contracts);
-
-            if (Environment.GetEnvironmentVariable(UpdateVariable) == "1")
-            {
-                var path = SourceBaselinePath();
-                File.WriteAllText(path, BaselineHeader + string.Join("\n", actual) + "\n", new UTF8Encoding(false));
-                Assert.Fail($"The API snapshot was rewritten at {path}. Review its git diff, commit it with the change, and run the tests again without {UpdateVariable}.");
-            }
-
-            var expected = ReadBaseline();
-            if (!expected.SequenceEqual(actual, StringComparer.Ordinal))
-            {
-                Assert.Fail(DescribeDifference(expected, actual));
-            }
+            ApiSurfaceGuard.AssertMatchesSnapshot(Contracts, BaselineFileName);
         }
 
         [Fact]
         public void Snapshot_IsNotEmpty_SoAnEmptiedFileCannotApproveEverything()
         {
-            var expected = ReadBaseline();
+            var expected = ApiSurfaceGuard.ReadBaseline(BaselineFileName);
 
             foreach (var core in new[] { "public interface RFiDGear.Contracts.ITaskExecHost", "public interface RFiDGear.Contracts.IProjectHost",
                 "public interface RFiDGear.Contracts.IAppContext", "public interface RFiDGear.Contracts.IRFiDGearExtensionHost", "public record RFiDGear.Contracts.ExecResult" })
@@ -68,7 +48,8 @@ namespace RFiDGear.Tests.ApiSurface
         public void ContractsAssembly_DependsOnlyOnTheFramework()
         {
             // An extension author must be able to reference the contract without the application. A reference to any
-            // other assembly would drag it in, and make the contract's surface depend on code that is not frozen.
+            // other assembly would drag it in, and make the contract's surface depend on code that is not frozen. In
+            // particular the contract stays free of MEF: that belongs to the extension SDK.
             var allowed = new[] { "System", "Microsoft", "netstandard", "mscorlib", "WindowsBase" };
             var references = Contracts.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty).ToList();
 
@@ -76,78 +57,86 @@ namespace RFiDGear.Tests.ApiSurface
                 Assert.True(
                     allowed.Any(prefix => name == prefix || name.StartsWith(prefix + ".", StringComparison.Ordinal)),
                     $"RFiDGear.Contracts references '{name}', which is not part of the framework."));
+            Assert.DoesNotContain("System.ComponentModel.Composition", references);
+        }
+    }
+
+    /// <summary>
+    /// Guards the public surface of <c>RFiDGear.ExtensionSdk</c>, the MEF-facing extension ABI. It is versioned on its
+    /// own: a change here is a separate, deliberate review from a change to the host contract.
+    /// </summary>
+    public class ExtensionSdkApiSurfaceTests
+    {
+        private const string BaselineFileName = "RFiDGear.ExtensionSdk.api.approved";
+
+        private static readonly Assembly Sdk = typeof(UiExtensionAttribute).Assembly;
+
+        private static readonly ApiSurfaceOptions Options = new(
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                "RFiDGear.UI.UIExtensions",
+                "RFiDGear.UI.UIExtensions.Interfaces",
+            },
+            new HashSet<Type>
+            {
+                // Without [MetadataAttribute] every [UiExtension] silently loses its MEF metadata.
+                typeof(System.ComponentModel.Composition.MetadataAttributeAttribute),
+                typeof(AttributeUsageAttribute),
+            });
+
+        [Fact]
+        public void PublicSurface_MatchesTheApprovedSnapshot()
+        {
+            ApiSurfaceGuard.AssertMatchesSnapshot(Sdk, BaselineFileName, Options);
         }
 
-        // ── plumbing ──────────────────────────────────────────────────────────
-
-        private const string BaselineHeader =
-            "// Approved public API surface of RFiDGear.Contracts. Generated by ApiSurfaceWriter; do not edit by hand.\n" +
-            "// To accept an intended change: set RFIDGEAR_UPDATE_API_SNAPSHOT=1, run ContractsApiSurfaceTests once,\n" +
-            "// review the git diff of this file and commit it together with the change that caused it.\n";
-
-        private static string SourceBaselinePath([CallerFilePath] string testFile = "") =>
-            Path.Combine(Path.GetDirectoryName(testFile)!, BaselineFileName);
-
-        private static IReadOnlyList<string> ReadBaseline()
+        [Fact]
+        public void Snapshot_ListsTheFourMovedTypes()
         {
-            var path = Path.Combine(AppContext.BaseDirectory, "ApiSurface", BaselineFileName);
-            Assert.True(File.Exists(path), $"The approved snapshot is missing from the test output at {path}.");
+            var expected = ApiSurfaceGuard.ReadBaseline(BaselineFileName);
 
-            return File.ReadAllLines(path)
-                .Where(line => !line.StartsWith(CommentPrefix, StringComparison.Ordinal))
-                .ToList();
+            foreach (var name in new[]
+            {
+                "RFiDGear.UI.UIExtensions.UiExtensionAttribute",
+                "RFiDGear.UI.UIExtensions.HostPlacement",
+                "RFiDGear.UI.UIExtensions.Interfaces.IUIExtension",
+                "RFiDGear.UI.UIExtensions.Interfaces.IUIExtensionDetails",
+            })
+            {
+                Assert.Contains(expected, line => line.Contains(name, StringComparison.Ordinal) && !line.StartsWith("    ", StringComparison.Ordinal));
+            }
         }
 
-        private static string DescribeDifference(IReadOnlyList<string> expected, IReadOnlyList<string> actual)
+        [Fact]
+        public void Snapshot_RecordsTheMetadataAttribute_WhichTheWholeMefContractRestsOn()
         {
-            static List<string> Missing(IReadOnlyList<string> from, IReadOnlyList<string> other)
-            {
-                var counts = other.GroupBy(l => l, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
-                var result = new List<string>();
-                foreach (var line in from)
-                {
-                    if (counts.TryGetValue(line, out var left) && left > 0)
-                    {
-                        counts[line] = left - 1;
-                    }
-                    else
-                    {
-                        result.Add(line);
-                    }
-                }
+            var expected = ApiSurfaceGuard.ReadBaseline(BaselineFileName);
 
-                return result;
-            }
+            Assert.Contains(expected, line => line.Contains("[MetadataAttribute]", StringComparison.Ordinal)
+                && line.Contains("UiExtensionAttribute", StringComparison.Ordinal));
+        }
 
-            const int limit = 40;
-            var removed = Missing(expected, actual).Where(l => l.Length > 0).ToList();
-            var added = Missing(actual, expected).Where(l => l.Length > 0).ToList();
-            var text = new StringBuilder();
-            text.AppendLine("The public surface of RFiDGear.Contracts no longer matches the approved snapshot.");
-            text.AppendLine("Extensions are compiled against this assembly: a removed or changed line breaks extensions that are already built;");
-            text.AppendLine("an added line is usually compatible but is still a new commitment.");
-            text.AppendLine();
-            text.AppendLine($"Only in the approved snapshot ({removed.Count}):");
-            foreach (var line in removed.Take(limit))
-            {
-                text.AppendLine("  - " + line.Trim());
-            }
+        [Fact]
+        public void HostPlacement_KeepsItsExplicitValues()
+        {
+            // Persisted in compiled extensions as numbers: CardTask must stay 0 (the default for every extension
+            // built before placement existed) and Application 1.
+            Assert.Equal(0, (int)HostPlacement.CardTask);
+            Assert.Equal(1, (int)HostPlacement.Application);
+        }
 
-            text.AppendLine($"Only in the current code ({added.Count}):");
-            foreach (var line in added.Take(limit))
-            {
-                text.AppendLine("  + " + line.Trim());
-            }
+        [Fact]
+        public void SdkAssembly_DependsOnlyOnTheFrameworkAndMef()
+        {
+            var allowed = new[] { "System", "Microsoft", "netstandard", "mscorlib", "WindowsBase", "PresentationFramework", "PresentationCore" };
+            var references = Sdk.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty).ToList();
 
-            if (removed.Count == 0 && added.Count == 0)
-            {
-                text.AppendLine("(only the order or the blank lines differ)");
-            }
-
-            text.AppendLine();
-            text.AppendLine($"If the change is intended, set {UpdateVariable}=1, run this test once, review the git diff of");
-            text.AppendLine($"RFiDGear.Tests/ApiSurface/{BaselineFileName}, and commit it with the change and a note on why it is compatible.");
-            return text.ToString();
+            Assert.All(references, name =>
+                Assert.True(
+                    name == "RFiDGear.Contracts"
+                    || allowed.Any(prefix => name == prefix || name.StartsWith(prefix + ".", StringComparison.Ordinal)),
+                    $"RFiDGear.ExtensionSdk references '{name}', which is neither the framework, MEF nor the host contract."));
+            Assert.DoesNotContain("RFiDGear", references);
         }
     }
 }

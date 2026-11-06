@@ -34,5 +34,9 @@
     <Content Include="ApiSurface\RFiDGear.Contracts.api.approved">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- The approved public surface of RFiDGear.ExtensionSdk, compared by ApiSurface/ExtensionSdkApiSurfaceTests. -->
+    <Content Include="ApiSurface\RFiDGear.ExtensionSdk.api.approved">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>
