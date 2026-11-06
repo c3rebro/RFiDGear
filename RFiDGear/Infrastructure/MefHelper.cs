@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
+using System.ComponentModel.Composition.Primitives;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.DI.Interfaces;
+using RFiDGear.UI.UIExtensions.Interfaces;
 using Serilog;
 
 // Template version 1.2.0.2. Code developed for framework v2.0.50727.3074
@@ -24,6 +28,11 @@ public sealed class MefHelper : IDisposable
     private const int SolutionRootDepth = 5;
     private const string ExtensionAssemblySearchPattern = "RFiDGear.Extensions*.dll";
 
+    // Null means "the entry assembly", resolved when composing (the singleton is created before it is needed).
+    private readonly Assembly _hostAssembly;
+    private readonly Func<string, ComposablePartCatalog> _catalogFactory;
+    private IReadOnlyList<ExtensionLoadResult> _lastLoadResults = Array.Empty<ExtensionLoadResult>();
+
     #region Constructor / Destructor
 
     /// <summary>
@@ -37,14 +46,31 @@ public sealed class MefHelper : IDisposable
         var applicationName = assembly?.GetName().Name;
 
         _ExtensionsPath = BuildExtensionsPath(programDataPath, applicationName);
+        _catalogFactory = CreateAssemblyCatalog;
         EnsureExtensionsDirectoryExists(_ExtensionsPath);
+    }
+
+    /// <summary>
+    /// Creates an instance that composes from an explicit host assembly and extensions folder. This is the test
+    /// seam: it never creates the folder and never touches the singleton.
+    /// </summary>
+    /// <param name="extensionsPath">The folder scanned for <c>RFiDGear.Extensions*.dll</c>.</param>
+    /// <param name="hostAssembly">The assembly whose exports stand in for the application's own.</param>
+    /// <param name="catalogFactory">
+    /// Builds the catalog for one extension file; defaults to loading the assembly from that path.
+    /// </param>
+    internal MefHelper(string extensionsPath, Assembly hostAssembly, Func<string, ComposablePartCatalog> catalogFactory = null)
+    {
+        _ExtensionsPath = extensionsPath ?? string.Empty;
+        _hostAssembly = hostAssembly ?? throw new ArgumentNullException(nameof(hostAssembly));
+        _catalogFactory = catalogFactory ?? CreateAssemblyCatalog;
     }
 
     #region IDisposable Members
 
     void IDisposable.Dispose()
     {
-        _Container.Dispose();
+        _Container?.Dispose();
         _Container = null;
     }
 
@@ -106,21 +132,41 @@ public sealed class MefHelper : IDisposable
     #region Public Methods
 
     /// <summary>
+    /// What happened to each extension assembly during the last <see cref="Compose"/>: loaded, or skipped with the
+    /// reason. Empty before the first composition.
+    /// </summary>
+    internal IReadOnlyList<ExtensionLoadResult> LastLoadResults => _lastLoadResults;
+
+    /// <summary>
     /// Composes the application and all MEF attributed components
     /// </summary>
-    /// <remarks></remarks>
-
+    /// <remarks>
+    /// A broken extension never prevents the others, or the application, from loading. Each extension is probed
+    /// before it is added; one that fails is logged and skipped. If the extensions that passed still break the
+    /// export queries the host relies on, the container is rebuilt from the host alone.
+    /// </remarks>
     public void Compose()
     {
-        AggregateCatalog Catalog = new AggregateCatalog();
+        var hostAssembly = _hostAssembly ?? Assembly.GetEntryAssembly();
+        var results = new List<ExtensionLoadResult>();
 
-        // Add This assembly's catalog parts
-        System.Reflection.Assembly ass = System.Reflection.Assembly.GetEntryAssembly();
-        Catalog.Catalogs.Add(new AssemblyCatalog(ass));
+        var container = BuildContainer(hostAssembly, results);
+        var failure = FindExportQueryFailure(container);
 
-        TryAddDirectoryCatalog(Catalog, ExtensionsPath);
+        if (failure != null)
+        {
+            Log.ForContext<MefHelper>()
+                .Error(failure, "The loaded extensions break the MEF export queries; continuing without extensions");
 
-        _Container = new CompositionContainer(Catalog);
+            container.Dispose();
+            container = BuildContainer(hostAssembly, null);
+            results = results
+                .Select(result => result.Loaded ? result with { Loaded = false, Error = failure } : result)
+                .ToList();
+        }
+
+        _lastLoadResults = results;
+        _Container = container;
     }
 
     /// <summary>
@@ -267,19 +313,138 @@ public sealed class MefHelper : IDisposable
         }
     }
 
-    private static void TryAddDirectoryCatalog(AggregateCatalog catalog, string catalogPath)
+    private static ComposablePartCatalog CreateAssemblyCatalog(string assemblyPath)
     {
+        return new AssemblyCatalog(assemblyPath);
+    }
+
+    /// <summary>
+    /// Builds a container from the host assembly and, when <paramref name="results"/> is given, the extensions.
+    /// </summary>
+    private CompositionContainer BuildContainer(Assembly hostAssembly, List<ExtensionLoadResult> results)
+    {
+        var catalog = new AggregateCatalog();
+        catalog.Catalogs.Add(new AssemblyCatalog(hostAssembly));
+
+        if (results != null)
+        {
+            TryAddDirectoryCatalog(catalog, ExtensionsPath, results);
+        }
+
+        return new CompositionContainer(catalog);
+    }
+
+    private void TryAddDirectoryCatalog(AggregateCatalog catalog, string catalogPath, List<ExtensionLoadResult> results)
+    {
+        IReadOnlyList<string> assemblyPaths;
+
         try
         {
-            foreach (var assemblyPath in GetExtensionAssemblyPaths(catalogPath))
-            {
-                catalog.Catalogs.Add(new AssemblyCatalog(assemblyPath));
-            }
+            assemblyPaths = GetExtensionAssemblyPaths(catalogPath);
         }
         catch (Exception e)
         {
             Log.ForContext<MefHelper>()
                 .Error(e, "Failed to compose extensions from {ExtensionsPath}", catalogPath);
+            return;
+        }
+
+        // One try/catch per file: a bad extension must not stop the ones after it.
+        foreach (var assemblyPath in assemblyPaths)
+        {
+            results.Add(TryAddExtensionCatalog(catalog, assemblyPath));
+        }
+    }
+
+    private ExtensionLoadResult TryAddExtensionCatalog(AggregateCatalog catalog, string assemblyPath)
+    {
+        ComposablePartCatalog candidate = null;
+
+        try
+        {
+            candidate = _catalogFactory(assemblyPath);
+
+            // MEF evaluates parts, metadata and imports lazily, so a broken extension would otherwise surface much
+            // later, inside whichever view model happens to compose first. Force it now, before the catalog is added.
+            var partCount = ProbeCatalog(candidate);
+
+            catalog.Catalogs.Add(candidate);
+            Log.ForContext<MefHelper>()
+                .Information("Loaded extension {ExtensionAssembly} with {PartCount} MEF parts", assemblyPath, partCount);
+
+            return new ExtensionLoadResult(assemblyPath, true, partCount, null);
+        }
+        catch (Exception e)
+        {
+            TryDispose(candidate);
+            Log.ForContext<MefHelper>()
+                .Error(e, "Extension {ExtensionAssembly} could not be loaded and was skipped", assemblyPath);
+
+            return new ExtensionLoadResult(assemblyPath, false, 0, e);
+        }
+    }
+
+    /// <summary>
+    /// Forces everything MEF would otherwise evaluate lazily: the parts, each export's contract and metadata, and
+    /// each import's contract. Never instantiates a part.
+    /// </summary>
+    /// <returns>The number of parts in the catalog.</returns>
+    private static int ProbeCatalog(ComposablePartCatalog catalog)
+    {
+        var parts = catalog.Parts.ToList();
+
+        foreach (var part in parts)
+        {
+            foreach (var export in part.ExportDefinitions)
+            {
+                _ = export.ContractName;
+                _ = export.Metadata.Count;
+            }
+
+            foreach (var import in part.ImportDefinitions)
+            {
+                _ = import.ContractName;
+            }
+        }
+
+        return parts.Count;
+    }
+
+    /// <summary>
+    /// Runs the export queries the host depends on, without instantiating anything.
+    /// </summary>
+    /// <returns>The exception the queries threw, or null when they work.</returns>
+    private static Exception FindExportQueryFailure(CompositionContainer container)
+    {
+        try
+        {
+            foreach (var export in container.GetExports<IUIExtension, IUIExtensionDetails>())
+            {
+                _ = export.Metadata.Name;
+            }
+
+            foreach (var export in container.GetExports<object, IViewModelMetadata>("ViewModel"))
+            {
+                _ = export.Metadata.Name;
+            }
+
+            return null;
+        }
+        catch (Exception e)
+        {
+            return e;
+        }
+    }
+
+    private static void TryDispose(ComposablePartCatalog catalog)
+    {
+        try
+        {
+            catalog?.Dispose();
+        }
+        catch (Exception e)
+        {
+            Log.ForContext<MefHelper>().Warning(e, "Failed to dispose a discarded extension catalog");
         }
     }
 

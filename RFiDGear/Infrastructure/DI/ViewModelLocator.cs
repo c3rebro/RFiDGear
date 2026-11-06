@@ -7,6 +7,8 @@ using System.Linq;
 
 using RFiDGear.Infrastructure.DI.Interfaces;
 
+using Serilog;
+
 namespace RFiDGear.Infrastructure.DI
 {
     [TypeDescriptionProvider(typeof(ModelViewMapDescriptionProvider))]
@@ -39,7 +41,7 @@ namespace RFiDGear.Infrastructure.DI
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    Log.ForContext<ViewModelLocator>().Error(ex, "Could not resolve the view model {ViewModelName}", name);
                 }
             }
 
