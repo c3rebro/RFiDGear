@@ -53,8 +53,15 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <inheritdoc/>
         public Window? Open(Lazy<IUIExtension, IUIExtensionDetails> extension, IRFiDGearExtensionHost host)
         {
-            if (extension == null) throw new ArgumentNullException(nameof(extension));
-            if (host == null) throw new ArgumentNullException(nameof(host));
+            if (extension == null)
+            {
+                throw new ArgumentNullException(nameof(extension));
+            }
+
+            if (host == null)
+            {
+                throw new ArgumentNullException(nameof(host));
+            }
 
             var name = extension.Metadata.Name ?? string.Empty;
             Window? window = null;

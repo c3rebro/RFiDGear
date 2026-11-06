@@ -732,9 +732,13 @@ namespace RFiDGear.Tests
             Interlocked.Increment(ref _disposeCount);
             if (_throwOnDispose)
             {
-                throw new InvalidOperationException("Key=00112233445566778899AABBCCDDEEFF");
+                FailLikeAnExtension();
             }
         }
+
+        /// <summary>The failure a faulty extension's Dispose produces, with key-like text in its message.</summary>
+        private static void FailLikeAnExtension() =>
+            throw new InvalidOperationException("Key=00112233445566778899AABBCCDDEEFF");
     }
 
     public sealed class ProbeDataContext : IDisposable
@@ -834,7 +838,7 @@ namespace RFiDGear.Tests
     [UiExtension(Name = "Page naming", HostPlacement = HostPlacement.Application, Uri = PageNamingExtension.PageUri)]
     public sealed class PageNamingExtension : IApplicationUIExtension
     {
-        public const string PageUri = "pack://application:,,,/RFiDGear.Tests;component/Named.xaml";
+        internal const string PageUri = "pack://application:,,,/RFiDGear.Tests;component/Named.xaml";
 
         public PageNamingExtension()
         {
@@ -850,7 +854,7 @@ namespace RFiDGear.Tests
     [UiExtension(Name = "Uri only", HostPlacement = HostPlacement.Application, Uri = UriOnlyExtension.PageUri)]
     public sealed class UriOnlyExtension : IUIExtension
     {
-        public const string PageUri = "pack://application:,,,/RFiDGear.Tests;component/Page.xaml";
+        internal const string PageUri = "pack://application:,,,/RFiDGear.Tests;component/Page.xaml";
     }
 
     [UiExtension(Name = "Blank uri", HostPlacement = HostPlacement.Application, Uri = "")]
