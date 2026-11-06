@@ -24,8 +24,6 @@ namespace RFiDGear.Tests.ApiSurface
     /// </summary>
     internal sealed class ApiSurfaceWriter
     {
-        private const string OwnNamespace = "RFiDGear.Contracts";
-
         private static readonly Dictionary<Type, string> Keywords = new()
         {
             [typeof(void)] = "void", [typeof(bool)] = "bool", [typeof(byte)] = "byte", [typeof(sbyte)] = "sbyte",
@@ -39,21 +37,32 @@ namespace RFiDGear.Tests.ApiSurface
 
         private readonly NullabilityInfoContext _nullability = new();
 
-        private ApiSurfaceWriter()
+        private readonly ApiSurfaceOptions _options;
+
+        private ApiSurfaceWriter(ApiSurfaceOptions options)
         {
+            _options = options;
         }
 
         /// <summary>Describes every exported type of <paramref name="assembly"/>.</summary>
         /// <param name="assembly">The assembly to describe.</param>
+        /// <param name="options">What counts as the assembly's own vocabulary and as surface; the Contracts options when omitted.</param>
         /// <returns>The lines of the description, types in ordinal name order, members sorted within each type.</returns>
-        public static IReadOnlyList<string> Describe(Assembly assembly) =>
-            new ApiSurfaceWriter().DescribeTypes(assembly.GetExportedTypes());
+        public static IReadOnlyList<string> Describe(Assembly assembly, ApiSurfaceOptions? options = null) =>
+            new ApiSurfaceWriter(options ?? ApiSurfaceOptions.Default).DescribeTypes(assembly.GetExportedTypes());
 
         /// <summary>Describes the given types only; used to test the writer itself.</summary>
         /// <param name="types">The types to describe; nested types are described when listed.</param>
         /// <returns>The lines of the description.</returns>
         public static IReadOnlyList<string> Describe(params Type[] types) =>
-            new ApiSurfaceWriter().DescribeTypes(types);
+            new ApiSurfaceWriter(ApiSurfaceOptions.Default).DescribeTypes(types);
+
+        /// <summary>Describes the given types only, with explicit options; used to test the options themselves.</summary>
+        /// <param name="options">What counts as the assembly's own vocabulary and as surface.</param>
+        /// <param name="types">The types to describe.</param>
+        /// <returns>The lines of the description.</returns>
+        public static IReadOnlyList<string> Describe(ApiSurfaceOptions options, params Type[] types) =>
+            new ApiSurfaceWriter(options).DescribeTypes(types);
 
         private IReadOnlyList<string> DescribeTypes(IEnumerable<Type> types)
         {
@@ -339,7 +348,7 @@ namespace RFiDGear.Tests.ApiSurface
             return parts.Count == 0 ? string.Empty : string.Join(" ", parts) + " ";
         }
 
-        private static string Member(MemberInfo owner, string text) =>
+        private string Member(MemberInfo owner, string text) =>
             AttributePrefix(owner.GetCustomAttributesData()) + text;
 
         // ── parameters, types, constraints ────────────────────────────────────
@@ -365,7 +374,7 @@ namespace RFiDGear.Tests.ApiSurface
             return open + string.Join(", ", rendered) + close;
         }
 
-        private static string Constraints(IEnumerable<Type> genericArguments)
+        private string Constraints(IEnumerable<Type> genericArguments)
         {
             var parts = new List<string>();
             foreach (var argument in genericArguments.Where(a => a.IsGenericParameter))
@@ -401,7 +410,7 @@ namespace RFiDGear.Tests.ApiSurface
             return string.Concat(parts);
         }
 
-        private static string Format(Type type, NullabilityInfo? info)
+        private string Format(Type type, NullabilityInfo? info)
         {
             if (type.IsByRef)
             {
@@ -445,7 +454,7 @@ namespace RFiDGear.Tests.ApiSurface
             return !type.IsValueType && info?.ReadState == NullabilityState.Nullable ? name + "?" : name;
         }
 
-        private static string QualifiedName(Type type)
+        private string QualifiedName(Type type)
         {
             var simple = StripArity(type.Name);
             if (type.IsNested)
@@ -453,7 +462,7 @@ namespace RFiDGear.Tests.ApiSurface
                 return QualifiedName(type.DeclaringType!) + "." + simple;
             }
 
-            return type.Namespace == OwnNamespace || string.IsNullOrEmpty(type.Namespace) ? simple : type.Namespace + "." + simple;
+            return string.IsNullOrEmpty(type.Namespace) || _options.ElidedNamespaces.Contains(type.Namespace) ? simple : type.Namespace + "." + simple;
         }
 
         private static string StripArity(string name)
@@ -467,7 +476,7 @@ namespace RFiDGear.Tests.ApiSurface
         private static bool HasAttribute(Type type, string attributeName) =>
             type.GetCustomAttributesData().Any(a => a.AttributeType.Name == attributeName);
 
-        private static string AttributePrefix(IEnumerable<CustomAttributeData> data)
+        private string AttributePrefix(IEnumerable<CustomAttributeData> data)
         {
             var rendered = data
                 .Where(IsSurfaceAttribute)
@@ -477,25 +486,30 @@ namespace RFiDGear.Tests.ApiSurface
             return rendered.Count == 0 ? string.Empty : string.Join(" ", rendered) + " ";
         }
 
-        private static bool IsSurfaceAttribute(CustomAttributeData data)
+        private bool IsSurfaceAttribute(CustomAttributeData data)
         {
             var type = data.AttributeType;
             return type == typeof(ObsoleteAttribute)
                 || type == typeof(FlagsAttribute)
+                || _options.ExtraSurfaceAttributes.Contains(type)
                 || (type.Namespace ?? string.Empty).StartsWith("RFiDGear", StringComparison.Ordinal);
         }
 
-        private static string FormatAttribute(CustomAttributeData data)
+        private string FormatAttribute(CustomAttributeData data)
         {
             var name = data.AttributeType.Name;
             name = name.EndsWith("Attribute", StringComparison.Ordinal) ? name[..^"Attribute".Length] : name;
-            var arguments = data.ConstructorArguments.Select(a => ConstantOf(a.Value))
-                .Concat(data.NamedArguments.Select(n => $"{n.MemberName} = {ConstantOf(n.TypedValue.Value)}"))
+            var arguments = data.ConstructorArguments.Select(ArgumentOf)
+                .Concat(data.NamedArguments.Select(n => $"{n.MemberName} = {ArgumentOf(n.TypedValue)}"))
                 .ToList();
             return arguments.Count == 0 ? $"[{name}]" : $"[{name}({string.Join(", ", arguments)})]";
         }
 
-        private static string ConstantOf(object? value) => value is Type type ? $"typeof({Format(type, null)})" : Constant(value);
+        // An enum argument arrives as its underlying number; show the names so a change to it is readable.
+        private string ArgumentOf(CustomAttributeTypedArgument argument) =>
+            ConstantOf(argument.ArgumentType.IsEnum && argument.Value != null ? Enum.ToObject(argument.ArgumentType, argument.Value) : argument.Value);
+
+        private string ConstantOf(object? value) => value is Type type ? $"typeof({Format(type, null)})" : Constant(value);
 
         private static string Constant(object? value) => value switch
         {

@@ -181,5 +181,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RFiDGear.Contracts\RFiDGear.Contracts.csproj" />
+    <ProjectReference Include="..\RFiDGear.ExtensionSdk\RFiDGear.ExtensionSdk.csproj" />
   </ItemGroup>
 </Project>

@@ -90,6 +90,11 @@ namespace RFiDGear.Tests.ApiSurface
 
     public delegate void SampleHandler(object? sender, int value);
 
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property, AllowMultiple = false)]
+    public sealed class SampleMarkerAttribute : Attribute
+    {
+    }
+
     public static class SampleStatics
     {
         public static int Add(int a, int b) => a + b;
@@ -207,6 +212,32 @@ namespace RFiDGear.Tests.ApiSurface
             Assert.Equal($"public static class {Ns}SampleStatics", Describe(typeof(SampleStatics))[0]);
             Assert.Contains("public static int Add(int a, int b)", Describe(typeof(SampleStatics)));
             Assert.Equal($"public delegate void {Ns}SampleHandler(object? sender, int value)", Describe(typeof(SampleHandler))[0]);
+        }
+
+        [Fact]
+        public void ElidedNamespaces_AreLeftOutOfSignaturesOnly()
+        {
+            var options = new ApiSurfaceOptions(
+                new System.Collections.Generic.HashSet<string> { "RFiDGear.Tests.ApiSurface" },
+                new System.Collections.Generic.HashSet<Type>());
+
+            var elided = ApiSurfaceWriter.Describe(options, typeof(SampleDerived)).Select(l => l.Trim()).ToList();
+
+            // The declaration keeps its full name; the base type, which is only mentioned, loses the namespace.
+            Assert.Equal($"public sealed class {Ns}SampleDerived : SampleBase", elided[0]);
+        }
+
+        [Fact]
+        public void ExtraSurfaceAttributes_AreShownOnlyWhenAskedFor_WithEnumArgumentsByName()
+        {
+            var plain = ApiSurfaceWriter.Describe(typeof(SampleMarkerAttribute)).Select(l => l.Trim()).First();
+            var options = new ApiSurfaceOptions(
+                new System.Collections.Generic.HashSet<string>(),
+                new System.Collections.Generic.HashSet<Type> { typeof(AttributeUsageAttribute) });
+            var extended = ApiSurfaceWriter.Describe(options, typeof(SampleMarkerAttribute)).Select(l => l.Trim()).First();
+
+            Assert.DoesNotContain("AttributeUsage", plain, StringComparison.Ordinal);
+            Assert.StartsWith("[AttributeUsage(AttributeTargets.Class, Property, AllowMultiple = false)] ", extended, StringComparison.Ordinal);
         }
 
         [Fact]

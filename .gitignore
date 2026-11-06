@@ -42,3 +42,5 @@ RFiDGear/.claude/settings.local.json
 /RFiDGear.HIL.Tests/bin
 /RFiDGear.HIL.Tests/obj
 /RFiDGear.Tests/TestResults
+/RFiDGear.ExtensionSdk/bin
+/RFiDGear.ExtensionSdk/obj

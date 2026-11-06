@@ -281,7 +281,7 @@ namespace RFiDGear.Tests
         /// <summary>
         /// Creates and initializes a view model whose settings and project staging live below <paramref name="tempRoot"/>.
         /// </summary>
-        private static async Task<MainWindowViewModel> CreateInitializedViewModelAsync(string tempRoot, CultureInfo? culture = null)
+        internal static async Task<MainWindowViewModel> CreateInitializedViewModelAsync(string tempRoot, CultureInfo? culture = null)
         {
             var settingsDirectory = Path.Combine(tempRoot, "settings");
             Directory.CreateDirectory(settingsDirectory);
