@@ -1,3 +1,7 @@
+---
+title: RFiDGear.ExtensionSdk
+---
+
 RFiDGear.ExtensionSdk is the MEF-facing extension ABI: the small set of
 types an extension uses to be discovered and placed by RFiDGear. Host services
 (project, execution, reader, culture) are a separate assembly,

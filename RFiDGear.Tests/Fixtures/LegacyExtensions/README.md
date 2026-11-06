@@ -1,3 +1,7 @@
+---
+title: Legacy extension fixtures
+---
+
 This folder holds two prebuilt extension DLLs that were compiled against
 RFiDGear.exe as it was before the extension SDK was split off, when
 `UiExtensionAttribute`, `HostPlacement`, `IUIExtension` and
