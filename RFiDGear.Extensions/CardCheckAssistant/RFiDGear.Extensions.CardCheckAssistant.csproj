@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>RFiDGear.Extensions.CardCheckAssistant</RootNamespace>
+    <!-- The name has to match RFiDGear.Extensions*.dll, the pattern the host scans for. -->
+    <AssemblyName>RFiDGear.Extensions.CardCheckAssistant</AssemblyName>
+    <Platforms>AnyCPU;x64;x86</Platforms>
+    <!-- Reference nothing but the contract and the SDK, and carry no private copy of anything the host owns. -->
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Private=false: RFiDGear.Contracts.dll and RFiDGear.ExtensionSdk.dll are owned by the host and must not be
+         copied next to the extension, or two copies of the contract types would be loaded. -->
+    <ProjectReference Include="..\..\RFiDGear.Contracts\RFiDGear.Contracts.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\RFiDGear.ExtensionSdk\RFiDGear.ExtensionSdk.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="RFiDGear.Tests" />
+  </ItemGroup>
+  <Target Name="RejectPrivateCopiesOfHostAssemblies" AfterTargets="Build">
+    <ItemGroup>
+      <_PrivateHostCopy Include="$(OutDir)RFiDGear.Contracts.dll;$(OutDir)RFiDGear.ExtensionSdk.dll;$(OutDir)RFiDGear.dll;$(OutDir)System.ComponentModel.Composition.dll" />
+    </ItemGroup>
+    <Error Condition="'@(_PrivateHostCopy)' != '' And Exists('%(_PrivateHostCopy.FullPath)')"
+           Text="The extension's output folder holds a private copy of a host assembly: %(_PrivateHostCopy.FullPath). Extensions must reference RFiDGear.Contracts and RFiDGear.ExtensionSdk with Private=false." />
+  </Target>
+</Project>
