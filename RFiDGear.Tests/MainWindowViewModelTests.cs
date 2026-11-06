@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
@@ -559,6 +560,68 @@ namespace RFiDGear.Tests
                     Directory.Delete(tempRoot, recursive: true);
                 }
             });
+        }
+
+        [Fact]
+        public async Task ExtensionHost_AppContext_RaisesCultureChanged_WhenOpeningReReadsADifferentLanguage()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                var projectPath = ProjectFixtures.CreateProject(1);
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot, new CultureInfo("en-US"));
+                    IRFiDGearExtensionHost api = viewModel.ExtensionHost;
+                    Assert.Equal("en-US", api.AppContext.UICultureName);
+
+                    // The user picked German under Options > Language and declined the restart: only the
+                    // saved settings know about it so far.
+                    await SaveLanguageAsync(tempRoot, "german");
+
+                    var seen = new List<(string Culture, string? ProjectPath)>();
+                    var laterSubscriberRan = 0;
+                    api.AppContext.CultureChanged += (_, _) => throw new InvalidOperationException("a faulty extension");
+                    api.AppContext.CultureChanged += (_, _) =>
+                    {
+                        seen.Add((api.AppContext.UICultureName, api.Project.CurrentPath));
+                        laterSubscriberRan++;
+                    };
+
+                    await OpenProjectAsync(viewModel, projectPath);
+
+                    // Raised once, with the new language already visible, before the project was opened, and a
+                    // faulty subscriber neither stopped the later one nor the open.
+                    Assert.Equal(new[] { ("de-DE", (string?)null) }, seen);
+                    Assert.Equal(1, laterSubscriberRan);
+                    Assert.Equal(Path.GetFullPath(projectPath), api.Project.CurrentPath);
+                    Assert.Equal("de-DE", api.AppContext.UICultureName);
+
+                    // Re-reading the same language is not a change.
+                    await OpenProjectAsync(viewModel, projectPath);
+                    Assert.Equal(1, laterSubscriberRan);
+
+                    // And back again.
+                    await SaveLanguageAsync(tempRoot, "english");
+                    await OpenProjectAsync(viewModel, projectPath);
+                    Assert.Equal(2, laterSubscriberRan);
+                    Assert.Equal("en-US", seen[1].Culture);
+                }
+                finally
+                {
+                    File.Delete(projectPath);
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
+
+        private static async Task SaveLanguageAsync(string tempRoot, string language)
+        {
+            using (var settings = new SettingsReaderWriter(Path.Combine(tempRoot, "settings")))
+            {
+                settings.DefaultSpecification.DefaultLanguage = language;
+                await settings.SaveSettings();
+            }
         }
 
         [Fact]

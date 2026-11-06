@@ -154,6 +154,14 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public void NotifyReaderStateChanged() => _reader.RaiseStateChanged();
 
         /// <summary>
+        /// Tells the host that the application has just changed the language it works with. If
+        /// <see cref="IAppContext.UICultureName"/> now reports a different language than before,
+        /// <see cref="IAppContext.CultureChanged"/> is raised once, synchronously on the calling thread; otherwise
+        /// nothing happens. Call this on the UI thread right after assigning the language.
+        /// </summary>
+        internal void NotifyCultureMayHaveChanged() => _appContext.NotifyCultureMayHaveChanged();
+
+        /// <summary>
         /// Returns a one-line-per-task summary of the last run's error levels and success flags.
         /// Useful for diagnostic messages in test assertions.
         /// </summary>

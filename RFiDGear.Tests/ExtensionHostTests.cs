@@ -68,6 +68,109 @@ namespace RFiDGear.Tests
             var ctx = new AppContextImpl();
             Assert.False(string.IsNullOrWhiteSpace(ctx.RFiDGearVersion));
         }
+
+        // ── CultureChanged ──
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_WhenTheLanguageChanged_RaisesOnceAndSubscribersSeeTheNewLanguage()
+        {
+            var language = "english";
+            var ctx = new AppContextImpl(() => language);
+            var seen = new List<string>();
+            object? sender = null;
+            ctx.CultureChanged += (s, _) =>
+            {
+                sender = s;
+                seen.Add(ctx.UICultureName);
+            };
+
+            language = "german";
+            ctx.NotifyCultureMayHaveChanged();
+
+            Assert.Equal(new[] { "de-DE" }, seen);
+            Assert.Same(ctx, sender);
+        }
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_WhenTheLanguageIsTheSame_RaisesNothing()
+        {
+            var language = "german";
+            var ctx = new AppContextImpl(() => language);
+            var raised = 0;
+            ctx.CultureChanged += (_, _) => raised++;
+
+            ctx.NotifyCultureMayHaveChanged();
+            ctx.NotifyCultureMayHaveChanged();
+
+            Assert.Equal(0, raised);
+        }
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_RaisesOncePerChange_NotOncePerNotification()
+        {
+            var language = "english";
+            var ctx = new AppContextImpl(() => language);
+            var seen = new List<string>();
+            ctx.CultureChanged += (_, _) => seen.Add(ctx.UICultureName);
+
+            language = "german";
+            ctx.NotifyCultureMayHaveChanged();
+            ctx.NotifyCultureMayHaveChanged();   // nothing new since the last notification
+            language = "english";
+            ctx.NotifyCultureMayHaveChanged();
+
+            Assert.Equal(new[] { "de-DE", "en-US" }, seen);
+        }
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_WithoutAConfiguredLanguageSource_NeverRaises()
+        {
+            var ctx = new AppContextImpl();
+            var raised = 0;
+            ctx.CultureChanged += (_, _) => raised++;
+
+            ctx.NotifyCultureMayHaveChanged();
+
+            Assert.Equal(0, raised);
+        }
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_AfterUnsubscribing_DoesNotCallTheHandler()
+        {
+            var language = "english";
+            var ctx = new AppContextImpl(() => language);
+            var raised = 0;
+            EventHandler handler = (_, _) => raised++;
+            ctx.CultureChanged += handler;
+            ctx.CultureChanged -= handler;
+
+            language = "german";
+            ctx.NotifyCultureMayHaveChanged();
+
+            Assert.Equal(0, raised);
+        }
+
+        [Fact]
+        public void NotifyCultureMayHaveChanged_WhenASubscriberThrows_LogsItWithoutTheSecretAndStillCallsTheRest()
+        {
+            const string secret = "00112233445566778899AABBCCDDEEFF";
+            using var logs = CapturedLogs.Install();
+            var language = "english";
+            var ctx = new AppContextImpl(() => language);
+            var later = 0;
+            ctx.CultureChanged += (_, _) => throw new InvalidOperationException($"Key={secret}");
+            ctx.CultureChanged += (_, _) => later++;
+
+            language = "german";
+            ctx.NotifyCultureMayHaveChanged();   // must not throw
+
+            Assert.Equal(1, later);
+            var entry = Assert.Single(logs.From(nameof(AppContextImpl)));
+            var written = CapturedLogs.EverythingWrittenFor(entry);
+            Assert.Contains(nameof(InvalidOperationException), written);
+            Assert.Contains("[REDACTED", written);
+            Assert.DoesNotContain(secret, written, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     // ── ExecutionRequest ─────────────────────────────────────────────────────
