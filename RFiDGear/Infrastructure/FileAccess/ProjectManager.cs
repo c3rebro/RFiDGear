@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
@@ -221,12 +222,84 @@ namespace RFiDGear.Infrastructure.FileAccess
             return settingsReaderWriter.SaveSettingsAsync(defaultSpecification, resolvedPath);
         }
 
+        /// <summary>
+        /// Compares concatenated digits, which orders versions wrongly (<c>1.10.9054</c> becomes 1109054 and looks
+        /// newer than <c>2.0.10</c>, which becomes 2010). Kept only for callers that still hold the number.
+        /// </summary>
+        /// <param name="manifestVersion">The manifest's digits run together, as in <see cref="ProjectLoadResult.ManifestVersion"/>.</param>
+        /// <param name="appVersion">The running application's version.</param>
+        /// <returns><c>true</c> when the run-together number is not larger than the application's.</returns>
+        [Obsolete("Compares concatenated digits, so 1.10.9054 sorts after 2.0.10. Use ValidateManifestVersion(string, Version).")]
         public bool ValidateManifestVersion(int manifestVersion, Version appVersion)
         {
-            var currentVersion = Convert.ToInt32(string.Format("{0}{1}{2}", appVersion.Major, appVersion.Minor, appVersion.Build));
-
-            return manifestVersion <= currentVersion;
+            return manifestVersion <= LegacyVersionNumber(appVersion);
         }
+
+        /// <summary>
+        /// Decides whether a file written with the given manifest version can be read by the running application,
+        /// that is whether it was written by this release or an older one.
+        /// <para>
+        /// The manifest text is <c>major.minor.build</c>. The parts are compared as numbers one after the other, so
+        /// <c>1.10.9054</c> is older than <c>2.0.10</c>, and <c>1.10.0</c> is newer than <c>1.9.9</c>. A missing
+        /// manifest counts as supported. A bare number without dots comes from the oldest layout and keeps the
+        /// original concatenated-digit meaning.
+        /// </para>
+        /// </summary>
+        /// <param name="manifestVersion">The manifest text exactly as stored in the file; may be empty.</param>
+        /// <param name="appVersion">The running application's version.</param>
+        /// <returns><c>true</c> when the manifest is not newer than <paramref name="appVersion"/>.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="appVersion"/> is <c>null</c>.</exception>
+        /// <exception cref="FormatException">Thrown when the manifest text is not made of numbers separated by dots.</exception>
+        public bool ValidateManifestVersion(string manifestVersion, Version appVersion)
+        {
+            if (appVersion == null)
+            {
+                throw new ArgumentNullException(nameof(appVersion));
+            }
+
+            if (string.IsNullOrWhiteSpace(manifestVersion))
+            {
+                return true;
+            }
+
+            var text = manifestVersion.Trim();
+
+            if (text.IndexOf('.') < 0)
+            {
+                return long.Parse(text, NumberStyles.None, CultureInfo.InvariantCulture) <= LegacyVersionNumber(appVersion);
+            }
+
+            var parts = text.Split('.');
+
+            if (parts.Length > 4)
+            {
+                throw new FormatException("A manifest version has at most four parts.");
+            }
+
+            var manifest = new int[parts.Length];
+
+            for (var i = 0; i < parts.Length; i++)
+            {
+                manifest[i] = int.Parse(parts[i], NumberStyles.None, CultureInfo.InvariantCulture);
+            }
+
+            var app = new[] { appVersion.Major, appVersion.Minor, Math.Max(appVersion.Build, 0) };
+
+            for (var i = 0; i < app.Length; i++)
+            {
+                var part = i < manifest.Length ? manifest[i] : 0;
+
+                if (part != app[i])
+                {
+                    return part < app[i];
+                }
+            }
+
+            return true;
+        }
+
+        private static long LegacyVersionNumber(Version appVersion) =>
+            Convert.ToInt64(string.Format(CultureInfo.InvariantCulture, "{0}{1}{2}", appVersion.Major, appVersion.Minor, appVersion.Build), CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Normalizes legacy XML values in a project payload to the currently supported ones.
@@ -245,13 +318,13 @@ namespace RFiDGear.Infrastructure.FileAccess
 
         private SettingsLoadResult CreateSettingsLoadResult(Version appVersion, string resolvedPath, DefaultSpecification specification)
         {
-            var manifestVersion = GetManifestVersion(resolvedPath);
+            var manifestText = ReadManifestVersionText(resolvedPath);
             var versionToCompare = appVersion ?? Assembly.GetExecutingAssembly().GetName().Version;
 
             return new SettingsLoadResult(
                 success: true,
-                manifestVersion: manifestVersion,
-                isSupportedVersion: ValidateManifestVersion(manifestVersion, versionToCompare),
+                manifestVersion: ToDiagnosticNumber(manifestText),
+                isSupportedVersion: ValidateManifestVersion(manifestText, versionToCompare),
                 defaultSpecification: specification,
                 settingsPath: resolvedPath);
         }
@@ -270,25 +343,35 @@ namespace RFiDGear.Infrastructure.FileAccess
 
         private ProjectLoadResult CreateXmlLoadResult(string path, Version appVersion, ProjectFileType projectFileType)
         {
-            var manifestVersion = GetManifestVersion(path);
+            var manifestText = ReadManifestVersionText(path);
+            // Validated before the reader is opened, so a malformed manifest cannot leak an open file.
+            var isSupportedVersion = ValidateManifestVersion(manifestText, appVersion);
 
             return new ProjectLoadResult(
                 success: true,
-                manifestVersion: manifestVersion,
-                isSupportedVersion: ValidateManifestVersion(manifestVersion, appVersion),
+                manifestVersion: ToDiagnosticNumber(manifestText),
+                isSupportedVersion: isSupportedVersion,
                 reader: new StreamReader(path),
                 fileType: projectFileType);
         }
 
-        private int GetManifestVersion(string path)
+        /// <summary>Reads the <c>ManifestVersion</c> element of a project or settings file, or <c>null</c> if it has none.</summary>
+        private static string ReadManifestVersionText(string path)
         {
             var doc = new XmlDocument();
             doc.Load(path);
 
-            var node = doc.SelectSingleNode("//ManifestVersion");
-
-            return node == null ? 0 : Convert.ToInt32(node.InnerText.Replace(".", string.Empty));
+            return doc.SelectSingleNode("//ManifestVersion")?.InnerText.Trim();
         }
+
+        /// <summary>
+        /// The concatenated-digit number that results and logs have always carried (<c>1.10.9054</c> becomes
+        /// 1109054). It is for display only; it is not used to decide whether a file is supported.
+        /// </summary>
+        private static int ToDiagnosticNumber(string manifestText) =>
+            int.TryParse(manifestText?.Replace(".", string.Empty), NumberStyles.None, CultureInfo.InvariantCulture, out var number)
+                ? number
+                : 0;
 
         private string ExtractCompressedProject(string archivePath, string archiveFileName)
         {
