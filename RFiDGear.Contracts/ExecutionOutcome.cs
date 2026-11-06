@@ -10,15 +10,19 @@ namespace RFiDGear.Contracts
     /// </summary>
     public enum ExecutionOutcome
     {
-        /// <summary>All executed tasks completed successfully.</summary>
+        /// <summary>
+        /// All executed tasks completed successfully and the run got to its last task. Tasks that error routing
+        /// jumped over on purpose do not count against it.
+        /// </summary>
         Success,
 
         /// <summary>Every failure had a downstream handler that explicitly targets it — intentional by design.</summary>
         CompletedWithIntentionalFailures,
 
         /// <summary>
-        /// At least one task failed without a downstream handler, or the run ended without a terminal evaluation
-        /// (see <see cref="ExecResult.FailureReason"/>). Operator intervention required.
+        /// At least one task failed without a downstream handler, the run stopped before it reached its last task
+        /// (the unreached tasks are reported as <see cref="TaskSkipReasons.NotReached"/>), or the run ended without a
+        /// terminal evaluation (see <see cref="ExecResult.FailureReason"/>). Operator intervention required.
         /// </summary>
         Failure
     }

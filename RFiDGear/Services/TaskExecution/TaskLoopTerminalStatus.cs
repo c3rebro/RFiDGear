@@ -7,7 +7,10 @@ namespace RFiDGear.Services.TaskExecution
     /// </summary>
     public enum TaskLoopTerminalStatus
     {
-        /// <summary>All executed tasks completed successfully; no failures of any kind.</summary>
+        /// <summary>
+        /// All executed tasks completed successfully; no failures of any kind, and the loop got to the end of the
+        /// task list (tasks that error routing jumped over on purpose do not count against it).
+        /// </summary>
         Success,
 
         /// <summary>
@@ -19,7 +22,8 @@ namespace RFiDGear.Services.TaskExecution
 
         /// <summary>
         /// At least one executed task failed without a downstream handler, or produced an unknown
-        /// outcome. Operator intervention is required before repeating.
+        /// outcome, or the loop ended before reaching every task (tasks after the last one it reached were
+        /// never started). Operator intervention is required before repeating.
         /// </summary>
         Failure
     }

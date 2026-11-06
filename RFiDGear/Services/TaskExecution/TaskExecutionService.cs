@@ -740,7 +740,8 @@ namespace RFiDGear.Services.TaskExecution
                 taskLoopResult = TaskLoopTerminalEvaluator.Evaluate(
                     descriptors?.Count ?? 0,
                     observations,
-                    request?.ErrorRouting);
+                    request?.ErrorRouting,
+                    selectedTaskOnly: request?.RunSelectedOnly ?? false);
                 logger.LogInformation("TaskLoop.Summary", new
                 {
                     RunId = runId,
@@ -753,6 +754,7 @@ namespace RFiDGear.Services.TaskExecution
                     taskLoopResult.AcceptedFailures,
                     taskLoopResult.UnhandledFailures,
                     taskLoopResult.InvalidSkips,
+                    taskLoopResult.NotReached,
                     TerminalStatus = taskLoopResult.TerminalStatus.ToString(),
                     Timestamp = DateTimeOffset.UtcNow
                 });

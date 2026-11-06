@@ -102,6 +102,13 @@ namespace RFiDGear.Services.TaskExecution
         /// (no matching executed source task with a non-matching error level).
         /// </summary>
         public int InvalidSkips { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of tasks after the last task the loop reached: the loop ended before it got to
+        /// them. Tasks that error routing jumped over on purpose lie before a task the loop did reach and are not
+        /// counted. Always 0 when only the selected task was run.
+        /// </summary>
+        public int NotReached { get; set; }
     }
 
     /// <summary>
@@ -121,14 +128,27 @@ namespace RFiDGear.Services.TaskExecution
         /// <param name="totalTasks">Total number of tasks in the descriptor list.</param>
         /// <param name="observations">Per-task execution observations collected during the run.</param>
         /// <param name="errorRouting">Optional map of error levels to recovery task identifiers.</param>
+        /// <param name="selectedTaskOnly">
+        /// <see langword="true"/> when the run was asked to execute only the selected task, so the other tasks are
+        /// not expected to be reached.
+        /// </param>
         /// <returns>
         /// A <see cref="TaskLoopRunResult"/> with the derived <see cref="TaskLoopTerminalStatus"/>
         /// and non-secret aggregate counts.
         /// </returns>
+        /// <remarks>
+        /// A run is a failure when the loop stopped before reaching every task. The loop visits the list in order,
+        /// and the only way it passes a task without an observation is a forward jump by error routing, which always
+        /// lands on a task the loop then reaches. So every task after the last one with an observation was never
+        /// started because the run ended early, for example when the per-task watchdog (Release builds) stopped it.
+        /// Such a run must not read as <see cref="TaskLoopTerminalStatus.Success"/> just because the tasks that did
+        /// run were fine.
+        /// </remarks>
         public static TaskLoopRunResult Evaluate(
             int totalTasks,
             IReadOnlyCollection<TaskExecutionObservation> observations,
-            IDictionary<ERROR, string> errorRouting = null)
+            IDictionary<ERROR, string> errorRouting = null,
+            bool selectedTaskOnly = false)
         {
             var items = observations?.ToList() ?? new List<TaskExecutionObservation>();
             var executed = items.Where(item => string.Equals(item.Decision, ExecutedDecision, StringComparison.Ordinal)).ToList();
@@ -139,9 +159,11 @@ namespace RFiDGear.Services.TaskExecution
             var invalidSkips = skipped.Count(item => !IsPermittedConditionalSkip(item, items));
             var unhandledFailures = failed.Count - acceptedFailures;
             var noObservedTask = totalTasks > 0 && items.Count == 0;
+            var lastReached = items.Count == 0 ? -1 : items.Max(item => item.TaskPosition);
+            var notReached = selectedTaskOnly ? 0 : Math.Max(0, totalTasks - 1 - lastReached);
 
             TaskLoopTerminalStatus status;
-            if (unhandledFailures > 0 || unknown > 0 || invalidSkips > 0 || noObservedTask)
+            if (unhandledFailures > 0 || unknown > 0 || invalidSkips > 0 || noObservedTask || notReached > 0)
             {
                 status = TaskLoopTerminalStatus.Failure;
             }
@@ -165,7 +187,8 @@ namespace RFiDGear.Services.TaskExecution
                 UnhandledFailures = unhandledFailures,
                 Skipped = skipped.Count,
                 Unknown = unknown,
-                InvalidSkips = invalidSkips
+                InvalidSkips = invalidSkips,
+                NotReached = notReached
             };
         }
 

@@ -1808,6 +1808,31 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task ExecuteAllAsync_WhenTheLoopStoppedBeforeItsLastTask_ReportsFailureWithTheUnreachedTasksListed()
+        {
+            // A run the loop left unfinished (for example the Release watchdog stopped it) is a failure even though
+            // no task that ran failed: Outcome is the field a caller trusts, and it must not say Success here.
+            var (project, host, _) = CreateTriple(new EarlyEndExecService(reached: 1));
+            project.ReplaceTaskCollection(new object[]
+            {
+                new StubTask { CurrentTaskIndex = "10" },
+                new StubTask { CurrentTaskIndex = "11" },
+                new StubTask { CurrentTaskIndex = "12" },
+            });
+
+            var result = await host.ExecuteAllAsync(ExecutionRequest.Empty);
+
+            Assert.Equal(ExecutionOutcome.Failure, result.Outcome);
+            Assert.Equal(ExecutionFailureReason.None, result.FailureReason);
+            Assert.Equal(3, result.TotalTasks);
+            Assert.Equal(0, result.FailedTasks);
+            Assert.Equal(new bool?[] { true, null, null }, result.TaskOutcomes.Select(o => o.IsSuccess));
+            Assert.Equal(
+                new string?[] { null, TaskSkipReasons.NotReached, TaskSkipReasons.NotReached },
+                result.TaskOutcomes.Select(o => o.SkipReason));
+        }
+
+        [Fact]
         public async Task ExecuteAllAsync_OnSuccess_FailureReasonIsNone()
         {
             var (_, host, _) = CreateTriple(new CapturingExecService());
@@ -3048,6 +3073,55 @@ namespace RFiDGear.Tests
         }
 
         public void HandleTaskTimeout() => _inner.HandleTaskTimeout();
+    }
+
+    /// <summary>
+    /// Behaves like a task loop that stopped after its first <c>reached</c> tasks: it observed only those and
+    /// reports the terminal status the real evaluator gives a run that was left unfinished, <c>Failure</c>.
+    /// </summary>
+    internal sealed class EarlyEndExecService : ITaskExecutionService
+    {
+        private readonly int _reached;
+
+        public EarlyEndExecService(int reached) => _reached = reached;
+
+        public event EventHandler<TaskExecutionCompletedEventArgs> ExecutionCompleted
+        {
+            add { }
+            remove { }
+        }
+
+        public int CurrentTaskIndex => 0;
+
+        public Task<TaskExecutionResult> ExecuteOnceAsync(
+            TaskExecutionRequest request, CancellationToken ct = default)
+        {
+            var position = 0;
+            foreach (var item in request.TaskHandler?.TaskCollection ?? new ObservableCollection<object>())
+            {
+                if (position >= _reached)
+                {
+                    break;
+                }
+
+                if (item is IGenericTask task)
+                {
+                    task.IsTaskCompletedSuccessfully = true;
+                    task.CurrentTaskErrorLevel = ERROR.NoError;
+                    request.Observations?.Add(TestObservations.Executed(position, task, success: true));
+                }
+
+                position++;
+            }
+
+            return Task.FromResult(new TaskExecutionResult
+            {
+                RunId = request.RunId,
+                TerminalStatus = TaskLoopTerminalStatus.Failure
+            });
+        }
+
+        public void HandleTaskTimeout() { }
     }
 
     internal sealed class BlockingExecService : ITaskExecutionService
