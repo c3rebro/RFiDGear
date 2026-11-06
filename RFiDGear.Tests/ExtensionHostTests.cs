@@ -679,9 +679,13 @@ namespace RFiDGear.Tests
         public void Dispose()
         {
             foreach (var file in _files)
+            {
                 File.Delete(file);
+            }
             if (Directory.Exists(_root))
+            {
                 Directory.Delete(_root, recursive: true);
+            }
         }
 
         private string Track(string path)
@@ -779,7 +783,9 @@ namespace RFiDGear.Tests
             foreach (var directory in _scratchDirectories.Append(_root))
             {
                 if (Directory.Exists(directory))
+                {
                     Directory.Delete(directory, recursive: true);
+                }
             }
         }
 
@@ -1084,7 +1090,9 @@ namespace RFiDGear.Tests
                 {
                     live.TaskCollection.Clear();
                     foreach (var task in loaded.TaskCollection)
+                    {
                         live.TaskCollection.Add(task);
+                    }
                 }));
 
         private string NewOutputPath(string extension) =>
@@ -1169,7 +1177,9 @@ namespace RFiDGear.Tests
                     applied.Add(model);
                     live.TaskCollection.Clear();
                     foreach (var task in model.TaskCollection)
+                    {
                         live.TaskCollection.Add(task);
+                    }
                 });
             Assert.True((await LoadAsync(host, project)).Success);
             Assert.Equal(2, live.TaskCollection.Count);
@@ -2061,7 +2071,9 @@ namespace RFiDGear.Tests
                 executed.Add(i);
                 MarkSuccess(task);
                 if (i == 0)
+                {
                     cts.Cancel();   // cancellation arrives while task 0 is running
+                }
                 return Task.CompletedTask;
             });
             var (project, host) = Create(service);
@@ -2089,7 +2101,9 @@ namespace RFiDGear.Tests
             var service = new DescriptorInjectingService((i, task) => ct =>
             {
                 if (i == 1)
+                {
                     throw new InvalidOperationException("task blew up");
+                }
                 MarkSuccess(task);
                 return Task.CompletedTask;
             });
@@ -2396,7 +2410,7 @@ namespace RFiDGear.Tests
         public void NonTaskItemInTheProject_IsReportedAsNotReachedWithItsTypeName()
         {
             var outcome = Assert.Single(TaskOutcomeMapper.Build(
-                new object?[] { new object() },
+                new[] { new object() },
                 Array.Empty<TaskExecutionObservation>()));
 
             Assert.Equal("Object", outcome.TaskTypeName);

@@ -224,7 +224,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         {
             var handlers = ExecutionCompleted;
             if (handlers == null)
+            {
                 return;
+            }
 
             foreach (var handler in handlers.GetInvocationList().Cast<EventHandler<ExecResult>>())
             {
@@ -250,7 +252,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         {
             var tasks = _project.SetupModel?.TaskCollection;
             if (tasks == null)
+            {
                 return;
+            }
 
             foreach (var item in tasks)
             {
@@ -285,7 +289,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             if (TryGetFirstNonBlank(variables, out var templateKey, out var template, "REPORTTEMPLATEFILE", "REPORTTEMPLATEPATH"))
             {
                 if (!File.Exists(template))
+                {
                     throw new ArgumentException($"Variable {templateKey} must name an existing file.", "request");
+                }
 
                 reportTemplateFile = template;
             }
@@ -304,13 +310,17 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             try
             {
                 if (!Path.IsPathFullyQualified(target))
+                {
                     throw new ArgumentException($"Variable {key} must be a full (absolute) file path.", "request");
+                }
 
                 var resolved = StartupArgumentProcessor.NormalizeReportTargetPath(target)
                     ?? throw new ArgumentException($"Variable {key} must be a file path whose folder exists.", "request");
 
                 if (string.IsNullOrEmpty(Path.GetFileName(resolved)) || Directory.Exists(resolved))
+                {
                     throw new ArgumentException($"Variable {key} must name a file, not a folder.", "request");
+                }
 
                 return resolved;
             }

@@ -21,7 +21,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <param name="exception">The exception to describe.</param>
         public SanitizedException(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
+            if (exception == null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
 
             TypeName = exception.GetType().Name;
             Message = TaskExecutionLogSanitizer.Sanitize(exception.Message) ?? string.Empty;

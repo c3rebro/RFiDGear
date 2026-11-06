@@ -151,12 +151,12 @@ namespace RFiDGear.Infrastructure.FileAccess
                 catch (IOException e)
                 {
                     logger.Error(e, "Failed to access database file {DatabaseFile}", fileName);
-                    return (DatabaseReadResult.Failed(DatabaseReadFailureReason.IoFailure), null);
+                    return (DatabaseReadResult.Failed(), null);
                 }
                 catch (UnauthorizedAccessException e)
                 {
                     logger.Error(e, "Access to database file was denied {DatabaseFile}", fileName);
-                    return (DatabaseReadResult.Failed(DatabaseReadFailureReason.IoFailure), null);
+                    return (DatabaseReadResult.Failed(), null);
                 }
                 catch (Exception e)
                 {

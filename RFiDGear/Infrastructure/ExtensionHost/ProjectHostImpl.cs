@@ -171,7 +171,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 }
 
                 if (!result.IsSupportedVersion || model == null)
+                {
                     return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.UnsupportedFormat);
+                }
 
                 var canonicalPath = Path.GetFullPath(path);
 
@@ -281,12 +283,14 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         private void RunProjectOperation(Action edit)
         {
             if (!_coordinator.TryBeginProjectOperation())
+            {
                 throw new InvalidOperationException(
                     _coordinator.IsLoading
                         ? "A project load is in progress. Wait for LoadAsync to complete."
                         : _coordinator.IsExecuting
                             ? "A task run is in progress. Wait for it to complete."
                             : "Another project edit is in progress.");
+            }
 
             var fileGateHeld = false;
             try
@@ -296,7 +300,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 // starts, so both sides take the same atomic gate instead.
                 fileGateHeld = TryEnterFileGate();
                 if (!fileGateHeld)
+                {
                     throw new InvalidOperationException("A project save is in progress. Wait for it to complete.");
+                }
 
                 edit();
                 RaiseProjectChanged();
@@ -304,7 +310,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             finally
             {
                 if (fileGateHeld)
+                {
                     ExitFileGate();
+                }
 
                 _coordinator.EndProjectOperation();
             }
@@ -318,12 +326,16 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         private void WriteProject(string? path)
         {
             if (_coordinator.IsMutating)
+            {
                 throw new InvalidOperationException("A project edit is in progress. Wait for it to complete.");
+            }
 
             // Edits and loads hold this gate for their whole duration, so once it is ours no edit can
             // replace the collection mid-serialization or clear CurrentPath behind our back.
             if (!TryEnterFileGate())
+            {
                 throw new InvalidOperationException("A project load, edit, or save is in progress. Wait for it to complete.");
+            }
 
             try
             {
@@ -358,7 +370,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         {
             var handlers = ProjectChanged;
             if (handlers == null)
+            {
                 return;
+            }
 
             foreach (var handler in handlers.GetInvocationList().Cast<EventHandler>())
             {

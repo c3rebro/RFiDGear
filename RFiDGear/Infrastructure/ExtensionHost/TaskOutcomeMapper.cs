@@ -61,7 +61,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             for (var position = 0; position < snapshot.Count; position++)
             {
                 if (reached.Contains(position))
+                {
                     continue;
+                }
 
                 var task = snapshot[position];
                 outcomes.Add(new TaskOutcome(
