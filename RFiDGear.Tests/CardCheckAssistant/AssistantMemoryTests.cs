@@ -59,12 +59,19 @@ namespace RFiDGear.Tests.CardCheckAssistant
         {
             public int Calls { get; private set; }
 
+            // What the page handed over: its texts and the token that the window cancels when it closes.
+            public LocalizedStrings? SeenStrings { get; private set; }
+
+            public CancellationToken SeenToken { get; private set; }
+
             // What the offer does when the operator agrees: the settings change under the page.
             public Action? Imports { get; set; }
 
             public Task<bool> OfferAsync(LocalizedStrings strings, CancellationToken cancellationToken)
             {
                 Calls++;
+                SeenStrings = strings;
+                SeenToken = cancellationToken;
                 Imports?.Invoke();
 
                 return Task.FromResult(Imports != null);
@@ -108,6 +115,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 await viewModel.Open();
 
                 Assert.Equal(1, offer.Calls);
+                Assert.Same(viewModel.Strings, offer.SeenStrings);   // the questions are in the language the page shows
+                Assert.True(offer.SeenToken.CanBeCanceled);          // the window can cancel the offer by closing
                 Assert.Equal(2, settings.Loads);   // before the offer and again after the import, not once more for the second Open
                 Assert.Equal("imported.rfPrj", viewModel.ProjectPath);
             });
@@ -216,13 +225,19 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             public string AskedText { get; private set; } = string.Empty;
 
+            public string ConfirmedTitle { get; private set; } = string.Empty;
+
             public string ConfirmedText { get; private set; } = string.Empty;
+
+            // The three buttons of the question, in the order they are given: import, not now, never.
+            public string[] Buttons { get; private set; } = Array.Empty<string>();
 
             public ImportAnswer Ask(string title, string text, string importButton, string notNowButton, string neverButton)
             {
                 Asked++;
                 AskedTitle = title;
                 AskedText = text;
+                Buttons = new[] { importButton, notNowButton, neverButton };
 
                 return Answer;
             }
@@ -230,6 +245,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             public bool Confirm(string title, string text)
             {
                 Confirmed++;
+                ConfirmedTitle = title;
                 ConfirmedText = text;
 
                 return Agrees;
@@ -319,8 +335,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 await Offer(CardCheckServices.CreateSettingsStore(Path.Combine(_folder.Path, "other"), _log), english).OfferAsync(new LocalizedStrings("en-US"), CancellationToken.None);
 
                 Assert.Contains("alten Card Check Assistant", german.AskedTitle, StringComparison.Ordinal);
+                Assert.Equal(german.AskedTitle, german.ConfirmedTitle);
+                Assert.Equal(new[] { "Übernehmen", "Jetzt nicht", "Nie wieder fragen" }, german.Buttons);
                 Assert.Contains("SQLite", german.ConfirmedText, StringComparison.Ordinal);
                 Assert.Contains("Settings of the old", english.AskedTitle, StringComparison.Ordinal);
+                Assert.Equal(new[] { "Import", "Not now", "Never ask again" }, english.Buttons);
                 Assert.Contains("SQLite", english.ConfirmedText, StringComparison.Ordinal);
             });
         }
