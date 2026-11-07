@@ -6,6 +6,8 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -291,6 +293,74 @@ namespace RFiDGear.Tests.CardCheck
 
             Assert.Equal(FailureKind.InvalidConfiguration, result.Failure!.Kind);
             Assert.Equal("orders.driver.missing", result.Failure.Code);
+        }
+
+        [Fact]
+        public async Task ANativeFileThatIsMissing_ArrivesWrappedInTypeInitializationExceptions_AndIsStillTheMissingDriver()
+        {
+            // As System.Data.SqlClient reports it: the loader exception inside the initializers of two types.
+            var nested = new TypeInitializationException("TdsParser", new TypeInitializationException("SNILoadHandle", new DllNotFoundException()));
+
+            var result = await Store(new FailingFactory(nested)).ListAsync(CancellationToken.None);
+
+            Assert.Equal("orders.driver.missing", result.Failure!.Code);
+        }
+
+        // A load context in which the database driver cannot be found, as in an install that copied only the extension and
+        // the library. Everything else is resolved as usual.
+        private sealed class WithoutTheDriver : AssemblyLoadContext
+        {
+            private readonly string _library;
+
+            public WithoutTheDriver(string library)
+                : base(isCollectible: true)
+            {
+                _library = library;
+            }
+
+            protected override Assembly? Load(AssemblyName assemblyName)
+            {
+                if (assemblyName.Name == "System.Data.SqlClient")
+                {
+                    throw new FileNotFoundException("The driver is not here.", assemblyName.Name);
+                }
+
+                return assemblyName.Name == Path.GetFileNameWithoutExtension(_library) ? LoadFromAssemblyPath(_library) : null;
+            }
+        }
+
+        [Fact]
+        public async Task WhenTheDriverCannotBeLoadedAtAll_TheRealStoreAnswersWithAFailure_ItDoesNotThrow()
+        {
+            // The synthetic exceptions above show how a missing driver is classified. This shows the other half: that
+            // classifying it does not itself need the driver, which a method that names the driver's exception type
+            // would, the moment it is compiled. A private copy of the library, in a context without the driver, is used
+            // through the real factory.
+            var location = typeof(CardCheckServices).Assembly.Location;
+            var context = new WithoutTheDriver(location);
+
+            try
+            {
+                var library = context.LoadFromAssemblyPath(location);
+                var services = library.GetType("RFiDGear.ExtensionLibraries.CardCheck.CardCheckServices")!;
+                var settingsType = library.GetType("RFiDGear.ExtensionLibraries.CardCheck.DatabaseSettings")!;
+                var settings = Activator.CreateInstance(settingsType)!;
+                settingsType.GetProperty("Server")!.SetValue(settings, Server);
+                settingsType.GetProperty("Database")!.SetValue(settings, Database);
+                var log = services.GetMethod("CreateLog")!.Invoke(null, null);
+                var store = services.GetMethod("CreateOrderStore")!.Invoke(null, new[] { settings, log })!;
+
+                var task = (Task)store.GetType().GetMethod("ListAsync")!.Invoke(store, new object[] { CancellationToken.None })!;
+                await task;
+
+                var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
+                var failure = result.GetType().GetProperty("Failure")!.GetValue(result)!;
+                Assert.Equal("orders.driver.missing", failure.GetType().GetProperty("Code")!.GetValue(failure));
+            }
+            finally
+            {
+                context.Unload();
+            }
         }
 
         [Fact]

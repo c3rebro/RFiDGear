@@ -319,7 +319,15 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
         private Failure Classify(Exception ex, string operation, bool opening)
         {
-            switch (ex)
+            // A driver whose native file is missing fails inside static initializers, so the loader exception can arrive
+            // wrapped in one TypeInitializationException or several.
+            var cause = ex;
+            while (cause is TypeInitializationException && cause.InnerException != null)
+            {
+                cause = cause.InnerException;
+            }
+
+            switch (cause)
             {
                 // The driver is a file beside the extension; if it is not there the first use of it throws one of
                 // these. That must be a failure like any other, so nothing in this method may need the driver itself.
