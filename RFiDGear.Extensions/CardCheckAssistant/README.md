@@ -46,11 +46,14 @@ in the Extensions menu of the main window.
   typed) and the folder of the last project that was loaded (where the picker
   opens when no project is entered). The settings are read and written off the
   UI thread; if they cannot be, the page works without them.
-- Offers once to take over the settings of the old Card Check Assistant, when
-  its `settings.xml` is found: a question with "Import", "Not now" (also what
-  closing the dialog means) and "Never ask again", then a summary to confirm.
-  The old files are only read, and the user name, password and port in them
-  never are. See the library's README for what is imported.
+- Does **not** offer, for now, to take over the settings of the old WinUI Card
+  Check Assistant. The code is kept (a question with "Import", "Not now" and
+  "Never ask again", then a summary to confirm; the old files are only read,
+  and the user name, password and port in them never are), but the settings
+  are built from scratch and no backward compatibility is wanted. While it is
+  off nothing is read from the old assistant's folder and no marker is
+  written. `AssistantServicesFactory` has the one switch; Slice 6 decides
+  whether to turn it on for the cutover or to remove the code.
 
 **Rules that keep it correct:**
 
