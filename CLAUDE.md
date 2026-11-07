@@ -20,6 +20,8 @@ dotnet test RFiDGear.Tests/RFiDGear.Tests.csproj
 dotnet test RFiDGear.Tests/RFiDGear.Tests.csproj --filter "FullyQualifiedName~MyTestClass.MyTestMethod"
 ```
 
+After a build, the extensions can be copied to `%ProgramData%\RFiDGear\Extensions` (`dotnet build RFiDGear.Extensions/CardCheckAssistant -p:DeployExtensionsToRFiDGear=true`; `RFIDGEAR_DEPLOY_EXTENSIONS=true` or a git-ignored `RFiDGear.Extensions/deploy.local.props` turn it on for every build). It is off by default on purpose: tests, clean checkouts and mutation runs also build the extensions and must not write into a real RFiDGear. See `RFiDGear.Extensions/DeployToRFiDGear.targets`.
+
 The solution targets `net8.0-windows`. Tests require the `EnableWindowsTargeting` MSBuild property (already set in the test project) for non-Windows dev environments. Tests use `StaTestRunner.cs` to run on an STA thread — required for any WPF-touching test.
 
 Setup/installer projects (`RFiDGearBundleSetup`, `RFiDGearSetup_x64/x86`) use WiX and are built separately; they are not part of `dotnet build`.

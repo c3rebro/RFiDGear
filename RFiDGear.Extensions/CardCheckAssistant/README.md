@@ -17,6 +17,11 @@ in the Extensions menu of the main window.
   any of them next to the extension would load its types twice.
 - Restart RFiDGear. Extensions are discovered once at start-up, so there is no
   hot loading.
+- While developing, a build can do the copying: see `DeployToRFiDGear.targets`
+  and `DEVELOPER_NOTES.md`. It is off unless the command line
+  (`-p:DeployExtensionsToRFiDGear=true`), a git-ignored
+  `RFiDGear.Extensions/deploy.local.props` or the environment variable
+  `RFIDGEAR_DEPLOY_EXTENSIONS=true` turns it on.
 - If the library file is missing, or is of another platform or version, the
   window opens with a short text that names the two files and the folder,
   instead of the page. The check runs each time a window opens, but a library

@@ -27,6 +27,7 @@
 /RFiDGear.Extensions/DesfirePluginSample/bin
 /RFiDGear.Extensions/CardCheckAssistant/obj
 /RFiDGear.Extensions/CardCheckAssistant/bin
+/RFiDGear.Extensions/deploy.local.props
 /RFiDGear.ExtensionLibraries/CardCheck/obj
 /RFiDGear.ExtensionLibraries/CardCheck/bin
 /RFiDGearBundleSetup/RFiDGearBundleSetup.wixproj

@@ -30,4 +30,6 @@
   <ItemGroup>
     <ProjectReference Include="..\\..\\RFiDGear\\RFiDGear.csproj" />
   </ItemGroup>
+  <!-- Copies the built extension to RFiDGear's extension folder when asked to (see the file). -->
+  <Import Project="..\DeployToRFiDGear.targets" />
 </Project>
