@@ -34,13 +34,14 @@ using RFiDGear.UI.UIExtensions;
 using RFiDGear.UI.UIExtensions.Interfaces;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
+using RFiDGear.Services.TaskExecution;
 using Elatec.NET;
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
     /// Description of MifareDesfireSetupViewModel.
     /// </summary>
-    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask
+    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, ITaskOutcomeDetails
     {
         #region Fields
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
@@ -1177,10 +1178,21 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public bool ShowCheckFileSettingsButton => SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings;
 
         /// <summary>
-        /// Gets the last key-free file-settings comparison for structured task diagnostics.
+        /// Gets the expected and actual file settings of the last attempt of <see cref="TaskType_MifareDesfireTask.CheckFileSettings"/>,
+        /// or <see langword="null"/> when that attempt compared nothing. It is replaced at the start of every attempt and
+        /// every run. It is internal, so it is neither saved in a project nor copied when a task is edited.
         /// </summary>
-        [XmlIgnore]
-        public DesfireFileSettingsComparison LastFileSettingsComparison { get; private set; }
+        internal DesfireFileSettingsComparison LastFileSettingsComparison { get; private set; }
+
+        /// <inheritdoc />
+        string ITaskOutcomeDetails.OutcomeDetailsSection => "FileSettingsComparison";
+
+        /// <inheritdoc />
+        IReadOnlyDictionary<string, object> ITaskOutcomeDetails.GetOutcomeDetails() =>
+            SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings ? LastFileSettingsComparison?.ToLogValues() : null;
+
+        /// <inheritdoc />
+        void ITaskOutcomeDetails.ClearOutcomeDetails() => LastFileSettingsComparison = null;
 
         /// <summary>
         /// Gets a value indicating whether application creation inputs should be shown.
@@ -4004,7 +4016,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 if (check.Comparison != null)
                 {
-                    LogFileSettingsComparison(check.Comparison);
                     StatusText += LocalizedStatusLine(
                         "textBoxStatusFileSettingsCompared",
                         DateTime.Now,
@@ -4072,32 +4083,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 SelectedDesfireFileAccessRightWrite,
                 SelectedDesfireFileAccessRightReadWrite,
                 SelectedDesfireFileAccessRightChange);
-        }
-
-        /// <summary>
-        /// Writes only key-free file-settings metadata to the structured application log.
-        /// </summary>
-        private void LogFileSettingsComparison(DesfireFileSettingsComparison comparison)
-        {
-            Log.ForContext<MifareDesfireSetupViewModel>().Information(
-                "DESFire file settings compared for TaskId {TaskId} AppId {AppId} FileNumber {FileNumber}: " +
-                "ExpectedType {ExpectedType} ActualType {ActualType} ExpectedSize {ExpectedSize} ActualSize {ActualSize} " +
-                "ExpectedMode {ExpectedMode} ActualMode {ActualMode} ExpectedRights0 {ExpectedRights0} ActualRights0 {ActualRights0} " +
-                "ExpectedRights1 {ExpectedRights1} ActualRights1 {ActualRights1} Matches {Matches}.",
-                CurrentTaskIndex,
-                comparison.ApplicationId,
-                comparison.FileNumber,
-                comparison.ExpectedFileType,
-                comparison.ActualFileType,
-                comparison.ExpectedFileSize,
-                comparison.ActualFileSize,
-                comparison.ExpectedCommunicationMode,
-                comparison.ActualCommunicationMode,
-                comparison.ExpectedAccessRights0,
-                comparison.ActualAccessRights0,
-                comparison.ExpectedAccessRights1,
-                comparison.ActualAccessRights1,
-                comparison.Matches);
         }
 
         /// <summary>

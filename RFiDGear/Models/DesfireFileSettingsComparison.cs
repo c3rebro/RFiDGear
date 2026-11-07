@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace RFiDGear.Models
 {
     /// <summary>
@@ -5,7 +7,7 @@ namespace RFiDGear.Models
     /// found them. It is the result of that attempt and cannot be changed afterwards. It holds numbers and a verdict
     /// only: no key, and nothing that was read from the file.
     /// </summary>
-    public sealed record DesfireFileSettingsComparison
+    internal sealed record DesfireFileSettingsComparison
     {
         /// <summary>Gets the application identifier.</summary>
         public int ApplicationId { get; init; }
@@ -45,5 +47,27 @@ namespace RFiDGear.Models
 
         /// <summary>Gets a value indicating whether every expected field matches the actual one.</summary>
         public bool Matches { get; init; }
+
+        /// <summary>
+        /// Lists what is logged with the outcome of the task: each field by name, as a number or a flag. This list is the
+        /// only thing that reaches the log, so a field added to the record is not logged until it is added here.
+        /// </summary>
+        /// <returns>The named values.</returns>
+        internal IReadOnlyDictionary<string, object> ToLogValues() => new Dictionary<string, object>
+        {
+            [nameof(ApplicationId)] = ApplicationId,
+            [nameof(FileNumber)] = FileNumber,
+            [nameof(ExpectedFileType)] = ExpectedFileType,
+            [nameof(ActualFileType)] = ActualFileType,
+            [nameof(ExpectedFileSize)] = ExpectedFileSize,
+            [nameof(ActualFileSize)] = ActualFileSize,
+            [nameof(ExpectedCommunicationMode)] = ExpectedCommunicationMode,
+            [nameof(ActualCommunicationMode)] = ActualCommunicationMode,
+            [nameof(ExpectedAccessRights0)] = ExpectedAccessRights0,
+            [nameof(ActualAccessRights0)] = ActualAccessRights0,
+            [nameof(ExpectedAccessRights1)] = ExpectedAccessRights1,
+            [nameof(ActualAccessRights1)] = ActualAccessRights1,
+            [nameof(Matches)] = Matches,
+        };
     }
 }

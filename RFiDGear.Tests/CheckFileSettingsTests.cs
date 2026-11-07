@@ -1,5 +1,6 @@
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
+using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using System.Threading.Tasks;
 using Xunit;
@@ -269,6 +270,31 @@ namespace RFiDGear.Tests
                 await Run(viewModel, reader);
 
                 Assert.Equal(ERROR.TransportError, viewModel.CurrentTaskErrorLevel);
+                Assert.Null(viewModel.LastFileSettingsComparison);
+            });
+        }
+
+        [Fact]
+        public async Task TheTaskReportsItsComparisonToTheLogAsPlainNumbers_AndForgetsItOnRequest()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateViewModel();
+                var details = (ITaskOutcomeDetails)viewModel;
+                Assert.Null(details.GetOutcomeDetails());
+
+                await Run(viewModel, new FakeFileSettingsProvider { FileSettings = Settings() });
+
+                var reported = details.GetOutcomeDetails()!;
+                Assert.Equal("FileSettingsComparison", details.OutcomeDetailsSection);
+                Assert.Equal(true, reported["Matches"]);
+                Assert.Equal(16L, reported["ActualFileSize"]);
+                Assert.Equal(0x32, reported["ActualAccessRights1"]);
+                Assert.All(reported.Values, value => Assert.True(value is bool || value is int || value is long));
+
+                details.ClearOutcomeDetails();
+
+                Assert.Null(details.GetOutcomeDetails());
                 Assert.Null(viewModel.LastFileSettingsComparison);
             });
         }

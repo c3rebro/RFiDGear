@@ -286,29 +286,30 @@ namespace RFiDGear.Tests
                 CurrentTaskIndex = "21",
                 SelectedTaskType = "CheckFileSettings",
                 FileNumberCurrentAsInt = 2,
-                FileSizeCurrentAsInt = 16,
-                LastFileSettingsComparison = new DesfireFileSettingsComparison
-                {
-                    ApplicationId = 1,
-                    FileNumber = 2,
-                    ExpectedFileType = 0,
-                    ActualFileType = 0,
-                    ExpectedFileSize = 16,
-                    ActualFileSize = 16,
-                    ExpectedCommunicationMode = 3,
-                    ActualCommunicationMode = 3,
-                    ExpectedAccessRights0 = 0x10,
-                    ActualAccessRights0 = 0x10,
-                    ExpectedAccessRights1 = 0x32,
-                    ActualAccessRights1 = 0x32,
-                    Matches = true
-                }
+                FileSizeCurrentAsInt = 16
             };
 
             var descriptors = new List<TaskDescriptor>
             {
                 new TaskDescriptor(0, task, ct =>
                 {
+                    // What the check finds while the task runs.
+                    task.Details = new DesfireFileSettingsComparison
+                    {
+                        ApplicationId = 1,
+                        FileNumber = 2,
+                        ExpectedFileType = 0,
+                        ActualFileType = 0,
+                        ExpectedFileSize = 16,
+                        ActualFileSize = 16,
+                        ExpectedCommunicationMode = 3,
+                        ActualCommunicationMode = 3,
+                        ExpectedAccessRights0 = 0x10,
+                        ActualAccessRights0 = 0x10,
+                        ExpectedAccessRights1 = 0x32,
+                        ActualAccessRights1 = 0x32,
+                        Matches = true
+                    }.ToLogValues();
                     task.CurrentTaskErrorLevel = ERROR.NoError;
                     task.IsTaskCompletedSuccessfully = true;
                     return Task.CompletedTask;
@@ -329,8 +330,112 @@ namespace RFiDGear.Tests
             Assert.False(string.IsNullOrWhiteSpace(document.RootElement.GetProperty("RunId").GetString()));
             Assert.True(comparison.GetProperty("Matches").GetBoolean());
             Assert.Equal(0x32, comparison.GetProperty("ActualAccessRights1").GetInt32());
+            Assert.Equal(16, comparison.GetProperty("ActualFileSize").GetInt64());
             Assert.DoesNotContain("Key", comparison.GetRawText(), StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Payload", comparison.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        public void IoMetadata_AttachesTheDetailsOfATaskOnlyWhenItWasExecuted(bool taskExecuted, bool expectDetails)
+        {
+            // A skipped task has nothing from this run to report.
+            var task = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "20",
+                Details = new Dictionary<string, object> { ["Matches"] = true }
+            };
+
+            var metadata = TaskExecutionService.GetSafeIoMetadata(task, taskExecuted) as IDictionary<string, object>;
+
+            Assert.Equal(expectDetails, metadata != null && metadata.ContainsKey("FileSettingsComparison"));
+        }
+
+        [Fact]
+        public void IoMetadata_KeepsOnlyNumbersAndFlagsOfWhatATaskReports()
+        {
+            var task = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "20",
+                Details = new Dictionary<string, object>
+                {
+                    ["Number"] = 7,
+                    ["Large"] = 4294967295L,
+                    ["Flag"] = true,
+                    ["Text"] = "00112233445566778899AABBCCDDEEFF",
+                    ["Object"] = new { Secret = "x" },
+                    ["List"] = new[] { 1, 2 },
+                    ["Nothing"] = null!
+                }
+            };
+
+            var metadata = (IDictionary<string, object>)TaskExecutionService.GetSafeIoMetadata(task, taskExecuted: true)!;
+            var reported = (IDictionary<string, object>)metadata["FileSettingsComparison"];
+
+            Assert.Equal(new[] { "Flag", "Large", "Number" }, reported.Keys.OrderBy(name => name));
+        }
+
+        [Fact]
+        public async Task TheDetailsOfAnEarlierRun_AreClearedBeforeTheNextRunStarts()
+        {
+            var task = new LoggingStubTaskModel
+            {
+                CurrentTaskIndex = "5",
+                SelectedTaskType = "CheckFileSettings",
+                Details = new Dictionary<string, object> { ["Matches"] = true }
+            };
+            var seenAtStart = new List<bool>();
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, task, ct =>
+                {
+                    seenAtStart.Add(task.Details != null);
+                    task.Calls.Add("execute");
+                    task.Details = new Dictionary<string, object> { ["Matches"] = false };
+                    task.CurrentTaskErrorLevel = ERROR.NoError;
+                    task.IsTaskCompletedSuccessfully = true;
+                    return Task.CompletedTask;
+                })
+            };
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await BuildService().ExecuteOnceAsync(BuildRequest(descriptors));
+                await BuildService().ExecuteOnceAsync(BuildRequest(descriptors));
+            });
+
+            // What was left over from before the first run, and what the first run found, is gone when the next one starts.
+            Assert.Equal(new[] { "clear", "execute", "clear", "execute" }, task.Calls);
+            Assert.Equal(new[] { false, false }, seenAtStart);
+        }
+
+        [Fact]
+        public async Task TheDetailsOfEveryTaskOfTheList_AreClearedWhenARunStarts()
+        {
+            var first = new LoggingStubTaskModel { CurrentTaskIndex = "0", Details = new Dictionary<string, object> { ["Matches"] = true } };
+            var second = new LoggingStubTaskModel { CurrentTaskIndex = "1", Details = new Dictionary<string, object> { ["Matches"] = true } };
+            var handler = new ChipTaskHandlerModel();
+            handler.TaskCollection.Add(first);
+            handler.TaskCollection.Add(second);
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, first, ct => Task.CompletedTask),
+                new TaskDescriptor(1, second, ct => Task.CompletedTask)
+            };
+            var request = BuildRequest(descriptors);
+            request.TaskHandler = handler;
+            request.RunSelectedOnly = true;
+            request.SelectedSetupViewModel = first;
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await BuildService().ExecuteOnceAsync(request);
+            });
+
+            // Also the task that was not selected: its old result is not shown with the new run.
+            Assert.Null(first.Details);
+            Assert.Null(second.Details);
         }
 
         [Fact]
@@ -825,7 +930,7 @@ namespace RFiDGear.Tests
             public string DetailsJson { get; }
         }
 
-        private sealed class LoggingStubTaskModel : IGenericTask
+        private sealed class LoggingStubTaskModel : IGenericTask, ITaskOutcomeDetails
         {
             public bool? IsTaskCompletedSuccessfully { get; set; }
             public ERROR SelectedExecuteConditionErrorLevel { get; set; }
@@ -840,7 +945,18 @@ namespace RFiDGear.Tests
             public string DesfireAppKeyCurrent { get; set; }
             public int FileNumberCurrentAsInt { get; set; }
             public int FileSizeCurrentAsInt { get; set; }
-            public DesfireFileSettingsComparison? LastFileSettingsComparison { get; set; }
+            public IReadOnlyDictionary<string, object>? Details { get; set; }
+            public List<string> Calls { get; } = new List<string>();
+
+            string ITaskOutcomeDetails.OutcomeDetailsSection => "FileSettingsComparison";
+
+            IReadOnlyDictionary<string, object> ITaskOutcomeDetails.GetOutcomeDetails() => Details!;
+
+            void ITaskOutcomeDetails.ClearOutcomeDetails()
+            {
+                Calls.Add("clear");
+                Details = null;
+            }
         }
 
         private sealed class StubReaderDeviceProvider : IReaderDeviceProvider
