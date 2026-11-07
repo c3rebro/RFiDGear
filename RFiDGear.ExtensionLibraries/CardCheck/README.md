@@ -11,9 +11,9 @@ and importing the settings of the old assistant. The WPF extension
 
 So far it holds the result types, the log abstraction, the status and
 language values, the template rules, the report file handling, the settings
-store, the workflow session, the import of the old assistant's settings and
-the guard tests. The other services follow one at a time, each with its own
-tests.
+store, the workflow session, the import of the old assistant's settings, the
+PDF report service and the guard tests. The other services follow one at a
+time, each with its own tests.
 
 **Import of the old settings** (`ILegacySettingsImporter`, created by
 `CardCheckServices.CreateLegacyImporter`):
@@ -124,6 +124,35 @@ tests.
   Programmed: steps 1, 2 and 3 if the setting is on (the old assistant forgot
   step 1). Re-edit: the downloaded report and its copy, always. The final
   report is never removed. A failure is logged by kind, not by path.
+
+**PDF reports** (`IReportService`, created by
+`CardCheckServices.CreateReportService`):
+
+- `Analyze` reads the five fields the first report carries: supported,
+  programmable, free memory, chip type and notes, in one load. A check box
+  counts as ticked only if its value is exactly `Yes`, as in the old
+  assistant. A field the report lacks reads as empty; a file with no form at
+  all is refused as not being a report.
+- `WriteFields` and `SetFieldsReadOnly` never change their source. They load
+  the report once, change it, save it under a short temporary name of its own
+  beside the target (not the target's name plus a suffix, which could be too
+  long) and swap it in, so a crash leaves the old target or the new one, never
+  half of a file. A target name with a character the file system never allows
+  is refused before anything is read. `WriteFields` is all or nothing: if a
+  named field is missing, nothing is written and the failure names the missing
+  fields (the report's own fixed names, never user data). A field that is
+  written is left editable.
+- A missing file (or a folder in its place), an empty or damaged file, a file
+  another program holds, a report in a folder this account may not read and a
+  folder that is not there each give a failure of their own kind, never an
+  exception: a file that cannot be inspected is an access failure, not a
+  missing file. The old assistant took a damaged report for an empty one and
+  went on to finish the order. Field values are never logged and never part of
+  a failure. The component runs in its free mode, with the same key the host
+  uses; a report over its limits is an `InvalidConfiguration` failure.
+- The component's save picks the format from the file extension, so the
+  temporary file is saved with the format named explicitly. Its exceptions
+  have no usable namespace and are recognised by assembly.
 
 **Template rules** (`TemplateRules`, `ProjectVariants`, `LsmTemplate`):
 

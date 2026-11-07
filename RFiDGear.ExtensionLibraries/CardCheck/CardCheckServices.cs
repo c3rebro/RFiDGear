@@ -17,6 +17,12 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         /// <exception cref="System.ArgumentNullException"><paramref name="log"/> is null.</exception>
         public static IReportFiles CreateReportFiles(ICardCheckLog log) => new ReportFiles(log);
 
+        /// <summary>Creates the service that reads and writes the form fields of the check reports (PDF files).</summary>
+        /// <param name="log">Where an unexpected fault is noted (by type only).</param>
+        /// <returns>A new service; it keeps no state.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="log"/> is null.</exception>
+        public static IReportService CreateReportService(ICardCheckLog log) => new ReportService(log);
+
         /// <summary>
         /// Creates the store for the assistant's settings, in its own folder below the user's application data
         /// (<c>%LocalAppData%\RFiDGear\Extensions\CardCheckAssistant</c>), apart from the host's own files.

@@ -17,6 +17,7 @@
     <!-- Keep equal to the version in RFiDGear.csproj. The host owns the copy that is loaded; this reference is for
          compiling only, so no private copy can end up next to the library. -->
     <PackageReference Include="Serilog" Version="4.3.0" ExcludeAssets="runtime;native" PrivateAssets="all" />
+    <PackageReference Include="GemBox.Pdf" Version="2025.12.101" ExcludeAssets="runtime;native" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="RFiDGear.Tests" />
