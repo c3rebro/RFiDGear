@@ -10,8 +10,44 @@ and importing the settings of the old assistant. The WPF extension
 (`RFiDGear.Extensions.CardCheckAssistant`) uses it; nothing else does.
 
 So far it holds the result types, the log abstraction, the status and
-language values, the template rules and the guard tests. The other services
-follow one at a time, each with its own tests.
+language values, the template rules, the report file handling and the guard
+tests. The other services follow one at a time, each with its own tests.
+
+**Report files** (`IReportFiles`, created by
+`CardCheckServices.CreateReportFiles`):
+
+- `Resolve` is the only place a report path is built. It gives the paths
+  `<root>\[<job>\]<job>-<chip>` plus `.step1.pdf`, `.step2.pdf`, `.step3.pdf`,
+  `_final.pdf`, and `.download.pdf` and `.edit.pdf` for a report fetched for
+  editing. For ordinary numbers the names are exactly those of the old
+  assistant. The old assistant kept every downloaded report under one fixed
+  name, so one order could open the report of another; here they are per order.
+- A job or chip number becomes one file name, and two different numbers never
+  share one. A character that is not allowed becomes `_`, and `~` plus eight
+  hex digits of the SHA-256 of the original are added: `A/B` and `A?B` stay
+  different and `..\..` cannot leave the folder. `~` itself is not allowed, so
+  a changed name cannot equal an unchanged one (a number typed as `A_B~1a2b3c4d`
+  is changed too). The chip number may not contain the hyphen that joins it to
+  the job number, so `A-B` with chip `C` and `A` with chip `B-C` have different
+  files. A name that is empty, ends in a dot (so also `.` and `..`) or starts
+  with a Windows device name (`NUL`, `COM1`, `COM¹`, `CONIN$` and the rest,
+  with or without an extension) is refused. Two numbers that differ only in
+  letter case name the same files on Windows; that is not handled.
+- The root must be a full path with none of `? * < > " |` anywhere in it (a
+  `?` would be replaced by the host as a numbering placeholder, also in a
+  `\\?\` prefix) and no `:` or control character in a folder name. No path may
+  be longer than 259 characters. Tests check every path against the
+  extension's own report-target check.
+- `EnsureOrderFolder` creates the order's folder and never the output folder.
+  `PrepareStep` deletes a step report an earlier attempt left behind, before
+  the run that writes it, so an old file is never read as the new result. Only
+  "file not found" means there is nothing to delete: a folder in the way or a
+  file that cannot be inspected is a failure, never a silent success.
+- `Cleanup` removes working reports and never throws because of a file. Not
+  supported: steps 1 and 2 if the setting is on. Supported only: nothing.
+  Programmed: steps 1, 2 and 3 if the setting is on (the old assistant forgot
+  step 1). Re-edit: the downloaded report and its copy, always. The final
+  report is never removed. A failure is logged by kind, not by path.
 
 **Template rules** (`TemplateRules`, `ProjectVariants`, `LsmTemplate`):
 
