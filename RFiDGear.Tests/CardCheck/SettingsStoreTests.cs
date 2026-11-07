@@ -648,6 +648,9 @@ namespace RFiDGear.Tests.CardCheck
 
                 Assert.False(result.IsSuccess);
                 Assert.True(result.Failure!.Code == "settings.save.io" || result.Failure.Code == "settings.save.denied", result.Failure.Code);
+
+                // The message of the settings window sends the operator to the log, so the log has to say it.
+                Assert.Contains("could not be saved", _log.Everything, StringComparison.Ordinal);
             }
 
             Assert.Equal(before, File.ReadAllBytes(FilePath));
@@ -664,6 +667,8 @@ namespace RFiDGear.Tests.CardCheck
             Assert.False(result.IsSuccess);
             Assert.Equal(FailureKind.Io, result.Failure!.Kind);
             Assert.Equal("settings.save.io", result.Failure.Code);
+            Assert.Contains("could not be saved: an I/O error", _log.Everything, StringComparison.Ordinal);
+            Assert.DoesNotContain(_folder.Path, _log.Everything, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]

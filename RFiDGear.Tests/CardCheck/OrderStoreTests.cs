@@ -443,6 +443,23 @@ namespace RFiDGear.Tests.CardCheck
             }
         }
 
+        [Fact]
+        public async Task AFailureWithoutAName_IsLoggedWithTheOperationAndTheErrorNumber_ButNeverWithTheTable()
+        {
+            var missingTable = new DatabaseSettings { Server = Server, Database = Database, Table = "T_Hidden" };
+
+            // A failure that has a name of its own tells the operator enough; it needs no line in the log.
+            var unreachable = Store(new SqliteFactory("Data Source=" + Path.Combine(_folder.Path, "no-such-folder", "T.db") + ";Mode=ReadOnly;Pooling=False"));
+            Assert.Equal("orders.unreachable", (await unreachable.ListAsync(CancellationToken.None)).Failure!.Code);
+            Assert.Empty(_log.Entries);
+
+            var result = await Store(new SqliteFactory(Connection), missingTable).ListAsync(CancellationToken.None);
+
+            Assert.Equal("orders.failed", result.Failure!.Code);
+            Assert.Contains("W: The order database call {Operation} failed with server error {ErrorNumber} [orders.list, 0]", _log.Everything, StringComparison.Ordinal);
+            Assert.DoesNotContain("T_Hidden", _log.Everything, StringComparison.Ordinal);
+        }
+
         [Theory]
         [InlineData(-2, false, FailureKind.Timeout)]
         [InlineData(18456, true, FailureKind.AccessDenied)]

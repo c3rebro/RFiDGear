@@ -341,7 +341,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 case ArgumentException _ when opening:
                     return new Failure(FailureKind.InvalidConfiguration, "orders.connection.invalid", "The server or database name cannot be used.");
                 case DbException db:
-                    return FromDatabaseError(db, opening);
+                    return LogIfUnnamed(FromDatabaseError(db, opening), operation, db);
                 default:
                     _log.Unexpected(operation, UnexpectedFault.From(ex));
 
@@ -349,11 +349,27 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             }
         }
 
-        // The only place that names the driver's exception type, in a method of its own that is never inlined: it is
+        // The only places that name the driver's exception type, in methods of their own that are never inlined: they are
         // compiled only when a database exception has actually been thrown, which means the driver is loaded.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Failure FromDatabaseError(DbException ex, bool opening) =>
             ex is SqlException sql ? FromSqlError(sql.Number, opening) : FromSqlError(0, opening);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int ErrorNumber(DbException ex) => ex is SqlException sql ? sql.Number : 0;
+
+        // A failure with no name of its own would leave the operator with nothing to go on, so the log keeps the
+        // operation (a fixed word) and the server's error number. The message of the error is not kept: it may name the
+        // server, the database or the table.
+        private Failure LogIfUnnamed(Failure failure, string operation, DbException ex)
+        {
+            if (failure.Code == "orders.failed")
+            {
+                _log.Warning("The order database call {Operation} failed with server error {ErrorNumber}", operation, ErrorNumber(ex));
+            }
+
+            return failure;
+        }
 
         // One UPDATE of a column of the order, with the value it sets.
         private sealed class Update

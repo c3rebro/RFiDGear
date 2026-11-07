@@ -222,10 +222,14 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 }
                 catch (UnauthorizedAccessException)
                 {
+                    _log.Warning("The settings could not be saved: access denied");
+
                     return Result.Fail(new Failure(FailureKind.AccessDenied, "settings.save.denied", "The settings cannot be saved: access denied."));
                 }
                 catch (Exception ex) when (ex is IOException || ex is NotSupportedException || ex is ArgumentException)
                 {
+                    _log.Warning("The settings could not be saved: an I/O error");
+
                     return Result.Fail(new Failure(FailureKind.Io, "settings.save.io", "The settings cannot be saved."));
                 }
                 finally
