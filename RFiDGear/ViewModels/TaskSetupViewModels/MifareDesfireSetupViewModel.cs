@@ -3840,7 +3840,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         {
                             var actual = (int)device.MaxNumberOfAppKeys;
                             var expected = selectedDesfireAppMaxNumberOfKeysAsInt;
-                            bool passes = actual == expected;
+                            bool passes = DesfireValueComparison.MatchesNumber(actual, expected, NumericRelation.Equal);
 
                             StatusText += string.Format("{0}: App {1} key count — actual: {2}, expected: {3} → {4}\n",
                                 DateTime.Now,
