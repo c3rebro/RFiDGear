@@ -32,9 +32,14 @@ rest follows one change at a time, each with its own tests.
   without its report. The transaction is serializable, so the existence check
   still holds when the updates run: at the default level the order system
   could delete the row in between and the updates would succeed on nothing.
+  On SQL Server the check also takes an update lock (`UPDLOCK, HOLDLOCK`):
+  with only a shared lock that is later upgraded, a writer of the order system
+  and this transaction can deadlock, and one of them is chosen as the victim.
   An empty report is refused (it would read back as "no report" on a finished
   order). The old assistant wrote the three in separate calls and went on
-  whatever happened.
+  whatever happened. One thing no client can rule out: if the connection is
+  lost while the final commit is on its way, the server may have committed
+  anyway. Every write sets the same values again, so writing again is safe.
 - Values are parameters, never part of the SQL text. The table name from the
   settings is read as up to three parts (bare words or `[bracketed]`) and
   written out with every part in brackets; anything else, such as `;` or a
@@ -46,10 +51,13 @@ rest follows one change at a time, each with its own tests.
   server name has an instance (the old code failed without one). Encryption is
   left at the driver's default, as before; the packet size is no longer set.
 - Every call opens its own connection and returns a `Result`: a timeout, a
-  refused login, an unreachable server, a missing table or column and an
-  unknown order are different failures with fixed text that never names the
-  server, database, table or path. The old assistant wrote errors to the
-  Windows event log and carried on.
+  refused login, an unreachable server, a missing table or column, an unknown
+  order and a missing database driver (`System.Data.SqlClient.dll` or its
+  native file is not beside the extension) are different failures with fixed
+  text that never names the server, database, table or path. Nothing that
+  handles a failure needs the driver itself, so a missing driver is reported
+  instead of thrown. The old assistant wrote errors to the Windows event log
+  and carried on.
 - `DownloadReportAsync` gives the bytes of the stored report; an order with no
   report (missing, `NULL` or empty) is "not found", never an empty file, and
   text that is not base64 is "corrupt". Columns are read as text whatever type
@@ -111,10 +119,13 @@ rest follows one change at a time, each with its own tests.
   used, so nothing is lost. A file another program holds is "unreadable" and
   is not overwritten either.
 - `Load` and `Save` never throw because of the file. A save writes a temporary
-  file in the same folder and swaps it in, so a full disk or a crash leaves
-  the old file whole. Values are tidied (missing becomes empty, blanks around
-  names and paths go) and an unknown language falls back to German instead
-  of discarding the file. The log gets status words only, never a value.
+  file in the same folder, flushes it to the disk and swaps it in, so a full
+  disk, a crash or a power loss leaves the old file whole. A file that someone
+  edited with a tool that adds a UTF-8 byte order mark is read like any other
+  (it is not set aside as damaged). Values are tidied (missing becomes
+  empty, blanks around names and paths go) and an unknown language falls
+  back to German instead of discarding the file. The log gets status words
+  only, never a value.
 
 **Workflow session** (`IWorkflowSession`, created by
 `CardCheckServices.CreateWorkflowSession`):
@@ -126,8 +137,12 @@ rest follows one change at a time, each with its own tests.
   and each window creates its own.
 - A snapshot never changes. Every successful change swaps in a new one and
   raises `Changed` after the lock is released, so a handler may read or change
-  the session again. A handler that throws does not undo the change or stop
-  the other handlers; the fault is logged by type, never by message.
+  the session again. Events come one at a time in the order of the versions:
+  a change made by a handler, or by another thread while events are being
+  raised, is queued and raised afterwards by the caller that is already
+  raising, so that call may return before its event has been delivered. A
+  handler that throws does not undo the change or stop the other handlers; the
+  fault is logged by type, never by message.
 - The rules keep the parts consistent: findings and selection come together,
   and the chosen template is always one of the available ones. A call that
   does not fit the state (findings before an order, a template that does not
@@ -162,7 +177,10 @@ rest follows one change at a time, each with its own tests.
   `PrepareStep` deletes a step report an earlier attempt left behind, before
   the run that writes it, so an old file is never read as the new result. Only
   "file not found" means there is nothing to delete: a folder in the way or a
-  file that cannot be inspected is a failure, never a silent success.
+  file that cannot be inspected is a failure, never a silent success. Both
+  `PrepareStep` and `Cleanup` delete only a file directly in the order's
+  folder: the paths record can be copied or built by hand, so anything else
+  is refused (`Cleanup` lists it as failed) and the file is kept.
 - `Cleanup` removes working reports and never throws because of a file. Not
   supported: steps 1 and 2 if the setting is on. Supported only: nothing.
   Programmed: steps 1, 2 and 3 if the setting is on (the old assistant forgot

@@ -123,7 +123,14 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
                     Directory.CreateDirectory(_folder);
                     temp = Path.Combine(_folder, FileName + ".tmp-" + Guid.NewGuid().ToString("N"));
-                    File.WriteAllBytes(temp, bytes);
+
+                    // Flushed to the disk before the swap: otherwise a power loss right after it could leave the new
+                    // name pointing at a file whose content never arrived, with the old, good file already gone.
+                    using (var stream = new FileStream(temp, FileMode.CreateNew, System.IO.FileAccess.Write, FileShare.None))
+                    {
+                        stream.Write(bytes, 0, bytes.Length);
+                        stream.Flush(flushToDisk: true);
+                    }
 
                     if (File.Exists(path))
                     {
@@ -175,7 +182,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                     return ExistingFile.Current;
                 }
 
-                using var document = JsonDocument.Parse(File.ReadAllBytes(path), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+                using var document = JsonDocument.Parse(WithoutByteOrderMark(File.ReadAllBytes(path)), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
 
                 return TryReadSchema(document.RootElement, out var version) && version > CurrentSchema
                     ? ExistingFile.Newer
@@ -192,11 +199,19 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             }
         }
 
+        // Tools that people edit the file with (Windows PowerShell, older Notepad, Visual Studio) put a UTF-8 byte order
+        // mark in front, which the JSON parser rejects. A valid file with a mark is read; it is not set aside as damaged,
+        // and it is not taken for a replaceable one when a newer version wrote it.
+        private static ReadOnlyMemory<byte> WithoutByteOrderMark(byte[] bytes) =>
+            bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF
+                ? bytes.AsMemory(3)
+                : bytes.AsMemory();
+
         private SettingsLoad Parse(byte[] bytes, string path)
         {
             try
             {
-                using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+                using var document = JsonDocument.Parse(WithoutByteOrderMark(bytes), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
                 var root = document.RootElement;
 
                 if (!TryReadSchema(root, out var version))

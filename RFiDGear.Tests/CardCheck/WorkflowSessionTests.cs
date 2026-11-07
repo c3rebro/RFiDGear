@@ -265,6 +265,27 @@ namespace RFiDGear.Tests.CardCheck
         }
 
         [Fact]
+        public void Changed_EveryHandlerSeesTheVersionsInOrder_EvenWhenAnEarlierHandlerChangesTheSession()
+        {
+            var session = Session();
+            session.Begin(Order(), ReportLanguage.German);
+            var seen = new List<long>();
+            session.Changed += (_, snapshot) =>
+            {
+                if (snapshot.Findings != null && snapshot.ChosenTemplate!.Name != "MDBasic")
+                {
+                    session.ChooseTemplate(Template("MDBasic"));
+                }
+            };
+            session.Changed += (_, snapshot) => seen.Add(snapshot.Version);
+
+            session.RecordFindings(Programmable());
+
+            // The second handler is not handed the newer snapshot first because the first one changed the session.
+            Assert.Equal(new[] { 2L, 3L }, seen);
+        }
+
+        [Fact]
         public void Changed_AHandlerThatThrows_DoesNotUndoTheChangeOrStopTheOthers_AndIsLoggedWithoutItsMessage()
         {
             var session = Session();
