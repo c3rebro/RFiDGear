@@ -18,6 +18,9 @@
          compiling only, so no private copy can end up next to the library. -->
     <PackageReference Include="Serilog" Version="4.3.0" ExcludeAssets="runtime;native" PrivateAssets="all" />
     <PackageReference Include="GemBox.Pdf" Version="2025.12.101" ExcludeAssets="runtime;native" PrivateAssets="all" />
+    <!-- The one driver for the order database (SQL Server, Windows authentication). It is the library's own: the
+         host does not carry it, so it is deployed beside the extension. -->
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="RFiDGear.Tests" />
