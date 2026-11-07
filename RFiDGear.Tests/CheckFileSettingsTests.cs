@@ -1,9 +1,15 @@
 using RFiDGear.Infrastructure;
+using RFiDGear.Models;
+using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Xunit;
 
 namespace RFiDGear.Tests
@@ -272,6 +278,95 @@ namespace RFiDGear.Tests
 
                 Assert.Equal(ERROR.TransportError, viewModel.CurrentTaskErrorLevel);
                 Assert.Null(viewModel.LastFileSettingsComparison);
+            });
+        }
+
+        [Theory]
+        [InlineData("14", EncryptionMode.CM_ENCRYPT, "textBoxStatusFileSettingsInvalidKeyNumber")]
+        [InlineData("0", EncryptionMode.CM_UNKNOWN, "textBoxStatusFileSettingsUnknownCommunicationMode")]
+        public async Task TheReasonOfARefusal_IsSaid(string keyNumber, EncryptionMode mode, string reasonKey)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateViewModel();
+                viewModel.SelectedDesfireAppKeyNumberCurrent = keyNumber;
+                viewModel.SelectedDesfireFileCryptoMode = mode;
+
+                await Run(viewModel, new FakeFileSettingsProvider { FileSettings = Settings() });
+
+                // The text follows the language; the template starts with the time, which is not part of the reason.
+                var reason = ResourceLoader.GetResource(reasonKey).Replace("{0}: ", string.Empty);
+                Assert.False(string.IsNullOrWhiteSpace(reason));
+                Assert.Equal(ERROR.ProtocolConstraint, viewModel.CurrentTaskErrorLevel);
+                Assert.Contains(reason, viewModel.StatusText);
+            });
+        }
+
+        [Fact]
+        public async Task ATaskThatIsEdited_KeepsEverySettingOfTheCheck()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var source = CreateViewModel(FileType_MifareDesfireFileType.BackupFile);
+                source.FileNumberCurrent = "9";
+                source.FileSizeCurrent = "300";
+                source.SelectedDesfireAppKeyNumberCurrent = "2";
+                source.SelectedDesfireFileCryptoMode = EncryptionMode.CM_MAC;
+                source.SelectedDesfireFileAccessRightRead = TaskAccessRights.AR_FREE;
+                source.SelectedDesfireFileAccessRightWrite = TaskAccessRights.AR_KEY5;
+                source.SelectedDesfireFileAccessRightReadWrite = TaskAccessRights.AR_NEVER;
+                source.SelectedDesfireFileAccessRightChange = TaskAccessRights.AR_KEY13;
+
+                // The dialog opened for a task that is already in the list copies every property of it.
+                var editor = new MifareDesfireSetupViewModel(source, new ObservableCollection<IDialogViewModel>());
+
+                Assert.Equal(TaskType_MifareDesfireTask.CheckFileSettings, editor.SelectedTaskType);
+                Assert.Equal(source.AppNumberCurrent, editor.AppNumberCurrent);
+                Assert.Equal(source.DesfireAppKeyCurrent, editor.DesfireAppKeyCurrent);
+                Assert.Equal(DESFireKeyType.DF_KEY_AES, editor.SelectedDesfireAppKeyEncryptionTypeCurrent);
+                Assert.Equal("2", editor.SelectedDesfireAppKeyNumberCurrent);
+                Assert.Equal("9", editor.FileNumberCurrent);
+                Assert.Equal("300", editor.FileSizeCurrent);
+                Assert.Equal(FileType_MifareDesfireFileType.BackupFile, editor.SelectedDesfireFileType);
+                Assert.Equal(EncryptionMode.CM_MAC, editor.SelectedDesfireFileCryptoMode);
+                Assert.Equal(TaskAccessRights.AR_FREE, editor.SelectedDesfireFileAccessRightRead);
+                Assert.Equal(TaskAccessRights.AR_KEY5, editor.SelectedDesfireFileAccessRightWrite);
+                Assert.Equal(TaskAccessRights.AR_NEVER, editor.SelectedDesfireFileAccessRightReadWrite);
+                Assert.Equal(TaskAccessRights.AR_KEY13, editor.SelectedDesfireFileAccessRightChange);
+
+                // And the tabs and the action of the task are there.
+                Assert.True(editor.ShowCheckFileSettingsButton);
+                Assert.True(editor.IsDesfireFileAuthoringTabEnabled);
+                Assert.True(editor.IsDesfireAppAuthenticationTabEnabled);
+                Assert.False(editor.IsDesfirePICCAuthoringTabEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task ANegativeFileSize_IsInvalid_AndNothingThrows()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                // It used to allocate an array of that size.
+                var viewModel = new MifareDesfireSetupViewModel { FileSizeCurrent = "-5" };
+
+                Assert.False(viewModel.IsValidFileSizeCurrent);
+
+                // A project that holds one still loads, and the task with it is refused when it runs.
+                var project = new ChipTaskHandlerModel();
+                project.TaskCollection.Add(CreateViewModel());
+                var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
+                using var writer = new StringWriter();
+                serializer.Serialize(writer, project);
+                var xml = writer.ToString();
+                Assert.Contains("<FileSizeCurrent>16</FileSizeCurrent>", xml);
+
+                using var reader = new StringReader(xml.Replace("<FileSizeCurrent>16</FileSizeCurrent>", "<FileSizeCurrent>-5</FileSizeCurrent>"));
+                var loaded = (ChipTaskHandlerModel)serializer.Deserialize(reader)!;
+
+                var task = Assert.IsType<MifareDesfireSetupViewModel>(Assert.Single(loaded.TaskCollection));
+                Assert.Equal("-5", task.FileSizeCurrent);
+                Assert.False(task.IsValidFileSizeCurrent);
             });
         }
 

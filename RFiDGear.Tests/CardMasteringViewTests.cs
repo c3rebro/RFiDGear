@@ -9,8 +9,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using System.Windows.Threading;
 using Xunit;
+using static RFiDGear.Tests.RenderedTab;
 
 namespace RFiDGear.Tests
 {
@@ -231,19 +231,7 @@ namespace RFiDGear.Tests
             // A resource key that does not exist gives an empty caption and no error, so a label can silently go blank.
             await InspectAsync(taskType, false, view =>
             {
-                var blank = new List<string>();
-                foreach (var element in LogicalDescendants(view).OfType<FrameworkElement>().Where(element => element.IsVisible))
-                {
-                    if (element is ContentControl content && content.Content is string text && string.IsNullOrWhiteSpace(text))
-                    {
-                        blank.Add(element.GetType().Name + " content");
-                    }
-
-                    if (element is HeaderedContentControl headered && (headered.Header is string header ? string.IsNullOrWhiteSpace(header) : headered.Header == null))
-                    {
-                        blank.Add(element.GetType().Name + " header");
-                    }
-                }
+                var blank = BlankCaptions(view);
 
                 Assert.True(blank.Count == 0, "blank captions: " + string.Join(", ", blank));
             });
@@ -260,79 +248,10 @@ namespace RFiDGear.Tests
         private static Task InspectAsync(TaskType_MifareDesfireTask taskType, bool selectTypeAfterRender, Action<FrameworkElement> inspect) =>
             InspectAsync(taskType, selectTypeAfterRender, (view, viewModel) => inspect(view));
 
-        private static async Task InspectAsync(
+        private static Task InspectAsync(
             TaskType_MifareDesfireTask taskType,
             bool selectTypeAfterRender,
-            Action<FrameworkElement, MifareDesfireSetupViewModel> inspect)
-        {
-            await StaTestRunner.RunOnStaThreadAsync(async () =>
-            {
-                var viewModel = new MifareDesfireSetupViewModel();
-                if (!selectTypeAfterRender)
-                {
-                    viewModel.SelectedTaskType = taskType;
-                }
-
-                var view = new RFiDGear.View.TabPageMifareDesfireCardMasteringView { DataContext = viewModel };
-                var window = new Window { Content = view, Width = 1100, Height = 800, ShowActivated = false, ShowInTaskbar = false };
-                try
-                {
-                    window.Show();
-                    if (selectTypeAfterRender)
-                    {
-                        viewModel.SelectedTaskType = taskType;
-                    }
-
-                    window.UpdateLayout();
-                    await Flush();
-                    window.UpdateLayout();
-
-                    inspect(view, viewModel);
-                }
-                finally
-                {
-                    window.Close();
-                }
-            });
-        }
-
-        // Lets everything already queued on the dispatcher run.
-        private static async Task Flush() => await Dispatcher.Yield(DispatcherPriority.Background);
-
-        private static IEnumerable<DependencyObject> LogicalDescendants(DependencyObject root)
-        {
-            // The logical tree, not the visual one: the contents of a group that is collapsed are never given a visual.
-            foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>())
-            {
-                yield return child;
-
-                foreach (var nested in LogicalDescendants(child))
-                {
-                    yield return nested;
-                }
-            }
-        }
-
-        private static string BindingPath(DependencyObject element, DependencyProperty property) =>
-            BindingOperations.GetBinding(element, property)?.Path?.Path ?? string.Empty;
-
-        private static List<T> Bound<T>(DependencyObject root, DependencyProperty property, string path)
-            where T : FrameworkElement =>
-            LogicalDescendants(root).OfType<T>().Where(element => BindingPath(element, property) == path).ToList();
-
-        private static T One<T>(DependencyObject root, DependencyProperty property, string path)
-            where T : FrameworkElement
-        {
-            var found = Bound<T>(root, property, path);
-            Assert.True(found.Count == 1, $"expected one {typeof(T).Name} bound to {path}, found {found.Count}");
-
-            return found[0];
-        }
-
-        private static void AssertUsable(FrameworkElement element, string what)
-        {
-            Assert.True(element.IsVisible, what + " is not visible");
-            Assert.True(element.IsEnabled, what + " is not enabled");
-        }
+            Action<FrameworkElement, MifareDesfireSetupViewModel> inspect) =>
+            RenderedTab.InspectAsync<RFiDGear.View.TabPageMifareDesfireCardMasteringView>(taskType, selectTypeAfterRender, inspect);
     }
 }

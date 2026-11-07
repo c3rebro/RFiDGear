@@ -27,6 +27,10 @@ namespace RFiDGear.Tests
             "textBoxStatusFileSettingsInvalidInput",
             "textBoxStatusFileSettingsCompared",
             "textBoxStatusFileSettingsUnreadable",
+            "labelContentMifareDesfireCommunicationMode",
+            "labelContentMifareDesfireBytes",
+            "textBoxStatusFileSettingsInvalidKeyNumber",
+            "textBoxStatusFileSettingsUnknownCommunicationMode",
             "labelExpectedChangeKeyPolicy",
             "labelContentMifareDesfireAppId",
             "labelContentMifareDesfireMaxKeys",
@@ -42,6 +46,9 @@ namespace RFiDGear.Tests
             "textBoxStatusCompareFail",
         };
 
+        // The unit of a size reads the same in both languages.
+        private static readonly string[] SameInBothLanguages = { "labelContentMifareDesfireBytes" };
+
         private static readonly ResourceManager Manifest =
             new ResourceManager("RFiDGear.Resources.Manifest", typeof(MainWindowViewModel).Assembly);
 
@@ -56,7 +63,10 @@ namespace RFiDGear.Tests
 
             Assert.False(string.IsNullOrWhiteSpace(english), key + " (en)");
             Assert.False(string.IsNullOrWhiteSpace(german), key + " (de)");
-            Assert.NotEqual(english, german);
+            if (!SameInBothLanguages.Contains(key))
+            {
+                Assert.NotEqual(english, german);
+            }
         }
 
         [Theory]

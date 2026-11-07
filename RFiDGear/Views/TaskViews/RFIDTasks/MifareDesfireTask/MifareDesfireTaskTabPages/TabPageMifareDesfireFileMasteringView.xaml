@@ -179,7 +179,7 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
-                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCurrentKeyType'}" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCommunicationMode'}" />
                     <Label
                         Grid.Row="3"
                         Grid.Column="3"
@@ -239,7 +239,7 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
-                        Content="Byte(s)" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireBytes'}" />
                     <ComboBox
                         x:Name="changeCB"
                         Grid.Row="4"

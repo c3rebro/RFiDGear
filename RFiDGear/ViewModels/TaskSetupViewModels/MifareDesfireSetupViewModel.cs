@@ -965,6 +965,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                                && SelectedTaskType != TaskType_MifareDesfireTask.ReadData
                                                && SelectedTaskType != TaskType_MifareDesfireTask.WriteData
                                                && SelectedTaskType != TaskType_MifareDesfireTask.ChangeFileSettings
+                                               && SelectedTaskType != TaskType_MifareDesfireTask.CheckFileSettings
                                                && SelectedTaskType != TaskType_MifareDesfireTask.DeleteApplication;
 
         /// <summary>
@@ -2228,7 +2229,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 fileSizeCurrent = value;
-                IsValidFileSizeCurrent = (int.TryParse(value, out fileSizeCurrentAsInt) && fileSizeCurrentAsInt <= 8000);
+                IsValidFileSizeCurrent = (int.TryParse(value, out fileSizeCurrentAsInt) && fileSizeCurrentAsInt >= 0 && fileSizeCurrentAsInt <= 8000);
 
                 if (IsValidFileSizeCurrent != false)
                 {
@@ -4051,15 +4052,24 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 return "textBoxStatusFileSettingsUnsupportedFileType";
             }
 
+            // The list of key numbers of the dialog is shared by all tasks and offers more than an application has.
+            if (selectedDesfireAppKeyNumberCurrentAsInt < 0 || selectedDesfireAppKeyNumberCurrentAsInt > 13)
+            {
+                return "textBoxStatusFileSettingsInvalidKeyNumber";
+            }
+
+            // The list of communication modes is shared too; "unknown" is what a provider answers for a mode it cannot read.
+            if (SelectedDesfireFileCryptoMode == EncryptionMode.CM_UNKNOWN)
+            {
+                return "textBoxStatusFileSettingsUnknownCommunicationMode";
+            }
+
             var configurationIsValid =
                 IsValidAppNumberCurrent != false &&
                 AppNumberCurrentAsInt > 0 &&
                 IsValidFileNumberCurrent != false &&
                 IsValidFileSizeCurrent != false &&
                 FileSizeCurrentAsInt > 0 &&
-                selectedDesfireAppKeyNumberCurrentAsInt >= 0 &&
-                selectedDesfireAppKeyNumberCurrentAsInt <= 13 &&
-                SelectedDesfireFileCryptoMode != EncryptionMode.CM_UNKNOWN &&
                 CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(
                     DesfireAppKeyCurrent,
                     SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR;

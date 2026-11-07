@@ -1852,4 +1852,16 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="textBoxStatusFileSettingsUnreadable" xml:space="preserve">
     <value>{0}: The settings of file {2} in App {1} could not be read completely: {3}</value>
   </data>
+  <data name="labelContentMifareDesfireCommunicationMode" xml:space="preserve">
+    <value>Communication Mode</value>
+  </data>
+  <data name="labelContentMifareDesfireBytes" xml:space="preserve">
+    <value>Byte(s)</value>
+  </data>
+  <data name="textBoxStatusFileSettingsInvalidKeyNumber" xml:space="preserve">
+    <value>{0}: The key number must be between 0 and 13. Nothing was read.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsUnknownCommunicationMode" xml:space="preserve">
+    <value>{0}: Choose the communication mode the file is expected to have; &quot;unknown&quot; cannot be checked. Nothing was read.</value>
+  </data>
 </root>
