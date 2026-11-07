@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -54,11 +55,16 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private readonly Dispatcher _dispatcher;
         private readonly IFileDialogService _dialogs;
         private readonly IPathChecker _pathChecker;
+        private readonly IAssistantSettings _settings;
+        private readonly IImportOffer _importOffer;
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
         private readonly ObservableCollection<TaskOutcomeRowViewModel> _rows = new ObservableCollection<TaskOutcomeRowViewModel>();
 
         private int _disposed;
         private int _cancellationDisposed;
+        private int _opened;
+        private Task _openTask = Task.CompletedTask;
+        private AssistantDefaults _defaults = AssistantDefaults.None;
         private string _projectPath = string.Empty;
         private string _jobNumber = string.Empty;
         private string _chipNumber = string.Empty;
@@ -75,16 +81,22 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <param name="dispatcher">The dispatcher of the window; every change the page shows is made on it.</param>
         /// <param name="dialogs">The file picker.</param>
         /// <param name="pathChecker">The file-system checks of a run; the real ones when omitted.</param>
+        /// <param name="settings">What the page remembers between windows; nothing when omitted.</param>
+        /// <param name="importOffer">The one-time offer to import the old assistant's settings; none when omitted.</param>
         public CardCheckAssistantViewModel(
             IRFiDGearExtensionHost host,
             Dispatcher dispatcher,
             IFileDialogService dialogs,
-            IPathChecker? pathChecker = null)
+            IPathChecker? pathChecker = null,
+            IAssistantSettings? settings = null,
+            IImportOffer? importOffer = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _dialogs = dialogs ?? throw new ArgumentNullException(nameof(dialogs));
             _pathChecker = pathChecker ?? new FileSystemPathChecker();
+            _settings = settings ?? AssistantServices.None.Settings;
+            _importOffer = importOffer ?? AssistantServices.None.ImportOffer;
 
             Strings = new LocalizedStrings(SafeRead(() => host.AppContext.UICultureName, string.Empty));
             RunCommand = new AsyncCommand(RunAsync, () => CanRun, OnUnhandledRunFailure);
@@ -349,9 +361,101 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             _rows.Clear();
         }
 
+        /// <summary>
+        /// Starts what the page does once, when it is first shown: prefill the project from what was remembered, then make
+        /// the one-time offer to import the old assistant's settings, and prefill again if something was imported. What
+        /// the operator has typed in the meantime is never overwritten. Safe to call more than once, and it never throws.
+        /// </summary>
+        /// <returns>The task of the start, which ends when the offer is answered or the window is closed.</returns>
+        internal Task Open()
+        {
+            if (Interlocked.Exchange(ref _opened, 1) == 0)
+            {
+                _openTask = OpenAsync();
+            }
+
+            return _openTask;
+        }
+
+        private async Task OpenAsync()
+        {
+            try
+            {
+                await ApplyDefaultsAsync();
+                if (IsDisposed)
+                {
+                    return;
+                }
+
+                if (await _importOffer.OfferAsync(Strings, _cancellation.Token) && !IsDisposed)
+                {
+                    await ApplyDefaultsAsync();
+                }
+            }
+            catch (Exception)
+            {
+                // Remembering is a convenience: a page that cannot read its settings, or whose offer failed, still works.
+            }
+        }
+
+        // The settings are read on a worker thread; the project is prefilled on the window's thread, and only while the
+        // operator has not entered one.
+        private async Task ApplyDefaultsAsync()
+        {
+            var defaults = await Task.Run(_settings.Load);
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            _defaults = defaults;
+            if (string.IsNullOrWhiteSpace(ProjectPath) && !string.IsNullOrWhiteSpace(defaults.DefaultProjectPath))
+            {
+                ProjectPath = defaults.DefaultProjectPath;
+            }
+        }
+
+        // Remembers where the project is, off the UI thread, so the picker opens there the next time.
+        private void RememberProjectFolder(string projectPath)
+        {
+            string? folder;
+            try
+            {
+                folder = Path.GetDirectoryName(projectPath.Trim());
+            }
+            catch (ArgumentException)
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(folder) || string.Equals(folder, _defaults.LastProjectFolder, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _defaults = _defaults with { LastProjectFolder = folder };
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    _settings.RememberProjectFolder(folder);
+                }
+                catch (Exception)
+                {
+                    // Not remembering one folder is no reason to bother the operator.
+                }
+            });
+        }
+
         private void Browse()
         {
-            var picked = _dialogs.PickProjectFile(ProjectPath, Strings[Keys.PickerTitle], Strings[Keys.PickerFilter]);
+            // With no project entered the picker opens in the folder of the last one (a trailing separator means "this
+            // folder, no file name").
+            var start = string.IsNullOrWhiteSpace(ProjectPath) && !string.IsNullOrWhiteSpace(_defaults.LastProjectFolder)
+                ? Path.TrimEndingDirectorySeparator(_defaults.LastProjectFolder) + Path.DirectorySeparatorChar
+                : ProjectPath;
+
+            var picked = _dialogs.PickProjectFile(start, Strings[Keys.PickerTitle], Strings[Keys.PickerFilter]);
             if (!string.IsNullOrWhiteSpace(picked))
             {
                 ProjectPath = picked!;
@@ -404,6 +508,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                     return;
                 }
 
+                RememberProjectFolder(ProjectPath);
                 SetPhase(RunPhase.Running);
                 var result = await _host.Execution.ExecuteAllAsync(BuildRequest(), token);
                 if (IsDisposed)

@@ -51,6 +51,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            if (!_disposed)
+            {
+                // Once, however often the page is loaded: prefill from what was remembered and make the import offer.
+                _ = _viewModel.Open();
+            }
+
             var window = Window.GetWindow(this);
             if (_disposed || window == null || ReferenceEquals(window, _window))
             {

@@ -68,6 +68,14 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string RunUnexpectedFormat = "RunUnexpectedFormat";
             public const string CloseBlocked = "CloseBlocked";
             public const string ComponentMissing = "ComponentMissing";
+            public const string ImportTitle = "ImportTitle";
+            public const string ImportFound = "ImportFound";
+            public const string ImportMore = "ImportMore";
+            public const string ImportButton = "ImportButton";
+            public const string ImportNotNow = "ImportNotNow";
+            public const string ImportNever = "ImportNever";
+            public const string ImportConfirm = "ImportConfirm";
+            public const string ImportSqliteNote = "ImportSqliteNote";
         }
 
         private static readonly IReadOnlyDictionary<string, string> English = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -128,6 +136,14 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.RunUnexpectedFormat] = "The run could not be completed ({0}). See the application log.",
             [Keys.CloseBlocked] = "A run is in progress. Wait until it has finished before closing this window.",
             [Keys.ComponentMissing] = "The Card Check Assistant cannot start. The file {0} was not found next to {1}, or it does not match this version. Copy both files to the Extensions folder of RFiDGear (%ProgramData%\\RFiDGear\\Extensions) and restart RFiDGear.",
+            [Keys.ImportTitle] = "Settings of the old Card Check Assistant",
+            [Keys.ImportFound] = "Settings of the old Card Check Assistant were found:\n{0}\n(last changed {1})\n\nDo you want to take them over into this version? The old files are only read, never changed.",
+            [Keys.ImportMore] = "{0} more file(s) were found; the newest is offered.",
+            [Keys.ImportButton] = "Import",
+            [Keys.ImportNotNow] = "Not now",
+            [Keys.ImportNever] = "Never ask again",
+            [Keys.ImportConfirm] = "{0} setting(s) will be taken over; {1} will not (they are empty, or no longer used). The user name, password and port of the old assistant are never read. What you have already entered here is kept.\n\nContinue?",
+            [Keys.ImportSqliteNote] = "The old assistant used SQLite. This version does not, so its database settings are not taken over.\n",
         };
 
         private static readonly IReadOnlyDictionary<string, string> German = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -188,6 +204,14 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.RunUnexpectedFormat] = "Der Lauf konnte nicht abgeschlossen werden ({0}). Siehe Anwendungsprotokoll.",
             [Keys.CloseBlocked] = "Ein Lauf ist in Arbeit. Warten Sie, bis er beendet ist, bevor Sie dieses Fenster schließen.",
             [Keys.ComponentMissing] = "Der Card Check Assistant kann nicht starten. Die Datei {0} fehlt neben {1} oder passt nicht zu dieser Version. Kopieren Sie beide Dateien in den Ordner Extensions von RFiDGear (%ProgramData%\\RFiDGear\\Extensions) und starten Sie RFiDGear neu.",
+            [Keys.ImportTitle] = "Einstellungen des alten Card Check Assistant",
+            [Keys.ImportFound] = "Einstellungen des alten Card Check Assistant wurden gefunden:\n{0}\n(zuletzt geändert {1})\n\nMöchten Sie sie in diese Version übernehmen? Die alten Dateien werden nur gelesen, nie verändert.",
+            [Keys.ImportMore] = "Es wurden {0} weitere Datei(en) gefunden; angeboten wird die neueste.",
+            [Keys.ImportButton] = "Übernehmen",
+            [Keys.ImportNotNow] = "Jetzt nicht",
+            [Keys.ImportNever] = "Nie wieder fragen",
+            [Keys.ImportConfirm] = "{0} Einstellung(en) werden übernommen, {1} nicht (sie sind leer oder werden nicht mehr verwendet). Benutzername, Passwort und Port des alten Assistenten werden nie gelesen. Was Sie hier bereits eingegeben haben, bleibt erhalten.\n\nFortfahren?",
+            [Keys.ImportSqliteNote] = "Der alte Assistent hat SQLite verwendet. Diese Version nicht, daher werden seine Datenbankeinstellungen nicht übernommen.\n",
         };
 
         /// <summary>The keys of the English dictionary, which is the complete one.</summary>
