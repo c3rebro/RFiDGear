@@ -16,9 +16,15 @@ namespace RFiDGear.Tests.CardCheck
 
         private IWorkflowSession Session() => CardCheckServices.CreateWorkflowSession(_log);
 
-        private static WorkflowOrder Order(string id = "1", string job = "KP-000005", string chip = "5") => new WorkflowOrder(id, job, chip);
+        private static WorkflowOrder Order() => Order("1", "KP-000005", "5");
 
-        private static ReportAnalysis Programmable(string memory = "1760") =>
+        private static WorkflowOrder Order(string id) => Order(id, "KP-000005", "5");
+
+        private static WorkflowOrder Order(string id, string job, string chip) => new WorkflowOrder(id, job, chip);
+
+        private static ReportAnalysis Programmable() => Programmable("1760");
+
+        private static ReportAnalysis Programmable(string memory) =>
             new ReportAnalysis { Supported = true, Programmable = true, FreeMemoryText = memory, ChipType = "DESFire EV2" };
 
         private static LsmTemplate Template(string name) => LsmTemplateCatalog.All.Single(t => t.Name == name);
@@ -348,10 +354,11 @@ namespace RFiDGear.Tests.CardCheck
             {
                 for (var i = 0; i < 300; i++)
                 {
-                    switch (i % 4)
+                    // Bit operations rather than "%": the loop counter is never negative.
+                    switch (i & 3)
                     {
                         case 0: session.Begin(Order(), ReportLanguage.German); break;
-                        case 1: session.RecordFindings(Programmable(i % 8 == 1 ? "1760" : "300")); break;
+                        case 1: session.RecordFindings(Programmable((i & 4) == 0 ? "1760" : "300")); break;
                         case 2: session.ChooseTemplate(Template("MDBasic")); break;
                         default: session.Reset(); break;
                     }
