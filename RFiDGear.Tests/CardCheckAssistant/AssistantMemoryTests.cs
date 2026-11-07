@@ -46,8 +46,18 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 return LoadFails != null ? throw LoadFails : Defaults;
             }
 
+            // Makes the first write slow: it waits until the test lets it go.
+            public ManualResetEventSlim? HoldFirstWrite { get; set; }
+
+            private int _writes;
+
             public void RememberProjectFolder(string folder)
             {
+                if (Interlocked.Increment(ref _writes) == 1)
+                {
+                    HoldFirstWrite?.Wait(TimeSpan.FromSeconds(30));
+                }
+
                 lock (Remembered)
                 {
                     Remembered.Add(folder);
@@ -176,6 +186,30 @@ namespace RFiDGear.Tests.CardCheckAssistant
             });
         }
 
+        [Fact]
+        public async Task FoldersOfProjectsLoadedOneAfterTheOther_AreRememberedInThatOrder_EvenWhenTheFirstWriteIsSlow()
+        {
+            using var first = new TempArea();
+            using var second = new TempArea();
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var release = new ManualResetEventSlim(false);
+                var settings = new FakeSettings { HoldFirstWrite = release };
+                using var viewModel = NewViewModel(settings, new FakeOffer());
+                await viewModel.Open();
+
+                viewModel.ProjectPath = first.ProjectPath;
+                await viewModel.RunCommand.ExecuteAsync();
+                viewModel.ProjectPath = second.ProjectPath;
+                await viewModel.RunCommand.ExecuteAsync();
+                release.Set();
+                await WaitUntil(() => settings.Remembered.Count == 2, "both folders to be remembered");
+
+                // The older folder is not the last one written, so the picker does not open in the wrong place next time.
+                Assert.Equal(new[] { first.Directory, second.Directory }, settings.Remembered);
+            });
+        }
+
         // ── what is kept in the settings file ───────────────────────────────
 
         private ISettingsStore Store() => CardCheckServices.CreateSettingsStore(Path.Combine(_folder.Path, "settings"), _log);
@@ -194,6 +228,56 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal("default.rfPrj", saved.DefaultProjectPath);
             Assert.Equal("reports", saved.Report.OutputPath);
             Assert.Equal(new AssistantDefaults("default.rfPrj", "projects"), memory.Load());
+        }
+
+        // A store that counts how it is written to.
+        private sealed class SpyStore : ISettingsStore
+        {
+            private readonly ISettingsStore _inner;
+
+            public SpyStore(ISettingsStore inner)
+            {
+                _inner = inner;
+            }
+
+            public int Updates { get; private set; }
+
+            public int Saves { get; private set; }
+
+            public SettingsLoad Load() => _inner.Load();
+
+            public Result Save(CardCheckSettings settings)
+            {
+                Saves++;
+
+                return _inner.Save(settings);
+            }
+
+            public Result Update(Func<CardCheckSettings, Result<CardCheckSettings>> change)
+            {
+                Updates++;
+
+                return _inner.Update(change);
+            }
+        }
+
+        [Fact]
+        public async Task WhatDependsOnTheCurrentSettings_IsChangedInOneStep_NeverByReadingAndThenWriting()
+        {
+            WriteOldSettings();
+            var remembering = new SpyStore(Store());
+            var importing = new SpyStore(CardCheckServices.CreateSettingsStore(Path.Combine(_folder.Path, "second"), _log));
+            var declining = new SpyStore(CardCheckServices.CreateSettingsStore(Path.Combine(_folder.Path, "third"), _log));
+
+            new SettingsMemory(remembering).RememberProjectFolder("folder");
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await Offer(importing, new FakeDialogs { Answer = ImportAnswer.Import }).OfferAsync(new LocalizedStrings("en-US"), CancellationToken.None);
+                await Offer(declining, new FakeDialogs { Answer = ImportAnswer.Never }).OfferAsync(new LocalizedStrings("en-US"), CancellationToken.None);
+            });
+
+            // A write that follows a read of its own could write a copy that another window has made stale.
+            Assert.All(new[] { remembering, importing, declining }, store => Assert.Equal((1, 0), (store.Updates, store.Saves)));
         }
 
         [Fact]

@@ -25,16 +25,13 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         /// <inheritdoc/>
         public void RememberProjectFolder(string folder)
         {
-            var load = _store.Load();
-
-            if (string.Equals(load.Settings.LastProjectFolder, folder, System.StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            // A file from a newer version, or one that cannot be read just now, comes back from Load as the defaults, but
-            // Save looks at the file itself and refuses to write over it, so one remembered folder never costs the rest.
-            _store.Save(load.Settings with { LastProjectFolder = folder });
+            // Read, change and write in one step: the settings may have been changed meanwhile by an import, or by another
+            // window, and this must not write a stale copy over that. A file from a newer version, or one that cannot be
+            // read just now, is refused by the store, so one remembered folder never costs the rest.
+            _store.Update(settings => Result<CardCheckSettings>.Ok(
+                string.Equals(settings.LastProjectFolder, folder, System.StringComparison.Ordinal)
+                    ? settings
+                    : settings with { LastProjectFolder = folder }));
         }
     }
 }

@@ -1,3 +1,5 @@
+using System;
+
 namespace RFiDGear.ExtensionLibraries.CardCheck
 {
     /// <summary>How <see cref="ISettingsStore.Load"/> got its settings.</summary>
@@ -51,5 +53,22 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         /// <param name="settings">The settings to keep.</param>
         /// <returns>Success, or why the settings could not be kept.</returns>
         Result Save(CardCheckSettings settings);
+
+        /// <summary>
+        /// Changes the settings as one step: reads them, hands them to <paramref name="change"/> and writes what it
+        /// returns. No other store for the same file (another window of the extension, another program) can read or
+        /// write in between, so no change is lost to a stale copy. Use this, not <see cref="Load"/> followed by
+        /// <see cref="Save"/>, whenever the new settings depend on the old ones.
+        /// </summary>
+        /// <param name="change">
+        /// Builds the new settings from the current ones. Return the same object to change nothing, or a failure to
+        /// stop; nothing is written in either case. It runs while the file is held, so it must be quick and must not call
+        /// this store.
+        /// </param>
+        /// <returns>
+        /// Success, or why nothing was written: the failure of <paramref name="change"/>, a file from a newer version, a
+        /// file that cannot be read just now, or one that another program holds for too long.
+        /// </returns>
+        Result Update(Func<CardCheckSettings, Result<CardCheckSettings>> change);
     }
 }

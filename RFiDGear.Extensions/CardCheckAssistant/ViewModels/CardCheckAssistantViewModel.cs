@@ -64,6 +64,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private int _cancellationDisposed;
         private int _opened;
         private Task _openTask = Task.CompletedTask;
+        private Task _persistChain = Task.CompletedTask;
         private AssistantDefaults _defaults = AssistantDefaults.None;
         private string _projectPath = string.Empty;
         private string _jobNumber = string.Empty;
@@ -434,17 +435,25 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             }
 
             _defaults = _defaults with { LastProjectFolder = folder };
-            _ = Task.Run(() =>
-            {
-                try
+
+            // One write after the other, in the order the projects were loaded: independent workers could finish out of
+            // order and leave the older folder as the last one written. Only the window's thread gets here, so the chain
+            // needs no lock of its own.
+            _persistChain = _persistChain.ContinueWith(
+                _ =>
                 {
-                    _settings.RememberProjectFolder(folder);
-                }
-                catch (Exception)
-                {
-                    // Not remembering one folder is no reason to bother the operator.
-                }
-            });
+                    try
+                    {
+                        _settings.RememberProjectFolder(folder);
+                    }
+                    catch (Exception)
+                    {
+                        // Not remembering one folder is no reason to bother the operator.
+                    }
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
         }
 
         private void Browse()

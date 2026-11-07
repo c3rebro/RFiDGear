@@ -142,7 +142,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.ImportButton] = "Import",
             [Keys.ImportNotNow] = "Not now",
             [Keys.ImportNever] = "Never ask again",
-            [Keys.ImportConfirm] = "{0} setting(s) will be taken over; {1} will not (they are empty, or no longer used). The user name, password and port of the old assistant are never read. What you have already entered here is kept.\n\nContinue?",
+            [Keys.ImportConfirm] = "{0} setting(s) of the old assistant can be taken over; {1} cannot (they are empty, or no longer used). What you have already entered here is kept, so fewer may actually change. The user name, password and port of the old assistant are never read.\n\nContinue?",
             [Keys.ImportSqliteNote] = "The old assistant used SQLite. This version does not, so its database settings are not taken over.\n",
         };
 
@@ -210,7 +210,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.ImportButton] = "Übernehmen",
             [Keys.ImportNotNow] = "Jetzt nicht",
             [Keys.ImportNever] = "Nie wieder fragen",
-            [Keys.ImportConfirm] = "{0} Einstellung(en) werden übernommen, {1} nicht (sie sind leer oder werden nicht mehr verwendet). Benutzername, Passwort und Port des alten Assistenten werden nie gelesen. Was Sie hier bereits eingegeben haben, bleibt erhalten.\n\nFortfahren?",
+            [Keys.ImportConfirm] = "{0} Einstellung(en) des alten Assistenten können übernommen werden, {1} nicht (sie sind leer oder werden nicht mehr verwendet). Was Sie hier bereits eingegeben haben, bleibt erhalten; es können also weniger tatsächlich geändert werden. Benutzername, Passwort und Port des alten Assistenten werden nie gelesen.\n\nFortfahren?",
             [Keys.ImportSqliteNote] = "Der alte Assistent hat SQLite verwendet. Diese Version nicht, daher werden seine Datenbankeinstellungen nicht übernommen.\n",
         };
 
