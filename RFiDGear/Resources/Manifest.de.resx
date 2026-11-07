@@ -1809,13 +1809,13 @@ https://github.com/c3rebro/rfidgear</value>
     <value>Mindestens eine gewählte Einstellung muss gesetzt sein</value>
   </data>
   <data name="labelAppSettingsCompareExact" xml:space="preserve">
-    <value>Exakte Übereinstimmung (einschließlich der Änderungsrichtlinie für Schlüssel)</value>
+    <value>Exakte Übereinstimmung (einschließlich Key-Änderungsmodus)</value>
   </data>
   <data name="textBoxStatusNoKeySettingFlagSelected" xml:space="preserve">
     <value>Nichts zu vergleichen: Wählen Sie mindestens eine Schlüsseleinstellung oder &quot;Exakte Übereinstimmung&quot;.</value>
   </data>
   <data name="labelExpectedChangeKeyPolicy" xml:space="preserve">
-    <value>Schlüsseländerung (erwartet)</value>
+    <value>Key-Änderungsmodus (erwartet)</value>
   </data>
   <data name="labelContentMifareDesfireAppId" xml:space="preserve">
     <value>App-ID</value>
@@ -1852,5 +1852,8 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="textBoxStatusCompareFail" xml:space="preserve">
     <value>NICHT BESTANDEN</value>
+  </data>
+  <data name="textBoxStatusInvalidApplicationId" xml:space="preserve">
+    <value>{0}: Die App-ID ist ungültig; es wurde nichts gelesen.</value>
   </data>
 </root>

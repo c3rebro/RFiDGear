@@ -13,10 +13,11 @@ namespace RFiDGear.Tests
     internal sealed class ReaderDeviceScope : IDisposable
     {
         private static readonly FieldInfo InstanceField =
-            typeof(ReaderDevice).GetField("instance", BindingFlags.NonPublic | BindingFlags.Static);
+            typeof(ReaderDevice).GetField("instance", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("ReaderDevice has no static field 'instance' any more; update this helper.");
 
         private readonly ReaderTypes originalReader;
-        private readonly ReaderDevice originalInstance;
+        private readonly ReaderDevice? originalInstance;
 
         private ReaderDeviceScope(ReaderDevice device)
         {

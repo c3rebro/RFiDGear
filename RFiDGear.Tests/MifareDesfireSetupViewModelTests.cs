@@ -216,10 +216,10 @@ namespace RFiDGear.Tests
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, "labelCurrentDesfireKeySettingsContext", "groupBoxheaderMifareDesfireCardMasterSettingTarget")]
         [InlineData(TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover, "labelTargetDesfireKeySettings", "groupBoxheaderMifareDesfireCardMasterSettingTarget")]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, "labelExpectedDesfireKeySettings", "groupBoxHeaderMifareDesfireExpectedAppSettings")]
-        [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount, "labelTargetDesfireKeySettings", "groupBoxHeaderMifareDesfireExpectedAppSettings")]
+        [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount, null, "groupBoxHeaderMifareDesfireExpectedAppSettings")]
         public async Task SelectedTaskType_NamesWhatTheShownSettingsAre(
             TaskType_MifareDesfireTask taskType,
-            string keySettingsKey,
+            string? keySettingsKey,
             string targetGroupKey)
         {
             await RunOnStaThreadAsync(() =>
@@ -229,10 +229,15 @@ namespace RFiDGear.Tests
                     SelectedTaskType = taskType
                 };
 
-                // The texts follow the language, so they are compared with the resource, which must exist.
-                Assert.False(string.IsNullOrWhiteSpace(ResourceLoader.GetResource(keySettingsKey)), keySettingsKey);
+                // The texts follow the language, so they are compared with the resource, which must exist. Where the
+                // key-settings group is not shown at all there is no caption to pin.
+                if (keySettingsKey != null)
+                {
+                    Assert.False(string.IsNullOrWhiteSpace(ResourceLoader.GetResource(keySettingsKey)), keySettingsKey);
+                    Assert.Equal(ResourceLoader.GetResource(keySettingsKey), viewModel.KeySettingsPanelHeader);
+                }
+
                 Assert.False(string.IsNullOrWhiteSpace(ResourceLoader.GetResource(targetGroupKey)), targetGroupKey);
-                Assert.Equal(ResourceLoader.GetResource(keySettingsKey), viewModel.KeySettingsPanelHeader);
                 Assert.Equal(ResourceLoader.GetResource(targetGroupKey), viewModel.TargetGroupHeader);
             });
         }

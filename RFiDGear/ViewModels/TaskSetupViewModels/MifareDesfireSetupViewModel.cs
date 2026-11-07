@@ -525,9 +525,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        /// Finalizes a task by updating success state and reader status.
-        /// </summary>
-        /// <summary>
         /// Runs a check that a button of the task dialog starts. A task that runs in the task loop is prepared by the
         /// command delegator, which allows it to finish again; a button press is not, so the second press of a button
         /// would not have updated <see cref="IsTaskCompletedSuccessfully"/> or the reader status, and a command that
@@ -550,6 +547,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
         }
 
+        /// <summary>
+        /// Finalizes a task by updating success state and reader status.
+        /// </summary>
         private async Task FinalizeTaskAsync()
         {
             if (hasFinalizedTask)
@@ -1103,6 +1103,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         /// <returns>Always <see langword="false"/>.</returns>
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S3400:Methods should not return constants", Justification = "XmlSerializer ShouldSerialize pattern: the legacy flag is read but never written.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S2325:Methods and properties that don't access instance data should be static", Justification = "XmlSerializer finds the ShouldSerialize pattern on the instance.")]
         public bool ShouldSerializeIsAppSettingsExactMatch() => false;
 
         /// <summary>Gets or sets whether all ticked flags must be set; bound to a radio button.</summary>
@@ -3627,7 +3629,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         ///
         /// </summary>
-        public IAsyncRelayCommand AuthenticateToCardApplicationCommand => new AsyncRelayCommand(OnNewAuthenticateToCardApplicationCommand);
+        public IAsyncRelayCommand AuthenticateToCardApplicationCommand => new AsyncRelayCommand(() => RunFromUiAsync(OnNewAuthenticateToCardApplicationCommand));
         private async Task OnNewAuthenticateToCardApplicationCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
@@ -3650,7 +3652,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
                     {
-                        var authKeyNo = GetAuthKeyNumberForChangeAppKey(AppNumberCurrentAsInt, GetChangeKeyModeForApplication(AppNumberCurrentAsInt), selectedDesfireAppKeyNumberCurrentAsInt);
+                        // The two check tasks authenticate with the key that is chosen, as their compare button does; the
+                        // others take it from the change-key policy of the application.
+                        var authKeyNo = SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings || SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount
+                            ? selectedDesfireAppKeyNumberCurrentAsInt
+                            : GetAuthKeyNumberForChangeAppKey(AppNumberCurrentAsInt, GetChangeKeyModeForApplication(AppNumberCurrentAsInt), selectedDesfireAppKeyNumberCurrentAsInt);
                         var result = await device.AuthToMifareDesfireApplication(
                                 DesfireAppKeyCurrent,
                                 SelectedDesfireAppKeyEncryptionTypeCurrent,
@@ -3905,9 +3911,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         /// Reads the actual max-key count from the card application and compares it to the expected value.
         /// </summary>
+        /// <returns>
+        /// A task that completes when the check has finished. The result is left in <see cref="CurrentTaskErrorLevel"/>:
+        /// <see cref="ERROR.NoError"/> for a match, <see cref="ERROR.IsNotTrue"/> for a mismatch,
+        /// <see cref="ERROR.ProtocolConstraint"/> when the application id is not valid, or the error of the failed read.
+        /// </returns>
         public async Task CheckAppKeyCountCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
+
+            if (await RejectInvalidApplicationIdAsync())
+            {
+                return;
+            }
 
             using (var device = ReaderDevice.Instance)
             {
@@ -3965,6 +3981,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
+            if (await RejectInvalidApplicationIdAsync())
+            {
+                return;
+            }
+
             var expected = BuildExpectedAppKeySettings();
             if (AppSettingsCompareMode != DesfireAppSettingsCompareMode.Exact && !DesfireValueComparison.HasSelectedFlags(expected))
             {
@@ -4020,24 +4041,38 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        /// Builds the key-settings byte the task expects: the four ticked flags and the chosen change-key policy. Only the
-        /// exact comparison looks at the policy. The PICC (application 0) has none, so it is always "master key" there.
+        /// Builds the key-settings byte the task expects, with the helpers the other key-settings tasks use: the four
+        /// ticked flags and, for the exact comparison only, the chosen change-key policy (the PICC, application 0, has
+        /// none, so it is "master key" there). The other comparisons look at the flags alone, so a policy that was chosen
+        /// earlier and is no longer shown must not appear in the byte that is reported.
         /// </summary>
         /// <returns>The expected byte.</returns>
         private byte BuildExpectedAppKeySettings()
         {
-            var policy = AppNumberCurrentAsInt == 0
-                ? DESFireKeySettings.ChangeKeyWithMasterKey
-                : (DESFireKeySettings)((DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp & DESFireKeySettings.ChangeKeyFrozen);
+            var expected = (byte)BuildSelectedKeySettings(AppNumberCurrentAsInt);
 
-            var keySettings = (byte)policy;
+            return AppSettingsCompareMode == DesfireAppSettingsCompareMode.Exact
+                ? expected
+                : (byte)(expected & DesfireValueComparison.KeySettingFlagsMask);
+        }
 
-            keySettings |= IsAllowChangeMKChecked ? (byte)0x01 : (byte)0;
-            keySettings |= IsAllowListingWithoutMKChecked ? (byte)0x02 : (byte)0;
-            keySettings |= IsAllowCreateDelWithoutMKChecked ? (byte)0x04 : (byte)0;
-            keySettings |= IsAllowConfigChangableChecked ? (byte)0x08 : (byte)0;
+        /// <summary>
+        /// Stops a check whose application id is marked invalid. Reading it as application 0, which an id that cannot be
+        /// parsed becomes, would compare the wrong application and could report a match.
+        /// </summary>
+        /// <returns><see langword="true"/> when the id is invalid and the task has been finished with an error.</returns>
+        private async Task<bool> RejectInvalidApplicationIdAsync()
+        {
+            if (IsValidAppNumberCurrent != false)
+            {
+                return false;
+            }
 
-            return keySettings;
+            CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
+            StatusText = LocalizedStatusLine("textBoxStatusInvalidApplicationId", DateTime.Now);
+            await FinalizeTaskAsync();
+
+            return true;
         }
 
         private static string DescribeCompareMode(DesfireAppSettingsCompareMode mode)

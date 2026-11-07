@@ -1,5 +1,4 @@
 using RFiDGear.Infrastructure;
-using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using System;
@@ -55,6 +54,7 @@ namespace RFiDGear.Tests
                 {
                     await viewModel.CheckAppKeyCountRelayCommand.ExecuteAsync(null);
                     Assert.True(viewModel.IsTaskCompletedSuccessfully);
+                    Assert.Contains("→ " + ResourceLoader.GetResource("textBoxStatusComparePass") + "\n", viewModel.StatusText);
 
                     fakeProvider.MaxNumberOfKeys = 4;
                     await viewModel.CheckAppKeyCountRelayCommand.ExecuteAsync(null);
@@ -62,6 +62,34 @@ namespace RFiDGear.Tests
 
                 Assert.False(viewModel.IsTaskCompletedSuccessfully);
                 Assert.Equal(new[] { false, false }, statusUpdates);
+            });
+        }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.ReadAppSettings)]
+        [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount)]
+        public async Task AuthenticateButtonOfTheCheckTasks_UsesTheChosenKeyAndFinishesOnEveryPress(TaskType_MifareDesfireTask taskType)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // The button used to pick its key from the change-key policy, which the panel has nothing to do with here,
+                // so a chosen key 1 was tried as key 0.
+                var viewModel = CreateConfigured(taskType);
+                viewModel.SelectedDesfireAppKeyNumberCurrent = "1";
+                var fakeProvider = new FakeAppSettingsProvider();
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    await viewModel.AuthenticateToCardApplicationCommand.ExecuteAsync(null);
+                    Assert.Equal(1, fakeProvider.LastAuthKeyNumber);
+                    Assert.True(viewModel.IsTaskCompletedSuccessfully);
+
+                    fakeProvider.AuthenticationResult = ERROR.AuthFailure;
+                    await viewModel.AuthenticateToCardApplicationCommand.ExecuteAsync(null);
+                }
+
+                Assert.Equal(2, fakeProvider.AuthCalls);
+                Assert.False(viewModel.IsTaskCompletedSuccessfully);
             });
         }
 

@@ -22,6 +22,7 @@ namespace RFiDGear.Tests
             "labelAppSettingsCompareAny",
             "labelAppSettingsCompareExact",
             "textBoxStatusNoKeySettingFlagSelected",
+            "textBoxStatusInvalidApplicationId",
             "labelExpectedChangeKeyPolicy",
             "labelContentMifareDesfireAppId",
             "labelContentMifareDesfireMaxKeys",
@@ -64,7 +65,7 @@ namespace RFiDGear.Tests
             Assert.Equal(english, german);
         }
 
-        private static string[] Placeholders(string text) =>
+        private static string[] Placeholders(string? text) =>
             Regex.Matches(text ?? string.Empty, @"\{(\d+)(?:[:,][^}]*)?\}")
                 .Select(match => match.Groups[1].Value)
                 .Distinct()

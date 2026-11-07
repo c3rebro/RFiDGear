@@ -1,6 +1,5 @@
 using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
-using RFiDGear.Tests.CardCheckAssistant;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using System;
 using System.Collections.Generic;
@@ -10,8 +9,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Threading;
 using Xunit;
-using static RFiDGear.Tests.CardCheckAssistant.ViewModelTestSupport;
 
 namespace RFiDGear.Tests
 {
@@ -100,6 +99,51 @@ namespace RFiDGear.Tests
             {
                 AssertUsable(One<ComboBox>(view, Selector.SelectedItemProperty, "SelectedDesfireAppMaxNumberOfKeys"), "the expected key count");
                 AssertUsable(One<Button>(view, ButtonBase.CommandProperty, "CheckAppKeyCountRelayCommand"), "the compare button");
+            });
+        }
+
+        [Fact]
+        public async Task CheckAppConfig_ChoosingAModeInTheWindow_SetsTheModeAndFollowsIt()
+        {
+            await InspectAsync(TaskType_MifareDesfireTask.ReadAppSettings, false, (view, viewModel) =>
+            {
+                var all = One<RadioButton>(view, ToggleButton.IsCheckedProperty, nameof(MifareDesfireSetupViewModel.IsCompareModeAll));
+                var any = One<RadioButton>(view, ToggleButton.IsCheckedProperty, nameof(MifareDesfireSetupViewModel.IsCompareModeAny));
+                var exact = One<RadioButton>(view, ToggleButton.IsCheckedProperty, nameof(MifareDesfireSetupViewModel.IsCompareModeExact));
+
+                // From the window to the view model, for the two modes that are not the default.
+                any.IsChecked = true;
+                Assert.Equal(DesfireAppSettingsCompareMode.AnySelected, viewModel.AppSettingsCompareMode);
+                exact.IsChecked = true;
+                Assert.Equal(DesfireAppSettingsCompareMode.Exact, viewModel.AppSettingsCompareMode);
+                Assert.False(any.IsChecked);
+
+                // And back, as when a saved task is opened.
+                viewModel.AppSettingsCompareMode = DesfireAppSettingsCompareMode.AllSelected;
+                view.UpdateLayout();
+                Assert.True(all.IsChecked);
+                Assert.False(exact.IsChecked);
+            });
+        }
+
+        [Fact]
+        public async Task CheckAppConfig_ChoosingAPolicyInTheWindow_SetsThePolicy()
+        {
+            await InspectAsync(TaskType_MifareDesfireTask.ReadAppSettings, false, (view, viewModel) =>
+            {
+                viewModel.AppSettingsCompareMode = DesfireAppSettingsCompareMode.Exact;
+                view.UpdateLayout();
+                var policy = One<ComboBox>(view, Selector.SelectedItemProperty, nameof(MifareDesfireSetupViewModel.SelectedDesfireAppKeySettingsCreateNewApp));
+                Assert.NotNull(policy.SelectedItem);
+
+                // The list is master key, same key, frozen; the text is localized, so the entry is picked by position.
+                policy.SelectedIndex = 2;
+
+                Assert.Equal(AccessCondition_MifareDesfireAppCreation.ChangeKeyFrozen, viewModel.SelectedDesfireAppKeySettingsCreateNewApp);
+
+                viewModel.AppSettingsCompareMode = DesfireAppSettingsCompareMode.AllSelected;
+                view.UpdateLayout();
+                Assert.False(policy.IsVisible);
             });
         }
 
@@ -195,7 +239,7 @@ namespace RFiDGear.Tests
                         blank.Add(element.GetType().Name + " content");
                     }
 
-                    if (element is HeaderedContentControl headered && headered.Header is string header && string.IsNullOrWhiteSpace(header))
+                    if (element is HeaderedContentControl headered && (headered.Header is string header ? string.IsNullOrWhiteSpace(header) : headered.Header == null))
                     {
                         blank.Add(element.GetType().Name + " header");
                     }
@@ -230,7 +274,7 @@ namespace RFiDGear.Tests
                 }
 
                 var view = new RFiDGear.View.TabPageMifareDesfireCardMasteringView { DataContext = viewModel };
-                var window = new Window { Content = view, Width = 1100, Height = 800 };
+                var window = new Window { Content = view, Width = 1100, Height = 800, ShowActivated = false, ShowInTaskbar = false };
                 try
                 {
                     window.Show();
@@ -251,6 +295,9 @@ namespace RFiDGear.Tests
                 }
             });
         }
+
+        // Lets everything already queued on the dispatcher run.
+        private static async Task Flush() => await Dispatcher.Yield(DispatcherPriority.Background);
 
         private static IEnumerable<DependencyObject> LogicalDescendants(DependencyObject root)
         {

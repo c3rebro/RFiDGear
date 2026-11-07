@@ -226,7 +226,6 @@
                                 Margin="0,8,0,4"
                                 Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}" />
                             <RadioButton
-                                x:Name="CompareModeAllRadio"
                                 Margin="0,0,0,4"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
@@ -234,7 +233,6 @@
                                 Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
                                 IsChecked="{Binding IsCompareModeAll, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                             <RadioButton
-                                x:Name="CompareModeAnyRadio"
                                 Margin="0,0,0,4"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
@@ -242,7 +240,6 @@
                                 Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
                                 IsChecked="{Binding IsCompareModeAny, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                             <RadioButton
-                                x:Name="CompareModeExactRadio"
                                 Margin="0,0,0,0"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
@@ -250,14 +247,12 @@
                                 Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
                                 IsChecked="{Binding IsCompareModeExact, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                             <StackPanel
-                                x:Name="ExpectedKeyPolicyPanel"
                                 Margin="0,8,0,0"
                                 Visibility="{Binding ShowExpectedKeyPolicySelector, Converter={StaticResource BoolToVisConv}}">
                                 <Label
                                     Padding="0,0,0,2"
                                     Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelExpectedChangeKeyPolicy'}" />
                                 <ComboBox
-                                    x:Name="ExpectedKeyPolicyComboBox"
                                     Height="26"
                                     HorizontalAlignment="Stretch"
                                     VerticalContentAlignment="Center"

@@ -23,6 +23,15 @@ namespace RFiDGear.Tests
         /// <summary>Gets how often the settings were read.</summary>
         public int AppSettingsCalls { get; private set; }
 
+        /// <summary>Gets or sets the result of authenticating to an application.</summary>
+        public ERROR AuthenticationResult { get; set; } = ERROR.NoError;
+
+        /// <summary>Gets how often an authentication was asked for.</summary>
+        public int AuthCalls { get; private set; }
+
+        /// <summary>Gets the key number the last authentication was asked for.</summary>
+        public int LastAuthKeyNumber { get; private set; } = -1;
+
         /// <inheritdoc />
         public override Task<OperationResult> GetMifareDesfireAppSettings(
             string _applicationMasterKey,
@@ -31,6 +40,11 @@ namespace RFiDGear.Tests
             int _appID,
             bool authenticateBeforeReading = true)
         {
+            _ = _applicationMasterKey;
+            _ = _keyType;
+            _ = _keyNumberCurrent;
+            _ = _appID;
+            _ = authenticateBeforeReading;
             AppSettingsCalls++;
             if (Throw)
             {
@@ -41,6 +55,18 @@ namespace RFiDGear.Tests
             MaxNumberOfAppKeys = MaxNumberOfKeys;
 
             return Task.FromResult(OperationResult.Success(Result));
+        }
+
+        /// <inheritdoc />
+        public override Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
+        {
+            _ = _applicationMasterKey;
+            _ = _keyType;
+            _ = _appID;
+            AuthCalls++;
+            LastAuthKeyNumber = _keyNumber;
+
+            return Task.FromResult(AuthenticationResult);
         }
     }
 }

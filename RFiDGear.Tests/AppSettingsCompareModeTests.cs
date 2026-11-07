@@ -6,7 +6,6 @@ using RFiDGear.ViewModel.TaskSetupViewModels;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Xunit;
@@ -50,7 +49,7 @@ namespace RFiDGear.Tests
         [InlineData("true", DesfireAppSettingsCompareMode.Exact)]
         [InlineData("false", DesfireAppSettingsCompareMode.AllSelected)]
         [InlineData(null, DesfireAppSettingsCompareMode.AllSelected)]
-        public async Task AProjectSavedWithTheYesNoFlag_StillLoads(string legacyValue, DesfireAppSettingsCompareMode expected)
+        public async Task AProjectSavedWithTheYesNoFlag_StillLoads(string? legacyValue, DesfireAppSettingsCompareMode expected)
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
@@ -116,8 +115,14 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
-                var viewModel = new MifareDesfireSetupViewModel();
-                var property = typeof(MifareDesfireSetupViewModel).GetProperty(radio);
+                // Start from another mode, so that choosing the default one is a change too.
+                var viewModel = new MifareDesfireSetupViewModel
+                {
+                    AppSettingsCompareMode = mode == DesfireAppSettingsCompareMode.Exact
+                        ? DesfireAppSettingsCompareMode.AllSelected
+                        : DesfireAppSettingsCompareMode.Exact
+                };
+                var property = typeof(MifareDesfireSetupViewModel).GetProperty(radio)!;
 
                 property.SetValue(viewModel, true);
                 Assert.Equal(mode, viewModel.AppSettingsCompareMode);
@@ -157,9 +162,10 @@ namespace RFiDGear.Tests
                 Assert.Equal(expected, viewModel.CurrentTaskErrorLevel);
                 Assert.Equal(1, fakeProvider.AppSettingsCalls);
 
-                // The text follows the language, so it is compared with the resource and not with a literal.
+                // The text follows the language, so it is compared with the resource and not with a literal. It is
+                // anchored at the arrow and the end of the line: in German "BESTANDEN" is part of "NICHT BESTANDEN".
                 Assert.Contains(
-                    ResourceLoader.GetResource(expected == ERROR.NoError ? "textBoxStatusComparePass" : "textBoxStatusCompareFail"),
+                    "→ " + ResourceLoader.GetResource(expected == ERROR.NoError ? "textBoxStatusComparePass" : "textBoxStatusCompareFail") + "\n",
                     viewModel.StatusText);
             });
         }
@@ -198,9 +204,12 @@ namespace RFiDGear.Tests
                     await viewModel.ReadAppSettingsCommand();
                 }
 
+                var reason = ResourceLoader.GetResource("textBoxStatusNoKeySettingFlagSelected");
+                Assert.False(string.IsNullOrWhiteSpace(reason));
                 Assert.Equal(ERROR.ProtocolConstraint, viewModel.CurrentTaskErrorLevel);
                 Assert.Equal(0, fakeProvider.AppSettingsCalls);
-                Assert.False(string.IsNullOrWhiteSpace(viewModel.StatusText));
+                Assert.Contains(reason, viewModel.StatusText);
+                Assert.False(viewModel.IsTaskCompletedSuccessfully);
             });
         }
 
@@ -242,9 +251,10 @@ namespace RFiDGear.Tests
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
-                // The policy that is chosen (same key) is not the one the card has (frozen); neither mode looks at it.
-                var viewModel = CreateCheckAppConfigViewModel(mode, 0x0B, AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo);
-                var fakeProvider = new FakeAppSettingsProvider { KeySettings = 0xFB };
+                // The policy that is chosen (frozen, 0xF0) is not the one the card has (same key, 0xE0), and the two
+                // are not subsets of each other; neither mode looks at it.
+                var viewModel = CreateCheckAppConfigViewModel(mode, 0x0B, AccessCondition_MifareDesfireAppCreation.ChangeKeyFrozen);
+                var fakeProvider = new FakeAppSettingsProvider { KeySettings = 0xEB };
 
                 using (ReaderDeviceScope.Use(fakeProvider))
                 {
@@ -252,6 +262,59 @@ namespace RFiDGear.Tests
                 }
 
                 Assert.Equal(ERROR.NoError, viewModel.CurrentTaskErrorLevel);
+            });
+        }
+
+        [Theory]
+        [InlineData(DesfireAppSettingsCompareMode.AllSelected)]
+        [InlineData(DesfireAppSettingsCompareMode.AnySelected)]
+        public async Task AllAndAny_DoNotReportAPolicyThatIsNotShownAnyMore(DesfireAppSettingsCompareMode mode)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // A policy was chosen for the exact comparison and the mode was changed back: the combo box is gone, so
+                // the byte in the status line must not carry the policy the user cannot see.
+                var viewModel = CreateCheckAppConfigViewModel(mode, 0x0B, AccessCondition_MifareDesfireAppCreation.ChangeKeyFrozen);
+                var fakeProvider = new FakeAppSettingsProvider { KeySettings = 0x0B };
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    await viewModel.ReadAppSettingsCommand();
+                }
+
+                Assert.Contains("0x0B", viewModel.StatusText);
+                Assert.DoesNotContain("0xFB", viewModel.StatusText);
+            });
+        }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.ReadAppSettings)]
+        [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount)]
+        public async Task AnApplicationIdMarkedInvalid_IsNotReadAsApplicationZero(TaskType_MifareDesfireTask taskType)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // An id that cannot be parsed becomes 0, the PICC, which can be read and would match.
+                var viewModel = CreateCheckAppConfigViewModel(DesfireAppSettingsCompareMode.AllSelected, 0x0B, appNumber: "abc");
+                viewModel.SelectedTaskType = taskType;
+                var fakeProvider = new FakeAppSettingsProvider { KeySettings = 0x0F, MaxNumberOfKeys = 1 };
+                Assert.False(viewModel.IsValidAppNumberCurrent);
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    if (taskType == TaskType_MifareDesfireTask.ReadAppSettings)
+                    {
+                        await viewModel.ReadAppSettingsCommand();
+                    }
+                    else
+                    {
+                        await viewModel.CheckAppKeyCountCommand();
+                    }
+                }
+
+                Assert.Equal(ERROR.ProtocolConstraint, viewModel.CurrentTaskErrorLevel);
+                Assert.Equal(0, fakeProvider.AppSettingsCalls);
+                Assert.False(viewModel.IsTaskCompletedSuccessfully);
             });
         }
 
@@ -289,7 +352,7 @@ namespace RFiDGear.Tests
         {
             using var reader = new StringReader(xml);
 
-            return (MifareDesfireSetupViewModel)new XmlSerializer(typeof(MifareDesfireSetupViewModel)).Deserialize(reader);
+            return (MifareDesfireSetupViewModel)new XmlSerializer(typeof(MifareDesfireSetupViewModel)).Deserialize(reader)!;
         }
     }
 }
