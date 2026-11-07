@@ -284,7 +284,12 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 .ToList();
             var marker = settings.LegacyImport == null
                 ? null
-                : new LegacyImportMarker { SourceSha256 = Clean(settings.LegacyImport.SourceSha256), ImportedAtUtc = settings.LegacyImport.ImportedAtUtc };
+                : new LegacyImportMarker
+                {
+                    SourceSha256 = Clean(settings.LegacyImport.SourceSha256),
+                    Declined = settings.LegacyImport.Declined,
+                    ImportedAtUtc = settings.LegacyImport.ImportedAtUtc,
+                };
 
             return new CardCheckSettings
             {

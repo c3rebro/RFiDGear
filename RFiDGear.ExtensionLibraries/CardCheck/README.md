@@ -11,8 +11,44 @@ and importing the settings of the old assistant. The WPF extension
 
 So far it holds the result types, the log abstraction, the status and
 language values, the template rules, the report file handling, the settings
-store, the workflow session and the guard tests. The other services follow one
-at a time, each with its own tests.
+store, the workflow session, the import of the old assistant's settings and
+the guard tests. The other services follow one at a time, each with its own
+tests.
+
+**Import of the old settings** (`ILegacySettingsImporter`, created by
+`CardCheckServices.CreateLegacyImporter`):
+
+- `OfferAsync` is the whole conversation, once: it looks for the old
+  `settings.xml` (the old assistant's own folder in the application data, and
+  the private folder of a packaged install), asks the operator through
+  `IImportPrompt` which file to use, shows what would be imported and asks for
+  confirmation, then imports. The library shows nothing itself; the extension
+  implements the two questions with its own dialogs. "Not now" asks again next
+  time, "never" is remembered, and an import or a refusal is never asked
+  again. `Discover`, `Preview` and `Apply` are the same steps for a menu entry.
+- The old files are only read: opened for reading and shared with the old
+  assistant if it is still running, never changed, moved or deleted. The
+  preview changes neither that file nor the settings (a damaged settings file
+  is moved aside, as with every load). `Apply` checks the SHA-256 of the file
+  against the preview, so a file that changed in between is refused.
+- A user name, a password and the port are not imported: the reader skips
+  those elements while it reads, the preview only says that they were not
+  read, and the library's copy of the file is cleared once it is parsed (the
+  XML reader's own buffers are not under its control). The file is not
+  trusted: a document type declaration is
+  refused, nothing external is resolved, a file over a megabyte is refused, and
+  it does not use the old assistant's own reader.
+- Settings that no longer exist (theme, updates, the reader volume, the path of
+  the old program, auto-run, the language of the user interface) are listed as
+  not used. An SQLite configuration is not imported (this version has no SQLite)
+  and the operator is told. The placeholder text block `N/A` is left out.
+- Nothing the operator entered in this version is overwritten: a setting is
+  filled in only if it is still at its default, and text blocks are added by
+  name. The settings are merged into what is saved at the moment of applying,
+  and a marker with the file's hash is saved with them. Reading, merging and
+  saving take a few milliseconds with no question in between. The store locks
+  per instance, not across windows: two imports at the very same moment write
+  the same result, and an edit saved in that gap is not protected.
 
 **Settings** (`ISettingsStore`, created by
 `CardCheckServices.CreateSettingsStore`):
