@@ -261,9 +261,18 @@ rest follows one change at a time, each with its own tests.
   with `Assembly.LoadFrom`, which is how MEF loads an extension.
 - The exported class of the extension must not use library types in its
   members or its constructor. MEF's checks cannot see a missing library; the
-  failure would appear when the class is created or used. When the extension
-  uses the library (a later change), it is to check for it when its window
-  opens and show a "component missing" page.
+  failure would appear when the class is created or used. The extension makes
+  the first use of the library inside a try block when a window opens
+  (`ComponentCheck`) and shows a "component missing" page if that fails.
+- By hand, for a trial: build the extension (Release, x64 or x86 to match
+  RFiDGear) and copy `RFiDGear.Extensions.CardCheckAssistant.dll` and
+  `RFiDGear.ExtensionLibraries.CardCheck.dll` from its build folder. Nothing
+  in the extension opens the order database yet, so the database driver is not
+  needed for that. When it is: the real `System.Data.SqlClient.dll` is the one
+  under `runtimes\win\lib` of the package (the one under `lib` is a stub), and
+  `sni.dll` has the same name for x86 and x64, so a flat folder holds only the
+  one that matches RFiDGear. The installer step derives this from the resolved
+  assets instead of listing files by hand.
 
 **What was measured before this library was built** (scratch harness with the
 host's package versions and MEF 10.0.1, x64 and x86, every negative control

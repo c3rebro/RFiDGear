@@ -342,8 +342,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         // ── what the assembly may depend on ──
 
+        // The extension's own support library; allowed by its exact name only.
+        private const string OwnLibrary = "RFiDGear.ExtensionLibraries.CardCheck";
+
         [Fact]
-        public void TheAssembly_ReferencesOnlyTheContractTheSdkAndTheFramework()
+        public void TheAssembly_ReferencesOnlyTheContractTheSdkItsOwnLibraryAndTheFramework()
         {
             var references = ReadAssemblyReferences();
             var allowed = new[]
@@ -354,9 +357,10 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             Assert.Contains("RFiDGear.Contracts", references);
             Assert.Contains("RFiDGear.ExtensionSdk", references);
+            Assert.Contains(OwnLibrary, references);
             Assert.All(references, name =>
                 Assert.True(
-                    allowed.Any(prefix => name == prefix || name.StartsWith(prefix + ".", StringComparison.Ordinal)),
+                    name == OwnLibrary || allowed.Any(prefix => name == prefix || name.StartsWith(prefix + ".", StringComparison.Ordinal)),
                     $"the extension references '{name}'"));
         }
 
@@ -369,13 +373,17 @@ namespace RFiDGear.Tests.CardCheckAssistant
         [InlineData("Newtonsoft")]
         [InlineData("CommunityToolkit")]
         [InlineData("System.Diagnostics.Process")]
+        [InlineData("System.Data.SqlClient")]   // the database driver belongs to the library, never to the page
+        [InlineData("System.Data.SQLite")]
+        [InlineData("Microsoft.Data")]
+        [InlineData("SQLitePCLRaw")]
         public void TheAssembly_DoesNotReference(string forbidden)
         {
             var references = ReadAssemblyReferences();
 
             Assert.DoesNotContain(
                 references,
-                name => name == forbidden || name.StartsWith(forbidden + ".", StringComparison.Ordinal) && name != "RFiDGear.Contracts" && name != "RFiDGear.ExtensionSdk");
+                name => name == forbidden || name.StartsWith(forbidden + ".", StringComparison.Ordinal) && name != "RFiDGear.Contracts" && name != "RFiDGear.ExtensionSdk" && name != OwnLibrary);
         }
 
         [Fact]
@@ -395,17 +403,32 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         [Fact]
-        public void TheProject_ReferencesTheContractAndTheSdkWithoutCopyingThem()
+        public void TheProject_ReferencesTheContractAndTheSdkWithoutCopyingThem_AndItsOwnLibraryWithACopy()
         {
             var project = XDocument.Load(Path.Combine(RepositoryRoot(), "RFiDGear.Extensions", "CardCheckAssistant", "RFiDGear.Extensions.CardCheckAssistant.csproj"));
 
             var references = project.Descendants("ProjectReference").ToList();
+            bool Includes(XElement reference, string file) => ((string?)reference.Attribute("Include") ?? string.Empty).EndsWith(file, StringComparison.Ordinal);
 
-            Assert.Equal(2, references.Count);
-            Assert.Contains(references, r => ((string?)r.Attribute("Include") ?? string.Empty).EndsWith("RFiDGear.Contracts.csproj", StringComparison.Ordinal));
-            Assert.Contains(references, r => ((string?)r.Attribute("Include") ?? string.Empty).EndsWith("RFiDGear.ExtensionSdk.csproj", StringComparison.Ordinal));
-            Assert.All(references, r => Assert.Equal("false", (string?)r.Element("Private")));
+            Assert.Equal(3, references.Count);
+            var contract = Assert.Single(references, r => Includes(r, "RFiDGear.Contracts.csproj"));
+            var sdk = Assert.Single(references, r => Includes(r, "RFiDGear.ExtensionSdk.csproj"));
+            var library = Assert.Single(references, r => Includes(r, OwnLibrary + ".csproj"));
+            Assert.Equal("false", (string?)contract.Element("Private"));
+            Assert.Equal("false", (string?)sdk.Element("Private"));
+            Assert.Null(library.Element("Private"));   // the host does not own it, so it is copied beside the extension
             Assert.Empty(project.Descendants("PackageReference"));
+        }
+
+        [Fact]
+        public void TheProject_RejectsPrivateCopiesOfEveryAssemblyTheHostOwns()
+        {
+            var project = File.ReadAllText(Path.Combine(RepositoryRoot(), "RFiDGear.Extensions", "CardCheckAssistant", "RFiDGear.Extensions.CardCheckAssistant.csproj"));
+
+            foreach (var owned in new[] { "RFiDGear.Contracts", "RFiDGear.ExtensionSdk", "GemBox.Pdf", "Serilog", "SkiaSharp", "HarfBuzzSharp", "Newtonsoft.Json" })
+            {
+                Assert.Contains("$(OutDir)" + owned + ".dll", project, StringComparison.Ordinal);
+            }
         }
 
         [Fact]

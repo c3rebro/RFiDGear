@@ -29,12 +29,44 @@ namespace RFiDGear.Extensions.CardCheckAssistant
         /// <inheritdoc/>
         public FrameworkElement CreateContent(IRFiDGearExtensionHost host)
         {
+            return CreateContent(host, ComponentCheck.TouchLibrary);
+        }
+
+        /// <summary>
+        /// Builds the window's content. The support library is used for the first time inside
+        /// <see cref="ComponentCheck.IsAvailable"/>; if it cannot be, the content is a page that says so and nothing
+        /// that needs the library has been created. This class itself mentions no library type: MEF cannot see a
+        /// missing sibling file, so the failure has to be met here, where it can be shown, not when the class is created.
+        /// </summary>
+        /// <param name="host">The initialized host service.</param>
+        /// <param name="touchLibrary">The first use of the library; replaced by a test.</param>
+        /// <returns>The page, or the page that explains why there is none.</returns>
+        internal static FrameworkElement CreateContent(IRFiDGearExtensionHost host, Func<object?> touchLibrary)
+        {
             if (host == null)
             {
                 throw new ArgumentNullException(nameof(host));
             }
 
+            if (!ComponentCheck.IsAvailable(touchLibrary))
+            {
+                return MissingComponentPage.Create(CultureNameOf(host));
+            }
+
             return CreatePage(host, viewModel => new CardCheckAssistantView(viewModel));
+        }
+
+        // A host that cannot say what language it uses is read as "no language", which shows English.
+        private static string CultureNameOf(IRFiDGearExtensionHost host)
+        {
+            try
+            {
+                return host.AppContext.UICultureName ?? string.Empty;
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
         }
 
         /// <summary>

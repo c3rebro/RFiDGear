@@ -26,13 +26,17 @@
     <ProjectReference Include="..\..\RFiDGear.ExtensionSdk\RFiDGear.ExtensionSdk.csproj">
       <Private>false</Private>
     </ProjectReference>
+    <!-- The extension's own support library. It is not owned by the host, so it is copied next to the extension (the
+         default). What it depends on is not copied here (CopyLocalLockFileAssemblies is off): the host owns Serilog and
+         GemBox.Pdf, and the database driver is added where the extension is installed. -->
+    <ProjectReference Include="..\..\RFiDGear.ExtensionLibraries\CardCheck\RFiDGear.ExtensionLibraries.CardCheck.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="RFiDGear.Tests" />
   </ItemGroup>
   <Target Name="RejectPrivateCopiesOfHostAssemblies" AfterTargets="Build">
     <ItemGroup>
-      <_PrivateHostCopy Include="$(OutDir)RFiDGear.Contracts.dll;$(OutDir)RFiDGear.ExtensionSdk.dll;$(OutDir)RFiDGear.dll;$(OutDir)System.ComponentModel.Composition.dll" />
+      <_PrivateHostCopy Include="$(OutDir)RFiDGear.Contracts.dll;$(OutDir)RFiDGear.ExtensionSdk.dll;$(OutDir)RFiDGear.dll;$(OutDir)System.ComponentModel.Composition.dll;$(OutDir)GemBox.Pdf.dll;$(OutDir)Serilog.dll;$(OutDir)SkiaSharp.dll;$(OutDir)HarfBuzzSharp.dll;$(OutDir)Newtonsoft.Json.dll" />
     </ItemGroup>
     <Error Condition="'@(_PrivateHostCopy)' != '' And Exists('%(_PrivateHostCopy.FullPath)')"
            Text="The extension's output folder holds a private copy of a host assembly: %(_PrivateHostCopy.FullPath). Extensions must reference RFiDGear.Contracts and RFiDGear.ExtensionSdk with Private=false." />
