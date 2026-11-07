@@ -2,6 +2,7 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.TaskSetupViewModels;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -275,6 +276,77 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task TheButton_FinishesTheTaskOnEveryPress()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateViewModel();
+                var finished = Observe(viewModel);
+                var reader = new FakeFileSettingsProvider { FileSettings = Settings() };
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await viewModel.CheckFileSettingsRelayCommand.ExecuteAsync(null);
+                    Assert.True(viewModel.IsTaskCompletedSuccessfully);
+                    Assert.Equal(new[] { false }, finished);
+
+                    // The card now differs; the second press must say so, once.
+                    reader.FileSettings = Settings(size: 15);
+                    await viewModel.CheckFileSettingsRelayCommand.ExecuteAsync(null);
+                }
+
+                Assert.False(viewModel.IsTaskCompletedSuccessfully);
+                Assert.Equal(ERROR.IsNotTrue, viewModel.CurrentTaskErrorLevel);
+                Assert.Equal(new[] { false, false }, finished);
+            });
+        }
+
+        [Fact]
+        public async Task TheButtonThatThrows_StillFinishesTheTaskOnce()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateViewModel();
+                var finished = Observe(viewModel);
+                var reader = new FakeFileSettingsProvider { FileSettings = Settings(), ThrowOnRead = true };
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await Assert.ThrowsAsync<System.InvalidOperationException>(() => viewModel.CheckFileSettingsRelayCommand.ExecuteAsync(null));
+                }
+
+                // The reader is released, and the task does not count as done.
+                Assert.Equal(new[] { false }, finished);
+                Assert.False(viewModel.IsTaskCompletedSuccessfully);
+            });
+        }
+
+        [Fact]
+        public async Task TheTaskLoop_FinishesTheTaskOncePerRun()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // The task loop starts the task through the command delegator, not through the button.
+                var viewModel = CreateViewModel();
+                var finished = Observe(viewModel);
+                var reader = new FakeFileSettingsProvider { FileSettings = Settings() };
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    await viewModel.CommandDelegator.ExecuteAsync(TaskType_MifareDesfireTask.CheckFileSettings);
+                    Assert.True(viewModel.IsTaskCompletedSuccessfully);
+                    Assert.Equal(new[] { false }, finished);
+
+                    reader.FileSettings = Settings(size: 15);
+                    await viewModel.CommandDelegator.ExecuteAsync(TaskType_MifareDesfireTask.CheckFileSettings);
+                }
+
+                Assert.False(viewModel.IsTaskCompletedSuccessfully);
+                Assert.Equal(new[] { false, false }, finished);
+            });
+        }
+
+        [Fact]
         public async Task TheTaskReportsItsComparisonToTheLogAsPlainNumbers_AndForgetsItOnRequest()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
@@ -316,6 +388,14 @@ namespace RFiDGear.Tests
                 Assert.Equal(ERROR.AuthFailure, viewModel.CurrentTaskErrorLevel);
                 Assert.Null(viewModel.LastFileSettingsComparison);
             });
+        }
+
+        private static List<bool> Observe(MifareDesfireSetupViewModel viewModel)
+        {
+            var finished = new List<bool>();
+            viewModel.OnUpdateStatus = isBusy => finished.Add(isBusy);
+
+            return finished;
         }
 
         private static async Task Run(MifareDesfireSetupViewModel viewModel, FakeFileSettingsProvider? reader)

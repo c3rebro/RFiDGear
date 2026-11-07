@@ -18,6 +18,9 @@ namespace RFiDGear.Tests
         /// </summary>
         public bool LeaveSettingsUnset { get; set; }
 
+        /// <summary>Gets or sets whether reading the settings throws, as a reader that fails in a way nobody expected.</summary>
+        public bool ThrowOnRead { get; set; }
+
         /// <summary>Gets how often the settings were read.</summary>
         public int GetFileSettingsCalls { get; private set; }
 
@@ -39,6 +42,11 @@ namespace RFiDGear.Tests
             _ = _keyType;
             _ = _keyNumberCurrent;
             GetFileSettingsCalls++;
+            if (ThrowOnRead)
+            {
+                throw new System.InvalidOperationException("The reader failed.");
+            }
+
             LastFileSettingsAppId = _appID;
             LastFileSettingsFileNo = _fileNo;
 

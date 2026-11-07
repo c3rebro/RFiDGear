@@ -3945,7 +3945,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         /// Relay command that exposes <see cref="CheckFileSettingsCommand"/> for button binding.
         /// </summary>
-        public IAsyncRelayCommand CheckFileSettingsRelayCommand => new AsyncRelayCommand(CheckFileSettingsCommand);
+        public IAsyncRelayCommand CheckFileSettingsRelayCommand => new AsyncRelayCommand(() => RunFromUiAsync(CheckFileSettingsCommand));
 
         /// <summary>
         /// Authenticates to an application, reads the settings of one file, and compares every configured value. The task
