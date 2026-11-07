@@ -20,6 +20,9 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         // The value of a ticked check box.
         internal const string Ticked = "Yes";
 
+        // The start of the name of the temporary file a report is saved to before it replaces the target.
+        internal const string TemporaryPrefix = "~rc";
+
         private readonly ICardCheckLog _log;
 
         /// <summary>Creates the service.</summary>
@@ -146,6 +149,11 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                     return Result.Fail(new Failure(FailureKind.InvalidInput, "report.target.missing", "No target file was given."));
                 }
 
+                if (targetPath.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+                {
+                    return Result.Fail(new Failure(FailureKind.InvalidInput, "report.target.invalid", "The target file name is not valid."));
+                }
+
                 SetLicense();
 
                 using (var document = PdfDocument.Load(sourcePath))
@@ -157,8 +165,10 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                         return Result.Fail(failure);
                     }
 
-                    temp = targetPath + ".tmp-" + Guid.NewGuid().ToString("N");
-                    // The format is named explicitly: the component would otherwise pick it from the file extension.
+                    // A short name of its own beside the target (not the target's name with a suffix, which could
+                    // be too long for the file system). The format is named explicitly: the component would
+                    // otherwise pick it from the file extension.
+                    temp = Path.Combine(Path.GetDirectoryName(targetPath) ?? string.Empty, TemporaryPrefix + Guid.NewGuid().ToString("N").Substring(0, 12) + ".pdf");
                     document.Save(temp, new PdfSaveOptions());
                 }
 
@@ -187,7 +197,20 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 return new Failure(FailureKind.InvalidInput, "report.source.missing", "No report file was given.");
             }
 
-            if (!File.Exists(path))
+            FileAttributes attributes;
+
+            try
+            {
+                // Unlike File.Exists this throws when the file cannot be inspected, so a report in a folder this
+                // account may not read is an access failure, not a missing file.
+                attributes = File.GetAttributes(path);
+            }
+            catch (Exception ex) when (ex is FileNotFoundException || ex is DirectoryNotFoundException)
+            {
+                return new Failure(FailureKind.NotFound, "report.source.notFound", "The report file does not exist.");
+            }
+
+            if ((attributes & FileAttributes.Directory) != 0)
             {
                 return new Failure(FailureKind.NotFound, "report.source.notFound", "The report file does not exist.");
             }

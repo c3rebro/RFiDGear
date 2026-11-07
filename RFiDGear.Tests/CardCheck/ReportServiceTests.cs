@@ -138,6 +138,7 @@ namespace RFiDGear.Tests.CardCheck
             }
 
             Assert.Equal(FailureKind.NotFound, Service().Analyze(PathOf("missing.pdf")).Failure!.Kind);
+            Assert.Equal(FailureKind.NotFound, Service().Analyze(_folder.Path).Failure!.Kind);
             Assert.Equal(FailureKind.InvalidInput, Service().Analyze(" ").Failure!.Kind);
             Assert.Equal(FailureKind.Corrupt, Service().Analyze(PathOf("garbage.pdf")).Failure!.Kind);
             Assert.Equal(FailureKind.Corrupt, Service().Analyze(PathOf("empty.pdf")).Failure!.Kind);
@@ -210,7 +211,41 @@ namespace RFiDGear.Tests.CardCheck
             Assert.True(Service().WriteFields(source, PathOf("step2.pdf"), new Dictionary<string, string> { ["TextBox_Notes_Site_2"] = "n" }).IsSuccess);
 
             Assert.Equal("n", Service().Analyze(PathOf("step2.pdf")).Value.Notes);
-            Assert.Empty(Directory.GetFiles(_folder.Path, "*.tmp-*"));
+            Assert.Empty(Directory.GetFiles(_folder.Path, ReportService.TemporaryPrefix + "*"));
+            Assert.Equal(2, Directory.GetFiles(_folder.Path).Length);
+        }
+
+        [Fact]
+        public void WriteFields_ATargetNameNearTheFileSystemLimit_StillWorks()
+        {
+            // 230 characters is a valid file name; the temporary file must not be the target's name plus a suffix.
+            var target = PathOf(new string('a', 226) + ".pdf");
+
+            var result = Service().WriteFields(Report("step1.pdf", FirstReport()), target, new Dictionary<string, string> { ["TextBox_Notes_Site_2"] = "n" });
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("n", Service().Analyze(target).Value.Notes);
+        }
+
+        [Fact]
+        public void WriteFields_ATargetThatCannotBeAFileName_IsRefusedWithoutAnException()
+        {
+            var source = Report("step1.pdf", FirstReport());
+
+            var result = Service().WriteFields(source, PathOf("bad\0name.pdf"), new Dictionary<string, string>());
+
+            Assert.Equal("report.target.invalid", result.Failure!.Code);
+        }
+
+        [Fact]
+        public void WriteFields_ATargetTheFileSystemRefusesLate_IsAFailureAndNotAnException()
+        {
+            var source = Report("step1.pdf", FirstReport());
+
+            // A colon inside a folder name passes the character check and fails only when the file is used.
+            var result = Service().WriteFields(source, PathOf("a:b" + Path.DirectorySeparatorChar + "out.pdf"), new Dictionary<string, string>());
+
+            Assert.False(result.IsSuccess);
         }
 
         [Fact]
@@ -221,7 +256,7 @@ namespace RFiDGear.Tests.CardCheck
             var result = Service().WriteFields(source, Path.Combine(_folder.Path, "no-such-folder", "out.pdf"), new Dictionary<string, string>());
 
             Assert.False(result.IsSuccess);
-            Assert.Empty(Directory.GetFiles(_folder.Path, "*.tmp-*"));
+            Assert.Empty(Directory.GetFiles(_folder.Path, ReportService.TemporaryPrefix + "*"));
         }
 
         // ── locking and unlocking ───────────────────────────────────────────
