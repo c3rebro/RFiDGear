@@ -186,4 +186,85 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
             return File.Exists(trimmed) ? ProjectPathCheck.Valid : ProjectPathCheck.NotFound;
         }
     }
+
+    /// <summary>What <see cref="FolderPathValidator"/> found out about a folder path.</summary>
+    internal enum FolderCheck
+    {
+        /// <summary>Nothing was entered: the setting is simply not set, which is allowed.</summary>
+        None,
+
+        /// <summary>A full path to a folder that exists.</summary>
+        Valid,
+
+        /// <summary>A relative path.</summary>
+        NotFullyQualified,
+
+        /// <summary>The text holds a character no path may hold.</summary>
+        Unusable,
+
+        /// <summary>The path names a file, not a folder.</summary>
+        NotAFolder,
+
+        /// <summary>No such folder.</summary>
+        NotFound
+    }
+
+    /// <summary>
+    /// The folder check of the settings, as a seam. It touches the disk, which on a network path can block for a long time,
+    /// so the view model calls it on a worker thread.
+    /// </summary>
+    internal interface IFolderChecker
+    {
+        /// <summary>Checks a folder path.</summary>
+        /// <param name="path">What the user typed or picked; blank means not set.</param>
+        /// <returns>The verdict.</returns>
+        FolderCheck CheckFolder(string? path);
+    }
+
+    /// <summary>The real check, against the file system.</summary>
+    internal sealed class FileSystemFolderChecker : IFolderChecker
+    {
+        /// <inheritdoc/>
+        public FolderCheck CheckFolder(string? path) => FolderPathValidator.Check(path);
+    }
+
+    /// <summary>
+    /// Checks a folder that a setting names, such as the folder reports are written to. Only what is certain is rejected;
+    /// whether the account may write there shows when a report is written.
+    /// </summary>
+    internal static class FolderPathValidator
+    {
+        // Not all of these are in Path.GetInvalidPathChars(), but none can be part of a folder path.
+        private static readonly char[] NotInAPath = { '*', '?', '<', '>', '|', '"' };
+
+        /// <summary>Checks one value.</summary>
+        /// <param name="path">What the user typed or picked.</param>
+        /// <returns>The verdict.</returns>
+        public static FolderCheck Check(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return FolderCheck.None;
+            }
+
+            var trimmed = path.Trim();
+
+            if (trimmed.IndexOfAny(Path.GetInvalidPathChars()) >= 0 || trimmed.IndexOfAny(NotInAPath) >= 0)
+            {
+                return FolderCheck.Unusable;
+            }
+
+            if (!Path.IsPathFullyQualified(trimmed))
+            {
+                return FolderCheck.NotFullyQualified;
+            }
+
+            if (File.Exists(trimmed))
+            {
+                return FolderCheck.NotAFolder;
+            }
+
+            return Directory.Exists(trimmed) ? FolderCheck.Valid : FolderCheck.NotFound;
+        }
+    }
 }

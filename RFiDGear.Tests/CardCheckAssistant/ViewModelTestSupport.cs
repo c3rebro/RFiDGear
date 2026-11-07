@@ -22,6 +22,16 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Requests.Add((currentPath, title, filter));
             return Answer;
         }
+
+        public string? FolderAnswer { get; set; }
+
+        public List<(string? Current, string Title)> FolderRequests { get; } = new List<(string?, string)>();
+
+        public string? PickFolder(string? currentPath, string title)
+        {
+            FolderRequests.Add((currentPath, title));
+            return FolderAnswer;
+        }
     }
 
     /// <summary>
