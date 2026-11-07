@@ -1780,4 +1780,16 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="groupBoxHeaderMifareDesfireExpectedAppSettings" xml:space="preserve">
     <value>Expected application settings</value>
   </data>
+  <data name="labelAppSettingsCompareAll" xml:space="preserve">
+    <value>All selected settings must be set</value>
+  </data>
+  <data name="labelAppSettingsCompareAny" xml:space="preserve">
+    <value>At least one selected setting must be set</value>
+  </data>
+  <data name="labelAppSettingsCompareExact" xml:space="preserve">
+    <value>Exact match (including the change-key policy)</value>
+  </data>
+  <data name="textBoxStatusNoKeySettingFlagSelected" xml:space="preserve">
+    <value>Nothing to compare: tick at least one key setting, or choose &quot;Exact match&quot;.</value>
+  </data>
 </root>

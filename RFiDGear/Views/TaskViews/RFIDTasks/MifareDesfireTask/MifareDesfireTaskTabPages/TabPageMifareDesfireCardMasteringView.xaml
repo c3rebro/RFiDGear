@@ -225,19 +225,29 @@
                                 Margin="0,8,0,4"
                                 Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}" />
                             <RadioButton
+                                x:Name="CompareModeAllRadio"
                                 Margin="0,0,0,4"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
-                                Content="At least selected bits must be set"
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAppSettingsCompareAll'}"
                                 Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
-                                IsChecked="{Binding IsAppSettingsAtLeastMode, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                                IsChecked="{Binding IsCompareModeAll, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                             <RadioButton
+                                x:Name="CompareModeAnyRadio"
+                                Margin="0,0,0,4"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAppSettingsCompareAny'}"
+                                Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
+                                IsChecked="{Binding IsCompareModeAny, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                            <RadioButton
+                                x:Name="CompareModeExactRadio"
                                 Margin="0,0,0,0"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
-                                Content="Exact match required"
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAppSettingsCompareExact'}"
                                 Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
-                                IsChecked="{Binding IsAppSettingsExactMatch, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                                IsChecked="{Binding IsCompareModeExact, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                         </StackPanel>
                     </GroupBox>
                     <Button

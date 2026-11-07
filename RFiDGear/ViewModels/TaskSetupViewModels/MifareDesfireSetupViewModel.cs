@@ -1021,25 +1021,78 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public bool ShowAppKeyCountCheckInputs => SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount;
 
         /// <summary>
-        /// When <see langword="true"/>, requires the card's key-settings byte to exactly equal
-        /// the expected mask. When <see langword="false"/> (default), all selected bits must be
-        /// present but additional bits are permitted.
+        /// Gets or sets how the key-settings byte read from the card is compared with the expected settings: all ticked
+        /// flags set, any ticked flag set, or the whole byte equal. Saved in the project file by name.
         /// </summary>
-        public bool IsAppSettingsExactMatch
+        public DesfireAppSettingsCompareMode AppSettingsCompareMode
         {
-            get => _isAppSettingsExactMatch;
-            set { _isAppSettingsExactMatch = value; OnPropertyChanged(nameof(IsAppSettingsExactMatch)); OnPropertyChanged(nameof(IsAppSettingsAtLeastMode)); }
+            get => appSettingsCompareMode;
+            set
+            {
+                if (appSettingsCompareMode == value)
+                {
+                    return;
+                }
+
+                appSettingsCompareMode = value;
+                OnPropertyChanged(nameof(AppSettingsCompareMode));
+                OnPropertyChanged(nameof(IsCompareModeAll));
+                OnPropertyChanged(nameof(IsCompareModeAny));
+                OnPropertyChanged(nameof(IsCompareModeExact));
+                OnPropertyChanged(nameof(IsAppSettingsExactMatch));
+            }
         }
-        private bool _isAppSettingsExactMatch;
+        private DesfireAppSettingsCompareMode appSettingsCompareMode = DesfireAppSettingsCompareMode.AllSelected;
 
         /// <summary>
-        /// Inverse of <see cref="IsAppSettingsExactMatch"/>; bound to the "at least" radio button.
+        /// Legacy form of <see cref="AppSettingsCompareMode"/>. Versions before it saved a yes/no: <see langword="true"/>
+        /// is <see cref="DesfireAppSettingsCompareMode.Exact"/>. It is still read from project files that have it, but
+        /// never written (see <see cref="ShouldSerializeIsAppSettingsExactMatch"/>). <see langword="false"/> changes
+        /// nothing: it meant "all selected", which is the default, and setting it must not undo a mode set by a property
+        /// that is read later, as the constructor that copies a task does.
         /// </summary>
-        [XmlIgnore]
-        public bool IsAppSettingsAtLeastMode
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool IsAppSettingsExactMatch
         {
-            get => !_isAppSettingsExactMatch;
-            set { if (value) IsAppSettingsExactMatch = false; }
+            get => AppSettingsCompareMode == DesfireAppSettingsCompareMode.Exact;
+            set
+            {
+                if (value)
+                {
+                    AppSettingsCompareMode = DesfireAppSettingsCompareMode.Exact;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tells the serializer not to write <see cref="IsAppSettingsExactMatch"/>: it only reads it from older files.
+        /// </summary>
+        /// <returns>Always <see langword="false"/>.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeIsAppSettingsExactMatch() => false;
+
+        /// <summary>Gets or sets whether all ticked flags must be set; bound to a radio button.</summary>
+        [XmlIgnore]
+        public bool IsCompareModeAll
+        {
+            get => AppSettingsCompareMode == DesfireAppSettingsCompareMode.AllSelected;
+            set { if (value) { AppSettingsCompareMode = DesfireAppSettingsCompareMode.AllSelected; } }
+        }
+
+        /// <summary>Gets or sets whether any ticked flag must be set; bound to a radio button.</summary>
+        [XmlIgnore]
+        public bool IsCompareModeAny
+        {
+            get => AppSettingsCompareMode == DesfireAppSettingsCompareMode.AnySelected;
+            set { if (value) { AppSettingsCompareMode = DesfireAppSettingsCompareMode.AnySelected; } }
+        }
+
+        /// <summary>Gets or sets whether the whole byte must match; bound to a radio button.</summary>
+        [XmlIgnore]
+        public bool IsCompareModeExact
+        {
+            get => AppSettingsCompareMode == DesfireAppSettingsCompareMode.Exact;
+            set { if (value) { AppSettingsCompareMode = DesfireAppSettingsCompareMode.Exact; } }
         }
 
         /// <summary>
@@ -3864,11 +3917,28 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        ///
+        /// Reads the key settings of an application and compares them with the settings ticked in the task, in the
+        /// chosen mode. Nothing is read when the task is not configured to compare anything.
         /// </summary>
+        /// <returns>
+        /// A task that completes when the check has finished. The result is left in <see cref="CurrentTaskErrorLevel"/>:
+        /// <see cref="ERROR.NoError"/> for a match, <see cref="ERROR.IsNotTrue"/> for a mismatch,
+        /// <see cref="ERROR.ProtocolConstraint"/> when "all" or "any" is chosen and no setting is ticked, or the error of
+        /// the failed read.
+        /// </returns>
         public async Task ReadAppSettingsCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
+
+            var expected = BuildExpectedAppKeySettings();
+            if (AppSettingsCompareMode != DesfireAppSettingsCompareMode.Exact && !DesfireValueComparison.HasSelectedFlags(expected))
+            {
+                // "All" and "any" of nothing would match every card, or none; say so instead of guessing.
+                CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
+                StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusNoKeySettingFlagSelected"));
+                await FinalizeTaskAsync();
+                return;
+            }
 
             using (var device = ReaderDevice.Instance)
             {
@@ -3884,28 +3954,17 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                 selectedDesfireAppKeyNumberCurrentAsInt,
                                 AppNumberCurrentAsInt);
 
-                        DESFireKeySettings keySettings;
-                        keySettings = (DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp;
-
-                        keySettings |= IsAllowChangeMKChecked ? (DESFireKeySettings)1 : (DESFireKeySettings)0;
-                        keySettings |= IsAllowListingWithoutMKChecked ? (DESFireKeySettings)2 : (DESFireKeySettings)0;
-                        keySettings |= IsAllowCreateDelWithoutMKChecked ? (DESFireKeySettings)4 : (DESFireKeySettings)0;
-                        keySettings |= IsAllowConfigChangableChecked ? (DESFireKeySettings)8 : (DESFireKeySettings)0;
-
                         if (IsValidAppNumberCurrent != false && result.Code == ERROR.NoError)
                         {
                             var actual = (byte)device.DesfireAppKeySetting;
-                            var expected = (byte)keySettings;
-                            bool passes = IsAppSettingsExactMatch
-                                ? actual == expected
-                                : (actual & expected) == expected;
+                            bool passes = DesfireValueComparison.MatchesKeySettings(actual, expected, AppSettingsCompareMode);
 
                             StatusText += string.Format("{0}: App {1} settings read — actual: 0x{2:X2}, expected: 0x{3:X2} ({4}) → {5}\n",
                                 DateTime.Now,
                                 AppNumberCurrentAsInt,
                                 actual,
                                 expected,
-                                IsAppSettingsExactMatch ? "exact match" : "at least",
+                                DescribeCompareMode(AppSettingsCompareMode),
                                 passes ? "PASS" : "FAIL");
 
                             CurrentTaskErrorLevel = passes ? ERROR.NoError : ERROR.IsNotTrue;
@@ -3922,6 +3981,36 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
             await FinalizeTaskAsync();
             return;
+        }
+
+        /// <summary>
+        /// Builds the key-settings byte the task expects: the four ticked flags and the change-key policy chosen for
+        /// new applications. Only the exact comparison looks at the policy.
+        /// </summary>
+        /// <returns>The expected byte.</returns>
+        private byte BuildExpectedAppKeySettings()
+        {
+            var keySettings = (byte)SelectedDesfireAppKeySettingsCreateNewApp;
+
+            keySettings |= IsAllowChangeMKChecked ? (byte)0x01 : (byte)0;
+            keySettings |= IsAllowListingWithoutMKChecked ? (byte)0x02 : (byte)0;
+            keySettings |= IsAllowCreateDelWithoutMKChecked ? (byte)0x04 : (byte)0;
+            keySettings |= IsAllowConfigChangableChecked ? (byte)0x08 : (byte)0;
+
+            return keySettings;
+        }
+
+        private static string DescribeCompareMode(DesfireAppSettingsCompareMode mode)
+        {
+            switch (mode)
+            {
+                case DesfireAppSettingsCompareMode.AnySelected:
+                    return "any selected";
+                case DesfireAppSettingsCompareMode.Exact:
+                    return "exact match";
+                default:
+                    return "all selected";
+            }
         }
 
         /// <summary>
