@@ -4,7 +4,9 @@ using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -238,7 +240,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
             var table = SqlIdentifier.Quote(_settings.Table);
 
-            return table.IsSuccess ? Result<OrderSql>.Ok(new OrderSql(table.Value)) : Result<OrderSql>.Fail(table.Failure!);
+            return table.IsSuccess ? Result<OrderSql>.Ok(new OrderSql(table.Value, _factory.UsesSqlServerDialect)) : Result<OrderSql>.Fail(table.Failure!);
         }
 
         // Opens a connection of its own, runs the work and turns whatever goes wrong into a failure.
@@ -282,9 +284,11 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
             var written = await RunAsync<bool>(operation, cancellationToken, async (connection, sql) =>
             {
-                // Serializable, so the shared lock of the existence check below is kept until the commit: at the
-                // default (read committed) the order system could delete the row between the check and the first
-                // update, and every update would then change nothing and still "succeed". The transaction is short.
+                // Serializable, so the lock of the existence check below is kept until the commit: at the default
+                // (read committed) the order system could delete the row between the check and the first update, and
+                // every update would then change nothing and still "succeed". On SQL Server the check also takes an
+                // update lock (see OrderSql), so a writer of the order system queues behind this transaction instead
+                // of deadlocking with the shared lock being upgraded. The transaction is short.
                 // Disposing it without committing rolls it back, on every path out of here.
                 await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken).ConfigureAwait(false);
 
@@ -315,22 +319,41 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
         private Failure Classify(Exception ex, string operation, bool opening)
         {
-            switch (ex)
+            // A driver whose native file is missing fails inside static initializers, so the loader exception can arrive
+            // wrapped in one TypeInitializationException or several.
+            var cause = ex;
+            while (cause is TypeInitializationException && cause.InnerException != null)
             {
+                cause = cause.InnerException;
+            }
+
+            switch (cause)
+            {
+                // The driver is a file beside the extension; if it is not there the first use of it throws one of
+                // these. That must be a failure like any other, so nothing in this method may need the driver itself.
+                case FileNotFoundException _:
+                case FileLoadException _:
+                case BadImageFormatException _:
+                case DllNotFoundException _:
+                    return new Failure(FailureKind.InvalidConfiguration, "orders.driver.missing", "The database driver is missing or does not fit this version.");
                 case TimeoutException _:
                     return FromSqlError(-2, opening);
-                case SqlException sql:
-                    return FromSqlError(sql.Number, opening);
                 case ArgumentException _ when opening:
                     return new Failure(FailureKind.InvalidConfiguration, "orders.connection.invalid", "The server or database name cannot be used.");
-                case DbException _:
-                    return FromSqlError(0, opening);
+                case DbException db:
+                    return FromDatabaseError(db, opening);
                 default:
                     _log.Unexpected(operation, UnexpectedFault.From(ex));
 
                     return new Failure(FailureKind.Unexpected, operation + ".unexpected", "The order database call failed unexpectedly.");
             }
         }
+
+        // The only place that names the driver's exception type, in a method of its own that is never inlined: it is
+        // compiled only when a database exception has actually been thrown, which means the driver is loaded.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Failure FromDatabaseError(DbException ex, bool opening) =>
+            ex is SqlException sql ? FromSqlError(sql.Number, opening) : FromSqlError(0, opening);
 
         // One UPDATE of a column of the order, with the value it sets.
         private sealed class Update

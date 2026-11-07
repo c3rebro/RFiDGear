@@ -461,6 +461,36 @@ namespace RFiDGear.Tests.CardCheck
             Assert.False(File.Exists(FilePath));
         }
 
+        // ── a file with a byte order mark ───────────────────────────────────
+
+        private void WriteFileWithByteOrderMark(string content)
+        {
+            Directory.CreateDirectory(SettingsFolder);
+            File.WriteAllBytes(FilePath, new byte[] { 0xEF, 0xBB, 0xBF }.Concat(Encoding.UTF8.GetBytes(content)).ToArray());
+        }
+
+        [Fact]
+        public void Load_AValidFileWithAByteOrderMark_IsRead_AndNotSetAside()
+        {
+            WriteFileWithByteOrderMark("{\"schemaVersion\":1,\"settings\":{\"database\":{\"server\":\"S\"}}}");
+
+            var load = Store().Load();
+
+            Assert.Equal(SettingsLoadStatus.Loaded, load.Status);
+            Assert.Equal("S", load.Settings.Database.Server);
+            Assert.Empty(Directory.GetFiles(SettingsFolder, "*corrupt*"));
+        }
+
+        [Fact]
+        public void Save_OverANewerSchemaWithAByteOrderMark_IsRefused_ItIsNotTakenForADamagedFile()
+        {
+            WriteFileWithByteOrderMark("{\"schemaVersion\":2,\"settings\":{}}");
+
+            var result = Store().Save(Sample());
+
+            Assert.Equal("settings.newerSchema", result.Failure!.Code);
+        }
+
         // ── a file from a newer version ─────────────────────────────────────
 
         [Fact]

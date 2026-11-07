@@ -6,6 +6,8 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,10 +50,13 @@ namespace RFiDGear.Tests.CardCheck
         {
             private readonly string _connectionString;
 
-            public SqliteFactory(string connectionString)
+            public SqliteFactory(string connectionString, bool sqlServerDialect = false)
             {
                 _connectionString = connectionString;
+                UsesSqlServerDialect = sqlServerDialect;
             }
+
+            public bool UsesSqlServerDialect { get; }
 
             public int Created { get; private set; }
 
@@ -84,7 +89,21 @@ namespace RFiDGear.Tests.CardCheck
             }
         }
 
-        private OrderStore Store(SqliteFactory factory, DatabaseSettings? settings = null) =>
+        private sealed class FailingFactory : IDbConnectionFactory
+        {
+            private readonly Exception _failure;
+
+            public FailingFactory(Exception failure)
+            {
+                _failure = failure;
+            }
+
+            public bool UsesSqlServerDialect => false;
+
+            public DbConnection Create() => throw _failure;
+        }
+
+        private OrderStore Store(IDbConnectionFactory factory, DatabaseSettings? settings = null) =>
             new OrderStore(settings ?? new DatabaseSettings { Server = Server, Database = Database, Table = "T_CardCheck" }, factory, _log, () => _clock);
 
         private OrderStore Store() => Store(new SqliteFactory(Connection));
@@ -241,6 +260,107 @@ namespace RFiDGear.Tests.CardCheck
 
             Assert.Equal(3, factory.Isolation.Count);
             Assert.All(factory.Isolation, level => Assert.Equal(IsolationLevel.Serializable, level));
+        }
+
+        [Fact]
+        public async Task OnSqlServerTheExistenceCheckOfAWriteTakesAnUpdateLock_ElsewhereNot()
+        {
+            Assert.Equal(
+                "SELECT 1 FROM [dbo].[T] WITH (UPDLOCK, HOLDLOCK) WHERE [CC-ID] = @id",
+                new OrderSql("[dbo].[T]", sqlServer: true).Exists);
+            Assert.Equal("SELECT 1 FROM [dbo].[T] WHERE [CC-ID] = @id", new OrderSql("[dbo].[T]", sqlServer: false).Exists);
+            Assert.True(new SqlServerConnectionFactory(new DatabaseSettings()).UsesSqlServerDialect);
+
+            // The store asks its factory: the test engine does not know the hint, so a write to it fails once the
+            // factory says it is SQL Server, which shows the hint was sent.
+            Insert("A", status: "InProgress");
+            var result = await Store(new SqliteFactory(Connection, sqlServerDialect: true)).FinalizeAsync("A", Pdf("x"), CancellationToken.None);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal("InProgress", Value("A", "CC-Status"));
+        }
+
+        [Theory]
+        [InlineData(typeof(FileNotFoundException))]
+        [InlineData(typeof(FileLoadException))]
+        [InlineData(typeof(BadImageFormatException))]
+        [InlineData(typeof(DllNotFoundException))]
+        public async Task AMissingDatabaseDriver_IsAFailureOfItsOwn_NotAnException(Type missing)
+        {
+            var store = Store(new FailingFactory((Exception)Activator.CreateInstance(missing)!));
+
+            var result = await store.ListAsync(CancellationToken.None);
+
+            Assert.Equal(FailureKind.InvalidConfiguration, result.Failure!.Kind);
+            Assert.Equal("orders.driver.missing", result.Failure.Code);
+        }
+
+        [Fact]
+        public async Task ANativeFileThatIsMissing_ArrivesWrappedInTypeInitializationExceptions_AndIsStillTheMissingDriver()
+        {
+            // As System.Data.SqlClient reports it: the loader exception inside the initializers of two types.
+            var nested = new TypeInitializationException("TdsParser", new TypeInitializationException("SNILoadHandle", new DllNotFoundException()));
+
+            var result = await Store(new FailingFactory(nested)).ListAsync(CancellationToken.None);
+
+            Assert.Equal("orders.driver.missing", result.Failure!.Code);
+        }
+
+        // A load context in which the database driver cannot be found, as in an install that copied only the extension and
+        // the library. Everything else is resolved as usual.
+        private sealed class WithoutTheDriver : AssemblyLoadContext
+        {
+            private readonly string _library;
+
+            public WithoutTheDriver(string library)
+                : base(isCollectible: true)
+            {
+                _library = library;
+            }
+
+            protected override Assembly? Load(AssemblyName assemblyName)
+            {
+                if (assemblyName.Name == "System.Data.SqlClient")
+                {
+                    throw new FileNotFoundException("The driver is not here.", assemblyName.Name);
+                }
+
+                return assemblyName.Name == Path.GetFileNameWithoutExtension(_library) ? LoadFromAssemblyPath(_library) : null;
+            }
+        }
+
+        [Fact]
+        public async Task WhenTheDriverCannotBeLoadedAtAll_TheRealStoreAnswersWithAFailure_ItDoesNotThrow()
+        {
+            // The synthetic exceptions above show how a missing driver is classified. This shows the other half: that
+            // classifying it does not itself need the driver, which a method that names the driver's exception type
+            // would, the moment it is compiled. A private copy of the library, in a context without the driver, is used
+            // through the real factory.
+            var location = typeof(CardCheckServices).Assembly.Location;
+            var context = new WithoutTheDriver(location);
+
+            try
+            {
+                var library = context.LoadFromAssemblyPath(location);
+                var services = library.GetType("RFiDGear.ExtensionLibraries.CardCheck.CardCheckServices")!;
+                var settingsType = library.GetType("RFiDGear.ExtensionLibraries.CardCheck.DatabaseSettings")!;
+                var settings = Activator.CreateInstance(settingsType)!;
+                settingsType.GetProperty("Server")!.SetValue(settings, Server);
+                settingsType.GetProperty("Database")!.SetValue(settings, Database);
+                var log = services.GetMethod("CreateLog")!.Invoke(null, null);
+                var store = services.GetMethod("CreateOrderStore")!.Invoke(null, new[] { settings, log })!;
+
+                var task = (Task)store.GetType().GetMethod("ListAsync")!.Invoke(store, new object[] { CancellationToken.None })!;
+                await task;
+
+                var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
+                var failure = result.GetType().GetProperty("Failure")!.GetValue(result)!;
+                Assert.Equal("orders.driver.missing", failure.GetType().GetProperty("Code")!.GetValue(failure));
+            }
+            finally
+            {
+                context.Unload();
+            }
         }
 
         [Fact]

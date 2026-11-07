@@ -374,6 +374,9 @@ namespace RFiDGear.Tests.CardCheck
 
             public Exception? Fault { get; set; }
 
+            // Runs while the operator is "looking at the question", before the answer is given.
+            public Action? WhileChoosing { get; set; }
+
             public int ChooseCalls { get; private set; }
 
             public int ConfirmCalls { get; private set; }
@@ -389,6 +392,7 @@ namespace RFiDGear.Tests.CardCheck
                 ChooseCalls++;
                 SeenCandidates = candidates;
                 SeenToken = cancellationToken;
+                WhileChoosing?.Invoke();
 
                 return Fault != null ? Task.FromException<ImportDecision>(Fault) : Task.FromResult(Decision ?? new ImportDecision(ImportChoice.NotNow));
             }
@@ -470,9 +474,15 @@ namespace RFiDGear.Tests.CardCheck
         public async Task Offer_Never_RemembersIt_ImportsNothing_AndNeverAsksAgain()
         {
             Write(UnpackagedFile, FullSample());
-            var prompt = new FakePrompt { Decision = new ImportDecision(ImportChoice.Never) };
             var store = Store();
-            store.Save(new CardCheckSettings { DefaultProjectPath = "entered-meanwhile" });
+
+            // Something is entered while the question is open; "never" must be written onto that, not onto the
+            // settings as they were when the question was asked.
+            var prompt = new FakePrompt
+            {
+                Decision = new ImportDecision(ImportChoice.Never),
+                WhileChoosing = () => store.Save(new CardCheckSettings { DefaultProjectPath = "entered-meanwhile" }),
+            };
 
             var first = await Offer(prompt, store);
             var second = await Offer(prompt, store);
@@ -495,6 +505,8 @@ namespace RFiDGear.Tests.CardCheck
 
             Assert.Equal(ImportOutcome.Failed, offer.Outcome);
             Assert.DoesNotContain("SECRET-DIALOG-FAULT", _log.Everything + offer.Failure!.SafeMessage, StringComparison.Ordinal);
+            Assert.Contains("import.offer", _log.Everything, StringComparison.Ordinal);
+            Assert.Contains(nameof(InvalidOperationException), _log.Everything, StringComparison.Ordinal);
         }
 
         [Fact]

@@ -122,9 +122,16 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 return Result.Fail(new Failure(FailureKind.InvalidInput, "report.file.unsupported", "Only step reports can be prepared."));
             }
 
+            var path = paths.PathOf(file);
+
+            if (!IsInOrderFolder(paths, path))
+            {
+                return Result.Fail(new Failure(FailureKind.InvalidInput, "report.path.outside", "A report path is not in the order's report folder."));
+            }
+
             try
             {
-                DeleteIfPresent(paths.PathOf(file));
+                DeleteIfPresent(path);
 
                 return Result.Ok();
             }
@@ -160,6 +167,14 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             {
                 var path = paths.PathOf(file);
 
+                if (!IsInOrderFolder(paths, path))
+                {
+                    failed.Add(file);
+                    _log.Warning("A report path was not in the order's folder: {ReportFile}", file);
+
+                    continue;
+                }
+
                 try
                 {
                     if (DeleteIfPresent(path))
@@ -191,6 +206,28 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                     return new[] { ReportFile.Download, ReportFile.Edit };
                 default:
                     throw new ArgumentOutOfRangeException(nameof(scope), scope, "Unknown cleanup scope.");
+            }
+        }
+
+        // The paths come from Resolve: files directly in the order's folder, which is the root or a folder directly in
+        // it. The record can also be built or copied by hand, and PrepareStep and Cleanup delete what it names, so a path
+        // is checked against the folder first. A path that cannot even be made absolute is outside.
+        private static bool IsInOrderFolder(OrderReportPaths paths, string path)
+        {
+            try
+            {
+                var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(paths.Root));
+                var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(paths.Folder));
+                var parent = Path.GetDirectoryName(Path.GetFullPath(path));
+
+                var folderIsInRoot = string.Equals(folder, root, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(Path.GetDirectoryName(folder), root, StringComparison.OrdinalIgnoreCase);
+
+                return folderIsInRoot && string.Equals(parent, folder, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is IOException)
+            {
+                return false;
             }
         }
 

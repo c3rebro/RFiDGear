@@ -8,7 +8,10 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
     /// The order table of the external order system (SQL Server, Windows authentication). The library reads the
     /// orders and writes exactly three things: the report of a check (as base64 text), the status
     /// <c>CheckFinished</c> and the date of the change. Every call opens its own connection and returns a
-    /// <see cref="Failure"/> instead of throwing; a failure never names the server, the database or the table.
+    /// <see cref="Failure"/> instead of throwing; a failure never names the server, the database or the table. A
+    /// failed write has been rolled back, with one exception that no client can rule out: if the connection is lost
+    /// while the final commit is on its way, the server may have committed anyway. Every write sets the same values
+    /// again, so writing the same thing a second time is safe.
     /// </summary>
     public interface IOrderStore
     {

@@ -259,6 +259,18 @@ namespace RFiDGear.Tests.CardCheck
             Assert.Empty(Directory.GetFiles(_folder.Path, ReportService.TemporaryPrefix + "*"));
         }
 
+        [Fact]
+        public void WriteFields_WhenTheFinalSwapFails_TheTemporaryCopyOfTheReportIsRemoved()
+        {
+            var source = Report("step1.pdf", FirstReport());
+            Directory.CreateDirectory(PathOf("taken.pdf"));   // a folder where the report should go, so the swap fails
+
+            var result = Service().WriteFields(source, PathOf("taken.pdf"), new Dictionary<string, string> { ["TextBox_Notes_Site_2"] = "n" });
+
+            Assert.False(result.IsSuccess);
+            Assert.Empty(Directory.GetFiles(_folder.Path, ReportService.TemporaryPrefix + "*"));
+        }
+
         // ── locking and unlocking ───────────────────────────────────────────
 
         [Fact]

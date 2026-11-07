@@ -276,7 +276,9 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
             try
             {
-                using var stream = new FileStream(sourcePath, FileMode.Open, System.IO.FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                // bufferSize 1 switches the stream's own buffer off: the file holds the old assistant's credentials, and
+                // a buffer that is never cleared would keep a second copy of them.
+                using var stream = new FileStream(sourcePath, FileMode.Open, System.IO.FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, bufferSize: 1);
 
                 if (stream.Length > LegacySettingsReader.MaxFileBytes)
                 {
@@ -284,7 +286,18 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 }
 
                 var bytes = new byte[stream.Length];
-                stream.ReadExactly(bytes);
+
+                try
+                {
+                    stream.ReadExactly(bytes);
+                }
+                catch
+                {
+                    // A read that stopped halfway leaves part of the file in the array; nobody else will clear it.
+                    CryptographicOperations.ZeroMemory(bytes);
+
+                    throw;
+                }
 
                 return Result<(byte[], string)>.Ok((bytes, Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant()));
             }
