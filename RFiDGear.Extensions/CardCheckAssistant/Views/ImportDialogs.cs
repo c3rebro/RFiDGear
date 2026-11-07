@@ -64,7 +64,19 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Views
                 : MessageBox.Show(owner, text, title, MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) == MessageBoxResult.OK;
         }
 
-        private static Window? ActiveWindow() =>
-            Application.Current?.Windows.OfType<Window>().FirstOrDefault(window => window.IsActive);
+        /// <summary>
+        /// The window the operator is working in, which a dialog is modal to; <c>null</c> if there is none. The windows of
+        /// the application can only be read on its own thread, and a window can only be owned by one on the calling
+        /// thread, so from any other thread there is none.
+        /// </summary>
+        /// <returns>The active window of the application.</returns>
+        internal static Window? ActiveWindow()
+        {
+            var application = Application.Current;
+
+            return application == null || !application.Dispatcher.CheckAccess()
+                ? null
+                : application.Windows.OfType<Window>().FirstOrDefault(window => window.IsActive);
+        }
     }
 }

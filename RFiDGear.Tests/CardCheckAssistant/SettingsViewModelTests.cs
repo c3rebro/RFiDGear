@@ -23,7 +23,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
     /// </summary>
     public class SettingsViewModelTests
     {
-        private sealed class FakeSettingsEditor : IAssistantSettingsEditor, IDisposable
+        internal sealed class FakeSettingsEditor : IAssistantSettingsEditor, IDisposable
         {
             private readonly List<(SettingsData Baseline, SettingsData Edited)> _saves = new List<(SettingsData, SettingsData)>();
             private readonly List<(DatabaseData Database, CancellationToken Token)> _tests = new List<(DatabaseData, CancellationToken)>();
@@ -87,7 +87,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             public void Dispose() => _saveGate?.Dispose();
         }
 
-        private sealed class FakeSettingsPrompts : ISettingsPrompts
+        internal sealed class FakeSettingsPrompts : ISettingsPrompts
         {
             private readonly List<(string Title, string Message)> _asked = new List<(string, string)>();
             private bool _answer;
@@ -105,7 +105,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
         }
 
-        private sealed class FakeFolderChecker : IFolderChecker
+        internal sealed class FakeFolderChecker : IFolderChecker
         {
             private readonly List<string?> _requests = new List<string?>();
 
@@ -124,7 +124,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
         }
 
-        private sealed class FakePathChecker : IPathChecker
+        internal sealed class FakePathChecker : IPathChecker
         {
             private readonly List<string?> _projects = new List<string?>();
             private readonly List<string?> _reports = new List<string?>();
@@ -148,7 +148,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
         }
 
-        private sealed class Rig : IDisposable
+        internal sealed class Rig : IDisposable
         {
             private readonly List<bool> _closed = new List<bool>();
             private readonly List<bool> _closePermitted = new List<bool>();
@@ -203,7 +203,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
         }
 
-        private static SettingsEditorLoad Loaded(SettingsProblem problem = SettingsProblem.None) => new SettingsEditorLoad(
+        internal static SettingsEditorLoad Loaded(SettingsProblem problem = SettingsProblem.None) => new SettingsEditorLoad(
             new SettingsData
             {
                 OutputFolder = " out ",

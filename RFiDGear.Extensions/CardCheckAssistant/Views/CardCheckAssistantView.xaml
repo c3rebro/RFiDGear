@@ -66,11 +66,20 @@
         </Grid.RowDefinitions>
 
         <!-- what this page does, the reader and the project RFiDGear has open -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,10">
-            <TextBlock Text="{Binding Strings[WindowHint]}" TextWrapping="Wrap" Margin="0,0,0,6" />
-            <TextBlock Text="{Binding ReaderText}" />
-            <TextBlock Text="{Binding OpenProjectText}" TextTrimming="CharacterEllipsis" ToolTip="{Binding OpenProjectText}" />
-        </StackPanel>
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="{Binding Strings[WindowHint]}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                <TextBlock Text="{Binding ReaderText}" />
+                <TextBlock Text="{Binding OpenProjectText}" TextTrimming="CharacterEllipsis" ToolTip="{Binding OpenProjectText}" />
+            </StackPanel>
+            <Button x:Name="SettingsButton" Grid.Column="1" VerticalAlignment="Top" Margin="12,0,0,0" Padding="12,3"
+                    Command="{Binding OpenSettingsCommand}" Content="{Binding Strings[SettingsButton]}"
+                    Visibility="{Binding HasSettings, Converter={StaticResource BoolToVisibility}}" />
+        </Grid>
 
         <!-- the values of the run -->
         <StackPanel x:Name="FieldsPanel" Grid.Row="1" IsEnabled="{Binding InputsEnabled}">

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -89,6 +91,63 @@ namespace RFiDGear.Tests.CardCheckAssistant
             catch (IOException)
             {
                 // Leave it to the operating system's temp cleanup.
+            }
+        }
+    }
+
+    /// <summary>Collects what WPF reports about bindings that could not be resolved.</summary>
+    internal sealed class BindingErrorListener : TraceListener
+    {
+        private readonly List<string> _messages = new List<string>();
+        private SourceLevels _previousLevel;
+
+        /// <summary>
+        /// Starts listening to the data binding trace of WPF. The trace is read again first: without that a listener added
+        /// later hears nothing, and a test that expects "no binding error" would pass whatever the XAML says. The trace is
+        /// shared by the whole process, so a test that breaks a binding on purpose must not run beside one that listens.
+        /// </summary>
+        /// <returns>The listener; call <see cref="Stop"/> when done.</returns>
+        public static BindingErrorListener Start()
+        {
+            PresentationTraceSources.Refresh();
+
+            var listener = new BindingErrorListener { _previousLevel = PresentationTraceSources.DataBindingSource.Switch.Level };
+            PresentationTraceSources.DataBindingSource.Listeners.Add(listener);
+            PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Warning;
+
+            return listener;
+        }
+
+        /// <summary>Stops listening and puts the level of the trace back.</summary>
+        public void Stop()
+        {
+            PresentationTraceSources.DataBindingSource.Listeners.Remove(this);
+            PresentationTraceSources.DataBindingSource.Switch.Level = _previousLevel;
+        }
+
+        public IReadOnlyList<string> Messages
+        {
+            get
+            {
+                lock (_messages)
+                {
+                    return _messages.ToList();
+                }
+            }
+        }
+
+        public override void Write(string? message) => Record(message);
+
+        public override void WriteLine(string? message) => Record(message);
+
+        private void Record(string? message)
+        {
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                lock (_messages)
+                {
+                    _messages.Add(message);
+                }
             }
         }
     }
