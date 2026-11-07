@@ -376,9 +376,17 @@ namespace RFiDGear.Tests.CardCheck
 
             public int ConfirmCalls { get; private set; }
 
+            public IReadOnlyList<LegacySettingsCandidate>? SeenCandidates { get; private set; }
+
+            public LegacyImportPreview? SeenPreview { get; private set; }
+
+            public CancellationToken SeenToken { get; private set; }
+
             public Task<ImportDecision> ChooseAsync(IReadOnlyList<LegacySettingsCandidate> candidates, CancellationToken cancellationToken)
             {
                 ChooseCalls++;
+                SeenCandidates = candidates;
+                SeenToken = cancellationToken;
 
                 return Fault != null ? Task.FromException<ImportDecision>(Fault) : Task.FromResult(Decision ?? new ImportDecision(ImportChoice.NotNow));
             }
@@ -386,6 +394,8 @@ namespace RFiDGear.Tests.CardCheck
             public Task<bool> ConfirmAsync(LegacyImportPreview preview, CancellationToken cancellationToken)
             {
                 ConfirmCalls++;
+                SeenPreview = preview;
+                SeenToken = cancellationToken;
 
                 return Task.FromResult(Confirm);
             }
@@ -419,6 +429,9 @@ namespace RFiDGear.Tests.CardCheck
             Assert.Equal(ImportOutcome.Imported, offer.Outcome);
             Assert.Contains(offer.Notes, n => n.Code == "import.sqlite.unsupported");
             Assert.Equal(1, prompt.ConfirmCalls);
+            // The operator is shown the file that was found and what would become of it, before anything is written.
+            Assert.Equal(path, Assert.Single(prompt.SeenCandidates!).Path);
+            Assert.Equal(path, prompt.SeenPreview!.SourcePath);
             Assert.NotNull(store.Load().Settings.LegacyImport);
             Assert.Equal(ImportOutcome.AlreadyHandled, again.Outcome);
             Assert.Equal(1, prompt.ChooseCalls);
