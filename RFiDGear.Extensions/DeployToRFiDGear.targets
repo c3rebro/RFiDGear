@@ -18,8 +18,10 @@
     SDK or the host: their names match the host's RFiDGear.Extensions*.dll scan too (RFiDGear.ExtensionSdk.dll does), and a
     second copy of them in that folder would be loaded as an extension and would load the contract types twice.
 
-    Whatever is built last replaces what is there, even an older build from another checkout: files are skipped only when they
-    are identical. Nothing is ever deleted.
+    Whatever is built last replaces what is there, even an older build from another checkout. A file is left alone only if it
+    has the same size and time stamp as the one already there (the Copy task's rule; a copy keeps the source's time stamp and
+    a build gives every file it changes a new one), so building again while RFiDGear runs is quiet when nothing changed, and an
+    extension that is already current but loaded does not stop a changed library from being copied. Nothing is ever deleted.
 
     A file that cannot be copied (RFiDGear is running and holds it, or there is no right to write to the folder) is a warning,
     and the build goes on; it is an error only if the build treats warnings as errors. The extension itself is copied first
