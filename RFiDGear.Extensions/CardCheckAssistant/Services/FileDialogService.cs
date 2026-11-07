@@ -5,7 +5,7 @@ using Microsoft.Win32;
 
 namespace RFiDGear.Extensions.CardCheckAssistant.Services
 {
-    /// <summary>Lets the user pick the project file; a seam so the view model can be tested without a dialog.</summary>
+    /// <summary>Lets the user pick a project file or a folder; a seam so the view model can be tested without a dialog.</summary>
     internal interface IFileDialogService
     {
         /// <summary>Shows the picker.</summary>
@@ -14,11 +14,43 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         /// <param name="filter">The file filter in <see cref="FileDialog.Filter"/> form, in the page's language.</param>
         /// <returns>The chosen full path, or <c>null</c> if the user cancelled.</returns>
         string? PickProjectFile(string? currentPath, string title, string filter);
+
+        /// <summary>Shows the folder picker.</summary>
+        /// <param name="currentPath">The folder already entered, to start from; may be blank.</param>
+        /// <param name="title">The dialog title, in the page's language.</param>
+        /// <returns>The chosen full path of the folder, or <c>null</c> if the user cancelled.</returns>
+        string? PickFolder(string? currentPath, string title);
     }
 
-    /// <summary>The Windows open-file dialog.</summary>
+    /// <summary>The Windows open-file and open-folder dialogs.</summary>
     internal sealed class OpenFileDialogService : IFileDialogService
     {
+        /// <inheritdoc/>
+        public string? PickFolder(string? currentPath, string title)
+        {
+            var dialog = new OpenFolderDialog
+            {
+                Title = title,
+                Multiselect = false
+            };
+
+            // Not checked for existence, for the same reason as in the file picker: that is a file-system call on the UI
+            // thread, and the dialog copes with a folder that is not there.
+            if (!string.IsNullOrWhiteSpace(currentPath))
+            {
+                try
+                {
+                    dialog.InitialDirectory = currentPath.Trim();
+                }
+                catch (ArgumentException)
+                {
+                    // The text is not a usable path; the dialog simply opens where it likes.
+                }
+            }
+
+            return dialog.ShowDialog() == true ? dialog.FolderName : null;
+        }
+
         /// <inheritdoc/>
         public string? PickProjectFile(string? currentPath, string title, string filter)
         {

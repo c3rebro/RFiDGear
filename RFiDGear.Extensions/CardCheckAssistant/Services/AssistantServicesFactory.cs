@@ -51,16 +51,18 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
                     ? CardCheckServices.CreateSettingsStore(Path.Combine(root!, "settings"), log)
                     : CardCheckServices.CreateSettingsStore(log);
 
+                var editor = new SettingsEditor(store, databaseSettings => CardCheckServices.CreateOrderStore(databaseSettings, log));
+
                 if (!offerLegacyImport)
                 {
-                    return new AssistantServices(new SettingsMemory(store), AssistantServices.None.ImportOffer);
+                    return new AssistantServices(new SettingsMemory(store), AssistantServices.None.ImportOffer, editor);
                 }
 
                 var importer = overridden
                     ? CardCheckServices.CreateLegacyImporter(store, root!, log)
                     : CardCheckServices.CreateLegacyImporter(store, log);
 
-                return new AssistantServices(new SettingsMemory(store), new ImportOfferService(importer, new ImportDialogs(), dispatcher));
+                return new AssistantServices(new SettingsMemory(store), new ImportOfferService(importer, new ImportDialogs(), dispatcher), editor);
             }
             catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException)
             {

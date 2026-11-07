@@ -46,10 +46,27 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
     /// <summary>The services of the page that need the support library, or none at all.</summary>
     /// <param name="Settings">What the page remembers.</param>
     /// <param name="ImportOffer">The one-time import offer.</param>
-    internal sealed record AssistantServices(IAssistantSettings Settings, IImportOffer ImportOffer)
+    /// <param name="Editor">What the settings UI reads, saves and tests.</param>
+    internal sealed record AssistantServices(IAssistantSettings Settings, IImportOffer ImportOffer, IAssistantSettingsEditor Editor)
     {
-        /// <summary>Nothing remembered, nothing offered: what the page does without a settings folder.</summary>
-        internal static AssistantServices None { get; } = new AssistantServices(new NoSettings(), new NoImportOffer());
+        /// <summary>Nothing remembered, nothing offered, nothing to edit: what the page does without a settings folder.</summary>
+        internal static AssistantServices None { get; } = new AssistantServices(new NoSettings(), new NoImportOffer(), new NoEditor());
+
+        private sealed class NoEditor : IAssistantSettingsEditor
+        {
+            public SettingsEditorLoad Load() => new SettingsEditorLoad(new SettingsData(), SettingsProblem.Unavailable);
+
+            // Like the real editor, it refuses a missing argument and does not start what is already cancelled.
+            public SettingsSaveOutcome Save(SettingsData baseline, SettingsData edited) =>
+                baseline == null || edited == null
+                    ? throw new ArgumentNullException(baseline == null ? nameof(baseline) : nameof(edited))
+                    : SettingsSaveOutcome.Unavailable;
+
+            public Task<ConnectionTestOutcome> TestConnectionAsync(DatabaseData database, CancellationToken cancellationToken) =>
+                database == null
+                    ? throw new ArgumentNullException(nameof(database))
+                    : Task.FromResult(cancellationToken.IsCancellationRequested ? ConnectionTestOutcome.Cancelled : ConnectionTestOutcome.Failed);
+        }
 
         private sealed class NoSettings : IAssistantSettings
         {
