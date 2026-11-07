@@ -24,6 +24,17 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         public static IReportService CreateReportService(ICardCheckLog log) => new ReportService(log);
 
         /// <summary>
+        /// Creates the access to the order table of the external order system (SQL Server, the Windows account of the
+        /// person running the check). The settings are taken as they are now; after they change, create a new one.
+        /// </summary>
+        /// <param name="settings">Where the order database and its table are.</param>
+        /// <param name="log">Where an unexpected fault is noted (by type only).</param>
+        /// <returns>A new store; it opens a connection for each call and keeps none.</returns>
+        /// <exception cref="System.ArgumentNullException">An argument is null.</exception>
+        public static IOrderStore CreateOrderStore(DatabaseSettings settings, ICardCheckLog log) =>
+            new OrderStore(settings, new SqlServerConnectionFactory(settings), log);
+
+        /// <summary>
         /// Creates the store for the assistant's settings, in its own folder below the user's application data
         /// (<c>%LocalAppData%\RFiDGear\Extensions\CardCheckAssistant</c>), apart from the host's own files.
         /// </summary>

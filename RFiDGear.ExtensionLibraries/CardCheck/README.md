@@ -12,8 +12,48 @@ and importing the settings of the old assistant. The WPF extension
 So far it holds the result types, the log abstraction, the status and
 language values, the template rules, the report file handling, the settings
 store, the workflow session, the import of the old assistant's settings, the
-PDF report service and the guard tests. The other services follow one at a
-time, each with its own tests.
+PDF report service, the access to the order table and the guard tests. The
+rest follows one change at a time, each with its own tests.
+
+**Order table** (`IOrderStore`, created by
+`CardCheckServices.CreateOrderStore`):
+
+- It reads the order table of the external order system and writes exactly
+  three things: the report of a check (as base64 text), the status
+  `CheckFinished` and the date of the change. The table and column names
+  (`[CC-ID]`, `[CC-ReportBase64]` and so on) are the system's own. SQL Server
+  only, with the Windows account of the person running the check: there is no
+  user name, password or port. SQLite is used by the tests alone, to run the
+  same statements on a real engine.
+- `FinalizeAsync` is one transaction: the order has to exist (asked with a
+  query of its own, because the row count of an `UPDATE` is not reliable on a
+  table with triggers), then the report, the status and the date are written.
+  If any step fails nothing is kept, so an order is never marked finished
+  without its report. The old assistant wrote the three in separate calls and
+  went on whatever happened.
+- Values are parameters, never part of the SQL text. The table name from the
+  settings is read as up to three parts (bare words or `[bracketed]`) and
+  written out with every part in brackets; anything else, such as `;` or a
+  space outside brackets, is refused. `SqlIdentifier` and `OrderSql` are the
+  only places that compose SQL text.
+- The connection is the old assistant's: integrated security, the server's
+  certificate trusted, two retries ten seconds apart, a thirty second connect
+  timeout, and the instance name as the application name, but only when the
+  server name has an instance (the old code failed without one). Encryption is
+  left at the driver's default, as before; the packet size is no longer set.
+- Every call opens its own connection and returns a `Result`: a timeout, a
+  refused login, an unreachable server, a missing table or column and an
+  unknown order are different failures with fixed text that never names the
+  server, database, table or path. The old assistant wrote errors to the
+  Windows event log and carried on.
+- `DownloadReportAsync` gives the bytes of the stored report; an order with no
+  report (missing, `NULL` or empty) is "not found", never an empty file, and
+  text that is not base64 is "corrupt". Columns are read as text whatever type
+  they have; a missing status reads as `NA`.
+- The report is sent as `nvarchar(max)` text where the old code sent `ntext`;
+  both convert to the column. The date of a change is written as text in the
+  current culture, as before, until the probe of the real table says otherwise.
+  The suite runs against SQLite, not against a SQL Server.
 
 **Import of the old settings** (`ILegacySettingsImporter`, created by
 `CardCheckServices.CreateLegacyImporter`):
