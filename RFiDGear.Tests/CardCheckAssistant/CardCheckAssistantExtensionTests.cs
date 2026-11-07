@@ -31,6 +31,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
     /// The extension as RFiDGear meets it: discovered from its metadata without being created, building a page per
     /// window, and, checked statically, depending on nothing but the contract and the SDK.
     /// </summary>
+    [Collection("WpfBindingTrace")]
     public class CardCheckAssistantExtensionTests
     {
         private static readonly System.Reflection.Assembly ExtensionAssembly = typeof(CardCheckAssistantExtension).Assembly;
@@ -183,10 +184,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public async Task TheView_ShowsEveryStateWithoutABindingError()
         {
             using var area = new TempArea();
-            var listener = new BindingErrorListener();
-            var previousLevel = PresentationTraceSources.DataBindingSource.Switch.Level;
-            PresentationTraceSources.DataBindingSource.Listeners.Add(listener);
-            PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Warning;
+            var listener = BindingErrorListener.Start();
 
             try
             {
@@ -227,8 +225,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
             finally
             {
-                PresentationTraceSources.DataBindingSource.Listeners.Remove(listener);
-                PresentationTraceSources.DataBindingSource.Switch.Level = previousLevel;
+                listener.Stop();
             }
 
             Assert.Empty(listener.Messages);
@@ -276,6 +273,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
                     // The buttons do what the view model says, and Enter inside a text box must not start a card run.
                     Assert.Same(viewModel.RunCommand, run.Command);
                     Assert.Same(viewModel.BrowseCommand, browse.Command);
+                    var settingsButton = Named<System.Windows.Controls.Button>(view, "SettingsButton");
+                    Assert.Same(viewModel.OpenSettingsCommand, settingsButton.Command);
+                    Assert.Equal(Visibility.Visible, settingsButton.Visibility);
                     Assert.All(Descendants<System.Windows.Controls.Button>(view), button => Assert.False(button.IsDefault));
 
                     // Idle: fields usable, nothing to report, no progress.
@@ -316,11 +316,13 @@ namespace RFiDGear.Tests.CardCheckAssistant
                     host.ExecutionHost.SetRunning(true);
                     await Flush();
                     Assert.False(fields.IsEnabled);
+                    Assert.False(settingsButton.IsEnabled);
                     Assert.Equal(Visibility.Visible, progress.Visibility);
 
                     host.ExecutionHost.SetRunning(false);
                     await Flush();
                     Assert.True(fields.IsEnabled);
+                    Assert.True(settingsButton.IsEnabled);
 
                     // The hint that the window cannot close appears when the page is busy and asked to close.
                     host.ProjectHost.LoadGate = NewGate();
@@ -431,10 +433,12 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
         }
 
-        [Fact]
-        public void EveryTextTheXamlBindsTo_ExistsInBothLanguages()
+        [Theory]
+        [InlineData("CardCheckAssistantView.xaml")]
+        [InlineData("SettingsView.xaml")]
+        public void EveryTextTheXamlBindsTo_ExistsInBothLanguages(string xamlFile)
         {
-            var xaml = File.ReadAllText(Path.Combine(RepositoryRoot(), "RFiDGear.Extensions", "CardCheckAssistant", "Views", "CardCheckAssistantView.xaml"));
+            var xaml = File.ReadAllText(Path.Combine(RepositoryRoot(), "RFiDGear.Extensions", "CardCheckAssistant", "Views", xamlFile));
 
             var used = Regex.Matches(xaml, @"Strings\[(\w+)\]").Select(match => match.Groups[1].Value).Distinct().ToList();
 
@@ -444,6 +448,23 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.Contains(key, ExtensionStrings.AllKeys);
                 Assert.Contains(key, ExtensionStrings.GermanKeys);
             });
+        }
+
+        [Fact]
+        public void EveryText_IsUsedBySomething()
+        {
+            // A text nobody asks for is a label somebody forgot to put on the screen.
+            var root = Path.Combine(RepositoryRoot(), "RFiDGear.Extensions", "CardCheckAssistant");
+            var sources = Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories)
+                .Where(file => !file.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar) && !file.Contains(Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar))
+                .Where(file => file.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase) || (file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) && !file.EndsWith("ExtensionStrings.cs", StringComparison.OrdinalIgnoreCase)))
+                .Select(File.ReadAllText)
+                .ToList();
+            var all = string.Join("\n", sources);
+
+            Assert.All(ExtensionStrings.AllKeys, name => Assert.True(
+                all.Contains("Strings[" + name + "]", StringComparison.Ordinal) || all.Contains("Keys." + name, StringComparison.Ordinal),
+                name + " is not used anywhere"));
         }
 
         [Fact]
@@ -528,37 +549,5 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         private static string RepositoryRoot([CallerFilePath] string thisFile = "") =>
             Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisFile)!, "..", ".."));
-
-        /// <summary>Collects what WPF reports about bindings that could not be resolved.</summary>
-        private sealed class BindingErrorListener : TraceListener
-        {
-            private readonly List<string> _messages = new List<string>();
-
-            public IReadOnlyList<string> Messages
-            {
-                get
-                {
-                    lock (_messages)
-                    {
-                        return _messages.ToList();
-                    }
-                }
-            }
-
-            public override void Write(string? message) => Record(message);
-
-            public override void WriteLine(string? message) => Record(message);
-
-            private void Record(string? message)
-            {
-                if (!string.IsNullOrWhiteSpace(message))
-                {
-                    lock (_messages)
-                    {
-                        _messages.Add(message);
-                    }
-                }
-            }
-        }
     }
 }

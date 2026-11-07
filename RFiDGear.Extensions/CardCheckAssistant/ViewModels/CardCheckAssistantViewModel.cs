@@ -57,6 +57,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private readonly IPathChecker _pathChecker;
         private readonly IAssistantSettings _settings;
         private readonly IImportOffer _importOffer;
+        private readonly ISettingsDialog? _settingsDialog;
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
         private readonly ObservableCollection<TaskOutcomeRowViewModel> _rows = new ObservableCollection<TaskOutcomeRowViewModel>();
 
@@ -84,13 +85,15 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <param name="pathChecker">The file-system checks of a run; the real ones when omitted.</param>
         /// <param name="settings">What the page remembers between windows; nothing when omitted.</param>
         /// <param name="importOffer">The one-time offer to import the old assistant's settings; none when omitted.</param>
+        /// <param name="settingsDialog">Opens the settings window; when omitted the page has no settings button.</param>
         public CardCheckAssistantViewModel(
             IRFiDGearExtensionHost host,
             Dispatcher dispatcher,
             IFileDialogService dialogs,
             IPathChecker? pathChecker = null,
             IAssistantSettings? settings = null,
-            IImportOffer? importOffer = null)
+            IImportOffer? importOffer = null,
+            ISettingsDialog? settingsDialog = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
@@ -98,10 +101,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             _pathChecker = pathChecker ?? new FileSystemPathChecker();
             _settings = settings ?? AssistantServices.None.Settings;
             _importOffer = importOffer ?? AssistantServices.None.ImportOffer;
+            _settingsDialog = settingsDialog;
 
             Strings = new LocalizedStrings(SafeRead(() => host.AppContext.UICultureName, string.Empty));
             RunCommand = new AsyncCommand(RunAsync, () => CanRun, OnUnhandledRunFailure);
             BrowseCommand = new DelegateCommand(Browse, () => InputsEnabled);
+            OpenSettingsCommand = new AsyncCommand(OpenSettingsAsync, () => HasSettings && InputsEnabled);
 
             // Subscribe first, read the state second: a change in between is then seen by the handler instead of lost.
             host.Execution.IsRunningChanged += OnIsRunningChanged;
@@ -120,6 +125,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         /// <summary>Opens the file picker.</summary>
         public DelegateCommand BrowseCommand { get; }
+
+        /// <summary>Opens the settings window, and reads what the page starts from again if the settings were saved.</summary>
+        public AsyncCommand OpenSettingsCommand { get; }
+
+        /// <summary>Whether the page has a settings window to open.</summary>
+        public bool HasSettings => _settingsDialog != null;
 
         /// <summary>The result list, in the order the host delivered it.</summary>
         public ObservableCollection<TaskOutcomeRowViewModel> Rows => _rows;
@@ -416,6 +427,29 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             }
         }
 
+        // The window is modal: this returns when the operator has closed it. What the page starts from may have changed.
+        private async Task OpenSettingsAsync()
+        {
+            if (_settingsDialog == null || !InputsEnabled)
+            {
+                return;
+            }
+
+            if (!_settingsDialog.Show(Strings) || IsDisposed)
+            {
+                return;
+            }
+
+            try
+            {
+                await ApplyDefaultsAsync();
+            }
+            catch (Exception)
+            {
+                // Remembering is a convenience: a page that cannot read its settings works with what it had.
+            }
+        }
+
         // Remembers where the project is, off the UI thread, so the picker opens there the next time.
         private void RememberProjectFolder(string projectPath)
         {
@@ -691,6 +725,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OnPropertyChanged(nameof(ShowProgress));
             RunCommand.RaiseCanExecuteChanged();
             BrowseCommand.RaiseCanExecuteChanged();
+            OpenSettingsCommand.RaiseCanExecuteChanged();
         }
 
         private void RaiseErrorProperties()

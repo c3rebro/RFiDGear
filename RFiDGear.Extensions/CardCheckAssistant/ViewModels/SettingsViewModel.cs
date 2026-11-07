@@ -157,10 +157,14 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             {
                 if (SetProperty(ref _selectedTextBlock, value))
                 {
+                    OnPropertyChanged(nameof(HasSelectedTextBlock));
                     RemoveTextBlockCommand.RaiseCanExecuteChanged();
                 }
             }
         }
+
+        /// <summary>Whether a text block is selected, so there is one to edit.</summary>
+        public bool HasSelectedTextBlock => _selectedTextBlock != null;
 
         /// <summary>Whether each order gets a folder of its own.</summary>
         public bool OneFolderPerJob
@@ -261,6 +265,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         /// <summary>Whether the last test succeeded.</summary>
         public bool TestSucceeded => _testState == ConnectionTestState.Succeeded;
+
+        /// <summary>Whether the last test found a problem.</summary>
+        public bool TestFailed => _testState == ConnectionTestState.Failed;
 
         /// <summary>What is wrong with the settings file, or <c>null</c>.</summary>
         public string? ProblemText => ProblemKey() is { } key ? Strings[key] : null;
@@ -810,6 +817,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OnPropertyChanged(nameof(HasTestResult));
             OnPropertyChanged(nameof(IsTesting));
             OnPropertyChanged(nameof(TestSucceeded));
+            OnPropertyChanged(nameof(TestFailed));
         }
 
         // ── messages and state ──

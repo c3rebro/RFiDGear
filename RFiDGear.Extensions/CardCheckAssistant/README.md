@@ -46,6 +46,21 @@ in the Extensions menu of the main window.
   typed) and the folder of the last project that was loaded (where the picker
   opens when no project is entered). The settings are read and written off the
   UI thread; if they cannot be, the page works without them.
+- Has a **Settings...** button that opens a modal window with everything the
+  assistant keeps: the folder reports are written to (one folder per job, remove
+  working reports, default report language), the default project and the
+  project that reads the memory of the card, the order database (server as
+  `host` or `host\instance`, database, table, and a **Test connection** button
+  that says in words what it found; the Windows account is used to log in), and
+  the text blocks (add, rename, edit, remove). Save writes only the values that
+  were changed, so a second window's changes to other values survive. A path
+  that is relative or unusable, a text block without a name or with a name
+  another one has, and a database with only part of its entries stop the save;
+  a folder or project that does not exist is only a warning, because it may be
+  a network share that is not reachable just now. Closing the window with
+  changes asks first. A settings file of a newer version, or one that cannot be
+  read, is shown as such and is never saved over. After a save the page reads
+  its starting values again (a project that is already in the field stays).
 - Does **not** offer, for now, to take over the settings of the old WinUI Card
   Check Assistant. The code is kept (a question with "Import", "Not now" and
   "Never ask again", then a summary to confirm; the old files are only read,

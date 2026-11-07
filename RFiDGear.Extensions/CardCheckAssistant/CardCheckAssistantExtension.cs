@@ -101,7 +101,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant
                 }
             }
 
-            var viewModel = new CardCheckAssistantViewModel(host, dispatcher, new OpenFileDialogService(), null, services.Settings, services.ImportOffer);
+            var dialogs = new OpenFileDialogService();
+            var viewModel = new CardCheckAssistantViewModel(
+                host, dispatcher, dialogs, null, services.Settings, services.ImportOffer, new SettingsDialog(services.Editor, dialogs));
 
             try
             {

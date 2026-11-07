@@ -108,6 +108,33 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string TestTimeout = "TestTimeout";
             public const string TestDriverMissing = "TestDriverMissing";
             public const string TestFailed = "TestFailed";
+            public const string SettingsButton = "SettingsButton";
+            public const string SettingsTitle = "SettingsTitle";
+            public const string SectionReports = "SectionReports";
+            public const string SectionProjects = "SectionProjects";
+            public const string SectionDatabase = "SectionDatabase";
+            public const string SectionTextBlocks = "SectionTextBlocks";
+            public const string OutputFolderLabel = "OutputFolderLabel";
+            public const string OneFolderPerJobLabel = "OneFolderPerJobLabel";
+            public const string RemoveTemporaryReportsLabel = "RemoveTemporaryReportsLabel";
+            public const string ReportLanguageLabel = "ReportLanguageLabel";
+            public const string LanguageGerman = "LanguageGerman";
+            public const string LanguageEnglish = "LanguageEnglish";
+            public const string DefaultProjectLabel = "DefaultProjectLabel";
+            public const string DefaultProjectHint = "DefaultProjectHint";
+            public const string MemoryProjectLabel = "MemoryProjectLabel";
+            public const string DatabaseHint = "DatabaseHint";
+            public const string DatabaseServerLabel = "DatabaseServerLabel";
+            public const string DatabaseNameLabel = "DatabaseNameLabel";
+            public const string DatabaseTableLabel = "DatabaseTableLabel";
+            public const string TestConnectionButton = "TestConnectionButton";
+            public const string TextBlocksHint = "TextBlocksHint";
+            public const string TextBlockNameLabel = "TextBlockNameLabel";
+            public const string TextBlockContentLabel = "TextBlockContentLabel";
+            public const string AddTextBlockButton = "AddTextBlockButton";
+            public const string RemoveTextBlockButton = "RemoveTextBlockButton";
+            public const string SaveButton = "SaveButton";
+            public const string CancelButton = "CancelButton";
         }
 
         private static readonly IReadOnlyDictionary<string, string> English = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -208,6 +235,33 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.TestTimeout] = "The server did not answer in time.",
             [Keys.TestDriverMissing] = "The database driver is missing. Copy the files that came with the extension next to it and restart RFiDGear.",
             [Keys.TestFailed] = "The connection could not be tested (see the application log).",
+            [Keys.SettingsButton] = "Settings...",
+            [Keys.SettingsTitle] = "Card Check Assistant settings",
+            [Keys.SectionReports] = "Reports",
+            [Keys.SectionProjects] = "Projects",
+            [Keys.SectionDatabase] = "Order database",
+            [Keys.SectionTextBlocks] = "Text blocks",
+            [Keys.OutputFolderLabel] = "Folder for the reports",
+            [Keys.OneFolderPerJobLabel] = "Make a folder for each job (named after the job number)",
+            [Keys.RemoveTemporaryReportsLabel] = "Remove the working reports when a check is finished",
+            [Keys.ReportLanguageLabel] = "Language of the reports",
+            [Keys.LanguageGerman] = "German",
+            [Keys.LanguageEnglish] = "English",
+            [Keys.DefaultProjectLabel] = "Default project (.rfPrj)",
+            [Keys.DefaultProjectHint] = "Next to name.rfPrj there may be the files name.deutsch.rfPrj and name.englisch.rfPrj. The one for the language of the report is used if it exists.",
+            [Keys.MemoryProjectLabel] = "Project that reads the memory of the card (.rfPrj)",
+            [Keys.DatabaseHint] = "The Windows account of the person who runs the check is used to log in.",
+            [Keys.DatabaseServerLabel] = "Server (host or host\\instance)",
+            [Keys.DatabaseNameLabel] = "Database",
+            [Keys.DatabaseTableLabel] = "Table (with or without schema)",
+            [Keys.TestConnectionButton] = "Test connection",
+            [Keys.TextBlocksHint] = "Text blocks can be inserted into the notes of a report.",
+            [Keys.TextBlockNameLabel] = "Name of the text block",
+            [Keys.TextBlockContentLabel] = "Text to insert",
+            [Keys.AddTextBlockButton] = "Add",
+            [Keys.RemoveTextBlockButton] = "Remove",
+            [Keys.SaveButton] = "Save",
+            [Keys.CancelButton] = "Cancel",
         };
 
         private static readonly IReadOnlyDictionary<string, string> German = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -308,6 +362,33 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.TestTimeout] = "Der Server hat nicht rechtzeitig geantwortet.",
             [Keys.TestDriverMissing] = "Der Datenbanktreiber fehlt. Kopieren Sie die mit der Erweiterung gelieferten Dateien daneben und starten Sie RFiDGear neu.",
             [Keys.TestFailed] = "Die Verbindung konnte nicht geprüft werden (siehe Anwendungsprotokoll).",
+            [Keys.SettingsButton] = "Einstellungen...",
+            [Keys.SettingsTitle] = "Einstellungen des Card Check Assistant",
+            [Keys.SectionReports] = "Berichte",
+            [Keys.SectionProjects] = "Projekte",
+            [Keys.SectionDatabase] = "Auftragsdatenbank",
+            [Keys.SectionTextBlocks] = "Textbausteine",
+            [Keys.OutputFolderLabel] = "Ordner für die Berichte",
+            [Keys.OneFolderPerJobLabel] = "Für jeden Auftrag einen Ordner anlegen (benannt nach der Auftragsnummer)",
+            [Keys.RemoveTemporaryReportsLabel] = "Arbeitsberichte entfernen, wenn eine Prüfung abgeschlossen ist",
+            [Keys.ReportLanguageLabel] = "Sprache der Berichte",
+            [Keys.LanguageGerman] = "Deutsch",
+            [Keys.LanguageEnglish] = "Englisch",
+            [Keys.DefaultProjectLabel] = "Standardprojekt (.rfPrj)",
+            [Keys.DefaultProjectHint] = "Neben name.rfPrj dürfen die Dateien name.deutsch.rfPrj und name.englisch.rfPrj liegen. Die zur Sprache des Berichts passende wird verwendet, wenn sie existiert.",
+            [Keys.MemoryProjectLabel] = "Projekt, das den Speicher der Karte ausliest (.rfPrj)",
+            [Keys.DatabaseHint] = "Zur Anmeldung wird das Windows-Konto der Person verwendet, die die Prüfung ausführt.",
+            [Keys.DatabaseServerLabel] = "Server (Host oder Host\\Instanz)",
+            [Keys.DatabaseNameLabel] = "Datenbank",
+            [Keys.DatabaseTableLabel] = "Tabelle (mit oder ohne Schema)",
+            [Keys.TestConnectionButton] = "Verbindung testen",
+            [Keys.TextBlocksHint] = "Textbausteine können in die Anmerkungen eines Berichts eingefügt werden.",
+            [Keys.TextBlockNameLabel] = "Name des Textbausteins",
+            [Keys.TextBlockContentLabel] = "Einzufügender Text",
+            [Keys.AddTextBlockButton] = "Hinzufügen",
+            [Keys.RemoveTextBlockButton] = "Entfernen",
+            [Keys.SaveButton] = "Speichern",
+            [Keys.CancelButton] = "Abbrechen",
         };
 
         /// <summary>The keys of the English dictionary, which is the complete one.</summary>

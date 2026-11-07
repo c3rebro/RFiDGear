@@ -1,0 +1,226 @@
+<UserControl
+    x:Class="RFiDGear.Extensions.CardCheckAssistant.Views.SettingsView"
+    x:ClassModifier="internal"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="clr-namespace:RFiDGear.Extensions.CardCheckAssistant.ViewModels"
+    MinWidth="580"
+    MinHeight="480">
+
+    <UserControl.InputBindings>
+        <KeyBinding Key="Escape" Command="{Binding CancelCommand}" />
+    </UserControl.InputBindings>
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,8,0,2" />
+        </Style>
+
+        <Style x:Key="HintText" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+        </Style>
+
+        <Style x:Key="ErrorText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="Firebrick" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Padding" Value="8,4,8,8" />
+        </Style>
+
+        <!-- a path, the button that picks it, and what is wrong with it: an error is red, a warning is amber -->
+        <DataTemplate x:Key="PathField" DataType="{x:Type vm:PathFieldViewModel}">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+                    <Button Grid.Column="1" Margin="6,0,0,0" Padding="12,2" Command="{Binding BrowseCommand}"
+                            Content="{Binding DataContext.Strings[Browse], RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                </Grid>
+                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Margin="0,2,0,0"
+                           Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="DarkGoldenrod" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsError}" Value="True">
+                                    <Setter Property="Foreground" Value="Firebrick" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- something is wrong with the settings file -->
+        <Border x:Name="ProblemBanner" Grid.Row="0" Margin="0,0,0,8" Padding="8,6" BorderThickness="1" BorderBrush="DarkGoldenrod"
+                Background="LightGoldenrodYellow" Visibility="{Binding HasProblem, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock Text="{Binding ProblemText}" TextWrapping="Wrap" Foreground="Black" />
+        </Border>
+
+        <ProgressBar x:Name="ProgressIndicator" Grid.Row="1" Height="6" Margin="0,0,0,8" IsIndeterminate="True"
+                     Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVisibility}}" />
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="ContentPanel" IsEnabled="{Binding InputsEnabled}" Margin="0,0,8,0">
+
+                <GroupBox Header="{Binding Strings[SectionReports]}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Margin="0,0,0,2" Text="{Binding Strings[OutputFolderLabel]}" />
+                        <ContentControl x:Name="OutputFolderField" Content="{Binding OutputFolder}" ContentTemplate="{StaticResource PathField}" />
+                        <CheckBox x:Name="OneFolderPerJobBox" Margin="0,8,0,0" IsChecked="{Binding OneFolderPerJob}"
+                                  Content="{Binding Strings[OneFolderPerJobLabel]}" />
+                        <CheckBox x:Name="RemoveTemporaryReportsBox" Margin="0,4,0,0" IsChecked="{Binding RemoveTemporaryReports}"
+                                  Content="{Binding Strings[RemoveTemporaryReportsLabel]}" />
+                        <TextBlock Style="{StaticResource Label}" Text="{Binding Strings[ReportLanguageLabel]}" />
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton x:Name="GermanReportButton" GroupName="ReportLanguage" Margin="0,0,16,0" IsChecked="{Binding IsGermanReport}"
+                                         Content="{Binding Strings[LanguageGerman]}" />
+                            <RadioButton x:Name="EnglishReportButton" GroupName="ReportLanguage" IsChecked="{Binding IsEnglishReport}"
+                                         Content="{Binding Strings[LanguageEnglish]}" />
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="{Binding Strings[SectionProjects]}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Margin="0,0,0,2" Text="{Binding Strings[DefaultProjectLabel]}" />
+                        <ContentControl x:Name="DefaultProjectField" Content="{Binding DefaultProject}" ContentTemplate="{StaticResource PathField}" />
+                        <TextBlock Style="{StaticResource HintText}" Text="{Binding Strings[DefaultProjectHint]}" />
+                        <TextBlock Style="{StaticResource Label}" Text="{Binding Strings[MemoryProjectLabel]}" />
+                        <ContentControl x:Name="MemoryProjectField" Content="{Binding MemoryProject}" ContentTemplate="{StaticResource PathField}" />
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="{Binding Strings[SectionDatabase]}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource HintText}" Margin="0,0,0,2" Text="{Binding Strings[DatabaseHint]}" />
+                        <TextBlock Style="{StaticResource Label}" Text="{Binding Strings[DatabaseServerLabel]}" />
+                        <TextBox x:Name="ServerBox" Text="{Binding DatabaseServer, UpdateSourceTrigger=PropertyChanged}" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource Label}" Text="{Binding Strings[DatabaseNameLabel]}" />
+                                <TextBox x:Name="DatabaseBox" Text="{Binding DatabaseName, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Style="{StaticResource Label}" Text="{Binding Strings[DatabaseTableLabel]}" />
+                                <TextBox x:Name="TableBox" Text="{Binding DatabaseTable, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock x:Name="DatabaseErrorText" Style="{StaticResource ErrorText}" Text="{Binding DatabaseError}"
+                                   Visibility="{Binding HasDatabaseError, Converter={StaticResource BoolToVisibility}}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button x:Name="TestButton" MinWidth="130" Padding="12,3" Command="{Binding TestConnectionCommand}"
+                                    Content="{Binding Strings[TestConnectionButton]}" />
+                            <ProgressBar x:Name="TestProgress" Width="90" Height="10" Margin="10,0,0,0" IsIndeterminate="True"
+                                         Visibility="{Binding IsTesting, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
+                        <TextBlock x:Name="TestResultLine" TextWrapping="Wrap" Margin="0,4,0,0" Text="{Binding TestResultText}"
+                                   Visibility="{Binding HasTestResult, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding TestSucceeded}" Value="True">
+                                            <Setter Property="Foreground" Value="DarkGreen" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding TestFailed}" Value="True">
+                                            <Setter Property="Foreground" Value="Firebrick" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="{Binding Strings[SectionTextBlocks]}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource HintText}" Margin="0,0,0,6" Text="{Binding Strings[TextBlocksHint]}" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <DockPanel Grid.Column="0">
+                                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
+                                    <Button x:Name="AddTextBlockButton" MinWidth="70" Padding="10,2" Command="{Binding AddTextBlockCommand}"
+                                            Content="{Binding Strings[AddTextBlockButton]}" />
+                                    <Button x:Name="RemoveTextBlockButton" MinWidth="70" Margin="6,0,0,0" Padding="10,2" Command="{Binding RemoveTextBlockCommand}"
+                                            Content="{Binding Strings[RemoveTextBlockButton]}" />
+                                </StackPanel>
+                                <ListBox x:Name="TextBlockList" MinHeight="120" ItemsSource="{Binding TextBlocks}"
+                                         SelectedItem="{Binding SelectedTextBlock, Mode=TwoWay}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:TextBlockViewModel}">
+                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding HasNameError}" Value="True">
+                                                                <Setter Property="Foreground" Value="Firebrick" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </DockPanel>
+                            <StackPanel x:Name="TextBlockEditor" Grid.Column="2" DataContext="{Binding SelectedTextBlock}"
+                                        Visibility="{Binding DataContext.HasSelectedTextBlock, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Style="{StaticResource Label}" Margin="0,0,0,2"
+                                           Text="{Binding DataContext.Strings[TextBlockNameLabel], RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                <TextBox x:Name="TextBlockNameBox" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock x:Name="TextBlockNameError" Style="{StaticResource ErrorText}" Text="{Binding NameError}"
+                                           Visibility="{Binding HasNameError, Converter={StaticResource BoolToVisibility}}" />
+                                <TextBlock Style="{StaticResource Label}"
+                                           Text="{Binding DataContext.Strings[TextBlockContentLabel], RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                <TextBox x:Name="TextBlockContentBox" Height="110" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                         Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- why the last save did not happen -->
+        <TextBlock x:Name="SaveErrorText" Grid.Row="3" Style="{StaticResource ErrorText}" Margin="0,8,0,0" Text="{Binding SaveErrorText}"
+                   Visibility="{Binding HasSaveError, Converter={StaticResource BoolToVisibility}}" />
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button x:Name="SaveButton" MinWidth="90" Padding="12,3" IsDefault="True" Command="{Binding OkCommand}"
+                    Content="{Binding Strings[SaveButton]}" />
+            <Button x:Name="CancelButton" MinWidth="90" Margin="8,0,0,0" Padding="12,3" Command="{Binding CancelCommand}"
+                    Content="{Binding Strings[CancelButton]}" />
+        </StackPanel>
+    </Grid>
+</UserControl>
