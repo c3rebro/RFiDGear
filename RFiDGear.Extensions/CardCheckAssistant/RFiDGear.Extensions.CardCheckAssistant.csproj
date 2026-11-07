@@ -41,4 +41,6 @@
     <Error Condition="'@(_PrivateHostCopy)' != '' And Exists('%(_PrivateHostCopy.FullPath)')"
            Text="The extension's output folder holds a private copy of a host assembly: %(_PrivateHostCopy.FullPath). Extensions must reference RFiDGear.Contracts and RFiDGear.ExtensionSdk with Private=false." />
   </Target>
+  <!-- Copies the built extension and its support library to RFiDGear's extension folder when asked to (see the file). -->
+  <Import Project="..\DeployToRFiDGear.targets" />
 </Project>

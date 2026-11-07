@@ -1,0 +1,79 @@
+<Project>
+  <!--
+    Copies a built extension, and the support libraries it needs, to the folder that RFiDGear scans for extensions, so a
+    developer can build and then just restart RFiDGear. Imported by each extension project.
+
+    Off unless asked for, because it writes outside the repository and a build is not always a developer's own: test runs,
+    clean checkouts and tools that build modified code would otherwise put their output into a real RFiDGear. It is turned on
+    by the value true in any of these (the first that is set wins; the command line beats the file beats the environment):
+      - the command line:        dotnet build -p:DeployExtensionsToRFiDGear=true
+      - a file for this machine: RFiDGear.Extensions\deploy.local.props (not in the repository, and only seen by the checkout
+                                 that holds it), containing
+                                 <Project><PropertyGroup><DeployExtensionsToRFiDGear>true</DeployExtensionsToRFiDGear></PropertyGroup></Project>
+      - the environment:         RFIDGEAR_DEPLOY_EXTENSIONS=true
+    RFiDGearExtensionsFolder replaces the target folder (the default is the one RFiDGear reads,
+    %ProgramData%\RFiDGear\Extensions).
+
+    Only the project's own assembly and RFiDGear.ExtensionLibraries.* are copied, with their symbols. Never the contract, the
+    SDK or the host: their names match the host's RFiDGear.Extensions*.dll scan too (RFiDGear.ExtensionSdk.dll does), and a
+    second copy of them in that folder would be loaded as an extension and would load the contract types twice.
+
+    Whatever is built last replaces what is there, even an older build from another checkout. A file is left alone only if it
+    has the same size and time stamp as the one already there (the Copy task's rule; a copy keeps the source's time stamp and
+    a build gives every file it changes a new one), so building again while RFiDGear runs is quiet when nothing changed, and an
+    extension that is already current but loaded does not stop a changed library from being copied. Nothing is ever deleted.
+
+    A file that cannot be copied (RFiDGear is running and holds it, or there is no right to write to the folder) is a warning,
+    and the build goes on; it is an error only if the build treats warnings as errors. The extension itself is copied first
+    and, if that fails, nothing else is, so the folder keeps one older set that belongs together instead of a new library next
+    to an old extension. The last message says whether everything is in place.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)deploy.local.props" Condition="Exists('$(MSBuildThisFileDirectory)deploy.local.props')" />
+
+  <PropertyGroup>
+    <DeployExtensionsToRFiDGear Condition="'$(DeployExtensionsToRFiDGear)' == '' And '$(RFIDGEAR_DEPLOY_EXTENSIONS)' != ''">$(RFIDGEAR_DEPLOY_EXTENSIONS)</DeployExtensionsToRFiDGear>
+    <RFiDGearExtensionsFolder Condition="'$(RFiDGearExtensionsFolder)' == ''">$([System.Environment]::GetFolderPath(SpecialFolder.CommonApplicationData))\RFiDGear\Extensions</RFiDGearExtensionsFolder>
+  </PropertyGroup>
+
+  <Target Name="DeployExtensionToRFiDGear" AfterTargets="Build" Condition="'$(DeployExtensionsToRFiDGear.Trim())' == 'true' And '$(DesignTimeBuild)' != 'true'">
+    <ItemGroup>
+      <_ExtensionMain Include="$(OutDir)$(TargetName).dll" />
+      <_ExtensionRest Include="$(OutDir)$(TargetName).pdb" Condition="Exists('$(OutDir)$(TargetName).pdb')" />
+      <_ExtensionRest Include="$(OutDir)RFiDGear.ExtensionLibraries.*.dll;$(OutDir)RFiDGear.ExtensionLibraries.*.pdb" />
+    </ItemGroup>
+
+    <!-- The extension first: RFiDGear holds it while it runs. If it cannot be replaced, nothing else is copied. -->
+    <Copy SourceFiles="@(_ExtensionMain)"
+          DestinationFolder="$(RFiDGearExtensionsFolder)"
+          SkipUnchangedFiles="true"
+          Retries="1"
+          RetryDelayMilliseconds="200"
+          ContinueOnError="WarnAndContinue">
+      <Output TaskParameter="CopiedFiles" ItemName="_ExtensionInPlace" />
+    </Copy>
+    <Copy Condition="'$(MSBuildLastTaskResult)' == 'true'"
+          SourceFiles="@(_ExtensionRest)"
+          DestinationFolder="$(RFiDGearExtensionsFolder)"
+          SkipUnchangedFiles="true"
+          Retries="1"
+          RetryDelayMilliseconds="200"
+          ContinueOnError="WarnAndContinue">
+      <Output TaskParameter="CopiedFiles" ItemName="_ExtensionInPlace" />
+    </Copy>
+
+    <!-- The list of copied files also holds the files that were already there unchanged: it means "in place". -->
+    <PropertyGroup>
+      <_ExtensionMainCount>@(_ExtensionMain->Count())</_ExtensionMainCount>
+      <_ExtensionRestCount>@(_ExtensionRest->Count())</_ExtensionRestCount>
+      <_ExtensionTotal>$([MSBuild]::Add($(_ExtensionMainCount), $(_ExtensionRestCount)))</_ExtensionTotal>
+      <_ExtensionDone>@(_ExtensionInPlace->Count())</_ExtensionDone>
+    </PropertyGroup>
+    <Message Condition="'$(_ExtensionDone)' == '$(_ExtensionTotal)'" Importance="high" Text="Extension $(TargetName) ($(Configuration)|$(Platform)): all $(_ExtensionTotal) file(s) are in place in $(RFiDGearExtensionsFolder). Restart RFiDGear to load a new version." />
+    <Message Condition="'$(_ExtensionDone)' != '$(_ExtensionTotal)'" Importance="high" Text="Extension $(TargetName) ($(Configuration)|$(Platform)) is NOT completely deployed: $(_ExtensionDone) of $(_ExtensionTotal) file(s) are in place in $(RFiDGearExtensionsFolder); see the warnings above. Close RFiDGear and build again." />
+  </Target>
+
+  <Target Name="DeployExtensionToRFiDGearSkipped" AfterTargets="Build" Condition="'$(DeployExtensionsToRFiDGear.Trim())' != 'true'">
+    <Message Condition="'$(DeployExtensionsToRFiDGear.Trim())' == ''" Importance="low" Text="Extension $(TargetName) is not copied to RFiDGear (set DeployExtensionsToRFiDGear=true to do so)." />
+    <Message Condition="'$(DeployExtensionsToRFiDGear.Trim())' != '' And '$(DeployExtensionsToRFiDGear.Trim())' != 'false'" Importance="high" Text="Extension $(TargetName) is not copied to RFiDGear: DeployExtensionsToRFiDGear is '$(DeployExtensionsToRFiDGear)', and only true (or yes, or on) turns it on." />
+  </Target>
+</Project>
