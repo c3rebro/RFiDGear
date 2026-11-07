@@ -67,6 +67,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string RunBusy = "RunBusy";
             public const string RunUnexpectedFormat = "RunUnexpectedFormat";
             public const string CloseBlocked = "CloseBlocked";
+            public const string ComponentMissing = "ComponentMissing";
         }
 
         private static readonly IReadOnlyDictionary<string, string> English = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -126,6 +127,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.RunBusy] = "RFiDGear is busy. Wait until the current operation has finished and try again.",
             [Keys.RunUnexpectedFormat] = "The run could not be completed ({0}). See the application log.",
             [Keys.CloseBlocked] = "A run is in progress. Wait until it has finished before closing this window.",
+            [Keys.ComponentMissing] = "The Card Check Assistant cannot start. The file {0} was not found next to {1}, or it does not match this version. Copy both files to the Extensions folder of RFiDGear (%ProgramData%\\RFiDGear\\Extensions) and restart RFiDGear.",
         };
 
         private static readonly IReadOnlyDictionary<string, string> German = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -185,6 +187,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.RunBusy] = "RFiDGear ist beschäftigt. Warten Sie, bis der laufende Vorgang beendet ist, und versuchen Sie es erneut.",
             [Keys.RunUnexpectedFormat] = "Der Lauf konnte nicht abgeschlossen werden ({0}). Siehe Anwendungsprotokoll.",
             [Keys.CloseBlocked] = "Ein Lauf ist in Arbeit. Warten Sie, bis er beendet ist, bevor Sie dieses Fenster schließen.",
+            [Keys.ComponentMissing] = "Der Card Check Assistant kann nicht starten. Die Datei {0} fehlt neben {1} oder passt nicht zu dieser Version. Kopieren Sie beide Dateien in den Ordner Extensions von RFiDGear (%ProgramData%\\RFiDGear\\Extensions) und starten Sie RFiDGear neu.",
         };
 
         /// <summary>The keys of the English dictionary, which is the complete one.</summary>

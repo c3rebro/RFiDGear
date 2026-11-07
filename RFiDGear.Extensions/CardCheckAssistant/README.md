@@ -9,12 +9,17 @@ in the Extensions menu of the main window.
 
 **Install:**
 
-- Copy `RFiDGear.Extensions.CardCheckAssistant.dll`, and only that file, to
-  `%ProgramData%\RFiDGear\Extensions`. The host already has the contract and
-  the SDK; a second copy next to the extension would load the contract types
-  twice.
+- Copy `RFiDGear.Extensions.CardCheckAssistant.dll` and its support library
+  `RFiDGear.ExtensionLibraries.CardCheck.dll`, and nothing else, to
+  `%ProgramData%\RFiDGear\Extensions`. Both come out of the build folder of
+  the extension, for the same platform (x64 or x86) as RFiDGear. The host
+  already has the contract, the SDK, Serilog and GemBox.Pdf; a second copy of
+  any of them next to the extension would load its types twice.
 - Restart RFiDGear. Extensions are discovered once at start-up, so there is no
   hot loading.
+- If the library file is missing, or is of another platform or version, the
+  window opens with a short text that names the two files and the folder,
+  instead of the page.
 
 **What the page does:**
 
@@ -32,9 +37,17 @@ in the Extensions menu of the main window.
 
 **Rules that keep it correct:**
 
-- It references only `RFiDGear.Contracts` and `RFiDGear.ExtensionSdk`, both
-  with `Private=false`. A build error stops a private copy of a host
-  assembly. Tests check the references of the built assembly.
+- It references `RFiDGear.Contracts` and `RFiDGear.ExtensionSdk`, both with
+  `Private=false`, and its own library `RFiDGear.ExtensionLibraries.CardCheck`,
+  which is copied beside it. A build error stops a private copy of a host
+  assembly (the contract, the SDK, GemBox.Pdf, Serilog, SkiaSharp, HarfBuzz and
+  Newtonsoft.Json included). Tests check the references of the built assembly
+  by exact name, and that the page itself names no database driver.
+- The exported class mentions no type of the library. MEF cannot see a missing
+  sibling file, so `ComponentCheck` makes the first use of the library inside
+  a try block when a window opens, and a library that is missing or does not
+  fit gives the page that says so. A test lists the members of the exported
+  class and fails if one is a library type.
 - It does not set `Uri` in `[UiExtension]`: a `Uri` makes the host open that
   page and never ask the class for content.
 - The exported class holds no state. Everything that belongs to one window
