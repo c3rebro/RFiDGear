@@ -90,7 +90,8 @@ namespace RFiDGear.Tests
 
         [Theory]
         [InlineData(TaskType_MifareDesfireTask.ChangeDefault, true, true, true, true, true, true, true)]
-        [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false, true, false, false, false, false)]
+        [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false, true, true, false, false, false)]
+        [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount, false, false, true, true, false, false, false)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, false, false, false, false, true, true, false)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover, false, false, false, false, true, true, false)]
         [InlineData(TaskType_MifareDesfireTask.AuthenticateApplication, false, false, false, true, true, true, false)]
@@ -185,6 +186,54 @@ namespace RFiDGear.Tests
 
                 Assert.Equal(showTarget, viewModel.ShowPiccMasterKeyTargetInputs);
                 Assert.Equal(showSettings, viewModel.ShowPiccMasterKeySettingsInputs);
+            });
+        }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover, true)]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover, true)]
+        [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, true)]
+        [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount, false)]
+        [InlineData(TaskType_MifareDesfireTask.FormatDesfireCard, false)]
+        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, false)]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, false)]
+        public async Task SelectedTaskType_ShowsKeySettingsGroupForPiccTasksAndTheAppConfigCheck(
+            TaskType_MifareDesfireTask taskType,
+            bool showGroup)
+        {
+            await RunOnStaThreadAsync(() =>
+            {
+                var viewModel = new MifareDesfireSetupViewModel
+                {
+                    SelectedTaskType = taskType
+                };
+
+                Assert.Equal(showGroup, viewModel.ShowKeySettingsGroup);
+            });
+        }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, "labelCurrentDesfireKeySettingsContext", "groupBoxheaderMifareDesfireCardMasterSettingTarget")]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover, "labelTargetDesfireKeySettings", "groupBoxheaderMifareDesfireCardMasterSettingTarget")]
+        [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, "labelExpectedDesfireKeySettings", "groupBoxHeaderMifareDesfireExpectedAppSettings")]
+        [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount, "labelTargetDesfireKeySettings", "groupBoxHeaderMifareDesfireExpectedAppSettings")]
+        public async Task SelectedTaskType_NamesWhatTheShownSettingsAre(
+            TaskType_MifareDesfireTask taskType,
+            string keySettingsKey,
+            string targetGroupKey)
+        {
+            await RunOnStaThreadAsync(() =>
+            {
+                var viewModel = new MifareDesfireSetupViewModel
+                {
+                    SelectedTaskType = taskType
+                };
+
+                // The texts follow the language, so they are compared with the resource, which must exist.
+                Assert.False(string.IsNullOrWhiteSpace(ResourceLoader.GetResource(keySettingsKey)), keySettingsKey);
+                Assert.False(string.IsNullOrWhiteSpace(ResourceLoader.GetResource(targetGroupKey)), targetGroupKey);
+                Assert.Equal(ResourceLoader.GetResource(keySettingsKey), viewModel.KeySettingsPanelHeader);
+                Assert.Equal(ResourceLoader.GetResource(targetGroupKey), viewModel.TargetGroupHeader);
             });
         }
 

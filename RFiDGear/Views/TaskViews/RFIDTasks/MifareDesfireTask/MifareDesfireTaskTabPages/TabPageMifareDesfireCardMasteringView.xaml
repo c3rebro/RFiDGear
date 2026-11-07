@@ -47,7 +47,7 @@
                 Margin="8,8,8,8"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxheaderMifareDesfireCardMasterSettingTarget'}"
+                Header="{Binding TargetGroupHeader}"
                 IsEnabled="{Binding IsDesfirePICCAuthoringTabEnabled}">
                 <GroupBox.Style>
                     <Style TargetType="GroupBox">
@@ -162,7 +162,7 @@
                         Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
-                        Visibility="{Binding ShowPiccMasterKeySettingsInputs, Converter={StaticResource BoolToVisConv}}"
+                        Visibility="{Binding ShowKeySettingsGroup, Converter={StaticResource BoolToVisConv}}"
                         Header="{Binding KeySettingsPanelHeader}">
                         <StackPanel Margin="8,4,8,4">
                             <CheckBox

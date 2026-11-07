@@ -1774,4 +1774,10 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="labelTargetDesfireKeySettings" xml:space="preserve">
     <value>New key settings to apply</value>
   </data>
+  <data name="labelExpectedDesfireKeySettings" xml:space="preserve">
+    <value>Expected key settings (compared with the card)</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireExpectedAppSettings" xml:space="preserve">
+    <value>Expected application settings</value>
+  </data>
 </root>

@@ -772,11 +772,13 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         break;
 
                     case TaskType_MifareDesfireTask.ReadAppSettings:
-                        SetTabAvailability(false, false, true, false, false, false, false);
+                        // The panel with the application id and the key is enabled by the "authentication" flag; both
+                        // checks read the application with that key.
+                        SetTabAvailability(false, false, true, true, false, false, false);
                         break;
 
                     case TaskType_MifareDesfireTask.CheckAppKeyCount:
-                        SetTabAvailability(false, false, true, false, false, false, false);
+                        SetTabAvailability(false, false, true, true, false, false, false);
                         break;
 
                     case TaskType_MifareDesfireTask.AppExistCheck:
@@ -845,6 +847,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowAppKeySettingsInputs));
                 OnPropertyChanged(nameof(ShowAppKeySettingsEditButton));
                 OnPropertyChanged(nameof(KeySettingsPanelHeader));
+                OnPropertyChanged(nameof(TargetGroupHeader));
+                OnPropertyChanged(nameof(ShowKeySettingsGroup));
                 OnPropertyChanged(nameof(ShowAppKeyTargetSection));
                 OnPropertyChanged(nameof(ShowPiccMasterKeyTargetInputs));
                 OnPropertyChanged(nameof(ShowPiccMasterKeySettingsInputs));
@@ -897,14 +901,29 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover;
 
         /// <summary>
-        /// Describes whether the visible settings are current ChangeKey context or target settings.
+        /// Describes whether the visible settings are current ChangeKey context, settings the check task expects, or
+        /// target settings to apply.
         /// </summary>
         [XmlIgnore]
         public string KeySettingsPanelHeader => ResourceLoader.GetResource(
-            SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover ||
-            SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover
-                ? "labelCurrentDesfireKeySettingsContext"
-                : "labelTargetDesfireKeySettings");
+            SelectedTaskType switch
+            {
+                TaskType_MifareDesfireTask.ApplicationKeyChangeover or TaskType_MifareDesfireTask.PICCMasterKeyChangeover
+                    => "labelCurrentDesfireKeySettingsContext",
+                TaskType_MifareDesfireTask.ReadAppSettings => "labelExpectedDesfireKeySettings",
+                _ => "labelTargetDesfireKeySettings",
+            });
+
+        /// <summary>
+        /// Gets the header of the right-hand group of the Card Mastering tab. The two check tasks show the settings they
+        /// expect there; for the others it is the PICC key setup to apply.
+        /// </summary>
+        [XmlIgnore]
+        public string TargetGroupHeader => ResourceLoader.GetResource(
+            SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings ||
+            SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount
+                ? "groupBoxHeaderMifareDesfireExpectedAppSettings"
+                : "groupBoxheaderMifareDesfireCardMasterSettingTarget");
 
         /// <summary>
         /// Gets a value indicating whether the target application key settings section should be shown.
@@ -968,6 +987,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public bool ShowPiccMasterKeySettingsInputs =>
             SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover ||
             SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover;
+
+        /// <summary>
+        /// Gets a value indicating whether the group with the key-settings check boxes should be shown: for the PICC key
+        /// tasks (see <see cref="ShowPiccMasterKeySettingsInputs"/>) and, as the settings it expects, for
+        /// <see cref="TaskType_MifareDesfireTask.ReadAppSettings"/>. It has its own property because the check boxes are
+        /// not PICC inputs for that task; widening the PICC property would show PICC-only controls with them.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowKeySettingsGroup => ShowPiccMasterKeySettingsInputs || ShowAppSettingsCheckModeSelector;
 
         /// <summary>
         /// Gets a value indicating whether the check-mode radio buttons should be shown.
