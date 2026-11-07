@@ -71,6 +71,86 @@ namespace RFiDGear.Tests.CardCheck
         // ── defaults and round trip ─────────────────────────────────────────
 
         [Fact]
+        public void Settings_ChangingTheListThatWasAssigned_ChangesNothing()
+        {
+            var assigned = new List<TextTemplate> { new TextTemplate { Name = "one", Content = "1" } };
+            var settings = new CardCheckSettings { TextTemplates = assigned };
+
+            assigned.Add(new TextTemplate { Name = "two", Content = "2" });
+            assigned[0] = new TextTemplate { Name = "changed", Content = "x" };
+
+            Assert.Equal(new[] { "one" }, settings.TextTemplates.Select(t => t.Name));
+        }
+
+        [Fact]
+        public void Settings_TheListHandedOutCannotBeChanged_NotInTheInstanceNorInACopy()
+        {
+            var settings = new CardCheckSettings { TextTemplates = new[] { new TextTemplate { Name = "one" } } };
+            var copy = settings with { DefaultProjectPath = "other" };
+
+            Assert.Throws<NotSupportedException>(() => ((IList<TextTemplate>)settings.TextTemplates).Add(new TextTemplate()));
+            Assert.Throws<NotSupportedException>(() => ((IList<TextTemplate>)settings.TextTemplates).Clear());
+            Assert.Throws<NotSupportedException>(() => ((IList<TextTemplate>)copy.TextTemplates)[0] = new TextTemplate());
+            Assert.False(settings.TextTemplates is List<TextTemplate>);
+            Assert.False(settings.TextTemplates is TextTemplate[]);
+            Assert.Single(settings.TextTemplates);
+        }
+
+        [Fact]
+        public void Settings_ANullListBecomesAnEmptyOne()
+        {
+            Assert.Empty(new CardCheckSettings { TextTemplates = null! }.TextTemplates);
+        }
+
+        [Fact]
+        public void Load_TheTemplatesOfALoadedFile_CannotBeChangedEither()
+        {
+            Store().Save(Sample());
+
+            var loaded = Store().Load().Settings;
+
+            Assert.Throws<NotSupportedException>(() => ((IList<TextTemplate>)loaded.TextTemplates).Clear());
+            Assert.Equal(2, loaded.TextTemplates.Count);
+        }
+
+        [Fact]
+        public void Save_SettingsThatWouldMakeAFileLargerThanLoadAccepts_AreRefused_AndTheOldFileStays()
+        {
+            var store = Store();
+            store.Save(Sample());
+            var before = File.ReadAllBytes(FilePath);
+
+            var result = store.Save(new CardCheckSettings { TextTemplates = new[] { new TextTemplate { Name = "huge", Content = new string('x', 1024 * 1024) } } });
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(FailureKind.InvalidInput, result.Failure!.Kind);
+            Assert.Equal("settings.save.tooLarge", result.Failure.Code);
+            Assert.Equal(before, File.ReadAllBytes(FilePath));
+            Assert.Empty(LeftoverFiles());
+        }
+
+        [Fact]
+        public void Save_TheSizeLimit_IsTheSameAsLoadsToTheByte_EverySuccessfulSaveCanBeLoaded()
+        {
+            var store = Store();
+            Assert.True(store.Save(new CardCheckSettings { TextTemplates = new[] { new TextTemplate { Name = "pad", Content = string.Empty } } }).IsSuccess);
+            var baseLength = new FileInfo(FilePath).Length;
+            var padding = (int)(SettingsStore.MaxFileBytes - baseLength);
+
+            var atTheLimit = store.Save(new CardCheckSettings { TextTemplates = new[] { new TextTemplate { Name = "pad", Content = new string('x', padding) } } });
+            var lengthAtLimit = new FileInfo(FilePath).Length;
+            var loaded = store.Load();
+            var oneOver = store.Save(new CardCheckSettings { TextTemplates = new[] { new TextTemplate { Name = "pad", Content = new string('x', padding + 1) } } });
+
+            Assert.True(atTheLimit.IsSuccess);
+            Assert.Equal(SettingsStore.MaxFileBytes, lengthAtLimit);
+            Assert.Equal(SettingsLoadStatus.Loaded, loaded.Status);
+            Assert.False(oneOver.IsSuccess);
+            Assert.Equal("settings.save.tooLarge", oneOver.Failure!.Code);
+            Assert.Equal(SettingsLoadStatus.Loaded, store.Load().Status);
+        }
+
+        [Fact]
         public void Defaults_AreEmptyExceptTheTableAndTheLanguage()
         {
             var defaults = new CardCheckSettings();

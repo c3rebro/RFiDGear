@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RFiDGear.ExtensionLibraries.CardCheck
 {
@@ -14,7 +15,10 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         {
             Verdict = verdict;
             Memory = memory ?? throw new ArgumentNullException(nameof(memory));
-            Available = available ?? throw new ArgumentNullException(nameof(available));
+
+            // A copy in a read-only wrapper: neither the caller's list nor the one handed out can be used to change
+            // which templates fit after the selection was made.
+            Available = Array.AsReadOnly((available ?? throw new ArgumentNullException(nameof(available))).ToArray());
             Default = defaultTemplate;
         }
 

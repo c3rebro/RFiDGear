@@ -81,8 +81,18 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         /// <summary>The folder the report picker opened last.</summary>
         public string LastReportFolder { get; init; } = string.Empty;
 
-        /// <summary>The text blocks for the report notes, in the order they are shown.</summary>
-        public IReadOnlyList<TextTemplate> TextTemplates { get; init; } = Array.Empty<TextTemplate>();
+        /// <summary>
+        /// The text blocks for the report notes, in the order they are shown. The list that is assigned is copied, so
+        /// changing it afterwards changes nothing here, and the list handed out cannot be changed either: an instance
+        /// of this type never changes, and neither does any copy made with <c>with</c>.
+        /// </summary>
+        public IReadOnlyList<TextTemplate> TextTemplates
+        {
+            get => _textTemplates;
+            init => _textTemplates = value == null ? Array.Empty<TextTemplate>() : Array.AsReadOnly(System.Linq.Enumerable.ToArray(value));
+        }
+
+        private readonly IReadOnlyList<TextTemplate> _textTemplates = Array.Empty<TextTemplate>();
 
         /// <summary>The import of the old assistant's settings, once it was done; otherwise <c>null</c>.</summary>
         public LegacyImportMarker? LegacyImport { get; init; }

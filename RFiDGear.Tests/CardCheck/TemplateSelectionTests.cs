@@ -65,6 +65,30 @@ namespace RFiDGear.Tests.CardCheck
         }
 
         [Fact]
+        public void Select_TheListOfAvailableTemplates_CannotBeChangedByAnyoneAfterwards()
+        {
+            var selection = TemplateRules.Select(Analysis(true, true, "1760"));
+            var before = selection.Available.Select(t => t.Name).ToArray();
+
+            Assert.Throws<NotSupportedException>(() => ((IList<LsmTemplate>)selection.Available).Clear());
+            Assert.Throws<NotSupportedException>(() => ((IList<LsmTemplate>)selection.Available).Add(LsmTemplateCatalog.All[0]));
+            Assert.False(selection.Available is List<LsmTemplate>);
+            Assert.False(selection.Available is LsmTemplate[]);
+            Assert.Equal(before, selection.Available.Select(t => t.Name));
+        }
+
+        [Fact]
+        public void Select_ChangingTheListThatWasPassedIn_ChangesNothing()
+        {
+            var passedIn = new List<LsmTemplate> { LsmTemplateCatalog.All[0] };
+            var selection = new TemplateSelection(ChipVerdict.Programmable, new FreeMemory(MemoryKind.Desfire, 1760), passedIn, null);
+
+            passedIn.Clear();
+
+            Assert.Single(selection.Available);
+        }
+
+        [Fact]
         public void Select_ThePreselectedTemplate_IsOneOfTheAvailableOnes()
         {
             foreach (var bytes in new[] { 225, 352, 1760, 3232, 7168, 20000 })

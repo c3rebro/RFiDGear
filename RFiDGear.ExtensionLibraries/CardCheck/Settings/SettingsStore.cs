@@ -114,6 +114,13 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
                     var bytes = JsonSerializer.SerializeToUtf8Bytes(new SettingsFile { SchemaVersion = CurrentSchema, Settings = Normalize(settings) }, Options);
 
+                    // Load sets a bigger file aside as damaged, so a save must never produce one: every successful save
+                    // can be loaded again.
+                    if (bytes.LongLength > MaxFileBytes)
+                    {
+                        return Result.Fail(new Failure(FailureKind.InvalidInput, "settings.save.tooLarge", "The settings are too large to be saved."));
+                    }
+
                     Directory.CreateDirectory(_folder);
                     temp = Path.Combine(_folder, FileName + ".tmp-" + Guid.NewGuid().ToString("N"));
                     File.WriteAllBytes(temp, bytes);
