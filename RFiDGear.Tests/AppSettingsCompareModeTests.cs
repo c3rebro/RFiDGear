@@ -181,17 +181,72 @@ namespace RFiDGear.Tests
             });
         }
 
-        private static MifareDesfireSetupViewModel CreateCheckAppConfigViewModel(DesfireAppSettingsCompareMode mode, int tickedFlags)
+        // The upper nibble is the change-key policy: 0x00 master key, 0xE0 same key, 0xF0 frozen.
+        [Theory]
+        [InlineData(AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo, "1", 0x0B, 0xEB, ERROR.NoError)]
+        [InlineData(AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo, "1", 0x0B, 0x0B, ERROR.IsNotTrue)]
+        [InlineData(AccessCondition_MifareDesfireAppCreation.ChangeKeyFrozen, "1", 0x0B, 0xFB, ERROR.NoError)]
+        [InlineData(AccessCondition_MifareDesfireAppCreation.ChangeKeyFrozen, "1", 0x0B, 0xEB, ERROR.IsNotTrue)]
+        [InlineData(AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK, "1", 0x0B, 0x0B, ERROR.NoError)]
+        [InlineData(AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo, "0", 0x0B, 0x0B, ERROR.NoError)]
+        public async Task TheExactComparison_IncludesTheChangeKeyPolicy(
+            AccessCondition_MifareDesfireAppCreation policy,
+            string appNumber,
+            int tickedFlags,
+            int actualKeySettings,
+            ERROR expected)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // The PICC (application 0) has no change-key policy, so what is chosen is not part of its comparison.
+                var viewModel = CreateCheckAppConfigViewModel(DesfireAppSettingsCompareMode.Exact, tickedFlags, policy, appNumber);
+                var fakeProvider = new FakeAppSettingsProvider { KeySettings = (byte)actualKeySettings };
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    await viewModel.ReadAppSettingsCommand();
+                }
+
+                Assert.Equal(expected, viewModel.CurrentTaskErrorLevel);
+                Assert.Equal(1, fakeProvider.AppSettingsCalls);
+            });
+        }
+
+        [Theory]
+        [InlineData(DesfireAppSettingsCompareMode.AllSelected)]
+        [InlineData(DesfireAppSettingsCompareMode.AnySelected)]
+        public async Task AllAndAny_LeaveThePolicyOut(DesfireAppSettingsCompareMode mode)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // The policy that is chosen (same key) is not the one the card has (frozen); neither mode looks at it.
+                var viewModel = CreateCheckAppConfigViewModel(mode, 0x0B, AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingKeyNo);
+                var fakeProvider = new FakeAppSettingsProvider { KeySettings = 0xFB };
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    await viewModel.ReadAppSettingsCommand();
+                }
+
+                Assert.Equal(ERROR.NoError, viewModel.CurrentTaskErrorLevel);
+            });
+        }
+
+        private static MifareDesfireSetupViewModel CreateCheckAppConfigViewModel(
+            DesfireAppSettingsCompareMode mode,
+            int tickedFlags,
+            AccessCondition_MifareDesfireAppCreation policy = AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK,
+            string appNumber = "1")
         {
             return new MifareDesfireSetupViewModel
             {
                 SelectedTaskType = TaskType_MifareDesfireTask.ReadAppSettings,
                 AppSettingsCompareMode = mode,
-                AppNumberCurrent = "1",
+                AppNumberCurrent = appNumber,
                 DesfireAppKeyCurrent = "00000000000000000000000000000000",
                 SelectedDesfireAppKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_AES,
                 SelectedDesfireAppKeyNumberCurrent = "0",
-                SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK,
+                SelectedDesfireAppKeySettingsCreateNewApp = policy,
                 IsAllowChangeMKChecked = (tickedFlags & 0x01) != 0,
                 IsAllowListingWithoutMKChecked = (tickedFlags & 0x02) != 0,
                 IsAllowCreateDelWithoutMKChecked = (tickedFlags & 0x04) != 0,

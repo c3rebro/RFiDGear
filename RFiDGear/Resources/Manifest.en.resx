@@ -1792,4 +1792,7 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="textBoxStatusNoKeySettingFlagSelected" xml:space="preserve">
     <value>Nothing to compare: tick at least one key setting, or choose &quot;Exact match&quot;.</value>
   </data>
+  <data name="labelExpectedChangeKeyPolicy" xml:space="preserve">
+    <value>Change-key policy (expected)</value>
+  </data>
 </root>

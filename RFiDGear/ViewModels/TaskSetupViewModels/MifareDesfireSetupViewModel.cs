@@ -855,6 +855,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowPiccMasterKeyCurrentSection));
                 OnPropertyChanged(nameof(ShowPiccMasterKeySettingsEditButton));
                 OnPropertyChanged(nameof(ShowAppSettingsCheckModeSelector));
+                OnPropertyChanged(nameof(ShowExpectedKeyPolicySelector));
                 OnPropertyChanged(nameof(ShowAppLevelCurrentPanel));
                 OnPropertyChanged(nameof(ShowAppKeyCountCheckInputs));
                 OnPropertyChanged(nameof(ShowPiccMasterKeyAuthoringSection));
@@ -1005,6 +1006,15 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public bool ShowAppSettingsCheckModeSelector => SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings;
 
         /// <summary>
+        /// Gets a value indicating whether the expected change-key policy should be chosen. Only the exact comparison
+        /// looks at it: the upper nibble of the key-settings byte is a policy, not a set of bits, so "all" and "any" of the
+        /// ticked settings leave it out.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowExpectedKeyPolicySelector =>
+            ShowAppSettingsCheckModeSelector && AppSettingsCompareMode == DesfireAppSettingsCompareMode.Exact;
+
+        /// <summary>
         /// Gets a value indicating whether the app-level current-key panel should be shown.
         /// True for both <see cref="TaskType_MifareDesfireTask.ReadAppSettings"/> and
         /// <see cref="TaskType_MifareDesfireTask.CheckAppKeyCount"/>.
@@ -1040,6 +1050,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(IsCompareModeAny));
                 OnPropertyChanged(nameof(IsCompareModeExact));
                 OnPropertyChanged(nameof(IsAppSettingsExactMatch));
+                OnPropertyChanged(nameof(ShowExpectedKeyPolicySelector));
             }
         }
         private DesfireAppSettingsCompareMode appSettingsCompareMode = DesfireAppSettingsCompareMode.AllSelected;
@@ -3984,13 +3995,17 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        /// Builds the key-settings byte the task expects: the four ticked flags and the change-key policy chosen for
-        /// new applications. Only the exact comparison looks at the policy.
+        /// Builds the key-settings byte the task expects: the four ticked flags and the chosen change-key policy. Only the
+        /// exact comparison looks at the policy. The PICC (application 0) has none, so it is always "master key" there.
         /// </summary>
         /// <returns>The expected byte.</returns>
         private byte BuildExpectedAppKeySettings()
         {
-            var keySettings = (byte)SelectedDesfireAppKeySettingsCreateNewApp;
+            var policy = AppNumberCurrentAsInt == 0
+                ? DESFireKeySettings.ChangeKeyWithMasterKey
+                : (DESFireKeySettings)((DESFireKeySettings)SelectedDesfireAppKeySettingsCreateNewApp & DESFireKeySettings.ChangeKeyFrozen);
+
+            var keySettings = (byte)policy;
 
             keySettings |= IsAllowChangeMKChecked ? (byte)0x01 : (byte)0;
             keySettings |= IsAllowListingWithoutMKChecked ? (byte)0x02 : (byte)0;

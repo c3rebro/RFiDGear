@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:dal="clr-namespace:RFiDGear.Infrastructure"
+    xmlns:access="clr-namespace:RFiDGear.Infrastructure.AccessControl"
     xmlns:local="clr-namespace:RFiDGear"
     
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -248,6 +249,22 @@
                                 Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelAppSettingsCompareExact'}"
                                 Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
                                 IsChecked="{Binding IsCompareModeExact, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                            <StackPanel
+                                x:Name="ExpectedKeyPolicyPanel"
+                                Margin="0,8,0,0"
+                                Visibility="{Binding ShowExpectedKeyPolicySelector, Converter={StaticResource BoolToVisConv}}">
+                                <Label
+                                    Padding="0,0,0,2"
+                                    Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelExpectedChangeKeyPolicy'}" />
+                                <ComboBox
+                                    x:Name="ExpectedKeyPolicyComboBox"
+                                    Height="26"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalContentAlignment="Center"
+                                    HorizontalContentAlignment="Left"
+                                    ItemsSource="{dal:Enumerate {x:Type access:AccessCondition_MifareDesfireAppCreation}}"
+                                    SelectedItem="{Binding SelectedDesfireAppKeySettingsCreateNewApp, Converter={StaticResource Localization}, ConverterParameter={x:Type access:AccessCondition_MifareDesfireAppCreation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                            </StackPanel>
                         </StackPanel>
                     </GroupBox>
                     <Button

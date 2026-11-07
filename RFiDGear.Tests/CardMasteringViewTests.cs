@@ -1,3 +1,4 @@
+using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Tests.CardCheckAssistant;
 using RFiDGear.ViewModel.TaskSetupViewModels;
@@ -62,11 +63,14 @@ namespace RFiDGear.Tests
                 }
 
                 var modes = LogicalDescendants(view).OfType<RadioButton>().ToList();
-                Assert.True(modes.Count >= 2, "the comparison modes are missing");
+                Assert.Equal(3, modes.Count);
                 foreach (var mode in modes)
                 {
                     AssertUsable(mode, "comparison mode " + BindingPath(mode, ToggleButton.IsCheckedProperty));
                 }
+
+                // "All selected" has always been the behaviour of a task that never chose.
+                Assert.True(One<RadioButton>(view, ToggleButton.IsCheckedProperty, "IsCompareModeAll").IsChecked);
 
                 AssertUsable(One<Button>(view, ButtonBase.CommandProperty, "ReadAppSettingsRelayCommand"), "the compare button");
             });
@@ -114,6 +118,48 @@ namespace RFiDGear.Tests
                 Assert.All(LogicalDescendants(view).OfType<RadioButton>(), mode => Assert.False(mode.IsVisible));
                 Assert.False(One<Button>(view, ButtonBase.CommandProperty, "ReadAppSettingsRelayCommand").IsVisible);
                 Assert.False(One<Button>(view, ButtonBase.CommandProperty, "CheckAppKeyCountRelayCommand").IsVisible);
+            });
+        }
+
+        [Theory]
+        [InlineData(DesfireAppSettingsCompareMode.AllSelected, false)]
+        [InlineData(DesfireAppSettingsCompareMode.AnySelected, false)]
+        [InlineData(DesfireAppSettingsCompareMode.Exact, true)]
+        public async Task CheckAppConfig_ShowsTheExpectedPolicyOnlyForTheExactMode(DesfireAppSettingsCompareMode mode, bool shown)
+        {
+            // The upper nibble of the byte is a policy, not a set of bits, so only the exact comparison needs it.
+            await InspectAsync(TaskType_MifareDesfireTask.ReadAppSettings, false, (view, viewModel) =>
+            {
+                var policy = One<ComboBox>(view, Selector.SelectedItemProperty, nameof(MifareDesfireSetupViewModel.SelectedDesfireAppKeySettingsCreateNewApp));
+                Assert.False(policy.IsVisible, "the policy is shown before a mode is chosen");
+
+                viewModel.AppSettingsCompareMode = mode;
+                view.UpdateLayout();
+
+                if (shown)
+                {
+                    AssertUsable(policy, "the expected change-key policy");
+                }
+                else
+                {
+                    Assert.False(policy.IsVisible);
+                }
+            });
+        }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover)]
+        [InlineData(TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover)]
+        [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount)]
+        public async Task OtherTasks_NeverShowTheExpectedPolicy(TaskType_MifareDesfireTask taskType)
+        {
+            await InspectAsync(taskType, false, (view, viewModel) =>
+            {
+                // A mode saved by a Check: App Config task on a task that has no comparison must not bring it back.
+                viewModel.AppSettingsCompareMode = DesfireAppSettingsCompareMode.Exact;
+                view.UpdateLayout();
+
+                Assert.False(One<ComboBox>(view, Selector.SelectedItemProperty, nameof(MifareDesfireSetupViewModel.SelectedDesfireAppKeySettingsCreateNewApp)).IsVisible);
             });
         }
 
@@ -167,7 +213,13 @@ namespace RFiDGear.Tests
             "IsAllowConfigChangableChecked",
         };
 
-        private static async Task InspectAsync(TaskType_MifareDesfireTask taskType, bool selectTypeAfterRender, Action<FrameworkElement> inspect)
+        private static Task InspectAsync(TaskType_MifareDesfireTask taskType, bool selectTypeAfterRender, Action<FrameworkElement> inspect) =>
+            InspectAsync(taskType, selectTypeAfterRender, (view, viewModel) => inspect(view));
+
+        private static async Task InspectAsync(
+            TaskType_MifareDesfireTask taskType,
+            bool selectTypeAfterRender,
+            Action<FrameworkElement, MifareDesfireSetupViewModel> inspect)
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
@@ -191,7 +243,7 @@ namespace RFiDGear.Tests
                     await Flush();
                     window.UpdateLayout();
 
-                    inspect(view);
+                    inspect(view, viewModel);
                 }
                 finally
                 {
