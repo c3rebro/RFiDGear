@@ -74,6 +74,12 @@ in the Extensions menu of the main window.
   `RFIDGEAR_CARDCHECK_APPDATA` moves the settings folder and the search for
   the old files to another folder; the test run sets it to a temporary one, so
   no test reads or writes the settings of whoever runs it.
+- The settings window sits behind a third seam, `IAssistantSettingsEditor`
+  (read, save, test the order database). `SettingsViewModel` works on a draft
+  and saves with the data as loaded and as edited, so only the values the
+  operator changed are written and another window's changes to other values
+  survive. A structural error stops the save; a folder or project that does
+  not exist is only a warning.
 - It does not set `Uri` in `[UiExtension]`: a `Uri` makes the host open that
   page and never ask the class for content.
 - The exported class holds no state. Everything that belongs to one window
