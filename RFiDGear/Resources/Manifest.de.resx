@@ -1862,4 +1862,16 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="textBoxStatusInvalidApplicationId" xml:space="preserve">
     <value>{0}: Die App-ID ist ungültig; es wurde nichts gelesen.</value>
   </data>
+  <data name="textBoxStatusFileSettingsUnsupportedFileType" xml:space="preserve">
+    <value>{0}: Nur Standard- und Backup-Datendateien können geprüft werden; Wert- und Record-Dateien werden noch nicht unterstützt. Es wurde nichts gelesen.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsInvalidInput" xml:space="preserve">
+    <value>{0}: App, Datei, Größe, Schlüssel oder Kommunikationsmodus sind ungültig. Es wurde nichts gelesen.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsCompared" xml:space="preserve">
+    <value>{0}: Einstellungen von Datei {2} in App {1} verglichen → {3}</value>
+  </data>
+  <data name="textBoxStatusFileSettingsUnreadable" xml:space="preserve">
+    <value>{0}: Die Einstellungen von Datei {2} in App {1} konnten nicht vollständig gelesen werden: {3}</value>
+  </data>
 </root>

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace RFiDGear.Tests
 {
     /// <summary>A reader that answers the application settings it is told to, and counts how often it was asked.</summary>
-    internal sealed class FakeAppSettingsProvider : ElatecNetProvider
+    internal class FakeAppSettingsProvider : ElatecNetProvider
     {
         /// <summary>Gets or sets the key-settings byte the card reports.</summary>
         public byte KeySettings { get; set; }

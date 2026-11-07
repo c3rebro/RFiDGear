@@ -1840,4 +1840,16 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="textBoxStatusInvalidApplicationId" xml:space="preserve">
     <value>{0}: The application id is not valid; nothing was read.</value>
   </data>
+  <data name="textBoxStatusFileSettingsUnsupportedFileType" xml:space="preserve">
+    <value>{0}: Only standard and backup data files can be checked; value and record files are not supported yet. Nothing was read.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsInvalidInput" xml:space="preserve">
+    <value>{0}: The application, file, size, key or communication mode is not valid. Nothing was read.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsCompared" xml:space="preserve">
+    <value>{0}: Settings of file {2} in App {1} compared → {3}</value>
+  </data>
+  <data name="textBoxStatusFileSettingsUnreadable" xml:space="preserve">
+    <value>{0}: The settings of file {2} in App {1} could not be read completely: {3}</value>
+  </data>
 </root>

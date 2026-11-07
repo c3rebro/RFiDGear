@@ -975,7 +975,9 @@ namespace RFiDGear.Tests
                     Assert.Equal(1, fakeProvider.GetFileSettingsCalls);
                     Assert.Equal(expectedSuccess ? ERROR.NoError : ERROR.IsNotTrue, viewModel.CurrentTaskErrorLevel);
                     Assert.Equal(expectedSuccess, viewModel.LastFileSettingsComparison.Matches);
-                    Assert.Contains(expectedSuccess ? "PASS" : "FAIL", viewModel.StatusText);
+                    Assert.Contains(
+                        "→ " + ResourceLoader.GetResource(expectedSuccess ? "textBoxStatusComparePass" : "textBoxStatusCompareFail") + "\n",
+                        viewModel.StatusText);
                 }
                 finally
                 {

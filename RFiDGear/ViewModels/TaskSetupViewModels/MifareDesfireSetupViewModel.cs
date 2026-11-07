@@ -3936,12 +3936,33 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public IAsyncRelayCommand CheckFileSettingsRelayCommand => new AsyncRelayCommand(CheckFileSettingsCommand);
 
         /// <summary>
-        /// Authenticates to an application, reads one file's settings, and compares every configured value.
+        /// Authenticates to an application, reads the settings of one file, and compares every configured value. The task
+        /// is strictly read-only and makes one attempt: it never retries, and it only asks for the settings when the
+        /// authentication it did first succeeded, because the reader providers swallow an authentication failure inside
+        /// the settings call and would otherwise return unauthenticated settings. A configuration that cannot be checked
+        /// is refused before the reader is touched.
         /// </summary>
+        /// <returns>
+        /// A task that completes when the check has finished. The result is left in <see cref="CurrentTaskErrorLevel"/>:
+        /// <see cref="ERROR.NoError"/> for a complete match, <see cref="ERROR.IsNotTrue"/> for a complete read with any
+        /// difference, <see cref="ERROR.ProtocolConstraint"/> for a configuration that is invalid or not supported,
+        /// <see cref="ERROR.TransportError"/> when there is no reader or what was read cannot be compared, or the error of
+        /// the failed authentication or read. The settings side by side are left in
+        /// <see cref="LastFileSettingsComparison"/>.
+        /// </returns>
         public async Task CheckFileSettingsCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
             LastFileSettingsComparison = null;
+
+            var configurationProblem = GetFileSettingsCheckConfigurationProblem();
+            if (configurationProblem != null)
+            {
+                CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
+                StatusText = LocalizedStatusLine(configurationProblem, DateTime.Now);
+                await FinalizeTaskAsync();
+                return;
+            }
 
             using (var device = ReaderDevice.Instance)
             {
@@ -3954,14 +3975,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
-                if (!HasValidFileSettingsCheckInput())
-                {
-                    CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
-                    StatusText += string.Format("{0}: Invalid file-settings verification input.\n", DateTime.Now);
-                    await FinalizeTaskAsync();
-                    return;
-                }
-
                 var result = await device.AuthToMifareDesfireApplication(
                     DesfireAppKeyCurrent,
                     SelectedDesfireAppKeyEncryptionTypeCurrent,
@@ -3970,6 +3983,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 if (result == ERROR.NoError)
                 {
+                    // A provider keeps the settings of its last read. Forget them, so that a read that fails without
+                    // saying so cannot be reported as the settings of this file.
+                    device.DesfireFileSettings = null;
+
                     result = await device.GetMifareDesfireFileSettings(
                         DesfireAppKeyCurrent,
                         SelectedDesfireAppKeyEncryptionTypeCurrent,
@@ -3978,24 +3995,27 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         FileNumberCurrentAsInt);
                 }
 
-                if (result == ERROR.NoError && device.DesfireFileSettings != null)
-                {
-                    LastFileSettingsComparison = BuildFileSettingsComparison(device.DesfireFileSettings);
-                    LogFileSettingsComparison(LastFileSettingsComparison);
+                var check = result == ERROR.NoError && device.DesfireFileSettings != null
+                    ? DesfireFileSettingsChecker.Compare(BuildFileSettingsExpectation(), device.DesfireFileSettings)
+                    : new DesfireFileSettingsCheckResult(result == ERROR.NoError ? ERROR.TransportError : result, null);
 
-                    CurrentTaskErrorLevel = LastFileSettingsComparison.Matches ? ERROR.NoError : ERROR.IsNotTrue;
-                    StatusText += string.Format(
-                        "{0}: File settings for App {1}, File {2}: {3}.\n",
+                LastFileSettingsComparison = check.Comparison;
+                CurrentTaskErrorLevel = check.ErrorLevel;
+
+                if (check.Comparison != null)
+                {
+                    LogFileSettingsComparison(check.Comparison);
+                    StatusText += LocalizedStatusLine(
+                        "textBoxStatusFileSettingsCompared",
                         DateTime.Now,
                         AppNumberCurrentAsInt,
                         FileNumberCurrentAsInt,
-                        LastFileSettingsComparison.Matches ? "PASS" : "FAIL");
+                        DescribeCompareResult(check.Comparison.Matches));
                 }
                 else
                 {
-                    CurrentTaskErrorLevel = result == ERROR.NoError ? ERROR.TransportError : result;
-                    StatusText += string.Format(
-                        "{0}: Unable to read settings for App {1}, File {2}: {3}.\n",
+                    StatusText += LocalizedStatusLine(
+                        "textBoxStatusFileSettingsUnreadable",
                         DateTime.Now,
                         AppNumberCurrentAsInt,
                         FileNumberCurrentAsInt,
@@ -4007,54 +4027,51 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        /// Validates every input needed for a read-only file-settings comparison.
+        /// Tells what keeps the file-settings check from running with the current configuration. A flag of a field is
+        /// tri-state: a task that was just created in the dialog holds valid defaults (file number 0, size 16) whose flags
+        /// are still <see langword="null"/>, "not yet validated", so only an explicit <see langword="false"/> marks a field
+        /// as invalid.
         /// </summary>
-        private bool HasValidFileSettingsCheckInput()
+        /// <returns>The resource key of the status text that names the problem, or <see langword="null"/> when there is none.</returns>
+        private string GetFileSettingsCheckConfigurationProblem()
         {
-            return IsValidAppNumberCurrent == true &&
-                   AppNumberCurrentAsInt > 0 &&
-                   IsValidFileNumberCurrent == true &&
-                   IsValidFileSizeCurrent == true &&
-                   FileSizeCurrentAsInt >= 0 &&
-                   selectedDesfireAppKeyNumberCurrentAsInt >= 0 &&
-                   selectedDesfireAppKeyNumberCurrentAsInt <= 13 &&
-                   CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(
-                       DesfireAppKeyCurrent,
-                       SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR;
+            if (!DesfireFileSettingsChecker.IsSupportedFileType(SelectedDesfireFileType))
+            {
+                return "textBoxStatusFileSettingsUnsupportedFileType";
+            }
+
+            var configurationIsValid =
+                IsValidAppNumberCurrent != false &&
+                AppNumberCurrentAsInt > 0 &&
+                IsValidFileNumberCurrent != false &&
+                IsValidFileSizeCurrent != false &&
+                FileSizeCurrentAsInt > 0 &&
+                selectedDesfireAppKeyNumberCurrentAsInt >= 0 &&
+                selectedDesfireAppKeyNumberCurrentAsInt <= 13 &&
+                SelectedDesfireFileCryptoMode != EncryptionMode.CM_UNKNOWN &&
+                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(
+                    DesfireAppKeyCurrent,
+                    SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR;
+
+            return configurationIsValid ? null : "textBoxStatusFileSettingsInvalidInput";
         }
 
         /// <summary>
-        /// Creates a key-free expected/actual snapshot from settings returned by the active provider.
+        /// Collects the settings the task expects the file to have.
         /// </summary>
-        private DesfireFileSettingsComparison BuildFileSettingsComparison(DESFireFileSettings actual)
+        /// <returns>The expected settings.</returns>
+        private DesfireFileSettingsExpectation BuildFileSettingsExpectation()
         {
-            var actualRights0 = actual.accessRights != null && actual.accessRights.Length > 0 ? actual.accessRights[0] : -1;
-            var actualRights1 = actual.accessRights != null && actual.accessRights.Length > 1 ? actual.accessRights[1] : -1;
-            var comparison = new DesfireFileSettingsComparison
-            {
-                ApplicationId = AppNumberCurrentAsInt,
-                FileNumber = FileNumberCurrentAsInt,
-                ExpectedFileType = (int)SelectedDesfireFileType,
-                ActualFileType = actual.FileType,
-                ExpectedFileSize = FileSizeCurrentAsInt,
-                ActualFileSize = actual.dataFile.fileSize,
-                ExpectedCommunicationMode = (int)SelectedDesfireFileCryptoMode,
-                ActualCommunicationMode = actual.comSett,
-                ExpectedAccessRights0 = (int)SelectedDesfireFileAccessRightRead |
-                                        ((int)SelectedDesfireFileAccessRightWrite << 4),
-                ActualAccessRights0 = actualRights0,
-                ExpectedAccessRights1 = (int)SelectedDesfireFileAccessRightReadWrite |
-                                        ((int)SelectedDesfireFileAccessRightChange << 4),
-                ActualAccessRights1 = actualRights1
-            };
-
-            comparison.Matches =
-                comparison.ExpectedFileType == comparison.ActualFileType &&
-                comparison.ExpectedFileSize == comparison.ActualFileSize &&
-                comparison.ExpectedCommunicationMode == comparison.ActualCommunicationMode &&
-                comparison.ExpectedAccessRights0 == comparison.ActualAccessRights0 &&
-                comparison.ExpectedAccessRights1 == comparison.ActualAccessRights1;
-            return comparison;
+            return new DesfireFileSettingsExpectation(
+                AppNumberCurrentAsInt,
+                FileNumberCurrentAsInt,
+                SelectedDesfireFileType,
+                FileSizeCurrentAsInt,
+                SelectedDesfireFileCryptoMode,
+                SelectedDesfireFileAccessRightRead,
+                SelectedDesfireFileAccessRightWrite,
+                SelectedDesfireFileAccessRightReadWrite,
+                SelectedDesfireFileAccessRightChange);
         }
 
         /// <summary>
