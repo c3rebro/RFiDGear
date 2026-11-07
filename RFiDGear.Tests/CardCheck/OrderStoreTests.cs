@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Globalization;
@@ -53,11 +55,32 @@ namespace RFiDGear.Tests.CardCheck
 
             public int Created { get; private set; }
 
+            // The isolation level of every transaction the store began, in order.
+            public List<IsolationLevel> Isolation { get; } = new List<IsolationLevel>();
+
             public DbConnection Create()
             {
                 Created++;
 
-                return new SqliteConnection(_connectionString);
+                return new RecordingConnection(_connectionString, Isolation.Add);
+            }
+        }
+
+        private sealed class RecordingConnection : SqliteConnection
+        {
+            private readonly Action<IsolationLevel> _record;
+
+            public RecordingConnection(string connectionString, Action<IsolationLevel> record)
+                : base(connectionString)
+            {
+                _record = record;
+            }
+
+            protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
+            {
+                _record(isolationLevel);
+
+                return base.BeginDbTransaction(isolationLevel);
             }
         }
 
@@ -191,6 +214,33 @@ namespace RFiDGear.Tests.CardCheck
             Assert.Equal("InProgress", Value("A", "CC-Status"));
             Assert.Null(Value("A", "CC-ReportBase64"));
             Assert.Equal("old date", Value("A", "CC-ChangedDate"));
+        }
+
+        [Fact]
+        public async Task AnEmptyReport_IsRefused_AndWritesNothing()
+        {
+            Insert("A", status: "InProgress");
+            var store = Store();
+
+            Assert.Equal("orders.report.empty", (await store.FinalizeAsync("A", Array.Empty<byte>(), CancellationToken.None)).Failure!.Code);
+            Assert.Equal("orders.report.empty", (await store.ReplaceReportAsync("A", Array.Empty<byte>(), CancellationToken.None)).Failure!.Code);
+            Assert.Equal("InProgress", Value("A", "CC-Status"));
+            Assert.Null(Value("A", "CC-ReportBase64"));
+        }
+
+        [Fact]
+        public async Task EveryWrite_RunsSerializable_SoTheExistenceCheckHoldsUntilTheCommit()
+        {
+            Insert("A", status: "InProgress");
+            var factory = new SqliteFactory(Connection);
+            var store = Store(factory);
+
+            await store.FinalizeAsync("A", Pdf("x"), CancellationToken.None);
+            await store.ReplaceReportAsync("A", Pdf("y"), CancellationToken.None);
+            await store.TouchChangedDateAsync("A", CancellationToken.None);
+
+            Assert.Equal(3, factory.Isolation.Count);
+            Assert.All(factory.Isolation, level => Assert.Equal(IsolationLevel.Serializable, level));
         }
 
         [Fact]

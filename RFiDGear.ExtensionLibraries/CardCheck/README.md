@@ -29,8 +29,12 @@ rest follows one change at a time, each with its own tests.
   query of its own, because the row count of an `UPDATE` is not reliable on a
   table with triggers), then the report, the status and the date are written.
   If any step fails nothing is kept, so an order is never marked finished
-  without its report. The old assistant wrote the three in separate calls and
-  went on whatever happened.
+  without its report. The transaction is serializable, so the existence check
+  still holds when the updates run: at the default level the order system
+  could delete the row in between and the updates would succeed on nothing.
+  An empty report is refused (it would read back as "no report" on a finished
+  order). The old assistant wrote the three in separate calls and went on
+  whatever happened.
 - Values are parameters, never part of the SQL text. The table name from the
   settings is read as up to three parts (bare words or `[bracketed]`) and
   written out with every part in brackets; anything else, such as `;` or a

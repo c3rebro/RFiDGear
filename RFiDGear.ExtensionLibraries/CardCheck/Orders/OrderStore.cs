@@ -107,6 +107,11 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 throw new ArgumentNullException(nameof(report));
             }
 
+            if (report.Length == 0)
+            {
+                return Task.FromResult(Result.Fail(EmptyReport()));
+            }
+
             return WriteAsync("orders.replace", orderId, cancellationToken, sql => new[] { Update.ForReport(sql, report) });
         }
 
@@ -116,6 +121,12 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             if (report == null)
             {
                 throw new ArgumentNullException(nameof(report));
+            }
+
+            // An empty report would be stored and then read back as "no report", on an order marked finished.
+            if (report.Length == 0)
+            {
+                return Task.FromResult(Result.Fail(EmptyReport()));
             }
 
             // The report first, then the status: an order is never marked finished while it has no report.
@@ -182,6 +193,9 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
         private static Failure MissingId() =>
             new Failure(FailureKind.InvalidInput, "orders.id.missing", "No order was given.");
+
+        private static Failure EmptyReport() =>
+            new Failure(FailureKind.InvalidInput, "orders.report.empty", "A report has no content.");
 
         private static Failure NoOrder() =>
             new Failure(FailureKind.NotFound, "orders.notFound", "There is no such order.");
@@ -268,8 +282,11 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
             var written = await RunAsync<bool>(operation, cancellationToken, async (connection, sql) =>
             {
-                // Disposing the transaction without committing rolls it back, on every path out of here.
-                await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+                // Serializable, so the shared lock of the existence check below is kept until the commit: at the
+                // default (read committed) the order system could delete the row between the check and the first
+                // update, and every update would then change nothing and still "succeed". The transaction is short.
+                // Disposing it without committing rolls it back, on every path out of here.
+                await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken).ConfigureAwait(false);
 
                 // Asked for with a query of its own: the number of rows an UPDATE reports is not reliable on a
                 // table that has triggers.
