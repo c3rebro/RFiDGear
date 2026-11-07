@@ -28,16 +28,14 @@ namespace RFiDGear.Tests.CardCheckAssistant
             private readonly List<(SettingsData Baseline, SettingsData Edited)> _saves = new List<(SettingsData, SettingsData)>();
             private readonly List<(DatabaseData Database, CancellationToken Token)> _tests = new List<(DatabaseData, CancellationToken)>();
             private int _saveStarted;
+            private TaskCompletionSource<bool>? _testGate;
+            private ManualResetEventSlim? _saveGate;
 
             public SettingsEditorLoad LoadResult { get; set; } = new SettingsEditorLoad(new SettingsData(), SettingsProblem.None);
 
             public SettingsSaveOutcome SaveResult { get; set; } = SettingsSaveOutcome.Saved;
 
             public ConnectionTestOutcome TestResult { get; set; } = ConnectionTestOutcome.Succeeded;
-
-            public TaskCompletionSource<bool>? TestGate { get; set; }
-
-            public ManualResetEventSlim? SaveGate { get; set; }
 
             public int LoadThreadId { get; private set; } = -1;
 
@@ -46,6 +44,18 @@ namespace RFiDGear.Tests.CardCheckAssistant
             public IReadOnlyList<(SettingsData Baseline, SettingsData Edited)> Saves => _saves;
 
             public IReadOnlyList<(DatabaseData Database, CancellationToken Token)> Tests => _tests;
+
+            /// <summary>Makes the next test of the connection wait until <see cref="ReleaseTest"/>.</summary>
+            public void HoldTest() => _testGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            /// <summary>Lets the held test of the connection answer.</summary>
+            public void ReleaseTest() => _testGate?.SetResult(true);
+
+            /// <summary>Makes the next save wait until <see cref="ReleaseSave"/>.</summary>
+            public void HoldSave() => _saveGate = new ManualResetEventSlim(false);
+
+            /// <summary>Lets the held save finish.</summary>
+            public void ReleaseSave() => _saveGate?.Set();
 
             public SettingsEditorLoad Load()
             {
@@ -58,7 +68,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             {
                 _saves.Add((baseline, edited));
                 Volatile.Write(ref _saveStarted, 1);
-                SaveGate?.Wait(TimeSpan.FromSeconds(10));
+                _saveGate?.Wait(TimeSpan.FromSeconds(10));
 
                 return SaveResult;
             }
@@ -66,30 +76,32 @@ namespace RFiDGear.Tests.CardCheckAssistant
             public async Task<ConnectionTestOutcome> TestConnectionAsync(DatabaseData database, CancellationToken cancellationToken)
             {
                 _tests.Add((database, cancellationToken));
-                if (TestGate != null)
+                if (_testGate != null)
                 {
-                    await TestGate.Task;
+                    await _testGate.Task;
                 }
 
                 return TestResult;
             }
 
-            public void Dispose() => SaveGate?.Dispose();
+            public void Dispose() => _saveGate?.Dispose();
         }
 
         private sealed class FakeSettingsPrompts : ISettingsPrompts
         {
             private readonly List<(string Title, string Message)> _asked = new List<(string, string)>();
-
-            public bool Answer { get; set; }
+            private bool _answer;
 
             public IReadOnlyList<(string Title, string Message)> Asked => _asked;
+
+            /// <summary>Sets what the operator answers when asked whether changes may be discarded; no until set.</summary>
+            public void WillAnswer(bool discard) => _answer = discard;
 
             public bool ConfirmDiscard(string title, string message)
             {
                 _asked.Add((title, message));
 
-                return Answer;
+                return _answer;
             }
         }
 
@@ -388,6 +400,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.Equal(rig.Strings[Keys.FixEntries], vm.SaveErrorText);
 
                 vm.TextBlocks[2].Name = " Third ";
+                Assert.Null(vm.TextBlocks[0].NameError);
+                Assert.Null(vm.TextBlocks[2].NameError);
                 vm.SelectedTextBlock = vm.TextBlocks[3];
                 vm.RemoveTextBlockCommand.Execute(null);
                 vm.DatabaseName = "orders";
@@ -470,11 +484,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.Empty(rig.Prompts.Asked);
 
                 vm.DefaultProject.Value = "other.rfPrj";
-                rig.Prompts.Answer = false;
+                rig.Prompts.WillAnswer(false);
                 Assert.False(vm.TryRequestClose());
                 Assert.Equal((rig.Strings[Keys.DiscardTitle], rig.Strings[Keys.DiscardMessage]), Assert.Single(rig.Prompts.Asked));
 
-                rig.Prompts.Answer = true;
+                rig.Prompts.WillAnswer(true);
                 Assert.True(vm.TryRequestClose());
 
                 // Putting everything back the way it was is no change.
@@ -491,11 +505,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
                 using var rig = await Rig.OpenAsync(Loaded());
-                rig.Editor.SaveGate = new ManualResetEventSlim(false);
+                rig.Editor.HoldSave();
                 rig.Vm.OneFolderPerJob = false;
 
                 // Were the operator asked, the answer would be "discard": only the save in progress can say no.
-                rig.Prompts.Answer = true;
+                rig.Prompts.WillAnswer(true);
                 var saving = rig.Vm.OkCommand.ExecuteAsync();
                 await WaitUntil(() => rig.Editor.SaveStarted, "the editor to start saving");
 
@@ -505,7 +519,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.Empty(rig.Prompts.Asked);
                 Assert.False(rig.Vm.CancelCommand.CanExecute(null));
 
-                rig.Editor.SaveGate.Set();
+                rig.Editor.ReleaseSave();
                 await saving;
 
                 Assert.False(rig.Vm.IsSaving);
@@ -552,7 +566,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
                 using var rig = await Rig.OpenAsync(Loaded());
-                rig.Editor.TestGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                rig.Editor.HoldTest();
 
                 var testing = rig.Vm.TestConnectionCommand.ExecuteAsync();
                 await WaitUntil(() => rig.Editor.Tests.Count == 1, "the editor to start the test");
@@ -565,7 +579,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.False(rig.Vm.IsTesting);
                 Assert.False(rig.Vm.HasTestResult);
 
-                rig.Editor.TestGate.SetResult(true);
+                rig.Editor.ReleaseTest();
                 await testing;
 
                 // The answer to the old values is not shown for the new ones.
@@ -580,12 +594,12 @@ namespace RFiDGear.Tests.CardCheckAssistant
             await StaTestRunner.RunOnStaThreadAsync(async () =>
             {
                 using var rig = await Rig.OpenAsync(Loaded());
-                rig.Editor.TestGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                rig.Editor.HoldTest();
                 var testing = rig.Vm.TestConnectionCommand.ExecuteAsync();
                 await WaitUntil(() => rig.Editor.Tests.Count == 1, "the editor to start the test");
 
                 rig.Vm.Dispose();
-                rig.Editor.TestGate.SetResult(true);
+                rig.Editor.ReleaseTest();
                 await testing;
 
                 Assert.True(rig.Editor.Tests[0].Token.IsCancellationRequested);
@@ -648,6 +662,22 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.Null(vm.SelectedTextBlock);
                 Assert.False(vm.RemoveTextBlockCommand.CanExecute(null));
                 Assert.False(vm.IsDirty);
+            });
+        }
+
+        [Fact]
+        public async Task ANewTextBlockIsNotNamedLikeAnExistingOne_WhateverTheCase()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var data = new SettingsData { TextBlocks = new[] { new TextBlockData("NEW TEXT BLOCK", "x") } };
+                using var rig = await Rig.OpenAsync(new SettingsEditorLoad(data, SettingsProblem.None));
+                rig.Vm.TextBlocks[0].Name = " NEW TEXT BLOCK ";
+
+                rig.Vm.AddTextBlockCommand.Execute(null);
+
+                Assert.Equal("New text block 2", rig.Vm.TextBlocks[1].Name);
+                Assert.All(rig.Vm.TextBlocks, block => Assert.Null(block.NameError));
             });
         }
 

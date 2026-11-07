@@ -107,9 +107,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             DefaultProject = new PathFieldViewModel(strings, OnDraftChanged, BrowseProject, () => InputsEnabled);
             MemoryProject = new PathFieldViewModel(strings, OnDraftChanged, BrowseProject, () => InputsEnabled);
 
-            OkCommand = new AsyncCommand(SaveAsync, () => CanSave, OnUnhandledSaveFailure);
+            OkCommand = new AsyncCommand(SaveAsync, () => CanSave, _ => SetSaveError(Keys.SaveFailed));
             CancelCommand = new DelegateCommand(Cancel, () => !_isSaving);
-            TestConnectionCommand = new AsyncCommand(TestConnectionAsync, () => InputsEnabled, OnUnhandledTestFailure);
+            TestConnectionCommand = new AsyncCommand(TestConnectionAsync, () => InputsEnabled, _ => SetTest(ConnectionTestState.Failed, Keys.TestFailed));
             AddTextBlockCommand = new DelegateCommand(AddTextBlock, () => InputsEnabled);
             RemoveTextBlockCommand = new DelegateCommand(RemoveTextBlock, () => InputsEnabled && _selectedTextBlock != null);
 
@@ -476,18 +476,27 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         private void AddTextBlock()
         {
-            var baseName = Strings[Keys.TextBlockNewName];
-            var name = baseName;
-            for (var number = 2; TextBlocks.Any(block => string.Equals(block.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)); number++)
-            {
-                name = baseName + " " + number;
-            }
-
-            var added = new TextBlockViewModel(Strings, name, string.Empty, OnTextBlockEdited);
+            var added = new TextBlockViewModel(Strings, UnusedTextBlockName(), string.Empty, OnTextBlockEdited);
             TextBlocks.Add(added);
             SelectedTextBlock = added;
             RefreshTextBlockProblems();
             OnDraftChanged();
+        }
+
+        // "New text block", then "New text block 2" and so on: the first name no other block has.
+        private string UnusedTextBlockName()
+        {
+            var baseName = Strings[Keys.TextBlockNewName];
+            var name = baseName;
+            var number = 2;
+            var used = new HashSet<string>(TextBlocks.Select(block => block.Name.Trim()), StringComparer.OrdinalIgnoreCase);
+            while (used.Contains(name))
+            {
+                name = baseName + " " + number;
+                number++;
+            }
+
+            return name;
         }
 
         private void RemoveTextBlock()
@@ -505,14 +514,22 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OnDraftChanged();
         }
 
+        // Runs on every edit of a name, so the names are counted once and each block looks its count up.
         private void RefreshTextBlockProblems()
         {
+            var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var block in TextBlocks)
+            {
+                var name = block.Name.Trim();
+                counts[name] = counts.TryGetValue(name, out var seen) ? seen + 1 : 1;
+            }
+
             foreach (var block in TextBlocks)
             {
                 var name = block.Name.Trim();
                 block.NameProblem = name.Length == 0
                     ? TextBlockNameProblem.Blank
-                    : TextBlocks.Count(other => string.Equals(other.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)) > 1
+                    : counts[name] > 1
                         ? TextBlockNameProblem.Duplicate
                         : TextBlockNameProblem.None;
             }
@@ -683,8 +700,6 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             _ => Keys.SaveFailed
         };
 
-        private void OnUnhandledSaveFailure(Exception ex) => SetSaveError(Keys.SaveFailed);
-
         private void Cancel() => CloseRequested?.Invoke(this, new CloseRequestedEventArgs(saved: false));
 
         // ── test of the connection ──
@@ -757,8 +772,6 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             ConnectionTestOutcome.DriverMissing => Keys.TestDriverMissing,
             _ => Keys.TestFailed
         };
-
-        private void OnUnhandledTestFailure(Exception ex) => SetTest(ConnectionTestState.Failed, Keys.TestFailed);
 
         // Stops a running test and forgets what it found.
         private void ResetTest()
