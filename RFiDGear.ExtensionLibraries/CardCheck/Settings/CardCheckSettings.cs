@@ -50,8 +50,11 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
     /// </summary>
     public sealed record LegacyImportMarker
     {
-        /// <summary>SHA-256 of the old settings file that was imported, in hex.</summary>
+        /// <summary>SHA-256 of the old settings file that was imported, in hex; empty if the import was declined.</summary>
         public string SourceSha256 { get; init; } = string.Empty;
+
+        /// <summary>Whether the operator chose never to import; nothing was imported then.</summary>
+        public bool Declined { get; init; }
 
         /// <summary>When it was imported (UTC).</summary>
         public DateTimeOffset ImportedAtUtc { get; init; }

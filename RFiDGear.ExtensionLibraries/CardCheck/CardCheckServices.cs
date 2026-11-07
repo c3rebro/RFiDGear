@@ -41,17 +41,38 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         /// <exception cref="System.ArgumentNullException"><paramref name="log"/> is null.</exception>
         public static IWorkflowSession CreateWorkflowSession(ICardCheckLog log) => new WorkflowSession(log);
 
+        /// <summary>
+        /// Creates the importer for the settings of the old Card Check Assistant. It looks for the old files in the
+        /// user's application data folder and merges what it imports into the given store.
+        /// </summary>
+        /// <param name="store">The settings the values are merged into.</param>
+        /// <param name="log">Where counts are noted (never a value, a path or a credential).</param>
+        /// <returns>A new importer.</returns>
+        /// <exception cref="System.InvalidOperationException">The user has no application data folder.</exception>
+        /// <exception cref="System.ArgumentNullException">An argument is null.</exception>
+        public static ILegacySettingsImporter CreateLegacyImporter(ISettingsStore store, ICardCheckLog log) =>
+            new LegacySettingsImporter(store, LocalAppData(), log);
+
+        /// <summary>Creates an importer that looks for the old files below the given application data folder.</summary>
+        /// <param name="store">The settings the values are merged into.</param>
+        /// <param name="localAppData">The folder that contains the old assistant's folders.</param>
+        /// <param name="log">Where counts are noted.</param>
+        /// <returns>A new importer.</returns>
+        /// <exception cref="System.ArgumentNullException">An argument is null.</exception>
+        public static ILegacySettingsImporter CreateLegacyImporter(ISettingsStore store, string localAppData, ICardCheckLog log) =>
+            new LegacySettingsImporter(store, localAppData, log);
+
         /// <summary>The folder of the settings file: the user's application data, then the assistant's own folder.</summary>
-        internal static string DefaultSettingsFolder()
+        internal static string DefaultSettingsFolder() =>
+            System.IO.Path.Combine(LocalAppData(), "RFiDGear", "Extensions", "CardCheckAssistant");
+
+        private static string LocalAppData()
         {
             var appData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
 
-            if (string.IsNullOrWhiteSpace(appData))
-            {
-                throw new System.InvalidOperationException("The user has no application data folder.");
-            }
-
-            return System.IO.Path.Combine(appData, "RFiDGear", "Extensions", "CardCheckAssistant");
+            return string.IsNullOrWhiteSpace(appData)
+                ? throw new System.InvalidOperationException("The user has no application data folder.")
+                : appData;
         }
     }
 }
