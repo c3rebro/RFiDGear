@@ -234,7 +234,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
     /// </summary>
     internal static class FolderPathValidator
     {
-        // Not all of these are in Path.GetInvalidPathChars(), but none can be part of a folder path.
+        // Not all of these are in Path.GetInvalidPathChars(), but none can be part of a folder path. The question mark is
+        // refused everywhere, also in an extended-length prefix such as \\?\: the folder becomes the front of the report
+        // path, and the host replaces every question mark of a report path with a number. The support library refuses
+        // it the same way (ReportFiles), so a folder this check let through would be rejected when the first report is
+        // prepared.
         private static readonly char[] NotInAPath = { '*', '?', '<', '>', '|', '"' };
 
         /// <summary>Checks one value.</summary>

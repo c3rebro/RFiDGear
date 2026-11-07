@@ -38,18 +38,25 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 _failure = failure;
             }
 
-            public Task<Result> TestConnectionAsync(CancellationToken cancellationToken) =>
-                Task.FromResult(_failure == null ? Result.Ok() : Result.Fail(_failure));
+            public Task<Result> TestConnectionAsync(CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
 
-            public Task<Result<IReadOnlyList<OrderRecord>>> ListAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+                return Task.FromResult(_failure == null ? Result.Ok() : Result.Fail(_failure));
+            }
 
-            public Task<Result<byte[]>> DownloadReportAsync(string orderId, CancellationToken cancellationToken) => throw new NotSupportedException();
+            public Task<Result<IReadOnlyList<OrderRecord>>> ListAsync(CancellationToken cancellationToken) => throw NotUsed(cancellationToken);
 
-            public Task<Result> ReplaceReportAsync(string orderId, byte[] report, CancellationToken cancellationToken) => throw new NotSupportedException();
+            public Task<Result<byte[]>> DownloadReportAsync(string orderId, CancellationToken cancellationToken) => throw NotUsed(orderId, cancellationToken);
 
-            public Task<Result> FinalizeAsync(string orderId, byte[] report, CancellationToken cancellationToken) => throw new NotSupportedException();
+            public Task<Result> ReplaceReportAsync(string orderId, byte[] report, CancellationToken cancellationToken) => throw NotUsed(orderId, report, cancellationToken);
 
-            public Task<Result> TouchChangedDateAsync(string orderId, CancellationToken cancellationToken) => throw new NotSupportedException();
+            public Task<Result> FinalizeAsync(string orderId, byte[] report, CancellationToken cancellationToken) => throw NotUsed(orderId, report, cancellationToken);
+
+            public Task<Result> TouchChangedDateAsync(string orderId, CancellationToken cancellationToken) => throw NotUsed(orderId, cancellationToken);
+
+            private static NotSupportedException NotUsed(params object[] arguments) =>
+                new NotSupportedException("The settings never use this member of the order store (called with " + arguments.Length + " arguments).");
         }
 
         private SettingsEditor Editor(ISettingsStore store, Func<DatabaseSettings, IOrderStore>? orders = null) =>
@@ -87,7 +94,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var editor = Editor(Store());
             var data = Edited();
 
-            Assert.Equal(SettingsSaveOutcome.Saved, editor.Save(data));
+            Assert.Equal(SettingsSaveOutcome.Saved, editor.Save(editor.Load().Data, data));
             var loaded = editor.Load().Data;
 
             Assert.Equal(
@@ -107,10 +114,48 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             // Another window remembers a folder after this one has read the settings and before it saves.
             store.Update(settings => Result<CardCheckSettings>.Ok(settings with { LastProjectFolder = "changed meanwhile" }));
-            Assert.Equal(SettingsSaveOutcome.Saved, editor.Save(shown.Data with { OutputFolder = "reports" }));
+            Assert.Equal(SettingsSaveOutcome.Saved, editor.Save(shown.Data, shown.Data with { OutputFolder = "reports" }));
 
             var saved = store.Load().Settings;
             Assert.Equal(("changed meanwhile", "reports-folder", true, "reports"), (saved.LastProjectFolder, saved.LastReportFolder, saved.LegacyImport!.Declined, saved.Report.OutputPath));
+        }
+
+        [Fact]
+        public void Save_WritesOnlyWhatWasChanged_SoAnotherWindowsEditsOfOtherValuesSurvive()
+        {
+            var store = Store();
+            var windowA = Editor(store);
+            var windowB = Editor(store);
+            Assert.Equal(SettingsSaveOutcome.Saved, windowA.Save(windowA.Load().Data, Edited()));
+            var shownByA = windowA.Load().Data;
+            var shownByB = windowB.Load().Data;
+
+            // B saves first and changes the values that A will not touch, and one that A changes as well.
+            var theirs = shownByB with
+            {
+                OneFolderPerJob = false,
+                RemoveTemporaryReports = false,
+                ReportLanguage = ReportLanguageChoice.German,
+                DefaultProjectPath = "their.rfPrj",
+                Database = new DatabaseData("THEIR-SERVER", "TheirDb", "dbo.Theirs"),
+                TextBlocks = new[] { new TextBlockData("Only", "theirs") },
+            };
+            Assert.Equal(SettingsSaveOutcome.Saved, windowB.Save(shownByB, theirs));
+
+            // A still shows the old values and changes three others, one of which B changed too.
+            var mine = shownByA with
+            {
+                OutputFolder = "my-output",
+                MemoryProjectPath = "my-memory.rfPrj",
+                Database = shownByA.Database with { Table = "dbo.Mine" },
+            };
+            Assert.Equal(SettingsSaveOutcome.Saved, windowA.Save(shownByA, mine));
+
+            var saved = windowA.Load().Data;
+            Assert.Equal(
+                ("my-output", "my-memory.rfPrj", false, false, ReportLanguageChoice.German, "their.rfPrj", new DatabaseData("THEIR-SERVER", "TheirDb", "dbo.Mine")),
+                (saved.OutputFolder, saved.MemoryProjectPath, saved.OneFolderPerJob, saved.RemoveTemporaryReports, saved.ReportLanguage, saved.DefaultProjectPath, saved.Database));
+            Assert.Equal(new[] { new TextBlockData("Only", "theirs") }, saved.TextBlocks);
         }
 
         [Fact]
@@ -123,7 +168,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var editor = Editor(Store());
 
             var load = editor.Load();
-            var outcome = editor.Save(Edited());
+            var outcome = editor.Save(load.Data, Edited());
 
             Assert.Equal(SettingsProblem.NewerVersion, load.Problem);
             Assert.Equal(string.Empty, load.Data.DefaultProjectPath);
@@ -138,17 +183,27 @@ namespace RFiDGear.Tests.CardCheckAssistant
             File.WriteAllText(Path.Combine(SettingsFolder, "settings.json"), "this is not json");
             var editor = Editor(Store());
 
-            Assert.Equal(SettingsProblem.DamagedFileSetAside, editor.Load().Problem);
-            Assert.Equal(SettingsSaveOutcome.Saved, editor.Save(Edited()));
+            var load = editor.Load();
+
+            Assert.Equal(SettingsProblem.DamagedFileSetAside, load.Problem);
+            Assert.Equal(SettingsSaveOutcome.Saved, editor.Save(load.Data, Edited()));
         }
 
         [Fact]
-        public void WithoutAPlaceToKeepSettings_TheEditorSaysSo()
+        public async Task WithoutAPlaceToKeepSettings_TheEditorSaysSo_AndRefusesMissingArguments()
         {
             var none = AssistantServices.None.Editor;
+            using var cancelled = new CancellationTokenSource();
+            cancelled.Cancel();
+            var database = new DatabaseData("s", "d", "t");
 
             Assert.Equal(SettingsProblem.Unavailable, none.Load().Problem);
-            Assert.Equal(SettingsSaveOutcome.Unavailable, none.Save(Edited()));
+            Assert.Equal(SettingsSaveOutcome.Unavailable, none.Save(new SettingsData(), Edited()));
+            Assert.Equal(ConnectionTestOutcome.Failed, await none.TestConnectionAsync(database, CancellationToken.None));
+            Assert.Equal(ConnectionTestOutcome.Cancelled, await none.TestConnectionAsync(database, cancelled.Token));
+            Assert.Throws<ArgumentNullException>(() => none.Save(null!, Edited()));
+            Assert.Throws<ArgumentNullException>(() => none.Save(new SettingsData(), null!));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => none.TestConnectionAsync(null!, CancellationToken.None));
         }
 
         // ── testing the order database ──────────────────────────────────────
@@ -213,6 +268,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal(FolderCheck.NotFullyQualified, FolderPathValidator.Check(Path.Combine("relative", "folder")));
             Assert.Equal(FolderCheck.Unusable, FolderPathValidator.Check(Path.Combine(_folder.Path, "a|b")));
             Assert.Equal(FolderCheck.Unusable, FolderPathValidator.Check(Path.Combine(_folder.Path, "a*b")));
+            // A question mark is the host's numbering placeholder in a report path, also in an extended-length prefix.
+            var separator = Path.DirectorySeparatorChar;
+            Assert.Equal(FolderCheck.Unusable, FolderPathValidator.Check(string.Concat(separator, separator, '?', separator, _folder.Path)));
             Assert.Equal(FolderCheck.NotAFolder, FolderPathValidator.Check(file));
             Assert.Equal(FolderCheck.NotFound, FolderPathValidator.Check(Path.Combine(_folder.Path, "missing")));
             Assert.Equal(FolderCheck.Valid, FolderPathValidator.Check(_folder.Path));

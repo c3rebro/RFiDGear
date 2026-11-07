@@ -56,10 +56,16 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         {
             public SettingsEditorLoad Load() => new SettingsEditorLoad(new SettingsData(), SettingsProblem.Unavailable);
 
-            public SettingsSaveOutcome Save(SettingsData data) => SettingsSaveOutcome.Unavailable;
+            // Like the real editor, it refuses a missing argument and does not start what is already cancelled.
+            public SettingsSaveOutcome Save(SettingsData baseline, SettingsData edited) =>
+                baseline == null || edited == null
+                    ? throw new ArgumentNullException(baseline == null ? nameof(baseline) : nameof(edited))
+                    : SettingsSaveOutcome.Unavailable;
 
             public Task<ConnectionTestOutcome> TestConnectionAsync(DatabaseData database, CancellationToken cancellationToken) =>
-                Task.FromResult(ConnectionTestOutcome.Failed);
+                database == null
+                    ? throw new ArgumentNullException(nameof(database))
+                    : Task.FromResult(cancellationToken.IsCancellationRequested ? ConnectionTestOutcome.Cancelled : ConnectionTestOutcome.Failed);
         }
 
         private sealed class NoSettings : IAssistantSettings

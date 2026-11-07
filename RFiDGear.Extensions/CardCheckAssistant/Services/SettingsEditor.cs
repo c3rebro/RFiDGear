@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,37 +32,50 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         }
 
         /// <inheritdoc/>
-        public SettingsSaveOutcome Save(SettingsData data)
+        public SettingsSaveOutcome Save(SettingsData baseline, SettingsData edited)
         {
-            if (data == null)
+            if (baseline == null)
             {
-                throw new ArgumentNullException(nameof(data));
+                throw new ArgumentNullException(nameof(baseline));
             }
 
-            // One step with reading: what the editor does not show (the folder the picker was last in, the marker of an
-            // earlier import) and anything another window changed meanwhile is carried over, not written over.
+            if (edited == null)
+            {
+                throw new ArgumentNullException(nameof(edited));
+            }
+
+            // One step with reading, and a value is only written where the operator changed it: what the editor does not
+            // show (the folder the picker was last in, the marker of an earlier import) and anything another window changed
+            // since this one loaded are carried over, not written over with a stale copy.
             var result = _store.Update(current => Result<CardCheckSettings>.Ok(current with
             {
                 Report = current.Report with
                 {
-                    OutputPath = data.OutputFolder,
-                    CreateSubdirectory = data.OneFolderPerJob,
-                    RemoveTemporaryReports = data.RemoveTemporaryReports,
-                    DefaultLanguage = data.ReportLanguage == ReportLanguageChoice.English ? ReportLanguage.English : ReportLanguage.German,
+                    OutputPath = Pick(baseline.OutputFolder, edited.OutputFolder, current.Report.OutputPath),
+                    CreateSubdirectory = Pick(baseline.OneFolderPerJob, edited.OneFolderPerJob, current.Report.CreateSubdirectory),
+                    RemoveTemporaryReports = Pick(baseline.RemoveTemporaryReports, edited.RemoveTemporaryReports, current.Report.RemoveTemporaryReports),
+                    DefaultLanguage = baseline.ReportLanguage == edited.ReportLanguage
+                        ? current.Report.DefaultLanguage
+                        : edited.ReportLanguage == ReportLanguageChoice.English ? ReportLanguage.English : ReportLanguage.German,
                 },
-                DefaultProjectPath = data.DefaultProjectPath,
-                CustomProjectPath = data.MemoryProjectPath,
+                DefaultProjectPath = Pick(baseline.DefaultProjectPath, edited.DefaultProjectPath, current.DefaultProjectPath),
+                CustomProjectPath = Pick(baseline.MemoryProjectPath, edited.MemoryProjectPath, current.CustomProjectPath),
                 Database = current.Database with
                 {
-                    Server = data.Database.Server,
-                    Database = data.Database.Database,
-                    Table = data.Database.Table,
+                    Server = Pick(baseline.Database.Server, edited.Database.Server, current.Database.Server),
+                    Database = Pick(baseline.Database.Database, edited.Database.Database, current.Database.Database),
+                    Table = Pick(baseline.Database.Table, edited.Database.Table, current.Database.Table),
                 },
-                TextTemplates = data.TextBlocks.Select(block => new TextTemplate { Name = block.Name, Content = block.Content }).ToList(),
+                TextTemplates = baseline.TextBlocks.SequenceEqual(edited.TextBlocks)
+                    ? current.TextTemplates
+                    : edited.TextBlocks.Select(block => new TextTemplate { Name = block.Name, Content = block.Content }).ToList(),
             }));
 
             return result.IsSuccess ? SettingsSaveOutcome.Saved : OutcomeOf(result.Failure!.Code);
         }
+
+        // The edited value if the operator changed it, otherwise whatever the settings hold now.
+        private static T Pick<T>(T baseline, T edited, T current) => EqualityComparer<T>.Default.Equals(baseline, edited) ? current : edited;
 
         /// <inheritdoc/>
         public async Task<ConnectionTestOutcome> TestConnectionAsync(DatabaseData database, CancellationToken cancellationToken)

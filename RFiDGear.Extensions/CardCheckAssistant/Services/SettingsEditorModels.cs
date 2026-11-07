@@ -145,7 +145,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
 
     /// <summary>
     /// Reads, saves and tests the settings the settings UI edits. A seam of the extension's own, like
-    /// <see cref="IAssistantSettings"/>: the support library is behind it. Nothing here throws.
+    /// <see cref="IAssistantSettings"/>: the support library is behind it. Nothing here throws because of the disk, the
+    /// settings file or the server; a missing argument is the caller's mistake and is refused.
     /// </summary>
     internal interface IAssistantSettingsEditor
     {
@@ -154,12 +155,15 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         SettingsEditorLoad Load();
 
         /// <summary>
-        /// Saves the edited values in one step with reading the settings as they are now, so what the UI did not edit, and
-        /// anything another window changed meanwhile, is kept. Writes the disk: call it off the UI thread.
+        /// Saves what the operator changed: only the values that differ between the loaded data and the edited data are
+        /// written, in one step with reading the settings as they are now. Everything else is kept as the file holds it
+        /// now: what the UI does not show, and what another window changed since this one loaded. A value that both
+        /// changed takes the edited one. Writes the disk: call it off the UI thread.
         /// </summary>
-        /// <param name="data">The edited values.</param>
+        /// <param name="baseline">The data as the UI loaded it (or last saved it).</param>
+        /// <param name="edited">The data as the operator left it.</param>
         /// <returns>How it ended.</returns>
-        SettingsSaveOutcome Save(SettingsData data);
+        SettingsSaveOutcome Save(SettingsData baseline, SettingsData edited);
 
         /// <summary>
         /// Tries the order database as entered (not as saved): connects with the Windows account and checks that the table
