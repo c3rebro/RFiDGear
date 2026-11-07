@@ -151,6 +151,16 @@ namespace RFiDGear.ViewModel.DialogFactories
             return viewModel;
         }
 
+        /// <summary>
+        /// Creates the dialog in which a DESFire task is added or edited. Confirming the dialog with OK adds the
+        /// task to the task list and closes the dialog for every task type except <c>None</c> and
+        /// <c>ChangeDefault</c> (which saves the default keys instead). A task type that is missing from the OK
+        /// handler would make OK do nothing.
+        /// </summary>
+        /// <param name="selectedSetupViewModel">The task being edited, or <see langword="null"/> for a new task.</param>
+        /// <param name="chipTasks">The task list the confirmed task is added to.</param>
+        /// <param name="dialogs">The dialog collection that receives validation messages.</param>
+        /// <returns>The dialog view model to show.</returns>
         public IUserDialogViewModel CreateDesfireTaskDialog(object selectedSetupViewModel, ChipTaskHandlerModel chipTasks, ObservableCollection<IDialogViewModel> dialogs)
         {
             var viewModel = new MifareDesfireSetupViewModel(selectedSetupViewModel, dialogs)
@@ -169,6 +179,7 @@ namespace RFiDGear.ViewModel.DialogFactories
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings ||
+                        sender.SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.AppExistCheck ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.AuthenticateApplication ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.ApplicationKeyChangeover ||
