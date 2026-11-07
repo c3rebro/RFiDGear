@@ -1844,7 +1844,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>{0}: Only standard and backup data files can be checked; value and record files are not supported yet. Nothing was read.</value>
   </data>
   <data name="textBoxStatusFileSettingsInvalidInput" xml:space="preserve">
-    <value>{0}: The application, file, size, key or communication mode is not valid. Nothing was read.</value>
+    <value>{0}: The application, file, size or key is not valid. Nothing was read.</value>
   </data>
   <data name="textBoxStatusFileSettingsCompared" xml:space="preserve">
     <value>{0}: Settings of file {2} in App {1} compared → {3}</value>
@@ -1863,5 +1863,8 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="textBoxStatusFileSettingsUnknownCommunicationMode" xml:space="preserve">
     <value>{0}: Choose the communication mode the file is expected to have; &quot;unknown&quot; cannot be checked. Nothing was read.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsNoReader" xml:space="preserve">
+    <value>{0}: No reader is available. Nothing was read.</value>
   </data>
 </root>

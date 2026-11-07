@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Threading;
 using Xunit;
@@ -143,6 +144,12 @@ namespace RFiDGear.Tests
             var blank = new List<string>();
             foreach (var element in LogicalDescendants(view).OfType<FrameworkElement>().Where(element => element.IsVisible))
             {
+                // A label, a button, a check box or a radio button has text; a broken binding leaves none at all.
+                if ((element is Label || element is ButtonBase) && ((ContentControl)element).Content == null)
+                {
+                    blank.Add(element.GetType().Name + " content");
+                }
+
                 if (element is ContentControl content && content.Content is string text && string.IsNullOrWhiteSpace(text))
                 {
                     blank.Add(element.GetType().Name + " content");

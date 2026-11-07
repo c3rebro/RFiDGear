@@ -3,6 +3,7 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -102,8 +103,9 @@ namespace RFiDGear.HIL.Tests
         /// The read-only Check File Settings task against a real card: a file with four different access rights is
         /// created; the task returns success when the project expects exactly that, and IsNotTrue when the project alone
         /// differs (another size, another communication mode, two access rights swapped, another file type); the same
-        /// task succeeds again afterwards, which shows that the checks did not change the card. Which reader ran (Elatec
-        /// first, PC/SC otherwise) is not asserted: see the log of the run.
+        /// task succeeds again afterwards, which shows that the settings it compares are still what they were. Which
+        /// reader ran (Elatec first, PC/SC otherwise) is not asserted, and the expected and the actual values of a
+        /// difference are in the Task.Outcome entry of the log of the run (stage Task.Outcome, IO.FileSettingsComparison).
         /// </summary>
         [Theory]
         [InlineData(DESFireKeyType.DF_KEY_AES, HilConstants.DefaultKeyAes)]
@@ -128,7 +130,8 @@ namespace RFiDGear.HIL.Tests
                     // The project expects what is on the card.
                     var (match, matchDiag) = await RunAsync(HilTaskBuilder.BuildCheckFileSettings(
                         HilConstants.TestAppId, keyType, defaultKey, onTheCard));
-                    Assert.True(match.Outcome == ExecutionOutcome.Success, $"The exact match was not accepted — keyType={keyType}\n{matchDiag}");
+                    Assert.True(match.Outcome == ExecutionOutcome.Success, $"The exact match was not accepted — keyType={keyType}\n{matchDiag}\nSee the Task.Outcome entry of the log for the values.");
+                    Assert.Equal(nameof(ERROR.NoError), Assert.Single(match.TaskOutcomes).NormalizedErrorCode);
 
                     // The project alone differs, in one field each time.
                     var differences = new[]
@@ -148,10 +151,11 @@ namespace RFiDGear.HIL.Tests
                         Assert.Equal(nameof(ERROR.IsNotTrue), outcome.NormalizedErrorCode);
                     }
 
-                    // The card is as it was: the exact match is still accepted.
+                    // The compared settings are as they were: the exact match is still accepted.
                     var (after, afterDiag) = await RunAsync(HilTaskBuilder.BuildCheckFileSettings(
                         HilConstants.TestAppId, keyType, defaultKey, onTheCard));
-                    Assert.True(after.Outcome == ExecutionOutcome.Success, $"The card changed during the checks — keyType={keyType}\n{afterDiag}");
+                    Assert.True(after.Outcome == ExecutionOutcome.Success, $"The settings changed during the checks — keyType={keyType}\n{afterDiag}\nSee the Task.Outcome entry of the log for the values.");
+                    Assert.Equal(nameof(ERROR.NoError), Assert.Single(after.TaskOutcomes).NormalizedErrorCode);
                 }
                 finally
                 {
@@ -160,14 +164,19 @@ namespace RFiDGear.HIL.Tests
             });
         }
 
-        private async Task<(ExecResult Result, string Diagnostics)> RunAsync(System.Collections.Generic.IEnumerable<object> tasks)
+        private async Task<(ExecResult Result, string Diagnostics)> RunAsync(IEnumerable<object> tasks)
         {
             _fixture.Host!.Project.ReplaceTaskCollection(tasks);
-            var result = await _fixture.Host.Execution.ExecuteAllAsync(ExecutionRequest.Empty);
-            var diagnostics = _fixture.Host.GetTaskErrorSummary();
-            _fixture.Host.Execution.ResetStatus();
+            try
+            {
+                var result = await _fixture.Host.Execution.ExecuteAllAsync(ExecutionRequest.Empty);
 
-            return (result, diagnostics);
+                return (result, _fixture.Host.GetTaskErrorSummary());
+            }
+            finally
+            {
+                _fixture.Host.Execution.ResetStatus();
+            }
         }
 
         /// <summary>

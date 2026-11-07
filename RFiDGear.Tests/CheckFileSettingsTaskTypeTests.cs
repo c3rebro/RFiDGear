@@ -1,5 +1,4 @@
 using RFiDGear.Infrastructure;
-using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Models;
 using RFiDGear.ViewModel.TaskSetupViewModels;
@@ -109,19 +108,24 @@ namespace RFiDGear.Tests
             });
         }
 
+        // A project as an earlier version wrote it, with no mention of the new task type.
+        private const string ProjectWithoutTheNewTask =
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
+            "<ChipTaskHandlerModel xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">" +
+            "<ManifestVersion>2.0.10</ManifestVersion>" +
+            "<TaskCollection>" +
+            "<anyType xsi:type=\"MifareDesfireSetupViewModel\"><SelectedTaskType>ReadData</SelectedTaskType><CurrentTaskIndex>0</CurrentTaskIndex></anyType>" +
+            "<anyType xsi:type=\"MifareDesfireSetupViewModel\"><SelectedTaskType>CheckAppKeyCount</SelectedTaskType><CurrentTaskIndex>1</CurrentTaskIndex></anyType>" +
+            "</TaskCollection>" +
+            "</ChipTaskHandlerModel>";
+
         [Fact]
         public async Task AProjectWithoutTheNewTask_StillLoads()
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
             {
-                var project = new ChipTaskHandlerModel();
-                project.TaskCollection.Add(new MifareDesfireSetupViewModel { SelectedTaskType = TaskType_MifareDesfireTask.ReadData });
-                project.TaskCollection.Add(new MifareDesfireSetupViewModel { SelectedTaskType = TaskType_MifareDesfireTask.CheckAppKeyCount });
-
                 var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
-                using var writer = new StringWriter();
-                serializer.Serialize(writer, project);
-                using var reader = new StringReader(writer.ToString());
+                using var reader = new StringReader(ProjectWithoutTheNewTask);
                 var loaded = (ChipTaskHandlerModel)serializer.Deserialize(reader)!;
 
                 Assert.Equal(

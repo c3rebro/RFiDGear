@@ -3,12 +3,12 @@ using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ExtensionHost;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.Tasks;
-using RFiDGear.Models;
 using RFiDGear.Services.TaskExecution;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using Serilog.Events;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -122,13 +122,23 @@ namespace RFiDGear.Tests
 
         private static async Task<ExecResult> RunAsync(MifareDesfireSetupViewModel viewModel)
         {
-            var service = new TaskExecutionService(new ReaderDeviceProvider(), new NullDispatcherTimerAdapter(), new NullDispatcherTimerAdapter());
-            var coordinator = new ExtensionOperationCoordinator();
-            var project = new ProjectHostImpl(new DatabaseReaderWriter(), coordinator);
-            var host = new TaskExecHostImpl(service, project, coordinator);
-            project.ReplaceTaskCollection(new object[] { viewModel });
+            // Its own folder: opening the project database resets the files of the application's profile, which a test
+            // must not do to the one of whoever runs it.
+            var root = Directory.CreateTempSubdirectory("CheckFileSettingsRun").FullName;
+            try
+            {
+                var service = new TaskExecutionService(new ReaderDeviceProvider(), new NullDispatcherTimerAdapter(), new NullDispatcherTimerAdapter());
+                var coordinator = new ExtensionOperationCoordinator();
+                var project = new ProjectHostImpl(new DatabaseReaderWriter(new ProjectManager(root)), coordinator);
+                var host = new TaskExecHostImpl(service, project, coordinator);
+                project.ReplaceTaskCollection(new object[] { viewModel });
 
-            return await host.ExecuteAllAsync(ExecutionRequest.Empty);
+                return await host.ExecuteAllAsync(ExecutionRequest.Empty);
+            }
+            finally
+            {
+                Directory.Delete(root, recursive: true);
+            }
         }
 
         // What the task loop logged for this run, as parsed entries.

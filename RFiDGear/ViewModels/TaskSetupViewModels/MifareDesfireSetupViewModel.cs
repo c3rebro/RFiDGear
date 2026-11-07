@@ -1158,7 +1158,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         /// <summary>
         /// Gets a value indicating whether file authoring commands should be shown.
-        /// The create/delete actions are unnecessary when reading or writing file data or when changing file settings.
+        /// The create/delete actions are unnecessary when reading or writing file data or when changing or checking
+        /// file settings.
         /// </summary>
         [XmlIgnore]
         public bool ShowFileAuthoringCommands => SelectedTaskType != TaskType_MifareDesfireTask.ReadData
@@ -1190,7 +1191,11 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         /// <inheritdoc />
         IReadOnlyDictionary<string, object> ITaskOutcomeDetails.GetOutcomeDetails() =>
-            SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings ? LastFileSettingsComparison?.ToLogValues() : null;
+            SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings && LastFileSettingsComparison != null
+                ? LastFileSettingsComparison.ToLogValues()
+                : NoOutcomeDetails;
+
+        private static readonly IReadOnlyDictionary<string, object> NoOutcomeDetails = new Dictionary<string, object>();
 
         /// <inheritdoc />
         void ITaskOutcomeDetails.ClearOutcomeDetails() => LastFileSettingsComparison = null;
@@ -3982,6 +3987,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 if (device == null)
                 {
                     CurrentTaskErrorLevel = ERROR.TransportError;
+                    StatusText = LocalizedStatusLine("textBoxStatusFileSettingsNoReader", DateTime.Now);
                     await FinalizeTaskAsync();
                     return;
                 }
@@ -4008,9 +4014,17 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         FileNumberCurrentAsInt);
                 }
 
-                var check = result == ERROR.NoError && device.DesfireFileSettings != null
-                    ? DesfireFileSettingsChecker.Compare(BuildFileSettingsExpectation(), device.DesfireFileSettings)
-                    : new DesfireFileSettingsCheckResult(result == ERROR.NoError ? ERROR.TransportError : result, null);
+                DesfireFileSettingsCheckResult check;
+                if (result == ERROR.NoError && device.DesfireFileSettings != null)
+                {
+                    check = DesfireFileSettingsChecker.Compare(BuildFileSettingsExpectation(), device.DesfireFileSettings);
+                }
+                else
+                {
+                    // A read that succeeded without settings is as unusable as one that failed.
+                    var failure = result == ERROR.NoError ? ERROR.TransportError : result;
+                    check = new DesfireFileSettingsCheckResult(failure, null);
+                }
 
                 LastFileSettingsComparison = check.Comparison;
                 CurrentTaskErrorLevel = check.ErrorLevel;
@@ -4038,6 +4052,9 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             await FinalizeTaskAsync();
         }
 
+        /// <summary>The highest key number an application can have (an application holds up to 14 keys).</summary>
+        private const int MaxDesfireApplicationKeyNumber = 13;
+
         /// <summary>
         /// Tells what keeps the file-settings check from running with the current configuration. A flag of a field is
         /// tri-state: a task that was just created in the dialog holds valid defaults (file number 0, size 16) whose flags
@@ -4053,7 +4070,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
 
             // The list of key numbers of the dialog is shared by all tasks and offers more than an application has.
-            if (selectedDesfireAppKeyNumberCurrentAsInt < 0 || selectedDesfireAppKeyNumberCurrentAsInt > 13)
+            // (The text of textBoxStatusFileSettingsInvalidKeyNumber names the same limit.)
+            if (selectedDesfireAppKeyNumberCurrentAsInt < 0 || selectedDesfireAppKeyNumberCurrentAsInt > MaxDesfireApplicationKeyNumber)
             {
                 return "textBoxStatusFileSettingsInvalidKeyNumber";
             }

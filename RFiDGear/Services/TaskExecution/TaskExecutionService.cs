@@ -971,8 +971,7 @@ namespace RFiDGear.Services.TaskExecution
 
             foreach (var pair in values)
             {
-                if (pair.Value is bool || pair.Value is byte || pair.Value is sbyte || pair.Value is short || pair.Value is ushort ||
-                    pair.Value is int || pair.Value is uint || pair.Value is long || pair.Value is ulong)
+                if (pair.Value is bool or byte or sbyte or short or ushort or int or uint or long or ulong)
                 {
                     safe[pair.Key] = pair.Value;
                 }

@@ -1185,9 +1185,9 @@ namespace RFiDGear.Tests
             public override Task<ERROR> GetMifareDesfireFileSettings(
                 string _applicationMasterKey,
                 DESFireKeyType _keyType,
-                int _keyNumberCurrent = 0,
-                int _appID = 0,
-                int _fileNo = 0)
+                int _keyNumberCurrent,
+                int _appID,
+                int _fileNo)
             {
                 _ = _applicationMasterKey;
                 _ = _keyType;

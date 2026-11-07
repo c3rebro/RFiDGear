@@ -7,7 +7,6 @@ using RFiDGear.ViewModel.TaskSetupViewModels;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Xunit;
@@ -124,8 +123,11 @@ namespace RFiDGear.Tests
 
                 await Run(viewModel, null);
 
+                var reason = ResourceLoader.GetResource("textBoxStatusFileSettingsNoReader").Replace("{0}: ", string.Empty);
+                Assert.False(string.IsNullOrWhiteSpace(reason));
                 Assert.Equal(ERROR.TransportError, viewModel.CurrentTaskErrorLevel);
                 Assert.False(viewModel.IsTaskCompletedSuccessfully);
+                Assert.Contains(reason, viewModel.StatusText);
             });
         }
 
@@ -232,6 +234,103 @@ namespace RFiDGear.Tests
 
                 Assert.Equal(ERROR.TransportError, viewModel.CurrentTaskErrorLevel);
                 Assert.Null(viewModel.LastFileSettingsComparison);
+            });
+        }
+
+        [Theory]
+        [InlineData(DESFireKeyType.DF_KEY_AES)]
+        [InlineData(DESFireKeyType.DF_KEY_DES)]
+        public async Task TheReaderIsAskedWithTheKeyTheApplicationAndTheFileOfTheTask(DESFireKeyType keyType)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // Nothing here is a default: a slip to another key, key type, key number, application or file would go
+                // unnoticed if the reader accepted whatever it was given.
+                const string key = "00112233445566778899AABBCCDDEEFF";
+                var viewModel = CreateViewModel();
+                viewModel.AppNumberCurrent = "0xF482D0";
+                viewModel.FileNumberCurrent = "7";
+                viewModel.SelectedDesfireAppKeyEncryptionTypeCurrent = keyType;
+                viewModel.DesfireAppKeyCurrent = key;
+                viewModel.SelectedDesfireAppKeyNumberCurrent = "2";
+                var reader = new FakeFileSettingsProvider { FileSettings = Settings() };
+
+                await Run(viewModel, reader);
+
+                Assert.Equal(ERROR.NoError, viewModel.CurrentTaskErrorLevel);
+                Assert.Equal(key, reader.LastAuthKey!.Replace(" ", string.Empty), ignoreCase: true);
+                Assert.Equal(key, reader.LastReadKey!.Replace(" ", string.Empty), ignoreCase: true);
+                Assert.Equal((keyType, 2, 0xF482D0), (reader.LastAuthKeyType, reader.LastAuthKeyNumber, reader.LastAuthAppId));
+                Assert.Equal((keyType, 2), (reader.LastReadKeyType, reader.LastReadKeyNumber));
+                Assert.Equal((0xF482D0, 7), (reader.LastFileSettingsAppId, reader.LastFileSettingsFileNo));
+            });
+        }
+
+        [Fact]
+        public async Task ATaskThatWasJustCreatedInTheDialog_RunsWithoutRetypingTheDefaults()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // A new task holds the file number 0 and the size 16 whose validity flags are still "not yet validated".
+                var viewModel = new MifareDesfireSetupViewModel(null, new ObservableCollection<IDialogViewModel>())
+                {
+                    SelectedTaskType = TaskType_MifareDesfireTask.CheckFileSettings,
+                    AppNumberCurrent = "1",
+                    DesfireAppKeyCurrent = ZeroAesKey,
+                    SelectedDesfireAppKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_AES,
+                    SelectedDesfireAppKeyNumberCurrent = "0",
+                    SelectedDesfireFileType = FileType_MifareDesfireFileType.StdDataFile,
+                    SelectedDesfireFileCryptoMode = EncryptionMode.CM_ENCRYPT,
+                    SelectedDesfireFileAccessRightRead = TaskAccessRights.AR_KEY0,
+                    SelectedDesfireFileAccessRightWrite = TaskAccessRights.AR_KEY1,
+                    SelectedDesfireFileAccessRightReadWrite = TaskAccessRights.AR_KEY2,
+                    SelectedDesfireFileAccessRightChange = TaskAccessRights.AR_KEY3
+                };
+                Assert.Equal(("0", "16"), (viewModel.FileNumberCurrent, viewModel.FileSizeCurrent));
+                Assert.Null(viewModel.IsValidFileNumberCurrent);
+                Assert.Null(viewModel.IsValidFileSizeCurrent);
+
+                await Run(viewModel, new FakeFileSettingsProvider { FileSettings = Settings() });
+
+                Assert.Equal(ERROR.NoError, viewModel.CurrentTaskErrorLevel);
+            });
+        }
+
+        [Fact]
+        public async Task FreeAndNever_AreComparedLikeKeys_InTheHighNibbleToo()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // 14 and 15 are the largest nibble values, and write and change are packed into the high nibbles.
+                var viewModel = CreateViewModel();
+                viewModel.SelectedDesfireFileAccessRightRead = TaskAccessRights.AR_FREE;
+                viewModel.SelectedDesfireFileAccessRightWrite = TaskAccessRights.AR_NEVER;
+                viewModel.SelectedDesfireFileAccessRightReadWrite = TaskAccessRights.AR_KEY13;
+                viewModel.SelectedDesfireFileAccessRightChange = TaskAccessRights.AR_FREE;
+
+                await Run(viewModel, new FakeFileSettingsProvider { FileSettings = Settings(read: 14, write: 15, readWrite: 13, change: 14) });
+                Assert.Equal(ERROR.NoError, viewModel.CurrentTaskErrorLevel);
+                Assert.Equal(0xFE, viewModel.LastFileSettingsComparison.ExpectedAccessRights0);
+                Assert.Equal(0xED, viewModel.LastFileSettingsComparison.ExpectedAccessRights1);
+
+                await Run(viewModel, new FakeFileSettingsProvider { FileSettings = Settings(read: 15, write: 14, readWrite: 13, change: 14) });
+                Assert.Equal(ERROR.IsNotTrue, viewModel.CurrentTaskErrorLevel);
+            });
+        }
+
+        [Fact]
+        public async Task TheHighestKeyNumber_IsAccepted()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateViewModel();
+                viewModel.SelectedDesfireAppKeyNumberCurrent = "13";
+                var reader = new FakeFileSettingsProvider { FileSettings = Settings() };
+
+                await Run(viewModel, reader);
+
+                Assert.Equal(ERROR.NoError, viewModel.CurrentTaskErrorLevel);
+                Assert.Equal(13, reader.LastAuthKeyNumber);
             });
         }
 
@@ -448,20 +547,26 @@ namespace RFiDGear.Tests
             {
                 var viewModel = CreateViewModel();
                 var details = (ITaskOutcomeDetails)viewModel;
-                Assert.Null(details.GetOutcomeDetails());
+                Assert.Empty(details.GetOutcomeDetails());
 
                 await Run(viewModel, new FakeFileSettingsProvider { FileSettings = Settings() });
 
                 var reported = details.GetOutcomeDetails()!;
                 Assert.Equal("FileSettingsComparison", details.OutcomeDetailsSection);
-                Assert.Equal(true, reported["Matches"]);
+                Assert.True((bool)reported["Matches"]);
                 Assert.Equal(16L, reported["ActualFileSize"]);
                 Assert.Equal(0x32, reported["ActualAccessRights1"]);
                 Assert.All(reported.Values, value => Assert.True(value is bool || value is int || value is long));
 
+                // The details are those of the check and of nothing else the same view model is switched to.
+                viewModel.SelectedTaskType = TaskType_MifareDesfireTask.ReadData;
+                Assert.Empty(details.GetOutcomeDetails());
+                viewModel.SelectedTaskType = TaskType_MifareDesfireTask.CheckFileSettings;
+                Assert.NotEmpty(details.GetOutcomeDetails());
+
                 details.ClearOutcomeDetails();
 
-                Assert.Null(details.GetOutcomeDetails());
+                Assert.Empty(details.GetOutcomeDetails());
                 Assert.Null(viewModel.LastFileSettingsComparison);
             });
         }

@@ -30,18 +30,27 @@ namespace RFiDGear.Tests
         /// <summary>Gets the file the last read was for.</summary>
         public int LastFileSettingsFileNo { get; private set; } = -1;
 
+        /// <summary>Gets the key the last read was asked for.</summary>
+        public string? LastReadKey { get; private set; }
+
+        /// <summary>Gets the key type the last read was asked for.</summary>
+        public DESFireKeyType? LastReadKeyType { get; private set; }
+
+        /// <summary>Gets the key number the last read was asked for.</summary>
+        public int LastReadKeyNumber { get; private set; } = -1;
+
         /// <inheritdoc />
         public override Task<ERROR> GetMifareDesfireFileSettings(
             string _applicationMasterKey,
             DESFireKeyType _keyType,
-            int _keyNumberCurrent = 0,
-            int _appID = 0,
-            int _fileNo = 0)
+            int _keyNumberCurrent,
+            int _appID,
+            int _fileNo)
         {
-            _ = _applicationMasterKey;
-            _ = _keyType;
-            _ = _keyNumberCurrent;
             GetFileSettingsCalls++;
+            LastReadKey = _applicationMasterKey;
+            LastReadKeyType = _keyType;
+            LastReadKeyNumber = _keyNumberCurrent;
             if (ThrowOnRead)
             {
                 throw new System.InvalidOperationException("The reader failed.");

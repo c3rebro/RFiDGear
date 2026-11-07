@@ -413,6 +413,8 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task TheDetailsOfEveryTaskOfTheList_AreClearedWhenARunStarts()
         {
+            // The second task is in the list of the project only: the run has no descriptor for it, so only the loop over
+            // the list can clear it (the loop over the descriptors is the one the test above needs).
             var first = new LoggingStubTaskModel { CurrentTaskIndex = "0", Details = new Dictionary<string, object> { ["Matches"] = true } };
             var second = new LoggingStubTaskModel { CurrentTaskIndex = "1", Details = new Dictionary<string, object> { ["Matches"] = true } };
             var handler = new ChipTaskHandlerModel();
@@ -420,8 +422,7 @@ namespace RFiDGear.Tests
             handler.TaskCollection.Add(second);
             var descriptors = new List<TaskDescriptor>
             {
-                new TaskDescriptor(0, first, ct => Task.CompletedTask),
-                new TaskDescriptor(1, second, ct => Task.CompletedTask)
+                new TaskDescriptor(0, first, ct => Task.CompletedTask)
             };
             var request = BuildRequest(descriptors);
             request.TaskHandler = handler;

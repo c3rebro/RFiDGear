@@ -17,7 +17,7 @@ namespace RFiDGear.Services.TaskExecution
         /// <summary>Gets the details of the last attempt of the task.</summary>
         /// <returns>
         /// The named values: numbers and flags only, never a key, a payload or text read from a card.
-        /// <see langword="null"/> or empty when there is nothing to report.
+        /// Empty when there is nothing to report.
         /// </returns>
         IReadOnlyDictionary<string, object> GetOutcomeDetails();
 

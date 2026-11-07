@@ -9,8 +9,9 @@ using Xunit;
 namespace RFiDGear.Tests
 {
     /// <summary>
-    /// The texts of the Check: App Config and Check: App Key Count dialogs. A resource key that does not exist gives an
-    /// empty text and no error, so a typo in a key, or a language that was forgotten, would only show as a blank label.
+    /// The texts of the Check: App Config, Check: App Key Count and Check: File Settings dialogs. A resource key that
+    /// does not exist gives an empty text and no error, so a typo in a key, or a language that was forgotten, would only
+    /// show as a blank label.
     /// </summary>
     public class ResourceKeysTests
     {
@@ -27,6 +28,9 @@ namespace RFiDGear.Tests
             "textBoxStatusFileSettingsInvalidInput",
             "textBoxStatusFileSettingsCompared",
             "textBoxStatusFileSettingsUnreadable",
+            "textBoxStatusFileSettingsNoReader",
+            "buttonContentMifareDesfireFileMasteringCheckFileSettings",
+            "ENUM.TaskType_MifareDesfireTask.CheckFileSettings",
             "labelContentMifareDesfireCommunicationMode",
             "labelContentMifareDesfireBytes",
             "textBoxStatusFileSettingsInvalidKeyNumber",
