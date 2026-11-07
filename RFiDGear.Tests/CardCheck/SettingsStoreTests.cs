@@ -461,6 +461,75 @@ namespace RFiDGear.Tests.CardCheck
             Assert.False(File.Exists(FilePath));
         }
 
+        // ── changing the settings in one step ───────────────────────────────
+
+        [Fact]
+        public async Task Update_TwoStoresOfTheSameFile_LoseNoChange()
+        {
+            // Two windows of the extension each have a store of their own for the same file. Each adds 25 text blocks, one
+            // update at a time; if reading and writing were not one step across the stores, one would write a copy that
+            // does not have the other's blocks.
+            var first = Store();
+            var second = Store();
+
+            async Task Add(ISettingsStore store, string prefix)
+            {
+                await Task.Run(() =>
+                {
+                    for (var i = 0; i < 25; i++)
+                    {
+                        var name = prefix + i;
+                        var result = store.Update(settings => Result<CardCheckSettings>.Ok(
+                            settings with { TextTemplates = settings.TextTemplates.Append(new TextTemplate { Name = name, Content = "x" }).ToList() }));
+                        Assert.True(result.IsSuccess, result.Failure?.Code);
+                    }
+                });
+            }
+
+            await Task.WhenAll(Add(first, "a"), Add(second, "b"));
+
+            Assert.Equal(50, Store().Load().Settings.TextTemplates.Count);
+        }
+
+        [Fact]
+        public void Update_ChangesWhatIsThere_AndANoChangeOrAFailureWritesNothing()
+        {
+            var store = Store();
+            store.Save(new CardCheckSettings { DefaultProjectPath = "kept.rfPrj" });
+            var before = File.ReadAllBytes(FilePath);
+
+            var same = store.Update(settings => Result<CardCheckSettings>.Ok(settings));
+            var failed = store.Update(_ => Result<CardCheckSettings>.Fail(new Failure(FailureKind.InvalidInput, "test.stop", "stop")));
+
+            Assert.True(same.IsSuccess);
+            Assert.Equal("test.stop", failed.Failure!.Code);
+            Assert.Equal(before, File.ReadAllBytes(FilePath));
+            Assert.Empty(LeftoverFiles());
+
+            Assert.True(store.Update(settings => Result<CardCheckSettings>.Ok(settings with { LastProjectFolder = "folder" })).IsSuccess);
+            var after = store.Load().Settings;
+            Assert.Equal(("kept.rfPrj", "folder"), (after.DefaultProjectPath, after.LastProjectFolder));
+        }
+
+        [Fact]
+        public void Update_OverAFileOfANewerVersion_IsRefused_AndTheChangeIsNeverAsked()
+        {
+            const string content = "{\"schemaVersion\":2,\"settings\":{}}";
+            WriteFile(content);
+            var asked = false;
+
+            var result = Store().Update(settings =>
+            {
+                asked = true;
+
+                return Result<CardCheckSettings>.Ok(settings);
+            });
+
+            Assert.Equal("settings.newerSchema", result.Failure!.Code);
+            Assert.False(asked);
+            Assert.Equal(content, File.ReadAllText(FilePath));
+        }
+
         // ── a file with a byte order mark ───────────────────────────────────
 
         private void WriteFileWithByteOrderMark(string content)

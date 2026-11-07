@@ -125,20 +125,14 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 return Result.Fail(parsed.Failure!);
             }
 
-            var current = _store.Load();
-
-            if (current.Status == SettingsLoadStatus.NewerSchema || current.Status == SettingsLoadStatus.Unreadable)
-            {
-                return Result.Fail(StoreUnavailable(current.Status));
-            }
-
-            if (current.Settings.LegacyImport != null)
-            {
-                return Result.Fail(new Failure(FailureKind.InvalidInput, "import.alreadyDone", "The old settings were already imported or declined."));
-            }
-
             var marker = new LegacyImportMarker { SourceSha256 = hash, ImportedAtUtc = UtcNow() };
-            var saved = _store.Save(Merge(current.Settings, parsed.Value.Values, marker));
+
+            // One step with the settings as they are at this moment: whatever was entered or remembered since the preview
+            // (by another window, say) is merged with, not written over. A file from a newer version, or one that cannot
+            // be read just now, is refused by the store itself.
+            var saved = _store.Update(current => current.LegacyImport != null
+                ? Result<CardCheckSettings>.Fail(new Failure(FailureKind.InvalidInput, "import.alreadyDone", "The old settings were already imported or declined."))
+                : Result<CardCheckSettings>.Ok(Merge(current, parsed.Value.Values, marker)));
 
             if (saved.IsSuccess)
             {
@@ -203,20 +197,19 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
             if (decision.Choice == ImportChoice.Never)
             {
-                // Written onto the settings as they are now, not as they were before the question was asked.
-                var fresh = _store.Load();
+                // Written onto the settings as they are now, not as they were before the question was asked, and in one
+                // step with reading them.
+                var declined = new LegacyImportMarker { SourceSha256 = string.Empty, ImportedAtUtc = UtcNow(), Declined = true };
+                var saved = _store.Update(fresh => Result<CardCheckSettings>.Ok(SettingsStore.Normalize(fresh with { LegacyImport = declined })));
 
-                if (fresh.Status == SettingsLoadStatus.NewerSchema || fresh.Status == SettingsLoadStatus.Unreadable)
+                if (saved.IsSuccess)
                 {
-                    return new ImportOffer(ImportOutcome.Unavailable, Array.Empty<ImportNote>(), StoreUnavailable(fresh.Status));
+                    return ImportOffer.Of(ImportOutcome.Declined);
                 }
 
-                var declined = new LegacyImportMarker { SourceSha256 = string.Empty, ImportedAtUtc = UtcNow(), Declined = true };
-                var saved = _store.Save(SettingsStore.Normalize(fresh.Settings with { LegacyImport = declined }));
+                var unavailable = saved.Failure!.Code == "settings.newerSchema" || saved.Failure.Code == "settings.unreadable";
 
-                return saved.IsSuccess
-                    ? ImportOffer.Of(ImportOutcome.Declined)
-                    : new ImportOffer(ImportOutcome.Failed, Array.Empty<ImportNote>(), saved.Failure);
+                return new ImportOffer(unavailable ? ImportOutcome.Unavailable : ImportOutcome.Failed, Array.Empty<ImportNote>(), saved.Failure);
             }
 
             var preview = Preview(decision.SourcePath ?? string.Empty);

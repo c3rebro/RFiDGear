@@ -36,6 +36,16 @@ in the Extensions menu of the main window.
   closed in the middle of its own run.
 - Is in English or German, following the language of RFiDGear, and switches
   when that changes.
+- Remembers, in `%LocalAppData%\RFiDGear\Extensions\CardCheckAssistant`, the
+  default project (prefilled when the window opens, never over text already
+  typed) and the folder of the last project that was loaded (where the picker
+  opens when no project is entered). The settings are read and written off the
+  UI thread; if they cannot be, the page works without them.
+- Offers once to take over the settings of the old Card Check Assistant, when
+  its `settings.xml` is found: a question with "Import", "Not now" (also what
+  closing the dialog means) and "Never ask again", then a summary to confirm.
+  The old files are only read, and the user name, password and port in them
+  never are. See the library's README for what is imported.
 
 **Rules that keep it correct:**
 
@@ -50,6 +60,12 @@ in the Extensions menu of the main window.
   a try block when a window opens, and a library that is missing or does not
   fit gives the page that says so. A test lists the members of the exported
   class and fails if one is a library type.
+- What the page remembers and offers sits behind two small interfaces of the
+  extension's own (`IAssistantSettings`, `IImportOffer`), so the view model
+  names no library type and is tested with fakes. The environment variable
+  `RFIDGEAR_CARDCHECK_APPDATA` moves the settings folder and the search for
+  the old files to another folder; the test run sets it to a temporary one, so
+  no test reads or writes the settings of whoever runs it.
 - It does not set `Uri` in `[UiExtension]`: a `Uri` makes the host open that
   page and never ask the class for content.
 - The exported class holds no state. Everything that belongs to one window

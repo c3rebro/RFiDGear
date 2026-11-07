@@ -28,6 +28,9 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             Converters = { new LenientReportLanguageConverter() },
         };
 
+        // How long a read or a write waits for another store (or program) that is in the middle of its own.
+        private static readonly TimeSpan GuardWait = TimeSpan.FromSeconds(10);
+
         private readonly string _folder;
         private readonly ICardCheckLog _log;
         private readonly object _gate = new object();
@@ -53,6 +56,84 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
         /// <inheritdoc />
         public SettingsLoad Load()
+        {
+            lock (_gate)
+            {
+                using var guard = FileGuard.Acquire(FilePath, GuardWait);
+
+                if (guard == null)
+                {
+                    _log.Warning("The settings file is in use by another program; defaults are used for now");
+
+                    return new SettingsLoad(new CardCheckSettings(), SettingsLoadStatus.Unreadable);
+                }
+
+                return LoadCore();
+            }
+        }
+
+        /// <inheritdoc />
+        public Result Save(CardCheckSettings settings)
+        {
+            if (settings == null)
+            {
+                throw new ArgumentNullException(nameof(settings));
+            }
+
+            lock (_gate)
+            {
+                using var guard = FileGuard.Acquire(FilePath, GuardWait);
+
+                return guard == null ? Busy() : SaveCore(settings);
+            }
+        }
+
+        /// <inheritdoc />
+        public Result Update(Func<CardCheckSettings, Result<CardCheckSettings>> change)
+        {
+            if (change == null)
+            {
+                throw new ArgumentNullException(nameof(change));
+            }
+
+            lock (_gate)
+            {
+                // Read, change and write are one step for every store of this file: another window of the extension or
+                // another program cannot read in between and then write over what this call wrote.
+                using var guard = FileGuard.Acquire(FilePath, GuardWait);
+
+                if (guard == null)
+                {
+                    return Busy();
+                }
+
+                var load = LoadCore();
+
+                if (load.Status == SettingsLoadStatus.NewerSchema)
+                {
+                    return Result.Fail(new Failure(FailureKind.InvalidConfiguration, "settings.newerSchema", "The settings were written by a newer version and are not overwritten."));
+                }
+
+                if (load.Status == SettingsLoadStatus.Unreadable)
+                {
+                    return Result.Fail(new Failure(FailureKind.Io, "settings.unreadable", "The settings file cannot be read just now."));
+                }
+
+                var next = change(load.Settings);
+
+                if (!next.IsSuccess)
+                {
+                    return Result.Fail(next.Failure!);
+                }
+
+                return ReferenceEquals(next.Value, load.Settings) ? Result.Ok() : SaveCore(next.Value);
+            }
+        }
+
+        private static Result Busy() =>
+            Result.Fail(new Failure(FailureKind.Io, "settings.busy", "The settings are in use by another program just now."));
+
+        private SettingsLoad LoadCore()
         {
             lock (_gate)
             {
@@ -85,14 +166,8 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             }
         }
 
-        /// <inheritdoc />
-        public Result Save(CardCheckSettings settings)
+        private Result SaveCore(CardCheckSettings settings)
         {
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
-
             lock (_gate)
             {
                 var path = FilePath;

@@ -53,7 +53,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant
                 return MissingComponentPage.Create(CultureNameOf(host));
             }
 
-            return CreatePage(host, viewModel => new CardCheckAssistantView(viewModel));
+            return CreatePage(host, viewModel => new CardCheckAssistantView(viewModel), AssistantServicesFactory.Create);
         }
 
         // A host that cannot say what language it uses is read as "no language", which shows English.
@@ -76,13 +76,32 @@ namespace RFiDGear.Extensions.CardCheckAssistant
         /// </summary>
         /// <param name="host">The initialized host service.</param>
         /// <param name="createView">Builds the view for a view model.</param>
+        /// <param name="createServices">
+        /// Builds what the page remembers and offers (see <see cref="AssistantServices"/>) for the window's dispatcher;
+        /// the page remembers and offers nothing when omitted, or when this fails.
+        /// </param>
         /// <returns>The view.</returns>
         internal static FrameworkElement CreatePage(
             IRFiDGearExtensionHost host,
-            Func<CardCheckAssistantViewModel, FrameworkElement> createView)
+            Func<CardCheckAssistantViewModel, FrameworkElement> createView,
+            Func<Dispatcher, AssistantServices>? createServices = null)
         {
             // Called on the UI thread, so this is the dispatcher of the window the page will live in.
-            var viewModel = new CardCheckAssistantViewModel(host, Dispatcher.CurrentDispatcher, new OpenFileDialogService());
+            var dispatcher = Dispatcher.CurrentDispatcher;
+            var services = AssistantServices.None;
+            if (createServices != null)
+            {
+                try
+                {
+                    services = createServices(dispatcher);
+                }
+                catch (Exception)
+                {
+                    // The page works without its memory; that is better than no page.
+                }
+            }
+
+            var viewModel = new CardCheckAssistantViewModel(host, dispatcher, new OpenFileDialogService(), null, services.Settings, services.ImportOffer);
 
             try
             {

@@ -98,9 +98,8 @@ rest follows one change at a time, each with its own tests.
   filled in only if it is still at its default, and text blocks are added by
   name. The settings are merged into what is saved at the moment of applying,
   and a marker with the file's hash is saved with them. Reading, merging and
-  saving take a few milliseconds with no question in between. The store locks
-  per instance, not across windows: two imports at the very same moment write
-  the same result, and an edit saved in that gap is not protected.
+  writing are one step (`ISettingsStore.Update`), so a change made meanwhile by
+  another window of the extension is merged with, not written over.
 
 **Settings** (`ISettingsStore`, created by
 `CardCheckServices.CreateSettingsStore`):
@@ -118,6 +117,16 @@ rest follows one change at a time, each with its own tests.
   `settings.json.corrupt-<time>` next to the original and the defaults are
   used, so nothing is lost. A file another program holds is "unreadable" and
   is not overwritten either.
+- `Update(change)` is the way to change settings that depend on the current
+  ones: it reads them, calls `change` and writes the result as one step, while
+  it holds a named system mutex made from the file's path. Every store for the
+  file (another window, another program) waits for it, so no change is lost to
+  a copy that went stale in between. Nothing is written if the file is from a
+  newer version or cannot be read just now, or if `change` fails or returns
+  its argument unchanged. A holder that does not let go for ten seconds makes
+  the call fail with `settings.busy`; a system that will not make a mutex
+  leaves only the lock inside one store, as before. `Load` and `Save` take the
+  same mutex.
 - `Load` and `Save` never throw because of the file. A save writes a temporary
   file in the same folder, flushes it to the disk and swaps it in, so a full
   disk, a crash or a power loss leaves the old file whole. A file that someone
