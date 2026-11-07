@@ -19,7 +19,9 @@ in the Extensions menu of the main window.
   hot loading.
 - If the library file is missing, or is of another platform or version, the
   window opens with a short text that names the two files and the folder,
-  instead of the page.
+  instead of the page. The check runs each time a window opens, but a library
+  that was loaded earlier in the same RFiDGear session stays loaded, so
+  removing the file only shows up after RFiDGear is restarted.
 
 **What the page does:**
 

@@ -11,7 +11,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
     /// a missing sibling file: the extension is found and created without it, and the failure would come later, when
     /// something first touches a library type. So the first touch is made here, on purpose, inside a try block, and a
     /// library that is missing, of the wrong bitness or of another version gives a page that says so instead of an
-    /// unhandled exception in the host.
+    /// unhandled exception in the host. The check cannot see a file that disappears later: once the library is loaded
+    /// in the process it stays loaded, so a removed file shows up at the next start of the application.
     /// </summary>
     internal static class ComponentCheck
     {

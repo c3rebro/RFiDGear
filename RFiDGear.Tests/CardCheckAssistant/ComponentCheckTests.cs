@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 
+using RFiDGear.ExtensionLibraries.CardCheck;
 using RFiDGear.Extensions.CardCheckAssistant;
 using RFiDGear.Extensions.CardCheckAssistant.Services;
 using RFiDGear.Extensions.CardCheckAssistant.Views;
@@ -87,12 +89,49 @@ namespace RFiDGear.Tests.CardCheckAssistant
             // MEF creates the exported class without the library; a library type in its fields, signatures or
             // constructor would fail when the class is created, before the check can run.
             const BindingFlags all = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-            var types = new[] { typeof(CardCheckAssistantExtension), typeof(ComponentCheck), typeof(MissingComponentPage) }
-                .SelectMany(owner => owner.GetMembers(all).SelectMany(MemberTypes))
+            var owners = new[] { typeof(CardCheckAssistantExtension), typeof(ComponentCheck), typeof(MissingComponentPage) };
+            var types = owners
+                .SelectMany(owner => owner.GetMembers(all).SelectMany(MemberTypes)
+                    .Concat(owner.GetInterfaces())
+                    .Append(owner.BaseType!))
+                .SelectMany(Flatten)
                 .ToList();
 
             Assert.NotEmpty(types);
             Assert.DoesNotContain(types, type => type.Assembly.GetName().Name == LibraryName);
+        }
+
+        [Fact]
+        public void TheTypeWalk_SeesALibraryTypeInsideGenericsArraysAndReferences()
+        {
+            // Without this the check above would let `Func<ICardCheckLog>` or `List<ICardCheckLog>` through: the
+            // outer type is a framework type, the dependency is in its argument.
+            foreach (var type in new[] { typeof(Func<ICardCheckLog>), typeof(List<ICardCheckLog>), typeof(ICardCheckLog[]), typeof(Func<List<ICardCheckLog[]>>) })
+            {
+                Assert.Contains(Flatten(type), inner => inner == typeof(ICardCheckLog));
+            }
+        }
+
+        // The type and everything it is made of: element types and generic arguments, all the way down.
+        private static IEnumerable<Type> Flatten(Type type)
+        {
+            yield return type;
+
+            if (type.HasElementType)
+            {
+                foreach (var inner in Flatten(type.GetElementType()!))
+                {
+                    yield return inner;
+                }
+            }
+
+            if (type.IsGenericType)
+            {
+                foreach (var inner in type.GetGenericArguments().SelectMany(Flatten))
+                {
+                    yield return inner;
+                }
+            }
         }
 
         private static Type[] MemberTypes(MemberInfo member)
