@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -446,6 +447,57 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 services.Settings.RememberProjectFolder(Path.Combine(AppDataSandbox.Root, "probe"));
 
                 Assert.True(File.Exists(Path.Combine(AppDataSandbox.Root, "settings", "settings.json")));
+            });
+        }
+
+        // ── the offer to import the old app's settings is off for now ───────
+
+        [Fact]
+        public async Task TheOfferToImportTheOldAppsSettings_IsOff_EvenWhenTheOldFileIsThere_AndNothingIsReadOrMarked()
+        {
+            var oldFolder = Path.Combine(AppDataSandbox.Root, "CardCheckAssistant");
+            Directory.CreateDirectory(oldFolder);
+            var oldFile = Path.Combine(oldFolder, "settings.xml");
+            File.WriteAllText(oldFile, "<DefaultSettings><SelectedDBServerName>OLD-SERVER</SelectedDBServerName></DefaultSettings>");
+
+            try
+            {
+                await StaTestRunner.RunOnStaThreadAsync(async () =>
+                {
+                    var services = AssistantServicesFactory.Create(Dispatcher.CurrentDispatcher);
+
+                    // Checked before the offer is used: were it the real one, it would ask a real question and wait for it.
+                    Assert.Same(AssistantServices.None.ImportOffer, services.ImportOffer);
+
+                    Assert.False(await services.ImportOffer.OfferAsync(new LocalizedStrings("en-US"), CancellationToken.None));
+                });
+
+                // Nothing of the old file reached the settings, and no marker says it was dealt with.
+                var settingsFile = Path.Combine(AppDataSandbox.Root, "settings", "settings.json");
+                var text = File.Exists(settingsFile) ? File.ReadAllText(settingsFile) : "{}";
+                Assert.DoesNotContain("OLD-SERVER", text, StringComparison.Ordinal);
+
+                using var document = JsonDocument.Parse(text);
+                var holdsMarker = document.RootElement.TryGetProperty("settings", out var settings)
+                    && settings.TryGetProperty("legacyImport", out var marker)
+                    && marker.ValueKind != JsonValueKind.Null;
+                Assert.False(holdsMarker, "a marker says the old settings were dealt with");
+            }
+            finally
+            {
+                File.Delete(oldFile);
+            }
+        }
+
+        [Fact]
+        public async Task TheImportCodeIsKept_SwitchedOnItIsTheRealOfferAgain()
+        {
+            // Not run: with the old file of the previous test possibly present, the real offer would ask a real question.
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var on = AssistantServicesFactory.Create(Dispatcher.CurrentDispatcher, offerLegacyImport: true);
+
+                Assert.IsType<ImportOfferService>(on.ImportOffer);
             });
         }
     }

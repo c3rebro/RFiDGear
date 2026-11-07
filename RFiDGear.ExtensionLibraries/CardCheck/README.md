@@ -68,7 +68,9 @@ rest follows one change at a time, each with its own tests.
   The suite runs against SQLite, not against a SQL Server.
 
 **Import of the old settings** (`ILegacySettingsImporter`, created by
-`CardCheckServices.CreateLegacyImporter`):
+`CardCheckServices.CreateLegacyImporter`). It is built and tested but **not used
+by the extension for now**: since Slice 3.5 the settings are built from scratch
+and no backward compatibility is wanted (the extension has one switch for it):
 
 - `OfferAsync` is the whole conversation, once: it looks for the old
   `settings.xml` (the old assistant's own folder in the application data, and
