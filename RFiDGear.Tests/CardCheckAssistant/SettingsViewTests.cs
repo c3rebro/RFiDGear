@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -114,6 +115,26 @@ namespace RFiDGear.Tests.CardCheckAssistant
                     Named<RadioButton>(view, "GermanReportButton").IsChecked = true;
                     Assert.Equal("other", vm.DatabaseServer);
                     Assert.True(vm.IsGermanReport);
+
+                    // Every text box has a name of its own for a screen reader, in the language of the page, and the three
+                    // path editors, which share one template, are told apart.
+                    string[] CaptionsNow() => new[]
+                    {
+                        rig.Strings[Keys.OutputFolderLabel], rig.Strings[Keys.DefaultProjectLabel], rig.Strings[Keys.MemoryProjectLabel],
+                        rig.Strings[Keys.DatabaseServerLabel], rig.Strings[Keys.DatabaseNameLabel], rig.Strings[Keys.DatabaseTableLabel],
+                        rig.Strings[Keys.TextBlockNameLabel], rig.Strings[Keys.TextBlockContentLabel],
+                    };
+
+                    window.UpdateLayout();
+                    var boxes = Descendants<TextBox>(view).ToList();
+                    Assert.Equal(CaptionsNow().OrderBy(name => name), boxes.Select(AutomationProperties.GetName).OrderBy(name => name));
+                    Assert.Equal(rig.Strings[Keys.OutputFolderLabel], AutomationProperties.GetName(Descendants<TextBox>(Named<ContentControl>(view, "OutputFolderField")).Single()));
+                    Assert.Equal(rig.Strings[Keys.MemoryProjectLabel], AutomationProperties.GetName(Descendants<TextBox>(Named<ContentControl>(view, "MemoryProjectField")).Single()));
+
+                    rig.Strings.Refresh("de-DE");
+                    await Flush();
+                    Assert.Equal(CaptionsNow().OrderBy(name => name), boxes.Select(AutomationProperties.GetName).OrderBy(name => name));
+                    Assert.Equal("Ordner für die Berichte", AutomationProperties.GetName(Descendants<TextBox>(Named<ContentControl>(view, "OutputFolderField")).Single()));
                 }
                 finally
                 {

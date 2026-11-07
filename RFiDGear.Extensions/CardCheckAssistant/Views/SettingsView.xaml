@@ -43,8 +43,11 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBox Grid.Column="0" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+                    <!-- named like the control that shows this template, which is what tells the three path editors apart -->
+                    <TextBox Grid.Column="0" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="{Binding (AutomationProperties.Name), RelativeSource={RelativeSource AncestorType=ContentControl}}" />
                     <Button Grid.Column="1" Margin="6,0,0,0" Padding="12,2" Command="{Binding BrowseCommand}"
+                            AutomationProperties.HelpText="{Binding (AutomationProperties.Name), RelativeSource={RelativeSource AncestorType=ContentControl}}"
                             Content="{Binding DataContext.Strings[Browse], RelativeSource={RelativeSource AncestorType=UserControl}}" />
                 </Grid>
                 <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Margin="0,2,0,0"
@@ -88,7 +91,8 @@
                 <GroupBox Header="{Binding Strings[SectionReports]}">
                     <StackPanel>
                         <TextBlock Style="{StaticResource Label}" Margin="0,0,0,2" Text="{Binding Strings[OutputFolderLabel]}" />
-                        <ContentControl x:Name="OutputFolderField" Content="{Binding OutputFolder}" ContentTemplate="{StaticResource PathField}" />
+                        <ContentControl x:Name="OutputFolderField" Content="{Binding OutputFolder}" ContentTemplate="{StaticResource PathField}"
+                                        AutomationProperties.Name="{Binding Strings[OutputFolderLabel]}" />
                         <CheckBox x:Name="OneFolderPerJobBox" Margin="0,8,0,0" IsChecked="{Binding OneFolderPerJob}"
                                   Content="{Binding Strings[OneFolderPerJobLabel]}" />
                         <CheckBox x:Name="RemoveTemporaryReportsBox" Margin="0,4,0,0" IsChecked="{Binding RemoveTemporaryReports}"
@@ -106,10 +110,12 @@
                 <GroupBox Header="{Binding Strings[SectionProjects]}">
                     <StackPanel>
                         <TextBlock Style="{StaticResource Label}" Margin="0,0,0,2" Text="{Binding Strings[DefaultProjectLabel]}" />
-                        <ContentControl x:Name="DefaultProjectField" Content="{Binding DefaultProject}" ContentTemplate="{StaticResource PathField}" />
+                        <ContentControl x:Name="DefaultProjectField" Content="{Binding DefaultProject}" ContentTemplate="{StaticResource PathField}"
+                                        AutomationProperties.Name="{Binding Strings[DefaultProjectLabel]}" />
                         <TextBlock Style="{StaticResource HintText}" Text="{Binding Strings[DefaultProjectHint]}" />
                         <TextBlock Style="{StaticResource Label}" Text="{Binding Strings[MemoryProjectLabel]}" />
-                        <ContentControl x:Name="MemoryProjectField" Content="{Binding MemoryProject}" ContentTemplate="{StaticResource PathField}" />
+                        <ContentControl x:Name="MemoryProjectField" Content="{Binding MemoryProject}" ContentTemplate="{StaticResource PathField}"
+                                        AutomationProperties.Name="{Binding Strings[MemoryProjectLabel]}" />
                     </StackPanel>
                 </GroupBox>
 
@@ -117,7 +123,8 @@
                     <StackPanel>
                         <TextBlock Style="{StaticResource HintText}" Margin="0,0,0,2" Text="{Binding Strings[DatabaseHint]}" />
                         <TextBlock Style="{StaticResource Label}" Text="{Binding Strings[DatabaseServerLabel]}" />
-                        <TextBox x:Name="ServerBox" Text="{Binding DatabaseServer, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox x:Name="ServerBox" Text="{Binding DatabaseServer, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.Name="{Binding Strings[DatabaseServerLabel]}" />
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -126,11 +133,13 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock Style="{StaticResource Label}" Text="{Binding Strings[DatabaseNameLabel]}" />
-                                <TextBox x:Name="DatabaseBox" Text="{Binding DatabaseName, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox x:Name="DatabaseBox" Text="{Binding DatabaseName, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.Name="{Binding Strings[DatabaseNameLabel]}" />
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Style="{StaticResource Label}" Text="{Binding Strings[DatabaseTableLabel]}" />
-                                <TextBox x:Name="TableBox" Text="{Binding DatabaseTable, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox x:Name="TableBox" Text="{Binding DatabaseTable, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.Name="{Binding Strings[DatabaseTableLabel]}" />
                             </StackPanel>
                         </Grid>
                         <TextBlock x:Name="DatabaseErrorText" Style="{StaticResource ErrorText}" Text="{Binding DatabaseError}"
@@ -176,6 +185,7 @@
                                             Content="{Binding Strings[RemoveTextBlockButton]}" />
                                 </StackPanel>
                                 <ListBox x:Name="TextBlockList" MinHeight="120" ItemsSource="{Binding TextBlocks}"
+                                         AutomationProperties.Name="{Binding Strings[SectionTextBlocks]}"
                                          SelectedItem="{Binding SelectedTextBlock, Mode=TwoWay}">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate DataType="{x:Type vm:TextBlockViewModel}">
@@ -198,12 +208,14 @@
                                         Visibility="{Binding DataContext.HasSelectedTextBlock, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}">
                                 <TextBlock Style="{StaticResource Label}" Margin="0,0,0,2"
                                            Text="{Binding DataContext.Strings[TextBlockNameLabel], RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                                <TextBox x:Name="TextBlockNameBox" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox x:Name="TextBlockNameBox" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.Name="{Binding DataContext.Strings[TextBlockNameLabel], RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                 <TextBlock x:Name="TextBlockNameError" Style="{StaticResource ErrorText}" Text="{Binding NameError}"
                                            Visibility="{Binding HasNameError, Converter={StaticResource BoolToVisibility}}" />
                                 <TextBlock Style="{StaticResource Label}"
                                            Text="{Binding DataContext.Strings[TextBlockContentLabel], RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                 <TextBox x:Name="TextBlockContentBox" Height="110" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                         AutomationProperties.Name="{Binding DataContext.Strings[TextBlockContentLabel], RelativeSource={RelativeSource AncestorType=UserControl}}"
                                          Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}" />
                             </StackPanel>
                         </Grid>

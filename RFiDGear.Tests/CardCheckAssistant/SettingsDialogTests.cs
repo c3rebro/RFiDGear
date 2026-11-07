@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using System.Windows;
@@ -42,6 +43,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
                 void End()
                 {
+                    // A save that is still going makes the view model refuse to close; a view model that is disposed no longer does.
+                    viewModel.Dispose();
                     prompts.WillAnswer(true);
                     try
                     {
@@ -130,6 +133,39 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.Single(editor.Saves);
                 Assert.Empty(prompts.Asked);
             });
+        }
+
+        [Fact]
+        public async Task AWindowThatCannotCloseBecauseASaveIsPending_FailsTheTest_InsteadOfHangingIt()
+        {
+            // The harness itself: while the settings are being saved the view model refuses every close, and the watchdog
+            // has to get through anyway. The thread is a background thread, so even a window that stays open for good
+            // ends this test after 30 seconds and does not hold up the run.
+            var run = StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                var (dialog, editor, prompts, strings) = Create();
+                using var editorDisposal = editor;
+                editor.HoldSave();
+
+                var clock = Stopwatch.StartNew();
+                var failure = Assert.Throws<TimeoutException>(() => ShowAndDrive(dialog, strings, prompts, (shown, viewModel) =>
+                {
+                    viewModel.OneFolderPerJob = true;
+                    _ = viewModel.OkCommand.ExecuteAsync();
+
+                    return Task.CompletedTask;
+                }));
+                clock.Stop();
+
+                // The watchdog waits three seconds. The held save gives up after ten and would then close the window the
+                // usual way, so a window closed by the watchdog is one that is closed well before that.
+                Assert.Contains("still open", failure.Message, StringComparison.Ordinal);
+                Assert.True(clock.Elapsed < TimeSpan.FromSeconds(8), "The watchdog needed " + clock.Elapsed.TotalSeconds + " seconds to close the window.");
+                editor.ReleaseSave();
+            });
+
+            Assert.Same(run, await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(30))));
+            await run;
         }
 
         [Fact]
