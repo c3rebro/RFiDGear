@@ -238,6 +238,8 @@ namespace RFiDGear.Tests.CardCheck
         [Theory]
         [InlineData("this is not xml at all")]
         [InlineData("<DefaultSettings><SelectedDBServerName><nested>complex</nested></SelectedDBServerName></DefaultSettings>")]
+        [InlineData("<DefaultSettings/>trailing garbage")]
+        [InlineData("<DefaultSettings><SelectedDBName>x</SelectedDBName></DefaultSettings><DefaultSettings />")]
         public void Preview_ADamagedFile_IsRefusedAsCorrupt(string content)
         {
             var result = Importer().Preview(Write(UnpackagedFile, content));

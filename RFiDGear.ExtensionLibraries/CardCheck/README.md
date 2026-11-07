@@ -28,11 +28,14 @@ tests.
   again. `Discover`, `Preview` and `Apply` are the same steps for a menu entry.
 - The old files are only read: opened for reading and shared with the old
   assistant if it is still running, never changed, moved or deleted. The
-  preview writes nothing. `Apply` checks the SHA-256 of the file against the
-  preview, so a file that changed in between is refused.
-- A user name, a password and the port are not imported and not even held: the
-  reader skips those elements while it reads and the preview only says that
-  they were not read. The file is not trusted: a document type declaration is
+  preview changes neither that file nor the settings (a damaged settings file
+  is moved aside, as with every load). `Apply` checks the SHA-256 of the file
+  against the preview, so a file that changed in between is refused.
+- A user name, a password and the port are not imported: the reader skips
+  those elements while it reads, the preview only says that they were not
+  read, and the library's copy of the file is cleared once it is parsed (the
+  XML reader's own buffers are not under its control). The file is not
+  trusted: a document type declaration is
   refused, nothing external is resolved, a file over a megabyte is refused, and
   it does not use the old assistant's own reader.
 - Settings that no longer exist (theme, updates, the reader volume, the path of
@@ -42,7 +45,10 @@ tests.
 - Nothing the operator entered in this version is overwritten: a setting is
   filled in only if it is still at its default, and text blocks are added by
   name. The settings are merged into what is saved at the moment of applying,
-  and a marker with the file's hash is saved with them.
+  and a marker with the file's hash is saved with them. Reading, merging and
+  saving take a few milliseconds with no question in between. The store locks
+  per instance, not across windows: two imports at the very same moment write
+  the same result, and an edit saved in that gap is not protected.
 
 **Settings** (`ISettingsStore`, created by
 `CardCheckServices.CreateSettingsStore`):

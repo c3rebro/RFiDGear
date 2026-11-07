@@ -27,7 +27,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         /// <summary>A setting that does not exist in this version (theme, updates, the reader volume, ...).</summary>
         NotUsed,
 
-        /// <summary>A credential. It is skipped while reading and never held, kept or logged.</summary>
+        /// <summary>A credential. It is skipped while reading and never taken into a setting, kept or logged.</summary>
         NeverRead,
 
         /// <summary>Not taken over because of another setting (database settings of an SQLite configuration).</summary>

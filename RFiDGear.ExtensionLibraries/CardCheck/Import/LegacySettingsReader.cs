@@ -53,8 +53,8 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
     /// <summary>
     /// Reads the settings file of the old assistant (an <c>XmlSerializer</c> document with the root
     /// <c>DefaultSettings</c>). The file is not trusted: a document type declaration is refused, nothing external is
-    /// resolved, and the credential elements are skipped while reading, so their values are never held. It does not use
-    /// the old assistant's own reader, which would also load them.
+    /// resolved, and the credential elements are skipped while reading, so their values never reach a setting, a preview
+    /// or a log. It does not use the old assistant's own reader, which would also load them.
     /// </summary>
     internal static class LegacySettingsReader
     {
@@ -103,6 +103,12 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 }
 
                 ReadChildren(reader, values, items, notes);
+
+                // Whatever follows the root element has to be well formed as well: a damaged file is never taken
+                // for a good one and marked as imported.
+                while (reader.Read())
+                {
+                }
             }
             catch (Exception ex) when (ex is XmlException || ex is InvalidOperationException)
             {

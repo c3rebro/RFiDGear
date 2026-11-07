@@ -75,7 +75,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             }
 
             var (bytes, hash) = read.Value;
-            var parsed = LegacySettingsReader.Read(bytes);
+            var parsed = ParseAndClear(bytes);
 
             if (!parsed.IsSuccess)
             {
@@ -113,10 +113,12 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
             if (!string.Equals(hash, preview.SourceSha256, StringComparison.Ordinal))
             {
+                CryptographicOperations.ZeroMemory(bytes);
+
                 return Result.Fail(new Failure(FailureKind.InvalidInput, "import.source.changed", "The old settings file changed since it was previewed."));
             }
 
-            var parsed = LegacySettingsReader.Read(bytes);
+            var parsed = ParseAndClear(bytes);
 
             if (!parsed.IsSuccess)
             {
@@ -234,6 +236,19 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             return applied.IsSuccess
                 ? new ImportOffer(ImportOutcome.Imported, preview.Value.Notes)
                 : new ImportOffer(ImportOutcome.Failed, Array.Empty<ImportNote>(), applied.Failure);
+        }
+
+        // The file holds the credentials of the old assistant; the library's copy of it does not outlive the parse.
+        private static Result<LegacyReadResult> ParseAndClear(byte[] bytes)
+        {
+            try
+            {
+                return LegacySettingsReader.Read(bytes);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(bytes);
+            }
         }
 
         private static Failure StoreUnavailable(SettingsLoadStatus status) =>

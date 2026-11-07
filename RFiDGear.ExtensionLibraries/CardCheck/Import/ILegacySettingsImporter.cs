@@ -7,8 +7,9 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
     /// <summary>
     /// Takes the settings of the old Card Check Assistant over into this version, once, when the operator agrees.
     /// The old files are only ever read: never changed, moved or deleted. Credentials (user name, password, port) are
-    /// not taken over and not even held. Values that the new settings already have are kept; only settings that are
-    /// still at their defaults are filled in.
+    /// not taken over: the elements are skipped while reading, and the library's copy of the file is cleared as soon as
+    /// it is parsed. Values that the new settings already have are kept; only settings that are still at their
+    /// defaults are filled in.
     /// </summary>
     public interface ILegacySettingsImporter
     {
@@ -20,7 +21,8 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         IReadOnlyList<LegacySettingsCandidate> Discover();
 
         /// <summary>
-        /// Works out what importing a file would do, without writing anything.
+        /// Works out what importing a file would do. Neither the old file nor the settings are changed; the only
+        /// exception is the recovery every load of the settings does: a damaged settings file is moved aside, not lost.
         /// </summary>
         /// <param name="sourcePath">The file to read.</param>
         /// <returns>The preview, or why the file cannot be used (missing, too large, not a settings file, damaged).</returns>
