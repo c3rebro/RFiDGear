@@ -49,7 +49,9 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
     /// <summary>
     /// Every file path of one order's check. All of them lie in <see cref="Folder"/>, which lies in
-    /// <see cref="Root"/>. They are built by <see cref="IReportFiles.Resolve"/> and by nothing else.
+    /// <see cref="Root"/>. They are built by <see cref="IReportFiles.Resolve"/> and by nothing else; because a record
+    /// can be copied or built by hand, <see cref="IReportFiles.PrepareStep"/> and <see cref="IReportFiles.Cleanup"/>
+    /// check that a path is directly in <see cref="Folder"/> before they delete it.
     /// </summary>
     /// <param name="Root">The report output folder.</param>
     /// <param name="Folder">The folder the order's files are in: <paramref name="Root"/> itself, or a folder below it named after the job.</param>

@@ -46,8 +46,12 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         SessionSnapshot Current { get; }
 
         /// <summary>
-        /// Raised after every change, with the new snapshot, on the thread that made the change and without any lock
-        /// held. A handler that throws does not stop the others or undo the change; the fault is logged.
+        /// Raised after every change, with the new snapshot, without any lock held, one event at a time and in the
+        /// order of the versions: no handler sees an older snapshot after a newer one. It is raised on the thread that
+        /// made the change, except that a change made while another change's event is being raised (by a handler, or by
+        /// another thread) is raised afterwards by the thread that is already raising, so that call can return before
+        /// its event has been delivered. A handler that throws does not stop the others or undo the change; the fault
+        /// is logged.
         /// </summary>
         event EventHandler<SessionSnapshot>? Changed;
 

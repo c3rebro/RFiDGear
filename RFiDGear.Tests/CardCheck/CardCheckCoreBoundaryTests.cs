@@ -174,6 +174,15 @@ namespace RFiDGear.Tests.CardCheck
             Assert.Empty(offenders);
         }
 
+        [Fact]
+        public void PublicSurfaceGuard_DoesNotTakeTheDatabaseDriverForTheFramework()
+        {
+            // It starts with "System" but is a package the library ships beside itself; a public member that exposed one
+            // of its types would make every consumer bind to it.
+            Assert.False(IsFrameworkOrOwn(typeof(System.Data.SqlClient.SqlException)));
+            Assert.True(IsFrameworkOrOwn(typeof(System.Data.Common.DbConnection)));
+        }
+
         private static bool IsFrameworkOrOwn(Type type)
         {
             var assembly = type.Assembly;
@@ -182,7 +191,7 @@ namespace RFiDGear.Tests.CardCheck
             return assembly == Core
                 || name == "mscorlib"
                 || name == "netstandard"
-                || name.StartsWith("System", StringComparison.Ordinal);
+                || (name.StartsWith("System", StringComparison.Ordinal) && name != "System.Data.SqlClient");
         }
 
         private static IEnumerable<Type> TypesInPublicSignaturesOf(Type type)

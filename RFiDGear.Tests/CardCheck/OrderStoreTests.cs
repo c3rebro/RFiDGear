@@ -48,10 +48,13 @@ namespace RFiDGear.Tests.CardCheck
         {
             private readonly string _connectionString;
 
-            public SqliteFactory(string connectionString)
+            public SqliteFactory(string connectionString, bool sqlServerDialect = false)
             {
                 _connectionString = connectionString;
+                UsesSqlServerDialect = sqlServerDialect;
             }
+
+            public bool UsesSqlServerDialect { get; }
 
             public int Created { get; private set; }
 
@@ -84,7 +87,21 @@ namespace RFiDGear.Tests.CardCheck
             }
         }
 
-        private OrderStore Store(SqliteFactory factory, DatabaseSettings? settings = null) =>
+        private sealed class FailingFactory : IDbConnectionFactory
+        {
+            private readonly Exception _failure;
+
+            public FailingFactory(Exception failure)
+            {
+                _failure = failure;
+            }
+
+            public bool UsesSqlServerDialect => false;
+
+            public DbConnection Create() => throw _failure;
+        }
+
+        private OrderStore Store(IDbConnectionFactory factory, DatabaseSettings? settings = null) =>
             new OrderStore(settings ?? new DatabaseSettings { Server = Server, Database = Database, Table = "T_CardCheck" }, factory, _log, () => _clock);
 
         private OrderStore Store() => Store(new SqliteFactory(Connection));
@@ -241,6 +258,39 @@ namespace RFiDGear.Tests.CardCheck
 
             Assert.Equal(3, factory.Isolation.Count);
             Assert.All(factory.Isolation, level => Assert.Equal(IsolationLevel.Serializable, level));
+        }
+
+        [Fact]
+        public async Task OnSqlServerTheExistenceCheckOfAWriteTakesAnUpdateLock_ElsewhereNot()
+        {
+            Assert.Equal(
+                "SELECT 1 FROM [dbo].[T] WITH (UPDLOCK, HOLDLOCK) WHERE [CC-ID] = @id",
+                new OrderSql("[dbo].[T]", sqlServer: true).Exists);
+            Assert.Equal("SELECT 1 FROM [dbo].[T] WHERE [CC-ID] = @id", new OrderSql("[dbo].[T]", sqlServer: false).Exists);
+            Assert.True(new SqlServerConnectionFactory(new DatabaseSettings()).UsesSqlServerDialect);
+
+            // The store asks its factory: the test engine does not know the hint, so a write to it fails once the
+            // factory says it is SQL Server, which shows the hint was sent.
+            Insert("A", status: "InProgress");
+            var result = await Store(new SqliteFactory(Connection, sqlServerDialect: true)).FinalizeAsync("A", Pdf("x"), CancellationToken.None);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal("InProgress", Value("A", "CC-Status"));
+        }
+
+        [Theory]
+        [InlineData(typeof(FileNotFoundException))]
+        [InlineData(typeof(FileLoadException))]
+        [InlineData(typeof(BadImageFormatException))]
+        [InlineData(typeof(DllNotFoundException))]
+        public async Task AMissingDatabaseDriver_IsAFailureOfItsOwn_NotAnException(Type missing)
+        {
+            var store = Store(new FailingFactory((Exception)Activator.CreateInstance(missing)!));
+
+            var result = await store.ListAsync(CancellationToken.None);
+
+            Assert.Equal(FailureKind.InvalidConfiguration, result.Failure!.Kind);
+            Assert.Equal("orders.driver.missing", result.Failure.Code);
         }
 
         [Fact]

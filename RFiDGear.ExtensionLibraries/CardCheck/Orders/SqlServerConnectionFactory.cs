@@ -9,6 +9,12 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         /// <summary>Creates a new, closed connection.</summary>
         /// <returns>The connection; the caller disposes it.</returns>
         DbConnection Create();
+
+        /// <summary>
+        /// Whether the connection goes to SQL Server, which understands the lock hints the writes use. The tests run on
+        /// another engine and say <c>false</c>.
+        /// </summary>
+        bool UsesSqlServerDialect { get; }
     }
 
     /// <summary>
@@ -25,6 +31,9 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         {
             _settings = settings ?? throw new System.ArgumentNullException(nameof(settings));
         }
+
+        /// <inheritdoc />
+        public bool UsesSqlServerDialect => true;
 
         /// <inheritdoc />
         public DbConnection Create() => new SqlConnection(BuildConnectionString(_settings));

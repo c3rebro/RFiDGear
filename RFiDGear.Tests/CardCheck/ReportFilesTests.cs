@@ -393,6 +393,28 @@ namespace RFiDGear.Tests.CardCheck
         }
 
         [Fact]
+        public void PrepareStepAndCleanup_NeverDeleteAPathOutsideTheOrdersFolder_WhateverTheRecordSays()
+        {
+            var paths = Paths();
+            var elsewhere = Path.Combine(_root.Path, "elsewhere", "precious.docx");           // another folder in the root
+            var inTheRoot = Path.Combine(_root.Path, "KP-000005-5.step2.pdf");                // the root, not the order's folder
+            var wayOut = Path.Combine(paths.Folder, "..", "elsewhere", "precious.docx");      // a way out of the folder
+            Touch(elsewhere);
+            Touch(inTheRoot);
+
+            var prepared = Service().PrepareStep(paths with { Step1 = elsewhere }, ReportFile.Step1);
+            var viaDots = Service().PrepareStep(paths with { Step1 = wayOut }, ReportFile.Step1);
+            var empty = Service().PrepareStep(paths with { Step1 = string.Empty }, ReportFile.Step1);
+            var cleaned = Service().Cleanup(paths with { Step1 = elsewhere, Step2 = inTheRoot }, CleanupScope.NotSupported, removeTemporaryReports: true);
+
+            Assert.All(new[] { prepared, viaDots, empty }, result => Assert.Equal("report.path.outside", result.Failure!.Code));
+            Assert.Equal(new[] { ReportFile.Step1, ReportFile.Step2 }, cleaned.Failed);
+            Assert.Empty(cleaned.Removed);
+            Assert.True(File.Exists(elsewhere));
+            Assert.True(File.Exists(inTheRoot));
+        }
+
+        [Fact]
         public void PrepareStep_RemovesAReadOnlyFile()
         {
             var paths = Paths();

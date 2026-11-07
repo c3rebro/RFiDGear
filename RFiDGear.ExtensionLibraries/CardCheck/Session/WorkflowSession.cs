@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace RFiDGear.ExtensionLibraries.CardCheck
@@ -8,6 +9,11 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
     {
         private readonly ICardCheckLog _log;
         private readonly object _gate = new object();
+
+        // Snapshots that were swapped in and whose event has not been raised yet, oldest first, and whether a caller
+        // is raising them. Together they keep the events in the order of the versions.
+        private readonly Queue<SessionSnapshot> _pending = new Queue<SessionSnapshot>();
+        private bool _delivering;
         private SessionSnapshot _current = SessionSnapshot.Empty;
 
         /// <summary>Creates an empty session.</summary>
@@ -113,11 +119,11 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             Result<SessionSnapshot>.Fail(new Failure(FailureKind.InvalidInput, "session.noOrder", "No check has begun."));
 
         // The new snapshot is built from the current one and swapped in under the lock; the event is raised after the
-        // lock is released, so a handler may read the session or change it again.
+        // lock is released, so a handler may read the session or change it again. Events are raised one at a time, in
+        // the order of the versions: if a handler (or another thread) changes the session while events are being
+        // raised, its snapshot is queued and raised by the caller that is already delivering, after the ones before it.
         private Result Change(Func<SessionSnapshot, Result<SessionSnapshot>> build)
         {
-            SessionSnapshot next;
-
             lock (_gate)
             {
                 var result = build(_current);
@@ -127,13 +133,59 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                     return Result.Fail(result.Failure!);
                 }
 
-                next = result.Value;
-                _current = next;
+                _current = result.Value;
+                _pending.Enqueue(result.Value);
+
+                if (_delivering)
+                {
+                    return Result.Ok();
+                }
+
+                _delivering = true;
             }
 
-            Raise(next);
+            DeliverPending();
 
             return Result.Ok();
+        }
+
+        private void DeliverPending()
+        {
+            var drained = false;
+
+            try
+            {
+                while (true)
+                {
+                    SessionSnapshot next;
+
+                    lock (_gate)
+                    {
+                        if (_pending.Count == 0)
+                        {
+                            _delivering = false;
+                            drained = true;
+
+                            return;
+                        }
+
+                        next = _pending.Dequeue();
+                    }
+
+                    Raise(next);
+                }
+            }
+            finally
+            {
+                if (!drained)
+                {
+                    // Raise catches what a handler throws; this is for anything worse, so a later change can deliver.
+                    lock (_gate)
+                    {
+                        _delivering = false;
+                    }
+                }
+            }
         }
 
         private void Raise(SessionSnapshot snapshot)

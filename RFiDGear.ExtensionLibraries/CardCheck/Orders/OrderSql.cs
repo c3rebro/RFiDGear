@@ -19,12 +19,18 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
         /// <summary>Creates the statements for a table.</summary>
         /// <param name="quotedTable">The table name as returned by <see cref="SqlIdentifier.Quote"/>.</param>
-        public OrderSql(string quotedTable)
+        /// <param name="sqlServer">
+        /// Whether the statements go to SQL Server. The existence check of a write then takes an update lock and keeps
+        /// it (<c>UPDLOCK, HOLDLOCK</c>): with only a shared lock, a writer of the order system and this transaction
+        /// each hold a lock the other needs to upgrade, and one of them is chosen as the victim of a deadlock. With the
+        /// update lock the other writer waits until this transaction is over.
+        /// </param>
+        public OrderSql(string quotedTable, bool sqlServer)
         {
             SelectAll = "SELECT " + Columns + " FROM " + quotedTable;
             Probe = "SELECT " + Columns + ", " + Report + " FROM " + quotedTable + " WHERE 1 = 0";
             SelectReport = "SELECT " + Report + " FROM " + quotedTable + " WHERE " + Id + " = @id";
-            Exists = "SELECT 1 FROM " + quotedTable + " WHERE " + Id + " = @id";
+            Exists = "SELECT 1 FROM " + quotedTable + (sqlServer ? " WITH (UPDLOCK, HOLDLOCK)" : string.Empty) + " WHERE " + Id + " = @id";
             UpdateReport = "UPDATE " + quotedTable + " SET " + Report + " = @data WHERE " + Id + " = @id";
             UpdateStatus = "UPDATE " + quotedTable + " SET " + Status + " = @status WHERE " + Id + " = @id";
             UpdateChangedDate = "UPDATE " + quotedTable + " SET " + Changed + " = @changed WHERE " + Id + " = @id";
