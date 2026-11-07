@@ -17,6 +17,9 @@ namespace RFiDGear.Tests
         /// <summary>Gets or sets the result of reading the settings.</summary>
         public ERROR Result { get; set; } = ERROR.NoError;
 
+        /// <summary>Gets or sets whether reading the settings throws, as a reader that fails in a way nobody expected.</summary>
+        public bool Throw { get; set; }
+
         /// <summary>Gets how often the settings were read.</summary>
         public int AppSettingsCalls { get; private set; }
 
@@ -29,6 +32,11 @@ namespace RFiDGear.Tests
             bool authenticateBeforeReading = true)
         {
             AppSettingsCalls++;
+            if (Throw)
+            {
+                throw new System.InvalidOperationException("The reader failed.");
+            }
+
             DesfireAppKeySetting = (DESFireKeySettings)KeySettings;
             MaxNumberOfAppKeys = MaxNumberOfKeys;
 

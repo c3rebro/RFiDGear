@@ -527,6 +527,29 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         /// Finalizes a task by updating success state and reader status.
         /// </summary>
+        /// <summary>
+        /// Runs a check that a button of the task dialog starts. A task that runs in the task loop is prepared by the
+        /// command delegator, which allows it to finish again; a button press is not, so the second press of a button
+        /// would not have updated <see cref="IsTaskCompletedSuccessfully"/> or the reader status, and a command that
+        /// threw would never have finished at all.
+        /// </summary>
+        /// <param name="command">The check to run.</param>
+        /// <returns>A task that completes when the check has run and the task has been finished, once.</returns>
+        private async Task RunFromUiAsync(Func<Task> command)
+        {
+            hasFinalizedTask = false;
+
+            try
+            {
+                await command();
+            }
+            finally
+            {
+                // Does nothing when the command has finished the task itself.
+                await FinalizeTaskAsync();
+            }
+        }
+
         private async Task FinalizeTaskAsync()
         {
             if (hasFinalizedTask)
@@ -3872,12 +3895,12 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// <summary>
         /// Relay command that exposes <see cref="ReadAppSettingsCommand"/> for button binding.
         /// </summary>
-        public IAsyncRelayCommand ReadAppSettingsRelayCommand => new AsyncRelayCommand(ReadAppSettingsCommand);
+        public IAsyncRelayCommand ReadAppSettingsRelayCommand => new AsyncRelayCommand(() => RunFromUiAsync(ReadAppSettingsCommand));
 
         /// <summary>
         /// Relay command that exposes <see cref="CheckAppKeyCountCommand"/> for button binding.
         /// </summary>
-        public IAsyncRelayCommand CheckAppKeyCountRelayCommand => new AsyncRelayCommand(CheckAppKeyCountCommand);
+        public IAsyncRelayCommand CheckAppKeyCountRelayCommand => new AsyncRelayCommand(() => RunFromUiAsync(CheckAppKeyCountCommand));
 
         /// <summary>
         /// Reads the actual max-key count from the card application and compares it to the expected value.
