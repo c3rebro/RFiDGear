@@ -1795,4 +1795,40 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="labelExpectedChangeKeyPolicy" xml:space="preserve">
     <value>Change-key policy (expected)</value>
   </data>
+  <data name="labelContentMifareDesfireAppId" xml:space="preserve">
+    <value>App ID</value>
+  </data>
+  <data name="labelContentMifareDesfireMaxKeys" xml:space="preserve">
+    <value>Max Keys</value>
+  </data>
+  <data name="buttonContentMifareDesfirePerformCompare" xml:space="preserve">
+    <value>Perform Compare</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireExpectedKeyCount" xml:space="preserve">
+    <value>Expected Key Count</value>
+  </data>
+  <data name="textBoxStatusAppSettingsCompared" xml:space="preserve">
+    <value>{0}: App {1} settings read — actual: 0x{2:X2}, expected: 0x{3:X2} ({4}) → {5}</value>
+  </data>
+  <data name="textBoxStatusAppKeyCountCompared" xml:space="preserve">
+    <value>{0}: App {1} key count — actual: {2}, expected: {3} → {4}</value>
+  </data>
+  <data name="textBoxStatusAppSettingsUnreadable" xml:space="preserve">
+    <value>{0}: Unable to read App {1} settings: {2}</value>
+  </data>
+  <data name="textBoxStatusCompareModeAll" xml:space="preserve">
+    <value>all selected</value>
+  </data>
+  <data name="textBoxStatusCompareModeAny" xml:space="preserve">
+    <value>any selected</value>
+  </data>
+  <data name="textBoxStatusCompareModeExact" xml:space="preserve">
+    <value>exact match</value>
+  </data>
+  <data name="textBoxStatusComparePass" xml:space="preserve">
+    <value>PASS</value>
+  </data>
+  <data name="textBoxStatusCompareFail" xml:space="preserve">
+    <value>FAIL</value>
+  </data>
 </root>

@@ -1817,4 +1817,40 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="labelExpectedChangeKeyPolicy" xml:space="preserve">
     <value>Schlüsseländerung (erwartet)</value>
   </data>
+  <data name="labelContentMifareDesfireAppId" xml:space="preserve">
+    <value>App-ID</value>
+  </data>
+  <data name="labelContentMifareDesfireMaxKeys" xml:space="preserve">
+    <value>Max. Schlüssel</value>
+  </data>
+  <data name="buttonContentMifareDesfirePerformCompare" xml:space="preserve">
+    <value>Vergleich durchführen</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireExpectedKeyCount" xml:space="preserve">
+    <value>Erwartete Schlüsselanzahl</value>
+  </data>
+  <data name="textBoxStatusAppSettingsCompared" xml:space="preserve">
+    <value>{0}: Einstellungen von App {1} gelesen — ist: 0x{2:X2}, soll: 0x{3:X2} ({4}) → {5}</value>
+  </data>
+  <data name="textBoxStatusAppKeyCountCompared" xml:space="preserve">
+    <value>{0}: Schlüsselanzahl von App {1} — ist: {2}, soll: {3} → {4}</value>
+  </data>
+  <data name="textBoxStatusAppSettingsUnreadable" xml:space="preserve">
+    <value>{0}: Einstellungen von App {1} konnten nicht gelesen werden: {2}</value>
+  </data>
+  <data name="textBoxStatusCompareModeAll" xml:space="preserve">
+    <value>alle gewählten</value>
+  </data>
+  <data name="textBoxStatusCompareModeAny" xml:space="preserve">
+    <value>mindestens eine gewählte</value>
+  </data>
+  <data name="textBoxStatusCompareModeExact" xml:space="preserve">
+    <value>exakte Übereinstimmung</value>
+  </data>
+  <data name="textBoxStatusComparePass" xml:space="preserve">
+    <value>BESTANDEN</value>
+  </data>
+  <data name="textBoxStatusCompareFail" xml:space="preserve">
+    <value>NICHT BESTANDEN</value>
+  </data>
 </root>

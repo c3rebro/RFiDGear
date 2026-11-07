@@ -290,7 +290,7 @@
                         VerticalAlignment="Bottom"
                         Command="{Binding ReadAppSettingsRelayCommand}"
                         Visibility="{Binding ShowAppSettingsCheckModeSelector, Converter={StaticResource BoolToVisConv}}"
-                        Content="Perform Compare" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfirePerformCompare'}" />
                     <GroupBox
                         Grid.Row="3"
                         Grid.Column="0"
@@ -299,7 +299,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Top"
                         Visibility="{Binding ShowAppKeyCountCheckInputs, Converter={StaticResource BoolToVisConv}}"
-                        Header="Expected Key Count">
+                        Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='groupBoxHeaderMifareDesfireExpectedKeyCount'}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="150" />
@@ -315,7 +315,7 @@
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Center"
                                 HorizontalContentAlignment="Left"
-                                Content="Max Keys" />
+                                Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireMaxKeys'}" />
                             <ComboBox
                                 Grid.Row="0"
                                 Grid.Column="1"
@@ -338,7 +338,7 @@
                         VerticalAlignment="Bottom"
                         Command="{Binding CheckAppKeyCountRelayCommand}"
                         Visibility="{Binding ShowAppKeyCountCheckInputs, Converter={StaticResource BoolToVisConv}}"
-                        Content="Perform Compare" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='buttonContentMifareDesfirePerformCompare'}" />
                     <Button
                         Grid.Row="6"
                         Grid.Column="0"
@@ -530,7 +530,7 @@
                             VerticalAlignment="Stretch"
                             HorizontalContentAlignment="Left"
                             VerticalContentAlignment="Center"
-                            Content="App ID" />
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppId'}" />
                         <TextBox
                             Grid.Row="0"
                             Grid.Column="1"

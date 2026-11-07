@@ -156,6 +156,29 @@ namespace RFiDGear.Tests
 
                 Assert.Equal(expected, viewModel.CurrentTaskErrorLevel);
                 Assert.Equal(1, fakeProvider.AppSettingsCalls);
+
+                // The text follows the language, so it is compared with the resource and not with a literal.
+                Assert.Contains(
+                    ResourceLoader.GetResource(expected == ERROR.NoError ? "textBoxStatusComparePass" : "textBoxStatusCompareFail"),
+                    viewModel.StatusText);
+            });
+        }
+
+        [Fact]
+        public async Task TheCommand_PassesOnTheErrorOfAReadThatFailed()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateCheckAppConfigViewModel(DesfireAppSettingsCompareMode.AllSelected, 0x0B);
+                var fakeProvider = new FakeAppSettingsProvider { KeySettings = 0x0F, Result = ERROR.TransportError };
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    await viewModel.ReadAppSettingsCommand();
+                }
+
+                // What the card said is not compared when the read failed: the error is the result.
+                Assert.Equal(ERROR.TransportError, viewModel.CurrentTaskErrorLevel);
             });
         }
 

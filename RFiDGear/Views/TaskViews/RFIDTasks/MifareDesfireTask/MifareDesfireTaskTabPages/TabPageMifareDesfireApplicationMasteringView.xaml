@@ -310,7 +310,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
-                        Content="App ID" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppId'}" />
                     <TextBox
                         Grid.Row="0"
                         Grid.Column="1"

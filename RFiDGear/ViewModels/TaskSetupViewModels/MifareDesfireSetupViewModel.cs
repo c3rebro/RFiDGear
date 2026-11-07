@@ -3906,18 +3906,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             var expected = selectedDesfireAppMaxNumberOfKeysAsInt;
                             bool passes = DesfireValueComparison.MatchesNumber(actual, expected, NumericRelation.Equal);
 
-                            StatusText += string.Format("{0}: App {1} key count — actual: {2}, expected: {3} → {4}\n",
+                            StatusText += LocalizedStatusLine(
+                                "textBoxStatusAppKeyCountCompared",
                                 DateTime.Now,
                                 AppNumberCurrentAsInt,
                                 actual,
                                 expected,
-                                passes ? "PASS" : "FAIL");
+                                DescribeCompareResult(passes));
 
                             CurrentTaskErrorLevel = passes ? ERROR.NoError : ERROR.IsNotTrue;
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to read App {1} settings: {2}\n", DateTime.Now, AppNumberCurrentAsInt, result.Message ?? result.Code.ToString());
+                            StatusText += LocalizedStatusLine("textBoxStatusAppSettingsUnreadable", DateTime.Now, AppNumberCurrentAsInt, result.Message ?? result.Code.ToString());
                             CurrentTaskErrorLevel = result.Code;
                         }
                     }
@@ -3970,19 +3971,20 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                             var actual = (byte)device.DesfireAppKeySetting;
                             bool passes = DesfireValueComparison.MatchesKeySettings(actual, expected, AppSettingsCompareMode);
 
-                            StatusText += string.Format("{0}: App {1} settings read — actual: 0x{2:X2}, expected: 0x{3:X2} ({4}) → {5}\n",
+                            StatusText += LocalizedStatusLine(
+                                "textBoxStatusAppSettingsCompared",
                                 DateTime.Now,
                                 AppNumberCurrentAsInt,
                                 actual,
                                 expected,
                                 DescribeCompareMode(AppSettingsCompareMode),
-                                passes ? "PASS" : "FAIL");
+                                DescribeCompareResult(passes));
 
                             CurrentTaskErrorLevel = passes ? ERROR.NoError : ERROR.IsNotTrue;
                         }
                         else
                         {
-                            StatusText += string.Format("{0}: Unable to read App {1} settings: {2}\n", DateTime.Now, AppNumberCurrentAsInt, result.Message ?? result.Code.ToString());
+                            StatusText += LocalizedStatusLine("textBoxStatusAppSettingsUnreadable", DateTime.Now, AppNumberCurrentAsInt, result.Message ?? result.Code.ToString());
                             CurrentTaskErrorLevel = result.Code;
                         }
 
@@ -4020,13 +4022,25 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             switch (mode)
             {
                 case DesfireAppSettingsCompareMode.AnySelected:
-                    return "any selected";
+                    return ResourceLoader.GetResource("textBoxStatusCompareModeAny");
                 case DesfireAppSettingsCompareMode.Exact:
-                    return "exact match";
+                    return ResourceLoader.GetResource("textBoxStatusCompareModeExact");
                 default:
-                    return "all selected";
+                    return ResourceLoader.GetResource("textBoxStatusCompareModeAll");
             }
         }
+
+        private static string DescribeCompareResult(bool passes) =>
+            ResourceLoader.GetResource(passes ? "textBoxStatusComparePass" : "textBoxStatusCompareFail");
+
+        /// <summary>
+        /// Formats a line of the status text from a localized template.
+        /// </summary>
+        /// <param name="resourceKey">The resource that holds the template with its numbered placeholders.</param>
+        /// <param name="arguments">The values for the placeholders; the first is the time stamp.</param>
+        /// <returns>The line, ended by a line break.</returns>
+        private static string LocalizedStatusLine(string resourceKey, params object[] arguments) =>
+            string.Format(CultureInfo.CurrentCulture, ResourceLoader.GetResource(resourceKey), arguments) + "\n";
 
         /// <summary>
         ///
