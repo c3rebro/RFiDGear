@@ -32,6 +32,13 @@ namespace RFiDGear.Tests
         /// <summary>Gets the key number the last authentication was asked for.</summary>
         public int LastAuthKeyNumber { get; private set; } = -1;
 
+        /// <summary>
+        /// Answers that a chip was read without reading one. The task execution service reads the chip before any task of
+        /// a run, and the real reader would look for hardware.
+        /// </summary>
+        /// <returns>Success, with no chip.</returns>
+        public override Task<ERROR> ReadChipPublic() => Task.FromResult(ERROR.NoError);
+
         /// <inheritdoc />
         public override Task<OperationResult> GetMifareDesfireAppSettings(
             string _applicationMasterKey,
