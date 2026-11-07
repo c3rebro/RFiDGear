@@ -10,8 +10,48 @@ and importing the settings of the old assistant. The WPF extension
 (`RFiDGear.Extensions.CardCheckAssistant`) uses it; nothing else does.
 
 So far it holds the result types, the log abstraction, the status and
-language values, the template rules, the report file handling and the guard
-tests. The other services follow one at a time, each with its own tests.
+language values, the template rules, the report file handling, the settings
+store, the workflow session and the guard tests. The other services follow one
+at a time, each with its own tests.
+
+**Settings** (`ISettingsStore`, created by
+`CardCheckServices.CreateSettingsStore`):
+
+- One JSON file, `settings.json`, in
+  `%LocalAppData%\RFiDGear\Extensions\CardCheckAssistant`: the assistant's own
+  folder, apart from the host's files. It holds the server, database and
+  table of the order database, the report options, the project paths, the
+  folders last used, the text blocks for report notes and a marker that the
+  old assistant's settings were imported. There is no user name, password or
+  port: the connection uses the Windows account of the operator.
+- The file carries a `schemaVersion`. A file from a newer version is never
+  overwritten: loading gives the defaults and saving is refused. A damaged
+  file (not JSON, wrong shape, bigger than a megabyte) is renamed to
+  `settings.json.corrupt-<time>` next to the original and the defaults are
+  used, so nothing is lost. A file another program holds is "unreadable" and
+  is not overwritten either.
+- `Load` and `Save` never throw because of the file. A save writes a temporary
+  file in the same folder and swaps it in, so a full disk or a crash leaves
+  the old file whole. Values are tidied (missing becomes empty, blanks around
+  names and paths go) and an unknown language falls back to German instead
+  of discarding the file. The log gets status words only, never a value.
+
+**Workflow session** (`IWorkflowSession`, created by
+`CardCheckServices.CreateWorkflowSession`):
+
+- The state of one check in one window: the order, the language, what the
+  first report said (`ReportAnalysis`), what the template rules make of it
+  (`TemplateSelection`) and the chosen template. It replaces the old
+  assistant's static `CurrentCardCheckProcess`; nothing is static or shared,
+  and each window creates its own.
+- A snapshot never changes. Every successful change swaps in a new one and
+  raises `Changed` after the lock is released, so a handler may read or change
+  the session again. A handler that throws does not undo the change or stop
+  the other handlers; the fault is logged by type, never by message.
+- The rules keep the parts consistent: findings and selection come together,
+  and the chosen template is always one of the available ones. A call that
+  does not fit the state (findings before an order, a template that does not
+  fit the chip) returns a failure and changes nothing.
 
 **Report files** (`IReportFiles`, created by
 `CardCheckServices.CreateReportFiles`):

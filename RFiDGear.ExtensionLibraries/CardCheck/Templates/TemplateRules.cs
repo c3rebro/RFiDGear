@@ -141,6 +141,27 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             return HasEnoughMemory(memory) ? ChipVerdict.Programmable : ChipVerdict.SupportedOnly;
         }
 
+        /// <summary>
+        /// Applies all the rules to a first report: reads the memory, gives the verdict, lists the templates that
+        /// fit and preselects one. Only a programmable chip gets any templates.
+        /// </summary>
+        /// <param name="analysis">What the first report says.</param>
+        /// <returns>The selection; its parts agree with each other.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="analysis"/> is null.</exception>
+        public static TemplateSelection Select(ReportAnalysis analysis)
+        {
+            if (analysis == null)
+            {
+                throw new ArgumentNullException(nameof(analysis));
+            }
+
+            var memory = ParseFreeMemory(analysis.FreeMemoryText);
+            var verdict = Classify(analysis.Supported, analysis.Programmable, memory);
+            var available = verdict == ChipVerdict.Programmable ? AvailableTemplates(memory) : Array.Empty<LsmTemplate>();
+
+            return new TemplateSelection(verdict, memory, available, DefaultTemplate(available));
+        }
+
         // A sign and digits only. A long digit string that does not fit an int is still a number, not a sector list.
         private static bool LooksLikeWholeNumber(string word)
         {
