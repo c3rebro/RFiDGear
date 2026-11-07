@@ -148,10 +148,10 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 editor.HoldSave();
 
                 var clock = Stopwatch.StartNew();
-                var failure = Assert.Throws<TimeoutException>(() => ShowAndDrive(dialog, strings, prompts, (shown, viewModel) =>
+                var failure = Assert.Throws<TimeoutException>(() => ShowAndDrive(dialog, strings, prompts, (_, viewModel) =>
                 {
                     viewModel.OneFolderPerJob = true;
-                    _ = viewModel.OkCommand.ExecuteAsync();
+                    viewModel.OkCommand.Execute(null);
 
                     return Task.CompletedTask;
                 }));
