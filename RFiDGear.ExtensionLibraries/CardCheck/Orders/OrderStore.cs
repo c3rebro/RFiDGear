@@ -107,7 +107,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 throw new ArgumentNullException(nameof(report));
             }
 
-            return WriteAsync("orders.replace", orderId, cancellationToken, sql => new[] { Update.Report(sql, report) });
+            return WriteAsync("orders.replace", orderId, cancellationToken, sql => new[] { Update.ForReport(sql, report) });
         }
 
         /// <inheritdoc />
@@ -121,15 +121,15 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             // The report first, then the status: an order is never marked finished while it has no report.
             return WriteAsync("orders.finalize", orderId, cancellationToken, sql => new[]
             {
-                Update.Report(sql, report),
+                Update.ForReport(sql, report),
                 new Update(sql.UpdateStatus, "@status", OrderStatusText.CheckFinished, large: false),
-                Update.Changed(sql, _now()),
+                Update.ForChangeDate(sql, _now()),
             });
         }
 
         /// <inheritdoc />
         public Task<Result> TouchChangedDateAsync(string orderId, CancellationToken cancellationToken) =>
-            WriteAsync("orders.touch", orderId, cancellationToken, sql => new[] { Update.Changed(sql, _now()) });
+            WriteAsync("orders.touch", orderId, cancellationToken, sql => new[] { Update.ForChangeDate(sql, _now()) });
 
         /// <inheritdoc />
         public async Task<Result> TestConnectionAsync(CancellationToken cancellationToken)
@@ -316,7 +316,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         }
 
         // One UPDATE of a column of the order, with the value it sets.
-        private readonly struct Update
+        private sealed class Update
         {
             public Update(string statement, string parameter, string value, bool large)
             {
@@ -334,10 +334,10 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
             public bool Large { get; }
 
-            public static Update Report(OrderSql sql, byte[] report) =>
-                new Update(sql.UpdateReport, "@data", Convert.ToBase64String(report), large: true);
+            public static Update ForReport(OrderSql sql, byte[] content) =>
+                new Update(sql.UpdateReport, "@data", Convert.ToBase64String(content), large: true);
 
-            public static Update Changed(OrderSql sql, DateTime when) =>
+            public static Update ForChangeDate(OrderSql sql, DateTime when) =>
                 new Update(sql.UpdateChangedDate, "@changed", when.ToString(CultureInfo.CurrentCulture), large: false);
         }
     }
