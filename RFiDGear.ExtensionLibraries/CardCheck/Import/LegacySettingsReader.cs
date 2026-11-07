@@ -106,8 +106,9 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
                 // Whatever follows the root element has to be well formed as well: a damaged file is never taken
                 // for a good one and marked as imported.
-                while (reader.Read())
+                while (!reader.EOF)
                 {
+                    reader.Read();
                 }
             }
             catch (Exception ex) when (ex is XmlException || ex is InvalidOperationException)
