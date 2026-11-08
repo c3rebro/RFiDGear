@@ -38,15 +38,24 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
         private readonly Action<string> _showError;
         private readonly Func<string, string, Window?> _openLegacyWindow;
+        private readonly Func<Window?> _getMainWindow;
 
         /// <param name="showError">Tells the user an extension could not be opened; receives the extension's name.</param>
         /// <param name="openLegacyWindow">
         /// Opens a window that navigates to a URI (URI, title). Defaults to the original frame-based window; tests
         /// replace it so no navigation happens.
         /// </param>
-        public ApplicationExtensionLauncher(Action<string> showError, Func<string, string, Window?>? openLegacyWindow = null)
+        /// <param name="getMainWindow">
+        /// Gives the main window of the application, which decides on which monitor an extension window opens. Defaults
+        /// to the main window of the running application when this thread may use it; tests replace it.
+        /// </param>
+        public ApplicationExtensionLauncher(
+            Action<string> showError,
+            Func<string, string, Window?>? openLegacyWindow = null,
+            Func<Window?>? getMainWindow = null)
         {
             _showError = showError ?? throw new ArgumentNullException(nameof(showError));
+            _getMainWindow = getMainWindow ?? ApplicationMainWindow;
             _openLegacyWindow = openLegacyWindow ?? OpenFrameWindow;
         }
 
@@ -109,7 +118,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     Content = content
                 };
                 window.Closed += (_, _) => cleanup();
-                window.Show();
+                ShowOnTheMonitorOfTheMainWindow(window);
                 return window;
             }
             catch (Exception ex)
@@ -132,7 +141,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <summary>
         /// The original behavior for an extension that only names a page: a window with a frame navigated to the URI.
         /// </summary>
-        private static Window OpenFrameWindow(string uri, string title)
+        private Window OpenFrameWindow(string uri, string title)
         {
             var frame = new Frame
             {
@@ -146,9 +155,64 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 Content = frame
             };
             frame.Source = new Uri(uri);
-            window.Show();
+            ShowOnTheMonitorOfTheMainWindow(window);
             return window;
         }
+
+        /// <summary>
+        /// Shows an extension window on the monitor the main window is on. Without an owner Windows picks the place of a
+        /// new window, which can be another monitor than the one the user is working on. An owner is what a window is
+        /// placed relative to, on the owner's monitor, as the task dialogs are. The window is only owned while it is
+        /// placed: it is not a dialog of the main window, so it must neither stay above it nor follow it when it is
+        /// minimized, and the owner is let go once the window is shown.
+        /// </summary>
+        /// <param name="window">The window to show.</param>
+        private void ShowOnTheMonitorOfTheMainWindow(Window window)
+        {
+            var main = _getMainWindow();
+            if (main == null || !CanPlaceRelativeTo(main, window))
+            {
+                window.Show();
+                return;
+            }
+
+            window.Owner = main;
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            window.Show();
+
+            // An extension may close its window while it loads; there is no owner left to let go then.
+            if (window.IsVisible)
+            {
+                window.Owner = null;
+            }
+        }
+
+        /// <summary>
+        /// The main window of the running application, or <see langword="null"/> when there is none this thread may use.
+        /// WPF lets only the thread of the application touch it and throws on any other; an application can belong to
+        /// another thread, for instance when it was created on a thread that has ended.
+        /// </summary>
+        /// <returns>The main window, or <see langword="null"/>.</returns>
+        private static Window? ApplicationMainWindow()
+        {
+            var application = Application.Current;
+
+            return application != null && application.Dispatcher.CheckAccess() ? application.MainWindow : null;
+        }
+
+        /// <summary>
+        /// Tells whether the main window can place a new window: this thread may use it, it is visible (so it has been
+        /// shown, which a window must have been to own another), and it is not minimized (Windows hides the windows a
+        /// minimized window owns).
+        /// </summary>
+        /// <param name="main">The main window.</param>
+        /// <param name="window">The window to place.</param>
+        /// <returns><see langword="true"/> when the window can be placed relative to the main window.</returns>
+        private static bool CanPlaceRelativeTo(Window main, Window window) =>
+            main.Dispatcher.CheckAccess()
+            && !ReferenceEquals(main, window)
+            && main.IsVisible
+            && main.WindowState != WindowState.Minimized;
 
         /// <summary>Wraps an action so that it runs at most once, however many times and from wherever it is called.</summary>
         private static Action Once(Action action)
