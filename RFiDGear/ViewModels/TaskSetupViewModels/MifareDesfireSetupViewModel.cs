@@ -911,6 +911,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowFileAuthoringCommands));
                 OnPropertyChanged(nameof(ShowChangeFileSettingsButton));
                 OnPropertyChanged(nameof(ShowCheckFileSettingsButton));
+                RaiseFileSettingsSelectionChanged();
 
                 UpdateOldAppKeyDefaults();
             }
@@ -1193,6 +1194,200 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// </summary>
         [XmlIgnore]
         public bool ShowCheckFileSettingsButton => SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings;
+
+        #region Check File Settings: which settings are compared
+
+        private bool isFileTypeCompared = true;
+        private bool isFileSizeCompared = true;
+        private bool isFileCommunicationModeCompared = true;
+        private bool isFileReadRightCompared = true;
+        private bool isFileWriteRightCompared = true;
+        private bool isFileReadWriteRightCompared = true;
+        private bool isFileChangeRightCompared = true;
+        private DesfireFileSettingsCompareMode fileSettingsCompareMode = DesfireFileSettingsCompareMode.AllSelected;
+        private NumericRelation fileSizeRelation = NumericRelation.Equal;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether <see cref="TaskType_MifareDesfireTask.CheckFileSettings"/> compares the
+        /// file type. A setting that is not compared is ignored. All the settings are compared by default, which is how
+        /// the task behaved before it could choose.
+        /// </summary>
+        public bool IsFileTypeCompared
+        {
+            get => isFileTypeCompared;
+            set { if (SetProperty(ref isFileTypeCompared, value)) { OnPropertyChanged(nameof(IsFileTypeInputEnabled)); } }
+        }
+
+        /// <summary>Gets or sets a value indicating whether the file-settings check compares the file size.</summary>
+        public bool IsFileSizeCompared
+        {
+            get => isFileSizeCompared;
+            set { if (SetProperty(ref isFileSizeCompared, value)) { OnPropertyChanged(nameof(IsFileSizeInputEnabled)); } }
+        }
+
+        /// <summary>Gets or sets a value indicating whether the file-settings check compares the communication mode.</summary>
+        public bool IsFileCommunicationModeCompared
+        {
+            get => isFileCommunicationModeCompared;
+            set { if (SetProperty(ref isFileCommunicationModeCompared, value)) { OnPropertyChanged(nameof(IsFileCommunicationModeInputEnabled)); } }
+        }
+
+        /// <summary>Gets or sets a value indicating whether the file-settings check compares the key that may read.</summary>
+        public bool IsFileReadRightCompared
+        {
+            get => isFileReadRightCompared;
+            set { if (SetProperty(ref isFileReadRightCompared, value)) { OnPropertyChanged(nameof(IsFileReadRightInputEnabled)); } }
+        }
+
+        /// <summary>Gets or sets a value indicating whether the file-settings check compares the key that may write.</summary>
+        public bool IsFileWriteRightCompared
+        {
+            get => isFileWriteRightCompared;
+            set { if (SetProperty(ref isFileWriteRightCompared, value)) { OnPropertyChanged(nameof(IsFileWriteRightInputEnabled)); } }
+        }
+
+        /// <summary>Gets or sets a value indicating whether the file-settings check compares the key that may read and write.</summary>
+        public bool IsFileReadWriteRightCompared
+        {
+            get => isFileReadWriteRightCompared;
+            set { if (SetProperty(ref isFileReadWriteRightCompared, value)) { OnPropertyChanged(nameof(IsFileReadWriteRightInputEnabled)); } }
+        }
+
+        /// <summary>Gets or sets a value indicating whether the file-settings check compares the key that may change the access rights.</summary>
+        public bool IsFileChangeRightCompared
+        {
+            get => isFileChangeRightCompared;
+            set { if (SetProperty(ref isFileChangeRightCompared, value)) { OnPropertyChanged(nameof(IsFileChangeRightInputEnabled)); } }
+        }
+
+        /// <summary>
+        /// Gets or sets whether all of the compared settings, or at least one of them, have to match. Saved in the project
+        /// file by name.
+        /// </summary>
+        public DesfireFileSettingsCompareMode FileSettingsCompareMode
+        {
+            get => fileSettingsCompareMode;
+            set
+            {
+                if (SetProperty(ref fileSettingsCompareMode, value))
+                {
+                    OnPropertyChanged(nameof(IsFileCompareModeAll));
+                    OnPropertyChanged(nameof(IsFileCompareModeAny));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets how the size of the file is compared with the size entered: equal to, at least or at most. Saved in
+        /// the project file by name. The other settings are compared for equality only.
+        /// </summary>
+        public NumericRelation FileSizeRelation
+        {
+            get => fileSizeRelation;
+            set => SetProperty(ref fileSizeRelation, value);
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether every compared setting has to match. It is the radio button of
+        /// <see cref="FileSettingsCompareMode"/>, so it only acts when it is set to <see langword="true"/>.
+        /// </summary>
+        [XmlIgnore]
+        public bool IsFileCompareModeAll
+        {
+            get => FileSettingsCompareMode == DesfireFileSettingsCompareMode.AllSelected;
+            set { if (value) { FileSettingsCompareMode = DesfireFileSettingsCompareMode.AllSelected; } }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether one matching compared setting is enough. It is the radio button of
+        /// <see cref="FileSettingsCompareMode"/>, so it only acts when it is set to <see langword="true"/>.
+        /// </summary>
+        [XmlIgnore]
+        public bool IsFileCompareModeAny
+        {
+            get => FileSettingsCompareMode == DesfireFileSettingsCompareMode.AnySelected;
+            set { if (value) { FileSettingsCompareMode = DesfireFileSettingsCompareMode.AnySelected; } }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the file tab offers the choice of what is compared: the check boxes, the size
+        /// relation and the radio buttons. Only the file-settings check does.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowFileSettingsSelection => SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings;
+
+        /// <summary>Gets a value indicating whether the plain captions of the file type, size and communication mode are shown (the check boxes replace them where the choice is offered).</summary>
+        [XmlIgnore]
+        public bool ShowFileCaptionLabels => !ShowFileSettingsSelection;
+
+        /// <summary>Gets a value indicating whether the plain captions of the access rights are shown.</summary>
+        [XmlIgnore]
+        public bool ShowFileAccessRightCaptionLabels => ShowFileAccessRights && !ShowFileSettingsSelection;
+
+        /// <summary>
+        /// Gets a value indicating whether the file type can be edited: always, except where the choice is offered and the
+        /// setting is not compared. (The input is shared with other tasks, so it must not follow the check box there.)
+        /// </summary>
+        [XmlIgnore]
+        public bool IsFileTypeInputEnabled => !ShowFileSettingsSelection || IsFileTypeCompared;
+
+        /// <summary>Gets a value indicating whether the file size and its relation can be edited.</summary>
+        [XmlIgnore]
+        public bool IsFileSizeInputEnabled => !ShowFileSettingsSelection || IsFileSizeCompared;
+
+        /// <summary>Gets a value indicating whether the communication mode can be edited.</summary>
+        [XmlIgnore]
+        public bool IsFileCommunicationModeInputEnabled => !ShowFileSettingsSelection || IsFileCommunicationModeCompared;
+
+        /// <summary>Gets a value indicating whether the read key can be edited.</summary>
+        [XmlIgnore]
+        public bool IsFileReadRightInputEnabled => !ShowFileSettingsSelection || IsFileReadRightCompared;
+
+        /// <summary>Gets a value indicating whether the write key can be edited.</summary>
+        [XmlIgnore]
+        public bool IsFileWriteRightInputEnabled => !ShowFileSettingsSelection || IsFileWriteRightCompared;
+
+        /// <summary>Gets a value indicating whether the read-write key can be edited.</summary>
+        [XmlIgnore]
+        public bool IsFileReadWriteRightInputEnabled => !ShowFileSettingsSelection || IsFileReadWriteRightCompared;
+
+        /// <summary>Gets a value indicating whether the change key can be edited.</summary>
+        [XmlIgnore]
+        public bool IsFileChangeRightInputEnabled => !ShowFileSettingsSelection || IsFileChangeRightCompared;
+
+        /// <summary>Tells the view that what depends on the task type has changed.</summary>
+        private void RaiseFileSettingsSelectionChanged()
+        {
+            OnPropertyChanged(nameof(ShowFileSettingsSelection));
+            OnPropertyChanged(nameof(ShowFileCaptionLabels));
+            OnPropertyChanged(nameof(ShowFileAccessRightCaptionLabels));
+            OnPropertyChanged(nameof(IsFileTypeInputEnabled));
+            OnPropertyChanged(nameof(IsFileSizeInputEnabled));
+            OnPropertyChanged(nameof(IsFileCommunicationModeInputEnabled));
+            OnPropertyChanged(nameof(IsFileReadRightInputEnabled));
+            OnPropertyChanged(nameof(IsFileWriteRightInputEnabled));
+            OnPropertyChanged(nameof(IsFileReadWriteRightInputEnabled));
+            OnPropertyChanged(nameof(IsFileChangeRightInputEnabled));
+        }
+
+        /// <summary>Collects which settings the task compares and how, as the dialog states it now.</summary>
+        /// <returns>The selection.</returns>
+        private DesfireFileSettingsSelection BuildFileSettingsSelection()
+        {
+            var kinds = DesfireFileSettingKinds.None;
+
+            if (IsFileTypeCompared) { kinds |= DesfireFileSettingKinds.FileType; }
+            if (IsFileSizeCompared) { kinds |= DesfireFileSettingKinds.FileSize; }
+            if (IsFileCommunicationModeCompared) { kinds |= DesfireFileSettingKinds.CommunicationMode; }
+            if (IsFileReadRightCompared) { kinds |= DesfireFileSettingKinds.Read; }
+            if (IsFileWriteRightCompared) { kinds |= DesfireFileSettingKinds.Write; }
+            if (IsFileReadWriteRightCompared) { kinds |= DesfireFileSettingKinds.ReadWrite; }
+            if (IsFileChangeRightCompared) { kinds |= DesfireFileSettingKinds.Change; }
+
+            return new DesfireFileSettingsSelection(kinds, FileSettingsCompareMode, FileSizeRelation);
+        }
+
+        #endregion
 
         /// <summary>
         /// Gets the expected and actual file settings of the last attempt of <see cref="TaskType_MifareDesfireTask.CheckFileSettings"/>,
@@ -3971,26 +4166,31 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public IAsyncRelayCommand CheckFileSettingsRelayCommand => new AsyncRelayCommand(() => RunFromUiAsync(CheckFileSettingsCommand));
 
         /// <summary>
-        /// Authenticates to an application, reads the settings of one file, and compares every configured value. The task
-        /// is strictly read-only and makes one attempt: it never retries, and it only asks for the settings when the
-        /// authentication it did first succeeded, because the reader providers swallow an authentication failure inside
-        /// the settings call and would otherwise return unauthenticated settings. A configuration that cannot be checked
-        /// is refused before the reader is touched.
+        /// Authenticates to an application, reads the settings of one file, and compares the settings that are selected
+        /// (<see cref="IsFileTypeCompared"/> and the other <c>Is...Compared</c> properties): all of them have to match, or
+        /// at least one of them, as <see cref="FileSettingsCompareMode"/> says. The task is strictly read-only and makes
+        /// one attempt: it never retries, and it only asks for the settings when the authentication it did first
+        /// succeeded, because the reader providers swallow an authentication failure inside the settings call and would
+        /// otherwise return unauthenticated settings. A configuration that cannot be checked, and a check with nothing
+        /// selected, are refused before the reader is touched.
         /// </summary>
         /// <returns>
         /// A task that completes when the check has finished. The result is left in <see cref="CurrentTaskErrorLevel"/>:
-        /// <see cref="ERROR.NoError"/> for a complete match, <see cref="ERROR.IsNotTrue"/> for a complete read with any
-        /// difference, <see cref="ERROR.ProtocolConstraint"/> for a configuration that is invalid or not supported,
-        /// <see cref="ERROR.TransportError"/> when there is no reader or what was read cannot be compared, or the error of
-        /// the failed authentication or read. The settings side by side are left in
-        /// <see cref="LastFileSettingsComparison"/>.
+        /// <see cref="ERROR.NoError"/> when the selected settings match as the mode demands, <see cref="ERROR.IsNotTrue"/>
+        /// when they do not, <see cref="ERROR.ProtocolConstraint"/> for a configuration that is invalid or not supported
+        /// or has nothing selected, <see cref="ERROR.TransportError"/> when there is no reader or what was read cannot be
+        /// compared for the verdict, or the error of the failed authentication or read. The settings side by side are
+        /// left in <see cref="LastFileSettingsComparison"/>.
         /// </returns>
         public async Task CheckFileSettingsCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
             LastFileSettingsComparison = null;
 
-            var configurationProblem = GetFileSettingsCheckConfigurationProblem();
+            // What is compared is taken with the rest of the dialog state, before anything is awaited.
+            var selection = BuildFileSettingsSelection();
+
+            var configurationProblem = GetFileSettingsCheckConfigurationProblem(selection);
             if (configurationProblem != null)
             {
                 CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
@@ -4005,7 +4205,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             var key = DesfireAppKeyCurrent;
             var keyType = SelectedDesfireAppKeyEncryptionTypeCurrent;
             var keyNumber = selectedDesfireAppKeyNumberCurrentAsInt;
-            var expectation = BuildFileSettingsExpectation();
+            var expectation = BuildFileSettingsExpectation(selection);
 
             using (var device = ReaderDevice.Instance)
             {
@@ -4056,12 +4256,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 if (check.Comparison != null)
                 {
-                    StatusText += LocalizedStatusLine(
-                        "textBoxStatusFileSettingsCompared",
-                        DateTime.Now,
-                        expectation.ApplicationId,
-                        expectation.FileNumber,
-                        DescribeCompareResult(check.Comparison.Matches));
+                    StatusText += DescribeFileSettingsComparison(check.Comparison, expectation);
                 }
                 else
                 {
@@ -4081,15 +4276,21 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         private const int MaxDesfireApplicationKeyNumber = 13;
 
         /// <summary>
-        /// Tells what keeps the file-settings check from running with the current configuration. A flag of a field is
-        /// tri-state: a task that was just created in the dialog holds valid defaults (file number 0, size 16) whose flags
-        /// are still <see langword="null"/>, "not yet validated", so only an explicit <see langword="false"/> marks a field
-        /// as invalid.
+        /// Tells what keeps the file-settings check from running with the current configuration. Only the settings that
+        /// are compared are looked at: one that is not compared may be left in any state. A flag of a field is tri-state:
+        /// a task that was just created in the dialog holds valid defaults (file number 0, size 16) whose flags are still
+        /// <see langword="null"/>, "not yet validated", so only an explicit <see langword="false"/> marks a field as invalid.
         /// </summary>
+        /// <param name="selection">Which settings are compared.</param>
         /// <returns>The resource key of the status text that names the problem, or <see langword="null"/> when there is none.</returns>
-        private string GetFileSettingsCheckConfigurationProblem()
+        private string GetFileSettingsCheckConfigurationProblem(DesfireFileSettingsSelection selection)
         {
-            if (!DesfireFileSettingsChecker.IsSupportedFileType(SelectedDesfireFileType))
+            if (selection.Kinds == DesfireFileSettingKinds.None)
+            {
+                return "textBoxStatusFileSettingsNothingSelected";
+            }
+
+            if (selection.Includes(DesfireFileSettingKinds.FileType) && !DesfireFileSettingsChecker.IsSupportedFileType(SelectedDesfireFileType))
             {
                 return "textBoxStatusFileSettingsUnsupportedFileType";
             }
@@ -4102,29 +4303,37 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             }
 
             // The list of communication modes is shared too; "unknown" is what a provider answers for a mode it cannot read.
-            if (SelectedDesfireFileCryptoMode == EncryptionMode.CM_UNKNOWN)
+            if (selection.Includes(DesfireFileSettingKinds.CommunicationMode) && SelectedDesfireFileCryptoMode == EncryptionMode.CM_UNKNOWN)
             {
                 return "textBoxStatusFileSettingsUnknownCommunicationMode";
             }
 
-            var configurationIsValid =
-                IsValidAppNumberCurrent != false &&
-                AppNumberCurrentAsInt > 0 &&
-                IsValidFileNumberCurrent != false &&
-                IsValidFileSizeCurrent != false &&
-                FileSizeCurrentAsInt > 0 &&
-                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(
-                    DesfireAppKeyCurrent,
-                    SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR;
+            return HasValidFileSettingsInput(selection) ? null : "textBoxStatusFileSettingsInvalidInput";
+        }
 
-            return configurationIsValid ? null : "textBoxStatusFileSettingsInvalidInput";
+        /// <summary>Determines whether the application, file, key and, when it is compared, the size are valid.</summary>
+        /// <param name="selection">Which settings are compared.</param>
+        /// <returns><see langword="true"/> when the check can run.</returns>
+        private bool HasValidFileSettingsInput(DesfireFileSettingsSelection selection)
+        {
+            var sizeIsValid = !selection.Includes(DesfireFileSettingKinds.FileSize)
+                              || (IsValidFileSizeCurrent != false && FileSizeCurrentAsInt > 0);
+
+            return IsValidAppNumberCurrent != false &&
+                   AppNumberCurrentAsInt > 0 &&
+                   IsValidFileNumberCurrent != false &&
+                   sizeIsValid &&
+                   CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(
+                       DesfireAppKeyCurrent,
+                       SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR;
         }
 
         /// <summary>
         /// Collects the settings the task expects the file to have.
         /// </summary>
+        /// <param name="selection">Which of them are compared, and how.</param>
         /// <returns>The expected settings.</returns>
-        private DesfireFileSettingsExpectation BuildFileSettingsExpectation()
+        private DesfireFileSettingsExpectation BuildFileSettingsExpectation(DesfireFileSettingsSelection selection)
         {
             return new DesfireFileSettingsExpectation(
                 AppNumberCurrentAsInt,
@@ -4135,7 +4344,53 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 SelectedDesfireFileAccessRightRead,
                 SelectedDesfireFileAccessRightWrite,
                 SelectedDesfireFileAccessRightReadWrite,
-                SelectedDesfireFileAccessRightChange);
+                SelectedDesfireFileAccessRightChange,
+                selection);
+        }
+
+        private static readonly (DesfireFileSettingKinds Kind, string ResourceKey)[] FileSettingNames =
+        {
+            (DesfireFileSettingKinds.FileType, "textBoxStatusFileSettingNameFileType"),
+            (DesfireFileSettingKinds.FileSize, "textBoxStatusFileSettingNameSize"),
+            (DesfireFileSettingKinds.CommunicationMode, "textBoxStatusFileSettingNameCommunicationMode"),
+            (DesfireFileSettingKinds.Read, "textBoxStatusFileSettingNameRead"),
+            (DesfireFileSettingKinds.Write, "textBoxStatusFileSettingNameWrite"),
+            (DesfireFileSettingKinds.ReadWrite, "textBoxStatusFileSettingNameReadWrite"),
+            (DesfireFileSettingKinds.Change, "textBoxStatusFileSettingNameChange"),
+        };
+
+        /// <summary>
+        /// Describes the outcome of the file-settings comparison for the status text: the result with the mode, and for a
+        /// result that does not match, which compared settings differed.
+        /// </summary>
+        /// <param name="comparison">The settings side by side.</param>
+        /// <param name="expectation">What was expected.</param>
+        /// <returns>One or two lines of the status text.</returns>
+        private static string DescribeFileSettingsComparison(DesfireFileSettingsComparison comparison, DesfireFileSettingsExpectation expectation)
+        {
+            var mode = ResourceLoader.GetResource(comparison.CompareModeAny ? "textBoxStatusCompareModeAny" : "textBoxStatusCompareModeAll");
+            var text = LocalizedStatusLine(
+                "textBoxStatusFileSettingsCompared",
+                DateTime.Now,
+                expectation.ApplicationId,
+                expectation.FileNumber,
+                DescribeCompareResult(comparison.Matches),
+                mode);
+
+            if (comparison.Matches)
+            {
+                return text;
+            }
+
+            // A setting is named when it was compared, was read and did not match.
+            var differing = FileSettingNames
+                .Where(name => (comparison.SelectedSettings & ~comparison.MatchedSettings & ~comparison.UnreadSettings & (int)name.Kind) != 0)
+                .Select(name => ResourceLoader.GetResource(name.ResourceKey))
+                .ToList();
+
+            return differing.Count == 0
+                ? text
+                : text + LocalizedStatusLine("textBoxStatusFileSettingsDiffering", DateTime.Now, string.Join(", ", differing));
         }
 
         /// <summary>

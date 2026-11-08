@@ -1872,7 +1872,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>{0}: App, Datei, Größe oder Schlüssel sind ungültig. Es wurde nichts gelesen.</value>
   </data>
   <data name="textBoxStatusFileSettingsCompared" xml:space="preserve">
-    <value>{0}: Einstellungen von Datei {2} in App {1} verglichen → {3}</value>
+    <value>{0}: Einstellungen von Datei {2} in App {1} verglichen ({4}) → {3}</value>
   </data>
   <data name="textBoxStatusFileSettingsUnreadable" xml:space="preserve">
     <value>{0}: Die Einstellungen von Datei {2} in App {1} konnten nicht vollständig gelesen werden: {3}</value>
@@ -1891,5 +1891,53 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="textBoxStatusFileSettingsNoReader" xml:space="preserve">
     <value>{0}: Es ist kein Lesegerät verfügbar. Es wurde nichts gelesen.</value>
+  </data>
+  <data name="labelFileSettingsCompareAll" xml:space="preserve">
+    <value>Alle gewählten Einstellungen müssen übereinstimmen</value>
+  </data>
+  <data name="labelFileSettingsCompareAny" xml:space="preserve">
+    <value>Mindestens eine gewählte Einstellung muss übereinstimmen</value>
+  </data>
+  <data name="ENUM.NumericRelation.Equal" xml:space="preserve">
+    <value>gleich</value>
+  </data>
+  <data name="ENUM.NumericRelation.ActualAtLeastExpected" xml:space="preserve">
+    <value>mindestens</value>
+  </data>
+  <data name="ENUM.NumericRelation.ActualAtMostExpected" xml:space="preserve">
+    <value>höchstens</value>
+  </data>
+  <data name="toolTipCheckBoxFileSettingCompare" xml:space="preserve">
+    <value>Anhaken, um diese Einstellung in den Vergleich einzubeziehen. Eine nicht angehakte Einstellung wird ignoriert.</value>
+  </data>
+  <data name="toolTipComboBoxFileSizeRelation" xml:space="preserve">
+    <value>Wie die aus der Datei gelesene Größe mit der eingegebenen Größe verglichen wird: gleich, mindestens (nicht kleiner) oder höchstens (nicht größer).</value>
+  </data>
+  <data name="textBoxStatusFileSettingsNothingSelected" xml:space="preserve">
+    <value>{0}: Nichts zu vergleichen: Wählen Sie mindestens eine Einstellung der Datei. Es wurde nichts gelesen.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsDiffering" xml:space="preserve">
+    <value>{0}: Abweichungen bei: {1}</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameFileType" xml:space="preserve">
+    <value>Dateityp</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameSize" xml:space="preserve">
+    <value>Größe</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameCommunicationMode" xml:space="preserve">
+    <value>Kommunikationsmodus</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameRead" xml:space="preserve">
+    <value>Lesezugriff</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameWrite" xml:space="preserve">
+    <value>Schreibzugriff</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameReadWrite" xml:space="preserve">
+    <value>Lese-/Schreibzugriff</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameChange" xml:space="preserve">
+    <value>Recht zum Ändern der Zugriffsrechte</value>
   </data>
 </root>

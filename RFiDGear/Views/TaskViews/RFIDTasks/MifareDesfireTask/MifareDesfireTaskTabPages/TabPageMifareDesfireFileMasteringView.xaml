@@ -118,33 +118,66 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileCaptionLabels, Converter={StaticResource BoolToVisConv}}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireFileSize'}" />
-                    <TextBox
+                    <CheckBox
                         Grid.Row="0"
-                        Grid.Column="4"
+                        Grid.Column="3"
                         Margin="8,8,8,8"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
-                        Text="{Binding FileSizeCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
-                        <TextBox.Resources>
-                            <Style TargetType="TextBox">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsValidFileSizeCurrent}" Value="True">
-                                        <Setter Property="Foreground" Value="Green" />
-                                        <Setter Property="Background" Value="White" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsValidFileSizeCurrent}" Value="False">
-                                        <Setter Property="Foreground" Value="Black" />
-                                        <Setter Property="Background" Value="Red" />
-                                        <Setter Property="FontWeight" Value="Normal" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
+                        Visibility="{Binding ShowFileSettingsSelection, Converter={StaticResource BoolToVisConv}}"
+                        IsChecked="{Binding IsFileSizeCompared, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        ToolTip="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxFileSettingCompare'}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireFileSize'}" />
+                    <Grid Grid.Row="0" Grid.Column="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox
+                            Grid.Column="0"
+                            Margin="8,8,0,8"
+                            MinWidth="90"
+                            Height="26"
+                            VerticalAlignment="Center"
+                            ItemsSource="{dal:Enumerate {x:Type tasks:NumericRelation}}"
+                            IsEnabled="{Binding IsFileSizeInputEnabled}"
+                            Visibility="{Binding ShowFileSettingsSelection, Converter={StaticResource BoolToVisConv}}"
+                            ToolTip="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipComboBoxFileSizeRelation'}"
+                            SelectedItem="{Binding FileSizeRelation, Converter={StaticResource Localization}, ConverterParameter={x:Type tasks:NumericRelation}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        <TextBox
+                            Grid.Column="1"
+                            IsEnabled="{Binding IsFileSizeInputEnabled}"
+                            Margin="8,8,8,8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            VerticalContentAlignment="Center"
+                            Text="{Binding FileSizeCurrent, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}">
+                            <TextBox.Resources>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsValidFileSizeCurrent}" Value="True">
+                                            <Setter Property="Foreground" Value="Green" />
+                                            <Setter Property="Background" Value="White" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsValidFileSizeCurrent}" Value="False" />
+                                                <Condition Binding="{Binding IsFileSizeInputEnabled}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Background" Value="Red" />
+                                            <Setter Property="FontWeight" Value="Normal" />
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                    </Grid>
                     <TextBox
                         Grid.Row="0"
                         Grid.Column="1"
@@ -179,6 +212,18 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileCaptionLabels, Converter={StaticResource BoolToVisConv}}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCommunicationMode'}" />
+                    <CheckBox
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileSettingsSelection, Converter={StaticResource BoolToVisConv}}"
+                        IsChecked="{Binding IsFileCommunicationModeCompared, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        ToolTip="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxFileSettingCompare'}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireCommunicationMode'}" />
                     <Label
                         Grid.Row="3"
@@ -188,7 +233,18 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
-                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
+                        Visibility="{Binding ShowFileAccessRightCaptionLabels, Converter={StaticResource BoolToVisConv}}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentWrite'}" />
+                    <CheckBox
+                        Grid.Row="3"
+                        Grid.Column="3"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileSettingsSelection, Converter={StaticResource BoolToVisConv}}"
+                        IsChecked="{Binding IsFileWriteRightCompared, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        ToolTip="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxFileSettingCompare'}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentWrite'}" />
                     <Label
                         Grid.Row="3"
@@ -198,7 +254,18 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
-                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
+                        Visibility="{Binding ShowFileAccessRightCaptionLabels, Converter={StaticResource BoolToVisConv}}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentRead'}" />
+                    <CheckBox
+                        Grid.Row="3"
+                        Grid.Column="0"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileSettingsSelection, Converter={StaticResource BoolToVisConv}}"
+                        IsChecked="{Binding IsFileReadRightCompared, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        ToolTip="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxFileSettingCompare'}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentRead'}" />
                     <Label
                         Grid.Row="4"
@@ -208,7 +275,18 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
-                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
+                        Visibility="{Binding ShowFileAccessRightCaptionLabels, Converter={StaticResource BoolToVisConv}}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentReadAndWrite'}" />
+                    <CheckBox
+                        Grid.Row="4"
+                        Grid.Column="0"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileSettingsSelection, Converter={StaticResource BoolToVisConv}}"
+                        IsChecked="{Binding IsFileReadWriteRightCompared, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        ToolTip="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxFileSettingCompare'}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentReadAndWrite'}" />
                     <Label
                         Grid.Row="4"
@@ -218,10 +296,22 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
-                        Visibility="{Binding ShowFileAccessRights, Converter={StaticResource BoolToVisConv}}"
+                        Visibility="{Binding ShowFileAccessRightCaptionLabels, Converter={StaticResource BoolToVisConv}}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentChange'}" />
+                    <CheckBox
+                        Grid.Row="4"
+                        Grid.Column="3"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileSettingsSelection, Converter={StaticResource BoolToVisConv}}"
+                        IsChecked="{Binding IsFileChangeRightCompared, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        ToolTip="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxFileSettingCompare'}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentChange'}" />
                     <ComboBox
                         x:Name="rnwriteCB"
+                        IsEnabled="{Binding IsFileReadWriteRightInputEnabled}"
                         Grid.Row="4"
                         Grid.Column="1"
                         Margin="8,0,8,8"
@@ -242,6 +332,7 @@
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireBytes'}" />
                     <ComboBox
                         x:Name="changeCB"
+                        IsEnabled="{Binding IsFileChangeRightInputEnabled}"
                         Grid.Row="4"
                         Height="26"
                         Grid.Column="4"
@@ -253,6 +344,7 @@
                         SelectedItem="{Binding SelectedDesfireFileAccessRightChange, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="writeCB"
+                        IsEnabled="{Binding IsFileWriteRightInputEnabled}"
                         Grid.Row="3"
                         Grid.Column="4"
                         Margin="8,0,8,8"
@@ -264,6 +356,7 @@
                         SelectedItem="{Binding SelectedDesfireFileAccessRightWrite, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="readCB"
+                        IsEnabled="{Binding IsFileReadRightInputEnabled}"
                         Grid.Row="3"
                         Grid.Column="1"
                         Margin="8,0,8,8"
@@ -275,6 +368,7 @@
                         SelectedItem="{Binding SelectedDesfireFileAccessRightRead, Converter={StaticResource Localization}, ConverterParameter={x:Type dal:TaskAccessRights}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
                     <ComboBox
                         x:Name="encModeCB"
+                        IsEnabled="{Binding IsFileCommunicationModeInputEnabled}"
                         Grid.Row="2"
                         Grid.Column="1"
                         Margin="8,0,8,8"
@@ -291,9 +385,22 @@
                         VerticalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileCaptionLabels, Converter={StaticResource BoolToVisConv}}"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireFileType'}" />
+                    <CheckBox
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        Margin="8,0,8,8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        VerticalContentAlignment="Center"
+                        Visibility="{Binding ShowFileSettingsSelection, Converter={StaticResource BoolToVisConv}}"
+                        IsChecked="{Binding IsFileTypeCompared, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        ToolTip="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='toolTipCheckBoxFileSettingCompare'}"
                         Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireFileType'}" />
                     <ComboBox
                         x:Name="encModeCB_Copy"
+                        IsEnabled="{Binding IsFileTypeInputEnabled}"
                         Grid.Row="1"
                         Grid.Column="1"
                         Height="26"
@@ -302,6 +409,21 @@
                         VerticalAlignment="Stretch"
                         ItemsSource="{dal:Enumerate {x:Type tasks:FileType_MifareDesfireFileType}}"
                         SelectedItem="{Binding SelectedDesfireFileType, Converter={StaticResource Localization}, ConverterParameter={x:Type tasks:FileType_MifareDesfireFileType}, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                    <StackPanel
+                        Grid.Row="5"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="6"
+                        Margin="8,0,8,8"
+                        VerticalAlignment="Top"
+                        Visibility="{Binding ShowFileSettingsSelection, Converter={StaticResource BoolToVisConv}}">
+                        <RadioButton
+                            Margin="0,0,0,4"
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelFileSettingsCompareAll'}"
+                            IsChecked="{Binding IsFileCompareModeAll, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                        <RadioButton
+                            Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelFileSettingsCompareAny'}"
+                            IsChecked="{Binding IsFileCompareModeAny, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+                    </StackPanel>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width=".3*" />

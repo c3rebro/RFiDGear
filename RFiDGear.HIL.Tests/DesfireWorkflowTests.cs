@@ -1,6 +1,7 @@
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.Tasks;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using System;
 using System.Collections.Generic;
@@ -162,6 +163,91 @@ namespace RFiDGear.HIL.Tests
                     await _fixture.CleanupTestAidAsync();
                 }
             });
+        }
+
+        /// <summary>
+        /// The Check File Settings task against a real card compares only what is selected. The project differs from the
+        /// file in one setting at a time and the task is accepted when that setting is not selected (all selected must
+        /// match), when the size relation lets the size pass ("at least" a smaller size, "at most" a larger one) and when
+        /// another selected setting matches (any selected); it is refused with IsNotTrue when the relation does not let
+        /// the size pass or when no selected setting matches, and with ProtocolConstraint when nothing is selected. Nothing
+        /// on the card changes. Needs a reader and a DESFire card; it is skipped without them.
+        /// </summary>
+        [Theory]
+        [InlineData(DESFireKeyType.DF_KEY_AES, HilConstants.DefaultKeyAes)]
+        [InlineData(DESFireKeyType.DF_KEY_DES, HilConstants.DefaultKeyDes)]
+        public async Task CheckFileSettings_ComparesOnlyWhatIsSelected(
+            DESFireKeyType keyType,
+            string defaultKey)
+        {
+            _fixture.SkipIfNoHardware();
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await _fixture.CleanupTestAidAsync();
+                var onTheCard = HilFileSettings.Distinct;
+                var larger = onTheCard with { Size = onTheCard.Size + 1 };
+                var smaller = onTheCard with { Size = onTheCard.Size - 1 };
+
+                var cases = new (string What, HilFileSettings Expected, Action<MifareDesfireSetupViewModel> Choose, ERROR Error)[]
+                {
+                    ("a size that differs is not selected", larger, task => task.IsFileSizeCompared = false, ERROR.NoError),
+                    ("the file is at least as large as the project says", smaller, task => task.FileSizeRelation = NumericRelation.ActualAtLeastExpected, ERROR.NoError),
+                    ("the file is at most as large as the project says", larger, task => task.FileSizeRelation = NumericRelation.ActualAtMostExpected, ERROR.NoError),
+                    ("the file is larger than the project says, which allows at most", smaller, task => task.FileSizeRelation = NumericRelation.ActualAtMostExpected, ERROR.IsNotTrue),
+                    ("the file is smaller than the project says, which asks for at least", larger, task => task.FileSizeRelation = NumericRelation.ActualAtLeastExpected, ERROR.IsNotTrue),
+                    ("the size differs but the communication mode, which is also selected, matches", larger, task => OnlySizeAndCommunicationMode(task, DesfireFileSettingsCompareMode.AnySelected), ERROR.NoError),
+                    ("the size and the communication mode both differ", larger with { CommunicationMode = EncryptionMode.CM_MAC }, task => OnlySizeAndCommunicationMode(task, DesfireFileSettingsCompareMode.AnySelected), ERROR.IsNotTrue),
+                    ("the size differs and the communication mode, which is also selected, matches", larger, task => OnlySizeAndCommunicationMode(task, DesfireFileSettingsCompareMode.AllSelected), ERROR.IsNotTrue),
+                    ("nothing is selected", onTheCard, NothingSelected, ERROR.ProtocolConstraint),
+                };
+
+                try
+                {
+                    var (setup, setupDiag) = await RunAsync(HilTaskBuilder.BuildCreateApplicationWithFile(
+                        HilConstants.TestAppId, keyType, defaultKey, onTheCard));
+                    Assert.True(setup.Outcome == ExecutionOutcome.Success, $"Setting the file up failed — keyType={keyType}\n{setupDiag}");
+
+                    foreach (var (what, expected, choose, error) in cases)
+                    {
+                        var (result, diag) = await RunAsync(HilTaskBuilder.BuildCheckFileSettings(
+                            HilConstants.TestAppId, keyType, defaultKey, expected, choose));
+                        var outcome = Assert.Single(result.TaskOutcomes);
+                        Assert.True(error.ToString() == outcome.NormalizedErrorCode,
+                            $"Expected {error} when {what}, got {outcome.NormalizedErrorCode} — keyType={keyType}\n{diag}\nSee the Task.Outcome entry of the log for the values.");
+                        Assert.Equal(error == ERROR.NoError, outcome.IsSuccess);
+                    }
+
+                    // The compared settings are as they were: the exact match, everything selected, is still accepted.
+                    var (after, afterDiag) = await RunAsync(HilTaskBuilder.BuildCheckFileSettings(
+                        HilConstants.TestAppId, keyType, defaultKey, onTheCard));
+                    Assert.True(after.Outcome == ExecutionOutcome.Success, $"The settings changed during the checks — keyType={keyType}\n{afterDiag}");
+                    Assert.Equal(nameof(ERROR.NoError), Assert.Single(after.TaskOutcomes).NormalizedErrorCode);
+                }
+                finally
+                {
+                    await _fixture.CleanupTestAidAsync();
+                }
+            });
+        }
+
+        private static void OnlySizeAndCommunicationMode(MifareDesfireSetupViewModel task, DesfireFileSettingsCompareMode mode)
+        {
+            NothingSelected(task);
+            task.IsFileSizeCompared = true;
+            task.IsFileCommunicationModeCompared = true;
+            task.FileSettingsCompareMode = mode;
+        }
+
+        private static void NothingSelected(MifareDesfireSetupViewModel task)
+        {
+            task.IsFileTypeCompared = false;
+            task.IsFileSizeCompared = false;
+            task.IsFileCommunicationModeCompared = false;
+            task.IsFileReadRightCompared = false;
+            task.IsFileWriteRightCompared = false;
+            task.IsFileReadWriteRightCompared = false;
+            task.IsFileChangeRightCompared = false;
         }
 
         private async Task<(ExecResult Result, string Diagnostics)> RunAsync(IEnumerable<object> tasks)
