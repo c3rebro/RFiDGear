@@ -590,6 +590,40 @@ namespace RFiDGear.Tests
             });
         }
 
+        [Fact]
+        public async Task TheCheckUsesTheDialogAsItWasPressed_EvenWhenTheDialogIsEditedWhileTheCardAnswers()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateViewModel();
+                var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var reader = new FakeFileSettingsProvider { FileSettings = Settings(), AuthenticationGate = release.Task };
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    var check = viewModel.CheckFileSettingsRelayCommand.ExecuteAsync(null);
+                    Assert.Equal(1, reader.AuthCalls);
+
+                    // Edited while the card is busy with the authentication: another size, application, file, key and key
+                    // number. The card matches what the dialog said when the button was pressed.
+                    viewModel.FileSizeCurrent = "32";
+                    viewModel.AppNumberCurrent = "7";
+                    viewModel.FileNumberCurrent = "9";
+                    viewModel.DesfireAppKeyCurrent = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+                    viewModel.SelectedDesfireAppKeyNumberCurrent = "5";
+
+                    release.SetResult(true);
+                    await check;
+                }
+
+                Assert.Equal(ERROR.NoError, viewModel.CurrentTaskErrorLevel);
+                Assert.True(viewModel.LastFileSettingsComparison.Matches);
+                Assert.Equal((1, 2), (reader.LastFileSettingsAppId, reader.LastFileSettingsFileNo));
+                Assert.Equal(ZeroAesKey, reader.LastReadKey!.Replace(" ", string.Empty), ignoreCase: true);
+                Assert.Equal(0, reader.LastReadKeyNumber);
+            });
+        }
+
         private static List<bool> Observe(MifareDesfireSetupViewModel viewModel)
         {
             var finished = new List<bool>();

@@ -4011,6 +4011,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 return;
             }
 
+            // What the check depends on is taken now, before the reader is asked: the dialog stays editable while the
+            // card answers, and a value changed meanwhile must neither change what is compared nor send the read to
+            // another key, application or file than the one that was authenticated to.
+            var key = DesfireAppKeyCurrent;
+            var keyType = SelectedDesfireAppKeyEncryptionTypeCurrent;
+            var keyNumber = selectedDesfireAppKeyNumberCurrentAsInt;
+            var expectation = BuildFileSettingsExpectation();
+
             using (var device = ReaderDevice.Instance)
             {
                 if (device == null)
@@ -4024,10 +4032,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
                 var result = await device.AuthToMifareDesfireApplication(
-                    DesfireAppKeyCurrent,
-                    SelectedDesfireAppKeyEncryptionTypeCurrent,
-                    selectedDesfireAppKeyNumberCurrentAsInt,
-                    AppNumberCurrentAsInt);
+                    key,
+                    keyType,
+                    keyNumber,
+                    expectation.ApplicationId);
 
                 if (result == ERROR.NoError)
                 {
@@ -4036,17 +4044,17 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     device.DesfireFileSettings = null;
 
                     result = await device.GetMifareDesfireFileSettings(
-                        DesfireAppKeyCurrent,
-                        SelectedDesfireAppKeyEncryptionTypeCurrent,
-                        selectedDesfireAppKeyNumberCurrentAsInt,
-                        AppNumberCurrentAsInt,
-                        FileNumberCurrentAsInt);
+                        key,
+                        keyType,
+                        keyNumber,
+                        expectation.ApplicationId,
+                        expectation.FileNumber);
                 }
 
                 DesfireFileSettingsCheckResult check;
                 if (result == ERROR.NoError && device.DesfireFileSettings != null)
                 {
-                    check = DesfireFileSettingsChecker.Compare(BuildFileSettingsExpectation(), device.DesfireFileSettings);
+                    check = DesfireFileSettingsChecker.Compare(expectation, device.DesfireFileSettings);
                 }
                 else
                 {
@@ -4063,8 +4071,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     StatusText += LocalizedStatusLine(
                         "textBoxStatusFileSettingsCompared",
                         DateTime.Now,
-                        AppNumberCurrentAsInt,
-                        FileNumberCurrentAsInt,
+                        expectation.ApplicationId,
+                        expectation.FileNumber,
                         DescribeCompareResult(check.Comparison.Matches));
                 }
                 else
@@ -4072,8 +4080,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     StatusText += LocalizedStatusLine(
                         "textBoxStatusFileSettingsUnreadable",
                         DateTime.Now,
-                        AppNumberCurrentAsInt,
-                        FileNumberCurrentAsInt,
+                        expectation.ApplicationId,
+                        expectation.FileNumber,
                         CurrentTaskErrorLevel);
                 }
             }
