@@ -62,6 +62,202 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task Open_ShowsTheWindowOnTheMonitorOfTheMainWindow_AndLetsGoOfTheOwner()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                RecordingFactory.Recorder.Reset();
+                using var parts = new PartSet(typeof(RecordingFactory));
+                var main = ShownMainWindow();
+                var launcher = new ApplicationExtensionLauncher(_ => { }, null, () => main);
+
+                var window = launcher.Open(parts.Single, new HeadlessExtensionHost());
+
+                try
+                {
+                    Assert.NotNull(window);
+
+                    // Placed relative to the main window, which is what keeps it on the monitor the main window is on.
+                    Assert.Same(main, Assert.Single(RecordingFactory.Recorder.Created).Content.OwnerAtFirstLayout);
+                    var centeredLeft = main.Left + ((main.Width - window!.Width) / 2);
+                    var centeredTop = main.Top + ((main.Height - window.Height) / 2);
+                    Assert.InRange(window.Left, centeredLeft - 2, centeredLeft + 2);
+                    Assert.InRange(window.Top, centeredTop - 2, centeredTop + 2);
+
+                    // The owner only placed it: it is no dialog of the main window.
+                    Assert.Null(window.Owner);
+                    Assert.True(window.IsVisible);
+                }
+                finally
+                {
+                    window?.Close();
+                    main.Close();
+                }
+            });
+        }
+
+        [Fact]
+        public async Task Open_ShowsTheWindowOfAnExtensionThatNamesAPage_OnTheMonitorOfTheMainWindowToo()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                using var parts = new PartSet(typeof(FramePageExtension));
+                var main = ShownMainWindow();
+                var errors = new List<string>();
+                var launcher = new ApplicationExtensionLauncher(errors.Add, null, () => main);   // the original frame-based opener
+
+                var window = launcher.Open(parts.Single, new HeadlessExtensionHost());
+
+                try
+                {
+                    Assert.Empty(errors);
+                    Assert.NotNull(window);
+
+                    // The page does not exist; the frame says so when the dispatcher runs, which must not end the test run.
+                    ((Frame)window!.Content).NavigationFailed += (_, e) => e.Handled = true;
+
+                    var centeredLeft = main.Left + ((main.Width - window.Width) / 2);
+                    var centeredTop = main.Top + ((main.Height - window.Height) / 2);
+                    Assert.InRange(window.Left, centeredLeft - 2, centeredLeft + 2);
+                    Assert.InRange(window.Top, centeredTop - 2, centeredTop + 2);
+                    Assert.Null(window.Owner);
+                    Assert.True(window.IsVisible);
+                }
+                finally
+                {
+                    window?.Close();
+                    main.Close();
+                }
+            });
+        }
+
+        [Fact]
+        public async Task Open_WithTheMainWindowOfAnotherThread_OpensTheWindowAsBefore()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                // WPF lets only the thread of a window touch it, so a main window of another thread cannot own this one.
+                RecordingFactory.Recorder.Reset();
+                using var parts = new PartSet(typeof(RecordingFactory));
+                var (foreign, shutDown) = ShownMainWindowOnAnotherThread();
+                var errors = new List<string>();
+                var launcher = new ApplicationExtensionLauncher(errors.Add, null, () => foreign);
+
+                var window = launcher.Open(parts.Single, new HeadlessExtensionHost());
+
+                try
+                {
+                    Assert.Empty(errors);
+                    Assert.NotNull(window);
+                    Assert.Null(Assert.Single(RecordingFactory.Recorder.Created).Content.OwnerAtFirstLayout);
+                    Assert.True(window!.IsVisible);
+                }
+                finally
+                {
+                    window?.Close();
+                    shutDown();
+                }
+            });
+        }
+
+        [Fact]
+        public async Task Open_WithAnApplicationOfAnotherThread_OpensTheWindowAsBefore()
+        {
+            // Other tests leave an Application behind whose dispatcher belongs to a thread that has ended. Its main
+            // window cannot be touched from here, and asking for it throws.
+            await StaTestRunner.RunOnStaThreadAsync(() => { _ = Application.Current ?? new Application(); });
+
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                RecordingFactory.Recorder.Reset();
+                using var parts = new PartSet(typeof(RecordingFactory));
+                var errors = new List<string>();
+                var launcher = new ApplicationExtensionLauncher(errors.Add);   // looks for the main window of the application itself
+
+                var window = launcher.Open(parts.Single, new HeadlessExtensionHost());
+
+                try
+                {
+                    Assert.Empty(errors);
+                    Assert.NotNull(window);
+                    Assert.Null(window!.Owner);
+                    Assert.True(window.IsVisible);
+                }
+                finally
+                {
+                    window?.Close();
+                }
+            });
+        }
+
+        [Fact]
+        public async Task Open_WithAMinimizedMainWindow_NeverMakesItTheOwner()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                // Windows hides the windows a minimized window owns, so the new window would not be seen.
+                RecordingFactory.Recorder.Reset();
+                using var parts = new PartSet(typeof(RecordingFactory));
+                var main = ShownMainWindow();
+                main.WindowState = WindowState.Minimized;
+                var launcher = new ApplicationExtensionLauncher(_ => { }, null, () => main);
+
+                var window = launcher.Open(parts.Single, new HeadlessExtensionHost());
+
+                try
+                {
+                    Assert.NotNull(window);
+                    Assert.Null(Assert.Single(RecordingFactory.Recorder.Created).Content.OwnerAtFirstLayout);
+                    Assert.Null(window!.Owner);
+                    Assert.True(window.IsVisible);
+                }
+                finally
+                {
+                    window?.Close();
+                    main.Close();
+                }
+            });
+        }
+
+        [Fact]
+        public async Task Open_WithoutAMainWindowThatIsShown_OpensTheWindowAsBefore()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(() =>
+            {
+                using var parts = new PartSet(typeof(RecordingFactory));
+                var hidden = ShownMainWindow();
+                hidden.Hide();
+                var neverShown = new Window();
+
+                // No main window, one that was never shown (a window that has not been shown cannot own another) and one
+                // that is hidden.
+                foreach (var main in new Window?[] { null, neverShown, hidden })
+                {
+                    RecordingFactory.Recorder.Reset();
+                    var errors = new List<string>();
+                    var launcher = new ApplicationExtensionLauncher(errors.Add, null, () => main);
+
+                    var window = launcher.Open(parts.Single, new HeadlessExtensionHost());
+
+                    try
+                    {
+                        Assert.Empty(errors);
+                        Assert.NotNull(window);
+                        Assert.Null(Assert.Single(RecordingFactory.Recorder.Created).Content.OwnerAtFirstLayout);
+                        Assert.Null(window!.Owner);
+                        Assert.True(window.IsVisible);
+                    }
+                    finally
+                    {
+                        window?.Close();
+                    }
+                }
+
+                hidden.Close();
+            });
+        }
+
+        [Fact]
         public async Task Open_CreatesTheExportedClassOnce_AndFreshContentEveryTime()
         {
             await StaTestRunner.RunOnStaThreadAsync(() =>
@@ -334,6 +530,50 @@ namespace RFiDGear.Tests
                 Assert.Throws<ArgumentNullException>(() => launcher.Open(null!, new HeadlessExtensionHost()));
                 Assert.Throws<ArgumentNullException>(() => launcher.Open(parts.Single, null!));
                 Assert.Throws<ArgumentNullException>(() => new ApplicationExtensionLauncher(null!));
+            });
+        }
+
+        // A main window that has been shown, away from the corner so that a window centered on it can be told from one
+        // that Windows placed.
+        private static Window ShownMainWindow()
+        {
+            var main = new Window
+            {
+                Left = 40,
+                Top = 40,
+                Width = 1000,
+                Height = 650,
+                ShowActivated = false,
+                ShowInTaskbar = false
+            };
+            main.Show();
+
+            return main;
+        }
+
+        // A shown window that belongs to a thread of its own, which this thread must not touch.
+        private static (Window Window, Action ShutDown) ShownMainWindowOnAnotherThread()
+        {
+            Window? window = null;
+            Dispatcher? dispatcher = null;
+            using var ready = new ManualResetEventSlim();
+            var thread = new Thread(() =>
+            {
+                window = new Window { Left = 40, Top = 40, Width = 1000, Height = 650, ShowActivated = false, ShowInTaskbar = false };
+                window.Show();
+                dispatcher = Dispatcher.CurrentDispatcher;
+                ready.Set();
+                Dispatcher.Run();
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.IsBackground = true;
+            thread.Start();
+            ready.Wait();
+
+            return (window!, () =>
+            {
+                dispatcher!.InvokeShutdown();
+                thread.Join();
             });
         }
 
@@ -712,6 +952,7 @@ namespace RFiDGear.Tests
         private readonly bool _throwOnDispose;
         private readonly bool _throwOnLayout;
         private int _disposeCount;
+        private bool _measured;
 
         public ProbeContent(bool throwOnDispose = false, bool throwOnLayout = false)
         {
@@ -722,10 +963,21 @@ namespace RFiDGear.Tests
 
         public int DisposeCount => Volatile.Read(ref _disposeCount);
 
-        protected override Size MeasureOverride(Size constraint) =>
-            _throwOnLayout
+        /// <summary>The owner of the window when this content was first laid out, which happens inside <c>Window.Show()</c>.</summary>
+        public Window? OwnerAtFirstLayout { get; private set; }
+
+        protected override Size MeasureOverride(Size constraint)
+        {
+            if (!_measured)
+            {
+                _measured = true;
+                OwnerAtFirstLayout = Window.GetWindow(this)?.Owner;
+            }
+
+            return _throwOnLayout
                 ? throw new InvalidOperationException("Layout failed.")
                 : base.MeasureOverride(constraint);
+        }
 
         public void Dispose()
         {
@@ -860,5 +1112,12 @@ namespace RFiDGear.Tests
     [UiExtension(Name = "Blank uri", HostPlacement = HostPlacement.Application, Uri = "")]
     public sealed class BlankUriExtension : IUIExtension
     {
+    }
+
+    /// <summary>Names a page that does not exist; the window of the original opener is placed before it navigates.</summary>
+    [UiExtension(Name = "Frame page", HostPlacement = HostPlacement.Application, Uri = FramePageExtension.PageUri)]
+    public sealed class FramePageExtension : IUIExtension
+    {
+        internal const string PageUri = "file:///C:/RFiDGear-no-such-page.xaml";
     }
 }
