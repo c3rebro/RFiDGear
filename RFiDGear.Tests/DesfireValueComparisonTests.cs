@@ -97,5 +97,34 @@ namespace RFiDGear.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() =>
                 DesfireValueComparison.MatchesNumber(1, 1, (NumericRelation)99));
         }
+
+        // Settings as bit flags: selected, matched, unknown. The verdict is 0 matches, 1 differs, 2 undecided.
+        // A setting that is unknown decides only when nothing known does.
+        [Theory]
+        [InlineData(7, 7, 0, 0, 0)]
+        [InlineData(7, 3, 0, 0, 1)]
+        [InlineData(7, 3, 0, 1, 0)]
+        [InlineData(7, 0, 0, 1, 1)]
+        [InlineData(1, 6, 0, 0, 1)]
+        [InlineData(0, 0, 0, 0, 1)]
+        [InlineData(0, 0, 0, 1, 1)]
+        [InlineData(3, 1, 2, 0, 2)]
+        [InlineData(3, 0, 2, 0, 1)]
+        [InlineData(3, 1, 2, 1, 0)]
+        [InlineData(3, 0, 2, 1, 2)]
+        [InlineData(1, 1, 2, 0, 0)]
+        public void JudgeSelected_DecidesOnWhatIsKnown_AndSaysWhenTheVerdictDependsOnWhatIsNot(int selected, int matched, int unknown, int mode, int verdict)
+        {
+            var judged = DesfireValueComparison.JudgeSelected(selected, matched, unknown, (DesfireFileSettingsCompareMode)mode);
+
+            Assert.Equal(verdict, (int)judged);
+        }
+
+        [Fact]
+        public void JudgeSelected_RejectsAnUnknownMode()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                DesfireValueComparison.JudgeSelected(1, 1, 0, (DesfireFileSettingsCompareMode)99));
+        }
     }
 }

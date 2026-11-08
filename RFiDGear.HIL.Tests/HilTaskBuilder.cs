@@ -275,13 +275,18 @@ namespace RFiDGear.HIL.Tests
         /// <param name="keyType">Key type of the application.</param>
         /// <param name="defaultKey">Zero-value key in the format of <paramref name="keyType"/>.</param>
         /// <param name="expected">The settings the file is expected to have; the project may differ from the card.</param>
+        /// <param name="configure">
+        /// Chooses what the task compares (which settings are ticked, all or any, the relation of the size) before it
+        /// is handed out; <see langword="null"/> leaves the defaults, which compare everything.
+        /// </param>
         public static IEnumerable<object> BuildCheckFileSettings(
             uint appId,
             DESFireKeyType keyType,
             string defaultKey,
-            HilFileSettings expected)
+            HilFileSettings expected,
+            Action<MifareDesfireSetupViewModel>? configure = null)
         {
-            yield return new MifareDesfireSetupViewModel
+            var task = new MifareDesfireSetupViewModel
             {
                 SelectedTaskType = TaskType_MifareDesfireTask.CheckFileSettings,
                 AppNumberCurrent = HexAid(appId),
@@ -299,6 +304,9 @@ namespace RFiDGear.HIL.Tests
                 CurrentTaskIndex = "0",
                 SelectedExecuteConditionErrorLevel = ERROR.Empty,
             };
+
+            configure?.Invoke(task);
+            yield return task;
         }
 
         // ── Utilities ─────────────────────────────────────────────────────────

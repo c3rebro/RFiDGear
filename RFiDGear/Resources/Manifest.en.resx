@@ -1850,7 +1850,7 @@ https://github.com/c3rebro/rfidgear</value>
     <value>{0}: The application, file, size or key is not valid. Nothing was read.</value>
   </data>
   <data name="textBoxStatusFileSettingsCompared" xml:space="preserve">
-    <value>{0}: Settings of file {2} in App {1} compared → {3}</value>
+    <value>{0}: Settings of file {2} in App {1} compared ({4}) → {3}</value>
   </data>
   <data name="textBoxStatusFileSettingsUnreadable" xml:space="preserve">
     <value>{0}: The settings of file {2} in App {1} could not be read completely: {3}</value>
@@ -1869,5 +1869,53 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="textBoxStatusFileSettingsNoReader" xml:space="preserve">
     <value>{0}: No reader is available. Nothing was read.</value>
+  </data>
+  <data name="labelFileSettingsCompareAll" xml:space="preserve">
+    <value>All selected settings must match</value>
+  </data>
+  <data name="labelFileSettingsCompareAny" xml:space="preserve">
+    <value>At least one selected setting must match</value>
+  </data>
+  <data name="ENUM.NumericRelation.Equal" xml:space="preserve">
+    <value>equal to</value>
+  </data>
+  <data name="ENUM.NumericRelation.ActualAtLeastExpected" xml:space="preserve">
+    <value>at least</value>
+  </data>
+  <data name="ENUM.NumericRelation.ActualAtMostExpected" xml:space="preserve">
+    <value>at most</value>
+  </data>
+  <data name="toolTipCheckBoxFileSettingCompare" xml:space="preserve">
+    <value>Tick to include this setting in the comparison. A setting that is not ticked is ignored.</value>
+  </data>
+  <data name="toolTipComboBoxFileSizeRelation" xml:space="preserve">
+    <value>How the size read from the file is compared with the size entered: equal to, at least (not smaller) or at most (not larger).</value>
+  </data>
+  <data name="textBoxStatusFileSettingsNothingSelected" xml:space="preserve">
+    <value>{0}: Nothing to compare: tick at least one setting of the file. Nothing was read.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsDiffering" xml:space="preserve">
+    <value>{0}: Differs in: {1}</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameFileType" xml:space="preserve">
+    <value>file type</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameSize" xml:space="preserve">
+    <value>size</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameCommunicationMode" xml:space="preserve">
+    <value>communication mode</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameRead" xml:space="preserve">
+    <value>read access</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameWrite" xml:space="preserve">
+    <value>write access</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameReadWrite" xml:space="preserve">
+    <value>read-write access</value>
+  </data>
+  <data name="textBoxStatusFileSettingNameChange" xml:space="preserve">
+    <value>right to change the access rights</value>
   </data>
 </root>

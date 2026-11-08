@@ -2,8 +2,11 @@ using System;
 
 namespace RFiDGear.Infrastructure.Tasks
 {
-    /// <summary>How an actual number is compared with the expected one.</summary>
-    internal enum NumericRelation
+    /// <summary>
+    /// How an actual number is compared with the expected one. The names are saved in project files (the file-size
+    /// relation of the file-settings check): add members at the end, never rename or remove one.
+    /// </summary>
+    public enum NumericRelation
     {
         /// <summary>The actual value equals the expected value.</summary>
         Equal,
@@ -13,6 +16,19 @@ namespace RFiDGear.Infrastructure.Tasks
 
         /// <summary>The actual value is less than or equal to the expected value.</summary>
         ActualAtMostExpected,
+    }
+
+    /// <summary>The verdict over the settings a check has selected.</summary>
+    internal enum SelectionVerdict
+    {
+        /// <summary>The selected settings match, as the compare mode asks.</summary>
+        Matches,
+
+        /// <summary>They do not match.</summary>
+        Differs,
+
+        /// <summary>A setting that the verdict depends on could not be read.</summary>
+        Undecided,
     }
 
     /// <summary>
@@ -54,6 +70,53 @@ namespace RFiDGear.Infrastructure.Tasks
                     return actual == expected;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown key-settings compare mode.");
+            }
+        }
+
+        /// <summary>
+        /// Judges a set of selected settings from what is known about each. A setting that could not be read (unknown)
+        /// is neither a match nor a difference: it decides the verdict only when nothing else does. Nothing selected
+        /// never matches.
+        /// </summary>
+        /// <param name="selected">The selected settings, as bit flags.</param>
+        /// <param name="matched">The settings known to match.</param>
+        /// <param name="unknown">The settings that could not be read.</param>
+        /// <param name="mode">Whether all or any of the selected settings have to match.</param>
+        /// <returns>
+        /// <see cref="SelectionVerdict.Differs"/> when all must match and one known setting differs, or when any must
+        /// match and none known does; <see cref="SelectionVerdict.Undecided"/> when the verdict depends on a setting
+        /// that could not be read.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined mode.</exception>
+        internal static SelectionVerdict JudgeSelected(int selected, int matched, int unknown, DesfireFileSettingsCompareMode mode)
+        {
+            if (selected == 0)
+            {
+                return SelectionVerdict.Differs;
+            }
+
+            var knownMatching = selected & matched & ~unknown;
+            var knownDiffering = selected & ~matched & ~unknown;
+            var dependsOnUnknown = (selected & unknown) != 0;
+
+            switch (mode)
+            {
+                case DesfireFileSettingsCompareMode.AllSelected:
+                    if (knownDiffering != 0)
+                    {
+                        return SelectionVerdict.Differs;
+                    }
+
+                    return dependsOnUnknown ? SelectionVerdict.Undecided : SelectionVerdict.Matches;
+                case DesfireFileSettingsCompareMode.AnySelected:
+                    if (knownMatching != 0)
+                    {
+                        return SelectionVerdict.Matches;
+                    }
+
+                    return dependsOnUnknown ? SelectionVerdict.Undecided : SelectionVerdict.Differs;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown file-settings compare mode.");
             }
         }
 
