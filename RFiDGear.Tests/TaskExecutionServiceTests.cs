@@ -370,7 +370,8 @@ namespace RFiDGear.Tests
                 }
             };
 
-            var metadata = (IDictionary<string, object>)TaskExecutionService.GetSafeIoMetadata(task, taskExecuted: true)!;
+            var metadata = TaskExecutionService.GetSafeIoMetadata(task, taskExecuted: true) as IDictionary<string, object>;
+            Assert.NotNull(metadata);
             var reported = (IDictionary<string, object>)metadata["FileSettingsComparison"];
 
             Assert.Equal(new[] { "Flag", "Large", "Number" }, reported.Keys.OrderBy(name => name));

@@ -25,7 +25,7 @@ namespace RFiDGear.Tests
         [MemberData(nameof(BeforeAndAfter))]
         public async Task TheFileTab_ShowsWhatIsExpected_AndTheCheckAction(bool selectTypeAfterRender)
         {
-            await InspectAsync<RFiDGear.View.TabPageMifareDesfireFileMasteringView>(selectTypeAfterRender, (view, viewModel) =>
+            await InspectAsync<RFiDGear.View.TabPageMifareDesfireFileMasteringView>(selectTypeAfterRender, (view, _) =>
             {
                 AssertUsable(One<TextBox>(view, TextBox.TextProperty, nameof(MifareDesfireSetupViewModel.FileNumberCurrent)), "the file number");
                 AssertUsable(One<TextBox>(view, TextBox.TextProperty, nameof(MifareDesfireSetupViewModel.FileSizeCurrent)), "the file size");
@@ -62,7 +62,7 @@ namespace RFiDGear.Tests
         [MemberData(nameof(BeforeAndAfter))]
         public async Task TheApplicationTab_ShowsTheApplicationAndTheKey_AndNotThePanelOfTheNewKey(bool selectTypeAfterRender)
         {
-            await InspectAsync<RFiDGear.View.TabPageMifareDesfireApplicationMasteringView>(selectTypeAfterRender, (view, viewModel) =>
+            await InspectAsync<RFiDGear.View.TabPageMifareDesfireApplicationMasteringView>(selectTypeAfterRender, (view, _) =>
             {
                 AssertUsable(One<TextBox>(view, TextBox.TextProperty, nameof(MifareDesfireSetupViewModel.AppNumberCurrent)), "the application id");
                 AssertUsable(One<TextBox>(view, TextBox.TextProperty, nameof(MifareDesfireSetupViewModel.DesfireAppKeyCurrent)), "the key");
@@ -87,7 +87,7 @@ namespace RFiDGear.Tests
             await RenderedTab.InspectAsync<RFiDGear.View.TabPageMifareDesfireApplicationMasteringView>(
                 TaskType_MifareDesfireTask.ApplicationKeyChangeover,
                 false,
-                (view, viewModel) =>
+                (view, _) =>
                 {
                     var targetSections = LogicalDescendants(view)
                         .OfType<GroupBox>()
@@ -102,14 +102,14 @@ namespace RFiDGear.Tests
         [Fact]
         public async Task EveryCaptionOfTheFileTab_HasText()
         {
-            await InspectAsync<RFiDGear.View.TabPageMifareDesfireFileMasteringView>(false, (view, viewModel) =>
+            await InspectAsync<RFiDGear.View.TabPageMifareDesfireFileMasteringView>(false, (view, _) =>
                 Assert.True(BlankCaptions(view).Count == 0, "blank captions: " + string.Join(", ", BlankCaptions(view))));
         }
 
         [Fact]
         public async Task EveryCaptionOfTheApplicationTab_HasText()
         {
-            await InspectAsync<RFiDGear.View.TabPageMifareDesfireApplicationMasteringView>(false, (view, viewModel) =>
+            await InspectAsync<RFiDGear.View.TabPageMifareDesfireApplicationMasteringView>(false, (view, _) =>
                 Assert.True(BlankCaptions(view).Count == 0, "blank captions: " + string.Join(", ", BlankCaptions(view))));
         }
 
