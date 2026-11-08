@@ -216,6 +216,91 @@ namespace RFiDGear.HIL.Tests
             };
         }
 
+        // ── File settings check ───────────────────────────────────────────────
+
+        /// <summary>
+        /// Creates the test application and, in it, a data file with the given settings. The application master key is
+        /// <paramref name="defaultKey"/>; PICC authentication uses the factory-default DES master key.
+        /// </summary>
+        /// <param name="appId">The AID to create.</param>
+        /// <param name="keyType">Key type of the application.</param>
+        /// <param name="defaultKey">Zero-value key in the format of <paramref name="keyType"/>.</param>
+        /// <param name="file">The settings of the file to create.</param>
+        public static IEnumerable<object> BuildCreateApplicationWithFile(
+            uint appId,
+            DESFireKeyType keyType,
+            string defaultKey,
+            HilFileSettings file)
+        {
+            var aidStr = HexAid(appId);
+
+            yield return new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = TaskType_MifareDesfireTask.CreateApplication,
+                AppNumberNew = aidStr,
+                SelectedDesfireAppKeyEncryptionTypeCreateNewApp = keyType,
+                SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK,
+                SelectedDesfireAppMaxNumberOfKeys = "2",
+                DesfireMasterKeyCurrent = HilConstants.DefaultKeyDes,
+                SelectedDesfireMasterKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_DES,
+                CurrentTaskIndex = "0",
+                SelectedExecuteConditionErrorLevel = ERROR.Empty,
+            };
+
+            yield return new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = TaskType_MifareDesfireTask.CreateFile,
+                AppNumberCurrent = aidStr,
+                DesfireAppKeyCurrent = defaultKey,
+                SelectedDesfireAppKeyEncryptionTypeCurrent = keyType,
+                SelectedDesfireAppKeyNumberCurrent = "0",
+                FileNumberCurrent = HilConstants.TestFileNo.ToString(),
+                FileSizeCurrent = file.Size.ToString(),
+                SelectedDesfireFileType = file.FileType,
+                SelectedDesfireFileCryptoMode = file.CommunicationMode,
+                SelectedDesfireFileAccessRightRead = file.Read,
+                SelectedDesfireFileAccessRightWrite = file.Write,
+                SelectedDesfireFileAccessRightReadWrite = file.ReadWrite,
+                SelectedDesfireFileAccessRightChange = file.Change,
+                CurrentTaskIndex = "1",
+                SelectedExecuteConditionErrorLevel = ERROR.Empty,
+            };
+        }
+
+        /// <summary>
+        /// Builds a single read-only Check File Settings task for the test file: it authenticates with the application
+        /// master key and compares the settings of the file with <paramref name="expected"/>. Nothing on the card changes.
+        /// </summary>
+        /// <param name="appId">The AID of the test application.</param>
+        /// <param name="keyType">Key type of the application.</param>
+        /// <param name="defaultKey">Zero-value key in the format of <paramref name="keyType"/>.</param>
+        /// <param name="expected">The settings the file is expected to have; the project may differ from the card.</param>
+        public static IEnumerable<object> BuildCheckFileSettings(
+            uint appId,
+            DESFireKeyType keyType,
+            string defaultKey,
+            HilFileSettings expected)
+        {
+            yield return new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = TaskType_MifareDesfireTask.CheckFileSettings,
+                AppNumberCurrent = HexAid(appId),
+                DesfireAppKeyCurrent = defaultKey,
+                SelectedDesfireAppKeyEncryptionTypeCurrent = keyType,
+                SelectedDesfireAppKeyNumberCurrent = "0",
+                FileNumberCurrent = HilConstants.TestFileNo.ToString(),
+                FileSizeCurrent = expected.Size.ToString(),
+                SelectedDesfireFileType = expected.FileType,
+                SelectedDesfireFileCryptoMode = expected.CommunicationMode,
+                SelectedDesfireFileAccessRightRead = expected.Read,
+                SelectedDesfireFileAccessRightWrite = expected.Write,
+                SelectedDesfireFileAccessRightReadWrite = expected.ReadWrite,
+                SelectedDesfireFileAccessRightChange = expected.Change,
+                CurrentTaskIndex = "0",
+                SelectedExecuteConditionErrorLevel = ERROR.Empty,
+            };
+        }
+
         // ── Utilities ─────────────────────────────────────────────────────────
 
         /// <summary>

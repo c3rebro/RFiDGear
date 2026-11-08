@@ -605,6 +605,18 @@ namespace RFiDGear.Services.TaskExecution
                 {
                     if (item is IGenericTask t)
                         t.ExecutionState = TaskExecutionState.NotStarted;
+
+                    (item as ITaskOutcomeDetails)?.ClearOutcomeDetails();
+                }
+            }
+
+            // The tasks of the run may be given as descriptors without a task list; what an earlier run found must not be
+            // logged with this one in either case.
+            if (descriptors != null)
+            {
+                foreach (var descriptor in descriptors)
+                {
+                    (descriptor?.Task as ITaskOutcomeDetails)?.ClearOutcomeDetails();
                 }
             }
 
@@ -818,7 +830,7 @@ namespace RFiDGear.Services.TaskExecution
                 IsSuccessful = GetTaskSuccess(taskModel),
                 ExceptionType = exception?.GetType().Name,
                 ExceptionMessage = TaskExecutionLogSanitizer.Sanitize(exception?.Message),
-                IO = GetSafeIoMetadata(taskModel),
+                IO = GetSafeIoMetadata(taskModel, string.Equals(decision, "Executed", StringComparison.Ordinal)),
                 Timestamp = DateTimeOffset.UtcNow
             });
         }
@@ -891,7 +903,16 @@ namespace RFiDGear.Services.TaskExecution
             }
         }
 
-        private static object GetSafeIoMetadata(IGenericTask taskModel)
+        /// <summary>
+        /// Collects the key-free, non-payload metadata that is logged with a task outcome.
+        /// </summary>
+        /// <param name="taskModel">The task whose configured values are described.</param>
+        /// <param name="taskExecuted">
+        /// <see langword="true"/> when the task was dispatched in this run (decision "Executed"). It gates the details a
+        /// task reports about its own attempt: a skipped task has none from this run.
+        /// </param>
+        /// <returns>The metadata, or <see langword="null"/> when there is nothing to report.</returns>
+        internal static object GetSafeIoMetadata(IGenericTask taskModel, bool taskExecuted)
         {
             if (taskModel == null)
             {
@@ -901,6 +922,22 @@ namespace RFiDGear.Services.TaskExecution
             var metadata = new Dictionary<string, object>();
             AddSafeIntegerMetadata(metadata, taskModel, "FileNumberCurrentAsInt", "FileNumber");
             AddSafeIntegerMetadata(metadata, taskModel, "FileSizeCurrentAsInt", "FileSizeBytes");
+
+            if (taskExecuted && taskModel is ITaskOutcomeDetails details)
+            {
+                try
+                {
+                    var values = SafeScalars(details.GetOutcomeDetails());
+                    if (values.Count > 0)
+                    {
+                        metadata[details.OutcomeDetailsSection] = values;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Diagnostic metadata must never affect task execution.
+                }
+            }
 
             try
             {
@@ -916,6 +953,31 @@ namespace RFiDGear.Services.TaskExecution
             }
 
             return metadata.Count == 0 ? null : metadata;
+        }
+
+        /// <summary>
+        /// Keeps the numbers and flags of what a task reports. A value of any other kind is dropped, so that text from a
+        /// card, a key or an object that serializes into more than it should cannot reach the log through this door.
+        /// </summary>
+        /// <param name="values">What the task reported.</param>
+        /// <returns>The reported values that are numbers or flags.</returns>
+        private static Dictionary<string, object> SafeScalars(IReadOnlyDictionary<string, object> values)
+        {
+            var safe = new Dictionary<string, object>();
+            if (values == null)
+            {
+                return safe;
+            }
+
+            foreach (var pair in values)
+            {
+                if (pair.Value is bool or byte or sbyte or short or ushort or int or uint or long or ulong)
+                {
+                    safe[pair.Key] = pair.Value;
+                }
+            }
+
+            return safe;
         }
 
         private static void AddSafeIntegerMetadata(

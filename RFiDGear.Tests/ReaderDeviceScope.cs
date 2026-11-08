@@ -19,19 +19,20 @@ namespace RFiDGear.Tests
         private readonly ReaderTypes originalReader;
         private readonly ReaderDevice? originalInstance;
 
-        private ReaderDeviceScope(ReaderDevice device)
+        private ReaderDeviceScope(ReaderDevice? device)
         {
             originalReader = ReaderDevice.Reader;
             originalInstance = InstanceField.GetValue(null) as ReaderDevice;
 
-            ReaderDevice.Reader = ReaderTypes.Elatec;
+            // No device means no reader at all: the application asks for none and gets null.
+            ReaderDevice.Reader = device == null ? ReaderTypes.None : ReaderTypes.Elatec;
             InstanceField.SetValue(null, device);
         }
 
         /// <summary>Makes <paramref name="device"/> the reader until the returned scope is disposed.</summary>
-        /// <param name="device">The test reader; it is reported as an Elatec reader.</param>
+        /// <param name="device">The test reader, reported as an Elatec reader; <see langword="null"/> for no reader at all.</param>
         /// <returns>The scope; dispose it, in a <c>finally</c> or a <c>using</c>, to restore the previous reader.</returns>
-        public static ReaderDeviceScope Use(ReaderDevice device) => new ReaderDeviceScope(device);
+        public static ReaderDeviceScope Use(ReaderDevice? device) => new ReaderDeviceScope(device);
 
         /// <inheritdoc />
         public void Dispose()

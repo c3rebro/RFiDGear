@@ -35,13 +35,14 @@ using RFiDGear.UI.UIExtensions;
 using RFiDGear.UI.UIExtensions.Interfaces;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
+using RFiDGear.Services.TaskExecution;
 using Elatec.NET;
 namespace RFiDGear.ViewModel.TaskSetupViewModels
 {
     /// <summary>
     /// Description of MifareDesfireSetupViewModel.
     /// </summary>
-    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask
+    public class MifareDesfireSetupViewModel : ObservableObject, IUserDialogViewModel, IGenericTask, ITaskOutcomeDetails
     {
         #region Fields
         private readonly object editedTaskReference; // Tracks the original task instance during edit mode.
@@ -882,6 +883,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     case TaskType_MifareDesfireTask.ChangeFileSettings:
                         SetTabAvailability(true, false, false, false, true, true, false);
                         break;
+
+                    case TaskType_MifareDesfireTask.CheckFileSettings:
+                        SetTabAvailability(true, false, false, false, true, true, false);
+                        break;
                 }
                 OnPropertyChanged(nameof(SelectedTaskType));
                 OnPropertyChanged(nameof(IsFormatTaskSelected));
@@ -909,6 +914,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                 OnPropertyChanged(nameof(ShowFileAccessRights));
                 OnPropertyChanged(nameof(ShowFileAuthoringCommands));
                 OnPropertyChanged(nameof(ShowChangeFileSettingsButton));
+                OnPropertyChanged(nameof(ShowCheckFileSettingsButton));
 
                 UpdateOldAppKeyDefaults();
             }
@@ -978,6 +984,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                                                && SelectedTaskType != TaskType_MifareDesfireTask.ReadData
                                                && SelectedTaskType != TaskType_MifareDesfireTask.WriteData
                                                && SelectedTaskType != TaskType_MifareDesfireTask.ChangeFileSettings
+                                               && SelectedTaskType != TaskType_MifareDesfireTask.CheckFileSettings
                                                && SelectedTaskType != TaskType_MifareDesfireTask.DeleteApplication;
 
         /// <summary>
@@ -1170,18 +1177,47 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
         /// <summary>
         /// Gets a value indicating whether file authoring commands should be shown.
-        /// The create/delete actions are unnecessary when reading or writing file data or when changing file settings.
+        /// The create/delete actions are unnecessary when reading or writing file data or when changing or checking
+        /// file settings.
         /// </summary>
         [XmlIgnore]
         public bool ShowFileAuthoringCommands => SelectedTaskType != TaskType_MifareDesfireTask.ReadData
                                                  && SelectedTaskType != TaskType_MifareDesfireTask.WriteData
-                                                 && SelectedTaskType != TaskType_MifareDesfireTask.ChangeFileSettings;
+                                                 && SelectedTaskType != TaskType_MifareDesfireTask.ChangeFileSettings
+                                                 && SelectedTaskType != TaskType_MifareDesfireTask.CheckFileSettings;
 
         /// <summary>
         /// Gets a value indicating whether the Change File Settings button should be shown.
         /// </summary>
         [XmlIgnore]
         public bool ShowChangeFileSettingsButton => SelectedTaskType == TaskType_MifareDesfireTask.ChangeFileSettings;
+
+        /// <summary>
+        /// Gets a value indicating whether the read-only file-settings comparison button should be shown.
+        /// </summary>
+        [XmlIgnore]
+        public bool ShowCheckFileSettingsButton => SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings;
+
+        /// <summary>
+        /// Gets the expected and actual file settings of the last attempt of <see cref="TaskType_MifareDesfireTask.CheckFileSettings"/>,
+        /// or <see langword="null"/> when that attempt compared nothing. It is replaced at the start of every attempt and
+        /// every run. It is internal, so it is neither saved in a project nor copied when a task is edited.
+        /// </summary>
+        internal DesfireFileSettingsComparison LastFileSettingsComparison { get; private set; }
+
+        /// <inheritdoc />
+        string ITaskOutcomeDetails.OutcomeDetailsSection => "FileSettingsComparison";
+
+        /// <inheritdoc />
+        IReadOnlyDictionary<string, object> ITaskOutcomeDetails.GetOutcomeDetails() =>
+            SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings && LastFileSettingsComparison != null
+                ? LastFileSettingsComparison.ToLogValues()
+                : NoOutcomeDetails;
+
+        private static readonly IReadOnlyDictionary<string, object> NoOutcomeDetails = new Dictionary<string, object>();
+
+        /// <inheritdoc />
+        void ITaskOutcomeDetails.ClearOutcomeDetails() => LastFileSettingsComparison = null;
 
         /// <summary>
         /// Gets a value indicating whether application creation inputs should be shown.
@@ -2217,7 +2253,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             set
             {
                 fileSizeCurrent = value;
-                IsValidFileSizeCurrent = (int.TryParse(value, out fileSizeCurrentAsInt) && fileSizeCurrentAsInt <= 8000);
+                IsValidFileSizeCurrent = (int.TryParse(value, out fileSizeCurrentAsInt) && fileSizeCurrentAsInt >= 0 && fileSizeCurrentAsInt <= 8000);
 
                 if (IsValidFileSizeCurrent != false)
                 {
@@ -2574,6 +2610,10 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     case TaskType_MifareDesfireTask.ChangeFileSettings:
                         await OnNewChangeFileSettingsCommand();
+                        break;
+
+                    case TaskType_MifareDesfireTask.CheckFileSettings:
+                        await CheckFileSettingsCommand();
                         break;
 
                     default:
@@ -3646,17 +3686,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        /// Authenticates to the application and finishes the task with the outcome. The Check: App Config and
-        /// Check: App Key Count tasks authenticate with the key number that is chosen and refuse an invalid application
-        /// id before the reader is asked; the other tasks take the key number from the change-key policy of the
-        /// application. Only one button of the dialog works at a time.
+        /// Authenticates to the application and finishes the task with the outcome. The Check: App Config,
+        /// Check: App Key Count and Check: File Settings tasks authenticate with the key number that is chosen and
+        /// refuse an invalid application id before the reader is asked; the other tasks take the key number from the
+        /// change-key policy of the application. Only one button of the dialog works at a time.
         /// </summary>
         public IAsyncRelayCommand AuthenticateToCardApplicationCommand => new AsyncRelayCommand(() => RunFromUiAsync(OnNewAuthenticateToCardApplicationCommand));
         private async Task OnNewAuthenticateToCardApplicationCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            var isCheckTask = SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings || SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount;
+            var isCheckTask = SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings
+                || SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount
+                || SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings;
             if (isCheckTask && await RejectInvalidApplicationIdAsync())
             {
                 // An id that cannot be read is application 0, and the PICC would authenticate: not a pass for this one.
@@ -3681,8 +3723,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
                     {
-                        // The two check tasks authenticate with the key that is chosen, as their compare button does; the
-                        // others take it from the change-key policy of the application.
+                        // The check tasks authenticate with the key that is chosen, as their own check does; the others
+                        // take it from the change-key policy of the application.
                         var authKeyNo = isCheckTask
                             ? selectedDesfireAppKeyNumberCurrentAsInt
                             : GetAuthKeyNumberForChangeAppKey(AppNumberCurrentAsInt, GetChangeKeyModeForApplication(AppNumberCurrentAsInt), selectedDesfireAppKeyNumberCurrentAsInt);
@@ -3936,6 +3978,179 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         /// Relay command that exposes <see cref="CheckAppKeyCountCommand"/> for button binding.
         /// </summary>
         public IAsyncRelayCommand CheckAppKeyCountRelayCommand => new AsyncRelayCommand(() => RunFromUiAsync(CheckAppKeyCountCommand));
+
+        /// <summary>
+        /// Relay command that exposes <see cref="CheckFileSettingsCommand"/> for button binding.
+        /// </summary>
+        public IAsyncRelayCommand CheckFileSettingsRelayCommand => new AsyncRelayCommand(() => RunFromUiAsync(CheckFileSettingsCommand));
+
+        /// <summary>
+        /// Authenticates to an application, reads the settings of one file, and compares every configured value. The task
+        /// is strictly read-only and makes one attempt: it never retries, and it only asks for the settings when the
+        /// authentication it did first succeeded, because the reader providers swallow an authentication failure inside
+        /// the settings call and would otherwise return unauthenticated settings. A configuration that cannot be checked
+        /// is refused before the reader is touched.
+        /// </summary>
+        /// <returns>
+        /// A task that completes when the check has finished. The result is left in <see cref="CurrentTaskErrorLevel"/>:
+        /// <see cref="ERROR.NoError"/> for a complete match, <see cref="ERROR.IsNotTrue"/> for a complete read with any
+        /// difference, <see cref="ERROR.ProtocolConstraint"/> for a configuration that is invalid or not supported,
+        /// <see cref="ERROR.TransportError"/> when there is no reader or what was read cannot be compared, or the error of
+        /// the failed authentication or read. The settings side by side are left in
+        /// <see cref="LastFileSettingsComparison"/>.
+        /// </returns>
+        public async Task CheckFileSettingsCommand()
+        {
+            CurrentTaskErrorLevel = ERROR.Empty;
+            LastFileSettingsComparison = null;
+
+            var configurationProblem = GetFileSettingsCheckConfigurationProblem();
+            if (configurationProblem != null)
+            {
+                CurrentTaskErrorLevel = ERROR.ProtocolConstraint;
+                StatusText = LocalizedStatusLine(configurationProblem, DateTime.Now);
+                await FinalizeTaskAsync();
+                return;
+            }
+
+            // What the check depends on is taken now, before the reader is asked: the dialog stays editable while the
+            // card answers, and a value changed meanwhile must neither change what is compared nor send the read to
+            // another key, application or file than the one that was authenticated to.
+            var key = DesfireAppKeyCurrent;
+            var keyType = SelectedDesfireAppKeyEncryptionTypeCurrent;
+            var keyNumber = selectedDesfireAppKeyNumberCurrentAsInt;
+            var expectation = BuildFileSettingsExpectation();
+
+            using (var device = ReaderDevice.Instance)
+            {
+                if (device == null)
+                {
+                    CurrentTaskErrorLevel = ERROR.TransportError;
+                    StatusText = LocalizedStatusLine("textBoxStatusFileSettingsNoReader", DateTime.Now);
+                    await FinalizeTaskAsync();
+                    return;
+                }
+
+                StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
+
+                var result = await device.AuthToMifareDesfireApplication(
+                    key,
+                    keyType,
+                    keyNumber,
+                    expectation.ApplicationId);
+
+                if (result == ERROR.NoError)
+                {
+                    // A provider keeps the settings of its last read. Forget them, so that a read that fails without
+                    // saying so cannot be reported as the settings of this file.
+                    device.DesfireFileSettings = null;
+
+                    result = await device.GetMifareDesfireFileSettings(
+                        key,
+                        keyType,
+                        keyNumber,
+                        expectation.ApplicationId,
+                        expectation.FileNumber);
+                }
+
+                DesfireFileSettingsCheckResult check;
+                if (result == ERROR.NoError && device.DesfireFileSettings != null)
+                {
+                    check = DesfireFileSettingsChecker.Compare(expectation, device.DesfireFileSettings);
+                }
+                else
+                {
+                    // A read that succeeded without settings is as unusable as one that failed.
+                    var failure = result == ERROR.NoError ? ERROR.TransportError : result;
+                    check = new DesfireFileSettingsCheckResult(failure, null);
+                }
+
+                LastFileSettingsComparison = check.Comparison;
+                CurrentTaskErrorLevel = check.ErrorLevel;
+
+                if (check.Comparison != null)
+                {
+                    StatusText += LocalizedStatusLine(
+                        "textBoxStatusFileSettingsCompared",
+                        DateTime.Now,
+                        expectation.ApplicationId,
+                        expectation.FileNumber,
+                        DescribeCompareResult(check.Comparison.Matches));
+                }
+                else
+                {
+                    StatusText += LocalizedStatusLine(
+                        "textBoxStatusFileSettingsUnreadable",
+                        DateTime.Now,
+                        expectation.ApplicationId,
+                        expectation.FileNumber,
+                        CurrentTaskErrorLevel);
+                }
+            }
+
+            await FinalizeTaskAsync();
+        }
+
+        /// <summary>The highest key number an application can have (an application holds up to 14 keys).</summary>
+        private const int MaxDesfireApplicationKeyNumber = 13;
+
+        /// <summary>
+        /// Tells what keeps the file-settings check from running with the current configuration. A flag of a field is
+        /// tri-state: a task that was just created in the dialog holds valid defaults (file number 0, size 16) whose flags
+        /// are still <see langword="null"/>, "not yet validated", so only an explicit <see langword="false"/> marks a field
+        /// as invalid.
+        /// </summary>
+        /// <returns>The resource key of the status text that names the problem, or <see langword="null"/> when there is none.</returns>
+        private string GetFileSettingsCheckConfigurationProblem()
+        {
+            if (!DesfireFileSettingsChecker.IsSupportedFileType(SelectedDesfireFileType))
+            {
+                return "textBoxStatusFileSettingsUnsupportedFileType";
+            }
+
+            // The list of key numbers of the dialog is shared by all tasks and offers more than an application has.
+            // (The text of textBoxStatusFileSettingsInvalidKeyNumber names the same limit.)
+            if (selectedDesfireAppKeyNumberCurrentAsInt < 0 || selectedDesfireAppKeyNumberCurrentAsInt > MaxDesfireApplicationKeyNumber)
+            {
+                return "textBoxStatusFileSettingsInvalidKeyNumber";
+            }
+
+            // The list of communication modes is shared too; "unknown" is what a provider answers for a mode it cannot read.
+            if (SelectedDesfireFileCryptoMode == EncryptionMode.CM_UNKNOWN)
+            {
+                return "textBoxStatusFileSettingsUnknownCommunicationMode";
+            }
+
+            var configurationIsValid =
+                IsValidAppNumberCurrent != false &&
+                AppNumberCurrentAsInt > 0 &&
+                IsValidFileNumberCurrent != false &&
+                IsValidFileSizeCurrent != false &&
+                FileSizeCurrentAsInt > 0 &&
+                CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(
+                    DesfireAppKeyCurrent,
+                    SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR;
+
+            return configurationIsValid ? null : "textBoxStatusFileSettingsInvalidInput";
+        }
+
+        /// <summary>
+        /// Collects the settings the task expects the file to have.
+        /// </summary>
+        /// <returns>The expected settings.</returns>
+        private DesfireFileSettingsExpectation BuildFileSettingsExpectation()
+        {
+            return new DesfireFileSettingsExpectation(
+                AppNumberCurrentAsInt,
+                FileNumberCurrentAsInt,
+                SelectedDesfireFileType,
+                FileSizeCurrentAsInt,
+                SelectedDesfireFileCryptoMode,
+                SelectedDesfireFileAccessRightRead,
+                SelectedDesfireFileAccessRightWrite,
+                SelectedDesfireFileAccessRightReadWrite,
+                SelectedDesfireFileAccessRightChange);
+        }
 
         /// <summary>
         /// Reads the actual max-key count from the card application and compares it to the expected value.

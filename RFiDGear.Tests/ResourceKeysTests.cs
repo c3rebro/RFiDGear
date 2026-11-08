@@ -9,8 +9,9 @@ using Xunit;
 namespace RFiDGear.Tests
 {
     /// <summary>
-    /// The texts of the Check: App Config and Check: App Key Count dialogs. A resource key that does not exist gives an
-    /// empty text and no error, so a typo in a key, or a language that was forgotten, would only show as a blank label.
+    /// The texts of the Check: App Config, Check: App Key Count and Check: File Settings dialogs. A resource key that
+    /// does not exist gives an empty text and no error, so a typo in a key, or a language that was forgotten, would only
+    /// show as a blank label.
     /// </summary>
     public class ResourceKeysTests
     {
@@ -23,6 +24,17 @@ namespace RFiDGear.Tests
             "labelAppSettingsCompareExact",
             "textBoxStatusNoKeySettingFlagSelected",
             "textBoxStatusInvalidApplicationId",
+            "textBoxStatusFileSettingsUnsupportedFileType",
+            "textBoxStatusFileSettingsInvalidInput",
+            "textBoxStatusFileSettingsCompared",
+            "textBoxStatusFileSettingsUnreadable",
+            "textBoxStatusFileSettingsNoReader",
+            "buttonContentMifareDesfireFileMasteringCheckFileSettings",
+            "ENUM.TaskType_MifareDesfireTask.CheckFileSettings",
+            "labelContentMifareDesfireCommunicationMode",
+            "labelContentMifareDesfireBytes",
+            "textBoxStatusFileSettingsInvalidKeyNumber",
+            "textBoxStatusFileSettingsUnknownCommunicationMode",
             "labelExpectedChangeKeyPolicy",
             "labelContentMifareDesfireAppId",
             "labelContentMifareDesfireMaxKeys",
@@ -38,6 +50,9 @@ namespace RFiDGear.Tests
             "textBoxStatusCompareFail",
         };
 
+        // The unit of a size reads the same in both languages.
+        private static readonly string[] SameInBothLanguages = { "labelContentMifareDesfireBytes" };
+
         private static readonly ResourceManager Manifest =
             new ResourceManager("RFiDGear.Resources.Manifest", typeof(MainWindowViewModel).Assembly);
 
@@ -52,7 +67,10 @@ namespace RFiDGear.Tests
 
             Assert.False(string.IsNullOrWhiteSpace(english), key + " (en)");
             Assert.False(string.IsNullOrWhiteSpace(german), key + " (de)");
-            Assert.NotEqual(english, german);
+            if (!SameInBothLanguages.Contains(key))
+            {
+                Assert.NotEqual(english, german);
+            }
         }
 
         [Theory]

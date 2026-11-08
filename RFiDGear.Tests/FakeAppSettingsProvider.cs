@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace RFiDGear.Tests
 {
     /// <summary>A reader that answers the application settings it is told to, and counts how often it was asked.</summary>
-    internal sealed class FakeAppSettingsProvider : ElatecNetProvider
+    internal class FakeAppSettingsProvider : ElatecNetProvider
     {
         /// <summary>Gets or sets the key-settings byte the card reports.</summary>
         public byte KeySettings { get; set; }
@@ -38,6 +38,22 @@ namespace RFiDGear.Tests
         /// <summary>Gets the key number the last authentication was asked for.</summary>
         public int LastAuthKeyNumber { get; private set; } = -1;
 
+        /// <summary>Gets the key the last authentication was asked for.</summary>
+        public string? LastAuthKey { get; private set; }
+
+        /// <summary>Gets the key type the last authentication was asked for.</summary>
+        public DESFireKeyType? LastAuthKeyType { get; private set; }
+
+        /// <summary>Gets the application the last authentication was asked for.</summary>
+        public int LastAuthAppId { get; private set; } = -1;
+
+        /// <summary>
+        /// Answers that a chip was read without reading one. The task execution service reads the chip before any task of
+        /// a run, and the real reader would look for hardware.
+        /// </summary>
+        /// <returns>Success, with no chip.</returns>
+        public override Task<ERROR> ReadChipPublic() => Task.FromResult(ERROR.NoError);
+
         /// <inheritdoc />
         public override Task<OperationResult> GetMifareDesfireAppSettings(
             string _applicationMasterKey,
@@ -67,11 +83,11 @@ namespace RFiDGear.Tests
         /// <inheritdoc />
         public override async Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
-            _ = _applicationMasterKey;
-            _ = _keyType;
-            _ = _appID;
             AuthCalls++;
+            LastAuthKey = _applicationMasterKey;
+            LastAuthKeyType = _keyType;
             LastAuthKeyNumber = _keyNumber;
+            LastAuthAppId = _appID;
 
             if (AuthenticationGate != null)
             {

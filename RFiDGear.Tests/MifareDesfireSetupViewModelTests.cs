@@ -92,6 +92,7 @@ namespace RFiDGear.Tests
         [InlineData(TaskType_MifareDesfireTask.ChangeDefault, true, true, true, true, true, true, true)]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false, true, true, false, false, false)]
         [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount, false, false, true, true, false, false, false)]
+        [InlineData(TaskType_MifareDesfireTask.CheckFileSettings, true, false, false, false, true, true, false)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, false, false, false, false, true, true, false)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover, false, false, false, false, true, true, false)]
         [InlineData(TaskType_MifareDesfireTask.AuthenticateApplication, false, false, false, true, true, true, false)]
@@ -935,6 +936,108 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
+        [InlineData(0, 16, 3, 0x10, 0x32, true)]
+        [InlineData(1, 16, 3, 0x10, 0x32, false)]
+        [InlineData(0, 15, 3, 0x10, 0x32, false)]
+        [InlineData(0, 16, 1, 0x10, 0x32, false)]
+        [InlineData(0, 16, 3, 0x11, 0x32, false)]
+        [InlineData(0, 16, 3, 0x10, 0x22, false)]
+        public async Task CheckFileSettingsCommand_RequiresCompleteMatch(
+            int actualFileType,
+            int actualFileSize,
+            int actualCommunicationMode,
+            int actualAccessRights0,
+            int actualAccessRights1,
+            bool expectedSuccess)
+        {
+            await RunOnStaThreadAsync(async () =>
+            {
+                var fakeProvider = new FakeElatecNetProvider
+                {
+                    FileSettingsToReturn = new DESFireFileSettings
+                    {
+                        FileType = (byte)actualFileType,
+                        comSett = (byte)actualCommunicationMode,
+                        accessRights = new[] { (byte)actualAccessRights0, (byte)actualAccessRights1 },
+                        dataFile = new DataFileSetting { fileSize = (uint)actualFileSize }
+                    }
+                };
+                var viewModel = CreateFileSettingsCheckViewModel();
+                var originalReader = ReaderDevice.Reader;
+                var originalInstance = GetReaderDeviceInstance();
+                try
+                {
+                    ReaderDevice.Reader = ReaderTypes.Elatec;
+                    SetReaderDeviceInstance(fakeProvider);
+
+                    await viewModel.CheckFileSettingsCommand();
+
+                    Assert.Equal(1, fakeProvider.AuthCalls);
+                    Assert.Equal(1, fakeProvider.GetFileSettingsCalls);
+                    Assert.Equal(expectedSuccess ? ERROR.NoError : ERROR.IsNotTrue, viewModel.CurrentTaskErrorLevel);
+                    Assert.Equal(expectedSuccess, viewModel.LastFileSettingsComparison.Matches);
+                    Assert.Contains(
+                        "→ " + ResourceLoader.GetResource(expectedSuccess ? "textBoxStatusComparePass" : "textBoxStatusCompareFail") + "\n",
+                        viewModel.StatusText);
+                }
+                finally
+                {
+                    ReaderDevice.Reader = originalReader;
+                    SetReaderDeviceInstance(originalInstance);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task CheckFileSettingsCommand_StopsWhenAuthenticationFails()
+        {
+            await RunOnStaThreadAsync(async () =>
+            {
+                var fakeProvider = new FakeElatecNetProvider { AuthenticationResult = ERROR.AuthFailure };
+                var viewModel = CreateFileSettingsCheckViewModel();
+                var originalReader = ReaderDevice.Reader;
+                var originalInstance = GetReaderDeviceInstance();
+                try
+                {
+                    ReaderDevice.Reader = ReaderTypes.Elatec;
+                    SetReaderDeviceInstance(fakeProvider);
+
+                    await viewModel.CheckFileSettingsCommand();
+
+                    Assert.Equal(ERROR.AuthFailure, viewModel.CurrentTaskErrorLevel);
+                    Assert.Equal(1, fakeProvider.AuthCalls);
+                    Assert.Equal(0, fakeProvider.GetFileSettingsCalls);
+                    Assert.Null(viewModel.LastFileSettingsComparison);
+                }
+                finally
+                {
+                    ReaderDevice.Reader = originalReader;
+                    SetReaderDeviceInstance(originalInstance);
+                }
+            });
+        }
+
+        private static MifareDesfireSetupViewModel CreateFileSettingsCheckViewModel()
+        {
+            return new MifareDesfireSetupViewModel
+            {
+                SelectedTaskType = TaskType_MifareDesfireTask.CheckFileSettings,
+                AppNumberCurrent = "1",
+                FileNumberCurrent = "2",
+                FileSizeCurrent = "16",
+                DesfireAppKeyCurrent = "00000000000000000000000000000000",
+                SelectedDesfireAppKeyEncryptionTypeCurrent = DESFireKeyType.DF_KEY_AES,
+                SelectedDesfireAppKeyNumberCurrent = "0",
+                SelectedDesfireFileType = FileType_MifareDesfireFileType.StdDataFile,
+                SelectedDesfireFileCryptoMode = EncryptionMode.CM_ENCRYPT,
+                SelectedDesfireFileAccessRightRead = TaskAccessRights.AR_KEY0,
+                SelectedDesfireFileAccessRightWrite = TaskAccessRights.AR_KEY1,
+                SelectedDesfireFileAccessRightReadWrite = TaskAccessRights.AR_KEY2,
+                SelectedDesfireFileAccessRightChange = TaskAccessRights.AR_KEY3
+            };
+        }
+
+        [Theory]
         [InlineData("0", "0", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK, false)]
         [InlineData("0", "1", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK, false)]
         [InlineData("1", "0", AccessCondition_MifareDesfireAppCreation.ChangeKeyUsingMK, false)]
@@ -1016,8 +1119,11 @@ namespace RFiDGear.Tests
         {
             public ERROR PostChangeAuthenticationResult { get; set; } = ERROR.NoError;
             public ERROR ChangeKeyResult { get; set; } = ERROR.NoError;
+            public ERROR AuthenticationResult { get; set; } = ERROR.NoError;
             public int AuthCalls { get; private set; }
             public int ChangeKeyCalls { get; private set; }
+            public int GetFileSettingsCalls { get; private set; }
+            public DESFireFileSettings? FileSettingsToReturn { get; set; }
             public string LastAuthKey { get; private set; }
             public DESFireKeyType LastAuthKeyType { get; private set; }
             public int LastAuthKeyNumber { get; private set; }
@@ -1042,7 +1148,7 @@ namespace RFiDGear.Tests
                 LastAuthKey = _applicationMasterKey;
                 LastAuthKeyType = _keyType;
                 LastAuthKeyNumber = _keyNumber;
-                return Task.FromResult(ChangeKeyCalls > 0 ? PostChangeAuthenticationResult : ERROR.NoError);
+                return Task.FromResult(ChangeKeyCalls > 0 ? PostChangeAuthenticationResult : AuthenticationResult);
             }
 
             public override Task<ERROR> VerifyMifareDesfireKeyChange(
@@ -1074,6 +1180,23 @@ namespace RFiDGear.Tests
                 _ = currentKeySettings;
                 ChangeKeyCalls++;
                 return Task.FromResult(ChangeKeyResult);
+            }
+
+            public override Task<ERROR> GetMifareDesfireFileSettings(
+                string _applicationMasterKey,
+                DESFireKeyType _keyType,
+                int _keyNumberCurrent,
+                int _appID,
+                int _fileNo)
+            {
+                _ = _applicationMasterKey;
+                _ = _keyType;
+                _ = _keyNumberCurrent;
+                _ = _appID;
+                _ = _fileNo;
+                GetFileSettingsCalls++;
+                DesfireFileSettings = FileSettingsToReturn;
+                return Task.FromResult(FileSettingsToReturn == null ? ERROR.TransportError : ERROR.NoError);
             }
 
             public override Task<ERROR> ReadMiFareDESFireChipFile(string _appReadKey, DESFireKeyType _keyTypeAppReadKey, int _readKeyNo,

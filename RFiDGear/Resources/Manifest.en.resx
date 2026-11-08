@@ -864,6 +864,9 @@ Recommended Setting (FOR PICC LAYER ONLY)</value>
   <data name="buttonContentMifareDesfireFileMasteringChangeFileSettings" xml:space="preserve">
     <value>Change File Settings</value>
   </data>
+  <data name="buttonContentMifareDesfireFileMasteringCheckFileSettings" xml:space="preserve">
+    <value>Check File Settings</value>
+  </data>
   <data name="buttonContentMifareDesfireFileMasteringDeleteFile" xml:space="preserve">
     <value>Delete File</value>
   </data>
@@ -1208,6 +1211,9 @@ Needed by:
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.CheckAppKeyCount" xml:space="preserve">
     <value>Check: App Key Count</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.CheckFileSettings" xml:space="preserve">
+    <value>Check: File Settings</value>
   </data>
   <data name="ENUM.ERROR.OutOfMemory" xml:space="preserve">
     <value>Out Of Memory Error</value>
@@ -1839,5 +1845,32 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="textBoxStatusInvalidApplicationId" xml:space="preserve">
     <value>{0}: The application id is not valid; nothing was read.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsUnsupportedFileType" xml:space="preserve">
+    <value>{0}: Only standard and backup data files can be checked; value and record files are not supported yet. Nothing was read.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsInvalidInput" xml:space="preserve">
+    <value>{0}: The application, file, size or key is not valid. Nothing was read.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsCompared" xml:space="preserve">
+    <value>{0}: Settings of file {2} in App {1} compared → {3}</value>
+  </data>
+  <data name="textBoxStatusFileSettingsUnreadable" xml:space="preserve">
+    <value>{0}: The settings of file {2} in App {1} could not be read completely: {3}</value>
+  </data>
+  <data name="labelContentMifareDesfireCommunicationMode" xml:space="preserve">
+    <value>Communication Mode</value>
+  </data>
+  <data name="labelContentMifareDesfireBytes" xml:space="preserve">
+    <value>Byte(s)</value>
+  </data>
+  <data name="textBoxStatusFileSettingsInvalidKeyNumber" xml:space="preserve">
+    <value>{0}: The key number must be between 0 and 13. Nothing was read.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsUnknownCommunicationMode" xml:space="preserve">
+    <value>{0}: Choose the communication mode the file is expected to have; &quot;unknown&quot; cannot be checked. Nothing was read.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsNoReader" xml:space="preserve">
+    <value>{0}: No reader is available. Nothing was read.</value>
   </data>
 </root>

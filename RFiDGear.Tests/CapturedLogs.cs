@@ -30,6 +30,9 @@ namespace RFiDGear.Tests
         /// <summary>Starts capturing; dispose the result to restore the previous logger.</summary>
         public static CapturedLogs Install() => new CapturedLogs();
 
+        /// <summary>Every event captured so far.</summary>
+        public IReadOnlyList<LogEvent> All() => _sink.Snapshot();
+
         /// <summary>Events written by the class whose name is <paramref name="sourceTypeName"/>.</summary>
         public IReadOnlyList<LogEvent> From(string sourceTypeName) =>
             _sink.Snapshot()

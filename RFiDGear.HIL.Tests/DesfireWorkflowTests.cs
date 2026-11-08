@@ -1,7 +1,9 @@
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.Tasks;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -95,6 +97,86 @@ namespace RFiDGear.HIL.Tests
                     _fixture.Host!.Execution.ResetStatus();
                 }
             });
+        }
+
+        /// <summary>
+        /// The read-only Check File Settings task against a real card: a file with four different access rights is
+        /// created; the task returns success when the project expects exactly that, and IsNotTrue when the project alone
+        /// differs (another size, another communication mode, two access rights swapped, another file type); the same
+        /// task succeeds again afterwards, which shows that the settings it compares are still what they were. Which
+        /// reader ran (Elatec first, PC/SC otherwise) is not asserted, and the expected and the actual values of a
+        /// difference are in the Task.Outcome entry of the log of the run (stage Task.Outcome, IO.FileSettingsComparison).
+        /// </summary>
+        [Theory]
+        [InlineData(DESFireKeyType.DF_KEY_AES, HilConstants.DefaultKeyAes)]
+        [InlineData(DESFireKeyType.DF_KEY_DES, HilConstants.DefaultKeyDes)]
+        public async Task CheckFileSettings_MatchesTheCard_RejectsADifference_AndLeavesTheCardUnchanged(
+            DESFireKeyType keyType,
+            string defaultKey)
+        {
+            _fixture.SkipIfNoHardware();
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await _fixture.CleanupTestAidAsync();
+                var onTheCard = HilFileSettings.Distinct;
+
+                try
+                {
+                    var (setup, setupDiag) = await RunAsync(HilTaskBuilder.BuildCreateApplicationWithFile(
+                        HilConstants.TestAppId, keyType, defaultKey, onTheCard));
+                    Assert.True(setup.Outcome == ExecutionOutcome.Success, $"Setting the file up failed — keyType={keyType}\n{setupDiag}");
+
+                    // The project expects what is on the card.
+                    var (match, matchDiag) = await RunAsync(HilTaskBuilder.BuildCheckFileSettings(
+                        HilConstants.TestAppId, keyType, defaultKey, onTheCard));
+                    Assert.True(match.Outcome == ExecutionOutcome.Success, $"The exact match was not accepted — keyType={keyType}\n{matchDiag}\nSee the Task.Outcome entry of the log for the values.");
+                    Assert.Equal(nameof(ERROR.NoError), Assert.Single(match.TaskOutcomes).NormalizedErrorCode);
+
+                    // The project alone differs, in one field each time.
+                    var differences = new[]
+                    {
+                        onTheCard with { Size = onTheCard.Size + 1 },
+                        onTheCard with { CommunicationMode = EncryptionMode.CM_MAC },
+                        onTheCard with { Read = onTheCard.Write, Write = onTheCard.Read },
+                        onTheCard with { FileType = FileType_MifareDesfireFileType.BackupFile },
+                    };
+
+                    foreach (var expected in differences)
+                    {
+                        var (mismatch, mismatchDiag) = await RunAsync(HilTaskBuilder.BuildCheckFileSettings(
+                            HilConstants.TestAppId, keyType, defaultKey, expected));
+                        var outcome = Assert.Single(mismatch.TaskOutcomes);
+                        Assert.False(outcome.IsSuccess, $"A difference was accepted: {expected}\n{mismatchDiag}");
+                        Assert.Equal(nameof(ERROR.IsNotTrue), outcome.NormalizedErrorCode);
+                    }
+
+                    // The compared settings are as they were: the exact match is still accepted.
+                    var (after, afterDiag) = await RunAsync(HilTaskBuilder.BuildCheckFileSettings(
+                        HilConstants.TestAppId, keyType, defaultKey, onTheCard));
+                    Assert.True(after.Outcome == ExecutionOutcome.Success, $"The settings changed during the checks — keyType={keyType}\n{afterDiag}\nSee the Task.Outcome entry of the log for the values.");
+                    Assert.Equal(nameof(ERROR.NoError), Assert.Single(after.TaskOutcomes).NormalizedErrorCode);
+                }
+                finally
+                {
+                    await _fixture.CleanupTestAidAsync();
+                }
+            });
+        }
+
+        private async Task<(ExecResult Result, string Diagnostics)> RunAsync(IEnumerable<object> tasks)
+        {
+            _fixture.Host!.Project.ReplaceTaskCollection(tasks);
+            try
+            {
+                var result = await _fixture.Host.Execution.ExecuteAllAsync(ExecutionRequest.Empty);
+
+                return (result, _fixture.Host.GetTaskErrorSummary());
+            }
+            finally
+            {
+                _fixture.Host.Execution.ResetStatus();
+            }
         }
 
         /// <summary>

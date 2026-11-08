@@ -880,6 +880,9 @@ Wird benötigt von:
   <data name="buttonContentMifareDesfireFileMasteringChangeFileSettings" xml:space="preserve">
     <value>Dateieinstellungen ändern</value>
   </data>
+  <data name="buttonContentMifareDesfireFileMasteringCheckFileSettings" xml:space="preserve">
+    <value>Dateieinstellungen prüfen</value>
+  </data>
   <data name="buttonContentMifareDesfireFileMasteringDeleteFile" xml:space="preserve">
     <value>Datei löschen</value>
   </data>
@@ -1215,6 +1218,9 @@ Wird benötigt von:
   </data>
   <data name="ENUM.TaskType_MifareDesfireTask.CheckAppKeyCount" xml:space="preserve">
     <value>Prüfung: App Schlüsselanzahl</value>
+  </data>
+  <data name="ENUM.TaskType_MifareDesfireTask.CheckFileSettings" xml:space="preserve">
+    <value>Prüfung: Dateieinstellungen</value>
   </data>
   <data name="ENUM.ERROR.OutOfMemory" xml:space="preserve">
     <value>Nicht genügend Speicher</value>
@@ -1861,5 +1867,32 @@ https://github.com/c3rebro/rfidgear</value>
   </data>
   <data name="textBoxStatusInvalidApplicationId" xml:space="preserve">
     <value>{0}: Die App-ID ist ungültig; es wurde nichts gelesen.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsUnsupportedFileType" xml:space="preserve">
+    <value>{0}: Nur Standard- und Backup-Datendateien können geprüft werden; Wert- und Record-Dateien werden noch nicht unterstützt. Es wurde nichts gelesen.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsInvalidInput" xml:space="preserve">
+    <value>{0}: App, Datei, Größe oder Schlüssel sind ungültig. Es wurde nichts gelesen.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsCompared" xml:space="preserve">
+    <value>{0}: Einstellungen von Datei {2} in App {1} verglichen → {3}</value>
+  </data>
+  <data name="textBoxStatusFileSettingsUnreadable" xml:space="preserve">
+    <value>{0}: Die Einstellungen von Datei {2} in App {1} konnten nicht vollständig gelesen werden: {3}</value>
+  </data>
+  <data name="labelContentMifareDesfireCommunicationMode" xml:space="preserve">
+    <value>Kommunikationsmodus</value>
+  </data>
+  <data name="labelContentMifareDesfireBytes" xml:space="preserve">
+    <value>Byte(s)</value>
+  </data>
+  <data name="textBoxStatusFileSettingsInvalidKeyNumber" xml:space="preserve">
+    <value>{0}: Die Schlüsselnummer muss zwischen 0 und 13 liegen. Es wurde nichts gelesen.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsUnknownCommunicationMode" xml:space="preserve">
+    <value>{0}: Wählen Sie den Kommunikationsmodus, den die Datei haben soll; &quot;unbekannt&quot; kann nicht geprüft werden. Es wurde nichts gelesen.</value>
+  </data>
+  <data name="textBoxStatusFileSettingsNoReader" xml:space="preserve">
+    <value>{0}: Es ist kein Lesegerät verfügbar. Es wurde nichts gelesen.</value>
   </data>
 </root>
