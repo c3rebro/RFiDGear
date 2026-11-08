@@ -79,10 +79,7 @@ namespace RFiDGear.Tests
 
                     // Placed relative to the main window, which is what keeps it on the monitor the main window is on.
                     Assert.Same(main, Assert.Single(RecordingFactory.Recorder.Created).Content.OwnerAtFirstLayout);
-                    var centeredLeft = main.Left + ((main.Width - window!.Width) / 2);
-                    var centeredTop = main.Top + ((main.Height - window.Height) / 2);
-                    Assert.InRange(window.Left, centeredLeft - 2, centeredLeft + 2);
-                    Assert.InRange(window.Top, centeredTop - 2, centeredTop + 2);
+                    AssertPlacedOnTheMainWindow(main, window!);
 
                     // The owner only placed it: it is no dialog of the main window.
                     Assert.Null(window.Owner);
@@ -116,10 +113,7 @@ namespace RFiDGear.Tests
                     // The page does not exist; the frame says so when the dispatcher runs, which must not end the test run.
                     ((Frame)window!.Content).NavigationFailed += (_, e) => e.Handled = true;
 
-                    var centeredLeft = main.Left + ((main.Width - window.Width) / 2);
-                    var centeredTop = main.Top + ((main.Height - window.Height) / 2);
-                    Assert.InRange(window.Left, centeredLeft - 2, centeredLeft + 2);
-                    Assert.InRange(window.Top, centeredTop - 2, centeredTop + 2);
+                    AssertPlacedOnTheMainWindow(main, window);
                     Assert.Null(window.Owner);
                     Assert.True(window.IsVisible);
                 }
@@ -533,22 +527,44 @@ namespace RFiDGear.Tests
             });
         }
 
-        // A main window that has been shown, away from the corner so that a window centered on it can be told from one
-        // that Windows placed.
+        // A main window that has been shown, in the middle of the work area of the primary monitor. A window of 900 by 600
+        // centered on it is then as close to the middle of the work area as the display allows, whatever its size and
+        // scaling, and can be told from one that Windows placed.
         private static Window ShownMainWindow()
         {
+            const double width = 400;
+            const double height = 300;
+            var workArea = SystemParameters.WorkArea;
             var main = new Window
             {
-                Left = 40,
-                Top = 40,
-                Width = 1000,
-                Height = 650,
+                Left = workArea.Left + ((workArea.Width - width) / 2),
+                Top = workArea.Top + ((workArea.Height - height) / 2),
+                Width = width,
+                Height = height,
                 ShowActivated = false,
                 ShowInTaskbar = false
             };
             main.Show();
 
             return main;
+        }
+
+        // The window is centered on the main window, or, when the display is too small for that, kept inside the work area
+        // of the monitor, which is what WPF does for a window that would not fit.
+        private static void AssertPlacedOnTheMainWindow(Window main, Window window)
+        {
+            var workArea = SystemParameters.WorkArea;
+            var centeredLeft = main.Left + ((main.Width - window.Width) / 2);
+            var centeredTop = main.Top + ((main.Height - window.Height) / 2);
+            var keptInLeft = Math.Max(workArea.Left, Math.Min(centeredLeft, workArea.Right - window.Width));
+            var keptInTop = Math.Max(workArea.Top, Math.Min(centeredTop, workArea.Bottom - window.Height));
+
+            Assert.True(
+                Math.Abs(window.Left - centeredLeft) <= 2 || Math.Abs(window.Left - keptInLeft) <= 2,
+                $"Left {window.Left} is neither centered ({centeredLeft}) nor kept in the work area ({keptInLeft}).");
+            Assert.True(
+                Math.Abs(window.Top - centeredTop) <= 2 || Math.Abs(window.Top - keptInTop) <= 2,
+                $"Top {window.Top} is neither centered ({centeredTop}) nor kept in the work area ({keptInTop}).");
         }
 
         // A shown window that belongs to a thread of its own, which this thread must not touch.
