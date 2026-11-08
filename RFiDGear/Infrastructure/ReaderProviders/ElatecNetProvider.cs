@@ -29,6 +29,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         private bool _disposed;
         private readonly SemaphoreSlim _comPortLock = new SemaphoreSlim(1, 1);
 
+        // The monitor retries a connect every few seconds; the log gets one line per distinct failure, not one per retry.
+        private string lastLoggedConnectFailure;
+
         private bool IsMultiTechReader => ReaderUnitVersion?.Contains("CCF") == true;
 
         #region Constructor
@@ -39,7 +42,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
             try
             {
-                var readerList = TWN4ReaderDevice.Instance;
+                var readerList = EnumerateReaders().ToList();
 
                 if (readerList != null && readerList.Count > 0)
                 {
@@ -60,6 +63,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             }
             catch (Exception e)
             {
+                LastConnectError = DescribeConnectFailure(e);
                 Log.ForContext<ElatecNetProvider>().Error(e, "Elatec operation failed.");
             }
         }
@@ -229,23 +233,75 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
 
         /// <summary>
-        ///
+        /// Lists the readers that are attached. A seam for tests, which must not enumerate the machine's real readers.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The attached TWN4 readers.</returns>
+        protected virtual IEnumerable<TWN4ReaderDevice> EnumerateReaders() => TWN4ReaderDevice.Instance;
+
+        /// <summary>
+        /// Opens the first attached reader and reads its version. An error from the reader stack (the COM port is held by
+        /// another program, the reader was pulled while it was being opened) is reported as
+        /// <see cref="ERROR.TransportError"/> with the reason in <see cref="ReaderDevice.LastConnectError"/>; nothing is
+        /// thrown. It makes one attempt and never retries: the caller decides when to try again.
+        /// </summary>
+        /// <returns>
+        /// <see cref="ERROR.NoError"/> when the reader is open and answered, <see cref="ERROR.TransportError"/> when no
+        /// reader is attached or it could not be opened or queried.
+        /// </returns>
         public async override Task<ERROR> ConnectAsync()
         {
-            readerDevice = TWN4ReaderDevice.Instance.FirstOrDefault();
+            LastConnectError = null;
 
-            if (readerDevice == null)
+            try
+            {
+                readerDevice = EnumerateReaders().FirstOrDefault();
+
+                if (readerDevice == null)
+                    return ERROR.TransportError;
+
+                // If the SDK device is already connected (e.g. left open by the settings dialog),
+                // skip ConnectAsync and just fetch the version.
+                if (!readerDevice.IsConnected && !await readerDevice.ConnectAsync())
+                    return ERROR.TransportError;
+
+                ReaderUnitVersion = await readerDevice.GetVersionStringAsync();
+                lastLoggedConnectFailure = null;
+
+                return ERROR.NoError;
+            }
+            catch (Exception e)
+            {
+                LastConnectError = DescribeConnectFailure(e);
+
+                if (!string.Equals(LastConnectError, lastLoggedConnectFailure, StringComparison.Ordinal))
+                {
+                    lastLoggedConnectFailure = LastConnectError;
+                    Log.ForContext<ElatecNetProvider>().Warning(e, "The Elatec reader could not be connected: {Reason}", LastConnectError);
+                }
+
                 return ERROR.TransportError;
+            }
+        }
 
-            // If the SDK device is already connected (e.g. left open by the settings dialog),
-            // skip ConnectAsync and just fetch the version.
-            if (!readerDevice.IsConnected && !await readerDevice.ConnectAsync())
-                return ERROR.TransportError;
+        /// <summary>
+        /// Describes a failure to connect in a few words that carry no key, UID or port name.
+        /// </summary>
+        /// <param name="e">The exception.</param>
+        /// <returns>For example "ReaderException: Call was not successfull, error NotOpen".</returns>
+        private static string DescribeConnectFailure(Exception e)
+        {
+            if (e is not ReaderException readerException)
+            {
+                return e.GetType().Name;
+            }
 
-            ReaderUnitVersion = await readerDevice.GetVersionStringAsync();
-            return ERROR.NoError;
+            // The errors Elatec.NET raises while it opens a port name themselves in the message and leave ErrorNumber at
+            // None; the message carries no port, key or UID.
+            var detail = readerException.ErrorNumber != ReaderError.None
+                ? readerException.ErrorNumber.ToString()
+                : readerException.Message;
+
+            return "ReaderException: " + detail;
         }
 
         #endregion

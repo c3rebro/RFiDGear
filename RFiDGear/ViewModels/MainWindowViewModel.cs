@@ -2162,69 +2162,41 @@ namespace RFiDGear.ViewModel
             }
         }
 
+        private readonly ReaderConnectionProbe readerProbe = new ReaderConnectionProbe();
+
         private async void CheckReader(object sender)
         {
             readerMonitor?.Pause();
 
-            using (var settings = new SettingsReaderWriter())
+            try
             {
-                if (ReaderDevice.Instance != null && IsReaderBusy != true)
+                using (var settings = new SettingsReaderWriter())
                 {
-                    try
-                    {
-                        if (!ReaderDevice.Instance.IsConnected)
-                        {
-                            var result = await ReaderDevice.Instance.ConnectAsync();
+                    var result = await readerProbe.ProbeAsync(
+                        ReaderDevice.Instance,
+                        settings.DefaultSpecification.DefaultReaderProvider,
+                        IsReaderBusy);
 
-                            if (result == ERROR.NoError)
-                            {
-                                IsReaderBusy = false;
-                                CurrentReader = settings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.None
-                                    ? "N/A"
-                                    : settings.DefaultSpecification.DefaultReaderProvider + " " +
-                                    ReaderDevice.Instance.ReaderUnitName +
-                                    ReaderDevice.Instance.ReaderUnitVersion;
-                            }
-                            else
-                            {
-                                IsReaderBusy = null;
-                                CurrentReader = settings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.None
-                                ? "N/A"
-                                : settings.DefaultSpecification.DefaultReaderProvider.ToString();
-                            }
-                        }
-                        else 
-                        {
-                            CurrentReader = settings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.None
-                                ? "N/A"
-                                : settings.DefaultSpecification.DefaultReaderProvider + " " +
-                                ReaderDevice.Instance.ReaderUnitName +
-                                ReaderDevice.Instance.ReaderUnitVersion;
-                        }
-                    }
-                    catch
+                    if (result != null)
                     {
-                        CurrentReader = settings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.None
-                            ? "N/A"
-                            : settings.DefaultSpecification.DefaultReaderProvider.ToString();
+                        if (result.ChangesBusy)
+                        {
+                            IsReaderBusy = result.Busy;
+                        }
+
+                        CurrentReader = result.Label;
                     }
                 }
-                else if (ReaderDevice.Instance != null && IsReaderBusy != true)
-                {
-                    IsReaderBusy = null;
-                    CurrentReader = settings.DefaultSpecification.DefaultReaderProvider == ReaderTypes.None
-                        ? "N/A"
-                        : settings.DefaultSpecification.DefaultReaderProvider.ToString();
-                    await ReaderDevice.Instance.ConnectAsync().ConfigureAwait(false);
-                    if (ReaderDevice.Instance.IsConnected)
-                    {
-                        IsReaderBusy = false;
-                    }
-                }
-            };
-
-            readerMonitor?.Resume();
-
+            }
+            catch (Exception e)
+            {
+                // A timer callback that is async void must not let anything escape: it would end the application.
+                readerProbe.ReportUnexpectedFailure(e);
+            }
+            finally
+            {
+                readerMonitor?.Resume();
+            }
         }
 
         private bool ContainsAny(string haystack, params string[] needles)

@@ -93,6 +93,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         public ReaderTypes ReaderProvider { get; set; }
         public string ReaderUnitName { get; set; }
         public string ReaderUnitVersion { get; set; }
+
+        /// <summary>
+        /// Gets a short description of why the last <see cref="ConnectAsync"/> failed with an error from the reader stack,
+        /// for example "ReaderException: Call was not successfull, error NotOpen" when the COM port is held by another
+        /// program or another RFiDGear window. It is <see langword="null"/> when the last attempt succeeded, or found no
+        /// reader attached. It says why the reader could not be opened, so it means something only while
+        /// <see cref="IsConnected"/> is <see langword="false"/>.
+        /// </summary>
+        public string LastConnectError { get; protected set; }
+
         public byte[] MifareClassicData { get; set; }
         public bool DataBlockSuccessfullyAuth { get; set; }
         public bool SectorSuccessfullyAuth { get; set; }
