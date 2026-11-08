@@ -836,10 +836,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                         SetTabAvailability(false, false, false, false, true, true, false);
                         break;
 
-                    case TaskType_MifareDesfireTask.ChangeDefault:
-                        SetTabAvailability(true, true, true, true, true, true, true);
-                        break;
-
                     case TaskType_MifareDesfireTask.CreateApplication:
                         SetTabAvailability(false, false, true, true, false, false, true);
                         break;
@@ -2528,16 +2524,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         #endregion
 
         #region Commands
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public IAsyncRelayCommand SaveSettings => new AsyncRelayCommand(OnNewSaveSettingsCommand);
-        private async Task OnNewSaveSettingsCommand()
-        {
-            SettingsReaderWriter settings = new SettingsReaderWriter();
-            await settings.SaveSettings();
-        }
 
         public IAsyncRelayCommand CommandDelegator => new AsyncRelayCommand<TaskType_MifareDesfireTask>((x) => OnNewCommandDelegatorCall(x));
         private async Task OnNewCommandDelegatorCall(TaskType_MifareDesfireTask desfireTaskType)

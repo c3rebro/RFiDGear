@@ -153,9 +153,8 @@ namespace RFiDGear.ViewModel.DialogFactories
 
         /// <summary>
         /// Creates the dialog in which a DESFire task is added or edited. Confirming the dialog with OK adds the
-        /// task to the task list and closes the dialog for every task type except <c>None</c> and
-        /// <c>ChangeDefault</c> (which saves the default keys instead). A task type that is missing from the OK
-        /// handler would make OK do nothing.
+        /// task to the task list and closes the dialog for every task type except <c>None</c>. A task type that is
+        /// missing from the OK handler would make OK do nothing.
         /// </summary>
         /// <param name="selectedSetupViewModel">The task being edited, or <see langword="null"/> for a new task.</param>
         /// <param name="chipTasks">The task list the confirmed task is added to.</param>
@@ -169,11 +168,6 @@ namespace RFiDGear.ViewModel.DialogFactories
 
                 OnOk = (sender) =>
                 {
-                    if (sender.SelectedTaskType == TaskType_MifareDesfireTask.ChangeDefault)
-                    {
-                        sender.SaveSettings.ExecuteAsync(null);
-                    }
-
                     if (sender.SelectedTaskType == TaskType_MifareDesfireTask.FormatDesfireCard ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeyChangeover ||
                         sender.SelectedTaskType == TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover ||

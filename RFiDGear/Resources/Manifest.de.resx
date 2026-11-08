@@ -292,9 +292,6 @@ ein Kartenlesegerät auswählen</value>
   <data name="ENUM.TaskType_MifareDesfireTask.WriteData" xml:space="preserve">
     <value>Daten schreiben</value>
   </data>
-  <data name="ENUM.TaskType_MifareDesfireTask.ChangeDefault" xml:space="preserve">
-    <value>Voreinstellungen ändern</value>
-  </data>
   <data name="ENUM.TaskType_MifareDesfireTask.ChangeFileSettings" xml:space="preserve">
     <value>Dateieinstellungen ändern</value>
   </data>
