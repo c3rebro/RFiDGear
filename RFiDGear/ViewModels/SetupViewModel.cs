@@ -16,6 +16,7 @@ using System.Data;
 using System.Xml.Serialization;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Serilog;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.FileAccess;
@@ -109,85 +110,124 @@ namespace RFiDGear.ViewModel
         }
 
         public IAsyncRelayCommand ConnectToReaderCommand => new AsyncRelayCommand(ConnectToReader);
+        /// <summary>
+        /// Connects to the selected reader and shows what it found. The reader is marked busy while this runs, and always
+        /// released again: a reader that cannot be opened (its COM port is held by another program or another RFiDGear
+        /// window) ends in a message in <see cref="ReaderStatus"/> and in the log, not in a dialog that stays busy.
+        /// </summary>
+        /// <returns>A task that completes when the reader has been released.</returns>
         private async Task ConnectToReader()
         {
             await UpdateReaderStatusCommand.ExecuteAsync(true);
 
-            switch (SelectedReader)
+            try
             {
-                case ReaderTypes.PCSC:
-                    if (device != null)
-                    {
-                        if (!(device is LibLogicalAccessProvider))
+                var portRefused = false;
+
+                switch (SelectedReader)
+                {
+                    case ReaderTypes.PCSC:
+                        if (device != null)
                         {
-                            device.Dispose();
-                            device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
-                            _ownsDevice = true;
+                            if (!(device is LibLogicalAccessProvider))
+                            {
+                                device.Dispose();
+                                device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
+                                _ownsDevice = true;
+                            }
+                            else
+                            {
+                                (device as LibLogicalAccessProvider)?.UpdateSelectedReader(SelectedReaderName);
+                            }
                         }
                         else
                         {
-                            (device as LibLogicalAccessProvider)?.UpdateSelectedReader(SelectedReaderName);
+                            device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
+                            _ownsDevice = true;
                         }
-                    }
-                    else
-                    {
-                        device = new LibLogicalAccessProvider(SelectedReader, SelectedReaderName);
-                        _ownsDevice = true;
-                    }
 
-                    await device.ReadChipPublic();
-                    break;
+                        await device.ReadChipPublic();
+                        break;
 
-                case ReaderTypes.Elatec:
-                    if (device != null)
-                    {
-                        if (!(device is ElatecNetProvider))
+                    case ReaderTypes.Elatec:
+                        if (device != null)
                         {
-                            device.Dispose();
+                            if (!(device is ElatecNetProvider))
+                            {
+                                device.Dispose();
+                                device = new ElatecNetProvider();
+                                _ownsDevice = true;
+                            }
+
+                            if (device != null && !device.IsConnected)
+                            {
+                                await device.ConnectAsync();
+                                portRefused = !device.IsConnected && device.LastConnectError != null;
+                            }
+                        }
+                        else
+                        {
                             device = new ElatecNetProvider();
                             _ownsDevice = true;
                         }
 
-                        if (device != null && !device.IsConnected)
+                        // A reader that has just refused to open is not asked again for its chip: the second attempt would
+                        // fail the same way and add an error to the log.
+                        if (!portRefused)
                         {
-                            await device.ConnectAsync();
+                            await device.ReadChipPublic();
                         }
-                    }
-                    else
-                    {
-                        device = new ElatecNetProvider();
-                        _ownsDevice = true;
-                    }
 
-                    await device.ReadChipPublic();
-                    break;
+                        break;
 
-                case ReaderTypes.None:
+                    case ReaderTypes.None:
 
-                    break;
+                        break;
+                }
+
+                if (portRefused)
+                {
+                    // Decided first: the chip an earlier read left on the shared reader is not what is connected now.
+                    ReaderStatus = NotAccessibleStatus(device.LastConnectError);
+                }
+                else if (device?.GenericChip?.UID != null)
+                {
+                    DefaultReader = string.IsNullOrWhiteSpace(SelectedReaderName)
+                        ? Enum.GetName(typeof(ReaderTypes), SelectedReader)
+                        : SelectedReaderName;
+
+                    ReaderStatus = string.Format(ResourceLoader.GetResource("labelReaderSetupReaderConnectStatus")
+                                                 + '\n'
+                                                 + "UID: {0} "
+                                                 + '\n'
+                                                 + "Type: {1}",
+                                                 device.GenericChip.UID, 
+                                                 ResourceLoader.GetResource(string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), device.GenericChip.CardType))));
+
+                }
+                else if (device != null && !device.IsConnected && device.LastConnectError != null)
+                {
+                    ReaderStatus = NotAccessibleStatus(device.LastConnectError);
+                }
+                else
+                {
+                    ReaderStatus = "no Reader / Card detected";
+                }
             }
-
-            if (device?.GenericChip?.UID != null)
+            catch (Exception e)
             {
-                DefaultReader = string.IsNullOrWhiteSpace(SelectedReaderName)
-                    ? Enum.GetName(typeof(ReaderTypes), SelectedReader)
-                    : SelectedReaderName;
-
-                ReaderStatus = string.Format(ResourceLoader.GetResource("labelReaderSetupReaderConnectStatus")
-                                             + '\n'
-                                             + "UID: {0} "
-                                             + '\n'
-                                             + "Type: {1}",
-                                             device.GenericChip.UID, 
-                                             ResourceLoader.GetResource(string.Format("ENUM.CARD_TYPE.{0}", Enum.GetName(typeof(CARD_TYPE), device.GenericChip.CardType))));
-
+                Log.ForContext<SetupViewModel>().Warning(e, "Connecting to the reader failed.");
+                ReaderStatus = NotAccessibleStatus(e.GetType().Name);
             }
-            else
+            finally
             {
-                ReaderStatus = "no Reader / Card detected";
+                await UpdateReaderStatusCommand.ExecuteAsync(false);
             }
+        }
 
-            await UpdateReaderStatusCommand.ExecuteAsync(false);
+        private static string NotAccessibleStatus(string reason)
+        {
+            return ResourceLoader.GetResource("labelReaderSetupReaderNotAccessible") + '\n' + reason;
         }
 
         /// <summary>

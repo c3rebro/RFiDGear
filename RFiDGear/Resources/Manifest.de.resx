@@ -1541,6 +1541,12 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="labelReaderSetupReaderConnectStatus" xml:space="preserve">
     <value>Verbunden:</value>
   </data>
+  <data name="labelReaderSetupReaderNotAccessible" xml:space="preserve">
+    <value>Der Reader konnte nicht geöffnet werden. Sein COM-Port wird möglicherweise von einem anderen Programm oder einem anderen RFiDGear-Fenster verwendet.</value>
+  </data>
+  <data name="labelReaderPortNotAccessible" xml:space="preserve">
+    <value>(Port nicht zugreifbar)</value>
+  </data>
   <data name="menuItemResetTasksReportTargetPath" xml:space="preserve">
     <value>_Berichtausgabepfade zurücksetzen</value>
   </data>
