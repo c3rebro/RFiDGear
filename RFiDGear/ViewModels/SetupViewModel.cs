@@ -122,6 +122,8 @@ namespace RFiDGear.ViewModel
 
             try
             {
+                var portRefused = false;
+
                 switch (SelectedReader)
                 {
                     case ReaderTypes.PCSC:
@@ -148,8 +150,6 @@ namespace RFiDGear.ViewModel
                         break;
 
                     case ReaderTypes.Elatec:
-                        var portRefused = false;
-
                         if (device != null)
                         {
                             if (!(device is ElatecNetProvider))
@@ -185,7 +185,12 @@ namespace RFiDGear.ViewModel
                         break;
                 }
 
-                if (device?.GenericChip?.UID != null)
+                if (portRefused)
+                {
+                    // Decided first: the chip an earlier read left on the shared reader is not what is connected now.
+                    ReaderStatus = NotAccessibleStatus(device.LastConnectError);
+                }
+                else if (device?.GenericChip?.UID != null)
                 {
                     DefaultReader = string.IsNullOrWhiteSpace(SelectedReaderName)
                         ? Enum.GetName(typeof(ReaderTypes), SelectedReader)

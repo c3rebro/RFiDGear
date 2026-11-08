@@ -2,6 +2,7 @@ using Elatec.NET;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.FileAccess;
 using RFiDGear.Infrastructure.ReaderProviders;
+using RFiDGear.Models;
 using RFiDGear.Services;
 using RFiDGear.UI.MVVMDialogs.ViewModels.Interfaces;
 using RFiDGear.ViewModel;
@@ -120,6 +121,34 @@ namespace RFiDGear.Tests
                     // The port is open, so the chip is asked for and the port is not blamed.
                     Assert.Equal(1, provider.ReadChipCalls);
                     Assert.DoesNotContain(ResourceLoader.GetResource("labelReaderSetupReaderNotAccessible"), viewModel.ReaderStatus);
+                }
+                finally
+                {
+                    Directory.Delete(directory, recursive: true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task ConnectInTheSettingsDialog_ShowsTheRefusal_NotTheChipAnEarlierReadLeftBehind()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var directory = Directory.CreateTempSubdirectory("ReaderConnect").FullName;
+                try
+                {
+                    using var settings = new SettingsReaderWriter(directory, loadSettings: false);
+                    settings.DefaultSpecification.DefaultReaderProvider = ReaderTypes.Elatec;
+                    var provider = new ScriptedConnectProvider { Result = ERROR.TransportError, Failure = "ReaderException: NotOpen" };
+
+                    // The shared reader read a card earlier; a refused connect must not report that card as connected.
+                    provider.GenericChip = new GenericChipModel("04A1B2C3", CARD_TYPE.EM4102);
+                    var viewModel = new SetupViewModel(provider, settings, new ObservableCollection<IDialogViewModel>());
+
+                    await viewModel.ConnectToReaderCommand.ExecuteAsync(null);
+
+                    Assert.Contains(ResourceLoader.GetResource("labelReaderSetupReaderNotAccessible"), viewModel.ReaderStatus);
+                    Assert.DoesNotContain("04A1B2C3", viewModel.ReaderStatus);
                 }
                 finally
                 {
