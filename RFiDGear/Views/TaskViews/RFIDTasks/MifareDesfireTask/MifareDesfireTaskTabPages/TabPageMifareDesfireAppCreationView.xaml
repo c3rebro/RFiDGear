@@ -51,7 +51,7 @@
                         HorizontalAlignment="Stretch"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
-                        Content="App ID" />
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireAppId'}" />
                     <Label
                         Grid.Row="1"
                         Margin="8,0,8,8"
@@ -82,7 +82,7 @@
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Left"
                         Visibility="{Binding ShowCreateApplicationInputs, Converter={StaticResource BoolToVisConv}}"
-                        Content="Max Keys"
+                        Content="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='labelContentMifareDesfireMaxKeys'}"
                         RenderTransformOrigin="0.5,0.5" />
                     <ComboBox
                         Grid.Row="2"

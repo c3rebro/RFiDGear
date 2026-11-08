@@ -1780,4 +1780,64 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="labelTargetDesfireKeySettings" xml:space="preserve">
     <value>New key settings to apply</value>
   </data>
+  <data name="labelExpectedDesfireKeySettings" xml:space="preserve">
+    <value>Expected key settings (compared with the card)</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireExpectedAppSettings" xml:space="preserve">
+    <value>Expected application settings</value>
+  </data>
+  <data name="labelAppSettingsCompareAll" xml:space="preserve">
+    <value>All selected settings must be set</value>
+  </data>
+  <data name="labelAppSettingsCompareAny" xml:space="preserve">
+    <value>At least one selected setting must be set</value>
+  </data>
+  <data name="labelAppSettingsCompareExact" xml:space="preserve">
+    <value>Exact match (including the Change-Key Mode)</value>
+  </data>
+  <data name="textBoxStatusNoKeySettingFlagSelected" xml:space="preserve">
+    <value>Nothing to compare: tick at least one key setting, or choose &quot;Exact match&quot;.</value>
+  </data>
+  <data name="labelExpectedChangeKeyPolicy" xml:space="preserve">
+    <value>Change-Key Mode (expected)</value>
+  </data>
+  <data name="labelContentMifareDesfireAppId" xml:space="preserve">
+    <value>App ID</value>
+  </data>
+  <data name="labelContentMifareDesfireMaxKeys" xml:space="preserve">
+    <value>Max Keys</value>
+  </data>
+  <data name="buttonContentMifareDesfirePerformCompare" xml:space="preserve">
+    <value>Perform Compare</value>
+  </data>
+  <data name="groupBoxHeaderMifareDesfireExpectedKeyCount" xml:space="preserve">
+    <value>Expected Key Count</value>
+  </data>
+  <data name="textBoxStatusAppSettingsCompared" xml:space="preserve">
+    <value>{0}: App {1} settings read — actual: 0x{2:X2}, expected: 0x{3:X2} ({4}) → {5}</value>
+  </data>
+  <data name="textBoxStatusAppKeyCountCompared" xml:space="preserve">
+    <value>{0}: App {1} key count — actual: {2}, expected: {3} → {4}</value>
+  </data>
+  <data name="textBoxStatusAppSettingsUnreadable" xml:space="preserve">
+    <value>{0}: Unable to read App {1} settings: {2}</value>
+  </data>
+  <data name="textBoxStatusCompareModeAll" xml:space="preserve">
+    <value>all selected</value>
+  </data>
+  <data name="textBoxStatusCompareModeAny" xml:space="preserve">
+    <value>any selected</value>
+  </data>
+  <data name="textBoxStatusCompareModeExact" xml:space="preserve">
+    <value>exact match</value>
+  </data>
+  <data name="textBoxStatusComparePass" xml:space="preserve">
+    <value>PASS</value>
+  </data>
+  <data name="textBoxStatusCompareFail" xml:space="preserve">
+    <value>FAIL</value>
+  </data>
+  <data name="textBoxStatusInvalidApplicationId" xml:space="preserve">
+    <value>{0}: The application id is not valid; nothing was read.</value>
+  </data>
 </root>
