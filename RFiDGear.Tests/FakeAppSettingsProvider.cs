@@ -23,6 +23,12 @@ namespace RFiDGear.Tests
         /// <summary>Gets how often the settings were read.</summary>
         public int AppSettingsCalls { get; private set; }
 
+        /// <summary>Gets or sets what happens while the card answers a read of the settings, such as an edit of the dialog.</summary>
+        public System.Action? DuringSettingsRead { get; set; }
+
+        /// <summary>Gets or sets a task that an authentication waits for, as a card that takes its time.</summary>
+        public Task? AuthenticationGate { get; set; }
+
         /// <summary>Gets or sets the result of authenticating to an application.</summary>
         public ERROR AuthenticationResult { get; set; } = ERROR.NoError;
 
@@ -46,6 +52,7 @@ namespace RFiDGear.Tests
             _ = _appID;
             _ = authenticateBeforeReading;
             AppSettingsCalls++;
+            DuringSettingsRead?.Invoke();
             if (Throw)
             {
                 throw new System.InvalidOperationException("The reader failed.");
@@ -58,7 +65,7 @@ namespace RFiDGear.Tests
         }
 
         /// <inheritdoc />
-        public override Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
+        public override async Task<ERROR> AuthToMifareDesfireApplication(string _applicationMasterKey, DESFireKeyType _keyType, int _keyNumber, int _appID)
         {
             _ = _applicationMasterKey;
             _ = _keyType;
@@ -66,7 +73,12 @@ namespace RFiDGear.Tests
             AuthCalls++;
             LastAuthKeyNumber = _keyNumber;
 
-            return Task.FromResult(AuthenticationResult);
+            if (AuthenticationGate != null)
+            {
+                await AuthenticationGate;
+            }
+
+            return AuthenticationResult;
         }
     }
 }

@@ -1,4 +1,5 @@
 using RFiDGear.Infrastructure;
+using RFiDGear.Infrastructure.AccessControl;
 using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using System;
@@ -110,6 +111,182 @@ namespace RFiDGear.Tests
                 // The reader is released and the task does not count as done.
                 Assert.Equal(new[] { false }, statusUpdates);
                 Assert.False(viewModel.IsTaskCompletedSuccessfully);
+            });
+        }
+
+        [Theory]
+        [InlineData(DesfireAppSettingsCompareMode.AllSelected, DesfireAppSettingsCompareMode.Exact, 0x1B, ERROR.NoError)]
+        [InlineData(DesfireAppSettingsCompareMode.Exact, DesfireAppSettingsCompareMode.AllSelected, 0x0B, ERROR.IsNotTrue)]
+        public async Task ThePressIsDecidedByTheModeItWasMadeIn_EvenWhenTheModeChangesWhileTheCardAnswers(
+            DesfireAppSettingsCompareMode modeOfThePress,
+            DesfireAppSettingsCompareMode modeChangedTo,
+            int cardKeySettings,
+            ERROR expected)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // The ticked flags are 0x0B and the policy that is chosen is frozen (0xF0): the card byte 0x1B satisfies
+                // "all selected" but not "exact", and 0x0B the other way round, so the two modes cannot be mixed up.
+                var viewModel = CreateCheckAppConfig();
+                viewModel.SelectedDesfireAppKeySettingsCreateNewApp = AccessCondition_MifareDesfireAppCreation.ChangeKeyFrozen;
+                viewModel.AppSettingsCompareMode = modeOfThePress;
+                var fakeProvider = new FakeAppSettingsProvider
+                {
+                    KeySettings = (byte)cardKeySettings,
+                    DuringSettingsRead = () => viewModel.AppSettingsCompareMode = modeChangedTo
+                };
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    await viewModel.ReadAppSettingsRelayCommand.ExecuteAsync(null);
+                }
+
+                Assert.Equal(modeChangedTo, viewModel.AppSettingsCompareMode);
+                Assert.Equal(expected, viewModel.CurrentTaskErrorLevel);
+                Assert.Contains(ModeText(modeOfThePress), viewModel.StatusText);
+                Assert.DoesNotContain(ModeText(modeChangedTo), viewModel.StatusText);
+            });
+        }
+
+        [Fact]
+        public async Task TheExpectedKeyCountOfThePress_IsTheOneItWasMadeWith()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateCheckAppKeyCount();
+                var fakeProvider = new FakeAppSettingsProvider
+                {
+                    MaxNumberOfKeys = 3,
+                    DuringSettingsRead = () => viewModel.SelectedDesfireAppMaxNumberOfKeys = "4"
+                };
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    await viewModel.CheckAppKeyCountRelayCommand.ExecuteAsync(null);
+                }
+
+                Assert.Equal("4", viewModel.SelectedDesfireAppMaxNumberOfKeys);
+                Assert.Equal(ERROR.NoError, viewModel.CurrentTaskErrorLevel);
+                Assert.True(viewModel.IsTaskCompletedSuccessfully);
+            });
+        }
+
+        [Fact]
+        public async Task AnApplicationIdThatBecomesInvalidWhileTheCardAnswers_DoesNotTurnAMismatchIntoAPass()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // The card differs from the ticked settings. The id was valid when the button was pressed.
+                var viewModel = CreateCheckAppConfig();
+                var fakeProvider = new FakeAppSettingsProvider
+                {
+                    KeySettings = 0x00,
+                    DuringSettingsRead = () => viewModel.AppNumberCurrent = "abc"
+                };
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    await viewModel.ReadAppSettingsRelayCommand.ExecuteAsync(null);
+                }
+
+                Assert.False(viewModel.IsValidAppNumberCurrent);
+                Assert.Equal(ERROR.IsNotTrue, viewModel.CurrentTaskErrorLevel);
+                Assert.False(viewModel.IsTaskCompletedSuccessfully);
+            });
+        }
+
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.ReadAppSettings)]
+        [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount)]
+        public async Task AuthenticateButtonOfTheCheckTasks_RefusesAnInvalidApplicationId_BeforeAskingTheReader(TaskType_MifareDesfireTask taskType)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // An id that cannot be parsed becomes 0, the PICC, which the key authenticates to: not a pass for this task.
+                var viewModel = CreateConfigured(taskType);
+                viewModel.AppNumberCurrent = "abc";
+                Assert.False(viewModel.IsValidAppNumberCurrent);
+                var fakeProvider = new FakeAppSettingsProvider();
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    await viewModel.AuthenticateToCardApplicationCommand.ExecuteAsync(null);
+                }
+
+                Assert.Equal(0, fakeProvider.AuthCalls);
+                Assert.Equal(ERROR.ProtocolConstraint, viewModel.CurrentTaskErrorLevel);
+                Assert.False(viewModel.IsTaskCompletedSuccessfully);
+            });
+        }
+
+        [Fact]
+        public async Task AButtonPressedWhileAnotherOneIsWorking_IsIgnored_AndCannotFinishTheOthersTask()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateCheckAppConfig();
+                var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var fakeProvider = new FakeAppSettingsProvider
+                {
+                    KeySettings = 0x0F,
+                    AuthenticationResult = ERROR.AuthFailure,
+                    AuthenticationGate = release.Task
+                };
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    var authenticate = viewModel.AuthenticateToCardApplicationCommand.ExecuteAsync(null);
+                    Assert.Equal(1, fakeProvider.AuthCalls);
+
+                    // Pressed while the card is still busy with the authentication: the comparison would pass, and would
+                    // have finished the task before the authentication had its say.
+                    await viewModel.ReadAppSettingsRelayCommand.ExecuteAsync(null);
+                    Assert.Equal(0, fakeProvider.AppSettingsCalls);
+
+                    release.SetResult(true);
+                    await authenticate;
+
+                    Assert.Equal(ERROR.AuthFailure, viewModel.CurrentTaskErrorLevel);
+                    Assert.False(viewModel.IsTaskCompletedSuccessfully);
+
+                    // Nothing is held back afterwards.
+                    fakeProvider.AuthenticationGate = null;
+                    await viewModel.ReadAppSettingsRelayCommand.ExecuteAsync(null);
+                }
+
+                Assert.Equal(1, fakeProvider.AppSettingsCalls);
+                Assert.True(viewModel.IsTaskCompletedSuccessfully);
+            });
+        }
+
+        [Fact]
+        public async Task AButtonThatThrows_DoesNotKeepTheOtherButtonsWaiting()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateCheckAppConfig();
+                var fakeProvider = new FakeAppSettingsProvider { Throw = true, KeySettings = 0x0F };
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => viewModel.ReadAppSettingsRelayCommand.ExecuteAsync(null));
+
+                    fakeProvider.Throw = false;
+                    await viewModel.ReadAppSettingsRelayCommand.ExecuteAsync(null);
+                }
+
+                Assert.Equal(2, fakeProvider.AppSettingsCalls);
+                Assert.True(viewModel.IsTaskCompletedSuccessfully);
+            });
+        }
+
+        private static string ModeText(DesfireAppSettingsCompareMode mode)
+        {
+            return ResourceLoader.GetResource(mode switch
+            {
+                DesfireAppSettingsCompareMode.AnySelected => "textBoxStatusCompareModeAny",
+                DesfireAppSettingsCompareMode.Exact => "textBoxStatusCompareModeExact",
+                _ => "textBoxStatusCompareModeAll"
             });
         }
 
