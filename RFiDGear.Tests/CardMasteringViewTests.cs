@@ -208,7 +208,6 @@ namespace RFiDGear.Tests
 
         [Theory]
         [InlineData(TaskType_MifareDesfireTask.FormatDesfireCard)]
-        [InlineData(TaskType_MifareDesfireTask.ChangeDefault)]
         [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount)]
         public async Task OtherTasks_HideTheKeySettings(TaskType_MifareDesfireTask taskType)
         {

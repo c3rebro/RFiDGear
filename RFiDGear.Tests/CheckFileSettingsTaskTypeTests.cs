@@ -4,8 +4,10 @@ using RFiDGear.Models;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Resources;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Xunit;
@@ -19,10 +21,12 @@ namespace RFiDGear.Tests
     public class CheckFileSettingsTaskTypeTests
     {
         [Fact]
-        public void TheValuesOfTheEarlierTaskTypes_AreUnchanged_AndTheNewOneComesLast()
+        public void TheTaskTypes_KeepTheirNamesAndOrder_AndCheckFileSettingsComesLast()
         {
-            // Project files hold the name, but nothing may depend on the numbers shifting either: members are added at
-            // the end, never inserted.
+            // Project files hold the name and the task-type drop-down lists the members in the order of their values,
+            // so a member is appended at the end and "Check: File Settings" stays the last entry of the list.
+            // "Change default values" was removed on purpose (it only rewrote the settings file and the Settings dialog
+            // has the real default-keys tab), which moved CheckFileSettings from 18 to 17; nothing stores the number.
             var expected = new Dictionary<string, int>
             {
                 ["None"] = 0,
@@ -42,8 +46,7 @@ namespace RFiDGear.Tests
                 ["AuthenticateApplication"] = 14,
                 ["ReadAppSettings"] = 15,
                 ["CheckAppKeyCount"] = 16,
-                ["ChangeDefault"] = 17,
-                ["CheckFileSettings"] = 18,
+                ["CheckFileSettings"] = 17,
             };
 
             var actual = Enum.GetValues(typeof(TaskType_MifareDesfireTask))
@@ -51,6 +54,23 @@ namespace RFiDGear.Tests
                 .ToDictionary(value => value.ToString(), value => (int)value);
 
             Assert.Equal(expected.OrderBy(pair => pair.Key), actual.OrderBy(pair => pair.Key));
+            Assert.Equal(nameof(TaskType_MifareDesfireTask.CheckFileSettings), Enum.GetNames(typeof(TaskType_MifareDesfireTask)).Last());
+        }
+
+        [Fact]
+        public void EveryDesfireTaskType_HasAName_InBothLanguages()
+        {
+            // A missing key gives a blank entry in the task-type drop-down, so this also guards against deleting the
+            // wrong one of the several ChangeDefault keys when a task type is removed.
+            var resources = new ResourceManager("RFiDGear.Resources.Manifest", typeof(MifareDesfireSetupViewModel).Assembly);
+
+            foreach (var name in Enum.GetNames(typeof(TaskType_MifareDesfireTask)))
+            {
+                var key = "ENUM.TaskType_MifareDesfireTask." + name;
+
+                Assert.False(string.IsNullOrWhiteSpace(resources.GetString(key, new CultureInfo("en"))), key + " (en)");
+                Assert.False(string.IsNullOrWhiteSpace(resources.GetString(key, new CultureInfo("de"))), key + " (de)");
+            }
         }
 
         [Fact]

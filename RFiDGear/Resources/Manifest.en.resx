@@ -265,9 +265,6 @@ slot of an available reader</value>
   <data name="ENUM.TaskType_MifareDesfireTask.None" xml:space="preserve">
     <value>None</value>
   </data>
-  <data name="ENUM.TaskType_MifareDesfireTask.ChangeDefault" xml:space="preserve">
-    <value>Change Default Values</value>
-  </data>
   <data name="ENUM.TaskType_MifareDesfireTask.ChangeFileSettings" xml:space="preserve">
     <value>Change File Settings</value>
   </data>

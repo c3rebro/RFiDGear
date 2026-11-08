@@ -89,13 +89,14 @@ namespace RFiDGear.Tests
         }
 
         [Theory]
-        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, true, true, true, true, true, true, true)]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false, true, true, false, false, false)]
         [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount, false, false, true, true, false, false, false)]
         [InlineData(TaskType_MifareDesfireTask.CheckFileSettings, true, false, false, false, true, true, false)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, false, false, false, false, true, true, false)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover, false, false, false, false, true, true, false)]
         [InlineData(TaskType_MifareDesfireTask.AuthenticateApplication, false, false, false, true, true, true, false)]
+        [InlineData(TaskType_MifareDesfireTask.ReadData, true, true, false, false, true, true, false)]
+        [InlineData(TaskType_MifareDesfireTask.CreateApplication, false, false, true, true, false, false, true)]
         public async Task SelectedTaskType_SetsExpectedTabAvailability(
             TaskType_MifareDesfireTask taskType,
             bool fileAuthoring,
@@ -126,7 +127,6 @@ namespace RFiDGear.Tests
         [Theory]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, true, true)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeySettingsChangeover, false, true)]
-        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, false, false)]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false)]
         [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover, false, false)]
         [InlineData(TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover, false, false)]
@@ -150,7 +150,6 @@ namespace RFiDGear.Tests
         [Theory]
         [InlineData(TaskType_MifareDesfireTask.ReadData, false)]
         [InlineData(TaskType_MifareDesfireTask.WriteData, false)]
-        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, true)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, true)]
         public async Task SelectedTaskType_TogglesCurrentAppKeyInputs(
             TaskType_MifareDesfireTask taskType,
@@ -170,7 +169,6 @@ namespace RFiDGear.Tests
         [Theory]
         [InlineData(TaskType_MifareDesfireTask.PICCMasterKeyChangeover, true, true)]
         [InlineData(TaskType_MifareDesfireTask.PICCMasterKeySettingsChangeover, false, true)]
-        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, false, false)]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, false, false)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, false, false)]
         public async Task SelectedTaskType_TogglesPiccMasterKeyInputVisibility(
@@ -196,7 +194,6 @@ namespace RFiDGear.Tests
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings, true)]
         [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount, false)]
         [InlineData(TaskType_MifareDesfireTask.FormatDesfireCard, false)]
-        [InlineData(TaskType_MifareDesfireTask.ChangeDefault, false)]
         [InlineData(TaskType_MifareDesfireTask.ApplicationKeyChangeover, false)]
         public async Task SelectedTaskType_ShowsKeySettingsGroupForPiccTasksAndTheAppConfigCheck(
             TaskType_MifareDesfireTask taskType,

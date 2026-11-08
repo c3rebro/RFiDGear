@@ -15,14 +15,13 @@ namespace RFiDGear.Tests
     public class TaskDialogFactoryTests
     {
         /// <summary>
-        /// Every DESFire task type except None and ChangeDefault (which saves the default keys instead of adding a
-        /// task).
+        /// Every DESFire task type except None.
         /// </summary>
         public static IEnumerable<object[]> AddableDesfireTaskTypes()
         {
             return Enum.GetValues(typeof(TaskType_MifareDesfireTask))
                 .Cast<TaskType_MifareDesfireTask>()
-                .Where(type => type != TaskType_MifareDesfireTask.None && type != TaskType_MifareDesfireTask.ChangeDefault)
+                .Where(type => type != TaskType_MifareDesfireTask.None)
                 .Select(type => new object[] { type });
         }
 
