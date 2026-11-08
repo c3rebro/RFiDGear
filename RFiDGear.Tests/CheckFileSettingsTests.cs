@@ -482,7 +482,7 @@ namespace RFiDGear.Tests
                 {
                     await viewModel.CheckFileSettingsRelayCommand.ExecuteAsync(null);
                     Assert.True(viewModel.IsTaskCompletedSuccessfully);
-                    Assert.Equal(new[] { false }, finished);
+                    Assert.Equal(new[] { true, false }, finished);
 
                     // The card now differs; the second press must say so, once.
                     reader.FileSettings = Settings(size: 15);
@@ -491,7 +491,55 @@ namespace RFiDGear.Tests
 
                 Assert.False(viewModel.IsTaskCompletedSuccessfully);
                 Assert.Equal(ERROR.IsNotTrue, viewModel.CurrentTaskErrorLevel);
-                Assert.Equal(new[] { false, false }, finished);
+                Assert.Equal(new[] { true, false, true, false }, finished);
+            });
+        }
+
+        [Fact]
+        public async Task TheReaderIsBusyWhileTheCardAnswers_AndFreeWhenTheCheckIsDone()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var viewModel = CreateViewModel();
+                var updates = Observe(viewModel);
+                var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var reader = new FakeFileSettingsProvider { FileSettings = Settings(), AuthenticationGate = release.Task };
+
+                using (ReaderDeviceScope.Use(reader))
+                {
+                    var check = viewModel.CheckFileSettingsRelayCommand.ExecuteAsync(null);
+
+                    // Held before the card is asked, and not freed while it answers.
+                    Assert.Equal(1, reader.AuthCalls);
+                    Assert.Equal(new[] { true }, updates);
+
+                    release.SetResult(true);
+                    await check;
+                }
+
+                Assert.Equal(new[] { true, false }, updates);
+            });
+        }
+
+        [Fact]
+        public async Task ACheckThatIsRefused_OrHasNoReader_NeverMarksTheReaderBusy()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // The reader is not used, so it is not held: the task only says that it is done.
+                var refused = CreateViewModel();
+                refused.AppNumberCurrent = "abc";
+                var refusedUpdates = Observe(refused);
+                await Run(refused, new FakeFileSettingsProvider { FileSettings = Settings() });
+
+                var withoutReader = CreateViewModel();
+                var withoutReaderUpdates = Observe(withoutReader);
+                await Run(withoutReader, null);
+
+                Assert.Equal(ERROR.ProtocolConstraint, refused.CurrentTaskErrorLevel);
+                Assert.Equal(ERROR.TransportError, withoutReader.CurrentTaskErrorLevel);
+                Assert.Equal(new[] { false }, refusedUpdates);
+                Assert.Equal(new[] { false }, withoutReaderUpdates);
             });
         }
 
@@ -509,8 +557,8 @@ namespace RFiDGear.Tests
                     await Assert.ThrowsAsync<System.InvalidOperationException>(() => viewModel.CheckFileSettingsRelayCommand.ExecuteAsync(null));
                 }
 
-                // The reader is released, and the task does not count as done.
-                Assert.Equal(new[] { false }, finished);
+                // The reader was held for the read that threw, and is released; the task does not count as done.
+                Assert.Equal(new[] { true, false }, finished);
                 Assert.False(viewModel.IsTaskCompletedSuccessfully);
             });
         }
@@ -529,14 +577,14 @@ namespace RFiDGear.Tests
                 {
                     await viewModel.CommandDelegator.ExecuteAsync(TaskType_MifareDesfireTask.CheckFileSettings);
                     Assert.True(viewModel.IsTaskCompletedSuccessfully);
-                    Assert.Equal(new[] { false }, finished);
+                    Assert.Equal(new[] { true, false }, finished);
 
                     reader.FileSettings = Settings(size: 15);
                     await viewModel.CommandDelegator.ExecuteAsync(TaskType_MifareDesfireTask.CheckFileSettings);
                 }
 
                 Assert.False(viewModel.IsTaskCompletedSuccessfully);
-                Assert.Equal(new[] { false, false }, finished);
+                Assert.Equal(new[] { true, false, true, false }, finished);
             });
         }
 

@@ -29,7 +29,7 @@ namespace RFiDGear.Tests
                 {
                     await viewModel.ReadAppSettingsRelayCommand.ExecuteAsync(null);
                     Assert.True(viewModel.IsTaskCompletedSuccessfully);
-                    Assert.Equal(new[] { false }, statusUpdates);
+                    Assert.Equal(new[] { true, false }, statusUpdates);
 
                     // The card now differs; the second press must say so, once.
                     fakeProvider.KeySettings = 0x09;
@@ -38,7 +38,7 @@ namespace RFiDGear.Tests
 
                 Assert.False(viewModel.IsTaskCompletedSuccessfully);
                 Assert.Equal(ERROR.IsNotTrue, viewModel.CurrentTaskErrorLevel);
-                Assert.Equal(new[] { false, false }, statusUpdates);
+                Assert.Equal(new[] { true, false, true, false }, statusUpdates);
             });
         }
 
@@ -62,7 +62,7 @@ namespace RFiDGear.Tests
                 }
 
                 Assert.False(viewModel.IsTaskCompletedSuccessfully);
-                Assert.Equal(new[] { false, false }, statusUpdates);
+                Assert.Equal(new[] { true, false, true, false }, statusUpdates);
             });
         }
 
@@ -95,6 +95,33 @@ namespace RFiDGear.Tests
             });
         }
 
+        [Theory]
+        [InlineData(TaskType_MifareDesfireTask.ReadAppSettings)]
+        [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount)]
+        public async Task ACheckThatIsRefused_NeverMarksTheReaderBusy(TaskType_MifareDesfireTask taskType)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                // The reader is not used, so it is not held: the task only says that it is done.
+                var viewModel = CreateConfigured(taskType);
+                viewModel.AppNumberCurrent = "abc";
+                var statusUpdates = Observe(viewModel);
+                var fakeProvider = new FakeAppSettingsProvider();
+                var button = taskType == TaskType_MifareDesfireTask.ReadAppSettings
+                    ? viewModel.ReadAppSettingsRelayCommand
+                    : viewModel.CheckAppKeyCountRelayCommand;
+
+                using (ReaderDeviceScope.Use(fakeProvider))
+                {
+                    await button.ExecuteAsync(null);
+                }
+
+                Assert.Equal(ERROR.ProtocolConstraint, viewModel.CurrentTaskErrorLevel);
+                Assert.Equal(0, fakeProvider.AppSettingsCalls);
+                Assert.Equal(new[] { false }, statusUpdates);
+            });
+        }
+
         [Fact]
         public async Task AButtonThatThrows_StillFinishesTheTaskOnce()
         {
@@ -109,8 +136,8 @@ namespace RFiDGear.Tests
                     await Assert.ThrowsAsync<InvalidOperationException>(() => viewModel.ReadAppSettingsRelayCommand.ExecuteAsync(null));
                 }
 
-                // The reader is released and the task does not count as done.
-                Assert.Equal(new[] { false }, statusUpdates);
+                // The reader was held for the read that threw, and is released; the task does not count as done.
+                Assert.Equal(new[] { true, false }, statusUpdates);
                 Assert.False(viewModel.IsTaskCompletedSuccessfully);
             });
         }

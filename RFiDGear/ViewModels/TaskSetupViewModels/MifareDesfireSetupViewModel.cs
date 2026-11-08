@@ -4217,6 +4217,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     return;
                 }
 
+                await UpdateReaderStatusCommand.ExecuteAsync(true);
+
                 StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
                 var result = await device.AuthToMifareDesfireApplication(
@@ -4419,6 +4421,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 if (device != null)
                 {
+                    await UpdateReaderStatusCommand.ExecuteAsync(true);
+
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
@@ -4494,6 +4498,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
             {
                 if (device != null)
                 {
+                    await UpdateReaderStatusCommand.ExecuteAsync(true);
+
                     StatusText = string.Format("{0}: {1}\n", DateTime.Now, ResourceLoader.GetResource("textBoxStatusTextBoxDllLoaded"));
 
                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
