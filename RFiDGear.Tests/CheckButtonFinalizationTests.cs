@@ -69,6 +69,7 @@ namespace RFiDGear.Tests
         [Theory]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings)]
         [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount)]
+        [InlineData(TaskType_MifareDesfireTask.CheckFileSettings)]
         public async Task AuthenticateButtonOfTheCheckTasks_UsesTheChosenKeyAndFinishesOnEveryPress(TaskType_MifareDesfireTask taskType)
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
@@ -198,6 +199,7 @@ namespace RFiDGear.Tests
         [Theory]
         [InlineData(TaskType_MifareDesfireTask.ReadAppSettings)]
         [InlineData(TaskType_MifareDesfireTask.CheckAppKeyCount)]
+        [InlineData(TaskType_MifareDesfireTask.CheckFileSettings)]
         public async Task AuthenticateButtonOfTheCheckTasks_RefusesAnInvalidApplicationId_BeforeAskingTheReader(TaskType_MifareDesfireTask taskType)
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>

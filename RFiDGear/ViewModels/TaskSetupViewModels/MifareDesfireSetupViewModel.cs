@@ -3686,17 +3686,19 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
 
         /// <summary>
-        /// Authenticates to the application and finishes the task with the outcome. The Check: App Config and
-        /// Check: App Key Count tasks authenticate with the key number that is chosen and refuse an invalid application
-        /// id before the reader is asked; the other tasks take the key number from the change-key policy of the
-        /// application. Only one button of the dialog works at a time.
+        /// Authenticates to the application and finishes the task with the outcome. The Check: App Config,
+        /// Check: App Key Count and Check: File Settings tasks authenticate with the key number that is chosen and
+        /// refuse an invalid application id before the reader is asked; the other tasks take the key number from the
+        /// change-key policy of the application. Only one button of the dialog works at a time.
         /// </summary>
         public IAsyncRelayCommand AuthenticateToCardApplicationCommand => new AsyncRelayCommand(() => RunFromUiAsync(OnNewAuthenticateToCardApplicationCommand));
         private async Task OnNewAuthenticateToCardApplicationCommand()
         {
             CurrentTaskErrorLevel = ERROR.Empty;
 
-            var isCheckTask = SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings || SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount;
+            var isCheckTask = SelectedTaskType == TaskType_MifareDesfireTask.ReadAppSettings
+                || SelectedTaskType == TaskType_MifareDesfireTask.CheckAppKeyCount
+                || SelectedTaskType == TaskType_MifareDesfireTask.CheckFileSettings;
             if (isCheckTask && await RejectInvalidApplicationIdAsync())
             {
                 // An id that cannot be read is application 0, and the PICC would authenticate: not a pass for this one.
@@ -3721,8 +3723,8 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                     if (CustomConverter.FormatMifareDesfireKeyStringWithSpacesEachByte(DesfireAppKeyCurrent, SelectedDesfireAppKeyEncryptionTypeCurrent) == KEY_ERROR.NO_ERROR)
                     {
-                        // The two check tasks authenticate with the key that is chosen, as their compare button does; the
-                        // others take it from the change-key policy of the application.
+                        // The check tasks authenticate with the key that is chosen, as their own check does; the others
+                        // take it from the change-key policy of the application.
                         var authKeyNo = isCheckTask
                             ? selectedDesfireAppKeyNumberCurrentAsInt
                             : GetAuthKeyNumberForChangeAppKey(AppNumberCurrentAsInt, GetChangeKeyModeForApplication(AppNumberCurrentAsInt), selectedDesfireAppKeyNumberCurrentAsInt);
