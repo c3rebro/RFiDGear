@@ -245,7 +245,7 @@ namespace RFiDGear.Tests
         };
 
         private static Task InspectAsync(TaskType_MifareDesfireTask taskType, bool selectTypeAfterRender, Action<FrameworkElement> inspect) =>
-            InspectAsync(taskType, selectTypeAfterRender, (view, viewModel) => inspect(view));
+            InspectAsync(taskType, selectTypeAfterRender, (view, _) => inspect(view));
 
         private static Task InspectAsync(
             TaskType_MifareDesfireTask taskType,
