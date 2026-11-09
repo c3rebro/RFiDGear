@@ -10,18 +10,24 @@
 
 **Factory DESFire cards ship with DES (2K3DES) keys, NOT AES!**
 
-This was causing "Access Denied" errors. The fix separates PICC authentication from application creation.
+This was causing "Access Denied" errors. The fix separates PICC authentication
+from application creation.
 
 ## Factory Configuration
+
+<!-- markdownlint-disable MD013 -->
 
 | Component | Key Type | Key Length | Default Value |
 |-----------|----------|------------|---------------|
 | **PICC Master Key** | DES (2K3DES) | 16 bytes | `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00` |
 | All Applications | DES (2K3DES) | 16 bytes | `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00` |
 
+<!-- markdownlint-enable MD013 -->
+
 ## What Changed
 
 ### Before (Broken)
+
 ```csharp
 // Tried to authenticate with AES - FAILS!
 await Authenticate(
@@ -31,6 +37,7 @@ await Authenticate(
 ```
 
 ### After (Fixed)
+
 ```csharp
 // Authenticate with 3K3DES - WORKS!
 await Authenticate(
@@ -49,6 +56,7 @@ await CreateApplication(
 The sample now tracks **two different key types**:
 
 ### 1. PICC Key Type (for authentication)
+
 - **Purpose**: Authenticate to card-level (PICC)
 - **Factory Default**: DES/2K3DES (16 bytes)
 - **Default Value**: `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
@@ -56,6 +64,7 @@ The sample now tracks **two different key types**:
 - **Must match**: Current PICC configuration
 
 ### 2. Application Key Type (for new apps)
+
 - **Purpose**: Key type for applications you create
 - **Default**: AES (16 bytes, recommended)
 - **Default Value**: `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
@@ -94,6 +103,7 @@ The sample now tracks **two different key types**:
 ## Common Mistakes
 
 ### ❌ Wrong: Same key type for everything
+
 ```csharp
 // Assumes factory card uses AES - FAILS!
 var config = new Config {
@@ -103,6 +113,7 @@ var config = new Config {
 ```
 
 ### ✅ Correct: Different key types
+
 ```csharp
 // Factory uses DES (2K3DES), new app uses AES - WORKS!
 var config = new Config {
@@ -127,12 +138,16 @@ var config = new Config {
 ## Sample Default Behavior
 
 The CLI sample defaults to:
-- **PICC Key Type**: DES (0) ← Works with factory cards
-- **PICC Key Value**: `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00` (16 bytes)
-- **App Key Type**: AES (2) ← Recommended for new apps
-- **App Key Value**: `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00` (16 bytes)
 
-This allows you to authenticate to a factory card with DES (2K3DES), then create modern AES applications!
+- **PICC Key Type**: DES (0) ← Works with factory cards
+- **PICC Key Value**: `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
+  (16 bytes)
+- **App Key Type**: AES (2) ← Recommended for new apps
+- **App Key Value**: `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
+  (16 bytes)
+
+This allows you to authenticate to a factory card with DES (2K3DES), then create
+modern AES applications!
 
 ## Verification
 
@@ -149,12 +164,17 @@ Application 0x000001 created successfully!
 
 ## Key Lengths Reference
 
+<!-- markdownlint-disable MD013 -->
+
 | Key Type | Bytes | Algorithm | Hex Example |
 |----------|-------|-----------|-------------|
 | DES (2K3DES) | **16** | Two-key Triple DES | `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00` |
 | 3K3DES | **24** | Three-key Triple DES | `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00` |
 | AES | **16** | AES-128 | `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00` |
 
+<!-- markdownlint-enable MD013 -->
+
 **CRITICAL**: Key lengths vary! DES/AES = 16 bytes, 3K3DES = 24 bytes.
 
-**Note**: In DESFire, "DES" actually means 2K3DES (16 bytes), not single DES (8 bytes).
+**Note**: In DESFire, "DES" actually means 2K3DES (16 bytes), not single DES
+(8 bytes).

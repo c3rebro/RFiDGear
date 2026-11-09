@@ -1,14 +1,17 @@
 # Elatec TWN4 MIFARE Sample CLI
 
-A .NET 8 console application demonstrating both MIFARE Classic and DESFire operations using the Elatec.NET library (v0.6.1) and TWN4 reader.
+A .NET 8 console application demonstrating both MIFARE Classic and DESFire
+operations using the Elatec.NET library (v0.6.1) and TWN4 reader.
 
 ## Features
 
-This sample automatically detects the chip type and runs the appropriate workflow:
+This sample automatically detects the chip type and runs the appropriate
+workflow:
 
 ### MIFARE Classic Workflow (1K/2K/4K, Plus SL1)
 
-1. **Connect to Reader** - Automatically detects and connects to Elatec TWN4 readers
+1. **Connect to Reader** - Automatically detects and connects to Elatec TWN4
+   readers
 2. **Chip Detection** - Identifies MIFARE Classic 1K/2K/4K or Plus SL1 cards
 3. **Sector Authentication** - Authenticates to a sector using Key A or Key B
 4. **Data Writing** - Writes 16 bytes to a block
@@ -16,15 +19,18 @@ This sample automatically detects the chip type and runs the appropriate workflo
 
 ### DESFire Workflow (EV0/EV1/EV2/EV3)
 
-1. **Connect to Reader** - Automatically detects and connects to Elatec TWN4 readers
+1. **Connect to Reader** - Automatically detects and connects to Elatec TWN4
+   readers
 2. **Chip Detection** - Identifies DESFire EV0/EV1/EV2/EV3 cards
 3. **Application Creation** - Creates a DESFire application with custom settings
 4. **PICC Master Key Change** - Changes the card master key (optional)
 5. **Application Key Change** - Changes application-level keys (optional)
 6. **File Creation** - Creates a standard data file with access rights
-7. **Data Writing** - Writes hex data to the file (default: 160-byte German greeting)
+7. **Data Writing** - Writes hex data to the file (default: 160-byte German
+   greeting)
 8. **Data Reading** - Reads back and displays the written data for verification
-9. **Format Tag** - Resets the tag to factory defaults, erasing all data (optional)
+9. **Format Tag** - Resets the tag to factory defaults, erasing all data
+   (optional)
 
 ## Prerequisites
 
@@ -38,7 +44,9 @@ This sample automatically detects the chip type and runs the appropriate workflo
 **DESFire key lengths:** DES/AES=16 bytes, 3K3DES=24 bytes
 
 **Factory DESFire cards use DES (2K3DES) keys, NOT AES:**
-- PICC Master Key: DES (2K3DES), `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00` (16 bytes)
+
+- PICC Master Key: DES (2K3DES),
+  `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00` (16 bytes)
 - The sample defaults to DES for PICC authentication
 - You can create AES applications on factory cards
 
@@ -60,7 +68,8 @@ dotnet run
 
 ## Usage Guide
 
-The sample automatically detects whether you have a MIFARE Classic or DESFire chip and runs the appropriate workflow.
+The sample automatically detects whether you have a MIFARE Classic or DESFire
+chip and runs the appropriate workflow.
 
 ## MIFARE Classic Usage
 
@@ -79,6 +88,7 @@ When working with a MIFARE Classic card, you'll be prompted for:
 ### 2. Block Calculation
 
 The sample automatically calculates which block to write based on the sector:
+
 - **Sectors 0-31**: 4 blocks each (blocks 0-127)
   - Sector 1 → Block 4 (first data block of sector 1)
 - **Sectors 32-39**: 16 blocks each (blocks 128-255, only on 4K cards)
@@ -86,8 +96,10 @@ The sample automatically calculates which block to write based on the sector:
 ### 3. Data Writing
 
 Enter 16 bytes of data to write:
+
 - Default: `Hello MIFARE!!!!` (ASCII, 16 bytes)
-- Format: Hex bytes space-separated (e.g., `48 65 6C 6C 6F 20 4D 49 46 41 52 45 21 21 21 21`)
+- Format: Hex bytes space-separated (e.g.,
+  `48 65 6C 6C 6F 20 4D 49 46 41 52 45 21 21 21 21`)
 
 ### 4. MIFARE Classic Example Session
 
@@ -199,6 +211,7 @@ Reset the tag to factory defaults:
   - Card returned to factory state
 
 **Use this to:**
+
 - Clean up test data
 - Prepare card for new workflow
 - Reset a card to known state
@@ -260,14 +273,19 @@ Application 0x000001 created successfully!
 DESFire keys must be provided in hex format with space separators:
 
 - **DES (2K3DES, 16 bytes)**: `00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F`
-- **3K3DES (24 bytes)**: `00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17`
+- **3K3DES (24 bytes)**:
+  `00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17`
 - **AES (16 bytes)**: `00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F`
 
-**Note**: In DESFire, "DES" actually means 2K3DES (16 bytes), not single DES (8 bytes).
+**Note**: In DESFire, "DES" actually means 2K3DES (16 bytes), not single DES
+(8 bytes).
 
 **Factory default keys:**
-- DES/AES: All zeros (16 bytes): `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
-- 3K3DES: All zeros (24 bytes): `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
+
+- DES/AES: All zeros (16 bytes):
+  `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
+- 3K3DES: All zeros (24 bytes):
+  `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
 
 ## Access Rights Format
 
@@ -278,6 +296,7 @@ Access rights are encoded as a 16-bit value with 4-bit fields:
 ```
 
 Example: `0xEEE0` means:
+
 - Read: Key 0 required
 - Write: Free access (E)
 - Read+Write: Free access (E)
@@ -286,20 +305,24 @@ Example: `0xEEE0` means:
 ## Common Issues
 
 ### Reader Not Found
+
 - Ensure the TWN4 reader is connected via USB
 - Check Device Manager for proper driver installation
 - Try reconnecting the reader
 
 ### Authentication Failed
+
 - Verify you're using the correct key value
 - Ensure key type matches (DES/3K3DES/AES)
 - Default factory key is all zeros
 
 ### Application Already Exists
+
 - Delete the application first or use a different App ID
 - Format the card to remove all applications (will erase all data!)
 
 ### File Creation Failed
+
 - Ensure you're authenticated to the application
 - Check that the file number is not already in use
 - Verify the application has enough space
@@ -307,7 +330,9 @@ Example: `0xEEE0` means:
 ## Technical Details
 
 ### Authentication Mode
+
 This sample uses **EV1 authentication mode** (`0x01`) which is compatible with:
+
 - DESFire EV1
 - DESFire EV2
 - DESFire EV3
@@ -315,12 +340,17 @@ This sample uses **EV1 authentication mode** (`0x01`) which is compatible with:
 For legacy DESFire cards, you may need to use compatible mode (`0x00`).
 
 ### Communication Encryption
-All file operations in this sample use **plain communication mode** (`CM_PLAIN`) for simplicity. For production use, consider:
+
+All file operations in this sample use **plain communication mode** (`CM_PLAIN`)
+for simplicity. For production use, consider:
+
 - `CM_MAC`: MAC-protected communication
 - `CM_ENCRYPT`: Fully encrypted communication
 
 ### Based on RFiDGear Implementation
+
 This sample is derived from the production RFiDGear implementation:
+
 - `ElatecNetProvider.cs`: Reader communication layer
 - `MifareDesfireSetupViewModel.cs`: Application and file management
 - `DesfireKeyChangeInputs.cs`: Key change logic

@@ -48,6 +48,7 @@ Sectors 32-39: 16 blocks each (blocks 128-255)
 ### Key Types
 
 Each sector has two keys:
+
 - **Key A** (6 bytes) - Typically used for read/write
 - **Key B** (6 bytes) - Can be used for additional security
 
@@ -113,7 +114,8 @@ Sector 39: Blocks 240-255
 
 ### 1. Sector Selection
 
-The sample prompts for a sector number (default: 1). It automatically calculates the first data block of that sector.
+The sample prompts for a sector number (default: 1). It automatically calculates
+the first data block of that sector.
 
 ### 2. Authentication
 
@@ -139,6 +141,7 @@ If successful → Note which key worked
 **Common scenario**: Some cards use Key A for read and Key B for write.
 
 The sample automatically tries both keys:
+
 1. First attempts write with Key A
 2. If that fails, re-authenticates with Key B and tries again
 3. Reports which key succeeded
@@ -157,11 +160,14 @@ Display hex and ASCII
 
 ## Access Bits
 
-Access bits in the sector trailer control what operations are allowed on each block. The sample doesn't modify access bits but handles different configurations automatically.
+Access bits in the sector trailer control what operations are allowed on each
+block. The sample doesn't modify access bits but handles different
+configurations automatically.
 
 ### Common Access Bit Configurations
 
 #### Factory Default (Transport Configuration)
+
 ```
 Key A: Read + Write
 Key B: Read + Write
@@ -169,6 +175,7 @@ Key B: Read + Write
 Both keys can perform all operations. This is the default on new cards.
 
 #### Typical Production Configuration
+
 ```
 Key A: Read only
 Key B: Write only
@@ -176,6 +183,7 @@ Key B: Write only
 This separates read and write permissions for better security.
 
 #### Read-Only Configuration
+
 ```
 Key A: Read only
 Key B: No access or Read only
@@ -187,37 +195,45 @@ Prevents accidental modification.
 The sample automatically tries both keys for operations:
 
 **For Write:**
+
 1. Try Key A + Write
 2. If fails → Try Key B + Write
 3. Report which key worked
 
 **For Read:**
+
 1. Try Key A + Read
 2. If fails → Try Key B + Read
 
-This ensures compatibility with different access bit configurations without needing to read or interpret the access bits.
+This ensures compatibility with different access bit configurations without
+needing to read or interpret the access bits.
 
 ### Modifying Access Bits
 
 ⚠️ **WARNING**: Writing incorrect access bits can permanently lock a sector!
 
-The sample does NOT modify access bits for safety. If you need custom access control, you must:
+The sample does NOT modify access bits for safety. If you need custom access
+control, you must:
+
 1. Calculate the correct access bit values
 2. Write to the sector trailer (block 3 or 15)
 3. Verify immediately after writing
 
-For production use, consider using dedicated MIFARE management tools to configure access bits.
+For production use, consider using dedicated MIFARE management tools to
+configure access bits.
 
 ## Common Issues
 
 ### Authentication Failed
 
 **Causes:**
+
 - Wrong key value
 - Card has been programmed with custom keys
 - Card is not a genuine MIFARE Classic
 
 **Solutions:**
+
 - Try default key: `FF FF FF FF FF FF`
 - If card has custom keys, you need to know the actual keys
 - Use tools like `mfoc` or `mfcuk` to recover keys (for testing only!)
@@ -225,11 +241,13 @@ For production use, consider using dedicated MIFARE management tools to configur
 ### Write Failed
 
 **Causes:**
+
 - Not authenticated to the sector
 - Trying to write to sector trailer without proper access
 - Trying to write to block 0 (manufacturer block)
 
 **Solutions:**
+
 - Ensure authentication succeeded before writing
 - Only write to data blocks (not sector trailers)
 - Don't write to block 0
@@ -237,9 +255,11 @@ For production use, consider using dedicated MIFARE management tools to configur
 ### Context Invalidated
 
 **Cause:**
+
 - TWN4 reader invalidates context between operations
 
 **Solution:**
+
 - Sample calls `SearchTagAsync()` before each operation
 - Re-authenticate before each read/write
 
@@ -247,11 +267,13 @@ For production use, consider using dedicated MIFARE management tools to configur
 
 ### Factory Defaults Are Insecure
 
-Cards with factory default keys (`FF FF FF FF FF FF`) offer NO security. Anyone can read/write the card.
+Cards with factory default keys (`FF FF FF FF FF FF`) offer NO security. Anyone
+can read/write the card.
 
 ### Production Use
 
 For production:
+
 1. Change all keys from factory defaults
 2. Configure appropriate access bits
 3. Store keys securely
@@ -266,6 +288,8 @@ For production:
 
 ## Comparison: Classic vs DESFire
 
+<!-- markdownlint-disable MD013 -->
+
 | Feature | MIFARE Classic | DESFire |
 |---------|---------------|---------|
 | **Security** | Crypto-1 (broken) | 3DES/AES (secure) |
@@ -274,6 +298,8 @@ For production:
 | **Access Control** | Access bits | Flexible file access rights |
 | **Encryption** | Weak | Strong |
 | **Use Case** | Legacy systems, simple storage | Secure applications, transit, payments |
+
+<!-- markdownlint-enable MD013 -->
 
 ## Sample Code Flow
 
@@ -309,10 +335,12 @@ byte[] readData = await _reader.MifareClassic_ReadBlockAsync(blockNumber);
 
 ## Important Notes
 
-⚠️ **Do NOT write to sector trailers** unless you know exactly what you're doing. Incorrect access bits can permanently lock a sector!
+⚠️ **Do NOT write to sector trailers** unless you know exactly what you're
+doing. Incorrect access bits can permanently lock a sector!
 
 ⚠️ **Block 0 is read-only** on most cards. Don't try to write to it.
 
-⚠️ **Crypto-1 is broken**. MIFARE Classic should only be used for non-security-critical applications or legacy system compatibility.
+⚠️ **Crypto-1 is broken**. MIFARE Classic should only be used for
+non-security-critical applications or legacy system compatibility.
 
 ✅ **For new projects**, use MIFARE DESFire for better security.

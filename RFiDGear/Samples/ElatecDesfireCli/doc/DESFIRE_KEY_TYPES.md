@@ -13,6 +13,7 @@
 ## Key Type Details
 
 ### DES (DF_KEY_DES = 0)
+
 - **Actually**: 2K3DES (two-key Triple DES)
 - **Length**: 16 bytes
 - **Algorithm**: Triple DES with 2 keys
@@ -20,13 +21,16 @@
 - **Example**: `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
 
 ### 3K3DES (DF_KEY_3K3DES = 1)
+
 - **Full name**: Three-key Triple DES
 - **Length**: 24 bytes (3 × 8-byte keys)
 - **Algorithm**: Triple DES with 3 keys
 - **Use**: Enhanced security over 2K3DES
-- **Example**: `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
+- **Example**:
+  `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
 
 ### AES (DF_KEY_AES = 2)
+
 - **Full name**: Advanced Encryption Standard
 - **Length**: 16 bytes
 - **Algorithm**: AES-128
@@ -36,6 +40,7 @@
 ## Why "DES" is Confusing
 
 In the DESFire context:
+
 - **"DES"** does NOT mean single DES (8 bytes)
 - **"DES"** means 2K3DES (16 bytes)
 - This is for backward compatibility naming
@@ -66,16 +71,19 @@ DESFire keys must be provided as hex bytes, space-separated:
 ## Factory Default
 
 **All factory DESFire cards come with:**
+
 - **PICC Master Key**: DES (2K3DES), all zeros (16 bytes)
 - **Value**: `00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
 
 ## Choosing a Key Type
 
 ### For PICC Authentication
+
 - **Factory cards**: Use 3K3DES (must match card's current setting)
 - **After upgrade**: Use whatever you changed it to (typically AES)
 
 ### For New Applications
+
 - **Recommended**: AES
   - Modern encryption
   - Better security
@@ -111,11 +119,13 @@ await CreateApplication(
 ## Key Type vs Key Value
 
 **Key Type** determines the encryption algorithm:
+
 - DES (2K3DES)
 - 3K3DES
 - AES
 
 **Key Value** is the actual 16-byte secret:
+
 - Factory default: All zeros
 - Production: Should be random/secure
 
