@@ -1,6 +1,7 @@
 #nullable enable
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.FileAccess;
+using RFiDGear.Infrastructure.ReaderProviders;
 using RFiDGear.Infrastructure.Tasks.Interfaces;
 using RFiDGear.Services.TaskExecution;
 
@@ -172,6 +173,32 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// name, and only then.
         /// </summary>
         public void NotifyReaderStateChanged() => _reader.NotifyReaderNameChanged();
+
+        /// <summary>The number of reader changes so far; take it before a read and hand it to <see cref="PublishRead"/>.</summary>
+        internal int ReaderGeneration => _reader.Generation;
+
+        /// <summary>Says what a read that the main window made means; call it while the reader gate is still held.</summary>
+        /// <param name="device">The device the read was made with.</param>
+        /// <param name="result">What the read returned.</param>
+        /// <returns>The snapshot, or <c>null</c> if the device could not be asked.</returns>
+        internal ReaderSnapshot? InterpretRead(ReaderDevice? device, ERROR result) => _reader.InterpretRead(device, result);
+
+        /// <summary>
+        /// Stores the picture of a read that the main window made; call it while the reader gate is still held, then
+        /// announce the change with <see cref="AnnounceReaderChange"/> when this returns <c>true</c>.
+        /// </summary>
+        /// <param name="snapshot">What <see cref="InterpretRead"/> returned.</param>
+        /// <param name="generation">The value of <see cref="ReaderGeneration"/> from before the read.</param>
+        /// <returns><c>true</c> if the picture is a change to announce.</returns>
+        internal bool StoreRead(ReaderSnapshot snapshot, int generation) => _reader.StoreRead(snapshot, generation);
+
+        /// <summary>
+        /// Raises <see cref="IReaderHost.ReaderStateChanged"/> for a change that <see cref="StoreRead"/> reported, unless the
+        /// reader has changed since the read began: the change of the reader announced itself.
+        /// </summary>
+        /// <param name="changed">What <see cref="StoreRead"/> returned.</param>
+        /// <param name="generation">The value of <see cref="ReaderGeneration"/> from before the read.</param>
+        internal void AnnounceReaderChange(bool changed, int generation) => _reader.AnnounceIfCurrent(changed, generation);
 
         /// <summary>
         /// Tells the host that the application has just changed the language it works with. If

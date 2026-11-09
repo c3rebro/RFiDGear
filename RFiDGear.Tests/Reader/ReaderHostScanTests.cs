@@ -502,6 +502,50 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public void AReadTheApplicationMadeItself_IsInterpretedLikeAScan_StoredOnceForAChange_AndAnnouncedByTheCaller()
+        {
+            _provider.GenericChip = Chip("04aa");
+            var generation = _host.Generation;
+            var snapshot = _host.InterpretRead(_provider, ERROR.NoError)!;
+
+            Assert.True(_host.StoreRead(snapshot, generation));
+            Assert.False(_host.StoreRead(snapshot, generation));
+            Assert.Equal(0, Events);
+            _host.AnnounceIfCurrent(true, generation);
+
+            Assert.Equal("04AA", Assert.Single(snapshot.Credentials).Uid);
+            Assert.Equal(1, Events);
+            Assert.Equal(snapshot, _host.CurrentSnapshot);
+        }
+
+        [Fact]
+        public void AReadTheApplicationMadeItself_WhoseReaderChangedMeanwhile_IsNotStored()
+        {
+            _provider.GenericChip = Chip("04aa");
+            var generation = _host.Generation;
+            var snapshot = _host.InterpretRead(_provider, ERROR.NoError)!;
+            _host.NotifyReaderNameChanged();
+            var events = Events;
+
+            Assert.False(_host.StoreRead(snapshot, generation));
+            Assert.Equal(events, Events);
+        }
+
+        [Fact]
+        public void ADeviceThatCannotBeAsked_GivesNoPictureToPublish_AndNoException()
+        {
+            Assert.Null(_host.InterpretRead(new UnaskableProvider(), ERROR.NoError));
+            Assert.Equal(ReaderScanState.NoReader, _host.InterpretRead(null, ERROR.NoError)!.State);
+        }
+
+        /// <summary>A reader that cannot say whether it is connected.</summary>
+        private sealed class UnaskableProvider : RFiDGear.Infrastructure.ReaderProviders.ElatecNetProvider
+        {
+            /// <inheritdoc />
+            public override bool IsConnected => throw new InvalidOperationException("The reader cannot be asked.");
+        }
+
+        [Fact]
         public void BeforeAnythingWasRead_TheSnapshotIsTheLiveView()
         {
             _provider.GenericChip = Chip("04aa");

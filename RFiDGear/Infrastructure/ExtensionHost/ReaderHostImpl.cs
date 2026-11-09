@@ -24,11 +24,13 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         private readonly ReaderAccessGate? _gate;
         private readonly object _publishLock = new object();
 
-        // What the last scan found, or null while nothing is known: at the start, and after the reader changed.
+        // What the last scan or read of the main window found, or null while nothing is known: at the start, and after
+        // the reader changed.
         private ReaderSnapshot? _published;
 
-        // Counts the reader changes. A scan remembers the number it started under and its result is dropped if the
-        // reader changed meanwhile, so the card of the old reader is never shown under the name of the new one.
+        // Counts the reader changes. A scan or a read of the main window remembers the number it started under and its
+        // result is dropped if the reader changed meanwhile, so the card of the old reader is never shown under the name
+        // of the new one.
         private int _generation;
 
         /// <param name="readerName">Display name of the configured reader (from settings).</param>
@@ -69,7 +71,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         {
             get
             {
-                // The card is what the last scan found; the name is the one the reader has now. If the reader changes
+                // The card is what the last scan or read found; the name is the one the reader has now. If the reader changes
                 // between taking the one and reading the other, the pair is wrong (the card of the old reader under the
                 // name of the new one), so it is taken again.
                 for (var attempt = 0; attempt < 3; attempt++)
@@ -185,8 +187,47 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         }
 
         /// <summary>
+        /// The number of reader changes so far. A read that is made outside this class takes the number before it starts
+        /// and hands it to <see cref="StoreRead"/>, which then drops the result if the reader changed meanwhile.
+        /// </summary>
+        internal int Generation => Volatile.Read(ref _generation);
+
+        /// <summary>
+        /// Says what a read that the application made itself means, with the same rules as a scan. Call it while the
+        /// reader gate is still held, right after the read, so that the chip is the one this read left.
+        /// </summary>
+        /// <param name="device">The device the read was made with, or <c>null</c>.</param>
+        /// <param name="result">What the read returned.</param>
+        /// <returns>The snapshot, or <c>null</c> if the device could not be asked (it is then not published).</returns>
+        internal ReaderSnapshot? InterpretRead(ReaderDevice? device, ERROR result)
+        {
+            try
+            {
+                return ReaderSnapshotBuilder.FromRead(
+                    SafeReaderName(), device != null, device?.IsPcscReader ?? false, device?.IsConnected ?? false, result, device?.GenericChip);
+            }
+            catch (Exception ex)
+            {
+                var error = new SanitizedException(ex);
+                Logger.Warning("Looking at the reader after a read failed. {ExceptionType}: {ExceptionMessage}", error.TypeName, error.Message);
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Stores the picture of a read that the application made itself, under the rules of a scan. Call it while the
+        /// reader gate is still held, so that pictures are stored in the order the reads were made, and raise the event
+        /// later with <see cref="AnnounceIfCurrent"/> if this returns <c>true</c>.
+        /// </summary>
+        /// <param name="snapshot">What <see cref="InterpretRead"/> made of the read.</param>
+        /// <param name="generation">The value of <see cref="Generation"/> from before the read.</param>
+        /// <returns><c>true</c> if the picture is a change that subscribers have to be told about.</returns>
+        internal bool StoreRead(ReaderSnapshot snapshot, int generation) => Publish(snapshot, generation);
+
+        /// <summary>
         /// Called by the main application when the reader the user selected changes. What the old reader showed says
-        /// nothing about the new one, so the published picture is forgotten (a scan that is on its way is dropped),
+        /// nothing about the new one, so the published picture is forgotten (a scan or read that is on its way is dropped),
         /// and the subscribers are told, exactly once, as before.
         /// </summary>
         internal void NotifyReaderNameChanged()
@@ -271,7 +312,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         }
 
         // Replaces the published picture by this one if it is one that can be published (the reader was looked at: Ready
-        // or NoReader, never Busy or ReadFailed) and the reader has not changed since the scan began. The first picture
+        // or NoReader, never Busy or ReadFailed) and the reader has not changed since the read began. The first picture
         // always counts as a change: nothing was known before, so a subscriber may have seen anything.
         private bool Publish(ReaderSnapshot snapshot, int generation)
         {

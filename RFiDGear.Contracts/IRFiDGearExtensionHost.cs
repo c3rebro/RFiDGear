@@ -22,7 +22,7 @@ namespace RFiDGear.Contracts
     /// behalf: <c>ExecutionCompleted</c> is raised on the thread that completes the run (typically a thread-pool
     /// thread), <c>IsRunningChanged</c> on the thread that starts or ends a run (the WPF dispatcher thread for a run
     /// started from the main window), <c>ReaderStateChanged</c> on the thread that made the change (the thread that changes
-    /// the reader name, a thread-pool thread for the periodic reader check, or the thread on which a reader scan finishes), and <c>ProjectChanged</c> on the thread that commits the
+    /// the reader name, a thread-pool thread for the periodic reader check, the thread on which a reader scan finishes, or the UI thread for a read of the main window), and <c>ProjectChanged</c> on the thread that commits the
     /// project, which is the WPF dispatcher thread in the main application. Each member documents whether it must be
     /// called on the UI thread.
     /// </para>
