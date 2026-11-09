@@ -69,16 +69,32 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         {
             get
             {
-                ReaderSnapshot? published;
-                lock (_publishLock)
+                // The card is what the last scan found; the name is the one the reader has now. If the reader changes
+                // between taking the one and reading the other, the pair is wrong (the card of the old reader under the
+                // name of the new one), so it is taken again.
+                for (var attempt = 0; attempt < 3; attempt++)
                 {
-                    published = _published;
+                    ReaderSnapshot? published;
+                    int generation;
+                    lock (_publishLock)
+                    {
+                        published = _published;
+                        generation = _generation;
+                    }
+
+                    if (published == null)
+                    {
+                        break;
+                    }
+
+                    var name = SafeReaderName();
+                    if (Volatile.Read(ref _generation) == generation)
+                    {
+                        return new ReaderSnapshot(name, published.State, published.Credentials);
+                    }
                 }
 
-                // The card is what the last scan found; the name is the one the reader has now.
-                return published != null
-                    ? new ReaderSnapshot(SafeReaderName(), published.State, published.Credentials)
-                    : LiveSnapshot();
+                return LiveSnapshot();
             }
         }
 
@@ -91,6 +107,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             var slotTaken = false;
             var gateTaken = false;
             var changed = false;
+            var generation = 0;
             ReaderSnapshot snapshot;
             try
             {
@@ -118,7 +135,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
                 // Cancelling works until the read has started (Task.Run does not start a cancelled task); a read that has
                 // started is never interrupted, because the token is not given to it.
-                var generation = Volatile.Read(ref _generation);
+                generation = Volatile.Read(ref _generation);
                 snapshot = await Task.Run(ReadOnceAsync, ct).ConfigureAwait(false);
 
                 // The state is updated while the slot is still held, so scans are published in the order they were made.
@@ -138,16 +155,34 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             }
 
             // After the release, so that a subscriber may scan again or start a run from the handler.
-            if (changed)
-            {
-                RaiseStateChanged();
-            }
+            BeforeAnnounce?.Invoke();
+            AnnounceIfCurrent(changed, generation);
 
             return snapshot;
         }
 
         /// <inheritdoc/>
         public event EventHandler? ReaderStateChanged;
+
+        /// <summary>
+        /// A seam for tests: called after a scan has stored its picture and given everything back, just before it
+        /// announces the change. It lets a test make the reader change at exactly that moment.
+        /// </summary>
+        internal Action? BeforeAnnounce { get; set; }
+
+        /// <summary>
+        /// Raises <see cref="ReaderStateChanged"/> for a change that was stored, unless the reader has changed since:
+        /// the change of the reader announced itself, and the picture it replaced is obsolete.
+        /// </summary>
+        /// <param name="changed">Whether storing the picture reported a change.</param>
+        /// <param name="generation">The number of reader changes from before the read.</param>
+        internal void AnnounceIfCurrent(bool changed, int generation)
+        {
+            if (changed && Volatile.Read(ref _generation) == generation)
+            {
+                RaiseStateChanged();
+            }
+        }
 
         /// <summary>
         /// Called by the main application when the reader the user selected changes. What the old reader showed says

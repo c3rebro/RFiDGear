@@ -340,6 +340,50 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public async Task AChangeOfTheReader_BetweenTheStoreAndTheAnnouncement_LeavesTheEventToTheChangeOfTheReader()
+        {
+            _provider.Script(ERROR.NoError, Chip("04aa"));
+            _host.BeforeAnnounce = () => _host.NotifyReaderNameChanged();
+
+            var snapshot = await _host.ScanAsync();
+
+            Assert.Equal("04AA", Assert.Single(snapshot.Credentials).Uid);
+            Assert.Equal(1, Events);
+        }
+
+        [Fact]
+        public async Task TheSnapshot_NeverPairsTheCardOfTheOldReaderWithTheNameOfTheNewOne()
+        {
+            ReaderHostImpl? host = null;
+            var current = "Old reader";
+            var armed = false;
+            host = new ReaderHostImpl(
+                () =>
+                {
+                    if (armed)
+                    {
+                        // The reader changes while the snapshot is being made.
+                        armed = false;
+                        current = "New reader";
+                        host!.NotifyReaderNameChanged();
+                    }
+
+                    return current;
+                },
+                _coordinator,
+                _gate);
+            _provider.Script(ERROR.NoError, Chip("04aa"));
+            await host.ScanAsync();
+            _provider.GenericChip = new GenericChipModel();
+            armed = true;
+
+            var snapshot = host.CurrentSnapshot;
+
+            Assert.False(snapshot.HasCard);
+            Assert.Equal("New reader", snapshot.ReaderName);
+        }
+
+        [Fact]
         public async Task ThePublishedPicture_CarriesTheNameTheReaderHasNow()
         {
             _provider.Script(ERROR.NoError, Chip("04aa"));
