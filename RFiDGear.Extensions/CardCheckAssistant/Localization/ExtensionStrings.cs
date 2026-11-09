@@ -114,6 +114,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string SectionProjects = "SectionProjects";
             public const string SectionDatabase = "SectionDatabase";
             public const string SectionTextBlocks = "SectionTextBlocks";
+            public const string SectionTest = "SectionTest";
+            public const string UseStubJobsLabel = "UseStubJobsLabel";
+            public const string UseStubJobsHint = "UseStubJobsHint";
             public const string OutputFolderLabel = "OutputFolderLabel";
             public const string OneFolderPerJobLabel = "OneFolderPerJobLabel";
             public const string RemoveTemporaryReportsLabel = "RemoveTemporaryReportsLabel";
@@ -241,6 +244,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.SectionProjects] = "Projects",
             [Keys.SectionDatabase] = "Order database",
             [Keys.SectionTextBlocks] = "Text blocks",
+            [Keys.SectionTest] = "Test mode",
+            [Keys.UseStubJobsLabel] = "Test mode: use stub jobs",
+            [Keys.UseStubJobsHint] = "Stub jobs are made up. The order database is not used, and reports are written to a Test subfolder. Switch this off for real work.",
             [Keys.OutputFolderLabel] = "Folder for the reports",
             [Keys.OneFolderPerJobLabel] = "Make a folder for each job (named after the job number)",
             [Keys.RemoveTemporaryReportsLabel] = "Remove the working reports when a check is finished",
@@ -368,6 +374,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.SectionProjects] = "Projekte",
             [Keys.SectionDatabase] = "Auftragsdatenbank",
             [Keys.SectionTextBlocks] = "Textbausteine",
+            [Keys.SectionTest] = "Testmodus",
+            [Keys.UseStubJobsLabel] = "Testmodus: Testaufträge verwenden",
+            [Keys.UseStubJobsHint] = "Testaufträge sind erfunden. Die Auftragsdatenbank wird nicht verwendet, und Berichte werden in den Unterordner Test geschrieben. Für die echte Arbeit ausschalten.",
             [Keys.OutputFolderLabel] = "Ordner für die Berichte",
             [Keys.OneFolderPerJobLabel] = "Für jeden Auftrag einen Ordner anlegen (benannt nach der Auftragsnummer)",
             [Keys.RemoveTemporaryReportsLabel] = "Arbeitsberichte entfernen, wenn eine Prüfung abgeschlossen ist",

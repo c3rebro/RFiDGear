@@ -60,6 +60,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
                 },
                 DefaultProjectPath = Pick(baseline.DefaultProjectPath, edited.DefaultProjectPath, current.DefaultProjectPath),
                 CustomProjectPath = Pick(baseline.MemoryProjectPath, edited.MemoryProjectPath, current.CustomProjectPath),
+                UseStubJobs = Pick(baseline.UseStubJobs, edited.UseStubJobs, current.UseStubJobs),
                 Database = current.Database with
                 {
                     Server = Pick(baseline.Database.Server, edited.Database.Server, current.Database.Server),
@@ -99,6 +100,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
             ReportLanguage = settings.Report.DefaultLanguage == ReportLanguage.English ? ReportLanguageChoice.English : ReportLanguageChoice.German,
             DefaultProjectPath = settings.DefaultProjectPath,
             MemoryProjectPath = settings.CustomProjectPath,
+            UseStubJobs = settings.UseStubJobs,
             Database = new DatabaseData(settings.Database.Server, settings.Database.Database, settings.Database.Table),
             TextBlocks = settings.TextTemplates.Select(template => new TextBlockData(template.Name, template.Content)).ToList(),
         };

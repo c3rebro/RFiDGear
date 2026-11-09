@@ -67,6 +67,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             OutputFolder = Path.Combine("reports", "out"),
             OneFolderPerJob = true,
             RemoveTemporaryReports = true,
+            UseStubJobs = true,
             ReportLanguage = ReportLanguageChoice.English,
             DefaultProjectPath = Path.Combine("projects", "check.rfPrj"),
             MemoryProjectPath = Path.Combine("projects", "memory.rfPrj"),
@@ -98,8 +99,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var loaded = editor.Load().Data;
 
             Assert.Equal(
-                (data.OutputFolder, data.OneFolderPerJob, data.RemoveTemporaryReports, data.ReportLanguage, data.DefaultProjectPath, data.MemoryProjectPath, data.Database),
-                (loaded.OutputFolder, loaded.OneFolderPerJob, loaded.RemoveTemporaryReports, loaded.ReportLanguage, loaded.DefaultProjectPath, loaded.MemoryProjectPath, loaded.Database));
+                (data.OutputFolder, data.OneFolderPerJob, data.RemoveTemporaryReports, data.UseStubJobs, data.ReportLanguage, data.DefaultProjectPath, data.MemoryProjectPath, data.Database),
+                (loaded.OutputFolder, loaded.OneFolderPerJob, loaded.RemoveTemporaryReports, loaded.UseStubJobs, loaded.ReportLanguage, loaded.DefaultProjectPath, loaded.MemoryProjectPath, loaded.Database));
             Assert.Equal(data.TextBlocks, loaded.TextBlocks);
         }
 
@@ -135,6 +136,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             {
                 OneFolderPerJob = false,
                 RemoveTemporaryReports = false,
+                UseStubJobs = false,
                 ReportLanguage = ReportLanguageChoice.German,
                 DefaultProjectPath = "their.rfPrj",
                 Database = new DatabaseData("THEIR-SERVER", "TheirDb", "dbo.Theirs"),
@@ -153,8 +155,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             var saved = windowA.Load().Data;
             Assert.Equal(
-                ("my-output", "my-memory.rfPrj", false, false, ReportLanguageChoice.German, "their.rfPrj", new DatabaseData("THEIR-SERVER", "TheirDb", "dbo.Mine")),
-                (saved.OutputFolder, saved.MemoryProjectPath, saved.OneFolderPerJob, saved.RemoveTemporaryReports, saved.ReportLanguage, saved.DefaultProjectPath, saved.Database));
+                ("my-output", "my-memory.rfPrj", false, false, false, ReportLanguageChoice.German, "their.rfPrj", new DatabaseData("THEIR-SERVER", "TheirDb", "dbo.Mine")),
+                (saved.OutputFolder, saved.MemoryProjectPath, saved.OneFolderPerJob, saved.RemoveTemporaryReports, saved.UseStubJobs, saved.ReportLanguage, saved.DefaultProjectPath, saved.Database));
             Assert.Equal(new[] { new TextBlockData("Only", "theirs") }, saved.TextBlocks);
         }
 

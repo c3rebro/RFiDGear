@@ -399,6 +399,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                 CustomProjectPath = Clean(settings.CustomProjectPath),
                 LastProjectFolder = Clean(settings.LastProjectFolder),
                 LastReportFolder = Clean(settings.LastReportFolder),
+                UseStubJobs = settings.UseStubJobs,
                 TextTemplates = templates,
                 LegacyImport = marker,
             };
