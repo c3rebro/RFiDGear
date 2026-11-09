@@ -65,6 +65,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         /// </summary>
         public override bool IsConnected => readerUnit?.isConnected() == true;
 
+        /// <inheritdoc />
+        public override bool IsPcscReader => true;
+
         private void InitializeReaderProvider(ReaderTypes readerType)
         {
             try

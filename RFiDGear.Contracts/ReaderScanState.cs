@@ -8,19 +8,22 @@ namespace RFiDGear.Contracts
     public enum ReaderScanState
     {
         /// <summary>
-        /// No reader is connected, so there is nothing to read. <see cref="ReaderSnapshot.Credentials"/> is empty.
+        /// No reader is connected, so there is nothing to read. <see cref="ReaderSnapshot.Credentials"/> is empty. With a
+        /// PC/SC reader this is only answered when RFiDGear has no reader at all: a reader that is unplugged answers like
+        /// a missing card (see <see cref="Ready"/>).
         /// </summary>
         NoReader = 0,
 
         /// <summary>
         /// The reader is connected and was read. <see cref="ReaderSnapshot.Credentials"/> lists what is on it; an empty
-        /// list means there is no card on the reader. (A PC/SC reader cannot tell a card it cannot read from no card, so
-        /// with one an empty list can also mean that; see <see cref="IReaderHost.ScanAsync"/>.)
+        /// list means there is no card on the reader that RFiDGear can read. (A card of a kind RFiDGear does not map, for
+        /// example an HF card that is not a MIFARE card, is not listed; a PC/SC reader cannot tell a card it cannot read
+        /// from no card; see <see cref="IReaderHost.ScanAsync"/>.)
         /// </summary>
         Ready = 1,
 
         /// <summary>
-        /// The reader is connected but reading it failed, for example because it did not answer. Nothing can be said
+        /// The reader is connected but reading it failed, for example because it answered with an error or the read threw. Nothing can be said
         /// about the card: <see cref="ReaderSnapshot.Credentials"/> is empty, and that must not be taken as "no card".
         /// </summary>
         ReadFailed = 2,

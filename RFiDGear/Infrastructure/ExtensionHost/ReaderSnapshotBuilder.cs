@@ -33,6 +33,70 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 ? new ReaderSnapshot(readerName ?? string.Empty, ReaderScanState.Ready, CredentialsOf(chip))
                 : NoReader(readerName);
 
+        /// <summary>
+        /// The one place that says what the result of a read means. The providers never throw: an exception inside
+        /// them comes back as <see cref="ERROR.TransportError"/>, and no card is not an error of its own.
+        /// <list type="bullet">
+        /// <item>No device: no reader.</item>
+        /// <item>
+        /// Elatec: a reader that is not connected after the read is no reader, whatever the result (a reader that is
+        /// not attached also answers <see cref="ERROR.NoError"/> with an empty chip); a connected reader with
+        /// <see cref="ERROR.NoError"/> was read (an empty chip then means no card); any other result is a failed read.
+        /// </item>
+        /// <item>
+        /// PC/SC: <c>IsConnected</c> only means that a card session exists, so it says nothing about the reader and is
+        /// not used. <see cref="ERROR.NoError"/> was read; <see cref="ERROR.TransportError"/> is what "no card" also
+        /// gives (as does a missing reader), so it counts as no card, which is the documented best effort; any other
+        /// result is a failed read.
+        /// </item>
+        /// </list>
+        /// </summary>
+        /// <param name="readerName">The reader's display name; <c>null</c> is taken as empty.</param>
+        /// <param name="hasDevice">Whether the application had a reader device to read with.</param>
+        /// <param name="isPcsc">Whether that device is a PC/SC reader.</param>
+        /// <param name="isConnected">The device's <c>IsConnected</c> after the read.</param>
+        /// <param name="result">What the read returned.</param>
+        /// <param name="chip">The chip the read left, only looked at when the reader was read.</param>
+        /// <returns>The snapshot; its state is <c>NoReader</c>, <c>Ready</c> or <c>ReadFailed</c>.</returns>
+        internal static ReaderSnapshot FromRead(string? readerName, bool hasDevice, bool isPcsc, bool isConnected, ERROR result, GenericChipModel? chip)
+        {
+            if (!hasDevice)
+            {
+                return NoReader(readerName);
+            }
+
+            if (isPcsc)
+            {
+                return result switch
+                {
+                    ERROR.NoError => new ReaderSnapshot(readerName, ReaderScanState.Ready, CredentialsOf(chip)),
+                    ERROR.TransportError => new ReaderSnapshot(readerName, ReaderScanState.Ready, Array.Empty<CredentialInfo>()),
+                    _ => ReadFailed(readerName),
+                };
+            }
+
+            if (!isConnected)
+            {
+                return NoReader(readerName);
+            }
+
+            return result == ERROR.NoError
+                ? new ReaderSnapshot(readerName, ReaderScanState.Ready, CredentialsOf(chip))
+                : ReadFailed(readerName);
+        }
+
+        /// <summary>The answer when the reader was not read because the host is busy.</summary>
+        /// <param name="readerName">The reader's display name; <c>null</c> is taken as empty.</param>
+        /// <returns>A snapshot in the state <see cref="ReaderScanState.Busy"/>.</returns>
+        internal static ReaderSnapshot Busy(string? readerName) =>
+            new ReaderSnapshot(readerName, ReaderScanState.Busy, Array.Empty<CredentialInfo>());
+
+        /// <summary>The answer when reading the reader failed.</summary>
+        /// <param name="readerName">The reader's display name; <c>null</c> is taken as empty.</param>
+        /// <returns>A snapshot in the state <see cref="ReaderScanState.ReadFailed"/>.</returns>
+        internal static ReaderSnapshot ReadFailed(string? readerName) =>
+            new ReaderSnapshot(readerName, ReaderScanState.ReadFailed, Array.Empty<CredentialInfo>());
+
         /// <summary>The snapshot of a host that has no reader to look at.</summary>
         /// <param name="readerName">The reader's display name; <c>null</c> is taken as empty.</param>
         /// <returns>A snapshot in the state <see cref="ReaderScanState.NoReader"/>.</returns>

@@ -1,7 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ExtensionHost;
@@ -14,35 +10,13 @@ using Xunit;
 namespace RFiDGear.Tests.Reader
 {
     /// <summary>
-    /// The host's side of <see cref="IReaderHost.CurrentSnapshot"/>, without a reader: the picture comes from the
-    /// accessor the application supplies, and a missing one means there is no reader.
+    /// The snapshot of the reader host before anything was scanned: the host's guess from the state of the reader the
+    /// application uses, built without a hardware reader.
     /// </summary>
     public class ReaderHostSnapshotTests
     {
         [Fact]
-        public void CurrentSnapshot_IsWhatTheAccessorGives_EachTimeItIsAsked()
-        {
-            var picture = Snapshots.Card("04AA");
-            var reader = new ReaderHostImpl(() => "Elatec", () => picture);
-
-            Assert.Same(picture, reader.CurrentSnapshot);
-            picture = Snapshots.NoCard();
-            Assert.Same(picture, reader.CurrentSnapshot);
-        }
-
-        [Fact]
-        public void AnAccessorThatGivesNothing_MeansNoReader_UnderTheNameOfTheReader()
-        {
-            var name = "first";
-            var reader = new ReaderHostImpl(() => name, () => null);
-
-            Assert.Equal(Snapshots.NoReader("first"), reader.CurrentSnapshot);
-            name = "second";
-            Assert.Equal(Snapshots.NoReader("second"), reader.CurrentSnapshot);
-        }
-
-        [Fact]
-        public void WithoutAnAccessor_ThereIsNoReader_WhenTheApplicationHasNone()
+        public void BeforeAnythingWasRead_WithNoReaderDevice_TheSnapshotSaysNoReader()
         {
             using var scope = ReaderDeviceScope.Use(null);
 
@@ -50,7 +24,7 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
-        public void WithoutAnAccessor_TheSnapshotIsMadeFromTheReaderTheApplicationUses()
+        public void BeforeAnythingWasRead_TheSnapshotIsMadeFromTheReaderTheApplicationUses()
         {
             var device = new ConnectedProvider { Connected = true, GenericChip = new GenericChipModel("04aa", CARD_TYPE.Mifare1K) };
             using var scope = ReaderDeviceScope.Use(device);
@@ -64,17 +38,15 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
-        public async Task AScan_IsNotAvailableYet_AndACancelledOneIsCancelled()
+        public void ALookAtAReaderThatCannotBeAsked_IsNoReader_NotAnException()
         {
-            var reader = new ReaderHostImpl(() => "Elatec", () => Snapshots.NoCard());
-            using var cancelled = new CancellationTokenSource();
-            cancelled.Cancel();
+            var reader = new ReaderHostImpl("Elatec");
+            using var scope = ReaderDeviceScope.Use(new ThrowingProvider());
 
-            await Assert.ThrowsAsync<NotSupportedException>(() => reader.ScanAsync());
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => reader.ScanAsync(cancelled.Token));
+            Assert.Equal(Snapshots.NoReader("Elatec"), reader.CurrentSnapshot);
         }
 
-        /// <summary>A reader that is connected or not as the test says, and has read the chip the test gave it.</summary>
+        /// <summary>A reader that is connected or not as the test says, and holds the chip the test gave it.</summary>
         private sealed class ConnectedProvider : ElatecNetProvider
         {
             /// <summary>Gets or sets whether the reader reports itself as connected.</summary>
@@ -82,6 +54,13 @@ namespace RFiDGear.Tests.Reader
 
             /// <inheritdoc />
             public override bool IsConnected => Connected;
+        }
+
+        /// <summary>A reader that cannot say whether it is connected.</summary>
+        private sealed class ThrowingProvider : ElatecNetProvider
+        {
+            /// <inheritdoc />
+            public override bool IsConnected => throw new System.InvalidOperationException("The reader cannot be asked.");
         }
     }
 }

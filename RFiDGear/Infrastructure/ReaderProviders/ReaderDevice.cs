@@ -80,6 +80,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
         private static ReaderDevice instance;
 
         public abstract bool IsConnected { get; }
+
+        /// <summary>
+        /// Whether this is a PC/SC reader. Such a reader answers a read with a transport error when there is no card on
+        /// it (and leaves the chip of the read before), and its <see cref="IsConnected"/> only means that a card session
+        /// exists, not that a reader is present. The host's reader scan takes the result of a read accordingly.
+        /// </summary>
+        public virtual bool IsPcscReader => false;
         public static ReaderTypes Reader { get; set; }
         public static int PortNumber { get; set; }
 

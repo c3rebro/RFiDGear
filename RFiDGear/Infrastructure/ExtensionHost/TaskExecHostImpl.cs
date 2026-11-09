@@ -73,6 +73,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 throw new InvalidOperationException(BusyMessage(
                     whenLoading: "A project load is in progress. Wait for LoadAsync to complete before executing.",
                     whenEditing: "A project edit is in progress. Wait for it to complete before executing.",
+                    whenScanning: "A reader scan is in progress. Wait for it to complete before executing.",
                     whenRunning: "An execution is already in progress."));
             }
 
@@ -186,6 +187,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 throw new InvalidOperationException(BusyMessage(
                     whenLoading: "A project load is in progress. Wait for LoadAsync to complete before resetting the task status.",
                     whenEditing: "A project edit is in progress. Wait for it to complete before resetting the task status.",
+                    whenScanning: "A reader scan is in progress. Wait for it to complete before resetting the task status.",
                     whenRunning: "A task run is in progress. Reset the task status after it has completed."));
             }
 
@@ -205,9 +207,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// Picks the message that matches what the coordinator is busy with. The state can change between the
         /// refused attempt and this read, in which case the last message is used.
         /// </summary>
-        private string BusyMessage(string whenLoading, string whenEditing, string whenRunning) =>
+        private string BusyMessage(string whenLoading, string whenEditing, string whenScanning, string whenRunning) =>
             _coordinator.IsLoading ? whenLoading
             : _coordinator.IsMutating ? whenEditing
+            : _coordinator.IsScanning ? whenScanning
             : whenRunning;
 
         private static ExecutionOutcome MapOutcome(TaskLoopTerminalStatus? status) => status switch

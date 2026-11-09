@@ -9,8 +9,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 {
     /// <summary>
     /// Shared admission gate for <see cref="ProjectHostImpl"/> and <see cref="TaskExecHostImpl"/>.
-    /// Guarantees that at most one load, one execution, or one project edit (New, ReplaceTaskCollection, or a
-    /// task-status reset) is in progress at any time, eliminating the TOCTOU race between checking a flag and replacing the task collection.
+    /// Guarantees that at most one load, one execution, one project edit (New, ReplaceTaskCollection, or a
+    /// task-status reset) or one reader scan is in progress at any time, eliminating the TOCTOU race between checking a flag and replacing the task collection.
     /// </summary>
     public sealed class ExtensionOperationCoordinator
     {
@@ -19,13 +19,14 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         private const int Loading = 1;
         private const int Executing = 2;
         private const int Mutating = 3;
+        private const int Scanning = 4;
 
         private int _state;
 
         /// <summary>
         /// Raised each time the coordinator enters or leaves the executing state: once after a successful
         /// <see cref="TryBeginExecution"/>, and once when a release finds the state <c>Executing</c>. It is never
-        /// raised for a refused attempt, for loads, or for project edits. The state has already changed when it is
+        /// raised for a refused attempt, for loads, for project edits, or for reader scans. The state has already changed when it is
         /// raised, so <see cref="IsExecuting"/> reports the new value. Handlers run synchronously on the thread that
         /// made the transition; an exception from one is logged and does not reach the caller, because it would
         /// otherwise leave the gate held.
@@ -34,7 +35,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
         /// <summary>
         /// Attempts to begin a project load. Returns <c>true</c> if the load was admitted;
-        /// returns <c>false</c> if another load, an execution, or a project edit is already in progress.
+        /// returns <c>false</c> if another load, an execution, a project edit, or a reader scan is already in progress.
         /// Callers must pair each <c>true</c> return with a call to <see cref="EndLoad"/>.
         /// </summary>
         public bool TryBeginLoad() =>
@@ -48,7 +49,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
         /// <summary>
         /// Attempts to begin a task execution. Returns <c>true</c> if execution was admitted;
-        /// returns <c>false</c> if a load, a project edit, or another execution is already in progress.
+        /// returns <c>false</c> if a load, a project edit, a reader scan, or another execution is already in progress.
         /// Callers must pair each <c>true</c> return with a call to <see cref="EndExecution"/>.
         /// </summary>
         public bool TryBeginExecution()
@@ -71,7 +72,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <summary>
         /// Attempts to begin a project edit: one that replaces the task collection (New, ReplaceTaskCollection) or one
         /// that clears the state of every task (a task-status reset).
-        /// Returns <c>true</c> if the edit was admitted; returns <c>false</c> if a load, an execution, or
+        /// Returns <c>true</c> if the edit was admitted; returns <c>false</c> if a load, an execution, a reader scan, or
         /// another edit is already in progress, so the collection can never change under a running task loop.
         /// Callers must pair each <c>true</c> return with a call to <see cref="EndProjectOperation"/>.
         /// </summary>
@@ -85,6 +86,21 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public void EndProjectOperation() =>
             ReleaseToIdle();
 
+        /// <summary>
+        /// Attempts to begin a reader scan (<c>IReaderHost.ScanAsync</c>). Returns <c>true</c> if the scan was admitted;
+        /// returns <c>false</c> if a load, an execution, a project edit or another scan is in progress. While a scan is
+        /// admitted, none of those can start: a scan re-activates the card, which would end a card session in the
+        /// middle of an operation. Callers must pair each <c>true</c> return with a call to <see cref="EndScan"/>.
+        /// </summary>
+        public bool TryBeginScan() =>
+            Interlocked.CompareExchange(ref _state, Scanning, Idle) == Idle;
+
+        /// <summary>
+        /// Releases the scan slot. Must be called in a <c>finally</c> block after <see cref="TryBeginScan"/> returns <c>true</c>.
+        /// </summary>
+        public void EndScan() =>
+            ReleaseToIdle();
+
         /// <summary><c>true</c> when a task execution is in progress.</summary>
         public bool IsExecuting => Volatile.Read(ref _state) == Executing;
 
@@ -94,10 +110,13 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <summary><c>true</c> when a project edit (New, ReplaceTaskCollection, or a task-status reset) is in progress.</summary>
         public bool IsMutating => Volatile.Read(ref _state) == Mutating;
 
+        /// <summary><c>true</c> when a reader scan is in progress.</summary>
+        public bool IsScanning => Volatile.Read(ref _state) == Scanning;
+
         /// <summary>
-        /// Unconditionally returns to idle, as the three <c>End*</c> methods always have, and announces the change
-        /// only when the state it replaced was <c>Executing</c>. Releasing while idle, loading or mutating changes
-        /// nothing a subscriber can observe.
+        /// Unconditionally returns to idle, as the <c>End*</c> methods always have, and announces the change
+        /// only when the state it replaced was <c>Executing</c>. Releasing while idle, loading, mutating or scanning
+        /// changes nothing a subscriber can observe.
         /// </summary>
         private void ReleaseToIdle()
         {
