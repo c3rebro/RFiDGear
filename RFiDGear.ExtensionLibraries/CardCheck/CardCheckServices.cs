@@ -35,6 +35,27 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             new OrderStore(settings, new SqlServerConnectionFactory(settings), log);
 
         /// <summary>
+        /// Creates a stand-in for the order table that keeps a few made-up orders in memory, for the assistant's test
+        /// mode: a check can be tried with only a reader and a card, and nothing is read from or written to an order
+        /// database. The orders, and every change made to them, last as long as the returned store.
+        /// </summary>
+        /// <param name="log">Where the creation of the store is noted (a count only).</param>
+        /// <returns>A new store that holds the stub orders; create one for each window.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="log"/> is null.</exception>
+        public static IOrderStore CreateStubOrderStore(ICardCheckLog log)
+        {
+            if (log == null)
+            {
+                throw new System.ArgumentNullException(nameof(log));
+            }
+
+            var seed = StubOrders.CreateSeed();
+            log.Information("The stub order store was created with {Count} stub orders; no order database is used", seed.Count);
+
+            return new InMemoryOrderStore(seed);
+        }
+
+        /// <summary>
         /// Creates the store for the assistant's settings, in its own folder below the user's application data
         /// (<c>%LocalAppData%\RFiDGear\Extensions\CardCheckAssistant</c>), apart from the host's own files.
         /// </summary>

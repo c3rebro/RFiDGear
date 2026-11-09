@@ -67,6 +67,26 @@ rest follows one change at a time, each with its own tests.
   current culture, as before, until the probe of the real table says otherwise.
   The suite runs against SQLite, not against a SQL Server.
 
+**Stub orders for the test mode** (`IOrderStore`, created by
+`CardCheckServices.CreateStubOrderStore`):
+
+- A stand-in for the order table that keeps five made-up orders in memory, so
+  the assistant can be tried with only a reader and a card when there is no
+  database or no order. It reads and writes no database and no file. The
+  orders and every change made to them last as long as the store, and each
+  window creates its own.
+- It answers as the store on the table does: the same order of checks (a
+  missing report throws, an empty one is refused, then a blank id, a cancelled
+  call and an unknown order), the same failure codes and texts (both take them
+  from `OrderFailures`), the list newest first, `FinalizeAsync` setting the
+  report, the status `CheckFinished` and the date of the change together.
+- The orders say what they are: ids and job numbers start with `STUB-`, the
+  customer, editor, dealer and sales names are made up, and the numbers are
+  plain enough to become folder and file names. They stand for five stages an
+  order goes through; one of them is finished and holds a placeholder text
+  instead of a real PDF, so analysing or re-editing its report fails. An order
+  finished during the session with a real PDF works like any other.
+
 **Import of the old settings** (`ILegacySettingsImporter`, created by
 `CardCheckServices.CreateLegacyImporter`). It is built and tested but **not used
 by the extension for now**: since Slice 3.5 the settings are built from scratch
