@@ -208,7 +208,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             // The page has no scroll bar and the results are listed below the run button, so what the test mode adds above
             // it comes straight out of the room the results have. The notice and a line for the jobs are small, the list
             // of five jobs that was tried first was not.
-            var smallest = new Size(620, 460);
+            var smallest = new Size(620, 490);
             double without = 0;
             double with = 0;
             await Show(testMode: false, (view, _, _) =>

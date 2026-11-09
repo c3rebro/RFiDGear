@@ -61,6 +61,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 ExtensionStrings.Keys.ColumnPosition,
                 ExtensionStrings.Keys.RowOk,
                 ExtensionStrings.Keys.RowUnknown,
+                ExtensionStrings.Keys.CardFormat,
             };
 
             foreach (var key in ExtensionStrings.AllKeys.Where(key => !sameInBoth.Contains(key)))

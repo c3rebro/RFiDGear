@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="clr-namespace:RFiDGear.Extensions.CardCheckAssistant.ViewModels"
     MinWidth="620"
-    MinHeight="460">
+    MinHeight="490">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
@@ -83,6 +83,16 @@
             <StackPanel Grid.Column="0">
                 <TextBlock Text="{Binding Strings[WindowHint]}" TextWrapping="Wrap" Margin="0,0,0,6" />
                 <TextBlock Text="{Binding ReaderText}" />
+                <Grid x:Name="CardRow" Margin="0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="CardLine" Grid.Column="0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               Text="{Binding CardText}" ToolTip="{Binding CardToolTip}" />
+                    <Button x:Name="ReadCardButton" Grid.Column="1" Margin="12,0,0,0" Padding="12,1"
+                            Command="{Binding ReadCardCommand}" Content="{Binding Strings[ReadCardButton]}" />
+                </Grid>
                 <TextBlock Text="{Binding OpenProjectText}" TextTrimming="CharacterEllipsis" ToolTip="{Binding OpenProjectText}" />
                 <Border x:Name="TestModeNotice" Margin="0,6,0,0" Padding="6,3" BorderThickness="1" BorderBrush="#C9A227" Background="#FFF4CC"
                         Visibility="{Binding IsTestMode, Converter={StaticResource BoolToVisibility}}">

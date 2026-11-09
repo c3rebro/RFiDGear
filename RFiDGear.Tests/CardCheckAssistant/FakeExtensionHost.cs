@@ -344,16 +344,21 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
         }
 
-        /// <summary>The next scan finds this. Scans are answered in the order they were scripted.</summary>
-        public void ScriptScan(ReaderSnapshot result, TaskCompletionSource<bool>? gate = null) => Enqueue(new ScriptedScan(result, null, gate));
+        /// <summary>
+        /// The next scan finds this. Scans are answered in the order they were scripted. With <paramref name="store"/> off
+        /// the reader changed while the scan ran, as the real host documents it: the answer is returned, but it does not
+        /// become the picture and raises no event.
+        /// </summary>
+        public void ScriptScan(ReaderSnapshot result, TaskCompletionSource<bool>? gate = null, bool store = true) =>
+            Enqueue(new ScriptedScan(result, null, gate, store));
 
         /// <summary>The next scan fails with this exception, as a faulty reader provider would.</summary>
         public void ScriptScanFailure(Exception failure, TaskCompletionSource<bool>? gate = null) => Enqueue(new ScriptedScan(null, failure, gate));
 
         /// <summary>
         /// Answers with the next scripted result; with nothing scripted the picture is as it was. A result in the state
-        /// <c>Ready</c> or <c>NoReader</c> becomes the picture (and raises the event if it differs); one in the state
-        /// <c>ReadFailed</c> or <c>Busy</c> is only returned.
+        /// <c>Ready</c> or <c>NoReader</c> becomes the picture (and raises the event if it differs), unless it was
+        /// scripted as not stored; one in the state <c>ReadFailed</c> or <c>Busy</c> is only returned.
         /// </summary>
         public async Task<ReaderSnapshot> ScanAsync(CancellationToken ct = default)
         {
@@ -386,7 +391,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
 
             var result = next.Result!;
-            if (result.State == ReaderScanState.Ready || result.State == ReaderScanState.NoReader)
+            if (next.Store && (result.State == ReaderScanState.Ready || result.State == ReaderScanState.NoReader))
             {
                 Show(result);
             }
@@ -441,7 +446,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         private static int CodeOf(string? typeName) =>
             Enum.TryParse<CARD_TYPE>(typeName, out var type) ? (int)type : 0;
 
-        private sealed record ScriptedScan(ReaderSnapshot? Result, Exception? Failure, TaskCompletionSource<bool>? Gate);
+        private sealed record ScriptedScan(ReaderSnapshot? Result, Exception? Failure, TaskCompletionSource<bool>? Gate, bool Store = true);
 
         public event EventHandler ReaderStateChanged
         {

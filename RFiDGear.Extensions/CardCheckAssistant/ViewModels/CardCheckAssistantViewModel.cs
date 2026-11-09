@@ -41,6 +41,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
     /// window's dispatcher and re-reads the state there instead of trusting what the event implied. <see cref="Dispose"/>
     /// removes all four, once, and drops what the page was showing.
     /// </para>
+    /// <para>
+    /// The card line shows the picture of the reader that the host last had (read again whenever the reader event
+    /// arrives), or the answer of the scan the operator asked for with <see cref="ReadCardCommand"/>. The page never scans
+    /// on its own: no timer, and nothing when the window opens.
+    /// </para>
     /// </summary>
     internal sealed class CardCheckAssistantViewModel : ObservableBase, IDisposable
     {
@@ -90,6 +95,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private bool _isExecutionRunning;
         private bool _showCloseHint;
         private ExecResult? _result;
+        private ReaderSnapshot? _card;
+        private bool _isScanning;
+        private int _readerEvents;
 
         /// <param name="host">The initialized host service.</param>
         /// <param name="dispatcher">The dispatcher of the window; every change the page shows is made on it.</param>
@@ -126,6 +134,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             RunCommand = new AsyncCommand(RunAsync, () => CanRun, OnUnhandledRunFailure);
             BrowseCommand = new DelegateCommand(Browse, () => InputsEnabled);
             OpenSettingsCommand = new AsyncCommand(OpenSettingsAsync, () => HasSettings && InputsEnabled);
+            ReadCardCommand = new AsyncCommand(ReadCardAsync, () => CanReadCard);
 
             // Subscribe first, read the state second: a change in between is then seen by the handler instead of lost.
             host.Execution.IsRunningChanged += OnIsRunningChanged;
@@ -134,6 +143,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             host.AppContext.CultureChanged += OnCultureChanged;
 
             _isExecutionRunning = SafeRead(() => host.Execution.IsRunning, false);
+            _card = SafeRead<ReaderSnapshot?>(() => host.Reader.CurrentSnapshot, null);
         }
 
         /// <summary>The page's texts, as a binding source: <c>{Binding Strings[Key]}</c>.</summary>
@@ -147,6 +157,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         /// <summary>Opens the settings window, and reads what the page starts from again if the settings were saved.</summary>
         public AsyncCommand OpenSettingsCommand { get; }
+
+        /// <summary>Looks at the reader now (a scan) and shows what is on it in the card line.</summary>
+        public AsyncCommand ReadCardCommand { get; }
 
         /// <summary>Whether the page has a settings window to open.</summary>
         public bool HasSettings => _settingsDialog != null;
@@ -273,8 +286,20 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// </summary>
         public bool InputsEnabled => !IsBusy && !_isExecutionRunning && !IsDisposed && _applyingSettings == 0;
 
-        /// <summary>Whether the run button can be used.</summary>
-        public bool CanRun => InputsEnabled;
+        /// <summary>
+        /// Whether the run button can be used: the inputs are on and the page is not looking at the reader. A load that
+        /// starts during that look would be refused as busy by the scan the page started itself.
+        /// </summary>
+        public bool CanRun => InputsEnabled && !_isScanning;
+
+        /// <summary>Whether the page is looking at the reader because the operator asked it to.</summary>
+        public bool IsScanning => _isScanning;
+
+        /// <summary>
+        /// Whether the Read card button can be used: not while this page or the host is loading or running (a scan would
+        /// be refused as busy, and it could end the card's session), and not while a look is already going.
+        /// </summary>
+        public bool CanReadCard => !IsDisposed && !IsBusy && !_isExecutionRunning && !_isScanning;
 
         /// <summary>The line that says what is going on, or empty.</summary>
         public string StatusText
@@ -321,6 +346,23 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 return $"{Strings[Keys.ReaderLabel]} {(string.IsNullOrWhiteSpace(name) ? Strings[Keys.ReaderUnknown] : name)} ({state})";
             }
         }
+
+        /// <summary>
+        /// The card line: the card on the reader (type and UID, and how many more credentials came with it), or why there
+        /// is none. A reader that is busy or could not be read is told as that, never as "no card".
+        /// </summary>
+        public string CardText
+        {
+            get
+            {
+                var state = _isScanning ? Strings[Keys.CardReading] : DescribeCard(_card);
+
+                return $"{Strings[Keys.CardLabel]} {state}";
+            }
+        }
+
+        /// <summary>The whole card line and, below it, what it shows: the tip for the line, which may be cut short.</summary>
+        public string CardToolTip => $"{CardText}\n{Strings[Keys.CardLineHint]}";
 
         /// <summary>The line that says which project RFiDGear has open.</summary>
         public string OpenProjectText
@@ -441,6 +483,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             }
 
             _result = null;
+            _card = null;
             _rows.Clear();
             _jobs.Clear();
         }
@@ -692,6 +735,75 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             }
         }
 
+        // One scan, because the operator pressed the button. The host answers busy or failed instead of throwing, and a
+        // host that throws anyway is shown as a failed read. A Ready or NoReader answer is the host's picture, and that
+        // picture is read again, because the reader may have changed while the scan ran (the answer is then not the
+        // current one). Any other answer, one the page does not know included, says nothing about the card, as the
+        // contract asks, and is shown as it is, unless a reader event came in meanwhile: that brought a newer picture.
+        private async Task ReadCardAsync()
+        {
+            if (!CanReadCard)
+            {
+                return;
+            }
+
+            var eventsBefore = _readerEvents;
+            _isScanning = true;
+
+            try
+            {
+                RaiseScanProperties();
+                var answer = await _host.Reader.ScanAsync(_cancellation.Token);
+                if (!IsDisposed)
+                {
+                    var isPicture = answer.State is ReaderScanState.Ready or ReaderScanState.NoReader;
+                    _card = isPicture || _readerEvents != eventsBefore
+                        ? SafeRead(() => _host.Reader.CurrentSnapshot, answer)
+                        : answer;
+                }
+            }
+            catch (OperationCanceledException) when (_cancellation.IsCancellationRequested)
+            {
+                // The window was closed before the read started; there is nobody left to tell.
+            }
+            catch (Exception)
+            {
+                if (!IsDisposed && _readerEvents == eventsBefore)
+                {
+                    _card = new ReaderSnapshot(SafeRead(() => _host.Reader.ReaderName, null), ReaderScanState.ReadFailed, Array.Empty<CredentialInfo>());
+                }
+            }
+            finally
+            {
+                _isScanning = false;
+                if (!IsDisposed)
+                {
+                    RaiseScanProperties();
+                }
+            }
+        }
+
+        private string DescribeCard(ReaderSnapshot? card) => card == null
+            ? Strings[Keys.ReaderUnknown]
+            : card.State switch
+            {
+                ReaderScanState.Ready => card.HasCard ? DescribeCredentials(card.Credentials) : Strings[Keys.CardNone],
+                ReaderScanState.NoReader => Strings[Keys.CardNoReader],
+                ReaderScanState.ReadFailed => Strings[Keys.CardReadFailed],
+                ReaderScanState.Busy => Strings[Keys.CardBusy],
+                _ => Strings[Keys.ReaderUnknown]
+            };
+
+        // The main credential first, as the snapshot lists them; the others are only counted (the combined display of an
+        // HF card with an LF or LEGIC credential is not this page's job).
+        private string DescribeCredentials(IReadOnlyList<CredentialInfo> credentials)
+        {
+            var main = credentials[0];
+            var text = Strings.Format(Keys.CardFormat, main.DisplayName, main.Uid);
+
+            return credentials.Count > 1 ? Strings.Format(Keys.CardMoreFormat, text, credentials.Count - 1) : text;
+        }
+
         private async Task RunAsync()
         {
             if (!CanRun)
@@ -868,8 +980,15 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private void OnProjectChanged(object? sender, EventArgs e) =>
             OnUiThread(() => OnPropertyChanged(nameof(OpenProjectText)));
 
-        private void OnReaderStateChanged(object? sender, EventArgs e) =>
-            OnUiThread(() => OnPropertyChanged(nameof(ReaderText)));
+        // The event says the reader or the card changed, not what it is now: the picture is read here, on the window's
+        // thread. Whatever the card line showed before, a scan that was busy or failed included, is out of date.
+        private void OnReaderStateChanged(object? sender, EventArgs e) => OnUiThread(() =>
+        {
+            _readerEvents++;
+            _card = SafeRead<ReaderSnapshot?>(() => _host.Reader.CurrentSnapshot, null);
+            OnPropertyChanged(nameof(ReaderText));
+            RaiseCardProperties();
+        });
 
         private void OnCultureChanged(object? sender, EventArgs e) => OnUiThread(() =>
         {
@@ -910,11 +1029,30 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OnPropertyChanged(nameof(IsExecutionRunning));
             OnPropertyChanged(nameof(InputsEnabled));
             OnPropertyChanged(nameof(CanRun));
+            OnPropertyChanged(nameof(CanReadCard));
             OnPropertyChanged(nameof(StatusText));
             OnPropertyChanged(nameof(ShowProgress));
             RunCommand.RaiseCanExecuteChanged();
             BrowseCommand.RaiseCanExecuteChanged();
             OpenSettingsCommand.RaiseCanExecuteChanged();
+            ReadCardCommand.RaiseCanExecuteChanged();
+        }
+
+        // The page started or ended a look at the reader: what depends on it besides the line itself.
+        private void RaiseScanProperties()
+        {
+            OnPropertyChanged(nameof(IsScanning));
+            OnPropertyChanged(nameof(CanRun));
+            OnPropertyChanged(nameof(CanReadCard));
+            RaiseCardProperties();
+            RunCommand.RaiseCanExecuteChanged();
+            ReadCardCommand.RaiseCanExecuteChanged();
+        }
+
+        private void RaiseCardProperties()
+        {
+            OnPropertyChanged(nameof(CardText));
+            OnPropertyChanged(nameof(CardToolTip));
         }
 
         private void RaiseErrorProperties()
@@ -942,6 +1080,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             RaiseResultProperties();
             OnPropertyChanged(nameof(StatusText));
             OnPropertyChanged(nameof(ReaderText));
+            RaiseCardProperties();
             OnPropertyChanged(nameof(OpenProjectText));
             OnPropertyChanged(nameof(CloseHintText));
         }

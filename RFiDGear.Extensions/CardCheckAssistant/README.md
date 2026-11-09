@@ -39,6 +39,21 @@ in the Extensions menu of the main window.
   and one line per task, with tasks the run never reached marked as such.
 - Is disabled while RFiDGear runs tasks, whoever started them, and cannot be
   closed in the middle of its own run.
+- Shows a **card line** under the reader line: the type and UID of the card on
+  the reader (`Card: DESFireEV1, UID 04AABBCCDD`, followed by `(+1 more)` when
+  an LF or LEGIC credential was read together with it), or why there is none:
+  no card found, no reader, the reader is busy, the reader could not be read. A
+  busy or failed look is never shown as "no card". The line is what RFiDGear
+  last saw: it is read from the host when the window opens and again whenever
+  the reader event arrives (a card arrived, was removed or was replaced, by a
+  scan or by the Read button of the main window, or the reader changed). The
+  **Read card** button next to it scans the reader once, now. It is off while
+  tasks run (whoever started them) and while the page loads or runs, and the
+  run button is off while the scan goes, because a load started meanwhile
+  would be refused as busy by that scan. The page never scans on its own: no
+  timer, nothing when the window opens. With a PC/SC reader a card that cannot
+  be read, and an unplugged reader, also show as "no card found" (the host
+  cannot tell them apart); a card that is not a MIFARE card is not listed.
 - Is in English or German, following the language of RFiDGear, and switches
   when that changes.
 - Remembers, in `%LocalAppData%\RFiDGear\Extensions\CardCheckAssistant`, the
