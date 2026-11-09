@@ -770,6 +770,10 @@ namespace RFiDGear.Services.TaskExecution
                     observations,
                     request?.ErrorRouting,
                     selectedTaskOnly: request?.RunSelectedOnly ?? false);
+
+                // The status is judged on the tasks up to the exit, but the summary accounts for the whole project: the tasks
+                // after the exit were not started either.
+                var tasksAfterProjectExit = endedByProjectAt >= 0 ? (descriptors?.Count ?? 0) - endedByProjectAt - 1 : 0;
                 logger.LogInformation("TaskLoop.Summary", new
                 {
                     RunId = runId,
@@ -783,7 +787,7 @@ namespace RFiDGear.Services.TaskExecution
                     taskLoopResult.AcceptedFailures,
                     taskLoopResult.UnhandledFailures,
                     taskLoopResult.InvalidSkips,
-                    taskLoopResult.NotReached,
+                    NotReached = taskLoopResult.NotReached + tasksAfterProjectExit,
                     TerminalStatus = taskLoopResult.TerminalStatus.ToString(),
                     Timestamp = DateTimeOffset.UtcNow
                 });

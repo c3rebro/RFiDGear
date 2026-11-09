@@ -167,9 +167,12 @@ namespace RFiDGear.Tests
                 Assert.Equal(0, summaries[0].GetProperty("EndedByProjectAt").GetInt32());
                 Assert.Equal(2, summaries[0].GetProperty("TotalTasks").GetInt32());
                 Assert.Equal(1, summaries[0].GetProperty("Executed").GetInt32());
+                Assert.Equal(1, summaries[0].GetProperty("NotReached").GetInt32());
+                Assert.Equal(nameof(TaskLoopTerminalStatus.Success), summaries[0].GetProperty("TerminalStatus").GetString());
                 Assert.Equal(JsonValueKind.Null, summaries[1].GetProperty("EndedByProjectAt").ValueKind);
                 Assert.Equal(2, summaries[1].GetProperty("TotalTasks").GetInt32());
                 Assert.Equal(2, summaries[1].GetProperty("Executed").GetInt32());
+                Assert.Equal(0, summaries[1].GetProperty("NotReached").GetInt32());
             });
         }
 
