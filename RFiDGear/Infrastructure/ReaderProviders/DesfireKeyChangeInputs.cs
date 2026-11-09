@@ -68,13 +68,21 @@ internal static class DesfireKeyChangeInputs
         AccessControl.DESFireKeySettings currentKeySettings)
     {
         if (string.IsNullOrWhiteSpace(masterKeyHex))
+        {
             throw new ArgumentException("Master key must be provided.", nameof(masterKeyHex));
+        }
         if (string.IsNullOrWhiteSpace(currentTargetKeyHex) && appId == 0 && targetKeyNo == 0)
+        {
             currentTargetKeyHex = masterKeyHex;
+        }
         if (string.IsNullOrWhiteSpace(currentTargetKeyHex))
+        {
             throw new ArgumentException("Current target key must be provided (old key value).", nameof(currentTargetKeyHex));
+        }
         if (string.IsNullOrWhiteSpace(newTargetKeyHex))
+        {
             throw new ArgumentException("New target key must be provided.", nameof(newTargetKeyHex));
+        }
 
         var changeKeyMode = currentKeySettings & AccessControl.DESFireKeySettings.ChangeKeyFrozen;
         var authKeyNo = changeKeyMode == AccessControl.DESFireKeySettings.ChangeKeyWithTargetedKeyNumber
@@ -113,11 +121,15 @@ internal static class DesfireKeyChangeInputs
     {
         var s = hex.Replace(" ", "").Trim();
         if (s.Length % 2 != 0)
+        {
             throw new ArgumentException("Hex string must have an even number of characters.", nameof(hex));
+        }
 
         var parts = new List<string>(s.Length / 2);
         for (int i = 0; i < s.Length; i += 2)
+        {
             parts.Add(s.Substring(i, 2));
+        }
 
         return string.Join(" ", parts).ToUpperInvariant();
     }

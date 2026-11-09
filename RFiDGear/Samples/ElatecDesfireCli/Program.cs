@@ -464,13 +464,34 @@ class Program
         if (isClassic || isPlusSL1)
         {
             string variant = "";
-            if (subTypeByte == 0x11) variant = "MIFARE Classic 1K";
-            else if (subTypeByte == 0x12) variant = "MIFARE Classic 2K";
-            else if (subTypeByte == 0x13) variant = "MIFARE Classic 4K";
-            else if (subTypeByte == 0x34) variant = "MIFARE Plus SL1 1K";
-            else if (subTypeByte == 0x35) variant = "MIFARE Plus SL1 2K";
-            else if (subTypeByte == 0x36) variant = "MIFARE Plus SL1 4K";
-            else variant = "MIFARE Classic/Plus";
+            if (subTypeByte == 0x11)
+            {
+                variant = "MIFARE Classic 1K";
+            }
+            else if (subTypeByte == 0x12)
+            {
+                variant = "MIFARE Classic 2K";
+            }
+            else if (subTypeByte == 0x13)
+            {
+                variant = "MIFARE Classic 4K";
+            }
+            else if (subTypeByte == 0x34)
+            {
+                variant = "MIFARE Plus SL1 1K";
+            }
+            else if (subTypeByte == 0x35)
+            {
+                variant = "MIFARE Plus SL1 2K";
+            }
+            else if (subTypeByte == 0x36)
+            {
+                variant = "MIFARE Plus SL1 4K";
+            }
+            else
+            {
+                variant = "MIFARE Classic/Plus";
+            }
 
             Console.WriteLine($"\n{variant} chip identified successfully!");
             Console.WriteLine("Will use MIFARE Classic workflow (authenticate, write, read).");
@@ -480,17 +501,27 @@ class Program
         {
             string variant = "";
             if (subTypeByte >= 0x70 && subTypeByte <= 0x7F)
+            {
                 variant = "DESFire EV3";
+            }
             else if (subTypeByte >= 0x60 && subTypeByte <= 0x6F)
+            {
                 variant = "DESFire EV2";
+            }
             else if (subTypeByte >= 0x50 && subTypeByte <= 0x5F)
+            {
                 variant = "DESFire EV1";
+            }
             else if (subTypeByte >= 0x40 && subTypeByte <= 0x4F)
+            {
                 variant = "DESFire EV0";
+            }
 
             // Check if SmartMX variant (bit 3 set)
             if ((subTypeByte & 0x08) != 0)
+            {
                 variant = "SmartMX " + variant;
+            }
 
             Console.WriteLine($"\n{variant} chip identified successfully!");
             Console.WriteLine("Will use DESFire workflow (create app, create file, write, read).");
@@ -568,10 +599,22 @@ class Program
         var configChangeable = PromptYesNo("Configuration changeable?", true);
 
         byte keySettings = keySettingsBase;
-        if (allowChangeMK) keySettings |= 0x01;
-        if (allowListing) keySettings |= 0x02;
-        if (allowCreateDel) keySettings |= 0x04;
-        if (configChangeable) keySettings |= 0x08;
+        if (allowChangeMK)
+        {
+            keySettings |= 0x01;
+        }
+        if (allowListing)
+        {
+            keySettings |= 0x02;
+        }
+        if (allowCreateDel)
+        {
+            keySettings |= 0x04;
+        }
+        if (configChangeable)
+        {
+            keySettings |= 0x08;
+        }
 
         // PICC Master Key Type (for authentication to PICC)
         Console.WriteLine("\n--- PICC Authentication (for card-level access) ---");
@@ -1186,7 +1229,9 @@ class Program
         var response = Console.ReadLine()?.Trim().ToLowerInvariant();
 
         if (string.IsNullOrWhiteSpace(response))
+        {
             return defaultValue;
+        }
 
         return response == "y" || response == "yes";
     }

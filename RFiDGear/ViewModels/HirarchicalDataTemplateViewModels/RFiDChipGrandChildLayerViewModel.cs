@@ -521,7 +521,6 @@ namespace RFiDGear.ViewModel
 
                 if (value % 2 == 0)
                 {
-                    //SelectedDataLengthInBytes = value / 2;
                     IsValidSelectedDataIndexAndLength = (bool)(selectedDataIndexStart % 2 == 0);
                 }
                 else

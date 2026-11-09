@@ -186,18 +186,26 @@ namespace RFiDGear.Infrastructure
         public static KEY_ERROR FormatMifareDesfireKeyStringWithSpacesEachByte(string Str, DESFireKeyType keyType = DESFireKeyType.DF_KEY_AES)
         {
             if (string.IsNullOrEmpty(Str))
+            {
                 return KEY_ERROR.KEY_IS_EMPTY;
+            }
 
             var temp = Str.Replace(" ", "");
 
             if (!IsInHexFormat(temp))
+            {
                 return KEY_ERROR.KEY_HAS_WRONG_FORMAT;
+            }
 
             if (temp.Length != GetExpectedKeyHexLength(keyType))
+            {
                 return KEY_ERROR.KEY_HAS_WRONG_LENGTH;
+            }
 
             for (var i = temp.Length - 2; i > 0; i -= 2)
+            {
                 temp = temp.Insert(i, " ");
+            }
 
             DesfireKeyToCheck = temp.ToUpper();
 

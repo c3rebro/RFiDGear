@@ -205,10 +205,15 @@ namespace RFiDGear.ViewModel
                     foreach (var entry in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     {
                         var trimmed = entry.Trim();
-                        if (trimmed.Length == 0) continue;
+                        if (trimmed.Length == 0)
+                        {
+                            continue;
+                        }
                         hasAny = true;
                         if (!CustomConverter.IsInHexFormat(trimmed) || trimmed.Length != 12)
+                        {
                             allValid = false;
+                        }
                     }
                 }
                 IsValidClassicKeysText = hasAny ? allValid : (bool?)null;
@@ -253,7 +258,9 @@ namespace RFiDGear.ViewModel
             {
                 var trimmed = entry.Trim();
                 if (CustomConverter.IsInHexFormat(trimmed) && trimmed.Length == 12)
+                {
                     classicKeys.Add(trimmed);
+                }
             }
             spec.MifareClassicDefaultQuickCheckKeys = classicKeys;
         }
@@ -263,9 +270,13 @@ namespace RFiDGear.ViewModel
             var idx = keys.FindIndex(k => k.KeyType == keyType);
             var updated = new MifareDesfireDefaultKeys(keyType, encType, value);
             if (idx >= 0)
+            {
                 keys[idx] = updated;
+            }
             else
+            {
                 keys.Add(updated);
+            }
         }
 
         #region IUserDialogViewModel

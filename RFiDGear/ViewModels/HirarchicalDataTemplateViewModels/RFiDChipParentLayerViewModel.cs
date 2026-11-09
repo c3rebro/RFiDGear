@@ -316,7 +316,9 @@ namespace RFiDGear.ViewModel
         private async Task<bool> ShowQuickCheckKeysDialogAsync()
         {
             if (dialogs == null)
+            {
                 return true;
+            }
 
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -365,7 +367,10 @@ namespace RFiDGear.ViewModel
         {
             if (settings.DefaultSpecification.PromptForKeysBeforeQuickCheck)
             {
-                if (!await ShowQuickCheckKeysDialogAsync()) return;
+                if (!await ShowQuickCheckKeysDialogAsync())
+                {
+                    return;
+                }
             }
 
             await MifareClassicQuickCheck(null);
@@ -418,7 +423,7 @@ namespace RFiDGear.ViewModel
                         {
                             if (device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data != null)
                             {
-                                gcVM.MifareClassicDataBlock.Data = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data; //device.currentSector[gcVM.DataBlockNumber];
+                                gcVM.MifareClassicDataBlock.Data = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data;
                                 gcVM.IsAuthenticated = true;
                             }
                             else
@@ -446,7 +451,10 @@ namespace RFiDGear.ViewModel
         {
             if (settings.DefaultSpecification.PromptForKeysBeforeQuickCheck)
             {
-                if (!await ShowQuickCheckKeysDialogAsync()) return;
+                if (!await ShowQuickCheckKeysDialogAsync())
+                {
+                    return;
+                }
             }
 
             using (await desfireQuickCheckLock.AcquireAsync())
@@ -618,7 +626,9 @@ namespace RFiDGear.ViewModel
         private async Task<(string keyHex, DESFireKeyType keyType, int keyNo)?> ShowDesfireAppKeyDialogAsync(uint appId)
         {
             if (dialogs == null)
+            {
                 return null;
+            }
 
             var tcs = new TaskCompletionSource<(string, DESFireKeyType, int)?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -651,10 +661,16 @@ namespace RFiDGear.ViewModel
 
         public async Task QuickCheckDesfireAppWithKeyAsync(RFiDChipChildLayerViewModel appNode)
         {
-            if (appNode?.AppID == null) return;
+            if (appNode?.AppID == null)
+            {
+                return;
+            }
 
             var result = await ShowDesfireAppKeyDialogAsync(appNode.AppID.Value);
-            if (result == null) return;
+            if (result == null)
+            {
+                return;
+            }
 
             var (keyHex, keyType, keyNo) = result.Value;
 
@@ -662,7 +678,10 @@ namespace RFiDGear.ViewModel
             {
                 using (var device = ReaderDevice.Instance)
                 {
-                    if (device == null) return;
+                    if (device == null)
+                    {
+                        return;
+                    }
                     Mouse.OverrideCursor = Cursors.AppStarting;
                     try
                     {
@@ -693,16 +712,8 @@ namespace RFiDGear.ViewModel
 
                         if (await device.ReadMifareUltralightSinglePage(cnVM.PageNumber) == ERROR.NoError)
                         {
-                            //var dataToShow = ByteArrayConverter.GetStringFrom(device.MifareUltralightPageData);
-                            /*
-                            for (var i = (ByteArrayConverter.GetStringFrom(device.MifareUltralightPageData).Length) - 2; i > 0; i -= 2)
-                            {
-                                dataToShow = dataToShow.Insert(i, " ");
-                            }
-                            */
                             cnVM.Children.Add(
                                 new RFiDChipGrandChildLayerViewModel(
-                                    //string.Format("Data: {0}", dataToShow)));
                             string.Format("Data: {0}", null)));
 
                             cnVM.IsAuthenticated = true;
@@ -719,7 +730,7 @@ namespace RFiDGear.ViewModel
                             {
                                 if (device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data != null)
                                 {
-                                    gcVM.MifareClassicDataBlock.Data = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data; //device.currentSector[gcVM.DataBlockNumber];
+                                    gcVM.MifareClassicDataBlock.Data = device.Sector.DataBlock.First(x => x.DataBlockNumberSectorBased == gcVM.DataBlockNumber).Data;
                                     gcVM.IsAuthenticated = true;
                                 }
                                 else

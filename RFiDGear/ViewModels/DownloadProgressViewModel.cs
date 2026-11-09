@@ -20,9 +20,13 @@ namespace RFiDGear.ViewModel
         private void Cancel()
         {
             if (OnCancel != null)
+            {
                 OnCancel(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         #endregion
@@ -72,9 +76,13 @@ namespace RFiDGear.ViewModel
         public virtual void RequestClose()
         {
             if (OnCloseRequest != null)
+            {
                 OnCloseRequest(this);
+            }
             else
+            {
                 Close();
+            }
         }
 
         public event EventHandler DialogClosing;

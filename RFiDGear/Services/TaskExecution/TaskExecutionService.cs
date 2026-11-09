@@ -604,7 +604,9 @@ namespace RFiDGear.Services.TaskExecution
                 foreach (var item in request.TaskHandler.TaskCollection)
                 {
                     if (item is IGenericTask t)
+                    {
                         t.ExecutionState = TaskExecutionState.NotStarted;
+                    }
 
                     (item as ITaskOutcomeDetails)?.ClearOutcomeDetails();
                 }

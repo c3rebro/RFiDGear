@@ -93,7 +93,9 @@ namespace RFiDGear.HIL.Tests
                 finally
                 {
                     if (File.Exists(payloadPath))
+                    {
                         File.Delete(payloadPath);
+                    }
 
                     _fixture.Host!.Execution.ResetStatus();
                 }

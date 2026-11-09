@@ -70,7 +70,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 {
                     var lang = _getConfiguredLanguage();
                     if (lang != null)
+                    {
                         return lang == "german" ? "de-DE" : "en-US";
+                    }
                 }
                 return CultureInfo.CurrentUICulture.Name;
             }

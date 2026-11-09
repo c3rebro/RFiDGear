@@ -287,11 +287,6 @@ namespace RFiDGear.Models
             C1x &= 0x03;
             C1x |= C2x;
             C1x &= 0x07; //now we have C1³ + C2³ + C3³ as integer in C1x see mifare manual
-                         //
-                         //            if (C1x == 4)
-                         //                isTransportConfiguration = true;
-                         //            else
-                         //                isTransportConfiguration = false;
 
             _sector.SectorAccessCondition = sectorTrailer_AccessBits[(int)C1x];
 
@@ -317,7 +312,6 @@ namespace RFiDGear.Models
             sab.d_data_block2_access_bits.c2 = (short)tmpAccessBitCx;
 
             C1x |= C2x;
-            //C2 &= 0xF8;
             C2x >>= 3;
 
             tmpAccessBitCx = C2x;

@@ -34,7 +34,9 @@ namespace RFiDGear.HIL.Tests
         public void SkipIfNoHardware()
         {
             if (SkipReason != null)
+            {
                 throw Xunit.Sdk.SkipException.ForSkip(SkipReason);
+            }
         }
 
         /// <inheritdoc/>
@@ -46,11 +48,15 @@ namespace RFiDGear.HIL.Tests
             {
                 // Try Elatec TWN4 first (auto-discovers USB readers).
                 if (await TryConnectReaderAsync(ReaderTypes.Elatec))
+                {
                     return;
+                }
 
                 // Fall back to PC/SC.
                 if (await TryConnectReaderAsync(ReaderTypes.PCSC))
+                {
                     return;
+                }
 
                 SkipReason = "No reader detected. Connect an Elatec TWN4 or PC/SC reader with a DESFire card.";
             });
@@ -72,7 +78,10 @@ namespace RFiDGear.HIL.Tests
         /// </summary>
         internal async Task CleanupTestAidAsync()
         {
-            if (Host == null) return;
+            if (Host == null)
+            {
+                return;
+            }
 
             try
             {
@@ -120,10 +129,16 @@ namespace RFiDGear.HIL.Tests
                 ReaderDevice.Reader = readerType;
 
                 var device = ReaderDevice.Instance;
-                if (device == null) return false;
+                if (device == null)
+                {
+                    return false;
+                }
 
                 var error = await device.ReadChipPublic();
-                if (error != ERROR.NoError) return false;
+                if (error != ERROR.NoError)
+                {
+                    return false;
+                }
 
                 var cardType = device.GenericChip?.CardType ?? CARD_TYPE.Unspecified;
                 if (!IsDesFire(cardType))

@@ -119,16 +119,22 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public async Task<Contracts.ProjectOpenResult> LoadAsync(string path, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(path))
+            {
                 return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.PathNotFound);
+            }
 
             if (!File.Exists(path))
+            {
                 return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.PathNotFound);
+            }
 
             ct.ThrowIfCancellationRequested();
 
             // Atomically reserve the load slot. Fails immediately if load, execution, or edit is in progress.
             if (!_coordinator.TryBeginLoad())
+            {
                 return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Busy);
+            }
 
             var fileGateHeld = false;
             try
@@ -217,7 +223,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public void Load(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
+            {
                 throw new ArgumentException("Path must not be empty.", nameof(path));
+            }
 
             // Refuse before anything is reserved or read. Reading a project parses it on the UI thread (its
             // view models must be created there), so blocking that thread here waits for work only it can do:
@@ -233,8 +241,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             // dispatcher commit) apply. Blocks the calling thread until the load has finished.
             var result = Task.Run(() => LoadAsync(path)).GetAwaiter().GetResult();
             if (!result.Success)
+            {
                 throw new InvalidOperationException(
                     $"Failed to load project '{path}': {result.Error}");
+            }
         }
 #pragma warning restore CS0618
 
@@ -253,7 +263,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public void SaveAs(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
+            {
                 throw new ArgumentException("Path must not be empty.", nameof(path));
+            }
 
             WriteProject(path);
         }
@@ -262,7 +274,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public void ReplaceTaskCollection(IEnumerable<object> tasks)
         {
             if (tasks == null)
+            {
                 throw new ArgumentNullException(nameof(tasks));
+            }
 
             var collection = new ObservableCollection<object>(tasks);
 
