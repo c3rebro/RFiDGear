@@ -209,6 +209,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 OutputFolder = " out ",
                 OneFolderPerJob = true,
                 RemoveTemporaryReports = false,
+                UseStubJobs = true,
                 ReportLanguage = ReportLanguageChoice.English,
                 DefaultProjectPath = "check.rfPrj",
                 MemoryProjectPath = string.Empty,
@@ -229,6 +230,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
                 Assert.NotEqual(Environment.CurrentManagedThreadId, rig.Editor.LoadThreadId);
                 Assert.Equal(("out", true, false, true, false), (vm.OutputFolder.Value, vm.OneFolderPerJob, vm.RemoveTemporaryReports, vm.IsEnglishReport, vm.IsGermanReport));
+                Assert.True(vm.UseStubJobs);
                 Assert.Equal(("check.rfPrj", string.Empty), (vm.DefaultProject.Value, vm.MemoryProject.Value));
                 Assert.Equal(("srv", "orders", "dbo.T_Orders"), (vm.DatabaseServer, vm.DatabaseName, vm.DatabaseTable));
                 Assert.Equal(new[] { "Greeting", "Closing" }, vm.TextBlocks.Select(block => block.Name));
@@ -298,6 +300,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 vm => vm.OutputFolder.Value = "other",
                 vm => vm.OneFolderPerJob = false,
                 vm => vm.RemoveTemporaryReports = true,
+                vm => vm.UseStubJobs = false,
                 vm => vm.IsGermanReport = true,
                 vm => vm.DefaultProject.Value = "other.rfPrj",
                 vm => vm.MemoryProject.Value = "memory.rfPrj",
@@ -306,7 +309,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 vm => vm.DatabaseTable = "other",
                 vm => vm.TextBlocks[0].Name = "Other",
                 vm => vm.TextBlocks[0].Content = "other",
-                vm => vm.TextBlocks.RemoveAt(1),
+                vm =>
+                {
+                    vm.SelectedTextBlock = vm.TextBlocks[1];
+                    vm.RemoveTextBlockCommand.Execute(null);
+                },
                 vm => vm.AddTextBlockCommand.Execute(null),
             };
 
@@ -316,9 +323,15 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 {
                     using var rig = await Rig.OpenAsync(Loaded());
 
+                    var raised = new List<string?>();
+                    rig.Vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
                     change(rig.Vm);
 
                     Assert.True(rig.Vm.IsDirty, "a change of " + change.Method.Name + " was not noticed");
+
+                    // And the window is told, so that what depends on it (a message about an earlier save) follows.
+                    Assert.True(raised.Contains(nameof(SettingsViewModel.IsDirty)), "a change of " + change.Method.Name + " was not announced");
                 }
             });
         }

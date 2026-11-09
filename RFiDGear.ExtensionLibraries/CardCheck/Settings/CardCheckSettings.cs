@@ -72,6 +72,12 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         /// <summary>How reports are kept.</summary>
         public ReportSettings Report { get; init; } = new ReportSettings();
 
+        /// <summary>
+        /// Whether the assistant is in test mode: it works on made-up stub orders and does not use the order database.
+        /// Off unless the operator switches it on.
+        /// </summary>
+        public bool UseStubJobs { get; init; }
+
         /// <summary>The project run for a check unless another one is chosen; empty until entered.</summary>
         public string DefaultProjectPath { get; init; } = string.Empty;
 

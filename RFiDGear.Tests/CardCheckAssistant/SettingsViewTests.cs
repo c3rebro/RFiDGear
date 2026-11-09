@@ -101,6 +101,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                     Assert.Equal(("srv", "orders", "dbo.T_Orders"), (Named<TextBox>(view, "ServerBox").Text, Named<TextBox>(view, "DatabaseBox").Text, Named<TextBox>(view, "TableBox").Text));
                     Assert.True(Named<CheckBox>(view, "OneFolderPerJobBox").IsChecked);
                     Assert.False(Named<CheckBox>(view, "RemoveTemporaryReportsBox").IsChecked);
+                    Assert.True(Named<CheckBox>(view, "UseStubJobsBox").IsChecked);
                     Assert.True(Named<RadioButton>(view, "EnglishReportButton").IsChecked);
                     Assert.False(Named<RadioButton>(view, "GermanReportButton").IsChecked);
                     Assert.Equal("out", Descendants<TextBox>(Named<ContentControl>(view, "OutputFolderField")).Single().Text);
@@ -115,6 +116,13 @@ namespace RFiDGear.Tests.CardCheckAssistant
                     Named<RadioButton>(view, "GermanReportButton").IsChecked = true;
                     Assert.Equal("other", vm.DatabaseServer);
                     Assert.True(vm.IsGermanReport);
+
+                    // The test mode check box is the test mode and nothing else, in both directions.
+                    Named<CheckBox>(view, "UseStubJobsBox").IsChecked = false;
+                    Assert.False(vm.UseStubJobs);
+                    Assert.True(vm.OneFolderPerJob);
+                    vm.UseStubJobs = true;
+                    Assert.True(Named<CheckBox>(view, "UseStubJobsBox").IsChecked);
 
                     // Every text box has a name of its own for a screen reader, in the language of the page, and the three
                     // path editors, which share one template, are told apart.

@@ -44,6 +44,7 @@ namespace RFiDGear.Tests.CardCheck
         {
             Database = new DatabaseSettings { Server = SecretServer, Database = SecretDatabase, Table = "dbo.T_CardCheck" },
             Report = new ReportSettings { OutputPath = "D:\\" + SecretFolder, CreateSubdirectory = true, RemoveTemporaryReports = true, DefaultLanguage = ReportLanguage.English },
+            UseStubJobs = true,
             DefaultProjectPath = "D:\\projects\\check.rfPrj",
             CustomProjectPath = "D:\\projects\\custom \u00C4\u00D6\u00DC.rfPrj",
             LastProjectFolder = "D:\\projects",
@@ -60,6 +61,7 @@ namespace RFiDGear.Tests.CardCheck
         {
             Assert.Equal(expected.Database, actual.Database);
             Assert.Equal(expected.Report, actual.Report);
+            Assert.Equal(expected.UseStubJobs, actual.UseStubJobs);
             Assert.Equal(expected.DefaultProjectPath, actual.DefaultProjectPath);
             Assert.Equal(expected.CustomProjectPath, actual.CustomProjectPath);
             Assert.Equal(expected.LastProjectFolder, actual.LastProjectFolder);
@@ -161,6 +163,7 @@ namespace RFiDGear.Tests.CardCheck
             Assert.Equal(string.Empty, defaults.Report.OutputPath);
             Assert.False(defaults.Report.CreateSubdirectory);
             Assert.False(defaults.Report.RemoveTemporaryReports);
+            Assert.False(defaults.UseStubJobs);
             Assert.Equal(ReportLanguage.German, defaults.Report.DefaultLanguage);
             Assert.Empty(defaults.TextTemplates);
             Assert.Null(defaults.LegacyImport);
@@ -319,6 +322,16 @@ namespace RFiDGear.Tests.CardCheck
             Assert.Equal("D:\\x", settings.Report.OutputPath);
             Assert.Equal(ReportLanguage.German, settings.Report.DefaultLanguage);
             Assert.Equal("T_CardCheck", settings.Database.Table);
+        }
+
+        [Fact]
+        public void Load_TheTestOption_IsOffUnlessTheFileSaysOtherwise()
+        {
+            WriteFile("{\"schemaVersion\":1,\"settings\":{\"defaultProjectPath\":\"x\"}}");
+            Assert.False(Store().Load().Settings.UseStubJobs);
+
+            WriteFile("{\"schemaVersion\":1,\"settings\":{\"useStubJobs\":true}}");
+            Assert.True(Store().Load().Settings.UseStubJobs);
         }
 
         [Theory]

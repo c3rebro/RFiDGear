@@ -53,6 +53,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         /// <summary>Where the order database is.</summary>
         public DatabaseData Database { get; init; } = new DatabaseData(string.Empty, string.Empty, "T_CardCheck");
 
+        /// <summary>Whether the assistant is in test mode and works on stub jobs instead of the order database.</summary>
+        public bool UseStubJobs { get; init; }
+
         /// <summary>The text blocks, in the order shown.</summary>
         public IReadOnlyList<TextBlockData> TextBlocks { get; init; } = new List<TextBlockData>();
     }

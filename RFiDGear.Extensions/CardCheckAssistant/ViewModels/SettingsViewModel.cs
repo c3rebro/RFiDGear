@@ -71,6 +71,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private bool _isSaving;
         private bool _oneFolderPerJob;
         private bool _removeTemporaryReports;
+        private bool _useStubJobs;
         private ReportLanguageChoice _reportLanguage = ReportLanguageChoice.German;
         private string _databaseServer = string.Empty;
         private string _databaseName = string.Empty;
@@ -186,6 +187,19 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             set
             {
                 if (SetProperty(ref _removeTemporaryReports, value))
+                {
+                    OnDraftChanged();
+                }
+            }
+        }
+
+        /// <summary>Whether the assistant is in test mode and works on stub jobs instead of the order database.</summary>
+        public bool UseStubJobs
+        {
+            get => _useStubJobs;
+            set
+            {
+                if (SetProperty(ref _useStubJobs, value))
                 {
                     OnDraftChanged();
                 }
@@ -386,6 +400,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OutputFolder.Value = data.OutputFolder;
             OneFolderPerJob = data.OneFolderPerJob;
             RemoveTemporaryReports = data.RemoveTemporaryReports;
+            UseStubJobs = data.UseStubJobs;
             SetReportLanguage(true, data.ReportLanguage);
             DefaultProject.Value = data.DefaultProjectPath;
             MemoryProject.Value = data.MemoryProjectPath;
@@ -408,6 +423,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OutputFolder = OutputFolder.Value.Trim(),
             OneFolderPerJob = _oneFolderPerJob,
             RemoveTemporaryReports = _removeTemporaryReports,
+            UseStubJobs = _useStubJobs,
             ReportLanguage = _reportLanguage,
             DefaultProjectPath = DefaultProject.Value.Trim(),
             MemoryProjectPath = MemoryProject.Value.Trim(),
@@ -433,6 +449,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             a.OutputFolder == b.OutputFolder
             && a.OneFolderPerJob == b.OneFolderPerJob
             && a.RemoveTemporaryReports == b.RemoveTemporaryReports
+            && a.UseStubJobs == b.UseStubJobs
             && a.ReportLanguage == b.ReportLanguage
             && a.DefaultProjectPath == b.DefaultProjectPath
             && a.MemoryProjectPath == b.MemoryProjectPath

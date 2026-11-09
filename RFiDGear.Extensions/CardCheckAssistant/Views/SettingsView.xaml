@@ -168,6 +168,14 @@
                     </StackPanel>
                 </GroupBox>
 
+                <GroupBox Header="{Binding Strings[SectionTest]}">
+                    <StackPanel>
+                        <CheckBox x:Name="UseStubJobsBox" IsChecked="{Binding UseStubJobs}"
+                                  Content="{Binding Strings[UseStubJobsLabel]}" />
+                        <TextBlock Style="{StaticResource HintText}" Text="{Binding Strings[UseStubJobsHint]}" />
+                    </StackPanel>
+                </GroupBox>
+
                 <GroupBox Header="{Binding Strings[SectionTextBlocks]}">
                     <StackPanel>
                         <TextBlock Style="{StaticResource HintText}" Margin="0,0,0,6" Text="{Binding Strings[TextBlocksHint]}" />
