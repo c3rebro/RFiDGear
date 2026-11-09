@@ -249,6 +249,15 @@ namespace RFiDGear.Services.TaskExecution
         /// so the extension host result and the service logs share one identity.
         /// </summary>
         public string RunId { get; set; }
+
+        /// <summary>
+        /// When <c>true</c>, a program task whose text is <c>%EXIT</c> ends the run instead of closing the application: the
+        /// task counts as successful, the tasks after it are not started and are not held against the run (they are
+        /// reported as not reached), and the application stays open. A run started for an extension sets it, because the
+        /// page that started the run has to stay open to show the result. The main window leaves it off, and then the task
+        /// closes the application, as it always did.
+        /// </summary>
+        public bool KeepApplicationOpen { get; set; }
     }
 
     /// <summary>
@@ -316,6 +325,7 @@ namespace RFiDGear.Services.TaskExecution
         private readonly IDispatcherTimerAdapter taskTimeout;
         private readonly ITaskExecutionLogger logger;
         private TaskExecutionRequest activeRequest;
+        private int endedByProjectAt = -1;
         private static readonly HashSet<ERROR> RoutedErrorLevels = new HashSet<ERROR>
         {
             ERROR.AuthFailure,
@@ -599,6 +609,8 @@ namespace RFiDGear.Services.TaskExecution
 
         private async Task<TaskLoopTerminalStatus> RunTaskLoopAsync(TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors, GenericChipModel genericChip, ReaderDevice device, string runId, CancellationToken cancellationToken)
         {
+            endedByProjectAt = -1;
+
             if (request.TaskHandler?.TaskCollection != null)
             {
                 foreach (var item in request.TaskHandler.TaskCollection)
@@ -751,15 +763,22 @@ namespace RFiDGear.Services.TaskExecution
             {
                 request.NotifyTreeViewChanged?.Invoke();
                 taskTimeout.Stop();
+                // A run that the project ended with %EXIT got to the end of what the project wanted: the tasks after the
+                // exit are not held against it.
                 taskLoopResult = TaskLoopTerminalEvaluator.Evaluate(
-                    descriptors?.Count ?? 0,
+                    endedByProjectAt >= 0 ? endedByProjectAt + 1 : descriptors?.Count ?? 0,
                     observations,
                     request?.ErrorRouting,
                     selectedTaskOnly: request?.RunSelectedOnly ?? false);
+
+                // The status is judged on the tasks up to the exit, but the summary accounts for the whole project: the tasks
+                // after the exit were not started either.
+                var tasksAfterProjectExit = endedByProjectAt >= 0 ? (descriptors?.Count ?? 0) - endedByProjectAt - 1 : 0;
                 logger.LogInformation("TaskLoop.Summary", new
                 {
                     RunId = runId,
-                    taskLoopResult.TotalTasks,
+                    TotalTasks = descriptors?.Count ?? 0,
+                    EndedByProjectAt = endedByProjectAt >= 0 ? endedByProjectAt : (int?)null,
                     taskLoopResult.Executed,
                     taskLoopResult.Skipped,
                     taskLoopResult.Failed,
@@ -768,7 +787,7 @@ namespace RFiDGear.Services.TaskExecution
                     taskLoopResult.AcceptedFailures,
                     taskLoopResult.UnhandledFailures,
                     taskLoopResult.InvalidSkips,
-                    taskLoopResult.NotReached,
+                    NotReached = taskLoopResult.NotReached + tasksAfterProjectExit,
                     TerminalStatus = taskLoopResult.TerminalStatus.ToString(),
                     Timestamp = DateTimeOffset.UtcNow
                 });
@@ -1079,6 +1098,30 @@ namespace RFiDGear.Services.TaskExecution
             }
         }
 
+        // Starts the program of a program task. A project that asks for the application to close (the task %EXIT) closes it
+        // when the main window runs the project. A run that has to keep the application open ends at that task instead.
+        private void StartProgram(CommonTaskViewModel program, TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors)
+        {
+            if (!request.KeepApplicationOpen || !program.IsExitRequest)
+            {
+                program.ExecuteProgramCommand.Execute(null);
+                return;
+            }
+
+            program.CompleteExitRequest();
+            endedByProjectAt = CurrentTaskIndex;
+            logger.LogInformation("TaskLoop.ProjectExit", new
+            {
+                RunId = result?.RunId,
+                TaskPosition = CurrentTaskIndex,
+                TasksAfter = descriptors.Count - CurrentTaskIndex - 1,
+                Timestamp = DateTimeOffset.UtcNow
+            });
+
+            // The loop ends when the index is past the last task; the next task is not started.
+            CurrentTaskIndex = descriptors.Count;
+        }
+
         private async Task<bool> HandleCommonTaskAsync(CommonTaskViewModel commonTask, TaskExecutionRequest request, TaskExecutionResult result, IReadOnlyList<TaskDescriptor> descriptors, GenericChipModel genericChip, ReaderDevice device)
         {
             (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).GenericChip = genericChip;
@@ -1252,7 +1295,7 @@ namespace RFiDGear.Services.TaskExecution
 
                         if (taskModel.SelectedExecuteConditionErrorLevel == ERROR.Empty)
                         {
-                            (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
+                            StartProgram(request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel, request, result, descriptors);
                             executed = true;
                         }
                         else
@@ -1261,7 +1304,7 @@ namespace RFiDGear.Services.TaskExecution
                             {
                                 if ((request.TaskHandler.TaskCollection[targetTaskIndex] as IGenericTask).CurrentTaskErrorLevel == taskModel.SelectedExecuteConditionErrorLevel)
                                 {
-                                    (request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel).ExecuteProgramCommand.Execute(null);
+                                    StartProgram(request.TaskHandler.TaskCollection[CurrentTaskIndex] as CommonTaskViewModel, request, result, descriptors);
                                     executed = true;
                                 }
                                 else

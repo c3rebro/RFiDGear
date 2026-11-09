@@ -86,6 +86,12 @@ namespace RFiDGear.Contracts
         /// (in this release the host configures no stage timeouts, so that case cannot currently happen).
         /// </para>
         /// <para>
+        /// A project may end with a program task whose text is <c>%EXIT</c>, which closes RFiDGear when the main window
+        /// runs the project. In a run started through this method it does not: it ends the run at that task as a normal
+        /// finish. The task counts as successful, the tasks after it are not started and appear as not reached, and the
+        /// outcome is judged on the tasks that ran. RFiDGear stays open and the result is returned as usual.
+        /// </para>
+        /// <para>
         /// Cancellation: cancellation is honoured only at safe task boundaries.
         /// A task that has already started completes before the run stops; no card operation is
         /// interrupted and none is retried. The result has <see cref="ExecutionOutcome.Failure"/> and
