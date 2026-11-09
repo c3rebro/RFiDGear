@@ -32,6 +32,14 @@ The original German help includes a concise hardware and OS checklist:
 * At least one PC/SC-compatible encoder—tested examples include HID/Omnikey 5x21 devices, Sciel SCL3711, and ACR 122U
 * Optional: the LibLogicalAccess provider stack supplied with the installer
 
+## Android Support
+
+Join the GoogleGroup and become a tester:
+
+* Load a prebuilt RFiDGear project into the Android App
+* Perform a QuickCheck on Android
+* [GoogleGroup](https://groups.google.com/g/rfidgear/members/)
+  
 ## Task model and supported operations
 
 RFiDGear organizes programming steps as sequential “tasks.” Each task has an index that drives execution order, a user-defined label, and an internal error code captured during execution. Tasks can also depend on the outcome of an earlier task (index + expected error code) before they run. They can be executed individually, as a batch, or automatically when a new chip is detected.
