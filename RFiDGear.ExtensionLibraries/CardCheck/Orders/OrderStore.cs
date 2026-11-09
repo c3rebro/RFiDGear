@@ -10,6 +10,8 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+using static RFiDGear.ExtensionLibraries.CardCheck.OrderFailures;
+
 namespace RFiDGear.ExtensionLibraries.CardCheck
 {
     /// <summary>The SQL implementation of <see cref="IOrderStore"/>.</summary>
@@ -193,18 +195,6 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         private static string Text(DbDataReader reader, int column, string fallback) =>
             reader.IsDBNull(column) ? fallback : Convert.ToString(reader.GetValue(column), CultureInfo.CurrentCulture) ?? fallback;
 
-        private static Failure MissingId() =>
-            new Failure(FailureKind.InvalidInput, "orders.id.missing", "No order was given.");
-
-        private static Failure EmptyReport() =>
-            new Failure(FailureKind.InvalidInput, "orders.report.empty", "A report has no content.");
-
-        private static Failure NoOrder() =>
-            new Failure(FailureKind.NotFound, "orders.notFound", "There is no such order.");
-
-        private static Failure NoReport() =>
-            new Failure(FailureKind.NotFound, "orders.report.notFound", "The order has no stored report.");
-
         private static DbCommand Command(DbConnection connection, DbTransaction? transaction, string text, string orderId)
         {
             var command = connection.CreateCommand();
@@ -266,7 +256,7 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
             }
             catch (Exception ex) when (ex is OperationCanceledException || cancellationToken.IsCancellationRequested)
             {
-                return Result<T>.Fail(new Failure(FailureKind.Cancelled, "orders.cancelled", "The call was cancelled."));
+                return Result<T>.Fail(Cancelled());
             }
             catch (Exception ex)
             {
