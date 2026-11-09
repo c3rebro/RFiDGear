@@ -19,7 +19,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         {
             var load = _store.Load();
 
-            return new AssistantDefaults(load.Settings.DefaultProjectPath, load.Settings.LastProjectFolder);
+            return new AssistantDefaults(load.Settings.DefaultProjectPath, load.Settings.LastProjectFolder)
+            {
+                UseStubJobs = load.Settings.UseStubJobs,
+            };
         }
 
         /// <inheritdoc/>

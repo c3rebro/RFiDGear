@@ -61,6 +61,23 @@ in the Extensions menu of the main window.
   changes asks first. A settings file of a newer version, or one that cannot be
   read, is shown as such and is never saved over. After a save the page reads
   its starting values again (a project that is already in the field stays).
+- Has a **test mode** for trying a check with only a reader and a card, when
+  there is no order database or no order in it. It is switched on with the
+  check box in the Settings window ("Test mode: use stub jobs", saved, off by
+  default). While it is on, the page shows a notice and a drop-down of five
+  made-up jobs (job numbers `STUB-1001` to `STUB-1005`). Picking one fills in
+  the job and the chip number and, where the report field is empty (or still
+  holds the file the page proposed), proposes the report file in a `Test`
+  folder: below the report folder of the settings if it is set and exists,
+  otherwise in `%TEMP%\RFiDGear\CardCheckAssistant\Test`, with a folder for
+  each job if the settings ask for one. The folder is made when a job is
+  picked, and a proposal that arrives after a run was started is dropped. What
+  the operator typed is never replaced. Switching the mode off takes back the
+  numbers and the report file a picked job filled in, unless they were changed
+  since. The jobs are kept in memory for as long as the window lives, and in
+  this mode the order database is never read or written; **Test connection**
+  in the Settings window still tests the real one. The drop-down is disabled
+  while a run is going, like the other fields.
 - Does **not** offer, for now, to take over the settings of the old WinUI Card
   Check Assistant. The code is kept (a question with "Import", "Not now" and
   "Never ask again", then a summary to confirm; the old files are only read,

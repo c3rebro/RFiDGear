@@ -103,7 +103,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant
 
             var dialogs = new OpenFileDialogService();
             var viewModel = new CardCheckAssistantViewModel(
-                host, dispatcher, dialogs, null, services.Settings, services.ImportOffer, new SettingsDialog(services.Editor, dialogs));
+                host, dispatcher, dialogs, null, services.Settings, services.ImportOffer, new SettingsDialog(services.Editor, dialogs),
+                services.Jobs, services.TestReports);
 
             try
             {

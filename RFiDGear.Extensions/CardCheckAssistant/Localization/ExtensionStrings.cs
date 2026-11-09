@@ -117,6 +117,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string SectionTest = "SectionTest";
             public const string UseStubJobsLabel = "UseStubJobsLabel";
             public const string UseStubJobsHint = "UseStubJobsHint";
+            public const string TestModeNotice = "TestModeNotice";
+            public const string JobsLabel = "JobsLabel";
+            public const string NoJobsText = "NoJobsText";
             public const string OutputFolderLabel = "OutputFolderLabel";
             public const string OneFolderPerJobLabel = "OneFolderPerJobLabel";
             public const string RemoveTemporaryReportsLabel = "RemoveTemporaryReportsLabel";
@@ -246,7 +249,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.SectionTextBlocks] = "Text blocks",
             [Keys.SectionTest] = "Test mode",
             [Keys.UseStubJobsLabel] = "Test mode: use stub jobs",
-            [Keys.UseStubJobsHint] = "Saved for the test mode that is being added; it has no effect yet. Test connection always tests the real order database.",
+            [Keys.UseStubJobsHint] = "Stub jobs are made up. The order database is not used, and picking a job proposes a report file in a Test folder. Switch this off for real work. Test connection still tests the real order database.",
+            [Keys.TestModeNotice] = "Test mode: the jobs are made up and the order database is not used. Picking a job proposes a report file in a Test folder.",
+            [Keys.JobsLabel] = "Stub job (pick one to fill in the job and chip number)",
+            [Keys.NoJobsText] = "There are no stub jobs.",
             [Keys.OutputFolderLabel] = "Folder for the reports",
             [Keys.OneFolderPerJobLabel] = "Make a folder for each job (named after the job number)",
             [Keys.RemoveTemporaryReportsLabel] = "Remove the working reports when a check is finished",
@@ -376,7 +382,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.SectionTextBlocks] = "Textbausteine",
             [Keys.SectionTest] = "Testmodus",
             [Keys.UseStubJobsLabel] = "Testmodus: Testaufträge verwenden",
-            [Keys.UseStubJobsHint] = "Gespeichert für den Testmodus, der gerade entsteht; er hat noch keine Wirkung. Der Verbindungstest prüft immer die echte Auftragsdatenbank.",
+            [Keys.UseStubJobsHint] = "Testaufträge sind erfunden. Die Auftragsdatenbank wird nicht verwendet, und beim Auswählen eines Auftrags wird eine Berichtsdatei in einem Ordner Test vorgeschlagen. Für die echte Arbeit ausschalten. Der Verbindungstest prüft weiterhin die echte Auftragsdatenbank.",
+            [Keys.TestModeNotice] = "Testmodus: Die Aufträge sind erfunden und die Auftragsdatenbank wird nicht verwendet. Beim Auswählen eines Auftrags wird eine Berichtsdatei in einem Ordner Test vorgeschlagen.",
+            [Keys.JobsLabel] = "Testauftrag (auswählen, um Auftrags- und Chipnummer einzutragen)",
+            [Keys.NoJobsText] = "Es gibt keine Testaufträge.",
             [Keys.OutputFolderLabel] = "Ordner für die Berichte",
             [Keys.OneFolderPerJobLabel] = "Für jeden Auftrag einen Ordner anlegen (benannt nach der Auftragsnummer)",
             [Keys.RemoveTemporaryReportsLabel] = "Arbeitsberichte entfernen, wenn eine Prüfung abgeschlossen ist",

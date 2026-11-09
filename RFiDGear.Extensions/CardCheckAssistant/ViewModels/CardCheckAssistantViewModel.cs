@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -58,15 +60,23 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private readonly IAssistantSettings _settings;
         private readonly IImportOffer _importOffer;
         private readonly ISettingsDialog? _settingsDialog;
+        private readonly IJobSource _jobSource;
+        private readonly ITestReportTarget _testReports;
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
         private readonly ObservableCollection<TaskOutcomeRowViewModel> _rows = new ObservableCollection<TaskOutcomeRowViewModel>();
+        private readonly ObservableCollection<JobEntry> _jobs = new ObservableCollection<JobEntry>();
 
         private int _disposed;
         private int _cancellationDisposed;
         private int _opened;
+        private int _applyGeneration;
         private Task _openTask = Task.CompletedTask;
         private Task _persistChain = Task.CompletedTask;
+        private Task _proposalTask = Task.CompletedTask;
         private AssistantDefaults _defaults = AssistantDefaults.None;
+        private bool _isTestMode;
+        private JobEntry? _selectedJob;
+        private string _proposedReportPath = string.Empty;
         private string _projectPath = string.Empty;
         private string _jobNumber = string.Empty;
         private string _chipNumber = string.Empty;
@@ -86,6 +96,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <param name="settings">What the page remembers between windows; nothing when omitted.</param>
         /// <param name="importOffer">The one-time offer to import the old assistant's settings; none when omitted.</param>
         /// <param name="settingsDialog">Opens the settings window; when omitted the page has no settings button.</param>
+        /// <param name="jobSource">The jobs of the test mode; none when omitted.</param>
+        /// <param name="testReports">Where the reports of a test run go; nowhere when omitted.</param>
+        [SuppressMessage("Major Code Smell", "S107:Methods should not have too many parameters", Justification = "The seams of the page are given one by one so that a test supplies only the ones it needs; the extension class is the one place that puts them together.")]
         public CardCheckAssistantViewModel(
             IRFiDGearExtensionHost host,
             Dispatcher dispatcher,
@@ -93,7 +106,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             IPathChecker? pathChecker = null,
             IAssistantSettings? settings = null,
             IImportOffer? importOffer = null,
-            ISettingsDialog? settingsDialog = null)
+            ISettingsDialog? settingsDialog = null,
+            IJobSource? jobSource = null,
+            ITestReportTarget? testReports = null)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
@@ -102,6 +117,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             _settings = settings ?? AssistantServices.None.Settings;
             _importOffer = importOffer ?? AssistantServices.None.ImportOffer;
             _settingsDialog = settingsDialog;
+            _jobSource = jobSource ?? AssistantServices.None.Jobs;
+            _testReports = testReports ?? AssistantServices.None.TestReports;
 
             Strings = new LocalizedStrings(SafeRead(() => host.AppContext.UICultureName, string.Empty));
             RunCommand = new AsyncCommand(RunAsync, () => CanRun, OnUnhandledRunFailure);
@@ -134,6 +151,52 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         /// <summary>The result list, in the order the host delivered it.</summary>
         public ObservableCollection<TaskOutcomeRowViewModel> Rows => _rows;
+
+        /// <summary>
+        /// Whether the page is in test mode: it offers made-up jobs and the order database is not used. It follows the
+        /// setting, which is read when the window opens and again after the settings were saved.
+        /// </summary>
+        public bool IsTestMode
+        {
+            get => _isTestMode;
+            private set
+            {
+                if (SetProperty(ref _isTestMode, value))
+                {
+                    OnPropertyChanged(nameof(HasNoJobs));
+                }
+            }
+        }
+
+        /// <summary>The jobs of the test mode, in the order the source gave them; empty when the page is not in test mode.</summary>
+        public ObservableCollection<JobEntry> Jobs => _jobs;
+
+        /// <summary>Whether the test mode has no job to offer.</summary>
+        public bool HasNoJobs => _isTestMode && _jobs.Count == 0;
+
+        /// <summary>
+        /// The job picked from the list. Picking one fills in its job and chip number, and, where the report field is empty
+        /// or still holds the folder the page itself proposed, proposes the report file in the Test folder. What the
+        /// operator typed is never replaced.
+        /// </summary>
+        public JobEntry? SelectedJob
+        {
+            get => _selectedJob;
+            set
+            {
+                if (!SetProperty(ref _selectedJob, value) || value == null)
+                {
+                    return;
+                }
+
+                JobNumber = value.JobNumber;
+                ChipNumber = value.ChipNumber;
+                _proposalTask = ProposeReportTargetAsync(value);
+            }
+        }
+
+        /// <summary>The proposal of the report file for the job picked last; completes when it was made or dropped.</summary>
+        internal Task PendingReportProposal => _proposalTask;
 
         /// <summary>The full path of the project file.</summary>
         public string ProjectPath
@@ -371,6 +434,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
             _result = null;
             _rows.Clear();
+            _jobs.Clear();
         }
 
         /// <summary>
@@ -414,8 +478,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         // operator has not entered one.
         private async Task ApplyDefaultsAsync()
         {
+            // A later call replaces an earlier one that is still waiting: what the older one found must not undo it.
+            var generation = ++_applyGeneration;
             var defaults = await Task.Run(_settings.Load);
-            if (IsDisposed)
+            if (IsDisposed || generation != _applyGeneration)
             {
                 return;
             }
@@ -424,6 +490,95 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             if (string.IsNullOrWhiteSpace(ProjectPath) && !string.IsNullOrWhiteSpace(defaults.DefaultProjectPath))
             {
                 ProjectPath = defaults.DefaultProjectPath;
+            }
+
+            await ApplyTestModeAsync(defaults.UseStubJobs, generation);
+        }
+
+        // The jobs of the test mode are listed on a worker thread and put on show on the window's thread. With the mode off
+        // there is nothing to list, and the page is as it was without it.
+        private async Task ApplyTestModeAsync(bool useStubJobs, int generation)
+        {
+            if (!useStubJobs)
+            {
+                LeaveTestMode();
+                return;
+            }
+
+            var token = _cancellation.Token;
+            var jobs = await Task.Run(() => _jobSource.ListAsync(token));
+            if (IsDisposed || generation != _applyGeneration)
+            {
+                return;
+            }
+
+            // The pick survives a new list as long as the job is still in it. It is not filled in again: the operator may
+            // have changed the numbers since.
+            var pickedId = _selectedJob?.Id;
+            _jobs.Clear();
+            foreach (var job in jobs)
+            {
+                _jobs.Add(job);
+            }
+
+            _selectedJob = pickedId == null ? null : _jobs.FirstOrDefault(job => job.Id == pickedId);
+            OnPropertyChanged(nameof(SelectedJob));
+            OnPropertyChanged(nameof(HasNoJobs));
+            IsTestMode = true;
+        }
+
+        private void LeaveTestMode()
+        {
+            // What the picked job filled in would go into the next real run: its numbers, if they were not changed since,
+            // and the report file the page proposed for it, which would send the next real report to the Test folder.
+            var picked = _selectedJob;
+            if (picked != null)
+            {
+                if (string.Equals(JobNumber, picked.JobNumber, StringComparison.Ordinal))
+                {
+                    JobNumber = string.Empty;
+                }
+
+                if (string.Equals(ChipNumber, picked.ChipNumber, StringComparison.Ordinal))
+                {
+                    ChipNumber = string.Empty;
+                }
+            }
+
+            if (_proposedReportPath.Length > 0 && string.Equals(ReportTargetPath, _proposedReportPath, StringComparison.Ordinal))
+            {
+                ReportTargetPath = string.Empty;
+            }
+
+            _proposedReportPath = string.Empty;
+            _jobs.Clear();
+            _selectedJob = null;
+            OnPropertyChanged(nameof(SelectedJob));
+            IsTestMode = false;
+        }
+
+        // The folder is made on a worker thread. The proposal is dropped if another job was picked meanwhile, the window
+        // closed or a run has started (the run has checked the report field already and it is not to change under it), and
+        // it only goes into a field that is empty or holds the page's own earlier proposal.
+        private async Task ProposeReportTargetAsync(JobEntry job)
+        {
+            try
+            {
+                var path = await Task.Run(() => _testReports.Prepare(job));
+                if (IsDisposed || IsBusy || _selectedJob == null || _selectedJob.Id != job.Id || string.IsNullOrWhiteSpace(path))
+                {
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(ReportTargetPath) || string.Equals(ReportTargetPath, _proposedReportPath, StringComparison.Ordinal))
+                {
+                    _proposedReportPath = path;
+                    ReportTargetPath = path;
+                }
+            }
+            catch (Exception)
+            {
+                // A report proposal is a convenience: the operator can still type the file.
             }
         }
 

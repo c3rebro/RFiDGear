@@ -53,16 +53,25 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
 
                 var editor = new SettingsEditor(store, databaseSettings => CardCheckServices.CreateOrderStore(databaseSettings, log));
 
+                // The jobs of the test mode are made up in memory and the reports of a test run have a folder of their own: no
+                // order database is reached from here. Without a usable report folder the Test folder is made in the
+                // fallback, which the test run moves into its sandbox like the settings.
+                var jobs = new StubJobSource(log);
+                var testReports = new TestReportTarget(
+                    store,
+                    CardCheckServices.CreateReportFiles(log),
+                    overridden ? root! : Path.Combine(Path.GetTempPath(), "RFiDGear", "CardCheckAssistant"));
+
                 if (!offerLegacyImport)
                 {
-                    return new AssistantServices(new SettingsMemory(store), AssistantServices.None.ImportOffer, editor);
+                    return new AssistantServices(new SettingsMemory(store), AssistantServices.None.ImportOffer, editor, jobs, testReports);
                 }
 
                 var importer = overridden
                     ? CardCheckServices.CreateLegacyImporter(store, root!, log)
                     : CardCheckServices.CreateLegacyImporter(store, log);
 
-                return new AssistantServices(new SettingsMemory(store), new ImportOfferService(importer, new ImportDialogs(), dispatcher), editor);
+                return new AssistantServices(new SettingsMemory(store), new ImportOfferService(importer, new ImportDialogs(), dispatcher), editor, jobs, testReports);
             }
             catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException)
             {

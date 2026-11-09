@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,6 +12,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
     /// <param name="LastProjectFolder">The folder the picker opens in when no project is entered; blank if unknown.</param>
     internal sealed record AssistantDefaults(string DefaultProjectPath, string LastProjectFolder)
     {
+        /// <summary>
+        /// Whether the assistant is in test mode: the page offers made-up jobs and the order database is not used. Off unless
+        /// the operator switched it on.
+        /// </summary>
+        public bool UseStubJobs { get; init; }
+
         /// <summary>Nothing is remembered.</summary>
         internal static AssistantDefaults None { get; } = new AssistantDefaults(string.Empty, string.Empty);
     }
@@ -47,10 +54,18 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
     /// <param name="Settings">What the page remembers.</param>
     /// <param name="ImportOffer">The one-time import offer.</param>
     /// <param name="Editor">What the settings UI reads, saves and tests.</param>
-    internal sealed record AssistantServices(IAssistantSettings Settings, IImportOffer ImportOffer, IAssistantSettingsEditor Editor)
+    /// <param name="Jobs">The jobs of the test mode.</param>
+    /// <param name="TestReports">Where the reports of a test run go.</param>
+    internal sealed record AssistantServices(
+        IAssistantSettings Settings,
+        IImportOffer ImportOffer,
+        IAssistantSettingsEditor Editor,
+        IJobSource Jobs,
+        ITestReportTarget TestReports)
     {
         /// <summary>Nothing remembered, nothing offered, nothing to edit: what the page does without a settings folder.</summary>
-        internal static AssistantServices None { get; } = new AssistantServices(new NoSettings(), new NoImportOffer(), new NoEditor());
+        internal static AssistantServices None { get; } =
+            new AssistantServices(new NoSettings(), new NoImportOffer(), new NoEditor(), new NoJobs(), new NoTestReports());
 
         private sealed class NoEditor : IAssistantSettingsEditor
         {
@@ -66,6 +81,18 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
                 database == null
                     ? throw new ArgumentNullException(nameof(database))
                     : Task.FromResult(cancellationToken.IsCancellationRequested ? ConnectionTestOutcome.Cancelled : ConnectionTestOutcome.Failed);
+        }
+
+        private sealed class NoJobs : IJobSource
+        {
+            public Task<IReadOnlyList<JobEntry>> ListAsync(CancellationToken cancellationToken) =>
+                Task.FromResult<IReadOnlyList<JobEntry>>(Array.Empty<JobEntry>());
+        }
+
+        private sealed class NoTestReports : ITestReportTarget
+        {
+            public string Prepare(JobEntry job) =>
+                job == null ? throw new ArgumentNullException(nameof(job)) : string.Empty;
         }
 
         private sealed class NoSettings : IAssistantSettings
