@@ -107,6 +107,15 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public void AListThatGetsShorterWhileItIsRead_GivesWhatWasReadBefore()
+        {
+            var children = ReaderSnapshotBuilder.ChildrenOf(new ShrinkingList(Chip("A", CARD_TYPE.EM4102), Chip("B", CARD_TYPE.LEGIC)));
+
+            Assert.Equal(new[] { "A", "B" }, children.Select(child => child.UID));
+            Assert.Empty(ReaderSnapshotBuilder.ChildrenOf(null));
+        }
+
+        [Fact]
         public void ANullChild_IsSkipped()
         {
             var root = Chip("R", CARD_TYPE.MIFARE);
@@ -174,6 +183,26 @@ namespace RFiDGear.Tests.Reader
             Assert.Equal(
                 new[] { 0x00, 0x40, 0x80, 0x83, 0x1100, 0x5000 },
                 types.Select(type => ReaderSnapshotBuilder.CredentialsOf(Chip("01", type))[0].TypeCode));
+        }
+
+        /// <summary>A list that says it holds one more child than it can give, as one that another thread just shortened.</summary>
+        private sealed class ShrinkingList : IReadOnlyList<GenericChipModel>
+        {
+            private readonly GenericChipModel[] items;
+
+            public ShrinkingList(params GenericChipModel[] items)
+            {
+                this.items = items;
+            }
+
+            public int Count => items.Length + 1;
+
+            public GenericChipModel this[int index] =>
+                index < items.Length ? items[index] : throw new ArgumentOutOfRangeException(nameof(index));
+
+            public IEnumerator<GenericChipModel> GetEnumerator() => ((IEnumerable<GenericChipModel>)items).GetEnumerator();
+
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         [Fact]

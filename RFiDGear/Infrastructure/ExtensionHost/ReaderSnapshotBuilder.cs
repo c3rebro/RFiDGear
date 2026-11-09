@@ -12,9 +12,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     /// immutable <see cref="ReaderSnapshot"/> extensions see. It copies what it needs and keeps no reference to the tree,
     /// and it takes no keys or card data because the tree holds none.
     /// <para>
-    /// The tree is changed by the provider's thread while it is being read, so every value is read once, the list of
-    /// children is copied in one go, and a node reached twice is skipped. Only the caller can make the values belong to
-    /// one moment, by building right after a read on the thread that made it.
+    /// The provider's thread may still be filling the tree while it is read here, so every value is read once, the
+    /// children are read by index and a list that gets shorter meanwhile gives what was read before, and a node reached
+    /// twice is skipped. That makes the build safe, not exact: only a build right after the read, on the thread that made
+    /// it, sees the tree as the read left it.
     /// </para>
     /// </summary>
     internal static class ReaderSnapshotBuilder
@@ -70,7 +71,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     credentials.Add(new CredentialInfo(uid.ToUpperInvariant(), (int)type, NameOf(type), credentials.Count == 0));
                 }
 
-                var children = ChildrenOf(node);
+                var children = ChildrenOf(node.Childs);
                 for (var i = children.Count - 1; i >= 0; i--)
                 {
                     pending.Push(children[i]);
@@ -84,23 +85,37 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         // for a number that is no member, which a [Flags] enum can hold. The code is what identifies the type.
         private static string NameOf(CARD_TYPE type) => Enum.GetName(type) ?? UnknownTypeName;
 
-        // A copy of the children, made in one go: the list may be changed by another thread while it is read, and a
-        // foreach over it would throw then.
-        private static List<GenericChipModel> ChildrenOf(GenericChipModel node)
+        /// <summary>
+        /// Copies the children of a node, one by one by index. The list may be changed by another thread while it is read:
+        /// one that grows gives what was there when the count was read, and one that gets shorter makes the indexer throw,
+        /// which ends the copy with what was read before. (A foreach over it, or <c>ToArray</c>, would throw at other
+        /// moments of the same race.)
+        /// </summary>
+        /// <param name="list">The children, or <c>null</c>.</param>
+        /// <returns>The children that could be read, without null entries.</returns>
+        internal static List<GenericChipModel> ChildrenOf(IReadOnlyList<GenericChipModel>? list)
         {
             var children = new List<GenericChipModel>();
-            var list = node.Childs;
             if (list == null)
             {
                 return children;
             }
 
-            foreach (var child in list.ToArray())
+            try
             {
-                if (child != null)
+                var count = list.Count;
+                for (var i = 0; i < count; i++)
                 {
-                    children.Add(child);
+                    var child = list[i];
+                    if (child != null)
+                    {
+                        children.Add(child);
+                    }
                 }
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // The list got shorter while it was read: what was read before is what there is.
             }
 
             return children;

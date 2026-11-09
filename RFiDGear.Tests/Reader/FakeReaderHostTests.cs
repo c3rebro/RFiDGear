@@ -31,6 +31,20 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public void TheSingleValues_ArePutRightAsTheRealBuilderDoes()
+        {
+            var reader = new FakeReaderHost { CurrentUID = " 04aa ", ChipTypeName = "Mifare1K" };
+
+            Assert.Equal(new CredentialInfo("04AA", 0x1100, "Mifare1K", true), Assert.Single(reader.CurrentSnapshot.Credentials));
+
+            // A name that is no card type is shown as it is, with code 0; a blank UID is no card.
+            reader.ChipTypeName = "Some other name";
+            Assert.Equal(new CredentialInfo("04AA", 0, "Some other name", true), Assert.Single(reader.CurrentSnapshot.Credentials));
+            reader.CurrentUID = "   ";
+            Assert.False(reader.CurrentSnapshot.HasCard);
+        }
+
+        [Fact]
         public void ShowingASnapshot_KeepsTheSingleValuesInStep_UntilOneOfThemIsSet()
         {
             var reader = new FakeReaderHost();

@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using RFiDGear.Contracts;
+using RFiDGear.Infrastructure;
 
 namespace RFiDGear.Tests.CardCheckAssistant
 {
@@ -420,12 +421,18 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 return new ReaderSnapshot(name, ReaderScanState.NoReader, Array.Empty<CredentialInfo>());
             }
 
-            var credentials = _currentUid == null
+            // As the real builder does: a blank UID is no card, a UID is trimmed and in upper case, and a name that is a card
+            // type gives its code (any other name is shown as it is, with code 0).
+            var uid = _currentUid?.Trim();
+            var credentials = string.IsNullOrEmpty(uid)
                 ? Array.Empty<CredentialInfo>()
-                : new[] { new CredentialInfo(_currentUid, 0, _chipTypeName ?? "Unknown", true) };
+                : new[] { new CredentialInfo(uid.ToUpperInvariant(), CodeOf(_chipTypeName), _chipTypeName ?? "Unknown", true) };
 
             return new ReaderSnapshot(name, ReaderScanState.Ready, credentials);
         }
+
+        private static int CodeOf(string? typeName) =>
+            Enum.TryParse<CARD_TYPE>(typeName, out var type) ? (int)type : 0;
 
         private sealed record ScriptedScan(ReaderSnapshot? Result, Exception? Failure, TaskCompletionSource<bool>? Gate);
 
