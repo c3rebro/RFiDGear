@@ -6,6 +6,8 @@ using Serilog;
 
 using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RFiDGear.Infrastructure.ExtensionHost
 {
@@ -17,6 +19,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         private static ILogger Logger => Log.ForContext<ReaderHostImpl>();
 
         private readonly Func<string?> _getReaderName;
+        private readonly Func<ReaderSnapshot?>? _getSnapshot;
 
         /// <param name="readerName">Display name of the configured reader (from settings).</param>
         public ReaderHostImpl(string readerName)
@@ -28,9 +31,15 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// Returns the display name of the configured reader. Called each time <see cref="ReaderName"/> is read, so the
         /// name follows the reader the user selects while the application runs.
         /// </param>
-        public ReaderHostImpl(Func<string?> getReaderName)
+        /// <param name="getSnapshot">
+        /// Returns the snapshot of the reader and the card. Called each time <see cref="CurrentSnapshot"/> is read. When
+        /// omitted the snapshot is built from <see cref="ReaderDevice.Instance"/>; a delegate that returns <c>null</c>
+        /// gives a snapshot without a reader.
+        /// </param>
+        public ReaderHostImpl(Func<string?> getReaderName, Func<ReaderSnapshot?>? getSnapshot = null)
         {
             _getReaderName = getReaderName ?? throw new ArgumentNullException(nameof(getReaderName));
+            _getSnapshot = getSnapshot;
         }
 
         /// <inheritdoc/>
@@ -44,6 +53,29 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
         /// <inheritdoc/>
         public bool IsConnected => ReaderDevice.Instance?.IsConnected ?? false;
+
+        /// <inheritdoc/>
+        public ReaderSnapshot CurrentSnapshot
+        {
+            get
+            {
+                if (_getSnapshot != null)
+                {
+                    return _getSnapshot() ?? ReaderSnapshotBuilder.NoReader(ReaderName);
+                }
+
+                var device = ReaderDevice.Instance;
+
+                return ReaderSnapshotBuilder.Build(ReaderName, device?.IsConnected ?? false, device?.GenericChip);
+            }
+        }
+
+        /// <inheritdoc/>
+        /// <remarks>Reading the reader on demand follows with the scan itself; until then a scan is not available.</remarks>
+        public Task<ReaderSnapshot> ScanAsync(CancellationToken ct = default) =>
+            ct.IsCancellationRequested
+                ? Task.FromCanceled<ReaderSnapshot>(ct)
+                : Task.FromException<ReaderSnapshot>(new NotSupportedException("Scanning the reader is not available in this build yet."));
 
         /// <inheritdoc/>
         public event EventHandler? ReaderStateChanged;
