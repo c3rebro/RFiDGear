@@ -34,6 +34,12 @@ namespace RFiDGear.Tests.CardCheckAssistant
             /// <summary>Makes the first read wait until the test lets it go; it answers with what was set when it was asked.</summary>
             public ManualResetEventSlim? HoldFirstLoad { get; set; }
 
+            /// <summary>Makes the second read wait until the test lets it go.</summary>
+            public ManualResetEventSlim? HoldSecondLoad { get; set; }
+
+            /// <summary>How many reads were asked for.</summary>
+            public int Loads => Volatile.Read(ref _loads);
+
             public void RememberProjectFolder(string folder)
             {
                 // Not needed here.
@@ -42,9 +48,14 @@ namespace RFiDGear.Tests.CardCheckAssistant
             public AssistantDefaults Load()
             {
                 var asked = Defaults;
-                if (Interlocked.Increment(ref _loads) == 1)
+                var number = Interlocked.Increment(ref _loads);
+                if (number == 1)
                 {
                     HoldFirstLoad?.Wait(TimeSpan.FromSeconds(30));
+                }
+                else if (number == 2)
+                {
+                    HoldSecondLoad?.Wait(TimeSpan.FromSeconds(30));
                 }
 
                 return asked;
@@ -57,8 +68,12 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             public bool Saved { get; set; } = true;
 
+            /// <summary>The texts the page handed to the window.</summary>
+            public LocalizedStrings? Shown { get; private set; }
+
             public bool Show(LocalizedStrings strings)
             {
+                Shown = strings;
                 WhileOpen?.Invoke();
 
                 return Saved;
@@ -81,8 +96,12 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             public int ThreadId => Volatile.Read(ref _threadId);
 
+            /// <summary>The token of the last call.</summary>
+            public CancellationToken LastToken { get; private set; }
+
             public Task<IReadOnlyList<JobEntry>> ListAsync(CancellationToken cancellationToken)
             {
+                LastToken = cancellationToken;
                 Interlocked.Increment(ref _lists);
                 Volatile.Write(ref _threadId, Environment.CurrentManagedThreadId);
 
@@ -112,6 +131,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
         {
             private readonly List<string> _prepared = new List<string>();
             private int _threadId = -1;
+            private bool _held;
+            private int _finished;
 
             public FakeTestReports(string root)
             {
@@ -120,7 +141,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             public string Root { get; }
 
-            /// <summary>Makes <see cref="Prepare"/> of this job wait until the test lets it go.</summary>
+            /// <summary>Makes the first <see cref="Prepare"/> of this job wait until the test lets it go; later ones are not held.</summary>
             public (string JobId, TaskCompletionSource<bool> Release)? Hold { get; set; }
 
             /// <summary>What to answer instead of the path in the Test folder, if anything.</summary>
@@ -139,26 +160,36 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             public int ThreadId => Volatile.Read(ref _threadId);
 
+            /// <summary>How many calls of <see cref="Prepare"/> have answered.</summary>
+            public int Finished => Volatile.Read(ref _finished);
+
             public string PathOf(JobEntry job) => Path.Combine(Root, job.JobNumber + "-" + job.ChipNumber + ".pdf");
 
             public string Prepare(JobEntry job)
             {
                 Volatile.Write(ref _threadId, Environment.CurrentManagedThreadId);
+
+                // The answer is what it is when the call is made, not when the call is let go.
+                var answer = Answer ?? PathOf(job);
+                TaskCompletionSource<bool>? release = null;
                 lock (_prepared)
                 {
                     _prepared.Add(job.Id);
+                    if (!_held && Hold is { } hold && hold.JobId == job.Id)
+                    {
+                        _held = true;
+                        release = hold.Release;
+                    }
                 }
 
-                if (Hold is { } hold && hold.JobId == job.Id)
-                {
-                    hold.Release.Task.Wait(TimeSpan.FromSeconds(30));
-                }
+                release?.Task.Wait(TimeSpan.FromSeconds(30));
+                Interlocked.Increment(ref _finished);
 
-                return Answer ?? PathOf(job);
+                return answer;
             }
         }
 
-        private static JobEntry Job(string id, string job, string chip) => new JobEntry(id, job, chip, "Customer " + id, "Created");
+        private static JobEntry Job(string id, string jobNumber, string chip) => new JobEntry(id, jobNumber, chip, "Customer " + id, "Created");
 
         private static CardCheckAssistantViewModel Create(
             FakeExtensionHost host,
@@ -205,6 +236,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.Equal(jobs.Jobs, viewModel.Jobs);
                 Assert.False(viewModel.HasNoJobs);
                 Assert.NotEqual(Environment.CurrentManagedThreadId, jobs.ThreadId);
+
+                // The page hands the source its own token, so closing the window can end a list that is still being made.
+                Assert.True(jobs.LastToken.CanBeCanceled);
             });
         }
 
@@ -371,6 +405,187 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         [Fact]
+        public async Task AProposalForAJobThatLeftTheList_IsDropped()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var jobs = new FakeJobs();
+                var release = NewGate();
+                var reports = new FakeTestReports(Path.Combine(Path.GetTempPath(), "Test")) { Hold = ("A", release) };
+                using var viewModel = Create(new FakeExtensionHost(), TestModeOn(), jobs, reports, new FakeSettingsDialog());
+                await viewModel.Open();
+                viewModel.SelectedJob = viewModel.Jobs[0];
+                var proposal = viewModel.PendingReportProposal;
+                await WaitUntil(() => reports.Prepared.Contains("A"), "the folder being made");
+
+                // The list is made again while the folder is still being made, and the job is not in it any more.
+                jobs.Jobs = jobs.Jobs.Where(job => job.Id != "A").ToList();
+                await viewModel.OpenSettingsCommand.ExecuteAsync();
+                Assert.Null(viewModel.SelectedJob);
+                release.SetResult(true);
+                await proposal;
+
+                Assert.Equal(string.Empty, viewModel.ReportTargetPath);
+            });
+        }
+
+        [Fact]
+        public async Task PickingAnotherJob_TakesBackTheReportFileOfTheJobBefore_AtOnce()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var jobs = new FakeJobs();
+                var release = NewGate();
+                var reports = new FakeTestReports(Path.Combine(Path.GetTempPath(), "Test")) { Hold = ("B", release) };
+                using var viewModel = Create(new FakeExtensionHost(), TestModeOn(), jobs, reports);
+                await viewModel.Open();
+                viewModel.SelectedJob = jobs.Jobs[0];
+                await viewModel.PendingReportProposal;
+                Assert.Equal(reports.PathOf(jobs.Jobs[0]), viewModel.ReportTargetPath);
+
+                // The folder of the next job is still being made: the file of the job before must not stay beside the
+                // numbers of this one, for a run started now would send both.
+                viewModel.SelectedJob = jobs.Jobs[1];
+                var proposal = viewModel.PendingReportProposal;
+
+                Assert.Equal(("J-2", "2"), (viewModel.JobNumber, viewModel.ChipNumber));
+                Assert.Equal(string.Empty, viewModel.ReportTargetPath);
+
+                release.SetResult(true);
+                await proposal;
+                Assert.Equal(reports.PathOf(jobs.Jobs[1]), viewModel.ReportTargetPath);
+            });
+        }
+
+        [Fact]
+        public async Task WhenTheNextJobGetsNoReportFile_TheFileOfTheJobBeforeIsNotKept()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var jobs = new FakeJobs();
+                var reports = new FakeTestReports(Path.Combine(Path.GetTempPath(), "Test"));
+                using var viewModel = Create(new FakeExtensionHost(), TestModeOn(), jobs, reports);
+                await viewModel.Open();
+                viewModel.SelectedJob = jobs.Jobs[0];
+                await viewModel.PendingReportProposal;
+                Assert.NotEqual(string.Empty, viewModel.ReportTargetPath);
+
+                reports.Answer = string.Empty;
+                viewModel.SelectedJob = jobs.Jobs[1];
+                await viewModel.PendingReportProposal;
+
+                Assert.Equal(string.Empty, viewModel.ReportTargetPath);
+            });
+        }
+
+        [Fact]
+        public async Task AJobPickedAgain_IsNotUndoneByItsOwnEarlierProposal_ThatIsStillBeingMade()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var jobs = new FakeJobs();
+                var release = NewGate();
+                var reports = new FakeTestReports(Path.Combine(Path.GetTempPath(), "Test")) { Hold = ("A", release) };
+                using var viewModel = Create(new FakeExtensionHost(), TestModeOn(), jobs, reports);
+                await viewModel.Open();
+
+                // A is picked and its folder is slow; B is picked, then A again, and the second proposal for A is quick.
+                viewModel.SelectedJob = jobs.Jobs[0];
+                await WaitUntil(() => reports.Prepared.Contains("A"), "the first folder being made");
+                viewModel.SelectedJob = jobs.Jobs[1];
+                await viewModel.PendingReportProposal;
+                var newer = Path.Combine(Path.GetTempPath(), "newer.pdf");
+                reports.Answer = newer;
+                viewModel.SelectedJob = jobs.Jobs[0];
+                await viewModel.PendingReportProposal;
+                Assert.Equal(newer, viewModel.ReportTargetPath);
+
+                // The first proposal for the same job is ready at last: it is older than the one the page has.
+                release.SetResult(true);
+                await WaitUntil(() => reports.Finished == 3, "the first folder being let go");
+                await Flush();
+
+                Assert.Equal(newer, viewModel.ReportTargetPath);
+            });
+        }
+
+        [Fact]
+        public async Task AProposalThatArrivesAfterTheRunIsOver_IsDropped_Too()
+        {
+            using var area = new TempArea();
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var jobs = new FakeJobs();
+                var release = NewGate();
+                var reports = new FakeTestReports(area.Directory) { Hold = ("A", release) };
+                using var viewModel = Create(new FakeExtensionHost(), TestModeOn(), jobs, reports);
+                await viewModel.Open();
+                viewModel.ProjectPath = area.ProjectPath;
+                viewModel.SelectedJob = viewModel.Jobs[0];
+                var proposal = viewModel.PendingReportProposal;
+                await WaitUntil(() => reports.Prepared.Contains("A"), "the folder being made");
+
+                // The run starts and ends before the proposal is ready: the page is idle again when it comes.
+                await viewModel.RunCommand.ExecuteAsync();
+                Assert.False(viewModel.IsBusy);
+                release.SetResult(true);
+                await proposal;
+
+                Assert.Equal(string.Empty, viewModel.ReportTargetPath);
+            });
+        }
+
+        [Fact]
+        public async Task WhileTheSettingsAreReadAgain_ThePageCannotBeRun_SoNothingIsTakenBackFromUnderARun()
+        {
+            using var area = new TempArea();
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var host = new FakeExtensionHost();
+                var settings = TestModeOn();
+                using var hold = new ManualResetEventSlim(false);
+                settings.HoldSecondLoad = hold;
+                var dialog = new FakeSettingsDialog { WhileOpen = () => settings.Defaults = settings.Defaults with { UseStubJobs = false } };
+                using var viewModel = Create(host, settings, new FakeJobs(), new FakeTestReports(area.Directory), dialog);
+                await viewModel.Open();
+                viewModel.ProjectPath = area.ProjectPath;
+                viewModel.SelectedJob = viewModel.Jobs[1];
+                await viewModel.PendingReportProposal;
+
+                // The settings window is closed and the settings are read again, slowly.
+                var raised = new List<string?>();
+                viewModel.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+                var commandChanges = 0;
+                viewModel.RunCommand.CanExecuteChanged += (_, _) => commandChanges++;
+                var reload = viewModel.OpenSettingsCommand.ExecuteAsync();
+                await WaitUntil(() => settings.Loads >= 2, "the settings being read again");
+
+                Assert.False(viewModel.InputsEnabled);
+                Assert.False(viewModel.CanRun);
+                Assert.False(viewModel.RunCommand.CanExecute(null));
+                Assert.Contains(nameof(viewModel.InputsEnabled), raised);
+                Assert.True(commandChanges > 0);
+                await viewModel.RunCommand.ExecuteAsync();
+                Assert.Empty(host.ExecutionHost.Requests);
+
+                // The page tells its window when it is usable again.
+                raised.Clear();
+                commandChanges = 0;
+                hold.Set();
+                await reload;
+
+                Assert.True(viewModel.InputsEnabled);
+                Assert.True(viewModel.RunCommand.CanExecute(null));
+                Assert.Contains(nameof(viewModel.InputsEnabled), raised);
+                Assert.True(commandChanges > 0);
+                Assert.False(viewModel.IsTestMode);
+                Assert.Same(viewModel.Strings, dialog.Shown);
+                await viewModel.RunCommand.ExecuteAsync();
+                Assert.Single(host.ExecutionHost.Requests);
+            });
+        }
+
+        [Fact]
         public async Task SwitchingTheModeOff_TakesBackTheNumbersOfThePickedJob_ButNotOnesTheOperatorChanged()
         {
             await StaTestRunner.RunOnStaThreadAsync(async () =>
@@ -500,7 +715,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 }
                 finally
                 {
-                    ((IDisposable)page).Dispose();
+                    Assert.IsAssignableFrom<IDisposable>(page).Dispose();
                 }
             });
         }

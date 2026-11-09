@@ -43,7 +43,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         private TestReportTarget Target(ISettingsStore store) =>
             new TestReportTarget(store, CardCheckServices.CreateReportFiles(_log), Fallback);
 
-        private static JobEntry Job(string job = "STUB-1001", string chip = "1") => new JobEntry("STUB-1", job, chip, "Stub customer A", "Created");
+        private static JobEntry Job(string jobNumber = "STUB-1001", string chip = "1") => new JobEntry("STUB-1", jobNumber, chip, "Stub customer A", "Created");
 
         // ── the jobs ────────────────────────────────────────────────────────
 
@@ -83,6 +83,16 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             Assert.Empty(jobs);
             Assert.Throws<ArgumentNullException>(() => new StubJobSource(null!));
+        }
+
+        [Fact]
+        public async Task WithoutASource_ThePageGetsAnEmptyList_EvenForACancelledCall()
+        {
+            using var source = new CancellationTokenSource();
+            source.Cancel();
+
+            Assert.Empty(await AssistantServices.None.Jobs.ListAsync(CancellationToken.None));
+            Assert.Empty(await AssistantServices.None.Jobs.ListAsync(source.Token));
         }
 
         [Fact]
@@ -205,8 +215,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Directory.CreateDirectory(Reports);
             var target = Target(StoreWith(Reports, oneFolderPerJob: true));
 
-            Assert.Equal(string.Empty, target.Prepare(Job("CON", "1")));
-            Assert.Equal(string.Empty, target.Prepare(Job("STUB-1001", string.Empty)));
+            Assert.Equal(string.Empty, target.Prepare(Job("CON")));
+            Assert.Equal(string.Empty, target.Prepare(Job(chip: string.Empty)));
             Assert.False(Directory.Exists(Path.Combine(Reports, TestReportTarget.FolderName, "CON")));
 
             // Nothing was made for them at all, not even the Test folder.

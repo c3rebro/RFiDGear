@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -85,6 +86,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
 
         private sealed class NoJobs : IJobSource
         {
+            [SuppressMessage("Major Code Smell", "S1172:Unused method parameters should be removed", Justification = "The parameter belongs to the interface; a source with nothing to list has no use for it.")]
             public Task<IReadOnlyList<JobEntry>> ListAsync(CancellationToken cancellationToken) =>
                 Task.FromResult<IReadOnlyList<JobEntry>>(Array.Empty<JobEntry>());
         }

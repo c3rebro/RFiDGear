@@ -77,7 +77,9 @@ in the Extensions menu of the main window.
   since. The jobs are kept in memory for as long as the window lives, and in
   this mode the order database is never read or written; **Test connection**
   in the Settings window still tests the real one. The drop-down is disabled
-  while a run is going, like the other fields.
+  while a run is going, like the other fields. The whole page is disabled for
+  the moment the settings are read again after the Settings window was closed,
+  so a run cannot start while a job's numbers are being taken back.
 - Does **not** offer, for now, to take over the settings of the old WinUI Card
   Check Assistant. The code is kept (a question with "Import", "Not now" and
   "Never ask again", then a summary to confirm; the old files are only read,

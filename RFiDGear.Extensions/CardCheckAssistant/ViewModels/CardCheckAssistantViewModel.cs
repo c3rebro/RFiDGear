@@ -70,6 +70,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private int _cancellationDisposed;
         private int _opened;
         private int _applyGeneration;
+        private int _proposalGeneration;
+        private int _applyingSettings;
         private Task _openTask = Task.CompletedTask;
         private Task _persistChain = Task.CompletedTask;
         private Task _proposalTask = Task.CompletedTask;
@@ -189,9 +191,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                     return;
                 }
 
+                // The report file the page proposed for the job picked before is not this job's: it goes now, not when the
+                // new proposal is ready, so a run started in between cannot send these numbers with that file.
+                DropProposal();
                 JobNumber = value.JobNumber;
                 ChipNumber = value.ChipNumber;
-                _proposalTask = ProposeReportTargetAsync(value);
+                _proposalTask = ProposeReportTargetAsync(value, _proposalGeneration);
             }
         }
 
@@ -262,8 +267,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>Whether the host is running tasks, whoever started them.</summary>
         public bool IsExecutionRunning => _isExecutionRunning;
 
-        /// <summary>Whether the input controls can be used: not while this page or the host is busy.</summary>
-        public bool InputsEnabled => !IsBusy && !_isExecutionRunning && !IsDisposed;
+        /// <summary>
+        /// Whether the input controls can be used: not while this page or the host is busy, and not while the settings are
+        /// read again after the settings window was closed (that may take back what a picked job filled in).
+        /// </summary>
+        public bool InputsEnabled => !IsBusy && !_isExecutionRunning && !IsDisposed && _applyingSettings == 0;
 
         /// <summary>Whether the run button can be used.</summary>
         public bool CanRun => InputsEnabled;
@@ -545,27 +553,39 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 }
             }
 
-            if (_proposedReportPath.Length > 0 && string.Equals(ReportTargetPath, _proposedReportPath, StringComparison.Ordinal))
-            {
-                ReportTargetPath = string.Empty;
-            }
-
-            _proposedReportPath = string.Empty;
+            DropProposal();
             _jobs.Clear();
             _selectedJob = null;
             OnPropertyChanged(nameof(SelectedJob));
             IsTestMode = false;
         }
 
-        // The folder is made on a worker thread. The proposal is dropped if another job was picked meanwhile, the window
-        // closed or a run has started (the run has checked the report field already and it is not to change under it), and
-        // it only goes into a field that is empty or holds the page's own earlier proposal.
-        private async Task ProposeReportTargetAsync(JobEntry job)
+        // Takes back the report file the page proposed, if the operator has not changed it, and drops the proposals that
+        // are still on their way.
+        private void DropProposal()
+        {
+            InvalidateProposals();
+            if (_proposedReportPath.Length > 0 && string.Equals(ReportTargetPath, _proposedReportPath, StringComparison.Ordinal))
+            {
+                ReportTargetPath = string.Empty;
+            }
+
+            _proposedReportPath = string.Empty;
+        }
+
+        // A proposal belongs to the pick it was asked for. One that comes after another pick, after the mode was left or
+        // after a run was started is out of date, and so is one that comes after the run is over.
+        private void InvalidateProposals() => _proposalGeneration++;
+
+        // The folder is made on a worker thread. The proposal is dropped if it is out of date by the time it is ready (see
+        // InvalidateProposals), if the window closed or if no job is picked any more, and it only goes into a field that
+        // is empty or holds the page's own earlier proposal.
+        private async Task ProposeReportTargetAsync(JobEntry job, int generation)
         {
             try
             {
                 var path = await Task.Run(() => _testReports.Prepare(job));
-                if (IsDisposed || IsBusy || _selectedJob == null || _selectedJob.Id != job.Id || string.IsNullOrWhiteSpace(path))
+                if (IsDisposed || generation != _proposalGeneration || _selectedJob == null)
                 {
                     return;
                 }
@@ -595,6 +615,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 return;
             }
 
+            // The page is off while the settings are read again: a run started in that time could have what a picked job
+            // filled in taken back from under it.
+            _applyingSettings++;
+            RaiseBusyProperties();
             try
             {
                 await ApplyDefaultsAsync();
@@ -602,6 +626,14 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             catch (Exception)
             {
                 // Remembering is a convenience: a page that cannot read its settings works with what it had.
+            }
+            finally
+            {
+                _applyingSettings--;
+                if (!IsDisposed)
+                {
+                    RaiseBusyProperties();
+                }
             }
         }
 
@@ -667,6 +699,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 return;
             }
 
+            // A proposal still on its way would change the report field after the run has checked it, or when it is over.
+            InvalidateProposals();
             ClearResultAndErrors();
             SetPhase(RunPhase.Checking);
 

@@ -48,8 +48,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 new JobEntry("B", "J-2", "2", "Customer B", "InProgress"),
             };
 
+            // Like the real source, a call that is already cancelled gives no jobs.
             public Task<IReadOnlyList<JobEntry>> ListAsync(CancellationToken cancellationToken) =>
-                Task.FromResult<IReadOnlyList<JobEntry>>(Jobs.ToList());
+                Task.FromResult<IReadOnlyList<JobEntry>>(cancellationToken.IsCancellationRequested ? new List<JobEntry>() : Jobs.ToList());
         }
 
         private sealed class NoReports : ITestReportTarget
