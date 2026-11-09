@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using RFiDGear.Contracts;
+using RFiDGear.Infrastructure;
 
 namespace RFiDGear.Tests.CardCheckAssistant
 {
@@ -244,12 +245,25 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public void ResetStatus() => throw new NotSupportedException();
     }
 
+    /// <summary>
+    /// A reader the test scripts. What it shows can be set as one snapshot or through the older single values, the next
+    /// scans can be scripted (a result, a failure, a result that waits for a gate), and it keeps the contract of the real
+    /// host: a scan that finds a different picture raises <c>ReaderStateChanged</c> once, and a scan that was busy or
+    /// failed leaves the picture as it was.
+    /// </summary>
     internal sealed class FakeReaderHost : IReaderHost
     {
+        private readonly object _sync = new object();
         private readonly SubscriberCounter _subscribers = new SubscriberCounter();
+        private readonly Queue<ScriptedScan> _scans = new Queue<ScriptedScan>();
         private EventHandler? _readerStateChanged;
 
         private string? _readerName = "Test reader";
+        private string? _currentUid;
+        private string? _chipTypeName;
+        private bool _isConnected = true;
+        private ReaderSnapshot? _snapshot;
+        private int _scanCount;
 
         /// <summary>Makes every read of the reader fail, as a faulty reader provider would.</summary>
         public bool ThrowOnRead { get; set; }
@@ -257,16 +271,170 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public string? ReaderName
         {
             get => ThrowOnRead ? throw new InvalidOperationException("The reader provider failed.") : _readerName;
-            set => _readerName = value;
+            set => Change(() => _readerName = value);
         }
 
-        public string? CurrentUID { get; set; }
+        public string? CurrentUID
+        {
+            get => _currentUid;
+            set => Change(() => _currentUid = value);
+        }
 
-        public string? ChipTypeName { get; set; }
+        public string? ChipTypeName
+        {
+            get => _chipTypeName;
+            set => Change(() => _chipTypeName = value);
+        }
 
-        public bool IsConnected { get; set; } = true;
+        public bool IsConnected
+        {
+            get => _isConnected;
+            set => Change(() => _isConnected = value);
+        }
+
+        /// <summary>
+        /// The picture of the reader. Unless a test set a snapshot, it is made from the single values above, so a test
+        /// that only sets <see cref="CurrentUID"/> still sees a card.
+        /// </summary>
+        public ReaderSnapshot CurrentSnapshot
+        {
+            get
+            {
+                if (ThrowOnRead)
+                {
+                    throw new InvalidOperationException("The reader provider failed.");
+                }
+
+                lock (_sync)
+                {
+                    return PictureLocked();
+                }
+            }
+        }
+
+        /// <summary>How many times <see cref="ScanAsync"/> was called, scans that were cancelled before they started excluded.</summary>
+        public int ScanCount => Volatile.Read(ref _scanCount);
 
         public int ReaderStateChangedSubscribers => _subscribers.Count;
+
+        /// <summary>
+        /// Shows this picture from now on, and keeps the single values in step with it. Raises the event once if the
+        /// picture is a different one, unless <paramref name="raise"/> is off.
+        /// </summary>
+        public void Show(ReaderSnapshot snapshot, bool raise = true)
+        {
+            bool changed;
+            lock (_sync)
+            {
+                changed = !PictureLocked().Equals(snapshot);
+                _snapshot = snapshot;
+                _readerName = snapshot.ReaderName;
+                _isConnected = snapshot.State != ReaderScanState.NoReader;
+                _currentUid = snapshot.Credentials.Count > 0 ? snapshot.Credentials[0].Uid : null;
+                _chipTypeName = snapshot.Credentials.Count > 0 ? snapshot.Credentials[0].DisplayName : null;
+            }
+
+            if (changed && raise)
+            {
+                RaiseReaderStateChanged();
+            }
+        }
+
+        /// <summary>The next scan finds this. Scans are answered in the order they were scripted.</summary>
+        public void ScriptScan(ReaderSnapshot result, TaskCompletionSource<bool>? gate = null) => Enqueue(new ScriptedScan(result, null, gate));
+
+        /// <summary>The next scan fails with this exception, as a faulty reader provider would.</summary>
+        public void ScriptScanFailure(Exception failure, TaskCompletionSource<bool>? gate = null) => Enqueue(new ScriptedScan(null, failure, gate));
+
+        /// <summary>
+        /// Answers with the next scripted result; with nothing scripted the picture is as it was. A result in the state
+        /// <c>Ready</c> or <c>NoReader</c> becomes the picture (and raises the event if it differs); one in the state
+        /// <c>ReadFailed</c> or <c>Busy</c> is only returned.
+        /// </summary>
+        public async Task<ReaderSnapshot> ScanAsync(CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (ThrowOnRead)
+            {
+                throw new InvalidOperationException("The reader provider failed.");
+            }
+
+            ScriptedScan? next;
+            lock (_sync)
+            {
+                _scanCount++;
+                next = _scans.Count > 0 ? _scans.Dequeue() : null;
+            }
+
+            if (next == null)
+            {
+                return CurrentSnapshot;
+            }
+
+            if (next.Gate != null)
+            {
+                await next.Gate.Task.ConfigureAwait(false);
+            }
+
+            if (next.Failure != null)
+            {
+                throw next.Failure;
+            }
+
+            var result = next.Result!;
+            if (result.State == ReaderScanState.Ready || result.State == ReaderScanState.NoReader)
+            {
+                Show(result);
+            }
+
+            return result;
+        }
+
+        private void Enqueue(ScriptedScan scan)
+        {
+            lock (_sync)
+            {
+                _scans.Enqueue(scan);
+            }
+        }
+
+        // A single value was set: the picture is made from the single values again.
+        private void Change(Action set)
+        {
+            lock (_sync)
+            {
+                set();
+                _snapshot = null;
+            }
+        }
+
+        private ReaderSnapshot PictureLocked()
+        {
+            if (_snapshot != null)
+            {
+                return _snapshot;
+            }
+
+            var name = _readerName ?? string.Empty;
+            if (!_isConnected)
+            {
+                return new ReaderSnapshot(name, ReaderScanState.NoReader, Array.Empty<CredentialInfo>());
+            }
+
+            // As the real builder does: a blank UID is no card, a UID is trimmed and in upper case, and a name that is a card
+            // type gives its code (any other name is shown as it is, with code 0).
+            var uid = _currentUid?.Trim();
+            var credentials = string.IsNullOrEmpty(uid)
+                ? Array.Empty<CredentialInfo>()
+                : new[] { new CredentialInfo(uid.ToUpperInvariant(), CodeOf(_chipTypeName), _chipTypeName ?? "Unknown", true) };
+
+            return new ReaderSnapshot(name, ReaderScanState.Ready, credentials);
+        }
+
+        private static int CodeOf(string? typeName) =>
+            Enum.TryParse<CARD_TYPE>(typeName, out var type) ? (int)type : 0;
+
+        private sealed record ScriptedScan(ReaderSnapshot? Result, Exception? Failure, TaskCompletionSource<bool>? Gate);
 
         public event EventHandler ReaderStateChanged
         {
