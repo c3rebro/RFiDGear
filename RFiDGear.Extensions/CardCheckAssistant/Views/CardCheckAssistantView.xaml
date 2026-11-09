@@ -26,6 +26,15 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
 
+        <DataTemplate x:Key="JobRow">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Width="90" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Text="{Binding JobNumber}" />
+                <TextBlock Width="40" TextTrimming="CharacterEllipsis" Text="{Binding ChipNumber}" />
+                <TextBlock Width="150" TextTrimming="CharacterEllipsis" Text="{Binding Customer}" />
+                <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding Status}" />
+            </StackPanel>
+        </DataTemplate>
+
         <DataTemplate x:Key="OutcomeRow" DataType="{x:Type vm:TaskOutcomeRowViewModel}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -75,6 +84,10 @@
                 <TextBlock Text="{Binding Strings[WindowHint]}" TextWrapping="Wrap" Margin="0,0,0,6" />
                 <TextBlock Text="{Binding ReaderText}" />
                 <TextBlock Text="{Binding OpenProjectText}" TextTrimming="CharacterEllipsis" ToolTip="{Binding OpenProjectText}" />
+                <Border x:Name="TestModeNotice" Margin="0,6,0,0" Padding="6,3" BorderThickness="1" BorderBrush="#C9A227" Background="#FFF4CC"
+                        Visibility="{Binding IsTestMode, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Foreground="Black" TextWrapping="Wrap" Text="{Binding Strings[TestModeNotice]}" />
+                </Border>
             </StackPanel>
             <Button x:Name="SettingsButton" Grid.Column="1" VerticalAlignment="Top" Margin="12,0,0,0" Padding="12,3"
                     Command="{Binding OpenSettingsCommand}" Content="{Binding Strings[SettingsButton]}"
@@ -83,6 +96,14 @@
 
         <!-- the values of the run -->
         <StackPanel x:Name="FieldsPanel" Grid.Row="1" IsEnabled="{Binding InputsEnabled}">
+            <StackPanel x:Name="JobsPanel" Margin="0,0,0,8" Visibility="{Binding IsTestMode, Converter={StaticResource BoolToVisibility}}">
+                <Label Content="{Binding Strings[JobsLabel]}" Target="{Binding ElementName=JobList}" Padding="0,0,0,2" />
+                <ComboBox x:Name="JobList" ItemsSource="{Binding Jobs}" SelectedItem="{Binding SelectedJob, Mode=TwoWay}"
+                          ItemTemplate="{StaticResource JobRow}" AutomationProperties.Name="{Binding Strings[JobsLabel]}" />
+                <TextBlock x:Name="NoJobsText" Margin="0,2,0,0" Text="{Binding Strings[NoJobsText]}"
+                           Visibility="{Binding HasNoJobs, Converter={StaticResource BoolToVisibility}}" />
+            </StackPanel>
+
             <Label Content="{Binding Strings[ProjectLabel]}" Target="{Binding ElementName=ProjectBox}" Padding="0,0,0,2" />
             <Grid>
                 <Grid.ColumnDefinitions>
