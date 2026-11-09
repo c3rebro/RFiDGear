@@ -265,7 +265,9 @@ namespace RFiDGear.Tests
             protected override Task CreateStdDataFileAsync(byte fileNo, Infrastructure.Tasks.FileType_MifareDesfireFileType fileType, RfidEncryptionMode encMode, DESFireFileAccessRights accessRights, uint fileSize)
             {
                 if (_throwOnCreate)
+                {
                     throw new InvalidOperationException("simulated create failure");
+                }
                 StdDataFileRequested = true;
                 return Task.CompletedTask;
             }
@@ -273,7 +275,9 @@ namespace RFiDGear.Tests
             protected override Task CreateBackupFileAsync(byte fileNo, RfidEncryptionMode encMode, DESFireFileAccessRights accessRights, uint fileSize)
             {
                 if (_throwOnCreate)
+                {
                     throw new InvalidOperationException("simulated create failure");
+                }
                 BackupFileRequested = true;
                 return Task.CompletedTask;
             }

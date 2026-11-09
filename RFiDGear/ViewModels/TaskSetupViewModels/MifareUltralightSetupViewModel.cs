@@ -464,7 +464,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public ICommand ReadDataCommand => new RelayCommand(OnNewReadDataCommand);
         private void OnNewReadDataCommand()
         {
-            //Mouse.OverrideCursor = Cursors.Wait;
             CurrentTaskErrorLevel = ERROR.Empty;
 
             var classicTask =
@@ -531,8 +530,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 classicTask.ContinueWith((x) =>
                                          {
-                                             //Mouse.OverrideCursor = null;
-
                                              if (CurrentTaskErrorLevel == ERROR.NoError)
                                              {
                                                  IsTaskCompletedSuccessfully = true;

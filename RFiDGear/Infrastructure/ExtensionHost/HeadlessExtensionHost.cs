@@ -181,14 +181,18 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         {
             var tasks = _project.SetupModel?.TaskCollection;
             if (tasks == null || tasks.Count == 0)
+            {
                 return "(no tasks in collection)";
+            }
 
             var sb = new StringBuilder();
             int i = 0;
             foreach (var item in tasks)
             {
                 if (item is IGenericTask t)
+                {
                     sb.AppendLine($"  task[{i}] index={t.CurrentTaskIndex} error={t.CurrentTaskErrorLevel} success={t.IsTaskCompletedSuccessfully}");
+                }
                 i++;
             }
             return sb.ToString();
@@ -197,7 +201,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <inheritdoc/>
         public void Dispose()
         {
-            if (_disposed) return;
+            if (_disposed)
+            {
+                return;
+            }
             _disposed = true;
         }
     }

@@ -98,7 +98,9 @@ namespace RFiDGear.ViewModel
             {
                 var trimmed = entry.Trim();
                 if (CustomConverter.IsInHexFormat(trimmed) && trimmed.Length == 12)
+                {
                     classicKeys.Add(trimmed);
+                }
             }
             settingsReaderWriter.DefaultSpecification.MifareClassicDefaultQuickCheckKeys = classicKeys;
         }
@@ -299,7 +301,9 @@ namespace RFiDGear.ViewModel
             {
                 // Block PC/SC selection when running under RDP — SCardSvr is not usable there.
                 if (IsRdpSession && value == ReaderTypes.PCSC)
+                {
                     value = ReaderTypes.None;
+                }
 
                 selectedReader = value;
 
@@ -601,10 +605,15 @@ namespace RFiDGear.ViewModel
                     foreach (var entry in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     {
                         var trimmed = entry.Trim();
-                        if (trimmed.Length == 0) continue;
+                        if (trimmed.Length == 0)
+                        {
+                            continue;
+                        }
                         hasAny = true;
                         if (!CustomConverter.IsInHexFormat(trimmed) || trimmed.Length != 12)
+                        {
                             allValid = false;
+                        }
                     }
                 }
                 IsValidClassicKeysText = hasAny ? allValid : (bool?)null;
@@ -634,7 +643,14 @@ namespace RFiDGear.ViewModel
             var idx = list.FindIndex(k => k.KeyType == keyType);
             var existing = idx >= 0 ? list[idx] : new MifareDesfireDefaultKeys(keyType, DESFireKeyType.DF_KEY_AES, string.Empty);
             var updated = new MifareDesfireDefaultKeys(keyType, existing.EncryptionType, value);
-            if (idx >= 0) list[idx] = updated; else list.Add(updated);
+            if (idx >= 0)
+            {
+                list[idx] = updated;
+            }
+            else
+            {
+                list.Add(updated);
+            }
         }
 
         private void SetDesfireKeyEncType(KeyType_MifareDesFireKeyType keyType, DESFireKeyType encType)
@@ -643,7 +659,14 @@ namespace RFiDGear.ViewModel
             var idx = list.FindIndex(k => k.KeyType == keyType);
             var existing = idx >= 0 ? list[idx] : new MifareDesfireDefaultKeys(keyType, encType, string.Empty);
             var updated = new MifareDesfireDefaultKeys(keyType, encType, existing.Key);
-            if (idx >= 0) list[idx] = updated; else list.Add(updated);
+            if (idx >= 0)
+            {
+                list[idx] = updated;
+            }
+            else
+            {
+                list.Add(updated);
+            }
         }
 
         #endregion Default Keys

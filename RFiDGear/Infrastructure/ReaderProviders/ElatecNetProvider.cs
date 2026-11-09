@@ -1,5 +1,4 @@
-﻿//using Elatec.NET.Model;
-using ByteArrayHelper.Extensions;
+﻿using ByteArrayHelper.Extensions;
 using Elatec.NET;
 using Elatec.NET.Cards.Mifare;
 using RFiDGear.Infrastructure.Tasks;
@@ -257,12 +256,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 readerDevice = EnumerateReaders().FirstOrDefault();
 
                 if (readerDevice == null)
+                {
                     return ERROR.TransportError;
+                }
 
                 // If the SDK device is already connected (e.g. left open by the settings dialog),
                 // skip ConnectAsync and just fetch the version.
                 if (!readerDevice.IsConnected && !await readerDevice.ConnectAsync())
+                {
                     return ERROR.TransportError;
+                }
 
                 ReaderUnitVersion = await readerDevice.GetVersionStringAsync();
                 lastLoggedConnectFailure = null;
@@ -638,7 +641,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 if (readerDevice == null)
+                {
                     return ERROR.TransportError;
+                }
 
                 // The ELATEC SDK retains an authenticated DESFire session after ChangeKey.
                 // A same-session Authenticate call therefore reports success even if the key
@@ -646,12 +651,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 // authoritative check. ChangeKey can leave IsConnected stale while the port is
                 // already closed, so DisconnectAsync must run unconditionally.
                 if (readerDevice.IsConnected)
+                {
                     await readerDevice.DisconnectAsync();
+                }
 
                 await Task.Delay(250);
 
                 if (!await readerDevice.ConnectAsync())
+                {
                     return ERROR.TransportError;
+                }
 
                 return await AuthToMifareDesfireApplicationCore(applicationKey, keyType, keyNumber, appId);
             }
@@ -988,7 +997,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             {
 
             if (!readerDevice.IsConnected)
+            {
                 return ERROR.TransportError;
+            }
 
             try { await readerDevice.SearchTagAsync(); } catch { }
 
@@ -1030,7 +1041,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     // Try map the returned key type to your enum by name; if it fails, keep the requested targetKeyType.
                     if (Enum.TryParse<DESFireKeyType>(ks.KeyType.ToString(), out var parsed))
+                    {
                         keyTypeForContext = ResolveKeyTypeForChange(resolved.AppId, resolved.TargetKeyType, parsed);
+                    }
                 }
                 catch
                 {
@@ -1074,7 +1087,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             static Elatec.NET.Cards.Mifare.DESFireKeyType ToElatecKeyType(DESFireKeyType t)
             {
                 if (Enum.TryParse<Elatec.NET.Cards.Mifare.DESFireKeyType>(t.ToString(), out var mapped))
+                {
                     return mapped;
+                }
 
                 throw new ArgumentOutOfRangeException(nameof(t), $"No Elatec key type mapping for {t}.");
             }
@@ -1087,7 +1102,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 if (!readerDevice.IsConnected)
+                {
                     return ERROR.TransportError;
+                }
 
                 try
                 {
@@ -1244,7 +1261,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                         var rawSettings = await readerDevice.MifareDesfire_GetFileSettingsAsync((byte)fileNo);
                         if (rawSettings == null)
+                        {
                             return ERROR.AuthFailure;
+                        }
 
                         var oldAR = rawSettings.accessRights;
                         var newAR = BuildDesfireAccessRights(newAccessRights);
@@ -1280,7 +1299,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
             try
             {
                 if (!readerDevice.IsConnected)
+                {
                     return ERROR.TransportError;
+                }
 
                 try
                 {
@@ -1297,7 +1318,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                 var authResult = await AuthToMifareDesfireApplicationCore(_applicationMasterKey, _keyType, 0, authAppId);
                 if (authResult != ERROR.NoError)
+                {
                     return authResult;
+                }
 
                 try
                 {
@@ -1330,7 +1353,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 {
                     var tag = await readerDevice.SearchTagAsync();
                     if (tag == null)
+                    {
                         throw new InvalidOperationException("SearchTag did not return a tag while verifying DeleteApplication.");
+                    }
 
                     await readerDevice.MifareDesfire_SelectApplicationAsync(0);
                     var applicationIds = await readerDevice.MifareDesfire_GetAppIDsAsync();
@@ -1348,7 +1373,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 {
                     lastException = exception;
                     if (attempt < maxAttempts)
+                    {
                         await Task.Delay(100);
+                    }
                 }
             }
 
@@ -1592,7 +1619,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 {
                     var authResult = await AuthToMifareDesfireApplicationCore(_appMasterKey, _keyTypeAppMasterKey, 0, _appID);
                     if (authResult != ERROR.NoError)
+                    {
                         return authResult;
+                    }
 
                     var ar = BuildDesfireAccessRights(_accessRights);
 
@@ -1760,7 +1789,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     // Exactly one complete boundary: SearchTag (TWN4 LEGIC) -> Select -> Authenticate -> Read.
                     var authResult = await AuthToMifareDesfireApplicationCore(_appReadKey, _keyTypeAppReadKey, _readKeyNo, _appID);
                     if (authResult != ERROR.NoError)
+                    {
                         return authResult;
+                    }
 
                     MifareDESFireData = await ReadDesfireDataAsync((byte)_fileNo, _fileSize, _encMode);
                     return MifareDESFireData != null ? ERROR.NoError : ERROR.Unknown;
@@ -1792,7 +1823,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     // Exactly one complete boundary: SearchTag (TWN4 LEGIC) -> Select -> Authenticate -> Write.
                     var authResult = await AuthToMifareDesfireApplicationCore(_appWriteKey, _keyTypeAppWriteKey, _writeKeyNo, _appID);
                     if (authResult != ERROR.NoError)
+                    {
                         return authResult;
+                    }
 
                     await WriteDesfireDataAsync((byte)_fileNo, _data, _encMode);
                 }
@@ -1833,20 +1866,26 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 {
                     var uids = await readerDevice.ISO14443A_SearchMultiTagAsync();
                     if (uids == null || uids.Count == 0)
+                    {
                         return null;
+                    }
 
                     var target = uids.FirstOrDefault(u =>
                         u.Length == uidBytes.Length && u.SequenceEqual(uidBytes)) ?? uids[0];
 
                     if (!await readerDevice.ISO14443A_SelectTagAsync(target))
+                    {
                         return null;
+                    }
                 }
 
                 var version = await readerDevice.ISO14443_4_TdxAsync(new byte[] { 0x60 });
 
                 // Response: [0]=AF (more frames), [1]=04 (NXP vendor), [2]=type (0x01=native, 0x81=emulated)
                 if (version == null || version.Length < 7 || version[2] != 0x81)
+                {
                     return null;
+                }
 
                 return version;
             }

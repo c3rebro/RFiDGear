@@ -1418,22 +1418,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
         private bool? isValidFunctionClusterCode;
 
-        /*
-        /// <summary>
-        ///
-        /// </summary>
-        public string AppNumber
-        {
-            get => appNumber;
-            set
-            {
-                appNumber = value;
-                IsValidAppNumber = (int.TryParse(value, out appNumberAsInt) && appNumberAsInt <= 0xFFFF);
-                OnPropertyChanged(nameof(AppNumberNew));
-            }
-        }
-        private string appNumber;
-        */
         private int appNumberAsInt;
 
         /// <summary>

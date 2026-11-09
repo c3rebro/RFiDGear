@@ -53,10 +53,15 @@ namespace RFiDGear.Contracts
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="variables"/> is null.</exception>
         public ExecutionRequest(IEnumerable<KeyValuePair<string, string>> variables)
         {
-            if (variables == null) throw new ArgumentNullException(nameof(variables));
+            if (variables == null)
+            {
+                throw new ArgumentNullException(nameof(variables));
+            }
             var d = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var kv in variables)
+            {
                 d[kv.Key] = kv.Value;
+            }
             Variables = new ReadOnlyDictionary<string, string>(d);
         }
     }

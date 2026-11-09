@@ -229,17 +229,6 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         public ObservableCollection<IDialogViewModel> Dialogs => dialogs;
         private readonly ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
 
-        /// <summary>
-        /// 
-        /// </summary>
-        //		[XmlIgnore]
-        //		private ObservableCollection<IDialogViewModel> dialogs = new ObservableCollection<IDialogViewModel>();
-        //		public ObservableCollection<IDialogViewModel> Dialogs
-        //		{
-        //			get { return dialogs; }
-        //			set { dialogs = value; }
-        //		}
-
         #endregion Dialogs
 
         #region Visual Properties
@@ -964,7 +953,7 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
 
                 else
                 {
-                    //ReportTemplateFile = string.Empty;
+                    // Dialog cancelled: the previous report template file stays as it is.
                 }
             }
 

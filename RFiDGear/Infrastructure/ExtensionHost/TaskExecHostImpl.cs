@@ -56,7 +56,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <inheritdoc/>
         public async Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, CancellationToken ct = default)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
 
             // Resolve and validate report variables before admission: a request that cannot produce
             // its report must be rejected before any card operation, not fail at the last step.
@@ -66,10 +69,12 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             ResolveReportVariables(variablesFromArgs, out var reportOutputPath, out var reportTemplateFile);
 
             if (!_coordinator.TryBeginExecution())
+            {
                 throw new InvalidOperationException(BusyMessage(
                     whenLoading: "A project load is in progress. Wait for LoadAsync to complete before executing.",
                     whenEditing: "A project edit is in progress. Wait for it to complete before executing.",
                     whenRunning: "An execution is already in progress."));
+            }
 
             // Allocate the RunId before the call so result, logs, and the execution service
             // all share the same identity regardless of where or when the run ends.

@@ -37,7 +37,6 @@ namespace RFiDGear.ViewModel
         private readonly AsyncRelayCommand _cmdReadAppWithKey;
         private readonly string _parentUid;
 
-        //private MifareClassicSetupViewModel setupViewModel;
         private readonly MifareClassicSectorModel sectorModel;
         private readonly MifareDesfireAppModel appModel;
         private readonly MifareUltralightPageModel pageModel;
@@ -152,8 +151,6 @@ namespace RFiDGear.ViewModel
             });
 
             children = new ObservableCollection<RFiDChipGrandChildLayerViewModel>();
-
-            //LoadChildren();
         }
 
         public RFiDChipChildLayerViewModel(
@@ -170,7 +167,6 @@ namespace RFiDGear.ViewModel
 
             isTask = _isTask;
 
-            //device = _device;
             pageModel = _pageModel;
             _cardType = cardType;
             _parentUid = parentUID?.UID;
@@ -291,7 +287,9 @@ namespace RFiDGear.ViewModel
         private async Task ReadDesfireAppWithKey()
         {
             if (_parent != null)
+            {
                 await _parent.QuickCheckDesfireAppWithKeyAsync(this);
+            }
         }
 
         #region Dependency Properties

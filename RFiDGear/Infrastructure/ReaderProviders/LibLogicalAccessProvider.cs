@@ -262,13 +262,17 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         }
                     }
                     else
+                    {
                         return ERROR.TransportError;
+                    }
                 }
             }
             catch (Exception e)
             {
                 if (readerProvider != null)
+                {
                     readerProvider.release();
+                }
 
                 Log.ForContext<LibLogicalAccessProvider>().Error(e, "LibLogicalAccess operation failed.");
 
@@ -565,7 +569,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     {
                         try
                         {
-                            //CardInfo = new CARD_INFO((CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()), ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray()));
                             GenericChip = new GenericChipModel(ByteArrayConverter.GetStringFrom(card.getChipIdentifier().ToArray()), (CARD_TYPE)Enum.Parse(typeof(CARD_TYPE), card.getCardType()));
                         }
                         catch (Exception e)
@@ -774,7 +777,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 if (await tryInitReader())
                 {
                     ReaderUnitName = readerUnit.getConnectedName();
-                    //readerSerialNumber = readerUnit.GetReaderSerialNumber();
                     RawFormat format = new RawFormat();
 
                     var chip = readerUnit.getSingleChip() as MifareUltralightChip;
@@ -785,7 +787,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                     if (chip.getCardType() == "MifareUltralight")
                     {
-                        var cmd = chip.getCommands() as MifareUltralightCommands;// IMifareUltralightCommands;
+                        var cmd = chip.getCommands() as MifareUltralightCommands;
                         MifareUltralightPageData = cmd.readPages(_pageNo, _pageNo).ToArray();
                     }
 
@@ -891,7 +893,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                         return ERROR.AuthFailure;
                                     }
                                     else
+                                    {
                                         return ERROR.TransportError;
+                                    }
                                 }
                             }
                         }
@@ -946,12 +950,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                         return ERROR.AuthFailure;
                                     }
                                     else
+                                    {
                                         return ERROR.TransportError;
+                                    }
                                 }
                             }
                         }
                         else
+                        {
                             return ERROR.TransportError;
+                        }
                     }
 
                     catch
@@ -982,7 +990,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                             }
                             else
+                            {
                                 return ERROR.TransportError;
+                            }
                         }
 
                         catch
@@ -1005,7 +1015,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     return ERROR.AuthFailure;
                 }
                 else
+                {
                     return ERROR.TransportError;
+                }
             }
         }
 
@@ -1096,7 +1108,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             return ERROR.ProtocolConstraint;
                         }
                         else
+                        {
                             return ERROR.TransportError;
+                        }
                     }
                 }
                 return ERROR.TransportError;
@@ -1172,11 +1186,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 return ERROR.AuthFailure;
                             }
                             else
+                            {
                                 return ERROR.TransportError;
+                            }
                         }
                     }
                     else
+                    {
                         return ERROR.TransportError;
+                    }
                 }
                 return ERROR.TransportError;
             }
@@ -1227,10 +1245,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
 
                             cmd.authenticate((byte)_writeKeyNo, writeKey);
 
-                            //byte[] padded = new byte[161];
-                            //Buffer.BlockCopy(_data, 0, padded, 0, _data.Length);
-                            //_data = padded;
-
                             cmd.writeData((byte)_fileNo, 0, new ByteVector(_data), LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT);
 
                             return ERROR.NoError;
@@ -1251,11 +1265,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 return ERROR.NoError;
                             }
                             else
+                            {
                                 return ERROR.TransportError;
+                            }
                         }
                     }
                     else
+                    {
                         return ERROR.TransportError;
+                    }
                 }
                 return ERROR.TransportError;
             }
@@ -1290,9 +1308,13 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         {
                             cmd.selectApplication((uint)_appID);
                             if (_appID > 0)
+                            {
                                 cmd.authenticate((byte)_keyNumber, masterKey);
+                            }
                             else
+                            {
                                 cmd.authenticate(0, masterKey);
+                            }
                             return ERROR.NoError;
                         }
 
@@ -1307,12 +1329,16 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 return ERROR.AuthFailure;
                             }
                             else
+                            {
                                 return ERROR.TransportError;
+                            }
                         }
                     }
 
                     else
+                    {
                         return ERROR.TransportError;
+                    }
                 }
                 return ERROR.TransportError;
             }
@@ -1553,7 +1579,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     cmd.selectApplication(0);
 
                     if (authenticateToPICCFirst)
+                    {
                         cmd.authenticate(0, masterKey);
+                    }
 
                     if (card.getCardType() == "DESFire")
                     {
@@ -1658,6 +1686,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             });
                     }
                     else
+                    {
                         return OperationResult.Failure(
                             ERROR.TransportError,
                             "Failed to create application",
@@ -1669,6 +1698,7 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 { "ApplicationId", _appID.ToString(CultureInfo.CurrentCulture) },
                                 { "MaxKeys", _maxNbKeys.ToString(CultureInfo.CurrentCulture) }
                             });
+                    }
                 }
             }
             catch (Exception e)
@@ -1727,19 +1757,27 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 readerUnit.disconnectFromReader();
 
                 if (!await tryInitReader())
+                {
                     return ERROR.TransportError;
+                }
 
                 card = readerUnit.getSingleChip();
                 if (card == null)
+                {
                     return ERROR.TransportError;
+                }
 
                 var ct = card.getCardType();
                 if (ct != "DESFire" && ct != "DESFireEV1" && ct != "DESFireEV2" && ct != "DESFireEV3")
+                {
                     return ERROR.TransportError;
+                }
 
                 var cmd = card.getCommands() as DESFireCommands;
                 if (cmd == null)
+                {
                     return ERROR.TransportError;
+                }
 
                 try
                 {
@@ -1769,7 +1807,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                 {
                     // Keep your current mapping style but more focused.
                     if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("status does not allow the requested command"))
+                    {
                         return ERROR.AuthFailure;
+                    }
 
                     return ERROR.TransportError;
                 }
@@ -1833,7 +1873,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         }
                     }
                     else
+                    {
                         return ERROR.TransportError;
+                    }
                 }
                 return ERROR.TransportError;
             }
@@ -1879,13 +1921,19 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         catch (Exception e)
                         {
                             if (e.Message != null && e.Message.Contains("authentication"))
+                            {
                                 return ERROR.AuthFailure;
+                            }
                             else
+                            {
                                 return ERROR.TransportError;
+                            }
                         }
                     }
                     else
+                    {
                         return ERROR.TransportError;
+                    }
                 }
                 return ERROR.TransportError;
             }
@@ -1931,7 +1979,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                         catch (Exception e)
                         {
                             if (e.Message != null && e.Message.Contains("status does not allow the requested command"))
+                            {
                                 return ERROR.AuthFailure;
+                            }
                             return ERROR.TransportError;
                         }
                     }
@@ -2001,11 +2051,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 return ERROR.AuthFailure;
                             }
                             else
+                            {
                                 return ERROR.TransportError;
+                            }
                         }
                     }
                     else
+                    {
                         return ERROR.TransportError;
+                    }
                 }
                 return ERROR.TransportError;
             }
@@ -2062,11 +2116,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 return ERROR.AuthFailure;
                             }
                             else
+                            {
                                 return ERROR.TransportError;
+                            }
                         }
                     }
                     else
+                    {
                         return ERROR.TransportError;
+                    }
                 }
                 return ERROR.TransportError;
             }
@@ -2090,7 +2148,6 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                     securityLevel = LibLogicalAccess.Card.EncryptionMode.CM_ENCRYPT
                 };
 
-                //IDESFireEV1Commands cmd;
                 // Keys to use for authentication
                 var masterKey = MakeDesfireKey((LibLogicalAccess.Card.DESFireKeyType)_keyType, _applicationMasterKey);
 
@@ -2132,7 +2189,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                         return ERROR.AuthFailure;
                                     }
                                     else
+                                    {
                                         return ERROR.TransportError;
+                                    }
                                 }
                             }
 
@@ -2152,11 +2211,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 return ERROR.AuthFailure;
                             }
                             else
+                            {
                                 return ERROR.TransportError;
+                            }
                         }
                     }
                     else
+                    {
                         return ERROR.TransportError;
+                    }
                 }
                 return ERROR.TransportError;
             }
@@ -2221,7 +2284,9 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                         return ERROR.AuthFailure;
                                     }
                                     else
+                                    {
                                         return ERROR.TransportError;
+                                    }
                                 }
                             }
 
@@ -2249,11 +2314,15 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                                 return ERROR.AuthFailure;
                             }
                             else
+                            {
                                 return ERROR.TransportError;
+                            }
                         }
                     }
                     else
+                    {
                         return ERROR.TransportError;
+                    }
                 }
                 return ERROR.TransportError;
             }

@@ -227,12 +227,18 @@ namespace RFiDGear.ViewModel
                     // TreeViewParentNodes is deliberately left alone: it shows the cards detected by
                     // the reader, which are not part of a project, and must survive opening one.
                     if (taskHandler.TaskCollection != null)
+                    {
                         taskHandler.TaskCollection.Clear();
+                    }
                     else
+                    {
                         taskHandler.TaskCollection = new System.Collections.ObjectModel.ObservableCollection<object>();
+                    }
 
                     foreach (var task in loadedModel?.TaskCollection ?? System.Linq.Enumerable.Empty<object>())
+                    {
                         taskHandler.TaskCollection.Add(task);
+                    }
 
                     OnPropertyChanged(nameof(ChipTasks));
                 },
@@ -524,7 +530,9 @@ namespace RFiDGear.ViewModel
                 {
                     LogProjectOpenFailure(projectPath, result.Error);
                     if (Dialogs.Any())
+                    {
                         Dialogs.RemoveAt(0);
+                    }
                     return;
                 }
 
@@ -535,7 +543,9 @@ namespace RFiDGear.ViewModel
                 }
 
                 if (Dialogs.Any())
+                {
                     Dialogs.RemoveAt(0);
+                }
             }
         }
         #endregion
@@ -1030,7 +1040,6 @@ namespace RFiDGear.ViewModel
                     }
                     else if (wellKnownTvNodes.Any())
                     {
-                        //wellKnownTvNodes.FirstOrDefault().IsExpanded = true;
                         wellKnownTvNodes.FirstOrDefault().IsSelected = true;
                     }
                 }
@@ -1172,7 +1181,9 @@ namespace RFiDGear.ViewModel
                 Mouse.OverrideCursor = Cursors.AppStarting;
 
                 if (!_runSelectedOnly)
+                {
                     await OnNewResetTaskStatusCommand();
+                }
 
                 await OnNewReadChipCommand();
                 OnPropertyChanged(nameof(TreeViewParentNodes));

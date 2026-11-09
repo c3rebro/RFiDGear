@@ -60,7 +60,9 @@ namespace RFiDGear.Models
             {
                 var normalized = value == "AuthenticationError" ? nameof(ERROR.AuthFailure) : value;
                 if (Enum.TryParse<ERROR>(normalized, out var parsed))
+                {
                     ErrorLevel = parsed;
+                }
             }
         }
 

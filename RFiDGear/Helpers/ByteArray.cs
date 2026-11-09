@@ -734,9 +734,13 @@ namespace ByteArrayHelper
 
                     ulong crc = foo.CalculateCRC("123456789");
                     if (crc != p.CheckValue)
+                    {
                         Console.WriteLine("CRC '{0}': failed sanity check, expected {1:x8}, got {2:x8}", p.Names[0], p.CheckValue, crc);
+                    }
                     else
+                    {
                         Console.WriteLine("CRC '{0}': passed", p.Names[0]);
+                    }
                 }
             }
 
@@ -746,7 +750,9 @@ namespace ByteArrayHelper
                 foreach (CRCParameters param in s_CRCParams)
                 {
                     if (param.Names.Contains(name.ToUpper()))
+                    {
                         return new CRC(param);
+                    }
                 }
 
                 return null;
@@ -822,7 +828,10 @@ namespace ByteArrayHelper
                     {
                         bit = crc & m_CRCHighBitMask;
                         crc <<= 1;
-                        if (bit != 0) crc ^= m_Params.Polynom;
+                        if (bit != 0)
+                        {
+                            crc ^= m_Params.Polynom;
+                        }
                     }
 
                     if (m_Params.ReflectIn)
@@ -840,7 +849,9 @@ namespace ByteArrayHelper
                 ulong crc = m_Params.Init;
 
                 if (m_Params.ReflectIn)
+                {
                     crc = Reflect(crc, m_Params.Width);
+                }
 
                 if (m_Params.ReflectIn)
                 {
@@ -887,8 +898,15 @@ namespace ByteArrayHelper
                     {
                         bit = crc & m_CRCHighBitMask;
                         crc <<= 1;
-                        if ((c & j) > 0) bit ^= m_CRCHighBitMask;
-                        if (bit > 0) crc ^= m_Params.Polynom;
+                        if ((c & j) > 0)
+                        {
+                            bit ^= m_CRCHighBitMask;
+                        }
+
+                        if (bit > 0)
+                        {
+                            crc ^= m_Params.Polynom;
+                        }
                     }
                 }
 
@@ -909,9 +927,13 @@ namespace ByteArrayHelper
                 // accordingly
 
                 if (m_Params.Width > 7)
+                {
                     return CalculateCRCbyTable(data, length);
+                }
                 else
+                {
                     return CalculateCRCdirect(data, length);
+                }
             }
 
             public ulong CalculateCRC(string data)

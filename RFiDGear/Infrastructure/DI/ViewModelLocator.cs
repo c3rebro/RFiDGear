@@ -239,8 +239,7 @@ namespace RFiDGear.Infrastructure.DI
             {
                 if (item.Value != null)
                 {
-                    //var vm = item.Value as ViewModelBase;
-                    //vm.Cleanup();
+                    // Nothing to clean up at the moment: the view models have no cleanup call.
                 }
             }
         }
