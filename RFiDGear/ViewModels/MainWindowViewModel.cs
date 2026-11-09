@@ -77,6 +77,10 @@ namespace RFiDGear.ViewModel
 
         private HeadlessExtensionHost extensionHost;
         private ExtensionOperationCoordinator _coordinator;
+        private readonly ReaderAccessGate _readerGate = new ReaderAccessGate();
+
+        /// <summary>The gate that lets one party at a time read a card: the reads of this window and the scans of extensions.</summary>
+        internal ReaderAccessGate ReaderGate => _readerGate;
         private readonly IApplicationExtensionLauncher applicationExtensionLauncher;
 
         private protected MainWindow mw;
@@ -246,7 +250,8 @@ namespace RFiDGear.ViewModel
                 coordinator: _coordinator,
                 getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english",
                 isOnUiThread: () => owningDispatcher.CheckAccess(),
-                getReaderName: () => CurrentReader);
+                getReaderName: () => CurrentReader,
+                readerGate: _readerGate);
 
             // The Extensions menu entries were built when MEF composed this view model, before the host existed, and
             // stay disabled until now.
@@ -572,12 +577,27 @@ namespace RFiDGear.ViewModel
                     //reader was ready - proceed
                     if (device != null)
                     {
-                        IsReaderBusy = true;
-                        await device.ReadChipPublic();
+                        // A reader scan of an extension (or a read of the Read button) may hold the reader: this tick is
+                        // skipped, and the next one tries again.
+                        if (!_readerGate.TryEnter())
+                        {
+                            Mouse.OverrideCursor = null;
 
-                        GenericChip = device.GenericChip;
+                            return;
+                        }
 
-                        IsReaderBusy = false; ;
+                        try
+                        {
+                            IsReaderBusy = true;
+                            await device.ReadChipPublic();
+
+                            GenericChip = device.GenericChip;
+                        }
+                        finally
+                        {
+                            IsReaderBusy = false;
+                            _readerGate.Exit();
+                        }
                     }
                     else
                     {
@@ -981,6 +1001,8 @@ namespace RFiDGear.ViewModel
             }
 
             IsReaderBusy = true;
+            var pictureChanged = false;
+            var pictureGeneration = 0;
 
             using (var device = ReaderDevice.Instance)
             {
@@ -992,18 +1014,20 @@ namespace RFiDGear.ViewModel
                         item.IsSelected = false;
                     }
 
-                    device.GenericChip = new GenericChipModel();
-                    var result = await device.ReadChipPublic();
-                    var wellKnownTvNodes = from nodes in treeViewParentNodes where nodes.UID == device.GenericChip.UID select nodes;
+                    // The chip is taken while the reader is still ours: a scan that follows empties the shared one.
+                    var (result, chip, changed, generation) = await ReadChipExclusivelyAsync(device);
+                    pictureChanged = changed;
+                    pictureGeneration = generation;
+                    var wellKnownTvNodes = from nodes in treeViewParentNodes where nodes.UID == chip.UID select nodes;
 
                     if (result == ERROR.NoError && !wellKnownTvNodes.Any())
                     {
-                        switch ((CARD_TYPE)((short)device.GenericChip.CardType & 0xF000))
+                        switch ((CARD_TYPE)((short)chip.CardType & 0xF000))
                             {
                                 case CARD_TYPE.MifareClassic:
                                     treeViewParentNodes.Add(
                                         new RFiDChipParentLayerViewModel(
-                                            new MifareClassicChipModel(device.GenericChip as MifareClassicChipModel), Dialogs, false));
+                                            new MifareClassicChipModel(chip as MifareClassicChipModel), Dialogs, false));
                                     break;
 
                                 case CARD_TYPE.DESFireEV0:
@@ -1012,27 +1036,27 @@ namespace RFiDGear.ViewModel
                                 case CARD_TYPE.DESFireEV3:
                                     treeViewParentNodes.Add(
                                         new RFiDChipParentLayerViewModel(
-                                            new MifareDesfireChipModel(device.GenericChip as MifareDesfireChipModel), Dialogs, false));
+                                            new MifareDesfireChipModel(chip as MifareDesfireChipModel), Dialogs, false));
                                     break;
 
                                 case CARD_TYPE.MifarePlus:
                                     treeViewParentNodes.Add(
                                         new RFiDChipParentLayerViewModel(
-                                            new MifareClassicChipModel(device.GenericChip as MifareClassicChipModel), Dialogs, false));
+                                            new MifareClassicChipModel(chip as MifareClassicChipModel), Dialogs, false));
                                     break;
 
                                 case CARD_TYPE.MifareUltralight:
                                     treeViewParentNodes.Add(
                                         new RFiDChipParentLayerViewModel(
-                                            new MifareUltralightChipModel(device.GenericChip), Dialogs, false));
+                                            new MifareUltralightChipModel(chip), Dialogs, false));
                                     break;
 
                                 default:
-                                    if(device.GenericChip?.CardType != CARD_TYPE.NOTAG)
+                                    if(chip?.CardType != CARD_TYPE.NOTAG)
                                     {
                                         treeViewParentNodes.Add(
                                             new RFiDChipParentLayerViewModel(
-                                                new GenericChipModel(device.GenericChip), Dialogs, false));
+                                                new GenericChipModel(chip), Dialogs, false));
                                     }
                                     break;
                             }
@@ -1051,7 +1075,38 @@ namespace RFiDGear.ViewModel
 
             triggerReadChip.IsEnabled = timerState;
 
+            // Last, and after everything that must be restored: the subscribers of the event run now, on this thread.
+            extensionHost?.AnnounceReaderChange(pictureChanged, pictureGeneration);
+        }
 
+        /// <summary>
+        /// Reads the chip with the reader to itself: while this runs no reader scan of an extension reads, and the timer
+        /// tick skips its read (the reads of tasks, quick checks and setup dialogs are not covered). The shared chip is
+        /// emptied first, as this command always did. The picture the extensions see is made and stored right after the
+        /// read, while the reader is still held, from the chip as this read left it, so pictures are stored in the order
+        /// of the reads; the caller raises the event later.
+        /// </summary>
+        /// <param name="device">The reader device.</param>
+        /// <returns>
+        /// What the read returned, the chip it left, whether its picture is a change to announce, and the number of reader
+        /// changes from before the read (the announcement is dropped if the reader changed since).
+        /// </returns>
+        private async Task<(ERROR Result, GenericChipModel Chip, bool Changed, int Generation)> ReadChipExclusivelyAsync(ReaderDevice device)
+        {
+            var generation = extensionHost?.ReaderGeneration ?? 0;
+            await _readerGate.EnterAsync();
+            try
+            {
+                device.GenericChip = new GenericChipModel();
+                var result = await device.ReadChipPublic();
+                var observed = extensionHost?.InterpretRead(device, result);
+
+                return (result, device.GenericChip, observed != null && extensionHost.StoreRead(observed, generation), generation);
+            }
+            finally
+            {
+                _readerGate.Exit();
+            }
         }
 
         /// <summary>
@@ -1170,7 +1225,7 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand WriteToChipOnceCommand => new AsyncRelayCommand(OnNewWriteToChipOnceCommand);
         private async Task OnNewWriteToChipOnceCommand()
         {
-            if (!_coordinator.TryBeginExecution())
+            if (!await TryBeginExecutionAfterAScanAsync())
             {
                 Mouse.OverrideCursor = null;
                 return;
@@ -1229,6 +1284,34 @@ namespace RFiDGear.ViewModel
                 _coordinator.EndExecution();
                 Mouse.OverrideCursor = null;
             }
+        }
+
+        /// <summary>The longest a run waits for a reader scan of an extension to end before it gives up.</summary>
+        internal TimeSpan MaxWaitForAScan { get; set; } = TimeSpan.FromSeconds(20);
+
+        // A scan is short. A run that meets one waits for it instead of being dropped: in automatic mode the card is in the
+        // tree already, so nothing would ever try it again. Any other reason to refuse (a run, a load, an edit) still
+        // refuses at once.
+        internal async Task<bool> TryBeginExecutionAfterAScanAsync()
+        {
+            var giveUp = DateTime.UtcNow + MaxWaitForAScan;
+            while (!_coordinator.TryBeginExecution())
+            {
+                if (!_coordinator.IsScanning)
+                {
+                    // Not a scan, or a scan that ended since the attempt: one more attempt tells which.
+                    return _coordinator.TryBeginExecution();
+                }
+
+                if (DateTime.UtcNow >= giveUp)
+                {
+                    return false;
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(25));
+            }
+
+            return true;
         }
 
         private void TaskExecutionService_ExecutionCompleted(object sender, TaskExecutionCompletedEventArgs e)
@@ -2175,6 +2258,9 @@ namespace RFiDGear.ViewModel
 
         private readonly ReaderConnectionProbe readerProbe = new ReaderConnectionProbe();
 
+        // The probe does nothing while somebody reads the card: the main window (the flag) or a reader scan (the gate).
+        internal bool? ReaderBusyForProbe() => _readerGate.IsHeld ? true : IsReaderBusy;
+
         private async void CheckReader(object sender)
         {
             readerMonitor?.Pause();
@@ -2186,7 +2272,7 @@ namespace RFiDGear.ViewModel
                     var result = await readerProbe.ProbeAsync(
                         ReaderDevice.Instance,
                         settings.DefaultSpecification.DefaultReaderProvider,
-                        IsReaderBusy);
+                        ReaderBusyForProbe());
 
                     if (result != null)
                     {

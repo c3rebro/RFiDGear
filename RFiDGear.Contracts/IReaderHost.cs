@@ -32,10 +32,11 @@ namespace RFiDGear.Contracts
         /// <see cref="CurrentUID"/>, <see cref="ChipTypeName"/> and <see cref="IsConnected"/> one after the other can mix
         /// two moments; this cannot, and it also lists a second credential (LF or LEGIC) read together with the card.
         /// <para>
-        /// It does not read the reader: it is what the last scan (<see cref="ScanAsync"/>) found. Reads that RFiDGear
-        /// makes itself (a task run, a quick check, a setup dialog, the Read button or the automatic mode of the main
-        /// window) are not included. Until the first scan that reads the reader, and after the reader the user selected
-        /// has changed, it is the host's guess from the state of the reader and can be out of date. Use
+        /// It does not read the reader: it is what the last scan (<see cref="ScanAsync"/>) found, or what the Read button
+        /// of RFiDGear's main window found, whichever came last (the automatic mode reads like that for a card it has
+        /// not seen yet). Other reads that RFiDGear makes itself (a task run, a quick check, a setup dialog, the periodic
+        /// check of the automatic mode) are not included. Until the first such read of the reader, and after the reader
+        /// the user selected has changed, it is the host's guess from the state of the reader and can be out of date. Use
         /// <see cref="ScanAsync"/> when you need to know what is on the reader now. It is never <c>null</c>: with no
         /// reader its state is <see cref="ReaderScanState.NoReader"/>. Its state is always
         /// <see cref="ReaderScanState.Ready"/> or <see cref="ReaderScanState.NoReader"/>: the answer of a scan becomes the
@@ -57,11 +58,13 @@ namespace RFiDGear.Contracts
         /// <para>
         /// Failures are answers, not exceptions: a reader that cannot be read gives the state
         /// <see cref="ReaderScanState.ReadFailed"/>, and no reader gives <see cref="ReaderScanState.NoReader"/>.
-        /// While the host is running tasks (<see cref="ITaskExecHost.IsRunning"/>), loading a project, editing one or
-        /// scanning already, the reader is not read and the answer has the state <see cref="ReaderScanState.Busy"/>: a
-        /// read could end the card's session in the middle of an operation. Ask again later. While a scan runs, a load,
-        /// a run or an edit started by someone else is refused as busy in turn. (A read that the user starts in RFiDGear's
-        /// main window at the same moment is not detected yet.)
+        /// While the host is running tasks (<see cref="ITaskExecHost.IsRunning"/>), loading a project, editing one,
+        /// scanning already, or reading a card for RFiDGear's main window (the Read button, the automatic mode), the
+        /// reader is not read and the answer has the state <see cref="ReaderScanState.Busy"/>: a read could end the
+        /// card's session in the middle of an operation. Ask again later. While a scan runs, a load, a run or an edit
+        /// started by someone else is refused as busy in turn, whereas the main window waits for the scan: its Read button
+        /// and a run it starts, while its timer skips a tick. Other reads of RFiDGear (a quick check, a setup dialog) are
+        /// not detected: do not scan while the user works with a card there.
         /// </para>
         /// <para>
         /// A scan changes no data on the card, but it activates the card again, which ends a card session that was
@@ -96,22 +99,26 @@ namespace RFiDGear.Contracts
         /// the picture of <see cref="CurrentSnapshot"/> starts again.
         /// </item>
         /// <item>
-        /// A scan (<see cref="ScanAsync"/>) finds a different picture than the one before: a card arrived, was removed or
-        /// was replaced, or a reader was lost or came back. The first scan that reads the reader (answers
-        /// <see cref="ReaderScanState.Ready"/> or <see cref="ReaderScanState.NoReader"/>) after the host started, and the
-        /// first after the reader changed, always raise it, whatever they find, because nothing was known before. A repeat
-        /// of the same picture raises nothing, and neither does a scan that was busy, failed or running while the reader
-        /// changed.
+        /// A scan (<see cref="ScanAsync"/>), or a read with the Read button of RFiDGear's main window, finds a different
+        /// picture than the one before: a card arrived, was removed or was replaced, or a reader was lost or came back.
+        /// The first such read of the reader (a scan that answers <see cref="ReaderScanState.Ready"/> or
+        /// <see cref="ReaderScanState.NoReader"/>, or a Read button read) after the host started, and the first after the
+        /// reader changed, always raise it, whatever they find, because nothing was known before. A repeat of the same
+        /// picture raises nothing, and neither does a scan or a read that failed, that was busy, that was made without a
+        /// reader device (the main window then does not read at all), or that was running while the reader changed.
         /// </item>
         /// </list>
-        /// A change of the card is only ever found by a scan: the host does not poll the reader on behalf of extensions.
+        /// The host does not poll the reader on behalf of extensions: a change of the card is found when a scan, or a read
+        /// of RFiDGear's main window, looks at the reader.
         /// Read <see cref="CurrentSnapshot"/> when the event is raised. <see cref="CurrentUID"/>, <see cref="ChipTypeName"/> and
         /// <see cref="IsConnected"/> describe the current reader when the event is raised.
         /// <para>
         /// Threading: raised synchronously on the thread that made the change and never marshalled. That is the UI thread
         /// for the user's selection, a thread-pool thread for the periodic check, and for a scan the thread on which the
-        /// scan finishes (a thread-pool thread); a subscriber that touches UI must marshal to its own dispatcher. The scan
-        /// has ended when the event is raised, so a handler may call <see cref="ScanAsync"/> or start a run.
+        /// scan finishes (a thread-pool thread), and for the Read button the UI thread; a subscriber that touches UI must
+        /// marshal to its own dispatcher. The scan has ended when the event is raised, so a handler may call
+        /// <see cref="ScanAsync"/> or start a run. An event that comes from the Read button can be raised while that read
+        /// is part of a run that the main window started: a scan or a run started from the handler is then refused as busy.
         /// </para>
         /// <para>
         /// Failures: an exception thrown by an ordinary (non-async) subscriber is logged (type name, redacted message
