@@ -855,6 +855,25 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
         }
         private string programToExecute;
 
+        /// <summary>
+        /// What closes the application for a program task whose text is <c>%EXIT</c>. Tests replace it so that the test
+        /// host is not closed; the application leaves it alone.
+        /// </summary>
+        internal static Action<int> ApplicationExit { get; set; } = Environment.Exit;
+
+        /// <summary>Gets whether the text of a program task asks for the application to close (<c>%EXIT</c>, in any case).</summary>
+        internal bool IsExitRequest => string.Equals(ProgramToExecute, "%exit", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Completes an exit request without closing the application, for a run that has to keep it open: the task counts
+        /// as successful, as it does when its program was started.
+        /// </summary>
+        internal void CompleteExitRequest()
+        {
+            CurrentTaskErrorLevel = ERROR.NoError;
+            IsTaskCompletedSuccessfully = true;
+        }
+
         #endregion
 
         #endregion General Properties
@@ -1650,11 +1669,14 @@ namespace RFiDGear.ViewModel.TaskSetupViewModels
                     info.Arguments = joinedArgs;
                 }
 
-                else if (ProgramToExecute.ToLower() == @"%exit")
+                else if (IsExitRequest)
                 {
-                    info = null;
+                    // The project asks for RFiDGear to close, for example as the last task of a check that another program
+                    // started. Nothing is logged after this, so say it first.
+                    SerilogLog.ForContext<CommonTaskViewModel>().Information("A task of the project asked for RFiDGear to close (%EXIT). Closing the application.");
+                    ApplicationExit(0);
 
-                    Environment.Exit(0);
+                    return Task.CompletedTask;
                 }
 
                 else

@@ -11,8 +11,9 @@ namespace RFiDGear.Contracts
     public enum ExecutionOutcome
     {
         /// <summary>
-        /// All executed tasks completed successfully and the run got to its last task. Tasks that error routing
-        /// jumped over on purpose, where error routing is in use, do not count against it.
+        /// All executed tasks completed successfully and the run got to its last task, or to a program task
+        /// <c>%EXIT</c> that ended it (see <c>ITaskExecHost.ExecuteAllAsync</c>). Tasks that error routing jumped over
+        /// on purpose, where error routing is in use, and the tasks after such a <c>%EXIT</c>, do not count against it.
         /// </summary>
         Success,
 
@@ -21,7 +22,8 @@ namespace RFiDGear.Contracts
 
         /// <summary>
         /// At least one task failed without a downstream handler, the run stopped before it reached its last task
-        /// (the unreached tasks are reported as <see cref="TaskSkipReasons.NotReached"/>), or the run ended without a
+        /// other than at a <c>%EXIT</c> task that ended it on purpose (the unreached tasks are reported as
+        /// <see cref="TaskSkipReasons.NotReached"/>), or the run ended without a
         /// terminal evaluation (see <see cref="ExecResult.FailureReason"/>). Operator intervention required.
         /// </summary>
         Failure

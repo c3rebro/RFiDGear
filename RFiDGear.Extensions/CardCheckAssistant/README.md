@@ -39,6 +39,11 @@ in the Extensions menu of the main window.
   and one line per task, with tasks the run never reached marked as such.
 - Is disabled while RFiDGear runs tasks, whoever started them, and cannot be
   closed in the middle of its own run.
+- Runs a project that ends with the program task `%EXIT` (the old assistant's
+  way of closing RFiDGear) without closing RFiDGear: the host ends the run at
+  that task as a normal finish, the tasks after it are shown as not reached
+  and are not held against the outcome, and the page shows the result. The
+  main window still closes RFiDGear on that task.
 - Shows a **card line** under the reader line: the type and UID of the card on
   the reader (`Card: DESFireEV1, UID 04AABBCCDD`, followed by `(+1 more)` when
   an LF or LEGIC credential was read together with it), or why there is none:

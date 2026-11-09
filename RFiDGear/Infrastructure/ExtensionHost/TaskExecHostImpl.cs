@@ -111,6 +111,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     NotifyTreeViewChanged = () => { },
                     NotifyTasksChanged = () => { },
                     RunSelectedOnly = false,
+
+                    // The page that started the run has to stay open to show its result: a project that ends with the
+                    // task %EXIT (the old assistant's way of closing RFiDGear) ends the run and not the application.
+                    KeepApplicationOpen = true,
                 };
 
                 var rawResult = await _execService.ExecuteOnceAsync(taskRequest, ct).ConfigureAwait(false);
