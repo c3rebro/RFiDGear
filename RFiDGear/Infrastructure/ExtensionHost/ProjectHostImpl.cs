@@ -130,7 +130,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
             ct.ThrowIfCancellationRequested();
 
-            // Atomically reserve the load slot. Fails immediately if load, execution, or edit is in progress.
+            // Atomically reserve the load slot. Fails immediately if load, execution, edit, or reader scan is in progress.
             if (!_coordinator.TryBeginLoad())
             {
                 return Contracts.ProjectOpenResult.Fail(Contracts.ProjectOpenError.Busy);
@@ -327,7 +327,9 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                         ? "A project load is in progress. Wait for LoadAsync to complete."
                         : _coordinator.IsExecuting
                             ? "A task run is in progress. Wait for it to complete."
-                            : "Another project edit is in progress.");
+                            : _coordinator.IsScanning
+                                ? "A reader scan is in progress. Wait for it to complete."
+                                : "Another project edit is in progress.");
             }
 
             var fileGateHeld = false;

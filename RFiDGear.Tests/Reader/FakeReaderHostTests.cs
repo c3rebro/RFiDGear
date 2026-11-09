@@ -45,6 +45,20 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public void TheFirstPicture_AlwaysCounts_AndTheReaderNameIsNotCompared()
+        {
+            var reader = new FakeReaderHost();
+            var events = 0;
+            reader.ReaderStateChanged += (_, _) => events++;
+
+            // The first picture raises although it equals what the single values give; a new name alone is no change of the card.
+            reader.Show(Snapshots.NoCard());
+            reader.Show(Snapshots.NoCard("Renamed"));
+
+            Assert.Equal(1, events);
+        }
+
+        [Fact]
         public void ShowingASnapshot_KeepsTheSingleValuesInStep_UntilOneOfThemIsSet()
         {
             var reader = new FakeReaderHost();

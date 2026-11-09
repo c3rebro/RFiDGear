@@ -44,7 +44,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 timerTimeout);
 
             _execution = new TaskExecHostImpl(execService, _project, coordinator);
-            _reader = new ReaderHostImpl(readerName);
+            _reader = new ReaderHostImpl(readerName, coordinator);
             _autoMode = new NullAutoModeHost();
             _appContext = new AppContextImpl();
         }
@@ -69,7 +69,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 execService ?? throw new ArgumentNullException(nameof(execService)),
                 _project,
                 coordinator);
-            _reader = new ReaderHostImpl(readerName ?? string.Empty);
+            _reader = new ReaderHostImpl(readerName ?? string.Empty, coordinator);
             _autoMode = new NullAutoModeHost();
             _appContext = new AppContextImpl();
         }
@@ -112,6 +112,11 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// follows the reader the user selects while the application runs. Pair it with
         /// <see cref="NotifyReaderStateChanged"/> to tell extensions when it changes.
         /// </param>
+        /// <param name="readerGate">
+        /// Optional gate that lets one party at a time read a card. A reader scan of an extension takes it, and the
+        /// application's own reads should take it too; a scan answers busy while it is held. When omitted a scan only
+        /// excludes loads, runs and project edits.
+        /// </param>
         public HeadlessExtensionHost(
             DatabaseReaderWriter dbRW,
             ITaskExecutionService execService,
@@ -122,7 +127,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             ExtensionOperationCoordinator coordinator,
             Func<string?>? getConfiguredLanguage = null,
             Func<bool>? isOnUiThread = null,
-            Func<string?>? getReaderName = null)
+            Func<string?>? getReaderName = null,
+            ReaderAccessGate? readerGate = null)
         {
             _project = new ProjectHostImpl(
                 dbRW ?? throw new ArgumentNullException(nameof(dbRW)),
@@ -136,8 +142,8 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                 _project,
                 coordinator);
             _reader = getReaderName != null
-                ? new ReaderHostImpl(getReaderName)
-                : new ReaderHostImpl(readerName ?? string.Empty);
+                ? new ReaderHostImpl(getReaderName, coordinator, readerGate)
+                : new ReaderHostImpl(readerName ?? string.Empty, coordinator, readerGate);
             _autoMode = new NullAutoModeHost();
             _appContext = getConfiguredLanguage != null
                 ? new AppContextImpl(getConfiguredLanguage)
@@ -160,10 +166,12 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public IAppContext AppContext => _appContext;
 
         /// <summary>
-        /// Notifies the reader host that connection or card state may have changed.
-        /// Call this from the main application's reader polling loop.
+        /// Tells the reader host that the reader the user selected has changed (its display name is a different one).
+        /// What the old reader showed says nothing about the new one, so the card picture the host kept is forgotten
+        /// and <see cref="IReaderHost.ReaderStateChanged"/> is raised once. Call it from the place that changes the
+        /// name, and only then.
         /// </summary>
-        public void NotifyReaderStateChanged() => _reader.RaiseStateChanged();
+        public void NotifyReaderStateChanged() => _reader.NotifyReaderNameChanged();
 
         /// <summary>
         /// Tells the host that the application has just changed the language it works with. If

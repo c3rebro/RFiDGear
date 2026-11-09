@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -248,8 +249,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
     /// <summary>
     /// A reader the test scripts. What it shows can be set as one snapshot or through the older single values, the next
     /// scans can be scripted (a result, a failure, a result that waits for a gate), and it keeps the contract of the real
-    /// host: a scan that finds a different picture raises <c>ReaderStateChanged</c> once, and a scan that was busy or
-    /// failed leaves the picture as it was.
+    /// host: a scan that finds a different picture raises <c>ReaderStateChanged</c> once (the first picture always counts
+    /// as different, and the reader name is not part of the comparison), and a scan that was busy or failed leaves the
+    /// picture as it was.
     /// </summary>
     internal sealed class FakeReaderHost : IReaderHost
     {
@@ -263,6 +265,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         private string? _chipTypeName;
         private bool _isConnected = true;
         private ReaderSnapshot? _snapshot;
+        private bool _known;
         private int _scanCount;
 
         /// <summary>Makes every read of the reader fail, as a faulty reader provider would.</summary>
@@ -326,7 +329,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
             bool changed;
             lock (_sync)
             {
-                changed = !PictureLocked().Equals(snapshot);
+                changed = !_known || !SameCard(PictureLocked(), snapshot);
+                _known = true;
                 _snapshot = snapshot;
                 _readerName = snapshot.ReaderName;
                 _isConnected = snapshot.State != ReaderScanState.NoReader;
@@ -430,6 +434,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             return new ReaderSnapshot(name, ReaderScanState.Ready, credentials);
         }
+
+        private static bool SameCard(ReaderSnapshot a, ReaderSnapshot b) =>
+            a.State == b.State && a.Credentials.SequenceEqual(b.Credentials);
 
         private static int CodeOf(string? typeName) =>
             Enum.TryParse<CARD_TYPE>(typeName, out var type) ? (int)type : 0;

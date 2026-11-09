@@ -16,7 +16,7 @@ namespace RFiDGear.Contracts
 
         /// <summary>
         /// The project cannot be replaced right now because a task execution, another load, a project edit
-        /// (<c>New</c> / <c>ReplaceTaskCollection</c>), or a save is in progress. The prior project is untouched;
+        /// (<c>New</c> / <c>ReplaceTaskCollection</c>), a reader scan, or a save is in progress. The prior project is untouched;
         /// retry once the other operation has finished.
         /// </summary>
         Busy,

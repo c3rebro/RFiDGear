@@ -28,7 +28,7 @@ namespace RFiDGear.Contracts
         /// <see cref="ExecuteAllAsync(ExecutionRequest, CancellationToken)"/>, because both share one admission gate.
         /// <para>
         /// Not raised: for a call that is refused (busy, or an argument error before admission), for a project load,
-        /// or for a project edit. Those do not change <see cref="IsRunning"/>.
+        /// for a project edit, or for a reader scan. Those do not change <see cref="IsRunning"/>.
         /// </para>
         /// <para>
         /// Ordering: for a run started through this interface, the change to <c>true</c> comes before any task work,
@@ -68,8 +68,9 @@ namespace RFiDGear.Contracts
         /// </para>
         /// <para>
         /// Busy behavior: it must not be called while <see cref="IsRunning"/> is <c>true</c>; doing so throws
-        /// <see cref="InvalidOperationException"/> and does not interrupt the active run. A project load or a
-        /// project edit (<c>New</c> / <c>ReplaceTaskCollection</c>) in progress is treated the same way.
+        /// <see cref="InvalidOperationException"/> and does not interrupt the active run. A project load, a
+        /// project edit (<c>New</c> / <c>ReplaceTaskCollection</c>) or a reader scan (<see cref="IReaderHost.ScanAsync"/>)
+        /// in progress is treated the same way.
         /// </para>
         /// <para>
         /// Fresh state: task completion state is reset when the run is accepted, so the returned
@@ -127,7 +128,7 @@ namespace RFiDGear.Contracts
         /// Thrown when a report variable cannot be honoured (see <see cref="ExecutionRequest"/>),
         /// before the run is accepted and before any card operation.
         /// </exception>
-        /// <exception cref="InvalidOperationException">Thrown when a run, a project load, or a project edit is already in progress.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when a run, a project load, a project edit, or a reader scan is already in progress.</exception>
         Task<ExecResult> ExecuteAllAsync(ExecutionRequest request, CancellationToken ct = default);
 
         /// <summary>
@@ -144,8 +145,8 @@ namespace RFiDGear.Contracts
         /// <see cref="ExecuteAllAsync(ExecutionRequest, CancellationToken)"/> does this automatically; call it
         /// only to clear results between runs.
         /// <para>
-        /// Busy behavior: it is refused while a task run (<see cref="IsRunning"/>), a project load, or a project edit
-        /// (<c>New</c> / <c>ReplaceTaskCollection</c>) is in progress. The call then throws
+        /// Busy behavior: it is refused while a task run (<see cref="IsRunning"/>), a project load, a project edit
+        /// (<c>New</c> / <c>ReplaceTaskCollection</c>) or a reader scan is in progress. The call then throws
         /// <see cref="InvalidOperationException"/> and changes nothing; the active operation is not interrupted.
         /// Clearing the state under a running task loop would make execute conditions that depend on an earlier task
         /// see a cleared (<c>Empty</c>) error level, and for Mifare Classic, DESFire and common tasks (create report,
@@ -161,7 +162,7 @@ namespace RFiDGear.Contracts
         /// Threading: in the main application it changes UI-bound task state, so call it on the UI thread.
         /// </para>
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown when a run, a project load, or a project edit is in progress.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when a run, a project load, a project edit, or a reader scan is in progress.</exception>
         void ResetStatus();
 
         /// <summary>

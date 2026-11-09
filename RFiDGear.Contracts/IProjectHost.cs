@@ -9,8 +9,8 @@ namespace RFiDGear.Contracts
     /// Provides access to the active task project from an extension or test harness.
     /// <para>
     /// Project operations never overlap: a load, a project edit (<see cref="New"/>, <see cref="ReplaceTaskCollection"/>),
-    /// and a task run exclude one another, and a save is excluded by a load or an edit but, unlike them, is allowed
-    /// while a task run is in progress. A task-status reset (<see cref="ITaskExecHost.ResetStatus"/>) counts as a
+    /// a task run and a reader scan (<see cref="IReaderHost.ScanAsync"/>) exclude one another, and a save is excluded by a load or an edit but, unlike them, is allowed
+    /// while a task run or a reader scan is in progress. A task-status reset (<see cref="ITaskExecHost.ResetStatus"/>) counts as a
     /// project edit here, for as long as it runs. Each member below says how a rejected call is reported.
     /// </para>
     /// <para>
@@ -59,7 +59,7 @@ namespace RFiDGear.Contracts
         /// context; marshal to the dispatcher before updating bound UI properties.
         /// </para>
         /// <para>
-        /// Busy: if a task execution, another load, a project edit, or a save is in progress, the call returns
+        /// Busy: if a task execution, another load, a project edit, a reader scan, or a save is in progress, the call returns
         /// immediately with <see cref="ProjectOpenError.Busy"/>. The prior project is never unloaded when the load fails.
         /// </para>
         /// <para>
@@ -126,7 +126,7 @@ namespace RFiDGear.Contracts
         /// thread. <see cref="ProjectChanged"/> is raised before this method returns.
         /// </para>
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown when a load, a task run, a save, or another project edit is in progress.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when a load, a task run, a reader scan, a save, or another project edit is in progress.</exception>
         void New();
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace RFiDGear.Contracts
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown when <see cref="CurrentPath"/> is <c>null</c> (use <see cref="SaveAs"/>), or when a load, a save,
-        /// or a project edit is in progress. Saving while a task run is in progress is allowed.
+        /// or a project edit is in progress. Saving while a task run or a reader scan is in progress is allowed.
         /// </exception>
         /// <exception cref="System.IO.IOException">Thrown when the project could not be written.</exception>
         void Save();
@@ -155,7 +155,7 @@ namespace RFiDGear.Contracts
         /// <param name="path">Output path for the project file.</param>
         /// <exception cref="ArgumentException">Thrown when <paramref name="path"/> is null, empty, or whitespace.</exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when a load, a save, or a project edit is in progress. Saving while a task run is in progress is allowed.
+        /// Thrown when a load, a save, or a project edit is in progress. Saving while a task run or a reader scan is in progress is allowed.
         /// </exception>
         /// <exception cref="System.IO.IOException">Thrown when the project could not be written; <see cref="CurrentPath"/> is then unchanged.</exception>
         void SaveAs(string path);
@@ -170,7 +170,7 @@ namespace RFiDGear.Contracts
         /// </summary>
         /// <param name="tasks">New ordered task collection.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="tasks"/> is <c>null</c>.</exception>
-        /// <exception cref="InvalidOperationException">Thrown when a load, a task run, a save, or another project edit is in progress.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when a load, a task run, a reader scan, a save, or another project edit is in progress.</exception>
         void ReplaceTaskCollection(IEnumerable<object> tasks);
 
         /// <summary>

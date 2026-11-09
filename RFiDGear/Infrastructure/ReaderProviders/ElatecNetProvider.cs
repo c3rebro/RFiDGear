@@ -151,8 +151,10 @@ namespace RFiDGear.Infrastructure.ReaderProviders
                             hfTag = new GenericChipModel(tmpTag.UIDHexString, (CARD_TYPE)((short)(tmpTag as MifareChip).SubType << 8));
                         }
                     }
-                    else if (tmpTag == null)
+                    else
                     {
+                        // No MIFARE chip: none at all, or one of a kind this application has no model for. Either way the
+                        // tag of the read before is gone and must not be shown (nor get the LF and LEGIC children again).
                         hfTag = null;
                     }
 

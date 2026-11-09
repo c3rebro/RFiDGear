@@ -49,14 +49,15 @@ namespace RFiDGear.Contracts
         /// <summary>
         /// What is on the reader, the main credential first (its <see cref="CredentialInfo.IsPrimary"/> is <c>true</c>).
         /// Empty unless <see cref="State"/> is <see cref="ReaderScanState.Ready"/>, and also empty when the reader was read
-        /// and there is no card on it (with a PC/SC reader it can also mean a card that could not be read).
+        /// and there is no card on it (it can also mean a card that RFiDGear cannot read; see
+        /// <see cref="IReaderHost.ScanAsync"/>).
         /// </summary>
         public IReadOnlyList<CredentialInfo> Credentials { get; }
 
         /// <summary>
-        /// <c>true</c> when the reader was read and a card is on it. <c>false</c> means "no card" only when
-        /// <see cref="State"/> is <see cref="ReaderScanState.Ready"/>, and with a PC/SC reader not even then (see
-        /// <see cref="IReaderHost.ScanAsync"/>).
+        /// <c>true</c> when the reader was read and a card is on it. <c>false</c> means that there is no card RFiDGear can
+        /// read, and only when <see cref="State"/> is <see cref="ReaderScanState.Ready"/>; with a PC/SC reader not even
+        /// then (see <see cref="IReaderHost.ScanAsync"/>).
         /// </summary>
         public bool HasCard => Credentials.Count > 0;
 
