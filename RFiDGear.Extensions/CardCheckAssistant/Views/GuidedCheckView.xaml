@@ -1,0 +1,394 @@
+<UserControl
+    x:Class="RFiDGear.Extensions.CardCheckAssistant.Views.GuidedCheckView"
+    x:ClassModifier="internal"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="clr-namespace:RFiDGear.Extensions.CardCheckAssistant.ViewModels"
+    MinWidth="620"
+    MinHeight="490">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <Style x:Key="ErrorText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="Firebrick" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+
+        <!-- a line that is only there when it says something -->
+        <Style x:Key="OptionalText" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource Self}}" Value="">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="Prompt" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Margin" Value="0,12,0,6" />
+        </Style>
+
+        <!-- the verdict; an unclear one is a warning -->
+        <Style x:Key="VerdictText" TargetType="TextBlock" BasedOn="{StaticResource Prompt}">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsIndeterminate}" Value="True">
+                    <Setter Property="Foreground" Value="#9A5B00" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ColumnHeader" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="4,2" />
+        </Style>
+
+        <Style x:Key="Cell" TargetType="TextBlock">
+            <Setter Property="Margin" Value="4,1" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style x:Key="StepButton" TargetType="Button">
+            <Setter Property="MinWidth" Value="130" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+        </Style>
+
+        <Style x:Key="StepButtons" TargetType="StackPanel">
+            <Setter Property="Orientation" Value="Horizontal" />
+            <Setter Property="Margin" Value="0,12,0,0" />
+        </Style>
+
+        <DataTemplate x:Key="OrderRow">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="OrderJob" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="OrderChip" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="OrderStatus" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Style="{StaticResource Cell}" MinWidth="90" FontWeight="SemiBold" Text="{Binding JobNumber}" />
+                <TextBlock Grid.Column="1" Style="{StaticResource Cell}" MinWidth="50" Text="{Binding ChipNumber}" />
+                <TextBlock Grid.Column="2" Style="{StaticResource Cell}" Text="{Binding Customer}" />
+                <TextBlock Grid.Column="3" Style="{StaticResource Cell}" MinWidth="90" Text="{Binding Status}" />
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsStartable}" Value="False">
+                    <Setter Property="TextElement.Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <DataTemplate x:Key="OutcomeRow" DataType="{x:Type vm:TaskOutcomeRowViewModel}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Position" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="TaskIndex" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Result" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="ErrorCode" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Style="{StaticResource Cell}" Text="{Binding Position}" />
+                <TextBlock Grid.Column="1" Style="{StaticResource Cell}" Text="{Binding TaskIndex}" />
+                <TextBlock Grid.Column="2" Style="{StaticResource Cell}" Text="{Binding TaskType}" />
+                <TextBlock x:Name="ResultCell" Grid.Column="3" Style="{StaticResource Cell}" Text="{Binding ResultText}" />
+                <TextBlock Grid.Column="4" Style="{StaticResource Cell}" Text="{Binding ErrorCode}" />
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static vm:TaskRowKind.Failure}">
+                    <Setter TargetName="ResultCell" Property="Foreground" Value="Firebrick" />
+                    <Setter TargetName="ResultCell" Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static vm:TaskRowKind.Success}">
+                    <Setter TargetName="ResultCell" Property="Foreground" Value="DarkGreen" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static vm:TaskRowKind.Skipped}">
+                    <Setter TargetName="ResultCell" Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- one problem: what went wrong and what to do, and the code that support can ask for -->
+        <DataTemplate x:Key="MessageRow">
+            <StackPanel>
+                <TextBlock Style="{StaticResource ErrorText}" Text="{Binding Text}" />
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock FontSize="11" Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                               Text="{Binding DataContext.Strings[GuidedCodeLabel], RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                    <TextBlock FontSize="11" Margin="4,0,0,0" Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" Text="{Binding Code}" />
+                </StackPanel>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- the table of task results: the header stays, the rows scroll under it -->
+        <DataTemplate x:Key="TaskTable">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Position" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="TaskIndex" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Result" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="ErrorCode" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[ColumnPosition]}" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[ColumnTaskIndex]}" />
+                        <TextBlock Grid.Column="2" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[ColumnType]}" />
+                        <TextBlock Grid.Column="3" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[ColumnResult]}" />
+                        <TextBlock Grid.Column="4" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[ColumnErrorCode]}" />
+                        <Border Grid.Column="5" Width="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" />
+                    </Grid>
+                </Border>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Visible">
+                    <ItemsControl ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource OutcomeRow}" />
+                </ScrollViewer>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="12" Grid.IsSharedSizeScope="True">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- what this page does, the reader, and the test mode -->
+        <Grid Grid.Row="0" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="{Binding Strings[GuidedHint]}" TextWrapping="Wrap" Margin="0,0,0,4" />
+                <TextBlock x:Name="ReaderLine" Text="{Binding ReaderText}" TextTrimming="CharacterEllipsis" />
+                <Border x:Name="TestModeBanner" Margin="0,6,0,0" Padding="6,3" BorderThickness="1" BorderBrush="#C9A227" Background="#FFF4CC"
+                        Visibility="{Binding IsTestMode, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Foreground="Black" TextWrapping="Wrap" Text="{Binding TestModeText}" />
+                </Border>
+            </StackPanel>
+            <Button x:Name="SettingsButton" Grid.Column="1" VerticalAlignment="Top" Margin="12,0,0,0" Padding="12,3"
+                    Command="{Binding OpenSettingsCommand}" Content="{Binding Strings[SettingsButton]}">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding HasSettings}" Value="True" />
+                                    <Condition Binding="{Binding IsOrdersStep}" Value="True" />
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible" />
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
+
+        <!-- the order being checked -->
+        <Grid x:Name="OrderSummary" Grid.Row="1" Margin="0,0,0,8"
+              Visibility="{Binding HasOrder, Converter={StaticResource BoolToVisibility}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" Text="{Binding Strings[JobNumberLabel]}" />
+            <TextBlock Grid.Column="1" FontWeight="SemiBold" Margin="4,0,12,0" Text="{Binding OrderJob}" />
+            <TextBlock Grid.Column="2" Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" Text="{Binding Strings[ChipNumberLabel]}" />
+            <TextBlock Grid.Column="3" FontWeight="SemiBold" Margin="4,0,12,0" Text="{Binding OrderChip}" />
+            <TextBlock Grid.Column="4" TextTrimming="CharacterEllipsis" Text="{Binding OrderCustomer}" />
+        </Grid>
+
+        <!-- one section for each step; only the one of the present step is shown -->
+        <Grid Grid.Row="2">
+            <!-- the list of orders -->
+            <Grid x:Name="StepOrders" Visibility="{Binding IsOrdersStep, Converter={StaticResource BoolToVisibility}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                    <Label Content="{Binding Strings[ReportLanguageLabel]}" Target="{Binding ElementName=LanguageBox}" Padding="0,0,8,0" VerticalAlignment="Center" />
+                    <ComboBox x:Name="LanguageBox" MinWidth="140" ItemsSource="{Binding Languages}" DisplayMemberPath="Name"
+                              SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}" AutomationProperties.Name="{Binding Strings[ReportLanguageLabel]}" />
+                </StackPanel>
+                <Border Grid.Row="1" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="OrderJob" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="OrderChip" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="OrderStatus" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource ColumnHeader}" MinWidth="90" Text="{Binding Strings[JobNumberLabel]}" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource ColumnHeader}" MinWidth="50" Text="{Binding Strings[ChipNumberLabel]}" />
+                        <TextBlock Grid.Column="2" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[GuidedCustomerLabel]}" />
+                        <TextBlock Grid.Column="3" Style="{StaticResource ColumnHeader}" MinWidth="90" Text="{Binding Strings[GuidedOrderStatusLabel]}" />
+                        <Border Grid.Column="4" Width="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" />
+                    </Grid>
+                </Border>
+                <ListBox x:Name="OrderList" Grid.Row="2" ItemsSource="{Binding Orders}" SelectedItem="{Binding SelectedOrder, Mode=TwoWay}"
+                         ItemTemplate="{StaticResource OrderRow}" HorizontalContentAlignment="Stretch" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible"
+                         AutomationProperties.Name="{Binding Strings[GuidedHint]}" />
+                <StackPanel Grid.Row="3" Margin="0,4,0,0">
+                    <TextBlock x:Name="OrdersEmptyText" Style="{StaticResource OptionalText}" Text="{Binding OrdersEmptyText}"
+                               Visibility="{Binding HasOrdersEmptyText, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBlock x:Name="UpdatingLine" Style="{StaticResource OptionalText}" Text="{Binding UpdatingText}"
+                               Visibility="{Binding IsUpdatingOrders, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBlock x:Name="OrderHint" Style="{StaticResource OptionalText}" Text="{Binding SelectedOrderHint}" />
+                </StackPanel>
+                <StackPanel Grid.Row="4" Style="{StaticResource StepButtons}">
+                    <Button x:Name="CheckOrderButton" Style="{StaticResource StepButton}" IsDefault="True"
+                            Command="{Binding StartOrderCommand}" Content="{Binding Strings[GuidedCheckOrderButton]}" />
+                    <Button x:Name="RefreshButton" Style="{StaticResource StepButton}"
+                            Command="{Binding RefreshCommand}" Content="{Binding Strings[GuidedRefreshButton]}" />
+                </StackPanel>
+            </Grid>
+
+            <!-- the order is being prepared -->
+            <StackPanel x:Name="StepPrepare" Visibility="{Binding IsPrepareStep, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Style="{StaticResource Prompt}" Text="{Binding PrepareText}" />
+                <ProgressBar Height="14" IsIndeterminate="True" />
+            </StackPanel>
+
+            <!-- reports of an earlier check exist -->
+            <StackPanel x:Name="StepReplace" Visibility="{Binding IsReplaceStep, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Style="{StaticResource Prompt}" Text="{Binding ReplaceText}" />
+                <TextBlock TextWrapping="Wrap" Text="{Binding ReplaceNote}" />
+                <StackPanel Style="{StaticResource StepButtons}">
+                    <Button x:Name="ReplaceButton" Style="{StaticResource StepButton}"
+                            Command="{Binding ConfirmReplaceCommand}" Content="{Binding Strings[GuidedReplaceButton]}" />
+                    <Button x:Name="KeepButton" Style="{StaticResource StepButton}" IsDefault="True"
+                            Command="{Binding KeepReportsCommand}" Content="{Binding Strings[GuidedKeepButton]}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- the chip is awaited -->
+            <StackPanel x:Name="StepCard" Visibility="{Binding IsCardStep, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock x:Name="PromptLine" Style="{StaticResource Prompt}" Text="{Binding PromptText}" />
+                <ProgressBar Height="14" IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Text="{Binding KeepChipText}" />
+                <StackPanel Style="{StaticResource StepButtons}">
+                    <Button x:Name="StartCheckButton" Style="{StaticResource StepButton}" IsDefault="True"
+                            Command="{Binding StartCheckCommand}" Content="{Binding Strings[GuidedStartCheckButton]}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- the check runs, or it failed -->
+            <Grid x:Name="StepCheck" Visibility="{Binding IsCheckStep, Converter={StaticResource BoolToVisibility}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Style="{StaticResource Prompt}" Text="{Binding CheckText}" />
+                <ProgressBar Grid.Row="1" Height="14" IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                <Grid Grid.Row="2" Margin="0,8,0,0" Visibility="{Binding HasRows, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock FontWeight="SemiBold" Text="{Binding SummaryText}" />
+                    <ContentControl Grid.Row="1" ContentTemplate="{StaticResource TaskTable}" Content="{Binding}" />
+                </Grid>
+                <StackPanel Grid.Row="3" Style="{StaticResource StepButtons}">
+                    <Button x:Name="RetryRunButton" Style="{StaticResource StepButton}" Command="{Binding RetryCommand}" Content="{Binding Strings[GuidedRetryButton]}" />
+                </StackPanel>
+            </Grid>
+
+            <!-- the verdict -->
+            <Grid x:Name="StepVerdict" Visibility="{Binding IsVerdictStep, Converter={StaticResource BoolToVisibility}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <ScrollViewer x:Name="VerdictScroll" Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                    <TextBlock x:Name="VerdictLine" Style="{StaticResource VerdictText}" Text="{Binding VerdictText}" />
+                    <TextBlock Style="{StaticResource OptionalText}" Text="{Binding ChipTypeText}" />
+                    <TextBlock Style="{StaticResource OptionalText}" Text="{Binding FreeMemoryText}" />
+                    <TextBlock Style="{StaticResource OptionalText}" Text="{Binding NotesText}" />
+                    <TextBox x:Name="ReportPathBox" Margin="0,8,0,0" Padding="0" IsReadOnly="True" BorderThickness="0" Background="Transparent"
+                             TextWrapping="Wrap" Text="{Binding ReportPathText, Mode=OneWay}" />
+                    <TextBlock Style="{StaticResource OptionalText}" Text="{Binding OpenReportHint}" />
+                    </StackPanel>
+                </ScrollViewer>
+                <Expander Grid.Row="1" Margin="0,8,0,0" Header="{Binding Strings[GuidedDetailsHeader]}"
+                          Visibility="{Binding HasRows, Converter={StaticResource BoolToVisibility}}">
+                    <ContentControl MaxHeight="160" ContentTemplate="{StaticResource TaskTable}" Content="{Binding}" />
+                </Expander>
+                <StackPanel Grid.Row="2" Style="{StaticResource StepButtons}">
+                    <Button x:Name="FinishButton" Style="{StaticResource StepButton}" IsDefault="True"
+                            Command="{Binding FinishCommand}" Content="{Binding Strings[GuidedFinishButton]}" />
+                </StackPanel>
+            </Grid>
+
+            <!-- the finished report is made and stored -->
+            <StackPanel x:Name="StepFinish" Visibility="{Binding IsFinishStep, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Style="{StaticResource Prompt}" Text="{Binding FinishText}" />
+                <ProgressBar Height="14" IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                <StackPanel Style="{StaticResource StepButtons}">
+                    <Button x:Name="RetryFinishButton" Style="{StaticResource StepButton}" Command="{Binding RetryCommand}" Content="{Binding Strings[GuidedRetryButton]}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- the end -->
+            <StackPanel x:Name="StepEnd" Visibility="{Binding IsEndStep, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock x:Name="EndLine" Style="{StaticResource Prompt}" Text="{Binding EndText}" />
+                <StackPanel Style="{StaticResource StepButtons}">
+                    <Button x:Name="BackButton" Style="{StaticResource StepButton}" IsDefault="True"
+                            Command="{Binding BackCommand}" Content="{Binding Strings[GuidedBackButton]}" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- what went wrong, what is being cancelled, and why the window cannot close -->
+        <StackPanel x:Name="Notes" Grid.Row="3" Margin="0,8,0,0">
+            <ItemsControl x:Name="MessageList" ItemsSource="{Binding Messages}" ItemTemplate="{StaticResource MessageRow}" />
+            <TextBlock x:Name="CancellingLine" Style="{StaticResource OptionalText}" Text="{Binding CancellingText}" />
+            <TextBlock x:Name="CloseHint" Margin="0,4,0,0" TextWrapping="Wrap" FontWeight="SemiBold" Text="{Binding CloseHintText}"
+                       Visibility="{Binding ShowCloseHint, Converter={StaticResource BoolToVisibility}}" />
+        </StackPanel>
+
+        <!-- the way out of whatever is going on -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0"
+                    Visibility="{Binding ShowCancel, Converter={StaticResource BoolToVisibility}}">
+            <Button x:Name="CancelButton" MinWidth="130" Padding="12,4" Command="{Binding CancelCommand}">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Content" Value="{Binding Strings[CancelButton]}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsProgrammable}" Value="True">
+                                <Setter Property="Content" Value="{Binding Strings[GuidedLeaveOpenButton]}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </StackPanel>
+    </Grid>
+</UserControl>

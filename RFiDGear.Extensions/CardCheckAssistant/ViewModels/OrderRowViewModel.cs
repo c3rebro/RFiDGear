@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 using RFiDGear.ExtensionLibraries.CardCheck;
 using RFiDGear.Extensions.CardCheckAssistant.Workflow;
@@ -37,5 +38,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         /// <summary>Gets a value indicating whether the order can be checked: only an order in progress can.</summary>
         public bool IsStartable { get; }
+
+        /// <summary>The row as one line, which is also what a screen reader announces for the item.</summary>
+        /// <returns>Job number, chip number, customer and status, without the ones that are empty.</returns>
+        public override string ToString() =>
+            string.Join(", ", new[] { JobNumber, ChipNumber, Customer, Status }.Where(part => !string.IsNullOrWhiteSpace(part)));
     }
 }

@@ -435,6 +435,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         [Theory]
         [InlineData("CardCheckAssistantView.xaml")]
+        [InlineData("GuidedCheckView.xaml")]
         [InlineData("SettingsView.xaml")]
         public void EveryTextTheXamlBindsTo_ExistsInBothLanguages(string xamlFile)
         {

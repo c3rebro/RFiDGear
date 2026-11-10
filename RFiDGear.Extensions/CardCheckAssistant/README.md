@@ -221,9 +221,10 @@ in the Extensions menu of the main window.
   there and a test folder that cannot be made are failures with a fixed code and
   text, not exceptions; an exception nobody expects is left for the workflow's
   catch-all, which logs it. The old page does not use the workflow yet.
-  `ViewModels/GuidedCheckViewModel` is the page that will, and has no window
-  yet. It binds to the workflow through `IGuidedWorkflow` (so a test can hand
-  it any snapshot in any order) and shows every snapshot in full: each change
+  `ViewModels/GuidedCheckViewModel` is the page that will; its window is
+  described below. It binds to the workflow through `IGuidedWorkflow` (so a
+  test can hand it any snapshot in any order) and shows every snapshot in
+  full: each change
   of the workflow or of the host is posted to the window's dispatcher and
   applied there in order, a snapshot that is not newer than the one shown is
   ignored, and every property is computed from the snapshot, never from the
@@ -239,4 +240,16 @@ in the Extensions menu of the main window.
   kind, because the same kind stands for different causes; the code is shown
   with it. Closing the window asks the workflow: nothing in progress closes,
   a step that cannot be left refuses, and a check that can be abandoned asks
-  first, through `ICloseConfirmation`.
+  first, through `ICloseConfirmation`. `Views/GuidedCheckView` is its window:
+  one section for each step, shown at a minimum of 620 by 490, with the way
+  out (Cancel, or Leave order open for a chip that can be programmed, which
+  this version does not do) in the footer and the problems with their codes
+  below the step. It opens the page when it is loaded and asks the page
+  before the window closes. `Services/GuidedWorkflowFactory` builds the real
+  workflow of a window from the settings, the order system (or the made-up
+  orders), the reports, `CheckRunner` and `CardWaiter`, and a workflow that
+  only says it has nothing to work from for the case that the assistant's
+  application data cannot be reached. It uses library types to build the
+  workflow, so it is called only after the library is known to be there. The
+  window is not wired yet: the page the menu entry opens is still the old
+  one.
