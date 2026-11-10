@@ -178,6 +178,37 @@ and no backward compatibility is wanted (the extension has one switch for it):
   and the chosen template is always one of the available ones. A call that
   does not fit the state (findings before an order, a template that does not
   fit the chip) returns a failure and changes nothing.
+- Every call that records something (`RecordFindings`, `ChooseTemplate`,
+  `RecordAnswers`) names the order it is for. A slow run of order 1 that
+  answers after order 2 has begun is refused as stale
+  (`session.order.stale`) and changes nothing, so it cannot write its
+  findings into the next order's check. A check for the same order that is
+  begun again is not told apart from the first: the caller must not begin it
+  again while a call of its own is still pending.
+- The operator's answers about the programming (`LsmAnswers`) are kept as
+  given, complete or not, and only for a chip whose verdict is `Programmable`.
+  New findings forget them: they were given for another report.
+
+**Answers and the end of a check** (`LsmAnswers`, `FinishRules`):
+
+- `LsmAnswers.ToFields(template)` turns the three yes-or-no questions (did
+  the programming succeed, did the function test pass, is the function
+  restricted) into the report fields to write, with the names and the pairs of
+  check boxes (`Yes` and `Off`) that the old assistant wrote. A question that
+  has not been answered is `null`, not "no", and the first one is named in the
+  failure; nothing is guessed. The notes of the report are written only when
+  the function is restricted and a text was given (a caller that shows the text
+  to the operator starts it with the notes of the first report; an empty text
+  clears them, no text leaves them as they are); the sectors only for a Classic
+  template, as free text; the template's text always. Nothing in the extension
+  uses these types yet.
+- `FinishRules.AfterFirstRun(verdict)` says how a check ends right after the
+  first run: not supported, supported only and a report that contradicts
+  itself finish with the first report; programming follows only for a
+  `Programmable` chip (the answer is `null`). A contradicting report keeps its
+  working files, because the operator is asked to look at them.
+  `FinishRules.AfterProgramming` finishes with the report of the read-out run,
+  or with the report made before programming if that run left none.
 
 **Report files** (`IReportFiles`, created by
 `CardCheckServices.CreateReportFiles`):

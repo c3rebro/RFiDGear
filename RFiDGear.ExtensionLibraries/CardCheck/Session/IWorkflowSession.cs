@@ -32,6 +32,12 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         /// <summary>The template chosen for the report; one of <c>Selection.Available</c>, or <c>null</c>.</summary>
         public LsmTemplate? ChosenTemplate { get; init; }
 
+        /// <summary>
+        /// What the operator answered about the programming; <c>null</c> until it has been recorded. Belongs to the
+        /// findings it was given for: recording new findings forgets it.
+        /// </summary>
+        public LsmAnswers? Answers { get; init; }
+
         /// <summary>How many changes this session has had; grows by one with each change.</summary>
         public long Version { get; init; }
     }
@@ -42,7 +48,10 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
     /// </summary>
     public interface IWorkflowSession
     {
-        /// <summary>The current state; never <c>null</c>.</summary>
+        /// <summary>
+        /// The current state; never <c>null</c>. Take everything you need from one read of it: two reads may see two
+        /// different checks.
+        /// </summary>
         SessionSnapshot Current { get; }
 
         /// <summary>
@@ -63,16 +72,37 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
         /// <summary>
         /// Records what the first report said and what follows from it. The preselected template (if any) becomes
-        /// the chosen one.
+        /// the chosen one, and answers recorded before are forgotten: they were given for another report.
         /// </summary>
+        /// <param name="orderId">
+        /// The identifier of the order the caller is working on, exactly as given to <see cref="Begin"/>
+        /// (<see cref="WorkflowOrder.Id"/>). If a check for another order has begun in the meantime, the call is
+        /// refused as stale and changes nothing, so a slow run of one order cannot write its findings into the next
+        /// order's check. A check for the same order that was begun again is not told apart from the first: the
+        /// caller must not begin it again while a call of its own is still pending.
+        /// </param>
         /// <param name="analysis">What the first report said.</param>
-        /// <returns>Success, or why it cannot be recorded (no check has begun).</returns>
-        Result RecordFindings(ReportAnalysis analysis);
+        /// <returns>Success, or why it cannot be recorded (no check has begun, or it is another order's).</returns>
+        Result RecordFindings(string orderId, ReportAnalysis analysis);
 
         /// <summary>Chooses one of the templates that fit the chip.</summary>
+        /// <param name="orderId">The identifier of the order the caller is working on; see <see cref="RecordFindings"/>.</param>
         /// <param name="template">The template; it must be one of the available ones.</param>
-        /// <returns>Success, or why it cannot be chosen.</returns>
-        Result ChooseTemplate(LsmTemplate template);
+        /// <returns>Success, or why it cannot be chosen (no check has begun, it is another order's, or the template does not fit).</returns>
+        Result ChooseTemplate(string orderId, LsmTemplate template);
+
+        /// <summary>
+        /// Records what the operator answered about the programming. The answers are kept as given, complete or not;
+        /// <see cref="LsmAnswers.ToFields"/> says whether they are complete. Only a chip whose verdict is
+        /// <see cref="ChipVerdict.Programmable"/> has anything to answer.
+        /// </summary>
+        /// <param name="orderId">The identifier of the order the caller is working on; see <see cref="RecordFindings"/>.</param>
+        /// <param name="answers">The answers.</param>
+        /// <returns>
+        /// Success, or why they cannot be recorded: no check has begun, it is another order's, the first report has
+        /// not been recorded yet, or the chip is not programmable.
+        /// </returns>
+        Result RecordAnswers(string orderId, LsmAnswers answers);
 
         /// <summary>Forgets the check, order included.</summary>
         void Reset();

@@ -60,8 +60,13 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         }
 
         /// <inheritdoc />
-        public Result RecordFindings(ReportAnalysis analysis)
+        public Result RecordFindings(string orderId, ReportAnalysis analysis)
         {
+            if (orderId == null)
+            {
+                throw new ArgumentNullException(nameof(orderId));
+            }
+
             if (analysis == null)
             {
                 throw new ArgumentNullException(nameof(analysis));
@@ -69,9 +74,11 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
             return Change(snapshot =>
             {
-                if (snapshot.Order == null)
+                var refused = Refuse(snapshot, orderId);
+
+                if (refused != null)
                 {
-                    return NoOrder();
+                    return refused;
                 }
 
                 var selection = TemplateRules.Select(analysis);
@@ -81,14 +88,20 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
                     Findings = analysis,
                     Selection = selection,
                     ChosenTemplate = selection.Default,
+                    Answers = null,
                     Version = snapshot.Version + 1,
                 });
             });
         }
 
         /// <inheritdoc />
-        public Result ChooseTemplate(LsmTemplate template)
+        public Result ChooseTemplate(string orderId, LsmTemplate template)
         {
+            if (orderId == null)
+            {
+                throw new ArgumentNullException(nameof(orderId));
+            }
+
             if (template == null)
             {
                 throw new ArgumentNullException(nameof(template));
@@ -96,9 +109,11 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
             return Change(snapshot =>
             {
-                if (snapshot.Order == null)
+                var refused = Refuse(snapshot, orderId);
+
+                if (refused != null)
                 {
-                    return NoOrder();
+                    return refused;
                 }
 
                 var match = snapshot.Selection?.Available.FirstOrDefault(t => t.Name == template.Name);
@@ -110,6 +125,39 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         }
 
         /// <inheritdoc />
+        public Result RecordAnswers(string orderId, LsmAnswers answers)
+        {
+            if (orderId == null)
+            {
+                throw new ArgumentNullException(nameof(orderId));
+            }
+
+            if (answers == null)
+            {
+                throw new ArgumentNullException(nameof(answers));
+            }
+
+            return Change(snapshot =>
+            {
+                var refused = Refuse(snapshot, orderId);
+
+                if (refused != null)
+                {
+                    return refused;
+                }
+
+                if (snapshot.Selection == null)
+                {
+                    return Result<SessionSnapshot>.Fail(new Failure(FailureKind.InvalidInput, "session.noFindings", "The first report has not been recorded yet."));
+                }
+
+                return snapshot.Selection.Verdict == ChipVerdict.Programmable
+                    ? Result<SessionSnapshot>.Ok(snapshot with { Answers = answers, Version = snapshot.Version + 1 })
+                    : Result<SessionSnapshot>.Fail(new Failure(FailureKind.InvalidInput, "session.answers.notExpected", "Only a programmable chip has answers to record."));
+            });
+        }
+
+        /// <inheritdoc />
         public void Reset()
         {
             Change(snapshot => Result<SessionSnapshot>.Ok(new SessionSnapshot { Version = snapshot.Version + 1 }));
@@ -117,6 +165,20 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
 
         private static Result<SessionSnapshot> NoOrder() =>
             Result<SessionSnapshot>.Fail(new Failure(FailureKind.InvalidInput, "session.noOrder", "No check has begun."));
+
+        // Why a call for this order cannot be applied to the snapshot, or null when it can: no check has begun, or the
+        // check that is running belongs to another order (the caller is a slow run of the previous one).
+        private static Result<SessionSnapshot>? Refuse(SessionSnapshot snapshot, string orderId)
+        {
+            if (snapshot.Order == null)
+            {
+                return NoOrder();
+            }
+
+            return string.Equals(snapshot.Order.Id, orderId, StringComparison.Ordinal)
+                ? null
+                : Result<SessionSnapshot>.Fail(new Failure(FailureKind.InvalidInput, "session.order.stale", "The check now running belongs to another order."));
+        }
 
         // The new snapshot is built from the current one and swapped in under the lock; the event is raised after the
         // lock is released, so a handler may read the session or change it again. Events are raised one at a time, in
