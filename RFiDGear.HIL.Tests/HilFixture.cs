@@ -106,8 +106,22 @@ namespace RFiDGear.HIL.Tests
 
         // ── private helpers ──────────────────────────────────────────────────
 
-        private static void ConfigureSerilog()
+        private static readonly object LogLock = new object();
+        private static bool _logConfigured;
+
+        internal static void ConfigureSerilog()
         {
+            // Both fixtures call this: a second logger on the same file would find it locked and start another file.
+            lock (LogLock)
+            {
+                if (_logConfigured)
+                {
+                    return;
+                }
+
+                _logConfigured = true;
+            }
+
             var logDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "RFiDGear", "log");
