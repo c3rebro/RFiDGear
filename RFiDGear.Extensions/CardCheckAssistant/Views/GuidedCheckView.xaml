@@ -38,7 +38,7 @@
             <Setter Property="FontWeight" Value="SemiBold" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsIndeterminate}" Value="True">
-                    <Setter Property="Foreground" Value="DarkOrange" />
+                    <Setter Property="Foreground" Value="#9A5B00" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -200,14 +200,21 @@
         </Grid>
 
         <!-- the order being checked -->
-        <StackPanel x:Name="OrderSummary" Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8"
-                    Visibility="{Binding HasOrder, Converter={StaticResource BoolToVisibility}}">
-            <TextBlock Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" Text="{Binding Strings[JobNumberLabel]}" />
-            <TextBlock FontWeight="SemiBold" Margin="4,0,12,0" Text="{Binding OrderJob}" />
-            <TextBlock Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" Text="{Binding Strings[ChipNumberLabel]}" />
-            <TextBlock FontWeight="SemiBold" Margin="4,0,12,0" Text="{Binding OrderChip}" />
-            <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding OrderCustomer}" />
-        </StackPanel>
+        <Grid x:Name="OrderSummary" Grid.Row="1" Margin="0,0,0,8"
+              Visibility="{Binding HasOrder, Converter={StaticResource BoolToVisibility}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" Text="{Binding Strings[JobNumberLabel]}" />
+            <TextBlock Grid.Column="1" FontWeight="SemiBold" Margin="4,0,12,0" Text="{Binding OrderJob}" />
+            <TextBlock Grid.Column="2" Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" Text="{Binding Strings[ChipNumberLabel]}" />
+            <TextBlock Grid.Column="3" FontWeight="SemiBold" Margin="4,0,12,0" Text="{Binding OrderChip}" />
+            <TextBlock Grid.Column="4" TextTrimming="CharacterEllipsis" Text="{Binding OrderCustomer}" />
+        </Grid>
 
         <!-- one section for each step; only the one of the present step is shown -->
         <Grid Grid.Row="2">
@@ -315,11 +322,12 @@
             <!-- the verdict -->
             <Grid x:Name="StepVerdict" Visibility="{Binding IsVerdictStep, Converter={StaticResource BoolToVisibility}}">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0">
+                <ScrollViewer x:Name="VerdictScroll" Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
                     <TextBlock x:Name="VerdictLine" Style="{StaticResource VerdictText}" Text="{Binding VerdictText}" />
                     <TextBlock Style="{StaticResource OptionalText}" Text="{Binding ChipTypeText}" />
                     <TextBlock Style="{StaticResource OptionalText}" Text="{Binding FreeMemoryText}" />
@@ -327,7 +335,8 @@
                     <TextBox x:Name="ReportPathBox" Margin="0,8,0,0" Padding="0" IsReadOnly="True" BorderThickness="0" Background="Transparent"
                              TextWrapping="Wrap" Text="{Binding ReportPathText, Mode=OneWay}" />
                     <TextBlock Style="{StaticResource OptionalText}" Text="{Binding OpenReportHint}" />
-                </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
                 <Expander Grid.Row="1" Margin="0,8,0,0" Header="{Binding Strings[GuidedDetailsHeader]}"
                           Visibility="{Binding HasRows, Converter={StaticResource BoolToVisibility}}">
                     <ContentControl MaxHeight="160" ContentTemplate="{StaticResource TaskTable}" Content="{Binding}" />

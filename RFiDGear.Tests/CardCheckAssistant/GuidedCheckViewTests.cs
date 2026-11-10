@@ -159,6 +159,24 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.True(page.Contains(bounds), what + " lies outside the page: " + bounds + " in " + page);
         }
 
+        // The contrast ratio of two colours as WCAG defines it.
+        private static double Contrast(System.Windows.Media.Color a, System.Windows.Media.Color b)
+        {
+            static double Channel(byte value)
+            {
+                var c = value / 255.0;
+
+                return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+            }
+
+            static double Luminance(System.Windows.Media.Color color) =>
+                (0.2126 * Channel(color.R)) + (0.7152 * Channel(color.G)) + (0.0722 * Channel(color.B));
+
+            var (light, dark) = Luminance(a) >= Luminance(b) ? (Luminance(a), Luminance(b)) : (Luminance(b), Luminance(a));
+
+            return (light + 0.05) / (dark + 0.05);
+        }
+
         private static OrderRecord Order(string id, OrderStatus status = OrderStatus.InProgress) => new OrderRecord
         {
             Id = id,
@@ -311,7 +329,41 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             Assert.True(scene.Button("FinishButton").IsEnabled);
             Assert.Equal(scene.Vm.Strings[Keys.CancelButton], scene.Button("CancelButton").Content);
-            Assert.Equal(System.Windows.Media.Brushes.DarkOrange.Color, ((System.Windows.Media.SolidColorBrush)scene.Named<TextBlock>("VerdictLine").Foreground).Color);
+            // A dark amber, not DarkOrange: the text has to be readable on the white window (at least 4.5 : 1).
+            var warning = ((System.Windows.Media.SolidColorBrush)scene.Named<TextBlock>("VerdictLine").Foreground).Color;
+            Assert.Equal(System.Windows.Media.Color.FromRgb(0x9A, 0x5B, 0x00), warning);
+            Assert.True(Contrast(warning, System.Windows.Media.Colors.White) >= 4.5, "The warning is hard to read.");
+        });
+
+        [Fact]
+        public Task ALongCustomerName_IsTrimmed_InTheSummaryOfTheOrder() => Show(async scene =>
+        {
+            var longName = string.Join(" ", Enumerable.Repeat("Mueller Metallbau GmbH", 12));
+            await scene.PushAsync(
+                WorkflowState.WaitingForCard,
+                s => s with { Order = new WorkflowOrder("A", "JA", "1"), Orders = new[] { new OrderRecord { Id = "A", JobNumber = "JA", ChipNumber = "1", CustomerName = longName, StatusText = "InProgress" } } });
+
+            AssertInside(scene.View, scene.Named<Grid>("OrderSummary"), "the summary of the order");
+            var customer = VisualDescendants<TextBlock>(scene.Named<Grid>("OrderSummary")).Single(block => block.Text == longName);
+            AssertInside(scene.View, customer, "the customer");
+        });
+
+        [Fact]
+        public Task LongNotesOfTheReport_ScrollInTheirOwnArea_AndTheButtonsStayInsideThePage() => Show(async scene =>
+        {
+            var notes = string.Join(Environment.NewLine, Enumerable.Range(1, 60).Select(i => "Note line " + i));
+            var findings = new ReportAnalysis { ChipType = "DESFire EV1", FreeMemoryText = "1760", Notes = notes };
+            var check = new CheckRunResult(CheckRunStatus.Finished, null, Rows(12), findings, "first-report.pdf");
+            var selection = new TemplateSelection(ChipVerdict.NotSupported, FreeMemory.Unknown, Array.Empty<LsmTemplate>(), null);
+            await scene.PushAsync(WorkflowState.Assessing, s => s with { Order = new WorkflowOrder("A", "JA", "1"), Findings = findings, Check = check, Selection = selection });
+            var expander = VisualDescendants<Expander>(scene.View).Single();
+            expander.IsExpanded = true;
+            scene.Window.UpdateLayout();
+
+            var scroll = scene.Named<ScrollViewer>("VerdictScroll");
+            Assert.True(scroll.ScrollableHeight > 0, "The notes did not need the scroll area.");
+            Assert.All(VisibleButtons(scene.View), button => AssertInside(scene.View, button, button.Name));
+            AssertInside(scene.View, scene.Button("FinishButton"), "the Finish button");
         });
 
         [Fact]
