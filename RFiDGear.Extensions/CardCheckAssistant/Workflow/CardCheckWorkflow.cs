@@ -43,6 +43,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         private readonly IReportService _reports;
         private readonly ICheckRunner _runner;
         private readonly ICardWaiter _waiter;
+        private readonly IOrderReservations _reservations;
         private readonly ICardCheckLog _log;
         private readonly CancellationTokenSource _disposeSource = new CancellationTokenSource();
 
@@ -67,6 +68,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// <param name="reports">Makes the finished report.</param>
         /// <param name="runner">Runs the check project.</param>
         /// <param name="waiter">Waits for a card.</param>
+        /// <param name="reservations">Which orders the windows are checking; shared by all windows (<see cref="OrderReservations.Shared"/>).</param>
         /// <param name="log">Where an unexpected fault is noted (by type only).</param>
         /// <exception cref="ArgumentNullException">One of the arguments is null.</exception>
         public CardCheckWorkflow(
@@ -76,6 +78,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             IReportService reports,
             ICheckRunner runner,
             ICardWaiter waiter,
+            IOrderReservations reservations,
             ICardCheckLog log)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -84,6 +87,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             _reports = reports ?? throw new ArgumentNullException(nameof(reports));
             _runner = runner ?? throw new ArgumentNullException(nameof(runner));
             _waiter = waiter ?? throw new ArgumentNullException(nameof(waiter));
+            _reservations = reservations ?? throw new ArgumentNullException(nameof(reservations));
             _log = log ?? throw new ArgumentNullException(nameof(log));
             _current = Compose(new WorkflowSnapshot());
         }
@@ -103,7 +107,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             }
         }
 
-        /// <summary>The operation that is running, or a task that is complete if none is. It does not fail: whatever goes wrong ends in the state <see cref="WorkflowState.Faulted"/>.</summary>
+        /// <summary>
+        /// The operation that is running, or a task that is complete if none is. It is in place before the first event of
+        /// the operation is raised, so a handler of that event that waits for it waits for this one. It does not fail:
+        /// whatever goes wrong ends in the state <see cref="WorkflowState.Faulted"/>.
+        /// </summary>
         public Task CurrentOperation => _operation;
 
         /// <summary>Whether an order can be started: only an order that is in progress has a check to make.</summary>
@@ -290,6 +298,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
 
             _disposeSource.Cancel();
             _disposeSource.Dispose();
+
+            // A step that is still running (an upload) keeps the order until it has ended.
+            if (!_busy)
+            {
+                ReleaseJob();
+            }
         }
 
         // ── the operations ──────────────────────────────────────────────────
@@ -319,15 +333,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
                 WorkflowState.Idle,
                 s => listed.IsSuccess
                     ? s with { Orders = listed.Value, OrdersFailure = null, IsTestMode = settings.IsTestMode, DefaultLanguage = settings.DefaultLanguage }
-                    : s with
-                    {
-                        // The last good list stays, unless it came from the other mode: the made-up orders must not
-                        // look like real ones.
-                        Orders = settings.IsTestMode == s.IsTestMode ? s.Orders : Array.Empty<OrderRecord>(),
-                        OrdersFailure = listed.Failure,
-                        IsTestMode = settings.IsTestMode,
-                        DefaultLanguage = settings.DefaultLanguage,
-                    });
+                    : WithListFailure(s, settings, listed.Failure!));
         }
 
         private async Task StartAsync(string orderId, ReportLanguage language, CancellationToken ct)
@@ -354,12 +360,24 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
 
             if (!listed.IsSuccess)
             {
+                Change(s => WithListFailure(s, settings, listed.Failure!));
+                if (StopIfCancelled())
+                {
+                    return;
+                }
+
                 Refuse(listed.Failure!);
                 return;
             }
 
             var orders = listed.Value;
             Change(s => s with { Orders = orders, OrdersFailure = null, IsTestMode = settings.IsTestMode, DefaultLanguage = settings.DefaultLanguage });
+
+            // A handler of that event may have cancelled: that comes before any refusal.
+            if (StopIfCancelled())
+            {
+                return;
+            }
 
             var order = orders.FirstOrDefault(o => string.Equals(o.Id, orderId, StringComparison.Ordinal));
             var refusal = RefusalFor(order, settings);
@@ -371,6 +389,16 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
 
             await BeginOrderAsync(context, order!, language, ct);
         }
+
+        // The last good list stays when a read fails, unless it came from the other mode: made-up orders must not look
+        // like real ones.
+        private static WorkflowSnapshot WithListFailure(WorkflowSnapshot s, WorkflowSettings settings, Failure failure) => s with
+        {
+            Orders = settings.IsTestMode == s.IsTestMode ? s.Orders : Array.Empty<OrderRecord>(),
+            OrdersFailure = failure,
+            IsTestMode = settings.IsTestMode,
+            DefaultLanguage = settings.DefaultLanguage,
+        };
 
         // Why an order cannot be started, or null when it can.
         private static Failure? RefusalFor(OrderRecord? order, WorkflowSettings settings)
@@ -402,7 +430,16 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
                 return;
             }
 
+            // Two windows must not check the same order: they would overwrite each other's reports.
+            var lease = _reservations.TryReserve(paths.Value.Final);
+            if (lease == null)
+            {
+                Refuse(new Failure(FailureKind.InvalidInput, WorkflowFailureCodes.OrderInUse, "The order is being checked in another window."));
+                return;
+            }
+
             var workflowOrder = new WorkflowOrder(order.Id, order.JobNumber, order.ChipNumber);
+            _job = new Job(context.Store, settings, workflowOrder, paths.Value, language, lease);
             var begun = _session.Begin(workflowOrder, language);
             if (!begun.IsSuccess)
             {
@@ -416,7 +453,6 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
                 return;
             }
 
-            _job = new Job(context.Store, settings, workflowOrder, paths.Value, language);
             Change(s => s with { Order = workflowOrder, Language = language, ExistingReports = existing });
 
             // A handler of that event may have cancelled; the cancel must not be swallowed by the settle that follows.
@@ -651,7 +687,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             if (from == WorkflowState.LoadingOrders || from == WorkflowState.Starting)
             {
                 _session.Reset();
-                _job = null;
+                ReleaseJob();
                 Settle(WorkflowState.Idle, ClearOrderParts);
             }
             else
@@ -664,15 +700,24 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         private void Refuse(Failure failure)
         {
             _session.Reset();
-            _job = null;
+            ReleaseJob();
             Settle(WorkflowState.Idle, s => ClearOrderParts(s) with { Failure = failure });
         }
 
         private void GoBack()
         {
             _session.Reset();
-            _job = null;
+            ReleaseJob();
             Move(WorkflowState.Idle, ClearOrderParts);
+        }
+
+        // The window lets go of its order: the reports of an order are held by one window from the start of its check
+        // until it goes back to the list, is cancelled before the check, or is closed.
+        private void ReleaseJob()
+        {
+            var job = _job;
+            _job = null;
+            job?.Lease.Dispose();
         }
 
         private static WorkflowSnapshot ClearOrderParts(WorkflowSnapshot s) => s with
@@ -701,21 +746,19 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             _operationSource = CancellationTokenSource.CreateLinkedTokenSource(_disposeSource.Token);
             var token = _operationSource.Token;
             var id = ++_operationId;
+            var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // The awaitable comes before the event: a handler of the first event that waits for the operation must wait
+            // for this one. A handler that starts the next operation replaces it, and this one does not take it back.
+            _operation = completion.Task;
             _busy = true;
             Publish(to, s => (edit == null ? s : edit(s)) with { Failure = null, Phase = null });
-
-            // A handler of the event above, or the first stretch of the step itself, may already have started the next
-            // operation: then that one is the current one, and this step has nothing more to say about the slot.
-            var task = ExecuteAsync(body, token, id);
-            if (_operationId == id)
-            {
-                _operation = task;
-            }
+            _ = ExecuteAsync(body, token, id, completion);
         }
 
         // The step with this identity runs its body and, if the body ends without having settled, faults. A step whose
         // slot was taken over by a later one (a handler started it as soon as this one settled) leaves the slot alone.
-        private async Task ExecuteAsync(Func<CancellationToken, Task> body, CancellationToken token, long id)
+        private async Task ExecuteAsync(Func<CancellationToken, Task> body, CancellationToken token, long id, TaskCompletionSource<bool> completion)
         {
             try
             {
@@ -738,6 +781,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
                     Settle(WorkflowState.Faulted, s => s with { Failure = new Failure(FailureKind.Unexpected, WorkflowFailureCodes.Faulted, "Something unexpected went wrong (" + ex.GetType().Name + ")."), Phase = null });
                 }
             }
+            finally
+            {
+                completion.TrySetResult(true);
+            }
         }
 
         private bool OwnsSlot(long id) => _busy && _operationId == id;
@@ -751,6 +798,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             _operationSource = null;
             Publish(to, edit);
             source?.Dispose();
+            if (_disposed)
+            {
+                ReleaseJob();
+            }
         }
 
         private void Move(WorkflowState to, Func<WorkflowSnapshot, WorkflowSnapshot>? edit) => Publish(to, edit);
@@ -901,14 +952,18 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         // What the workflow knows about the order being checked, from the start to the end.
         private sealed class Job
         {
-            public Job(IOrderStore store, WorkflowSettings settings, WorkflowOrder order, OrderReportPaths paths, ReportLanguage language)
+            public Job(IOrderStore store, WorkflowSettings settings, WorkflowOrder order, OrderReportPaths paths, ReportLanguage language, IDisposable lease)
             {
+                Lease = lease;
                 Store = store;
                 Settings = settings;
                 Order = order;
                 Paths = paths;
                 Language = language;
             }
+
+            // The reservation of the order's reports.
+            public IDisposable Lease { get; }
 
             public IOrderStore Store { get; }
 

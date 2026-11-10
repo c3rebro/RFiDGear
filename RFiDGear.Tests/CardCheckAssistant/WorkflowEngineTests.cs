@@ -202,6 +202,165 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
+        public Task AFailedListAtTheStart_AlsoDropsAListFromTheOtherMode_AndShowsTheModeItFailedIn() => Sta(async rig =>
+        {
+            rig.Engine.RefreshOrders();
+            await rig.Settled();
+            Assert.Equal(5, rig.Now.Orders.Count);
+
+            rig.UseSettings(s => s with { IsTestMode = false });
+            rig.Store.ListAnswer = Result<IReadOnlyList<OrderRecord>>.Fail(new Failure(FailureKind.Unreachable, "orders.unreachable", "No server."));
+            rig.Engine.Start(Rig.OrderId, ReportLanguage.German);
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Idle, rig.Now.State);
+            Assert.Equal("orders.unreachable", rig.Now.Failure!.Code);
+            Assert.Empty(rig.Now.Orders);
+            Assert.False(rig.Now.IsTestMode);
+        });
+
+        [Fact]
+        public Task ACancelFromAHandlerOfTheEventThatShowsTheFreshList_WinsOverARefusal() => Sta(async rig =>
+        {
+            var cancelled = false;
+            rig.Engine.Changed += (_, s) =>
+            {
+                if (!cancelled && s.State == WorkflowState.Starting && s.Orders.Count > 0 && s.Order == null)
+                {
+                    cancelled = true;
+                    rig.Engine.Cancel();
+                }
+            };
+
+            rig.Engine.Start("STUB-1", ReportLanguage.German);   // not in progress: it would be refused
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Idle, rig.Now.State);
+            Assert.Null(rig.Now.Failure);
+        });
+
+        [Fact]
+        public Task TheOperation_IsThereBeforeTheFirstEventOfItIsRaised() => Sta(async rig =>
+        {
+            await rig.AssessedAsync(ChipVerdict.NotSupported);
+            Task? seen = null;
+            rig.Engine.Changed += (_, s) =>
+            {
+                if (s.State == WorkflowState.Completing && seen == null)
+                {
+                    seen = rig.Engine.CurrentOperation;
+                }
+            };
+
+            rig.Engine.Finish();
+
+            // A handler that waited for the operation at the first event waits for the upload, not for the step before.
+            Assert.NotNull(seen);
+            Assert.False(seen!.IsCompleted);
+            await rig.Settled();
+            await seen.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(WorkflowState.Completed, rig.Now.State);
+        });
+
+        [Fact]
+        public Task AnOrderThatOneWindowChecks_CannotBeStartedInAnotherWindow_UntilTheFirstLetsGo() => Sta(async rig =>
+        {
+            await rig.WaitingForCardAsync();   // the first window holds the order
+            using var other = rig.SecondWindow();
+
+            other.Engine.Start(Rig.OrderId, ReportLanguage.German);
+            await other.Settled();
+
+            Assert.Equal(WorkflowState.Idle, other.Now.State);
+            Assert.Equal(WorkflowFailureCodes.OrderInUse, other.Now.Failure!.Code);
+            Assert.Null(other.Session.Current.Order);
+            Assert.Equal(WorkflowState.WaitingForCard, rig.Now.State);
+
+            rig.Engine.Cancel();
+            rig.Engine.Back();   // the first window goes back to the list and lets go
+            other.Engine.Start(Rig.OrderId, ReportLanguage.German);
+            await other.Settled();
+
+            Assert.Equal(WorkflowState.WaitingForCard, other.Now.State);
+        });
+
+        [Fact]
+        public Task AWindowThatIsClosed_LetsGoOfItsOrder() => Sta(async rig =>
+        {
+            await rig.WaitingForCardAsync();
+            using var other = rig.SecondWindow();
+
+            rig.Engine.Dispose();
+            other.Engine.Start(Rig.OrderId, ReportLanguage.German);
+            await other.Settled();
+
+            Assert.Equal(WorkflowState.WaitingForCard, other.Now.State);
+        });
+
+        [Fact]
+        public Task AStartThatIsCancelledAfterTheOrderWasReserved_LetsGoOfIt() => Sta(async rig =>
+        {
+            rig.WriteReport(ReportFile.Step1);
+            var cancelled = false;
+            rig.Engine.Changed += (_, s) =>
+            {
+                if (!cancelled && s.State == WorkflowState.Starting && s.Order != null)
+                {
+                    cancelled = true;
+                    rig.Engine.Cancel();
+                }
+            };
+            rig.Engine.Start(Rig.OrderId, ReportLanguage.German);
+            await rig.Settled();
+            Assert.Equal(WorkflowState.Idle, rig.Now.State);
+            using var other = rig.SecondWindow();
+
+            other.Engine.Start(Rig.OrderId, ReportLanguage.German);
+            await other.Settled();
+
+            Assert.Equal(WorkflowState.ConfirmingReplace, other.Now.State);   // not "in use"
+        });
+
+        [Fact]
+        public Task AStartThatIsRefusedAfterTheOrderWasReserved_LetsGoOfIt() => Sta(async rig =>
+        {
+            // The session refuses a check without an identifier; the order is reserved before the session is asked.
+            rig.Store.ListAnswer = Result<IReadOnlyList<OrderRecord>>.Ok(new[]
+            {
+                new OrderRecord { Id = " ", JobNumber = Rig.Job, ChipNumber = Rig.Chip, StatusText = nameof(OrderStatus.InProgress) },
+            });
+            rig.Engine.Start(" ", ReportLanguage.German);
+            await rig.Settled();
+            Assert.Equal(WorkflowState.Idle, rig.Now.State);
+            Assert.NotNull(rig.Now.Failure);
+            using var other = rig.SecondWindow();
+            rig.Store.ListAnswer = null;
+
+            other.Engine.Start(Rig.OrderId, ReportLanguage.German);
+            await other.Settled();
+
+            Assert.Equal(WorkflowState.WaitingForCard, other.Now.State);
+        });
+
+        [Fact]
+        public void TheReservations_AreExclusive_ReleasedOnce_AndIgnoreTheCaseOfAPath()
+        {
+            var reservations = new OrderReservations();
+
+            var first = reservations.TryReserve("C:\\Reports\\KP-1\\KP-1-5_final.pdf");
+            Assert.NotNull(first);
+            Assert.Null(reservations.TryReserve("c:\\reports\\kp-1\\kp-1-5_final.pdf"));
+            Assert.NotNull(reservations.TryReserve("C:\\Reports\\KP-2\\KP-2-6_final.pdf"));
+
+            first!.Dispose();
+            var second = reservations.TryReserve("C:\\Reports\\KP-1\\KP-1-5_final.pdf");
+            Assert.NotNull(second);
+            first.Dispose();   // letting go twice must not release what the second holds
+            Assert.Null(reservations.TryReserve("C:\\Reports\\KP-1\\KP-1-5_final.pdf"));
+            Assert.Throws<ArgumentNullException>(() => reservations.TryReserve(null!));
+        }
+
+        [Fact]
         public Task AFailedRead_KeepsTheLastGoodList_ButNotOneThatCameFromTheOtherMode() => Sta(async rig =>
         {
             rig.Engine.RefreshOrders();
@@ -925,15 +1084,17 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var reports = CardCheckServices.CreateReportService(log);
             var runner = new FakeCheckRunner();
             var waiter = new FakeCardWaiter();
+            var reservations = new OrderReservations();
 
-            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(null!, session, files, reports, runner, waiter, log));
-            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, null!, files, reports, runner, waiter, log));
-            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, session, null!, reports, runner, waiter, log));
-            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, session, files, null!, runner, waiter, log));
-            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, session, files, reports, null!, waiter, log));
-            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, session, files, reports, runner, null!, log));
-            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, session, files, reports, runner, waiter, null!));
-            using var workflow = new CardCheckWorkflow(context, session, files, reports, runner, waiter, log);
+            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(null!, session, files, reports, runner, waiter, reservations, log));
+            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, null!, files, reports, runner, waiter, reservations, log));
+            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, session, null!, reports, runner, waiter, reservations, log));
+            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, session, files, null!, runner, waiter, reservations, log));
+            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, session, files, reports, null!, waiter, reservations, log));
+            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, session, files, reports, runner, null!, reservations, log));
+            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, session, files, reports, runner, waiter, null!, log));
+            Assert.Throws<ArgumentNullException>(() => new CardCheckWorkflow(context, session, files, reports, runner, waiter, reservations, null!));
+            using var workflow = new CardCheckWorkflow(context, session, files, reports, runner, waiter, reservations, log);
             Assert.Throws<ArgumentNullException>(() => workflow.Start(null!, ReportLanguage.German));
             Assert.Throws<ArgumentNullException>(() => CardCheckWorkflow.IsStartable(null!));
         }
@@ -975,7 +1136,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 _settings = new WorkflowSettings(Location, removeTemporary, ReportLanguage.German, _area.ProjectPath, true);
                 UseSettings(s => s);
                 var reports = CardCheckServices.CreateReportService(Log);
-                Engine = new CardCheckWorkflow(Context, Session, wrapFiles == null ? Files : wrapFiles(Files), wrapReports == null ? reports : wrapReports(reports), Runner, Waiter, Log);
+                Engine = new CardCheckWorkflow(Context, Session, wrapFiles == null ? Files : wrapFiles(Files), wrapReports == null ? reports : wrapReports(reports), Runner, Waiter, Reservations, Log);
                 if (record)
                 {
                     Engine.Changed += (_, snapshot) => Events.Add(snapshot);
@@ -1001,6 +1162,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
             public FakeCheckRunner Runner { get; } = new FakeCheckRunner();
 
             public FakeCardWaiter Waiter { get; } = new FakeCardWaiter();
+
+            public OrderReservations Reservations { get; } = new OrderReservations();
 
             public CardCheckWorkflow Engine { get; }
 
@@ -1029,7 +1192,47 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Context.Answer = Result<WorkflowContext>.Ok(new WorkflowContext(Store, _settings));
             }
 
-            public Task Settled() => Engine.CurrentOperation.WaitAsync(TimeSpan.FromSeconds(30));
+            public Task Settled() => SettledAsync(Engine);
+
+            // Waits for the operation, and for the one a handler started on its last event, and so on.
+            private static async Task SettledAsync(CardCheckWorkflow engine)
+            {
+                Task last;
+                do
+                {
+                    last = engine.CurrentOperation;
+                    await last.WaitAsync(TimeSpan.FromSeconds(30));
+                }
+                while (!ReferenceEquals(last, engine.CurrentOperation));
+            }
+
+            // A second window of the assistant: its own session and workflow, the same store, files, runner and reservations.
+            public Window SecondWindow()
+            {
+                var session = CardCheckServices.CreateWorkflowSession(Log);
+                var engine = new CardCheckWorkflow(Context, session, Files, CardCheckServices.CreateReportService(Log), Runner, Waiter, Reservations, Log);
+
+                return new Window(engine, session);
+            }
+
+            public sealed class Window : IDisposable
+            {
+                public Window(CardCheckWorkflow engine, IWorkflowSession session)
+                {
+                    Engine = engine;
+                    Session = session;
+                }
+
+                public CardCheckWorkflow Engine { get; }
+
+                public IWorkflowSession Session { get; }
+
+                public WorkflowSnapshot Now => Engine.Current;
+
+                public Task Settled() => SettledAsync(Engine);
+
+                public void Dispose() => Engine.Dispose();
+            }
 
             // Lets the dispatcher run until a condition holds (a held step is waiting on a gate of the test).
             public async Task UntilAsync(Func<bool> condition)
@@ -1097,9 +1300,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
 
             // The check project writes a first report with the flags a verdict needs, and the runner answers with what it says.
-            public void Verdict(ChipVerdict verdict)
+            public void Verdict(ChipVerdict kind)
             {
-                switch (verdict)
+                switch (kind)
                 {
                     case ChipVerdict.NotSupported:
                         RunnerWritesFirstReport(false, false, "N/A");

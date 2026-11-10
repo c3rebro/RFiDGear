@@ -202,7 +202,11 @@ in the Extensions menu of the main window.
   which, what is offered in each, what closing the window means), and a test
   demands an entry for every state. Starting an order reads the list again, so
   a stale list cannot start a finished order (in the test mode only the third
-  stub order is in progress). The workflow is for one context, the window's;
+  stub order is in progress). Two windows cannot check the same order: the
+  reports of an order are files with fixed names, so a window reserves the
+  order from the start of its check until it goes back to the list, is
+  cancelled before the check, or is closed (`OrderReservations`, one instance
+  for all windows). The workflow is for one context, the window's;
   events are delivered in the order of the versions, also when a handler calls
   a command. The order store and settings come from one
   `IWorkflowContextSource`, so an order is listed, checked and finished with

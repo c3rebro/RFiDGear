@@ -20,6 +20,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// <summary>The order is not in progress, so there is no check to make.</summary>
         public const string OrderNotStartable = "workflow.order.notStartable";
 
+        /// <summary>Another window of the assistant is checking this order.</summary>
+        public const string OrderInUse = "workflow.order.inUse";
+
         /// <summary>No project for the check is set in the settings.</summary>
         public const string ProjectNotConfigured = "workflow.project.notConfigured";
 
