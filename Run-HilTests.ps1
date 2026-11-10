@@ -70,6 +70,83 @@ function Write-Line {
     }
 }
 
+# Takes the // and /* */ comments out of the text of a JSON file. The tests allow them; Windows PowerShell 5.1 cannot read
+# them by itself. A string is never touched, whatever it holds.
+function Remove-JsonComment {
+    param (
+        [AllowEmptyString()]
+        [string] $Text
+    )
+
+    $builder  = New-Object System.Text.StringBuilder
+    $inString = $false
+    $i        = 0
+    while ($i -lt $Text.Length) {
+        $c = $Text[$i]
+        if ($inString) {
+            [void] $builder.Append($c)
+            if ($c -eq '\' -and ($i + 1) -lt $Text.Length) {
+                $i++
+                [void] $builder.Append($Text[$i])
+            } elseif ($c -eq '"') {
+                $inString = $false
+            }
+            $i++
+        } elseif ($c -eq '"') {
+            $inString = $true
+            [void] $builder.Append($c)
+            $i++
+        } elseif ($c -eq '/' -and ($i + 1) -lt $Text.Length -and $Text[$i + 1] -eq '/') {
+            while ($i -lt $Text.Length -and $Text[$i] -ne "`n") { $i++ }
+        } elseif ($c -eq '/' -and ($i + 1) -lt $Text.Length -and $Text[$i + 1] -eq '*') {
+            $end = $Text.IndexOf('*/', $i + 2)
+            if ($end -lt 0) { throw 'a /* comment is not closed' }
+            [void] $builder.Append(' ')
+            $i = $end + 2
+        } else {
+            [void] $builder.Append($c)
+            $i++
+        }
+    }
+
+    return $builder.ToString()
+}
+
+# Takes the commas out that stand right before a closing } or ] (the tests allow them), outside of strings.
+function Remove-JsonTrailingComma {
+    param (
+        [AllowEmptyString()]
+        [string] $Text
+    )
+
+    $builder  = New-Object System.Text.StringBuilder
+    $inString = $false
+    for ($i = 0; $i -lt $Text.Length; $i++) {
+        $c = $Text[$i]
+        if ($inString) {
+            [void] $builder.Append($c)
+            if ($c -eq '\' -and ($i + 1) -lt $Text.Length) {
+                $i++
+                [void] $builder.Append($Text[$i])
+            } elseif ($c -eq '"') {
+                $inString = $false
+            }
+            continue
+        }
+
+        if ($c -eq '"') { $inString = $true }
+        if ($c -eq ',') {
+            $j = $i + 1
+            while ($j -lt $Text.Length -and [char]::IsWhiteSpace($Text[$j])) { $j++ }
+            if ($j -lt $Text.Length -and ($Text[$j] -eq '}' -or $Text[$j] -eq ']')) { continue }
+        }
+
+        [void] $builder.Append($c)
+    }
+
+    return $builder.ToString()
+}
+
 $ScriptDir   = $PSScriptRoot
 $ProjectFile = Join-Path $ScriptDir 'RFiDGear.HIL.Tests\RFiDGear.HIL.Tests.csproj'
 $ResultsDir  = Join-Path $ScriptDir 'TestResults\HIL'
@@ -77,11 +154,22 @@ $TrxFileName = "hil-$(Get-Date -Format 'yyyyMMdd-HHmmss').trx"
 $TrxFile     = Join-Path $ResultsDir $TrxFileName
 
 # ---- Settings ----------------------------------------------------------------
-# The reader-scan tests read hil.settings.json themselves. This script makes sure that the file exists (a copy of the
-# sample; an existing file is never touched) and says what is in it.
-$SettingsFile = Join-Path $ScriptDir 'hil.settings.json'
+# The reader-scan tests read hil.settings.json themselves, and they use the nearest one from their build folder upwards
+# (HilSettings.Find). This script finds the same file, makes sure that one exists (a copy of the sample next to this
+# script; an existing file is never touched) and says what is in it.
 $SampleFile   = Join-Path $ScriptDir 'hil.settings.sample.json'
-$settingsNote = ''
+$SettingsFile = Join-Path $ScriptDir 'hil.settings.json'
+$nearer       = $false
+for ($directory = Join-Path $ScriptDir "RFiDGear.HIL.Tests\bin\$Configuration\net8.0-windows"; $directory; $directory = Split-Path -Parent $directory) {
+    $candidate = Join-Path $directory 'hil.settings.json'
+    if (Test-Path $candidate) {
+        $nearer       = $candidate -ne $SettingsFile
+        $SettingsFile = $candidate
+        break
+    }
+}
+
+$settingsNote = $(if ($nearer) { '  (a nearer file than the one next to this script; the tests use it too)' } else { '' })
 if (-not (Test-Path $SettingsFile)) {
     if ($DryRun) {
         $settingsNote = '  (does not exist yet; it would be created from hil.settings.sample.json)'
@@ -99,11 +187,12 @@ $readerScan      = $false
 $fileInteractive     = $false
 $settingsProblem = $null
 try {
-    $settingsPath = if (Test-Path $SettingsFile) { $SettingsFile } else { $SampleFile }
-    # The tests accept // comments (whole lines, or after a value) and trailing commas, which Windows PowerShell 5.1
-    # cannot read by itself. A // counts as a comment after a value only with a space before it and no quote after it
-    # on the line, so a string is never cut. /* */ comments are not understood here; the file is then reported below.
-    $settingsText = (Get-Content -Raw -Path $settingsPath) -replace '(?m)^\s*//.*$', '' -replace '(?m)\s//[^"\r\n]*$', '' -replace ',(\s*[}\]])', '$1'
+    # The sample is shown only in a dry run, which creates nothing; a file that could not be created is no setting at all.
+    $settingsPath = if (Test-Path $SettingsFile) { $SettingsFile } elseif ($DryRun) { $SampleFile } else { $null }
+    if (-not $settingsPath) { throw 'there is no settings file' }
+    # The tests accept // and /* */ comments and trailing commas in the file; Windows PowerShell 5.1 cannot read them by
+    # itself, so they are taken out here.
+    $settingsText = Remove-JsonTrailingComma (Remove-JsonComment (Get-Content -Raw -Path $settingsPath))
     # The same rules, and the same words, as the tests (HilSettings.cs): what the tests would not accept is no setting.
     if (-not ("$settingsText").TrimStart().StartsWith('{')) { throw 'the file must hold one JSON object' }
     $settings     = $settingsText | ConvertFrom-Json
@@ -126,9 +215,8 @@ try {
 }
 
 # -Interactive turns the questions on for this run, whatever the file says; the reader-scan tests must still be on there.
-# The tests learn of it from a variable of this process (and clear it for a run without the switch).
+# The tests learn of it from a variable of this process, which is set only around the test run (see below).
 $interactiveRun = $fileInteractive -or ($Interactive -and $readerScan)
-$env:RFIDGEAR_HIL_INTERACTIVE = $(if ($Interactive) { '1' } else { $null })
 
 # ---- Header ------------------------------------------------------------------
 Write-Host ""
@@ -206,14 +294,23 @@ Write-Host "Running HIL tests..." -ForegroundColor Cyan
 Write-Host "(Place the card on the reader now if you haven't already.)"
 Write-Host ""
 
-& dotnet test $ProjectFile `
-    --no-build `
-    -c $Configuration `
-    --logger "console;verbosity=normal" `
-    --logger "trx;LogFileName=$TrxFileName" `
-    --results-directory $ResultsDir
+# The variable is set for the tests of this run only, and put back as it was: this script may have been started from a
+# PowerShell session that goes on, and a later plain "dotnet test" there must not ask its questions.
+$previousInteractive = $env:RFIDGEAR_HIL_INTERACTIVE
+try {
+    $env:RFIDGEAR_HIL_INTERACTIVE = $(if ($Interactive) { '1' } else { $null })
 
-$testExitCode = $LASTEXITCODE
+    & dotnet test $ProjectFile `
+        --no-build `
+        -c $Configuration `
+        --logger "console;verbosity=normal" `
+        --logger "trx;LogFileName=$TrxFileName" `
+        --results-directory $ResultsDir
+
+    $testExitCode = $LASTEXITCODE
+} finally {
+    $env:RFIDGEAR_HIL_INTERACTIVE = $previousInteractive
+}
 
 # ---- Parse TRX for accurate counts ------------------------------------------
 Write-Host ""

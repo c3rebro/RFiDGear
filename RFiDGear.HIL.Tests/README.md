@@ -35,7 +35,10 @@ folder, from Visual Studio and from `dotnet test`. It has two settings:
   reason, and the reader is not touched. A checkout that never ran the runner
   has no file, so it cannot open your reader by accident.
 - `Run-HilTests.bat` creates the file from `hil.settings.sample.json` when it
-  is missing, and never changes an existing one.
+  is missing, and never changes an existing one. It finds the same file as the
+  tests (the nearest one) and shows its path, so a nearer file in
+  `RFiDGear.HIL.Tests` that overrides the one in the solution folder is not a
+  surprise.
 
 **Running them with the runner (the usual way):**
 
