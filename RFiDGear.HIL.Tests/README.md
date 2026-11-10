@@ -69,8 +69,16 @@ dotnet test RFiDGear.HIL.Tests `
 - The order is fixed: the four cases that do not move cards run first, with
   the card that was on the reader when you started. The three cases that ask
   you to move cards run last, and each of them asks for the card it needs.
-- The cases that ask you to move cards show a message box that stays on top.
-  OK means "done, go on", Cancel ends the test.
+- The cases that ask you to move cards show a window that stays on top. Put
+  ONE card on the reader and keep every other card away from it, also the ones
+  lying near it: the reader sees a few centimetres around the antenna.
+- Where the reader can see the step, the test **watches** it: it scans again and
+  again, and goes on by itself when it sees the card (or the empty reader, or
+  the different card) that the window asked for. Nobody has to click when the
+  step is done. Each step has 60 seconds, and Cancel ends the test.
+- One step cannot be watched: the HF card that is not a MIFARE card is not
+  listed, so the reader cannot show that it is there. That window is a message
+  box: click OK when the card lies on the reader.
 - A scan that has started cannot be limited from outside. If a run hangs,
   `--blame-hang-timeout` ends it.
 - The log of the run is `%LOCALAPPDATA%\RFiDGear\log\hil-log-<date>.txt`.
@@ -103,15 +111,21 @@ the hardware.
 - **AScanDuringARun_IsAnsweredBusy**: a scan while a run is going answers
   Busy, lists no card, changes nothing and raises nothing; a scan after the run
   works. With an Elatec reader, with or without a card.
-- **ARemovedCard_IsReportedAsGone** (asks you to move cards): put any card on
-  the reader, then take it off. The scan reports it gone, once.
+- **ARemovedCard_IsReportedAsGone** (asks you to move cards): put one card on
+  the reader, then take it off. The test watches the reader and notices both.
+  Every change of the picture is announced exactly once, and nothing else is.
+  If the reader still sees a card, the test says which one (type and UID) after
+  60 seconds.
 - **AReplacedCard_IsReportedWithItsOwnUid** (asks you to move cards): put one
-  card on the reader, then replace it with a different one. The second UID is
-  reported, once.
+  card on the reader, then replace it with a different one. The test watches
+  the reader and notices the different UID. Every change of the picture is
+  announced exactly once: twice if the reader happened to see the empty reader
+  between the cards, once if it did not.
 - **ACardThatIsNotMifare_DoesNotLeaveTheOldCardBehind** (asks you to move
-  cards): put a MIFARE card on the reader, then replace it with an HF card that
-  is not a MIFARE card but that your reader can read (for example ISO 15693;
-  iCLASS only if your reader reads it). The MIFARE card must not be reported
+  cards): put a MIFARE card on the reader (watched), then replace it with an
+  HF card that is not a MIFARE card but that your reader can read (for example
+  ISO 15693; iCLASS only if your reader reads it) in ONE move, without taking
+  the MIFARE card away first (clicked). The MIFARE card must not be reported
   any more. This guards the Elatec fix of the reader scan, which cannot be
   tested without a reader. A pass proves the fix only if the reader detected
   the second card (it usually beeps, or its LED reacts): a card the reader does

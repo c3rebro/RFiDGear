@@ -5,6 +5,7 @@ using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -17,10 +18,36 @@ namespace RFiDGear.HIL.Tests
     /// <summary>What a person at the reader is asked to do, and how they say they did it.</summary>
     internal interface IReaderOperator
     {
-        /// <summary>Shows the instruction and returns when the person has done it.</summary>
+        /// <summary>
+        /// Shows the instruction and returns when the person has done it. For a step the reader cannot see (a card of a kind
+        /// it does not list).
+        /// </summary>
         /// <param name="instruction">What to do with the card, in a sentence or two.</param>
         /// <returns><c>true</c> when the person confirmed, <c>false</c> when they cancelled.</returns>
         Task<bool> ConfirmAsync(string instruction);
+
+        /// <summary>
+        /// Shows the instruction and keeps asking <paramref name="isDone"/> until it says yes, the time is up or the person
+        /// cancels: nobody has to click when the step is done, the case watches the reader. For a step the reader can see.
+        /// </summary>
+        /// <param name="instruction">What to do with the card, in a sentence or two.</param>
+        /// <param name="isDone">Looks at the reader once and says whether the card is where the instruction wanted it.</param>
+        /// <param name="timeout">How long to wait for the person.</param>
+        /// <returns>How the waiting ended.</returns>
+        Task<WaitOutcome> WaitAsync(string instruction, Func<Task<bool>> isDone, TimeSpan timeout);
+    }
+
+    /// <summary>How the waiting for a step of the person ended.</summary>
+    internal enum WaitOutcome
+    {
+        /// <summary>The reader showed what the person was asked for.</summary>
+        Done,
+
+        /// <summary>The time was up.</summary>
+        TimedOut,
+
+        /// <summary>The person cancelled.</summary>
+        Cancelled
     }
 
     /// <summary>
@@ -31,6 +58,9 @@ namespace RFiDGear.HIL.Tests
     /// </summary>
     internal static class ReaderScenarios
     {
+        // The time a person gets for one step; each step ends by itself as soon as the reader shows what was asked for.
+        private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(60);
+
         /// <summary>
         /// A scan always answers: it does not throw, the answer is <see cref="ReaderScanState.Ready"/> or
         /// <see cref="ReaderScanState.NoReader"/>, it becomes the current picture, and a card on the reader comes first.
@@ -142,51 +172,69 @@ namespace RFiDGear.HIL.Tests
         }
 
         /// <summary>
-        /// A card that is taken off the reader is reported as gone, once. Asks the person to put a card on the reader and
-        /// to take it off again.
+        /// A card that is taken off the reader is noticed, and every change of the picture on the way is announced exactly
+        /// once. The case watches the reader: it scans until it sees a card, asks the person to take it off, and scans until
+        /// it sees the reader empty, so nobody has to click when the physical step is done.
         /// </summary>
         /// <param name="host">A new host.</param>
         /// <param name="person">Who moves the card.</param>
         /// <returns>The task of the case.</returns>
         public static async Task ARemovedCardIsReportedAsGoneAsync(IRFiDGearExtensionHost host, IReaderOperator person)
         {
-            await AskAsync(person, "Put a card that RFiDGear can read on the reader, then click OK.");
-            var present = await ScanAsync(host);
-            RequireCard(present);
+            var placed = await WaitForAsync(
+                host,
+                person,
+                "Put ONE card that RFiDGear can read on the reader, and take every other card away from the reader. " +
+                "The test goes on by itself when it sees the card.",
+                scan => scan.State == ReaderScanState.Ready && scan.HasCard,
+                "a card on the reader");
+            var present = placed[placed.Count - 1];
             using var events = new EventCounter(host.Reader);
 
-            await AskAsync(person, "Take the card off the reader (leave the reader connected), then click OK.");
-            var gone = await ScanAsync(host);
+            var seen = await WaitForAsync(
+                host,
+                person,
+                "Now take the card off the reader, and keep every other card away from it too. " +
+                "The test goes on by itself when it sees the reader empty.",
+                scan => scan.State == ReaderScanState.Ready && !scan.HasCard,
+                "the reader to be empty (is a card still on it, or lying near it?)");
 
-            Require(gone.State == ReaderScanState.Ready, $"The scan after the removal answered {gone.State}, not Ready.");
-            Require(!gone.HasCard, $"The card is still reported ({string.Join(", ", gone.Credentials.Select(credential => credential.DisplayName))}) although it was taken off.");
-            Require(events.Count == 1, $"ReaderStateChanged was raised {events.Count} times for the removal, not once.");
-            Require(gone.Equals(host.Reader.CurrentSnapshot), "The answer of the scan did not become the current picture of the reader.");
+            Require(seen[seen.Count - 1].Equals(host.Reader.CurrentSnapshot), "The answer of the last scan did not become the current picture of the reader.");
+            RequireEventsForChanges(events, present, seen);
         }
 
         /// <summary>
-        /// A card that is replaced by another is reported with its own UID, once. Asks the person to put one card on the
-        /// reader and then to replace it with a different one.
+        /// A card that is replaced by another is reported with its own UID, and every change of the picture on the way is
+        /// announced exactly once (the reader may or may not see the empty reader between the two cards, depending on how
+        /// fast the person is). The case watches the reader, so nobody has to click when the physical step is done.
         /// </summary>
         /// <param name="host">A new host.</param>
         /// <param name="person">Who moves the cards.</param>
         /// <returns>The task of the case.</returns>
         public static async Task AReplacedCardIsReportedWithItsOwnUidAsync(IRFiDGearExtensionHost host, IReaderOperator person)
         {
-            await AskAsync(person, "Put a card that RFiDGear can read on the reader, then click OK.");
-            var first = await ScanAsync(host);
-            RequireCard(first);
+            var placed = await WaitForAsync(
+                host,
+                person,
+                "Put ONE card that RFiDGear can read on the reader, and take every other card away from the reader. " +
+                "The test goes on by itself when it sees the card.",
+                scan => scan.State == ReaderScanState.Ready && scan.HasCard,
+                "a card on the reader");
+            var first = placed[placed.Count - 1];
+            var firstUid = first.Credentials[0].Uid;
             using var events = new EventCounter(host.Reader);
 
-            await AskAsync(person, "Replace it with a DIFFERENT card that RFiDGear can read (another UID), then click OK.");
-            var second = await ScanAsync(host);
+            var seen = await WaitForAsync(
+                host,
+                person,
+                "Now replace the card with a DIFFERENT card that RFiDGear can read (another UID), and keep every other card " +
+                "away. The test goes on by itself when it sees the new card.",
+                scan => scan.State == ReaderScanState.Ready && scan.HasCard
+                        && !string.Equals(scan.Credentials[0].Uid, firstUid, StringComparison.Ordinal),
+                "a different card on the reader (the same card does not count)");
 
-            RequireCard(second);
-            Require(
-                !string.Equals(first.Credentials[0].Uid, second.Credentials[0].Uid, StringComparison.Ordinal),
-                "The second card has the same UID as the first. Use a different card.");
-            Require(events.Count == 1, $"ReaderStateChanged was raised {events.Count} times for the replacement, not once.");
-            Require(second.Equals(host.Reader.CurrentSnapshot), "The answer of the scan did not become the current picture of the reader.");
+            Require(seen[seen.Count - 1].Equals(host.Reader.CurrentSnapshot), "The answer of the last scan did not become the current picture of the reader.");
+            RequireEventsForChanges(events, first, seen);
         }
 
         /// <summary>
@@ -203,16 +251,24 @@ namespace RFiDGear.HIL.Tests
         /// <returns>The task of the case.</returns>
         public static async Task ACardThatIsNotMifareDoesNotLeaveTheOldOneBehindAsync(IRFiDGearExtensionHost host, IReaderOperator person)
         {
-            await AskAsync(person, "Put a MIFARE card (DESFire, Classic or Ultralight) on the reader, then click OK.");
-            var mifare = await ScanAsync(host);
-            RequireCard(mifare);
+            var placed = await WaitForAsync(
+                host,
+                person,
+                "Put ONE MIFARE card (DESFire, Classic or Ultralight) on the reader, and take every other card away from the " +
+                "reader. The test goes on by itself when it sees the card.",
+                scan => scan.State == ReaderScanState.Ready && scan.HasCard,
+                "a card on the reader");
+            var mifare = placed[placed.Count - 1];
             var oldUid = mifare.Credentials[0].Uid;
             using var events = new EventCounter(host.Reader);
 
+            // The reader cannot see the second card, so this step is confirmed by a click, and it must be ONE move: the
+            // fix guards the read that goes straight from the MIFARE card to the other one, without an empty reader between.
             await AskAsync(
                 person,
-                "Replace it with an HF card that is NOT a MIFARE card, but that this reader can read (for example ISO 15693; " +
-                "iCLASS only if your reader reads it). The reader should beep or show its LED. Then click OK.");
+                "Now replace the card with an HF card that is NOT a MIFARE card, but that this reader can read (for example ISO " +
+                "15693; iCLASS only if your reader reads it), in ONE move: do not take the MIFARE card away first, and keep " +
+                "every other card away. The reader should beep or show its LED. Then click OK.");
             var other = await ScanAsync(host);
 
             Require(other.State == ReaderScanState.Ready, $"The scan after the replacement answered {other.State}, not Ready.");
@@ -225,6 +281,69 @@ namespace RFiDGear.HIL.Tests
         // A read that has started cannot be limited: ScanAsync honours its token only until the read begins. A run that
         // hangs is ended with 'dotnet test --blame-hang-timeout 5m'.
         private static Task<ReaderSnapshot> ScanAsync(IRFiDGearExtensionHost host) => host.Reader.ScanAsync();
+
+        // Scans until the reader shows what the person was asked for, and returns every answer on the way (the last one is
+        // the one that showed it).
+        private static async Task<IReadOnlyList<ReaderSnapshot>> WaitForAsync(
+            IRFiDGearExtensionHost host,
+            IReaderOperator person,
+            string instruction,
+            Func<ReaderSnapshot, bool> reached,
+            string what)
+        {
+            var seen = new List<ReaderSnapshot>();
+            var outcome = await person.WaitAsync(
+                instruction,
+                async () =>
+                {
+                    var scan = await ScanAsync(host);
+                    seen.Add(scan);
+
+                    return reached(scan);
+                },
+                WaitLimit);
+
+            if (outcome == WaitOutcome.Cancelled)
+            {
+                throw new XunitException("The person at the reader cancelled the test.");
+            }
+
+            if (outcome == WaitOutcome.TimedOut)
+            {
+                throw new XunitException(
+                    $"Gave up after {WaitLimit.TotalSeconds:0} seconds waiting for {what}. " +
+                    $"The last answer was: {Describe(seen.Count > 0 ? seen[seen.Count - 1] : null)}.");
+            }
+
+            return seen;
+        }
+
+        // Every change of the picture is announced once, and nothing else is: the number of events is the number of times
+        // the answers of the scans differed from the one before (a scan that failed or was busy changes nothing).
+        private static void RequireEventsForChanges(EventCounter events, ReaderSnapshot before, IEnumerable<ReaderSnapshot> seen)
+        {
+            var last = before;
+            var changes = 0;
+            foreach (var scan in seen)
+            {
+                if ((scan.State == ReaderScanState.Ready || scan.State == ReaderScanState.NoReader)
+                    && !(scan.State == last.State && scan.Credentials.SequenceEqual(last.Credentials)))
+                {
+                    changes++;
+                    last = scan;
+                }
+            }
+
+            Require(changes >= 1, "The picture of the reader did not change.");
+            Require(events.Count == changes, $"ReaderStateChanged was raised {events.Count} times for {changes} change(s) of the picture.");
+        }
+
+        private static string Describe(ReaderSnapshot? scan) =>
+            scan == null
+                ? "no scan"
+                : scan.State + (scan.HasCard
+                    ? ", " + string.Join(", ", scan.Credentials.Select(credential => credential.DisplayName + " " + credential.Uid))
+                    : ", no card");
 
         private static async Task AskAsync(IReaderOperator person, string instruction)
         {

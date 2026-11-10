@@ -56,13 +56,13 @@ namespace RFiDGear.HIL.Tests
         [HilReaderFact]
         public Task AScanDuringARun_IsAnsweredBusy() => Run(ReaderScenarios.AScanDuringARunIsAnsweredBusyAsync);
 
-        /// <summary>Asks for a card to be put on the reader and taken off.</summary>
+        /// <summary>Watches the reader while a card is put on it and taken off again; nobody has to click.</summary>
         /// <returns>The task of the test.</returns>
         [HilInteractiveFact]
         public Task ARemovedCard_IsReportedAsGone() =>
             Run(host => ReaderScenarios.ARemovedCardIsReportedAsGoneAsync(host, new MessageBoxOperator()));
 
-        /// <summary>Asks for two different cards.</summary>
+        /// <summary>Watches the reader while one card is put on it and replaced by a different one; nobody has to click.</summary>
         /// <returns>The task of the test.</returns>
         [HilInteractiveFact]
         public Task AReplacedCard_IsReportedWithItsOwnUid() =>
