@@ -91,7 +91,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
     /// or too long to add to the clock (<see cref="TimeSpan.MaxValue"/>) waits until cancelled, like <c>null</c>.
     /// </para>
     /// </summary>
-    internal sealed class CardWaiter
+    internal sealed class CardWaiter : ICardWaiter
     {
         /// <summary>
         /// The time between two looks, on top of the time a look takes (up to a few seconds with some readers). Short

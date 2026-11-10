@@ -184,3 +184,31 @@ in the Extensions menu of the main window.
   not started. The disk work runs on a worker thread. The page does not
   use the runner yet; its own run method goes when the guided page replaces
   it.
+- `Workflow/CardCheckWorkflow` is the guided check without a window: the list
+  of orders, starting an order, waiting for a card, the check run, the verdict
+  and the finish (the final report is made, uploaded with `IOrderStore`, the
+  working reports are cleaned up). It covers the verdicts that do not lead to
+  programming; programming, the read-out and the review come later, and for a
+  chip that can be programmed it stops at the verdict with only Cancel
+  offered. The page binds to `Current` (an immutable `WorkflowSnapshot`: state,
+  what the operator may do, whether something runs, the orders, the card, the
+  task outcomes, the verdict, the failure as a stable code) and `Changed`, and
+  calls the commands. A command is a synchronous request that returns whether
+  the state offers it and starts at most one operation; while one runs only
+  Cancel is accepted, and a cancel wins over whatever the step brings back
+  (the host cancels a run only between two tasks). The report is made and
+  uploaded without a cancel, because the upload may already have been
+  committed. The rules are tables (`WorkflowTables`: which state can follow
+  which, what is offered in each, what closing the window means), and a test
+  demands an entry for every state. Starting an order reads the list again, so
+  a stale list cannot start a finished order (in the test mode only the third
+  stub order is in progress). Two windows cannot check the same order: the
+  reports of an order are files with fixed names, so a window reserves the
+  order from the start of its check until it goes back to the list, is
+  cancelled before the check, or is closed (`OrderReservations`, one instance
+  for all windows). The workflow is for one context, the window's;
+  events are delivered in the order of the versions, also when a handler calls
+  a command. The order store and settings come from one
+  `IWorkflowContextSource`, so an order is listed, checked and finished with
+  the same pair (the real one, with the test folder for the made-up orders,
+  comes with the page). The page does not use the workflow yet.
