@@ -20,6 +20,10 @@
     <Compile Remove="Fixtures\**" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The steps of the hardware cases, run here against a scripted reader (see Reader/HilScenarioSelfCheckTests). -->
+    <Compile Include="..\RFiDGear.HIL.Tests\ReaderScenarios.cs" Link="Reader\HilScenarios\ReaderScenarios.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\RFiDGear.Extensions\DesfirePluginSample\RFiDGear.Extensions.DesfirePluginSample.csproj" />
     <ProjectReference Include="..\RFiDGear.Extensions\CardCheckAssistant\RFiDGear.Extensions.CardCheckAssistant.csproj" />
     <ProjectReference Include="..\\RFiDGear\\RFiDGear.csproj" />
