@@ -45,6 +45,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private readonly ICloseConfirmation _closeConfirmation;
         private readonly Func<TimeSpan, Action, IDisposable> _startTimer;
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
+        private readonly EventHandler<WorkflowSnapshot> _onWorkflowChanged;
         private readonly ObservableCollection<OrderRowViewModel> _orders = new ObservableCollection<OrderRowViewModel>();
         private readonly ObservableCollection<TaskOutcomeRowViewModel> _rows = new ObservableCollection<TaskOutcomeRowViewModel>();
         private readonly LanguageOption[] _languages;
@@ -117,7 +118,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OpenSettingsCommand = new AsyncCommand(OpenSettingsAsync, () => _settingsDialog != null && _modal == 0 && Offers(WorkflowControls.Refresh));
 
             // Subscribe first, read the state second: a change in between is then seen by the handler instead of lost.
-            _workflow.Changed += OnWorkflowChanged;
+            _onWorkflowChanged = (_, snapshot) => OnUiThread(() => Apply(snapshot));
+            _workflow.Changed += _onWorkflowChanged;
             host.Reader.ReaderStateChanged += OnReaderStateChanged;
             host.Execution.IsRunningChanged += OnIsRunningChanged;
             host.AppContext.CultureChanged += OnCultureChanged;
@@ -479,7 +481,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
             _timer?.Dispose();
             _timer = null;
-            _workflow.Changed -= OnWorkflowChanged;
+            _workflow.Changed -= _onWorkflowChanged;
             _host.Reader.ReaderStateChanged -= OnReaderStateChanged;
             _host.Execution.IsRunningChanged -= OnIsRunningChanged;
             _host.AppContext.CultureChanged -= OnCultureChanged;
@@ -640,8 +642,6 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         });
 
         // ── what comes in ──
-
-        private void OnWorkflowChanged(object? _, WorkflowSnapshot snapshot) => OnUiThread(() => Apply(snapshot));
 
         private void OnReaderStateChanged(object? sender, EventArgs e) => OnUiThread(() =>
         {
