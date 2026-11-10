@@ -27,15 +27,57 @@ namespace RFiDGear.Tests.Reader
 
         private sealed class ScriptedPerson : IReaderOperator
         {
+            // Looks at the reader as often as the real operator would in the time, but without the pauses.
+            private const int Looks = 25;
+
             public List<string> Asked { get; } = new List<string>();
 
+            public List<string> Waited { get; } = new List<string>();
+
+            // The answer to a message box (the step the reader cannot see): false is Cancel.
             public bool Confirms { get; set; } = true;
+
+            // Whether the person keeps watching in the window (the steps the reader can see): false is Cancel.
+            public bool Watches { get; set; } = true;
 
             public Task<bool> ConfirmAsync(string instruction)
             {
                 Asked.Add(instruction);
 
                 return Task.FromResult(Confirms);
+            }
+
+            public async Task<WaitOutcome> WaitAsync(string instruction, Func<Task<bool>> isDone, TimeSpan timeout)
+            {
+                Waited.Add(instruction);
+                if (!Watches)
+                {
+                    return WaitOutcome.Cancelled;
+                }
+
+                if (timeout <= TimeSpan.Zero)
+                {
+                    return WaitOutcome.TimedOut;   // a person with no time left gives up before the first look
+                }
+
+                for (var look = 0; look < Looks; look++)
+                {
+                    if (await isDone())
+                    {
+                        return WaitOutcome.Done;
+                    }
+                }
+
+                return WaitOutcome.TimedOut;
+            }
+        }
+
+        // Scripts the same answer many times: a card that does not go away.
+        private static void Stays(ScriptedReadProvider reader, string uid)
+        {
+            for (var i = 0; i < 40; i++)
+            {
+                reader.Script(ERROR.NoError, Card(uid));
             }
         }
 
@@ -118,33 +160,100 @@ namespace RFiDGear.Tests.Reader
                 ReaderScenarios.AScanDuringARunIsAnsweredBusyAsync);
 
         [Fact]
-        public async Task ARemovedCard_IsReportedAsGone_AndTheCaseAsksTwice()
+        public async Task ARemovedCard_IsNoticedByWatching_NobodyHasToClick()
         {
             var person = new ScriptedPerson();
 
             await Run(
                 reader =>
                 {
+                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));   // the card is seen
+                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));   // still there while the person reaches for it
+                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));
+                    NoCard(reader);                                     // gone
+                },
+                host => ReaderScenarios.ARemovedCardIsReportedAsGoneAsync(host, person));
+
+            Assert.Equal(2, person.Waited.Count);
+            Assert.Empty(person.Asked);
+        }
+
+        [Fact]
+        public async Task ATroubledScanOnTheWay_ChangesNothingAndIsNotCountedAsAChange()
+        {
+            await Run(
+                reader =>
+                {
+                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));
+                    reader.Script(ERROR.NoError, failure: new InvalidOperationException("the reader failed"));   // no answer about the card
+                    NoCard(reader);
+                },
+                host => ReaderScenarios.ARemovedCardIsReportedAsGoneAsync(host, new ScriptedPerson()));
+        }
+
+        [Fact]
+        public async Task ACardThatIsPlacedLate_IsWaitedFor_BeforeTheRemovalIsAsked()
+        {
+            var person = new ScriptedPerson();
+
+            await Run(
+                reader =>
+                {
+                    NoCard(reader);                                     // the person is still looking for a card
+                    NoCard(reader);
                     reader.Script(ERROR.NoError, Card("04AABBCCDD"));
                     NoCard(reader);
                 },
                 host => ReaderScenarios.ARemovedCardIsReportedAsGoneAsync(host, person));
 
-            Assert.Equal(2, person.Asked.Count);
+            Assert.Equal(2, person.Waited.Count);
         }
 
         [Fact]
-        public async Task ACardThatStaysOnTheReader_FailsTheRemovalCase()
+        public async Task AReaderThatNeverSeesACard_FailsTheRemovalCase_AtThePlacement()
         {
             var failure = await Assert.ThrowsAsync<XunitException>(() => Run(
                 reader =>
                 {
-                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));
-                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));
+                    for (var i = 0; i < 40; i++)
+                    {
+                        NoCard(reader);
+                    }
                 },
                 host => ReaderScenarios.ARemovedCardIsReportedAsGoneAsync(host, new ScriptedPerson())));
 
-            Assert.Contains("still reported", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("Gave up", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("a card on the reader", failure.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task ACardThatStaysOnTheReader_FailsTheRemovalCase_AndSaysWhichCard()
+        {
+            var failure = await Assert.ThrowsAsync<XunitException>(() => Run(
+                reader => Stays(reader, "04AABBCCDD"),
+                host => ReaderScenarios.ARemovedCardIsReportedAsGoneAsync(host, new ScriptedPerson())));
+
+            Assert.Contains("Gave up", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("the reader to be empty", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("DESFireEV1 04AABBCCDD", failure.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task ARemovedCardThatIsReportedAgainByAnotherCard_NeverMakesTheReaderEmpty()
+        {
+            // A second card near the antenna: the first one goes, the reader sees the other.
+            var failure = await Assert.ThrowsAsync<XunitException>(() => Run(
+                reader =>
+                {
+                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));
+                    for (var i = 0; i < 40; i++)
+                    {
+                        reader.Script(ERROR.NoError, Card("04112233FF"));
+                    }
+                },
+                host => ReaderScenarios.ARemovedCardIsReportedAsGoneAsync(host, new ScriptedPerson())));
+
+            Assert.Contains("04112233FF", failure.Message, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -153,6 +262,19 @@ namespace RFiDGear.Tests.Reader
                 reader =>
                 {
                     reader.Script(ERROR.NoError, Card("04AABBCCDD"));
+                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));
+                    reader.Script(ERROR.NoError, Card("04112233FF"));
+                },
+                host => ReaderScenarios.AReplacedCardIsReportedWithItsOwnUidAsync(host, new ScriptedPerson()));
+
+        [Fact]
+        public Task AReplacedCard_IsAnnouncedOncePerChange_WhenTheReaderSawItEmptyOnTheWay() =>
+            Run(
+                reader =>
+                {
+                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));
+                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));
+                    NoCard(reader);                                     // the person was slow: the reader saw it empty
                     reader.Script(ERROR.NoError, Card("04112233FF"));
                 },
                 host => ReaderScenarios.AReplacedCardIsReportedWithItsOwnUidAsync(host, new ScriptedPerson()));
@@ -161,25 +283,43 @@ namespace RFiDGear.Tests.Reader
         public async Task TheSameCardPutBack_FailsTheReplacementCase()
         {
             var failure = await Assert.ThrowsAsync<XunitException>(() => Run(
-                reader =>
-                {
-                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));
-                    reader.Script(ERROR.NoError, Card("04AABBCCDD"));
-                },
+                reader => Stays(reader, "04AABBCCDD"),
                 host => ReaderScenarios.AReplacedCardIsReportedWithItsOwnUidAsync(host, new ScriptedPerson())));
 
-            Assert.Contains("same UID", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("Gave up", failure.Message, StringComparison.Ordinal);
+            Assert.Contains("the same card does not count", failure.Message, StringComparison.Ordinal);
         }
 
         [Fact]
-        public Task ACardThatIsNotMifare_LeavesNoTraceOfTheOldCard() =>
-            Run(
+        public async Task ACardThatIsNotMifare_LeavesNoTraceOfTheOldCard_AndTheSwapIsClicked()
+        {
+            var person = new ScriptedPerson();
+
+            await Run(
                 reader =>
                 {
                     reader.Script(ERROR.NoError, Card("04AABBCCDD"));
                     NoCard(reader);   // the new card is of a kind the application has no model for: not listed
                 },
-                host => ReaderScenarios.ACardThatIsNotMifareDoesNotLeaveTheOldOneBehindAsync(host, new ScriptedPerson()));
+                host => ReaderScenarios.ACardThatIsNotMifareDoesNotLeaveTheOldOneBehindAsync(host, person));
+
+            // The placement is watched, the swap is one move that the reader cannot see: one click, no second watching.
+            Assert.Single(person.Waited);
+            Assert.Single(person.Asked);
+        }
+
+        [Fact]
+        public async Task APersonWhoCancelsTheBlindSwap_EndsTheNonMifareCase_AndSaysSo()
+        {
+            var person = new ScriptedPerson { Confirms = false };
+
+            var failure = await Assert.ThrowsAsync<XunitException>(() => Run(
+                reader => reader.Script(ERROR.NoError, Card("04AABBCCDD")),
+                host => ReaderScenarios.ACardThatIsNotMifareDoesNotLeaveTheOldOneBehindAsync(host, person)));
+
+            Assert.Contains("cancelled", failure.Message, StringComparison.Ordinal);
+            Assert.Single(person.Asked);
+        }
 
         [Fact]
         public async Task AReplacementTheReaderCannotRead_FailsTheNonMifareCaseInsteadOfPassingIt()
@@ -211,11 +351,21 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
-        public async Task APersonWhoCancels_EndsTheCase_AndSaysSo()
+        public async Task APersonWhoCancelsTheWaiting_EndsTheReplacementCase_AndSaysSo()
         {
             var failure = await Assert.ThrowsAsync<XunitException>(() => Run(
                 _ => { },
-                host => ReaderScenarios.ARemovedCardIsReportedAsGoneAsync(host, new ScriptedPerson { Confirms = false })));
+                host => ReaderScenarios.AReplacedCardIsReportedWithItsOwnUidAsync(host, new ScriptedPerson { Watches = false })));
+
+            Assert.Contains("cancelled", failure.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task APersonWhoCancelsTheWaiting_EndsTheRemovalCase_AndSaysSo()
+        {
+            var failure = await Assert.ThrowsAsync<XunitException>(() => Run(
+                _ => { },
+                host => ReaderScenarios.ARemovedCardIsReportedAsGoneAsync(host, new ScriptedPerson { Watches = false })));
 
             Assert.Contains("cancelled", failure.Message, StringComparison.Ordinal);
         }
