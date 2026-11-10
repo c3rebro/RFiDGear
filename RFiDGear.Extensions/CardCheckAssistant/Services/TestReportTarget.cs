@@ -14,7 +14,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
     internal sealed class TestReportTarget : ITestReportTarget
     {
         /// <summary>The name of the folder the reports of test runs are kept in.</summary>
-        internal const string FolderName = "Test";
+        internal const string FolderName = TestReportFolder.FolderName;
 
         private readonly ISettingsStore _settings;
         private readonly IReportFiles _files;
@@ -43,7 +43,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
             try
             {
                 var report = _settings.Load().Settings.Report;
-                var root = Path.Combine(UsableReportFolder(report.OutputPath) ?? _fallbackFolder, FolderName);
+                var root = TestReportFolder.Root(report, _fallbackFolder);
 
                 // Resolve checks the root (it must be a full path) and the numbers (they must be usable as file names)
                 // before anything is made, so none of them leaves a folder behind.
@@ -63,10 +63,5 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
                 return string.Empty;
             }
         }
-
-        // The report folder of the settings, if it is a full path to a folder that is there; a network share that is not
-        // reachable just now, or a path that was never right, does not stop a test.
-        private static string? UsableReportFolder(string path) =>
-            !string.IsNullOrWhiteSpace(path) && Path.IsPathFullyQualified(path) && Directory.Exists(path) ? path : null;
     }
 }
