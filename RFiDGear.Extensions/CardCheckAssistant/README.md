@@ -158,3 +158,29 @@ in the Extensions menu of the main window.
   RFiDGear does not notice other users of the reader: wait only while nothing
   else works with the card. The page does not use the waiter yet; the workflow
   of the next steps does.
+- `Workflow/CheckRunner` runs one check project for one order and reads the
+  report it wrote. The first run of the check (default project, writes the
+  first report) and the run that reads the memory out after programming
+  (custom project, continues from the second report, writes the third) are the
+  same job with other arguments. It checks the project, works out the order's
+  paths and makes its folder (`IReportFiles`), has RFiDGear load the project,
+  deletes a report an earlier attempt left, runs the project with `$JOBNUMBER`,
+  `$CHIPNUMBER`, `REPORTTARGETPATH` and, if the run continues from a report,
+  `REPORTTEMPLATEFILE`, and reads the report (`IReportService`). If a report
+  language is given, the project of that language (`name.deutsch.rfPrj` or
+  `name.englisch.rfPrj`) beside the one given is run instead. Every failure is
+  a result with a stable code (`CheckFailureCodes`, or the library's own code
+  for a number or a report) and nothing is retried; a run that ends well but
+  leaves no readable report is a failure, never "the chip is not supported".
+  A run that ends with intentional failures is finished: the check project
+  fails some checks on purpose. A run that fails is a failure even when it left
+  a report; the report is then offered as findings, not as the verdict, because
+  a failed run can leave flags that were never set. Once a run has ended its
+  report is read even if a cancel came meanwhile. A request that names a
+  report that is not a step report is refused before anything is made or
+  deleted, and the order's folder is made last. Loading replaces the project in
+  RFiDGear's main window; if the project is changed again before the run starts
+  (another project opened, this one reloaded or its tasks replaced), the run is
+  not started. The disk work runs on a worker thread. The page does not
+  use the runner yet; its own run method goes when the guided page replaces
+  it.

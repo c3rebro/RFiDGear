@@ -155,6 +155,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
         /// <summary>When set, a run throws it instead of answering.</summary>
         public Exception? ThrowOnExecute { get; set; }
 
+        /// <summary>When set, a run calls this with its request before it answers, as the project does when it writes its report.</summary>
+        public Action<ExecutionRequest>? OnExecute { get; set; }
+
         /// <summary>Whether a run also moves <see cref="IsRunning"/> and raises its event, as the real host does.</summary>
         public bool SimulateRunningState { get; set; }
 
@@ -215,6 +218,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
             {
                 throw ThrowOnExecute;
             }
+
+            OnExecute?.Invoke(request);
 
             if (SimulateRunningState)
             {
