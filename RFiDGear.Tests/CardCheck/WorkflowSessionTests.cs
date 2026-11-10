@@ -12,6 +12,9 @@ namespace RFiDGear.Tests.CardCheck
 {
     public sealed class WorkflowSessionTests
     {
+        // The id of the order that Order() makes; the calls that need an order token pass it.
+        private const string OrderId = "1";
+
         private readonly RecordingCardCheckLog _log = new RecordingCardCheckLog();
 
         private IWorkflowSession Session() => CardCheckServices.CreateWorkflowSession(_log);
@@ -60,7 +63,7 @@ namespace RFiDGear.Tests.CardCheck
         {
             var session = Session();
             session.Begin(Order("1"), ReportLanguage.English);
-            session.RecordFindings(Programmable());
+            session.RecordFindings(OrderId, Programmable());
 
             session.Begin(Order("2", "J2", "C2"), ReportLanguage.German);
 
@@ -103,7 +106,7 @@ namespace RFiDGear.Tests.CardCheck
             var session = Session();
             session.Begin(Order(), ReportLanguage.German);
 
-            Assert.True(session.RecordFindings(Programmable("1760")).IsSuccess);
+            Assert.True(session.RecordFindings(OrderId, Programmable("1760")).IsSuccess);
 
             Assert.Equal("DESFire EV2", session.Current.Findings!.ChipType);
             Assert.Equal(ChipVerdict.Programmable, session.Current.Selection!.Verdict);
@@ -117,7 +120,7 @@ namespace RFiDGear.Tests.CardCheck
             var session = Session();
             session.Begin(Order(), ReportLanguage.German);
 
-            session.RecordFindings(new ReportAnalysis { Supported = false, Programmable = false });
+            session.RecordFindings(OrderId, new ReportAnalysis { Supported = false, Programmable = false });
 
             Assert.Equal(ChipVerdict.NotSupported, session.Current.Selection!.Verdict);
             Assert.Null(session.Current.ChosenTemplate);
@@ -128,7 +131,7 @@ namespace RFiDGear.Tests.CardCheck
         {
             var session = Session();
 
-            var result = session.RecordFindings(Programmable());
+            var result = session.RecordFindings(OrderId, Programmable());
 
             Assert.False(result.IsSuccess);
             Assert.Equal("session.noOrder", result.Failure!.Code);
@@ -140,11 +143,11 @@ namespace RFiDGear.Tests.CardCheck
         {
             var session = Session();
             session.Begin(Order(), ReportLanguage.German);
-            session.RecordFindings(Programmable("1760"));
+            session.RecordFindings(OrderId, Programmable("1760"));
             var findings = session.Current.Findings;
             var selection = session.Current.Selection;
 
-            Assert.True(session.ChooseTemplate(Template("MD2500L_AV")).IsSuccess);
+            Assert.True(session.ChooseTemplate(OrderId, Template("MD2500L_AV")).IsSuccess);
 
             Assert.Equal("MD2500L_AV", session.Current.ChosenTemplate!.Name);
             Assert.Same(findings, session.Current.Findings);
@@ -156,11 +159,11 @@ namespace RFiDGear.Tests.CardCheck
         {
             var session = Session();
             session.Begin(Order(), ReportLanguage.German);
-            session.RecordFindings(Programmable("1760"));
+            session.RecordFindings(OrderId, Programmable("1760"));
 
             foreach (var name in new[] { "MD10000L_AV", "MD32000L_AV", "MC1000L_AV" })
             {
-                var result = session.ChooseTemplate(Template(name));
+                var result = session.ChooseTemplate(OrderId, Template(name));
 
                 Assert.False(result.IsSuccess);
                 Assert.Equal("session.template.notAvailable", result.Failure!.Code);
@@ -173,10 +176,100 @@ namespace RFiDGear.Tests.CardCheck
         public void ChooseTemplate_WithoutFindingsOrWithoutAnOrder_IsRefused()
         {
             var session = Session();
-            Assert.Equal("session.noOrder", session.ChooseTemplate(Template("MDBasic")).Failure!.Code);
+            Assert.Equal("session.noOrder", session.ChooseTemplate(OrderId, Template("MDBasic")).Failure!.Code);
 
             session.Begin(Order(), ReportLanguage.German);
-            Assert.Equal("session.template.notAvailable", session.ChooseTemplate(Template("MDBasic")).Failure!.Code);
+            Assert.Equal("session.template.notAvailable", session.ChooseTemplate(OrderId, Template("MDBasic")).Failure!.Code);
+        }
+
+        [Fact]
+        public void ACallForAnotherOrder_IsRefusedAsStale_AndChangesNothing()
+        {
+            var session = Session();
+            session.Begin(Order("2", "J2", "C2"), ReportLanguage.German);
+            session.RecordFindings("2", Programmable("1760"));
+            session.RecordAnswers("2", new LsmAnswers { ProgrammingSucceeded = true });
+            var before = session.Current;
+            Assert.NotNull(before.Answers);
+
+            // A slow run of order 1 answers after order 2 has begun: none of its three results may land in order 2.
+            var results = new[]
+            {
+                session.RecordFindings(OrderId, Programmable("300")),
+                session.ChooseTemplate(OrderId, Template("MDBasic")),
+                session.RecordAnswers(OrderId, new LsmAnswers { ProgrammingSucceeded = false }),
+                session.RecordFindings(string.Empty, Programmable("300")),
+            };
+
+            Assert.All(results, result =>
+            {
+                Assert.False(result.IsSuccess);
+                Assert.Equal("session.order.stale", result.Failure!.Code);
+            });
+            Assert.Same(before, session.Current);
+        }
+
+        [Fact]
+        public void RecordAnswers_KeepsThemAsGiven_EvenWhenIncomplete()
+        {
+            var session = Session();
+            session.Begin(Order(), ReportLanguage.German);
+            session.RecordFindings(OrderId, Programmable("1760"));
+            var answers = new LsmAnswers { ProgrammingSucceeded = true, FunctionTestPassed = null, HasRestrictions = false };
+
+            Assert.True(session.RecordAnswers(OrderId, answers).IsSuccess);
+
+            Assert.Same(answers, session.Current.Answers);
+            Assert.Equal(3, session.Current.Version);
+        }
+
+        [Fact]
+        public void RecordAnswers_ForAChipThatIsNotProgrammable_IsRefusedAndChangesNothing()
+        {
+            var session = Session();
+
+            Assert.Equal("session.noOrder", session.RecordAnswers(OrderId, new LsmAnswers()).Failure!.Code);
+
+            session.Begin(Order(), ReportLanguage.German);
+            Assert.Equal("session.noFindings", session.RecordAnswers(OrderId, new LsmAnswers()).Failure!.Code);
+
+            session.RecordFindings(OrderId, Programmable("100"));   // too little memory: supported only
+            var before = session.Current;
+            Assert.Equal("session.answers.notExpected", session.RecordAnswers(OrderId, new LsmAnswers()).Failure!.Code);
+
+            Assert.Same(before, session.Current);
+            Assert.Null(session.Current.Answers);
+        }
+
+        [Fact]
+        public void NewFindings_ForgetTheAnswersGivenForTheOldOnes_ButChoosingATemplateKeepsThem()
+        {
+            var session = Session();
+            session.Begin(Order(), ReportLanguage.German);
+            session.RecordFindings(OrderId, Programmable("1760"));
+            var answers = new LsmAnswers { ProgrammingSucceeded = true };
+            session.RecordAnswers(OrderId, answers);
+
+            Assert.True(session.ChooseTemplate(OrderId, Template("MDBasic")).IsSuccess);
+            Assert.Equal("MDBasic", session.Current.ChosenTemplate!.Name);
+            Assert.Same(answers, session.Current.Answers);
+
+            session.RecordFindings(OrderId, Programmable("1760"));
+            Assert.Null(session.Current.Answers);
+        }
+
+        [Fact]
+        public void Begin_Again_ForgetsTheAnswersToo()
+        {
+            var session = Session();
+            session.Begin(Order("1"), ReportLanguage.German);
+            session.RecordFindings("1", Programmable("1760"));
+            session.RecordAnswers("1", new LsmAnswers { ProgrammingSucceeded = true });
+            Assert.NotNull(session.Current.Answers);
+
+            session.Begin(Order("2", "J2", "C2"), ReportLanguage.German);
+
+            Assert.Null(session.Current.Answers);
         }
 
         [Fact]
@@ -184,7 +277,7 @@ namespace RFiDGear.Tests.CardCheck
         {
             var session = Session();
             session.Begin(Order(), ReportLanguage.English);
-            session.RecordFindings(Programmable());
+            session.RecordFindings(OrderId, Programmable());
 
             session.Reset();
 
@@ -203,7 +296,7 @@ namespace RFiDGear.Tests.CardCheck
             var first = session.Current;
 
             Assert.Same(first, session.Current);
-            session.RecordFindings(Programmable());
+            session.RecordFindings(OrderId, Programmable());
             Assert.NotSame(first, session.Current);
             Assert.Null(first.Findings);
         }
@@ -217,12 +310,12 @@ namespace RFiDGear.Tests.CardCheck
             var seen = new List<SessionSnapshot>();
             session.Changed += (_, snapshot) => seen.Add(snapshot);
 
-            session.RecordFindings(Programmable());
+            session.RecordFindings(OrderId, Programmable());
             session.Begin(Order(), ReportLanguage.German);
             session.Begin(Order(" "), ReportLanguage.German);
-            session.RecordFindings(Programmable());
-            session.ChooseTemplate(Template("MD10000L_AV"));
-            session.ChooseTemplate(Template("MDBasic"));
+            session.RecordFindings(OrderId, Programmable());
+            session.ChooseTemplate(OrderId, Template("MD10000L_AV"));
+            session.ChooseTemplate(OrderId, Template("MDBasic"));
             session.Reset();
 
             Assert.Equal(new long[] { 1, 2, 3, 4 }, seen.Select(s => s.Version));
@@ -251,11 +344,11 @@ namespace RFiDGear.Tests.CardCheck
                 if (snapshot.Findings != null && snapshot.ChosenTemplate!.Name != "MDBasic")
                 {
                     Assert.Equal(snapshot.Version, session.Current.Version);
-                    session.ChooseTemplate(Template("MDBasic"));
+                    session.ChooseTemplate(OrderId, Template("MDBasic"));
                 }
             };
 
-            var change = Task.Run(() => session.RecordFindings(Programmable()));
+            var change = Task.Run(() => session.RecordFindings(OrderId, Programmable()));
             var finished = await Task.WhenAny(change, Task.Delay(TimeSpan.FromSeconds(30))) == change;
 
             Assert.True(finished, "the session deadlocked");
@@ -274,12 +367,12 @@ namespace RFiDGear.Tests.CardCheck
             {
                 if (snapshot.Findings != null && snapshot.ChosenTemplate!.Name != "MDBasic")
                 {
-                    session.ChooseTemplate(Template("MDBasic"));
+                    session.ChooseTemplate(OrderId, Template("MDBasic"));
                 }
             };
             session.Changed += (_, snapshot) => seen.Add(snapshot.Version);
 
-            session.RecordFindings(Programmable());
+            session.RecordFindings(OrderId, Programmable());
 
             // The second handler is not handed the newer snapshot first because the first one changed the session.
             Assert.Equal(new[] { 2L, 3L }, seen);
@@ -312,7 +405,7 @@ namespace RFiDGear.Tests.CardCheck
             var two = Session();
 
             one.Begin(Order("1", "J1", "C1"), ReportLanguage.English);
-            one.RecordFindings(Programmable("7168"));
+            one.RecordFindings(OrderId, Programmable("7168"));
             two.Begin(Order("2", "J2", "C2"), ReportLanguage.German);
 
             Assert.Equal("1", one.Current.Order!.Id);
@@ -333,8 +426,8 @@ namespace RFiDGear.Tests.CardCheck
                 for (var i = 0; i < 200; i++)
                 {
                     session.Begin(Order("order-" + index, "J" + index, "C" + index), ReportLanguage.German);
-                    session.RecordFindings(Programmable());
-                    session.ChooseTemplate(Template("MDBasic"));
+                    session.RecordFindings("order-" + index, Programmable());
+                    session.ChooseTemplate("order-" + index, Template("MDBasic"));
                 }
             })));
 
@@ -379,8 +472,8 @@ namespace RFiDGear.Tests.CardCheck
                     switch (i & 3)
                     {
                         case 0: session.Begin(Order(), ReportLanguage.German); break;
-                        case 1: session.RecordFindings(Programmable((i & 4) == 0 ? "1760" : "300")); break;
-                        case 2: session.ChooseTemplate(Template("MDBasic")); break;
+                        case 1: session.RecordFindings(OrderId, Programmable((i & 4) == 0 ? "1760" : "300")); break;
+                        case 2: session.ChooseTemplate(OrderId, Template("MDBasic")); break;
                         default: session.Reset(); break;
                     }
                 }
@@ -400,8 +493,12 @@ namespace RFiDGear.Tests.CardCheck
 
             Assert.Throws<ArgumentNullException>(() => CardCheckServices.CreateWorkflowSession(null!));
             Assert.Throws<ArgumentNullException>(() => session.Begin(null!, ReportLanguage.German));
-            Assert.Throws<ArgumentNullException>(() => session.RecordFindings(null!));
-            Assert.Throws<ArgumentNullException>(() => session.ChooseTemplate(null!));
+            Assert.Throws<ArgumentNullException>(() => session.RecordFindings(OrderId, null!));
+            Assert.Throws<ArgumentNullException>(() => session.RecordFindings(null!, Programmable()));
+            Assert.Throws<ArgumentNullException>(() => session.ChooseTemplate(OrderId, null!));
+            Assert.Throws<ArgumentNullException>(() => session.ChooseTemplate(null!, Template("MDBasic")));
+            Assert.Throws<ArgumentNullException>(() => session.RecordAnswers(OrderId, null!));
+            Assert.Throws<ArgumentNullException>(() => session.RecordAnswers(null!, new LsmAnswers()));
         }
     }
 }

@@ -37,7 +37,10 @@ namespace RFiDGear.ExtensionLibraries.CardCheck
         /// <summary>The chip is not supported and the check ended after the first run.</summary>
         NotSupported,
 
-        /// <summary>The chip is recognised but cannot be programmed here; the check ended after the first run.</summary>
+        /// <summary>
+        /// The check ended after the first run and keeps its working reports: the chip is recognised but has too
+        /// little memory for any template, or the report contradicts itself.
+        /// </summary>
         SupportedOnly,
 
         /// <summary>The chip was programmed and the check went through all steps.</summary>
