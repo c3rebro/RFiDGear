@@ -1,0 +1,15 @@
+// Settings of the hardware tests (RFiDGear.HIL.Tests).
+//
+// Run-HilTests.bat copies this file to hil.settings.json (next to it; not in git) the first time and
+// never overwrites that copy. Edit hil.settings.json, not this file.
+// Without hil.settings.json the reader-scan tests are skipped and do not touch the reader.
+{
+  // true: the reader-scan tests may open the reader. A card must be on the reader.
+  // This switches on the 4 cases that need no help.
+  "readerScan": true,
+
+  // true: also run the 3 cases that ask you to put cards on the reader and to take them off again
+  // (message boxes that stay on top). Has no effect while readerScan is false.
+  // Run-HilTests.bat -Interactive turns this on for one run, whatever it says here.
+  "interactive": false
+}

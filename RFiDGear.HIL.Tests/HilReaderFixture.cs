@@ -14,7 +14,7 @@ namespace RFiDGear.HIL.Tests
     /// Finds the reader for the tests of the reader scan. Unlike <see cref="HilFixture"/> it needs no DESFire card: an
     /// Elatec TWN4 is found by the reader itself, with or without a card on it. A PC/SC reader cannot be told from no
     /// reader while it has no card (the host says so, too), so it is found only with a card on it.
-    /// Nothing is done unless the tests were asked for (see <see cref="HilEnvironment"/>): the fixture is also created
+    /// Nothing is done unless the tests were asked for (see <see cref="HilSettings"/>): the fixture is also created
     /// when every test of its collection is skipped.
     /// </summary>
     public sealed class HilReaderFixture : IAsyncLifetime
@@ -28,7 +28,7 @@ namespace RFiDGear.HIL.Tests
         /// <inheritdoc/>
         public async Task InitializeAsync()
         {
-            if (!HilEnvironment.HardwareRequested)
+            if (!HilSettings.Current.HardwareRequested)
             {
                 return;
             }
@@ -57,13 +57,18 @@ namespace RFiDGear.HIL.Tests
         /// <inheritdoc/>
         public Task DisposeAsync() => Task.CompletedTask;
 
-        /// <summary>Makes a host for one test, so that every test starts with a host that has not scanned yet.</summary>
+        /// <summary>
+        /// Makes a host for one test, so that every test starts with a host that has not scanned yet. When tests were asked
+        /// for but no reader was found, the test ends as the DESFire tests do: with the dynamic skip of the assert library,
+        /// which xunit 2 reports as a failure with the message prefix <c>$XunitDynamicSkip$</c> and which
+        /// <c>Run-HilTests.ps1</c> counts as skipped.
+        /// </summary>
         /// <returns>The host; dispose it at the end of the test.</returns>
         public HeadlessExtensionHost NewHost()
         {
             if (Kind == ReaderTypes.None)
             {
-                throw new XunitException(FailureReason ?? "No reader was found.");
+                throw SkipException.ForSkip(FailureReason ?? "No reader was found.");
             }
 
             // The other fixture may have chosen another kind of reader since.

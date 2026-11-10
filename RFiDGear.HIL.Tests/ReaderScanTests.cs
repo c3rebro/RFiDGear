@@ -13,8 +13,9 @@ namespace RFiDGear.HIL.Tests
     /// case are in <see cref="ReaderScenarios"/>, which the unit tests also run against a scripted reader; this class only
     /// supplies the reader and the person.
     /// <para>
-    /// Without <c>RFIDGEAR_HIL=1</c> every test is reported as skipped and nothing touches the reader. The cases that ask
-    /// for cards to be moved also need <c>RFIDGEAR_HIL_INTERACTIVE=1</c>. See <c>README.md</c> of this project.
+    /// Without <c>hil.settings.json</c> (or with <c>readerScan</c> off) every test is reported as skipped and nothing
+    /// touches the reader. The cases that ask for cards to be moved also need <c>interactive</c> on. See <c>README.md</c>
+    /// of this project.
     /// </para>
     /// <para>
     /// The cases share one reader and one card, so their order is fixed (see <see cref="HilCaseOrderer"/>): the cases that

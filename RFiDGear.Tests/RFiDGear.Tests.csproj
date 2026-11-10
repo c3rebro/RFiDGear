@@ -22,6 +22,8 @@
   <ItemGroup>
     <!-- The steps of the hardware cases, run here against a scripted reader (see Reader/HilScenarioSelfCheckTests). -->
     <Compile Include="..\RFiDGear.HIL.Tests\ReaderScenarios.cs" Link="Reader\HilScenarios\ReaderScenarios.cs" />
+    <!-- The settings file of the hardware tests: its parsing and lookup are tested here (Reader/HilSettingsTests). -->
+    <Compile Include="..\RFiDGear.HIL.Tests\HilSettings.cs" Link="Reader\HilScenarios\HilSettings.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RFiDGear.Extensions\DesfirePluginSample\RFiDGear.Extensions.DesfirePluginSample.csproj" />
