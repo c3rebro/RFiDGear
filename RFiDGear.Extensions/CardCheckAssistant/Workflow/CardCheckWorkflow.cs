@@ -32,7 +32,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
     /// the window does not cancel it. Nothing that happens after <see cref="Dispose"/> raises an event.
     /// </para>
     /// </summary>
-    internal sealed class CardCheckWorkflow : IGuidedWorkflow
+    internal sealed class CardCheckWorkflow : IGuidedWorkflow, IDisposable
     {
         /// <summary>How long the workflow waits for a card before it gives up, so that a window nobody uses does not look at the reader for ever.</summary>
         internal static readonly TimeSpan WaitCeiling = TimeSpan.FromMinutes(30);

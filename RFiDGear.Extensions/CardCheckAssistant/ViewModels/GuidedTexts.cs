@@ -17,20 +17,20 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
     internal static class GuidedTexts
     {
         /// <summary>The chip on the reader: its type and UID, and how many more credentials came with it.</summary>
-        /// <param name="card">What the reader showed; may be <c>null</c>.</param>
+        /// <param name="reader">What the reader showed; may be <c>null</c>.</param>
         /// <param name="strings">The page's texts.</param>
-        /// <returns>The description, or empty if there is no chip in <paramref name="card"/>.</returns>
-        public static string Card(ReaderSnapshot? card, LocalizedStrings strings)
+        /// <returns>The description, or empty if there is no chip in <paramref name="reader"/>.</returns>
+        public static string Card(ReaderSnapshot? reader, LocalizedStrings strings)
         {
-            if (card == null || !card.HasCard || card.Credentials.Count == 0)
+            if (reader == null || !reader.HasCard || reader.Credentials.Count == 0)
             {
                 return string.Empty;
             }
 
-            var main = card.Credentials[0];
+            var main = reader.Credentials[0];
             var text = strings.Format(Keys.CardFormat, main.DisplayName, main.Uid);
 
-            return card.Credentials.Count > 1 ? strings.Format(Keys.CardMoreFormat, text, card.Credentials.Count - 1) : text;
+            return reader.Credentials.Count > 1 ? strings.Format(Keys.CardMoreFormat, text, reader.Credentials.Count - 1) : text;
         }
 
         /// <summary>
@@ -60,10 +60,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         }
 
         /// <summary>The line for the phase the check run is in.</summary>
-        /// <param name="phase">The phase; <c>null</c> when none is running.</param>
+        /// <param name="current">The phase; <c>null</c> when none is running.</param>
         /// <param name="strings">The page's texts.</param>
         /// <returns>The line, or empty.</returns>
-        public static string Phase(CheckPhase? phase, LocalizedStrings strings) => phase switch
+        public static string Phase(CheckPhase? current, LocalizedStrings strings) => current switch
         {
             CheckPhase.Preparing => strings[Keys.GuidedPreparing],
             CheckPhase.LoadingProject => strings[Keys.GuidedPhaseLoading],

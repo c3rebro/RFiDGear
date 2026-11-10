@@ -641,7 +641,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         // ── what comes in ──
 
-        private void OnWorkflowChanged(object? sender, WorkflowSnapshot snapshot) => OnUiThread(() => Apply(snapshot));
+        private void OnWorkflowChanged(object? _, WorkflowSnapshot snapshot) => OnUiThread(() => Apply(snapshot));
 
         private void OnReaderStateChanged(object? sender, EventArgs e) => OnUiThread(() =>
         {
