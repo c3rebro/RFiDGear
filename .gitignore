@@ -46,6 +46,8 @@ RFiDGear/.claude/settings.local.json
 /RFiDGear.Contracts/obj
 /RFiDGear.HIL.Tests/bin
 /RFiDGear.HIL.Tests/obj
+# The settings of the hardware tests (Run-HilTests.bat creates the file) are local.
+/hil.settings.json
 /RFiDGear.Tests/TestResults
 /RFiDGear.ExtensionSdk/bin
 /RFiDGear.ExtensionSdk/obj
