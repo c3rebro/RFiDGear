@@ -128,8 +128,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
                 return Fail(FailureKind.NotConfigured, "report.root.notSet", "No report folder is set.");
             }
 
-            // The path itself (a full path, no forbidden character) is checked where the paths of the reports are made;
-            // that the folder is there is checked here, so a missing folder is told before anyone waits for a card.
+            // The path itself (a full path, no forbidden character) is checked where the paths of the reports are made.
+            // That the folder is there is checked here, so a missing folder is told before anyone waits for a card.
             if (!Directory.Exists(s.Report.OutputPath))
             {
                 return Fail(FailureKind.NotFound, "report.root.missing", "The report folder does not exist.");

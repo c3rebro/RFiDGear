@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -272,8 +273,10 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             public SettingsLoad Load() => Throw != null ? throw Throw : _load;
 
+            [SuppressMessage("Major Code Smell", "S1172:Unused method parameters should be removed", Justification = "The parameter belongs to the interface; the source under test only reads.")]
             public Result Save(CardCheckSettings settings) => throw new NotSupportedException();
 
+            [SuppressMessage("Major Code Smell", "S1172:Unused method parameters should be removed", Justification = "The parameter belongs to the interface; the source under test only reads.")]
             public Result Update(Func<CardCheckSettings, Result<CardCheckSettings>> change) => throw new NotSupportedException();
         }
     }
