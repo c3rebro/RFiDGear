@@ -49,3 +49,4 @@ RFiDGear/.claude/settings.local.json
 /RFiDGear.Tests/TestResults
 /RFiDGear.ExtensionSdk/bin
 /RFiDGear.ExtensionSdk/obj
+/TestResults
