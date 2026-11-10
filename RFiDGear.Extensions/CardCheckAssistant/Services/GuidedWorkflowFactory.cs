@@ -51,6 +51,16 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         }
 
         /// <summary>
+        /// Builds the workflow that has nothing to work from, with the real log and the reservations all windows share.
+        /// </summary>
+        /// <param name="host">The initialized host service.</param>
+        /// <returns>The workflow; see <see cref="CreateUnavailable(IRFiDGearExtensionHost, ICardCheckLog, IOrderReservations)"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="host"/> is null.</exception>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static IGuidedWorkflow CreateUnavailable(IRFiDGearExtensionHost host) =>
+            CreateUnavailable(host, CardCheckServices.CreateLog(), OrderReservations.Shared);
+
+        /// <summary>
         /// Builds a workflow that has nothing to work from: the application data of the assistant could not be reached,
         /// so every read of the list ends in the failure <see cref="ContextFailureCodes.Unavailable"/> and says so.
         /// </summary>

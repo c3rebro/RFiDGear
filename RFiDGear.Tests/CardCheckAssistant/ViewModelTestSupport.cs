@@ -36,35 +36,6 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
     }
 
-    /// <summary>
-    /// A checker that waits to be released and remembers which thread it ran on, to show that the checks happen off the
-    /// UI thread and that the window stays responsive meanwhile.
-    /// </summary>
-    internal sealed class BlockingPathChecker : IPathChecker, IDisposable
-    {
-        private readonly ManualResetEventSlim _release = new ManualResetEventSlim(false);
-        private int _started;
-        private int _threadId = -1;
-
-        public bool Started => Volatile.Read(ref _started) == 1;
-
-        public int ThreadId => Volatile.Read(ref _threadId);
-
-        public void Release() => _release.Set();
-
-        public void Dispose() => _release.Dispose();
-
-        public ProjectPathCheck CheckProject(string? path)
-        {
-            Volatile.Write(ref _threadId, Environment.CurrentManagedThreadId);
-            Volatile.Write(ref _started, 1);
-            _release.Wait(TimeSpan.FromSeconds(10));
-            return ProjectPathCheck.Valid;
-        }
-
-        public ReportTargetCheck CheckReportTarget(string? target) => ReportTargetCheck.None;
-    }
-
     /// <summary>A folder with a project file in it and room for a report, removed when disposed.</summary>
     internal sealed class TempArea : IDisposable
     {
@@ -154,15 +125,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
     internal static class ViewModelTestSupport
     {
-        /// <summary>A view model for the calling thread's dispatcher; call on the STA test thread.</summary>
-        public static CardCheckAssistantViewModel Create(RFiDGear.Contracts.IRFiDGearExtensionHost host, IFileDialogService? dialogs = null) =>
-            new CardCheckAssistantViewModel(host, Dispatcher.CurrentDispatcher, dialogs ?? new FakeFileDialogService());
-
         /// <summary>Lets everything already queued on the dispatcher run, including work the host's events queued.</summary>
         public static async Task Flush() => await Dispatcher.Yield(DispatcherPriority.Background);
-
-        public static TaskCompletionSource<bool> NewGate() =>
-            new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         /// <summary>
         /// Lets the dispatcher keep working until a condition holds. For the real host, whose load runs on another thread,

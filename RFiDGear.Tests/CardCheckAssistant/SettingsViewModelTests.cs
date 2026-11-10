@@ -127,7 +127,6 @@ namespace RFiDGear.Tests.CardCheckAssistant
         internal sealed class FakePathChecker : IPathChecker
         {
             private readonly List<string?> _projects = new List<string?>();
-            private readonly List<string?> _reports = new List<string?>();
 
             public Dictionary<string, ProjectPathCheck> Answers { get; } = new Dictionary<string, ProjectPathCheck>();
 
@@ -138,13 +137,6 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 _projects.Add(path);
 
                 return path != null && Answers.TryGetValue(path, out var answer) ? answer : ProjectPathCheck.Valid;
-            }
-
-            public ReportTargetCheck CheckReportTarget(string? target)
-            {
-                _reports.Add(target);
-
-                return ReportTargetCheck.None;
             }
         }
 

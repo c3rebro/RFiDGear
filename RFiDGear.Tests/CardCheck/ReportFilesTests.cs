@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-using RFiDGear.Extensions.CardCheckAssistant.Services;
 using RFiDGear.ExtensionLibraries.CardCheck;
 
 using Xunit;
@@ -253,35 +252,13 @@ namespace RFiDGear.Tests.CardCheck
         // ── the extension's own check of a report target ────────────────────
 
         [Theory]
-        [InlineData("KP-000005", "5")]
-        [InlineData("J 7", "C 9")]
-        [InlineData("A/B", "C?D")]
-        [InlineData("J:1", "C*2")]
-        [InlineData("\u00C4\u00D6", "\u00DF")]
-        [InlineData("com10", "aux1")]
-        public void Resolve_EveryPathIsAcceptedByTheExtensionsReportTargetCheck(string job, string chip)
-        {
-            foreach (var subfolder in new[] { true, false })
-            {
-                var paths = Service().Resolve(new ReportLocation(_root.Path, subfolder), job, chip).Value;
-                Assert.True(Service().EnsureOrderFolder(paths).IsSuccess);
-
-                foreach (var file in AllFiles)
-                {
-                    Assert.Equal(ReportTargetCheck.Valid, ReportTargetValidator.Check(paths.PathOf(file)));
-                }
-            }
-        }
-
-        [Theory]
         [InlineData("NUL")]
         [InlineData("CON.txt")]
         [InlineData("lpt1")]
         [InlineData("abc.")]
-        public void Resolve_ANameTheExtensionsCheckWouldRefuseAsAFileName_IsRefusedHereToo(string name)
+        public void Resolve_AFileNameWindowsCannotCreate_IsRefused(string name)
         {
-            // The check refuses a report whose file name is this; the library refuses to build such a name.
-            Assert.Equal(ReportTargetCheck.Unusable, ReportTargetValidator.Check(Path.Combine(_root.Path, name)));
+            // Windows cannot create a file with such a name, so the library builds none.
             Assert.False(Service().Resolve(new ReportLocation(_root.Path, true), name, "1").IsSuccess);
             Assert.False(Service().Resolve(new ReportLocation(_root.Path, false), "1", name).IsSuccess);
         }
