@@ -302,15 +302,45 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         [Fact]
-        public async Task AProjectReplacedBetweenTheLoadAndTheRun_IsNotRun()
+        public async Task AProjectChangedBetweenTheLoadAndTheRun_IsNotRun_EvenWhenItsPathIsTheSame()
         {
-            var files = new SpyReportFiles(Files) { OnPrepareStep = () => _project.CurrentPath = Path.Combine(_area.Directory, "another.rfPrj") };
+            // Another project, the same project reloaded, or its tasks replaced: the host says so with ProjectChanged and
+            // the path stays the same for the last two.
+            var files = new SpyReportFiles(Files) { OnPrepareStep = _project.RaiseProjectChanged };
 
             var result = await Runner(files).RunAsync(Request(), null, CancellationToken.None);
 
             Assert.Equal(CheckRunStatus.Failed, result.Status);
             Assert.Equal(CheckFailureCodes.ProjectChanged, result.Failure!.Code);
             Assert.Empty(_execution.Requests);
+            Assert.Equal(0, _project.ProjectChangedSubscribers);
+        }
+
+        [Fact]
+        public async Task TheRunnerListensForProjectChangesOnlyWhileItPrepares()
+        {
+            var good = await Runner().RunAsync(Request(), null, CancellationToken.None);
+            Assert.Equal(CheckRunStatus.Finished, good.Status);
+            Assert.Equal(0, _project.ProjectChangedSubscribers);
+
+            _project.LoadAnswer = _ => ProjectOpenResult.Fail(ProjectOpenError.Busy);
+            var notLoaded = await Runner().RunAsync(Request(), null, CancellationToken.None);
+            Assert.Equal(CheckRunStatus.Failed, notLoaded.Status);
+            Assert.Equal(0, _project.ProjectChangedSubscribers);
+        }
+
+        [Fact]
+        public async Task AProjectThatChangesWhileTheRunGoes_IsNotTheRunnersConcern()
+        {
+            _execution.OnExecute = request =>
+            {
+                ReportFixtures.WriteFirstReport(request.Variables["REPORTTARGETPATH"]);
+                _project.RaiseProjectChanged();   // after the start: the runner no longer listens
+            };
+
+            var result = await Runner().RunAsync(Request(), null, CancellationToken.None);
+
+            Assert.Equal(CheckRunStatus.Finished, result.Status);
         }
 
         [Fact]

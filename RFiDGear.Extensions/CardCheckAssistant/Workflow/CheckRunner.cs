@@ -57,7 +57,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// <summary>The project file does not exist.</summary>
         public const string ProjectNotFound = "check.project.notFound";
 
-        /// <summary>The project in RFiDGear was replaced after the runner had loaded it, so it was not run.</summary>
+        /// <summary>The project in RFiDGear was changed after the runner had loaded it (replaced, reloaded or its tasks edited), so it was not run.</summary>
         public const string ProjectChanged = "check.project.changed";
 
         /// <summary>The report the run is to continue from does not exist.</summary>
@@ -151,8 +151,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
     /// report is read even if a cancel came meanwhile, because the work is done.
     /// </para>
     /// <para>
-    /// Loading a project replaces the project in RFiDGear's main window; if it is replaced again before the run starts,
-    /// the run is not started. The disk work runs on a worker thread, and the runner continues on the context of the
+    /// Loading a project replaces the project in RFiDGear's main window; if the project is changed again before the run
+    /// starts (another project opened, this one reloaded or its tasks replaced), the run is not started. The disk work
+    /// runs on a worker thread, and the runner continues on the context of the
     /// caller (it never uses <c>ConfigureAwait(false)</c>), so the phase callback runs there. A callback that throws
     /// ends the run as an unexpected failure. A failure is a result; only a null argument throws.
     /// </para>
@@ -291,23 +292,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             var reportPath = paths.PathOf(request.Report);
             progress.ReportPath = reportPath;
 
-            phaseChanged?.Invoke(CheckPhase.LoadingProject);
-            var load = await _project.LoadAsync(prepared.ProjectPath!, ct);
-            if (!load.Success)
+            var notReady = await LoadAndClearAsync(prepared.ProjectPath!, paths, request.Report, phaseChanged, ct);
+            if (notReady != null)
             {
-                return Failed(LoadFailure(load.Error), progress);
-            }
-
-            var cleared = await Task.Run(() => _files.PrepareStep(paths, request.Report), ct);
-            if (!cleared.IsSuccess)
-            {
-                return Failed(cleared.Failure!, progress);
-            }
-
-            // The host is free between the load and the run, and someone may have opened another project meanwhile.
-            if (!string.Equals(_project.CurrentPath, load.CanonicalPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return Failed(new Failure(FailureKind.Unreachable, CheckFailureCodes.ProjectChanged, "The project in RFiDGear was replaced before the run."), progress);
+                return Failed(notReady, progress);
             }
 
             phaseChanged?.Invoke(CheckPhase.Running);
@@ -337,6 +325,44 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             return read.Failure != null
                 ? Failed(read.Failure, progress)
                 : new CheckRunResult(CheckRunStatus.Finished, null, execution, read.Findings, reportPath);
+        }
+
+        // Loads the project and deletes the report an earlier attempt left. The host is free between the load and the
+        // run, and someone may open another project, reload this one or replace its tasks meanwhile; any of these raises
+        // ProjectChanged, so the run is not started if it was raised after the load. Returns why the run cannot start,
+        // or null when it can.
+        private async Task<Failure?> LoadAndClearAsync(string projectPath, OrderReportPaths paths, ReportFile report, Action<CheckPhase>? phaseChanged, CancellationToken ct)
+        {
+            var changes = 0;
+            void OnProjectChanged(object? sender, EventArgs e) => Interlocked.Increment(ref changes);
+
+            _project.ProjectChanged += OnProjectChanged;
+            try
+            {
+                phaseChanged?.Invoke(CheckPhase.LoadingProject);
+                var load = await _project.LoadAsync(projectPath, ct);
+                if (!load.Success)
+                {
+                    return LoadFailure(load.Error);
+                }
+
+                // The load raised the event itself, before it returned.
+                var afterLoad = Volatile.Read(ref changes);
+
+                var cleared = await Task.Run(() => _files.PrepareStep(paths, report), ct);
+                if (!cleared.IsSuccess)
+                {
+                    return cleared.Failure!;
+                }
+
+                return Volatile.Read(ref changes) == afterLoad
+                    ? null
+                    : new Failure(FailureKind.Unreachable, CheckFailureCodes.ProjectChanged, "The project in RFiDGear was changed before the run.");
+            }
+            finally
+            {
+                _project.ProjectChanged -= OnProjectChanged;
+            }
         }
 
         // Asks RFiDGear to run the project. Returns why it refused, or null when it ran; the answer is in progress.
@@ -398,17 +424,19 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         }
 
         // The report the run wrote, on a worker thread. A file that is not there is a failure of the run, whatever the
-        // run said: PrepareStep removed the old one, so a file here was written by this run.
+        // run said: PrepareStep removed the old one, so a file here was written by this run. Only the library's "not
+        // found" is a missing report; a file that cannot be read (access denied, a network error) keeps its own failure.
         private (Failure? Failure, ReportAnalysis? Findings) ReadReport(string reportPath)
         {
-            if (!File.Exists(reportPath))
+            var analysis = _reports.Analyze(reportPath);
+            if (analysis.IsSuccess)
             {
-                return (new Failure(FailureKind.NotFound, CheckFailureCodes.ReportMissing, "The run did not write the report."), null);
+                return (null, analysis.Value);
             }
 
-            var analysis = _reports.Analyze(reportPath);
-
-            return analysis.IsSuccess ? (null, analysis.Value) : (analysis.Failure, null);
+            return analysis.Failure!.Kind == FailureKind.NotFound
+                ? (new Failure(FailureKind.NotFound, CheckFailureCodes.ReportMissing, "The run did not write the report."), null)
+                : (analysis.Failure, null);
         }
 
         // What a run has done so far, for the result of a run that ends early.

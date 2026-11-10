@@ -179,7 +179,8 @@ in the Extensions menu of the main window.
   report is read even if a cancel came meanwhile. A request that names a
   report that is not a step report is refused before anything is made or
   deleted, and the order's folder is made last. Loading replaces the project in
-  RFiDGear's main window; if it is replaced again before the run starts, the
-  run is not started. The disk work runs on a worker thread. The page does not
+  RFiDGear's main window; if the project is changed again before the run starts
+  (another project opened, this one reloaded or its tasks replaced), the run is
+  not started. The disk work runs on a worker thread. The page does not
   use the runner yet; its own run method goes when the guided page replaces
   it.
