@@ -220,4 +220,23 @@ in the Extensions menu of the main window.
   settings, settings of a newer version, a report folder that is not set or not
   there and a test folder that cannot be made are failures with a fixed code and
   text, not exceptions; an exception nobody expects is left for the workflow's
-  catch-all, which logs it. The page does not use the workflow yet.
+  catch-all, which logs it. The old page does not use the workflow yet.
+  `ViewModels/GuidedCheckViewModel` is the page that will, and has no window
+  yet. It binds to the workflow through `IGuidedWorkflow` (so a test can hand
+  it any snapshot in any order) and shows every snapshot in full: each change
+  of the workflow or of the host is posted to the window's dispatcher and
+  applied there in order, a snapshot that is not newer than the one shown is
+  ignored, and every property is computed from the snapshot, never from the
+  difference to the one before. The steps (`GuidedStep`) follow the states;
+  the commands follow the controls the snapshot offers. A refused start ends
+  in the list with its reason in the snapshot, which the next read would
+  erase, so the page keeps it as a notice until the operator acts. The list
+  is read again every ten seconds only while nothing else is going on: it is
+  shown, no order is selected, the last read worked and no window of the page
+  is open. A failure is shown as a text chosen by its code
+  (`Localization/FailureTexts`: a text of its own, else the family of its
+  ending, else a generic text with the English safe message), never by its
+  kind, because the same kind stands for different causes; the code is shown
+  with it. Closing the window asks the workflow: nothing in progress closes,
+  a step that cannot be left refuses, and a check that can be abandoned asks
+  first, through `ICloseConfirmation`.

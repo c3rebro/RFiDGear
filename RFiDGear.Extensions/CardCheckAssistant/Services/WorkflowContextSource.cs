@@ -75,7 +75,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
 
             if (load.Status == SettingsLoadStatus.NewerSchema)
             {
-                return Fail(FailureKind.InvalidConfiguration, "settings.newerSchema", "The settings were written by a newer version.");
+                return Fail(FailureKind.InvalidConfiguration, ContextFailureCodes.SettingsNewerSchema, "The settings were written by a newer version.");
             }
 
             return load.Settings.UseStubJobs ? TestContext(load.Settings) : RealContext(load.Settings);
@@ -85,7 +85,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
             ex is IOException || ex is UnauthorizedAccessException || ex is ArgumentException || ex is NotSupportedException;
 
         private static Result<WorkflowContext> SettingsUnreadable() =>
-            Fail(FailureKind.Io, "settings.unreadable", "The settings cannot be read just now.");
+            Fail(FailureKind.Io, ContextFailureCodes.SettingsUnreadable, "The settings cannot be read just now.");
 
         private static Result<WorkflowContext> Fail(FailureKind kind, string code, string message) =>
             Result<WorkflowContext>.Fail(new Failure(kind, code, message));
@@ -100,13 +100,13 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
             }
             catch (UnauthorizedAccessException)
             {
-                return Fail(FailureKind.AccessDenied, "report.folder.denied", "The folder for the test reports cannot be made: access denied.");
+                return Fail(FailureKind.AccessDenied, ContextFailureCodes.ReportFolderDenied, "The folder for the test reports cannot be made: access denied.");
             }
 
             catch (Exception ex) when (ex is IOException || ex is ArgumentException || ex is NotSupportedException)
             {
                 // A file in the way, a path that is too long or has a character that is not allowed.
-                return Fail(FailureKind.Io, "report.folder.io", "The folder for the test reports cannot be made.");
+                return Fail(FailureKind.Io, ContextFailureCodes.ReportFolderIo, "The folder for the test reports cannot be made.");
             }
 
             return Result<WorkflowContext>.Ok(new WorkflowContext(Stub(), SettingsOf(s, new ReportLocation(root, s.Report.CreateSubdirectory), true)));
@@ -125,14 +125,14 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         {
             if (string.IsNullOrWhiteSpace(s.Report.OutputPath))
             {
-                return Fail(FailureKind.NotConfigured, "report.root.notSet", "No report folder is set.");
+                return Fail(FailureKind.NotConfigured, ContextFailureCodes.ReportRootNotSet, "No report folder is set.");
             }
 
             // The path itself (a full path, no forbidden character) is checked where the paths of the reports are made.
             // That the folder is there is checked here, so a missing folder is told before anyone waits for a card.
             if (!Directory.Exists(s.Report.OutputPath))
             {
-                return Fail(FailureKind.NotFound, "report.root.missing", "The report folder does not exist.");
+                return Fail(FailureKind.NotFound, ContextFailureCodes.ReportRootMissing, "The report folder does not exist.");
             }
 
             var location = new ReportLocation(s.Report.OutputPath, s.Report.CreateSubdirectory);

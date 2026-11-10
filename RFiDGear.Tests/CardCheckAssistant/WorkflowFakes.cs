@@ -39,6 +39,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         public Result<IReadOnlyList<OrderRecord>>? ListAnswer { get; set; }
 
+        public Exception? ListThrows { get; set; }
+
         public TaskCompletionSource<bool>? ListGate { get; set; }
 
         public Result? FinalizeAnswer { get; set; }
@@ -52,6 +54,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public async Task<Result<IReadOnlyList<OrderRecord>>> ListAsync(CancellationToken cancellationToken)
         {
             ListCalls++;
+            if (ListThrows != null)
+            {
+                throw ListThrows;
+            }
+
             if (ListGate != null)
             {
                 await ListGate.Task;

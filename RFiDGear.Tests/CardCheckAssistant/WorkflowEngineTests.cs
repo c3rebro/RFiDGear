@@ -885,6 +885,55 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
+        public Task ACancel_AfterAFailedUpload_KeepsTheFailure_SoThePageCanSayWhatToCheck() => Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.CompletionFailed);
+
+            Assert.True(rig.Engine.Cancel());
+
+            Assert.Equal(WorkflowState.Cancelled, rig.Now.State);
+            Assert.Equal(WorkflowState.CompletionFailed, rig.Now.CancelledAt);
+            Assert.Equal("orders.unreachable", rig.Now.Failure!.Code);
+        });
+
+        [Fact]
+        public Task ACancel_AfterAFailedRun_ClearsTheFailure() => Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.RunFailed);
+            Assert.NotNull(rig.Now.Failure);
+
+            Assert.True(rig.Engine.Cancel());
+
+            Assert.Equal(WorkflowState.Cancelled, rig.Now.State);
+            Assert.Null(rig.Now.Failure);
+        });
+
+        [Fact]
+        public Task AListRead_ThatThrows_IsAFailedRead_NotAFault_AndTheNextReadWorks() => Sta(async rig =>
+        {
+            Assert.True(rig.Engine.RefreshOrders());
+            await rig.Settled();
+            Assert.Equal(5, rig.Now.Orders.Count);
+            rig.Store.ListThrows = new InvalidOperationException("secret path of the share");
+
+            Assert.True(rig.Engine.RefreshOrders());
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Idle, rig.Now.State);
+            Assert.Equal(ContextFailureCodes.OrdersUnexpected, rig.Now.OrdersFailure!.Code);
+            Assert.Empty(rig.Now.Orders);
+            Assert.DoesNotContain("secret", rig.Now.OrdersFailure.SafeMessage, StringComparison.Ordinal);
+            Assert.DoesNotContain("secret", rig.Log.Everything, StringComparison.Ordinal);
+
+            rig.Store.ListThrows = null;
+            Assert.True(rig.Engine.RefreshOrders());
+            await rig.Settled();
+
+            Assert.Null(rig.Now.OrdersFailure);
+            Assert.Equal(5, rig.Now.Orders.Count);
+        });
+
+        [Fact]
         public Task Dispose_StopsTheRunningStep_AndNothingIsRaisedAfterwards() => Sta(async rig =>
         {
             await rig.WaitingForCardAsync();
@@ -1102,7 +1151,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         // ── the rig ─────────────────────────────────────────────────────────
 
         // The workflow is for one context: each test runs on a thread with a dispatcher, as the window's thread does.
-        private static Task Sta(
+        internal static Task Sta(
             Func<Rig, Task> body,
             bool removeTemporary = false,
             Func<IReportFiles, IReportFiles>? wrapFiles = null,
@@ -1116,7 +1165,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 await body(rig).WaitAsync(TimeSpan.FromSeconds(60));
             });
 
-        private sealed class Rig : IDisposable
+        internal sealed class Rig : IDisposable
         {
             public const string OrderId = "STUB-3";
             public const string Job = "STUB-1003";
