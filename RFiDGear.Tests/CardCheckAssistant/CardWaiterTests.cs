@@ -14,14 +14,6 @@ namespace RFiDGear.Tests.CardCheckAssistant
     {
         private static readonly TimeSpan Second = TimeSpan.FromSeconds(1);
 
-        // What the rig throws when a wait that should have ended goes on: a failure no test expects by accident.
-        private sealed class WaitDidNotEnd : Exception
-        {
-            public WaitDidNotEnd()
-                : base("The wait did not end.")
-            {
-            }
-        }
 
         // A waiter on a scripted reader whose clock is moved only by the waits between two looks, so a test needs no
         // real time: one look at a time, one second after the other.
@@ -41,7 +33,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
                         // A wait that should have ended must fail a test, not loop for ever.
                         if (Delays > 1000)
                         {
-                            throw new WaitDidNotEnd();
+                            // A failure that no test expects by accident, so a wait that should have ended fails its test.
+                            throw new TimeoutException("The wait did not end.");
                         }
 
                         OnDelay?.Invoke();
@@ -273,7 +266,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         {
             var host = new FakeReaderHost();
             host.ScriptScan(Snapshots.NoCard());
-            var waiter = new CardWaiter(host, Second, (span, ct) => Task.Delay(Timeout.Infinite, ct));
+            var waiter = new CardWaiter(host, Second, (_, ct) => Task.Delay(Timeout.Infinite, ct));
             using var cts = new CancellationTokenSource();
 
             var wait = waiter.WaitForCardAsync(null, cts.Token);
@@ -427,6 +420,50 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal(CardWaitOutcome.TimedOut, result.Outcome);
             Assert.Equal(CardMoveStage.WaitingForReinsertion, result.Stage);
             Assert.Equal(TimeSpan.FromSeconds(4), rig.Now);
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(1000, 1)]
+        [InlineData(999, 1)]
+        public async Task RemovalAndReinsertion_WhenTheRemovalHasUsedUpTheTime_NoFurtherLookIsMade(int milliseconds, int pauses)
+        {
+            // After one pause of a second the time is used up exactly (1000), or by 1 ms (999: the time left is -1 ms,
+            // which is not the infinite timeout). The reader showed the empty reader at that look.
+            var rig = new Rig();
+            rig.Script(pauses == 0 ? Snapshots.NoCard() : CardA(), Snapshots.NoCard());
+
+            var result = await rig.Waiter.WaitForRemovalAndReinsertionAsync(TimeSpan.FromMilliseconds(milliseconds), null, null, CancellationToken.None);
+
+            Assert.Equal(CardWaitOutcome.TimedOut, result.Outcome);
+            Assert.Equal(CardMoveStage.WaitingForReinsertion, result.Stage);
+            Assert.Null(result.UidAfter);
+            Assert.Equal(Snapshots.NoCard(), result.Last);
+            Assert.Equal(pauses + 1, rig.Host.ScanCount);
+        }
+
+        [Fact]
+        public async Task RemovalAndReinsertion_ACancelWithTheTimeUsedUp_WinsOverTheTimeout()
+        {
+            var rig = new Rig();
+            rig.Script(Snapshots.NoCard());
+            using var cts = new CancellationTokenSource();
+
+            var result = await rig.Waiter.WaitForRemovalAndReinsertionAsync(
+                TimeSpan.Zero,
+                null,
+                stage =>
+                {
+                    if (stage == CardMoveStage.WaitingForReinsertion)
+                    {
+                        cts.Cancel();
+                    }
+                },
+                cts.Token);
+
+            Assert.Equal(CardWaitOutcome.Cancelled, result.Outcome);
+            Assert.Equal(CardMoveStage.WaitingForReinsertion, result.Stage);
+            Assert.Equal(1, rig.Host.ScanCount);
         }
 
         [Fact]

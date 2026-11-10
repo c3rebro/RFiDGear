@@ -169,7 +169,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// Waits for a card to be taken off the reader and a card to be put on it. A reader that is already empty at
         /// the first look counts as taken off.
         /// </summary>
-        /// <param name="timeout">How long to wait for both together; <c>null</c> to wait until cancelled. A time of zero looks once.</param>
+        /// <param name="timeout">
+        /// How long to wait for both together; <c>null</c> to wait until cancelled. A time of zero looks once. When the
+        /// removal has used up the time, the wait ends at once as <see cref="CardWaitOutcome.TimedOut"/>, in the stage
+        /// <see cref="CardMoveStage.WaitingForReinsertion"/>, without another look.
+        /// </param>
         /// <param name="cardBeforeUid">
         /// The UID of the card that was on the reader before, if the caller knows it; used when the waiter never sees a
         /// card, because the reader was already empty.
@@ -217,7 +221,25 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
 
             stageChanged?.Invoke(CardMoveStage.WaitingForReinsertion);
 
-            var remaining = IsUnlimited(timeout) ? null : timeout - (_clock() - started);
+            TimeSpan? remaining = null;
+
+            if (!IsUnlimited(timeout))
+            {
+                remaining = timeout!.Value - (_clock() - started);
+
+                // The time is spent: no further look (and a remaining time of exactly -1 millisecond is not the infinite
+                // timeout). A cancel still wins.
+                if (remaining <= TimeSpan.Zero)
+                {
+                    return new CardMoveResult(
+                        ct.IsCancellationRequested ? CardWaitOutcome.Cancelled : CardWaitOutcome.TimedOut,
+                        CardMoveStage.WaitingForReinsertion,
+                        before,
+                        null,
+                        removal.Last);
+                }
+            }
+
             var reinsertion = await LookUntilAsync(HasCardOn, remaining, null, ct);
 
             return new CardMoveResult(
