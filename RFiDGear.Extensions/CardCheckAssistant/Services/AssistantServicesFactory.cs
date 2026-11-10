@@ -5,6 +5,7 @@ using System.Windows.Threading;
 
 using RFiDGear.ExtensionLibraries.CardCheck;
 using RFiDGear.Extensions.CardCheckAssistant.Views;
+using RFiDGear.Extensions.CardCheckAssistant.Workflow;
 
 namespace RFiDGear.Extensions.CardCheckAssistant.Services
 {
@@ -31,13 +32,13 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
 
         /// <summary>Creates the services for one window.</summary>
         /// <param name="dispatcher">The dispatcher of the window, on which the import questions are shown.</param>
-        /// <returns>The services; remembering and offering nothing if the user has no application data folder.</returns>
+        /// <returns>The services; offering nothing and working from nothing if the user has no application data folder.</returns>
         internal static AssistantServices Create(Dispatcher dispatcher) => Create(dispatcher, OfferLegacyImport);
 
         /// <summary>Creates the services for one window, with the import offer switched on or off.</summary>
         /// <param name="dispatcher">The dispatcher of the window, on which the import questions are shown.</param>
         /// <param name="offerLegacyImport">Whether the page offers to import the old assistant's settings.</param>
-        /// <returns>The services; remembering and offering nothing if the user has no application data folder.</returns>
+        /// <returns>The services; offering nothing and working from nothing if the user has no application data folder.</returns>
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static AssistantServices Create(Dispatcher dispatcher, bool offerLegacyImport)
         {
@@ -53,29 +54,27 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
 
                 var editor = new SettingsEditor(store, databaseSettings => CardCheckServices.CreateOrderStore(databaseSettings, log));
 
-                // The jobs of the test mode are made up in memory and the reports of a test run have a folder of their own: no
-                // order database is reached from here. Without a usable report folder the Test folder is made in the
-                // fallback, which the test run moves into its sandbox like the settings.
-                var jobs = new StubJobSource(log);
-                var testReports = new TestReportTarget(
-                    store,
-                    CardCheckServices.CreateReportFiles(log),
-                    overridden ? root! : Path.Combine(Path.GetTempPath(), "RFiDGear", "CardCheckAssistant"));
+                // Each window gets its own workflow, built when the window is opened. In the test mode the orders are made
+                // up in memory and the reports go to a Test folder of their own; without a usable report folder that folder
+                // is made in the fallback, which the test run moves into its sandbox like the settings.
+                var fallback = overridden ? root! : Path.Combine(Path.GetTempPath(), "RFiDGear", "CardCheckAssistant");
+                Func<RFiDGear.Contracts.IRFiDGearExtensionHost, IGuidedWorkflow> workflow =
+                    host => GuidedWorkflowFactory.Create(host, store, log, OrderReservations.Shared, fallback);
 
                 if (!offerLegacyImport)
                 {
-                    return new AssistantServices(new SettingsMemory(store), AssistantServices.None.ImportOffer, editor, jobs, testReports);
+                    return new AssistantServices(AssistantServices.None.ImportOffer, editor, workflow);
                 }
 
                 var importer = overridden
                     ? CardCheckServices.CreateLegacyImporter(store, root!, log)
                     : CardCheckServices.CreateLegacyImporter(store, log);
 
-                return new AssistantServices(new SettingsMemory(store), new ImportOfferService(importer, new ImportDialogs(), dispatcher), editor, jobs, testReports);
+                return new AssistantServices(new ImportOfferService(importer, new ImportDialogs(), dispatcher), editor, workflow);
             }
             catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException)
             {
-                // No application data folder, or a folder name that is no path: the page works without remembering.
+                // No application data folder, or a folder name that is no path: the page says it has nothing to work from.
                 return AssistantServices.None;
             }
         }

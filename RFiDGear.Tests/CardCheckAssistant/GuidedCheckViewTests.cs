@@ -258,6 +258,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 }
 
                 Assert.All(VisibleButtons(scene.View), button => AssertInside(scene.View, button, state + " " + button.Name));
+                Assert.True(VisibleButtons(scene.View).Count(button => button.IsDefault) <= 1, "Enter must have one meaning.");
                 Assert.True(scene.Shown("ReaderLine"));
                 Assert.True(scene.Shown("TestModeBanner"));
             }
@@ -299,6 +300,41 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal("J1, 3, Muster GmbH, InProgress", new OrderRowViewModel(new OrderRecord { Id = "A", JobNumber = "J1", ChipNumber = "3", CustomerName = "Muster GmbH", StatusText = "InProgress" }).ToString());
             Assert.Equal("J1, InProgress", new OrderRowViewModel(new OrderRecord { Id = "A", JobNumber = "J1", StatusText = "InProgress" }).ToString());
         }
+
+        [Fact]
+        public Task TheButtons_AreWiredToTheCommandsOfThePage_AndFinishIsNotTheEnterButton() => Show(scene =>
+        {
+            var vm = scene.Vm;
+            Assert.Same(vm.StartOrderCommand, scene.Button("CheckOrderButton").Command);
+            Assert.Same(vm.RefreshCommand, scene.Button("RefreshButton").Command);
+            Assert.Same(vm.OpenSettingsCommand, scene.Button("SettingsButton").Command);
+            Assert.Same(vm.ConfirmReplaceCommand, scene.Button("ReplaceButton").Command);
+            Assert.Same(vm.KeepReportsCommand, scene.Button("KeepButton").Command);
+            Assert.Same(vm.StartCheckCommand, scene.Button("StartCheckButton").Command);
+            Assert.Same(vm.RetryCommand, scene.Button("RetryRunButton").Command);
+            Assert.Same(vm.RetryCommand, scene.Button("RetryFinishButton").Command);
+            Assert.Same(vm.FinishCommand, scene.Button("FinishButton").Command);
+            Assert.Same(vm.BackCommand, scene.Button("BackButton").Command);
+            Assert.Same(vm.CancelCommand, scene.Button("CancelButton").Command);
+
+            // Finishing stores the report and finishes the order: that is not what Enter should do by accident.
+            Assert.False(scene.Button("FinishButton").IsDefault);
+
+            return Task.CompletedTask;
+        });
+
+        [Fact]
+        public Task TheTestModeBanner_IsOnlyThereInTheTestMode() => Show(async scene =>
+        {
+            await scene.PushAsync(WorkflowState.Idle, s => s with { IsTestMode = false });
+            Assert.False(scene.Shown("TestModeBanner"));
+
+            await scene.PushAsync(WorkflowState.Idle, s => s with { IsTestMode = true });
+            Assert.True(scene.Shown("TestModeBanner"));
+
+            await scene.PushAsync(WorkflowState.WaitingForCard, s => s with { IsTestMode = false });
+            Assert.False(scene.Shown("TestModeBanner"));
+        });
 
         [Fact]
         public Task AnEmptyList_SaysWhy_AndATimerReadOnlyAddsALine() => Show(async scene =>

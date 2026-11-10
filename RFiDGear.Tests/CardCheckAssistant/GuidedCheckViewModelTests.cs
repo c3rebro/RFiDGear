@@ -150,6 +150,36 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
+        public Task HostEventsFromOtherThreads_ChangeThePageOnlyOnItsOwnThread_AndTheStateIsReadWhenTheEventIsHandled() => Run(async page =>
+        {
+            var vm = page.Vm;
+            await page.PushAsync(WorkflowState.WaitingForCard);
+            var uiThread = Environment.CurrentManagedThreadId;
+            var raisedOn = new System.Collections.Concurrent.ConcurrentBag<int>();
+            vm.PropertyChanged += (_, _) => raisedOn.Add(Environment.CurrentManagedThreadId);
+            vm.Strings.PropertyChanged += (_, _) => raisedOn.Add(Environment.CurrentManagedThreadId);
+
+            await Task.Run(() =>
+            {
+                page.Host.ExecutionHost.SetRunning(true);
+                page.Host.ReaderHost.RaiseReaderStateChanged();
+                page.Host.Context.ChangeCulture("de-DE");
+            });
+            await ViewModelTestSupport.Flush();
+
+            Assert.NotEmpty(raisedOn);
+            Assert.All(raisedOn, id => Assert.Equal(uiThread, id));
+            Assert.Equal(vm.Strings[Keys.GuidedPromptHostRunning], vm.PromptText);
+
+            // The event says that the state changed, not what it is: the page reads it when it handles the event.
+            page.Host.ExecutionHost.SetRunning(true);
+            page.Host.ExecutionHost.SetRunningQuietly(false);
+            await ViewModelTestSupport.Flush();
+
+            Assert.Equal(vm.Strings[Keys.GuidedPromptPlaceChip], vm.PromptText);
+        });
+
+        [Fact]
         public Task ABindingThatFails_DoesNotEscapeIntoTheApplication() => Run(async page =>
         {
             var reachedTheDispatcher = false;
@@ -564,6 +594,58 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
+        public Task EveryKindOfTaskRow_IsShownInItsOwnWords_AndTheTextsFollowTheLanguage() => Run(async page =>
+        {
+            var vm = page.Vm;
+            var now = DateTimeOffset.UtcNow;
+            var outcomes = new[]
+            {
+                new TaskOutcome(0, "1", "Classic", true, "NoError"),
+                new TaskOutcome(1, "2", "Desfire", false, "AuthFailure"),
+                new TaskOutcome(2, "3", "Ultralight", null, "Empty"),
+                new TaskOutcome(3, "4", "A", null, "Empty", TaskSkipReasons.NotReached),
+                new TaskOutcome(4, "5", "B", null, "Empty", TaskSkipReasons.ExecuteConditionNotMet),
+                new TaskOutcome(5, "6", "C", null, "Empty", TaskSkipReasons.NotExecuted),
+                new TaskOutcome(6, "7", "D", null, "Empty", TaskSkipReasons.TaskModelUnavailable),
+                new TaskOutcome(7, "8", "E", null, "Empty", "a reason this version does not know"),
+            };
+            var result = new ExecResult("run", ExecutionOutcome.Failure, 8, 1, now, now, outcomes);
+            await page.PushAsync(WorkflowState.Assessing, s => s with { Check = new CheckRunResult(CheckRunStatus.Finished, null, result, null, null) });
+
+            var expected = new[]
+            {
+                (TaskRowKind.Success, Keys.RowOk),
+                (TaskRowKind.Failure, Keys.RowFailed),
+                (TaskRowKind.Unknown, Keys.RowUnknown),
+                (TaskRowKind.Skipped, Keys.RowNotReached),
+                (TaskRowKind.Skipped, Keys.RowConditionNotMet),
+                (TaskRowKind.Skipped, Keys.RowNotExecuted),
+                (TaskRowKind.Skipped, Keys.RowTaskUnavailable),
+            };
+            Assert.Equal(8, vm.Rows.Count);
+            for (var i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(expected[i].Item1, vm.Rows[i].Kind);
+                Assert.Equal(vm.Strings[expected[i].Item2], vm.Rows[i].ResultText);
+                Assert.Equal(i + 1, vm.Rows[i].Position);
+            }
+
+            Assert.Equal("a reason this version does not know", vm.Rows[7].ResultText);   // shown as it is, not hidden
+            Assert.Equal("2", vm.Rows[1].TaskIndex);
+            Assert.Equal("AuthFailure", vm.Rows[1].ErrorCode);
+            Assert.Equal(vm.Strings.Format(Keys.SummaryFormat, 1, 8), vm.SummaryText);
+
+            var changed = new List<string?>();
+            vm.Rows[1].PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+            var before = vm.Rows[1].ResultText;
+            page.Host.Context.ChangeCulture("de-DE");
+            await ViewModelTestSupport.Flush();
+
+            Assert.Contains("ResultText", changed);
+            Assert.NotEqual(before, vm.Rows[1].ResultText);   // "Failed" becomes German; "OK" is the same in both
+        });
+
+        [Fact]
         public Task TheReplaceStep_NamesTheReportsThatExist() => Run(async page =>
         {
             var vm = page.Vm;
@@ -598,12 +680,33 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.True(vm.HasSettings);
             Assert.True(vm.OpenSettingsCommand.CanExecute(null));
 
+            // Not saved: nothing is read again. And not a second window while the first is open.
+            var whileOpen = new List<bool>();
+            page.Settings.WhileOpen = () => whileOpen.Add(vm.OpenSettingsCommand.CanExecute(null));
+            page.Settings.Answer = false;
+            await vm.OpenSettingsCommand.ExecuteAsync();
+            Assert.Empty(page.Workflow.Calls);
+            Assert.Equal(new[] { false }, whileOpen);
+            Assert.True(vm.OpenSettingsCommand.CanExecute(null));
+
+            // Saved: the list is read again.
+            page.Settings.WhileOpen = null;
             page.Settings.Answer = true;
             await vm.OpenSettingsCommand.ExecuteAsync();
             Assert.Equal(new[] { "Refresh" }, page.Workflow.Calls);
 
+            // The page is closed while the window is open: nothing is read afterwards.
+            page.Workflow.Calls.Clear();
+            page.Settings.WhileOpen = vm.Dispose;
+            await vm.OpenSettingsCommand.ExecuteAsync();
+            Assert.Empty(page.Workflow.Calls);
+        });
+
+        [Fact]
+        public Task Settings_AreNotOfferedOutsideTheList() => Run(async page =>
+        {
             await page.PushAsync(WorkflowState.WaitingForCard);
-            Assert.False(vm.OpenSettingsCommand.CanExecute(null));
+            Assert.False(page.Vm.OpenSettingsCommand.CanExecute(null));
         });
 
         [Fact]

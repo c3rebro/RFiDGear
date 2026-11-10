@@ -2,10 +2,11 @@
 title: Card Check Assistant
 ---
 
-The Card Check Assistant is an application extension for RFiDGear. It runs a
-project once on the card that is on the reader, with a job number, a chip
-number and an optional report file, and lists what every task did. It appears
-in the Extensions menu of the main window.
+The Card Check Assistant is an application extension for RFiDGear. It guides
+the operator through the check of the chip of an order: pick the order from
+the list, put the chip on the reader, run the check, read the verdict, and
+finish the order, which makes the final report and stores it in the order
+system. It appears in the Extensions menu of the main window.
 
 **Install:**
 
@@ -30,76 +31,69 @@ in the Extensions menu of the main window.
 
 **What the page does:**
 
-- Takes the full path of a project (`.rfPrj`), chosen with the picker or
-  typed. The host loads it, so it replaces the project open in RFiDGear.
-- Sends the job number as `$JOBNUMBER`, the chip number as `$CHIPNUMBER` and
-  the report file as `REPORTTARGETPATH`. A blank field leaves its variable
-  out.
-- Runs the project once, shows the outcome, the reason if the host gives one,
-  and one line per task, with tasks the run never reached marked as such.
-- Is disabled while RFiDGear runs tasks, whoever started them, and cannot be
-  closed in the middle of its own run.
+- Shows the orders of the order system (server, database and table from the
+  Settings window) with their customer and status. Only an order that is in
+  progress can be checked. The list is read when the window opens and again
+  every ten seconds while nothing else is going on (no order selected, no
+  window of the page open); **Refresh list** reads it at once. The report
+  language (German or English, from the settings until the operator chooses
+  one) picks the project of that language.
+- **Check this order** starts the order. The list is read again, so a stale
+  list cannot start a finished order; the settings and the report paths are
+  checked; if reports of an earlier check exist the operator is asked whether
+  to replace them (the finished report is only replaced when the order is
+  finished). Then the page waits for a chip and says what it sees: no reader,
+  RFiDGear busy with tasks, or the chip found. **Start check** loads the check
+  project from the settings into RFiDGear (it replaces the project open in the
+  main window) and runs it once with `$JOBNUMBER`, `$CHIPNUMBER` and
+  `REPORTTARGETPATH`. The results of the tasks are listed. A failed run can be
+  repeated, which goes back to the chip step; nothing is retried on its own.
+- Shows the verdict from the first report: not supported, supported but too
+  little free memory, can be programmed, or unclear (shown as a warning), with
+  the chip type, the free memory, the notes of the report and its path.
+  **Finish order** makes the final report and stores it in the order system;
+  if that fails it can be repeated or cancelled, and the page says what to
+  check. Programming a chip is not part of this version: for a chip that can
+  be programmed the only way out is **Leave order open**.
+- Says what went wrong in words, chosen by the code of the failure (never by
+  its kind, which stands for different causes), with the code in small print
+  for support. A running step is stopped with Cancel; closing the window in
+  the middle of a step that cannot be left (preparing, running, storing) is
+  refused with a hint, and closing it while a check is only waiting asks
+  first. Nothing of an order changes until it is finished.
 - Runs a project that ends with the program task `%EXIT` (the old assistant's
   way of closing RFiDGear) without closing RFiDGear: the host ends the run at
   that task as a normal finish, the tasks after it are shown as not reached
-  and are not held against the outcome, and the page shows the result. The
-  main window still closes RFiDGear on that task.
-- Shows a **card line** under the reader line: the type and UID of the card on
-  the reader (`Card: DESFireEV1, UID 04AABBCCDD`, followed by `(+1 more)` when
-  an LF or LEGIC credential was read together with it), or why there is none:
-  no card found, no reader, the reader is busy, the reader could not be read. A
-  busy or failed look is never shown as "no card". The line is what RFiDGear
-  last saw: it is read from the host when the window opens and again whenever
-  the reader event arrives (a card arrived, was removed or was replaced, by a
-  scan or by the Read button of the main window, or the reader changed). The
-  **Read card** button next to it scans the reader once, now. It is off while
-  tasks run (whoever started them) and while the page loads or runs, and the
-  run button is off while the scan goes, because a load started meanwhile
-  would be refused as busy by that scan. The page never scans on its own: no
-  timer, nothing when the window opens. With a PC/SC reader a card that cannot
-  be read, and an unplugged reader, also show as "no card found" (the host
-  cannot tell them apart); a card that is not a MIFARE card is not listed.
+  and are not held against the outcome. The main window still closes RFiDGear
+  on that task.
 - Is in English or German, following the language of RFiDGear, and switches
   when that changes.
-- Remembers, in `%LocalAppData%\RFiDGear\Extensions\CardCheckAssistant`, the
-  default project (prefilled when the window opens, never over text already
-  typed) and the folder of the last project that was loaded (where the picker
-  opens when no project is entered). The settings are read and written off the
-  UI thread; if they cannot be, the page works without them.
-- Has a **Settings...** button that opens a modal window with everything the
-  assistant keeps: the folder reports are written to (one folder per job, remove
-  working reports, default report language), the default project and the
-  project that reads the memory of the card, the order database (server as
-  `host` or `host\instance`, database, table, and a **Test connection** button
-  that says in words what it found; the Windows account is used to log in), and
-  the text blocks (add, rename, edit, remove). Save writes only the values that
-  were changed, so a second window's changes to other values survive. A path
-  that is relative or unusable, a text block without a name or with a name
-  another one has, and a database with only part of its entries stop the save;
-  a folder or project that does not exist is only a warning, because it may be
-  a network share that is not reachable just now. Closing the window with
-  changes asks first. A settings file of a newer version, or one that cannot be
-  read, is shown as such and is never saved over. After a save the page reads
-  its starting values again (a project that is already in the field stays).
+- Has a **Settings...** button, offered while the list is shown, that opens a
+  modal window with everything the assistant keeps: the folder reports are
+  written to (one folder per job, remove working reports, default report
+  language), the default project and the project that reads the memory of the
+  card, the order database (server as `host` or `host\instance`, database,
+  table, and a **Test connection** button that says in words what it found;
+  the Windows account is used to log in), and the text blocks (add, rename,
+  edit, remove). Save writes only the values that were changed, so a second
+  window's changes to other values survive. A path that is relative or
+  unusable, a text block without a name or with a name another one has, and a
+  database with only part of its entries stop the save; a folder or project
+  that does not exist is only a warning, because it may be a network share
+  that is not reachable just now. Closing the window with changes asks first.
+  A settings file of a newer version, or one that cannot be read, is shown as
+  such and is never saved over. After a save the list is read again.
 - Has a **test mode** for trying a check with only a reader and a card, when
   there is no order database or no order in it. It is switched on with the
   check box in the Settings window ("Test mode: use stub jobs", saved, off by
-  default). While it is on, the page shows a notice and a drop-down of five
-  made-up jobs (job numbers `STUB-1001` to `STUB-1005`). Picking one fills in
-  the job and the chip number and, where the report field is empty (or still
-  holds the file the page proposed), proposes the report file in a `Test`
-  folder: below the report folder of the settings if it is set and exists,
-  otherwise in `%TEMP%\RFiDGear\CardCheckAssistant\Test`, with a folder for
-  each job if the settings ask for one. The folder is made when a job is
-  picked, and a proposal that arrives after a run was started is dropped. What
-  the operator typed is never replaced. Switching the mode off takes back the
-  numbers and the report file a picked job filled in, unless they were changed
-  since. The jobs are kept in memory for as long as the window lives, and in
-  this mode the order database is never read or written; **Test connection**
-  in the Settings window still tests the real one. The drop-down is disabled
-  while a run is going, like the other fields. The whole page is disabled for
-  the moment the settings are read again after the Settings window was closed,
-  so a run cannot start while a job's numbers are being taken back.
+  default). While it is on, the page shows a notice, the orders are five
+  made-up ones (job numbers `STUB-1001` to `STUB-1005`, of which only the
+  third is in progress), and the reports go to a `Test` folder: below the
+  report folder of the settings if it is set and exists, otherwise in
+  `%TEMP%\RFiDGear\CardCheckAssistant\Test`. The made-up orders are kept in
+  memory for as long as the window lives, so an order that was finished stays
+  finished in it; the order database is never read or written in this mode
+  (**Test connection** in the Settings window still tests the real one).
 - Does **not** offer, for now, to take over the settings of the old WinUI Card
   Check Assistant. The code is kept (a question with "Import", "Not now" and
   "Never ask again", then a summary to confirm; the old files are only read,
@@ -108,6 +102,11 @@ in the Extensions menu of the main window.
   off nothing is read from the old assistant's folder and no marker is
   written. `AssistantServicesFactory` has the one switch; Slice 6 decides
   whether to turn it on for the cutover or to remove the code.
+- Left out on purpose, compared with the run-once page it replaces: the fields
+  for job number, chip number and report file (they come from the order), the
+  project picker (the project comes from the settings), the **Read card**
+  button and the card line (the page looks at the reader itself while it waits
+  for the chip), and the line for the project open in RFiDGear.
 
 **Rules that keep it correct:**
 
@@ -121,10 +120,13 @@ in the Extensions menu of the main window.
   sibling file, so `ComponentCheck` makes the first use of the library inside
   a try block when a window opens, and a library that is missing or does not
   fit gives the page that says so. A test lists the members of the exported
-  class and fails if one is a library type.
-- What the page remembers and offers sits behind two small interfaces of the
-  extension's own (`IAssistantSettings`, `IImportOffer`), so the view model
-  names no library type and is tested with fakes. The environment variable
+  class and fails if one is a library type. The page, its view model and the
+  factories do use library types, but they are only created after that check;
+  a test also fails if one of them holds a library enum or struct in a field,
+  because the runtime would load the library for it when the type is loaded.
+- What the page offers sits behind small interfaces of the extension's own
+  (`IImportOffer`, `IGuidedWorkflow`), so the view model is tested with
+  fakes. The environment variable
   `RFIDGEAR_CARDCHECK_APPDATA` moves the settings folder and the search for
   the old files to another folder; the test run sets it to a temporary one, so
   no test reads or writes the settings of whoever runs it.
@@ -138,9 +140,11 @@ in the Extensions menu of the main window.
   page and never ask the class for content.
 - The exported class holds no state. Everything that belongs to one window
   lives in the page and its view model, which the host disposes when the
-  window closes. The view model unsubscribes from the four host events there.
-- The report file check mirrors the host's rule. A test runs both over a table
-  of paths and fails if they disagree.
+  window closes. The view model unsubscribes from the three host events (reader,
+  running tasks, language) there.
+- The paths of the reports are made by the library (`IReportFiles`), whatever
+  the job and chip numbers look like; a test hands every path it makes to the
+  real host and fails if the host refuses one.
 - `Workflow/CardWaiter` waits for things to happen on the reader: a card to
   arrive, to be taken off, or taken off and put back. RFiDGear does not poll
   the reader for an extension, so the waiter looks itself with `ScanAsync`,
@@ -156,8 +160,8 @@ in the Extensions menu of the main window.
   follow. A card that is taken off and put back between two looks is not
   seen. A look activates the card again and ends an authenticated session, and
   RFiDGear does not notice other users of the reader: wait only while nothing
-  else works with the card. The page does not use the waiter yet; the workflow
-  of the next steps does.
+  else works with the card. The workflow uses it while the page waits for a
+  chip.
 - `Workflow/CheckRunner` runs one check project for one order and reads the
   report it wrote. The first run of the check (default project, writes the
   first report) and the run that reads the memory out after programming
@@ -181,10 +185,9 @@ in the Extensions menu of the main window.
   deleted, and the order's folder is made last. Loading replaces the project in
   RFiDGear's main window; if the project is changed again before the run starts
   (another project opened, this one reloaded or its tasks replaced), the run is
-  not started. The disk work runs on a worker thread. The page does not
-  use the runner yet; its own run method goes when the guided page replaces
-  it.
-- `Workflow/CardCheckWorkflow` is the guided check without a window: the list
+  not started. The disk work runs on a worker thread.
+- `Workflow/CardCheckWorkflow` is the guided check without a window (the page
+  below is its window): the list
   of orders, starting an order, waiting for a card, the check run, the verdict
   and the finish (the final report is made, uploaded with `IOrderStore`, the
   working reports are cleaned up). It covers the verdicts that do not lead to
@@ -210,22 +213,19 @@ in the Extensions menu of the main window.
   events are delivered in the order of the versions, also when a handler calls
   a command. The order store and settings come from one
   `IWorkflowContextSource`, so an order is listed, checked and finished with
-  the same pair (the real one, with the test folder for the made-up orders,
-  comes with the page). `Services/WorkflowContextSource` is that source for
-  the page: in test mode it hands out the made-up orders (one set for the
-  window, also when the mode is switched off and on) and a `Test` folder for the
-  reports (`TestReportFolder`, the same rule as the old test target); otherwise
-  a new store of the order system for the database settings as they are now and
-  the report folder of the settings, which must be set and exist. Unreadable
-  settings, settings of a newer version, a report folder that is not set or not
-  there and a test folder that cannot be made are failures with a fixed code and
-  text, not exceptions; an exception nobody expects is left for the workflow's
-  catch-all, which logs it. The old page does not use the workflow yet.
-  `ViewModels/GuidedCheckViewModel` is the page that will; its window is
-  described below. It binds to the workflow through `IGuidedWorkflow` (so a
-  test can hand it any snapshot in any order) and shows every snapshot in
-  full: each change
-  of the workflow or of the host is posted to the window's dispatcher and
+  the same pair. `Services/WorkflowContextSource` is that source for the page:
+  in test mode it hands out the made-up orders (one set for the window, also
+  when the mode is switched off and on) and a `Test` folder for the reports
+  (`TestReportFolder`); otherwise a new store of the order system for the
+  database settings as they are now and the report folder of the settings,
+  which must be set and exist. Unreadable settings, settings of a newer
+  version, a report folder that is not set or not there and a test folder that
+  cannot be made are failures with a fixed code and text, not exceptions; an
+  exception nobody expects is left for the workflow's catch-all, which logs it.
+  `ViewModels/GuidedCheckViewModel` is the page. It binds to the workflow
+  through `IGuidedWorkflow` (so a test can hand it any snapshot in any order)
+  and shows every snapshot in full: each change of the workflow or of the
+  host is posted to the window's dispatcher and
   applied there in order, a snapshot that is not newer than the one shown is
   ignored, and every property is computed from the snapshot, never from the
   difference to the one before. The steps (`GuidedStep`) follow the states;
@@ -249,7 +249,7 @@ in the Extensions menu of the main window.
   workflow of a window from the settings, the order system (or the made-up
   orders), the reports, `CheckRunner` and `CardWaiter`, and a workflow that
   only says it has nothing to work from for the case that the assistant's
-  application data cannot be reached. It uses library types to build the
-  workflow, so it is called only after the library is known to be there. The
-  window is not wired yet: the page the menu entry opens is still the old
-  one.
+  application data cannot be reached (or when building the real one fails).
+  It uses library types to build the workflow, so `AssistantServicesFactory`
+  calls it only after the library is known to be there, and the exported
+  class sees only `IGuidedWorkflow`.

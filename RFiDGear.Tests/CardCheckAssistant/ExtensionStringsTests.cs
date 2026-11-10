@@ -101,15 +101,15 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var strings = new LocalizedStrings("en-US");
             var raised = new List<string?>();
             strings.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
-            Assert.Equal("Run once", strings[ExtensionStrings.Keys.RunButton]);
+            Assert.Equal("Start check", strings[ExtensionStrings.Keys.GuidedStartCheckButton]);
 
             strings.Refresh("de-DE");
 
-            Assert.Equal("Einmal ausführen", strings[ExtensionStrings.Keys.RunButton]);
+            Assert.Equal("Prüfung starten", strings[ExtensionStrings.Keys.GuidedStartCheckButton]);
             Assert.Equal(new[] { "Item[]" }, raised);
 
             strings.Refresh(null);   // no language at all is English
-            Assert.Equal("Run once", strings[ExtensionStrings.Keys.RunButton]);
+            Assert.Equal("Start check", strings[ExtensionStrings.Keys.GuidedStartCheckButton]);
         }
 
         [Fact]

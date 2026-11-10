@@ -27,7 +27,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
 
     /// <summary>
     /// What the settings UI shows and edits, as plain values of the extension's own: no type of the support library, so the
-    /// view model that works on it names none. Whatever the UI does not edit (the folder the picker was last opened in, ...)
+    /// view model that works on it names none. Whatever the UI does not edit (the marker of an earlier import, ...)
     /// is not in here and is left alone when the data is saved.
     /// </summary>
     internal sealed record SettingsData
@@ -148,7 +148,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
 
     /// <summary>
     /// Reads, saves and tests the settings the settings UI edits. A seam of the extension's own, like
-    /// <see cref="IAssistantSettings"/>: the support library is behind it. Nothing here throws because of the disk, the
+    /// <see cref="IImportOffer"/>: the support library is behind it. Nothing here throws because of the disk, the
     /// settings file or the server; a missing argument is the caller's mistake and is refused.
     /// </summary>
     internal interface IAssistantSettingsEditor

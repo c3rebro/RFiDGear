@@ -342,7 +342,7 @@
                     <ContentControl MaxHeight="160" ContentTemplate="{StaticResource TaskTable}" Content="{Binding}" />
                 </Expander>
                 <StackPanel Grid.Row="2" Style="{StaticResource StepButtons}">
-                    <Button x:Name="FinishButton" Style="{StaticResource StepButton}" IsDefault="True"
+                    <Button x:Name="FinishButton" Style="{StaticResource StepButton}"
                             Command="{Binding FinishCommand}" Content="{Binding Strings[GuidedFinishButton]}" />
                 </StackPanel>
             </Grid>

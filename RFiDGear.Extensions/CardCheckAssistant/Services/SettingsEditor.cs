@@ -45,7 +45,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
             }
 
             // One step with reading, and a value is only written where the operator changed it: what the editor does not
-            // show (the folder the picker was last in, the marker of an earlier import) and anything another window changed
+            // show (the marker of an earlier import) and anything another window changed
             // since this one loaded are carried over, not written over with a stale copy.
             var result = _store.Update(current => Result<CardCheckSettings>.Ok(current with
             {
