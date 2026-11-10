@@ -158,7 +158,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
     /// ends the run as an unexpected failure. A failure is a result; only a null argument throws.
     /// </para>
     /// </summary>
-    internal sealed class CheckRunner
+    internal sealed class CheckRunner : ICheckRunner
     {
         /// <summary>The variable that carries the job number into the project.</summary>
         internal const string JobNumberVariable = "$JOBNUMBER";
