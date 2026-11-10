@@ -141,3 +141,20 @@ in the Extensions menu of the main window.
   window closes. The view model unsubscribes from the four host events there.
 - The report file check mirrors the host's rule. A test runs both over a table
   of paths and fails if they disagree.
+- `Workflow/CardWaiter` waits for things to happen on the reader: a card to
+  arrive, to be taken off, or taken off and put back. RFiDGear does not poll
+  the reader for an extension, so the waiter looks itself with `ScanAsync`,
+  every half second plus the time a read takes (four times as long after an
+  answer that says nothing). Only an answer in the state `Ready` says what is
+  on the reader: `Busy`, `ReadFailed` and `NoReader` are never taken for "the
+  card was taken off", and a reader that is empty at the first look counts as
+  taken off. A PC/SC reader cannot tell an empty reader from a card it cannot
+  read or one that another program holds, so one such answer counts as a
+  removal. To stop a wait, cancel it and await it: it ends only after a look
+  that has started has ended (up to a few seconds), so no scan is running when
+  it returns, and a run (which the host refuses while a scan is going) can
+  follow. A card that is taken off and put back between two looks is not
+  seen. A look activates the card again and ends an authenticated session, and
+  RFiDGear does not notice other users of the reader: wait only while nothing
+  else works with the card. The page does not use the waiter yet; the workflow
+  of the next steps does.
