@@ -72,7 +72,7 @@ function Write-Line {
 
 # Takes the // and /* */ comments out of the text of a JSON file. The tests allow them; Windows PowerShell 5.1 cannot read
 # them by itself. A string is never touched, whatever it holds.
-function Remove-JsonComment {
+function Get-JsonWithoutComment {
     param (
         [AllowEmptyString()]
         [string] $Text
@@ -113,7 +113,7 @@ function Remove-JsonComment {
 }
 
 # Takes the commas out that stand right before a closing } or ] (the tests allow them), outside of strings.
-function Remove-JsonTrailingComma {
+function Get-JsonWithoutTrailingComma {
     param (
         [AllowEmptyString()]
         [string] $Text
@@ -192,7 +192,7 @@ try {
     if (-not $settingsPath) { throw 'there is no settings file' }
     # The tests accept // and /* */ comments and trailing commas in the file; Windows PowerShell 5.1 cannot read them by
     # itself, so they are taken out here.
-    $settingsText = Remove-JsonTrailingComma (Remove-JsonComment (Get-Content -Raw -Path $settingsPath))
+    $settingsText = Get-JsonWithoutTrailingComma (Get-JsonWithoutComment (Get-Content -Raw -Path $settingsPath))
     # The same rules, and the same words, as the tests (HilSettings.cs): what the tests would not accept is no setting.
     if (-not ("$settingsText").TrimStart().StartsWith('{')) { throw 'the file must hold one JSON object' }
     $settings     = $settingsText | ConvertFrom-Json
