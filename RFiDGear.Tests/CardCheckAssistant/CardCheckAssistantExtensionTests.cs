@@ -463,7 +463,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var all = string.Join("\n", sources);
 
             Assert.All(ExtensionStrings.AllKeys, name => Assert.True(
-                all.Contains("Strings[" + name + "]", StringComparison.Ordinal) || all.Contains("Keys." + name, StringComparison.Ordinal),
+                all.Contains("Strings[" + name + "]", StringComparison.Ordinal) || Regex.IsMatch(all, @"Keys\." + Regex.Escape(name) + @"\b"),
                 name + " is not used anywhere"));
         }
 

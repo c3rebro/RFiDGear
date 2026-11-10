@@ -32,7 +32,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
     /// the window does not cancel it. Nothing that happens after <see cref="Dispose"/> raises an event.
     /// </para>
     /// </summary>
-    internal sealed class CardCheckWorkflow : IDisposable
+    internal sealed class CardCheckWorkflow : IGuidedWorkflow
     {
         /// <summary>How long the workflow waits for a card before it gives up, so that a window nobody uses does not look at the reader for ever.</summary>
         internal static readonly TimeSpan WaitCeiling = TimeSpan.FromMinutes(30);
@@ -254,7 +254,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
 
             if (!_busy)
             {
-                Move(WorkflowState.Cancelled, s => s with { CancelledAt = s.State, Failure = null });
+                // After a failed upload the failure stays: it says whether the report was not made or the order system did
+                // not answer, and the page needs that to tell the operator what to check.
+                Move(WorkflowState.Cancelled, s => s with { CancelledAt = s.State, Failure = s.State == WorkflowState.CompletionFailed ? s.Failure : null });
 
                 return true;
             }
@@ -308,7 +310,28 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
 
         // ── the operations ──────────────────────────────────────────────────
 
+        // A read of the list never faults the workflow: what nobody expected (a source or a store that throws) is logged by
+        // type and told as a failed read, with the list emptied since its origin is not known. The operator can try again.
         private async Task ReadOrdersAsync(CancellationToken ct)
+        {
+            try
+            {
+                await ReadOrdersCoreAsync(ct);
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _log.Unexpected("workflow.orders", UnexpectedFault.From(ex));
+                if (StopIfCancelled())
+                {
+                    return;
+                }
+
+                var failure = new Failure(FailureKind.Unexpected, ContextFailureCodes.OrdersUnexpected, "The list of orders cannot be read just now (" + ex.GetType().Name + ").");
+                Settle(WorkflowState.Idle, s => s with { Orders = Array.Empty<OrderRecord>(), OrdersFailure = failure });
+            }
+        }
+
+        private async Task ReadOrdersCoreAsync(CancellationToken ct)
         {
             var resolved = await Task.Run(() => _context.Resolve(), ct);
             if (StopIfCancelled())
