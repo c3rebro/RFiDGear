@@ -77,7 +77,14 @@ namespace RFiDGear.HIL.Tests
                 var deadline = DateTime.UtcNow + timeout;
                 while (!cancelled)
                 {
-                    if (await isDone())
+                    // A look takes a second or more: Cancel may come while it runs, and then the answer must not count.
+                    var done = await isDone();
+                    if (cancelled)
+                    {
+                        break;
+                    }
+
+                    if (done)
                     {
                         return WaitOutcome.Done;
                     }

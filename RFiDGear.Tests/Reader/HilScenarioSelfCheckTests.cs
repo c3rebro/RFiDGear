@@ -55,6 +55,11 @@ namespace RFiDGear.Tests.Reader
                     return WaitOutcome.Cancelled;
                 }
 
+                if (timeout <= TimeSpan.Zero)
+                {
+                    return WaitOutcome.TimedOut;   // a person with no time left gives up before the first look
+                }
+
                 for (var look = 0; look < Looks; look++)
                 {
                     if (await isDone())
