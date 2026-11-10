@@ -211,4 +211,13 @@ in the Extensions menu of the main window.
   a command. The order store and settings come from one
   `IWorkflowContextSource`, so an order is listed, checked and finished with
   the same pair (the real one, with the test folder for the made-up orders,
-  comes with the page). The page does not use the workflow yet.
+  comes with the page). `Services/WorkflowContextSource` is that source for
+  the page: in test mode it hands out the made-up orders (one set for the
+  window, also when the mode is switched off and on) and a `Test` folder for the
+  reports (`TestReportFolder`, the same rule as the old test target); otherwise
+  a new store of the order system for the database settings as they are now and
+  the report folder of the settings, which must be set and exist. Unreadable
+  settings, settings of a newer version, a report folder that is not set or not
+  there and a test folder that cannot be made are failures with a fixed code and
+  text, not exceptions; an exception nobody expects is left for the workflow's
+  catch-all, which logs it. The page does not use the workflow yet.
