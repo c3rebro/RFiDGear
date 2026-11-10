@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 using RFiDGear.ExtensionLibraries.CardCheck;
@@ -122,7 +123,7 @@ namespace RFiDGear.Tests.CardCheck
         {
             var result = Answered(true, true, true).ToFields(Template("MC1000L_AV"));
 
-            Assert.Throws<NotSupportedException>(() => ((IDictionary<string, string>)result.Value)["CheckBox_Detail_Reserved_2_1"] = "Off");
+            Assert.IsType<ReadOnlyDictionary<string, string>>(result.Value);
         }
 
         [Fact]
