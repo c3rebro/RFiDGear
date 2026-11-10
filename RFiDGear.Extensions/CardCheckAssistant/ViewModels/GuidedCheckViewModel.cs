@@ -69,6 +69,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private LanguageOption _selectedLanguage;
         private ReaderSnapshot? _hostCard;
         private bool _hostRunning;
+        private ExecResult? _shownResult;
 
         /// <summary>Creates the page and shows the workflow's current picture.</summary>
         /// <param name="host">The initialized host service.</param>
@@ -776,20 +777,22 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OnPropertyChanged(nameof(SelectedOrder));
         }
 
+        // The rows follow the result the snapshot carries: a new result (another run) is a new set of rows, however many
+        // tasks it has; the same result in a later snapshot leaves them alone.
         private void SyncTaskRows(ExecResult? result)
         {
+            if (ReferenceEquals(result, _shownResult))
+            {
+                return;
+            }
+
+            _shownResult = result;
+            _rows.Clear();
             if (result == null)
             {
-                _rows.Clear();
                 return;
             }
 
-            if (_rows.Count == result.TaskOutcomes.Count)
-            {
-                return;
-            }
-
-            _rows.Clear();
             foreach (var outcome in result.TaskOutcomes)
             {
                 _rows.Add(new TaskOutcomeRowViewModel(outcome, Strings));

@@ -537,6 +537,33 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
+        public Task TheTaskRows_FollowEachResult_AlsoWhenTheCountIsTheSame_AndStayWhenTheResultDoesNot() => Run(async page =>
+        {
+            var vm = page.Vm;
+            var now = DateTimeOffset.UtcNow;
+            ExecResult Result(string type) => new ExecResult(
+                "run", ExecutionOutcome.Success, 1, 0, now, now, new[] { new TaskOutcome(0, "1", type, true, "NoError") });
+            CheckRunResult Check(ExecResult result) => new CheckRunResult(CheckRunStatus.Finished, null, result, null, null);
+
+            var first = Result("Classic");
+            await page.PushAsync(WorkflowState.Assessing, s => s with { Check = Check(first) });
+            var rows = vm.Rows.ToList();
+            Assert.Equal("Classic", Assert.Single(vm.Rows).TaskType);
+
+            // The same result in the next snapshot: nothing is rebuilt.
+            await page.PushAsync(WorkflowState.Assessing, s => s with { Check = Check(first) });
+            Assert.True(rows.SequenceEqual(vm.Rows));
+
+            // Another run with as many tasks: the rows are its own.
+            await page.PushAsync(WorkflowState.Assessing, s => s with { Check = Check(Result("Desfire")) });
+            Assert.Equal("Desfire", Assert.Single(vm.Rows).TaskType);
+
+            await page.PushAsync(WorkflowState.Idle);
+            Assert.Empty(vm.Rows);
+            Assert.False(vm.HasRows);
+        });
+
+        [Fact]
         public Task TheReplaceStep_NamesTheReportsThatExist() => Run(async page =>
         {
             var vm = page.Vm;
