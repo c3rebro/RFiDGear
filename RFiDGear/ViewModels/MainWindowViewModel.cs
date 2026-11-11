@@ -77,6 +77,7 @@ namespace RFiDGear.ViewModel
 
         private HeadlessExtensionHost extensionHost;
         private ExtensionOperationCoordinator _coordinator;
+        private Dispatcher uiDispatcher;
         private readonly ReaderAccessGate _readerGate = new ReaderAccessGate();
 
         /// <summary>The gate that lets one party at a time read a card: the reads of this window and the scans of extensions.</summary>
@@ -219,7 +220,8 @@ namespace RFiDGear.ViewModel
             taskExecutionService = taskServices.TaskExecutionService;
 
             _coordinator = new ExtensionOperationCoordinator();
-            var owningDispatcher = Dispatcher.CurrentDispatcher;
+            uiDispatcher = Dispatcher.CurrentDispatcher;
+            var owningDispatcher = uiDispatcher;
             extensionHost = new HeadlessExtensionHost(
                 databaseReaderWriter,
                 taskExecutionService,
@@ -615,8 +617,12 @@ namespace RFiDGear.ViewModel
 
                     // fill treeview with dummy models and viewmodels
                     await ReadChipCommand.ExecuteAsync(null);
-                    await ResetTaskStatusCommand.ExecuteAsync(null);
-                    await WriteToChipOnceCommand.ExecuteAsync(null);
+
+                    // No message when it is refused: this runs on a timer, and the run below would be refused too.
+                    if (await TryResetTaskStatusAsync())
+                    {
+                        await WriteToChipOnceCommand.ExecuteAsync(null);
+                    }
                 }
 
             }
@@ -1110,12 +1116,68 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// Reset all Task status information
+        /// Runs a change of the task list, or of the state of its tasks, while the coordinator's project-edit slot
+        /// is held. Clearing the state under a running task loop lets a finished task run a second time (it breaks
+        /// the one-attempt rule), and changing the collection under it is worse, so these changes are admitted
+        /// only when no run, load, other edit or reader scan is in progress, as for an extension.
+        /// </summary>
+        /// <param name="edit">The change to make.</param>
+        /// <returns><c>false</c> when the slot was not free and nothing was changed.</returns>
+        private async Task<bool> TryRunProjectEditAsync(Func<Task> edit)
+        {
+            if (!_coordinator.TryBeginProjectOperation())
+            {
+                return false;
+            }
+
+            try
+            {
+                await edit();
+                return true;
+            }
+            finally
+            {
+                _coordinator.EndProjectOperation();
+            }
+        }
+
+        /// <summary>Tells the user that the task list cannot be changed right now.</summary>
+        private void ShowProjectBusy()
+        {
+            Dialogs.Add(new CustomDialogViewModel
+            {
+                Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                Message = ResourceLoader.GetResource("messageBoxProjectBusyMessage"),
+                OnOk = sender => sender.Close()
+            });
+        }
+
+        /// <summary>
+        /// Reset all Task status information. Refused, with a message, while a run, a load or another project
+        /// edit is in progress.
         /// </summary>
         public IAsyncRelayCommand ResetTaskStatusCommand => new AsyncRelayCommand(OnNewResetTaskStatusCommand);
         private async Task OnNewResetTaskStatusCommand()
         {
-            await Task.Run(() =>
+            if (!await TryResetTaskStatusAsync())
+            {
+                ShowProjectBusy();
+            }
+        }
+
+        /// <summary>
+        /// Resets the state of every task if no run, load or other edit is in progress. Quiet when it is refused, for
+        /// callers that are not a click (the reader timer, start-up).
+        /// </summary>
+        /// <returns><c>false</c> when the reset was refused.</returns>
+        private Task<bool> TryResetTaskStatusAsync() => TryRunProjectEditAsync(ResetTaskStatusCoreAsync);
+
+        /// <summary>
+        /// The reset itself. Callers must hold the coordinator's slot: the main window's own run does, as the
+        /// execution slot, and every other caller goes through <see cref="TryResetTaskStatusAsync"/>.
+        /// </summary>
+        private Task ResetTaskStatusCoreAsync() =>
+            Task.Run(() =>
             {
                 foreach (IGenericTask chipTask in taskHandler.TaskCollection)
                 {
@@ -1123,13 +1185,27 @@ namespace RFiDGear.ViewModel
                     chipTask.CurrentTaskErrorLevel = ERROR.Empty;
                 }
             });
-        }
 
         /// <summary>
-        /// Reset all Reporttasks directory information
+        /// Reset all Reporttasks directory information. Refused, with a message, while a run, a load or another
+        /// project edit is in progress.
         /// </summary>
         public IAsyncRelayCommand ResetReportTaskDirectoryCommand => new AsyncRelayCommand(OnNewResetReportTaskDirectoryCommand);
-        private Task OnNewResetReportTaskDirectoryCommand()
+        private async Task OnNewResetReportTaskDirectoryCommand()
+        {
+            var changed = await TryRunProjectEditAsync(() =>
+            {
+                ResetReportTaskDirectoryCore();
+                return Task.CompletedTask;
+            });
+
+            if (!changed)
+            {
+                ShowProjectBusy();
+            }
+        }
+
+        private void ResetReportTaskDirectoryCore()
         {
             try
             {
@@ -1151,30 +1227,55 @@ namespace RFiDGear.ViewModel
             {
                 Log.ForContext<MainWindowViewModel>().Error(e, "Failed to update chip.");
             }
-
-            return Task.CompletedTask;
         }
 
         /// <summary>
-        /// Reset selected Task status information
+        /// Reset selected Task status information. Refused, with a message, while a run, a load or another project
+        /// edit is in progress.
         /// </summary>
         public IAsyncRelayCommand ResetSelectedTaskStatusCommand => new AsyncRelayCommand(OnNewResetSelectedTaskStatusCommand);
         private async Task OnNewResetSelectedTaskStatusCommand()
         {
-            await Task.Run(() =>
+            var changed = await TryRunProjectEditAsync(() =>
+                Task.Run(() =>
+                {
+                    if (SelectedSetupViewModel is IGenericTask selectedTask)
+                    {
+                        selectedTask.IsTaskCompletedSuccessfully = null;
+                        selectedTask.CurrentTaskErrorLevel = ERROR.Empty;
+                    }
+                }));
+
+            if (!changed)
             {
-                (SelectedSetupViewModel as IGenericTask).IsTaskCompletedSuccessfully = null;
-                (SelectedSetupViewModel as IGenericTask).CurrentTaskErrorLevel = ERROR.Empty;
-            });
+                ShowProjectBusy();
+            }
         }
 
         /// <summary>
-        /// Remove all Tasks from DataGrid
+        /// Remove all Tasks from DataGrid. Refused, with a message, while a run, a load or another project edit
+        /// is in progress.
         /// </summary>
         public IAsyncRelayCommand RemoveAllTasksCommand => new AsyncRelayCommand(OnNewRemoveAllTasksCommand);
         private async Task OnNewRemoveAllTasksCommand()
         {
-            await Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => taskHandler.TaskCollection.Clear()));
+            var changed = await TryRunProjectEditAsync(async () =>
+            {
+                // The collection is bound to the grid and may only change on the UI thread.
+                if (uiDispatcher.CheckAccess())
+                {
+                    taskHandler.TaskCollection.Clear();
+                }
+                else
+                {
+                    await uiDispatcher.InvokeAsync(() => taskHandler.TaskCollection.Clear());
+                }
+            });
+
+            if (!changed)
+            {
+                ShowProjectBusy();
+            }
         }
 
         /// <summary>
@@ -1237,7 +1338,8 @@ namespace RFiDGear.ViewModel
 
                 if (!_runSelectedOnly)
                 {
-                    await OnNewResetTaskStatusCommand();
+                    // This run holds the execution slot, so it resets without asking for the project-edit slot.
+                    await ResetTaskStatusCoreAsync();
                 }
 
                 await OnNewReadChipCommand();
@@ -2352,7 +2454,7 @@ namespace RFiDGear.ViewModel
                     }
                 },
                 OpenProjectAsync = file => OpenLastProjectFile(file ?? string.Empty),
-                ResetTaskStatusAsync = () => OnNewResetTaskStatusCommand(),
+                ResetTaskStatusAsync = () => TryResetTaskStatusAsync(),
                 ReadChipAsync = () => OnNewReadChipCommand(),
                 WriteOnceAsync = () => OnNewWriteToChipOnceCommand(),
                 UpdateDateTime = value => DateTimeStatusBar = value,

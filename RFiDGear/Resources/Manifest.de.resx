@@ -518,6 +518,9 @@ Ein zum Lesertyp passender RFID Chip muss sich in Leserreichweite befinden.</val
   <data name="messageBoxProjectSavedAsMessage" xml:space="preserve">
     <value>Das Projekt wurde als '{0}' gespeichert.</value>
   </data>
+  <data name="messageBoxProjectBusyMessage" xml:space="preserve">
+    <value>Die Aufgabenliste kann nicht ge&#228;ndert werden, w&#228;hrend ein Lauf, das Laden eines Projekts oder eine andere &#196;nderung aktiv ist. Versuchen Sie es erneut, wenn sie abgeschlossen ist.</value>
+  </data>
   <data name="windowCaptionSaveTasks" xml:space="preserve">
     <value>Aufgabenliste Speichern unter...</value>
   </data>
