@@ -289,6 +289,79 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public async Task TheReader_IsInitializing_UntilTheMonitorHasLookedAtIt_AndTheStatusBarIsToldWhenThatEnds()
+        {
+            await WithViewModel(async (viewModel, _, _) =>
+            {
+                var announced = 0;
+                viewModel.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == nameof(viewModel.IsReaderInitializing))
+                    {
+                        announced++;
+                    }
+                };
+
+                // Nothing has looked at the reader yet, whatever IsReaderBusy says: the status bar must not show IDLE.
+                Assert.True(viewModel.IsReaderInitializing);
+                Assert.False(viewModel.IsReaderBusy);
+
+                await viewModel.CheckReaderAsync();
+
+                Assert.False(viewModel.IsReaderInitializing);
+                Assert.Equal(1, announced);
+
+                // It is the start-up that is over, not one look: later looks change nothing, and say nothing.
+                await viewModel.CheckReaderAsync();
+
+                Assert.False(viewModel.IsReaderInitializing);
+                Assert.Equal(1, announced);
+            });
+        }
+
+        [Fact]
+        public async Task ALookThatIsSkippedBecauseTheReaderIsBusy_DoesNotEndTheInitialization()
+        {
+            await WithViewModel(async (viewModel, _, _) =>
+            {
+                viewModel.IsReaderBusy = true;
+
+                await viewModel.CheckReaderAsync();
+
+                Assert.True(viewModel.IsReaderInitializing);
+
+                // The same for a reader a scan of an extension holds.
+                viewModel.IsReaderBusy = false;
+                Assert.True(viewModel.ReaderGate.TryEnter());
+
+                await viewModel.CheckReaderAsync();
+
+                Assert.True(viewModel.IsReaderInitializing);
+                viewModel.ReaderGate.Exit();
+
+                await viewModel.CheckReaderAsync();
+
+                Assert.False(viewModel.IsReaderInitializing);
+            });
+        }
+
+        [Fact]
+        public async Task WithoutAReader_TheInitializationEnds_BecauseThereIsNothingToWaitFor()
+        {
+            await WithViewModel(async (viewModel, _, _) =>
+            {
+                using (ReaderDeviceScope.Use(null))
+                {
+                    Assert.True(viewModel.IsReaderInitializing);
+
+                    await viewModel.CheckReaderAsync();
+
+                    Assert.False(viewModel.IsReaderInitializing);
+                }
+            });
+        }
+
+        [Fact]
         public async Task TheMonitorProbe_IsToldTheReaderIsBusy_WhileAScanHoldsIt()
         {
             await WithViewModel((viewModel, _, _) =>

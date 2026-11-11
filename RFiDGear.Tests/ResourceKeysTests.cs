@@ -64,10 +64,11 @@ namespace RFiDGear.Tests
             "textBoxStatusCompareModeExact",
             "textBoxStatusComparePass",
             "textBoxStatusCompareFail",
+            "statusHeaderReaderIsInitializing",
         };
 
-        // The unit of a size reads the same in both languages.
-        private static readonly string[] SameInBothLanguages = { "labelContentMifareDesfireBytes" };
+        // The unit of a size, and the INIT of the status bar, read the same in both languages.
+        private static readonly string[] SameInBothLanguages = { "labelContentMifareDesfireBytes", "statusHeaderReaderIsInitializing" };
 
         private static readonly ResourceManager Manifest =
             new ResourceManager("RFiDGear.Resources.Manifest", typeof(MainWindowViewModel).Assembly);

@@ -1964,7 +1964,28 @@ namespace RFiDGear.ViewModel
         private bool? isReaderBusy;
 
         /// <summary>
-        /// 
+        /// Gets a value indicating whether the reader is still being set up: the application has started, but the reader
+        /// monitor has not yet had its first look at the reader. The status bar shows INIT instead of IDLE or UNKNOWN while
+        /// this is <see langword="true"/>; a busy reader is still shown as busy.
+        /// </summary>
+        public bool IsReaderInitializing
+        {
+            get => isReaderInitializing;
+            private set
+            {
+                if (isReaderInitializing == value)
+                {
+                    return;
+                }
+
+                isReaderInitializing = value;
+                OnPropertyChanged(nameof(IsReaderInitializing));
+            }
+        }
+        private bool isReaderInitializing = true;
+
+        /// <summary>
+        ///
         /// </summary>
         public bool IsCheckForUpdatesChecked
         {
@@ -2261,16 +2282,26 @@ namespace RFiDGear.ViewModel
         // The probe does nothing while somebody reads the card: the main window (the flag) or a reader scan (the gate).
         internal bool? ReaderBusyForProbe() => _readerGate.IsHeld ? true : IsReaderBusy;
 
-        private async void CheckReader(object sender)
+        // The callback of the reader monitor. Everything it does is in CheckReaderAsync, which lets nothing escape.
+        private async void CheckReader(object sender) => await CheckReaderAsync();
+
+        /// <summary>
+        /// One look at the reader, as the reader monitor makes it every few seconds: connects a reader that is not
+        /// connected, updates the status bar, and ends <see cref="IsReaderInitializing"/> once the reader has been looked
+        /// at. Nothing escapes it.
+        /// </summary>
+        /// <returns>A task that completes when the look is over.</returns>
+        internal async Task CheckReaderAsync()
         {
             readerMonitor?.Pause();
 
             try
             {
-                using (var settings = new SettingsReaderWriter())
+                using (var settings = settingsReaderWriterFactory())
                 {
+                    var device = ReaderDevice.Instance;
                     var result = await readerProbe.ProbeAsync(
-                        ReaderDevice.Instance,
+                        device,
                         settings.DefaultSpecification.DefaultReaderProvider,
                         ReaderBusyForProbe());
 
@@ -2283,12 +2314,23 @@ namespace RFiDGear.ViewModel
 
                         CurrentReader = result.Label;
                     }
+
+                    // The first look that reached the reader ends the start-up, whatever it found. Without a reader
+                    // (none selected) there is nothing to wait for. A look that was skipped because the reader was busy
+                    // does not count.
+                    if (result != null || device == null)
+                    {
+                        IsReaderInitializing = false;
+                    }
                 }
             }
             catch (Exception e)
             {
-                // A timer callback that is async void must not let anything escape: it would end the application.
+                // The timer callback is async void: anything that escaped would end the application.
                 readerProbe.ReportUnexpectedFailure(e);
+
+                // The look has been made and failed; INIT must not stay on for good.
+                IsReaderInitializing = false;
             }
             finally
             {

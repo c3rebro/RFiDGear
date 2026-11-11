@@ -1733,6 +1733,9 @@ https://github.com/c3rebro/rfidgear</value>
   <data name="statusHeaderReaderIsUnknown" xml:space="preserve">
     <value>UNBEKANNT</value>
   </data>
+  <data name="statusHeaderReaderIsInitializing" xml:space="preserve">
+    <value>INIT</value>
+  </data>
   <data name="messageBoxInvalidClassicKeysCaption" xml:space="preserve">
     <value>Ungültiger Schlüssel</value>
   </data>
