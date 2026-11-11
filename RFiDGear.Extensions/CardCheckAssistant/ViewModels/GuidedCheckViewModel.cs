@@ -319,7 +319,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         public string UpdatingText => Strings[Keys.GuidedOrdersUpdating];
 
         /// <summary>Gets a value indicating whether the footer offers Cancel as a button: not for a read the timer started.</summary>
-        public bool ShowCancel => _snapshot.Controls.HasFlag(WorkflowControls.Cancel) && !IsUpdatingOrders;
+        public bool ShowCancel => (_snapshot.Controls.HasFlag(WorkflowControls.Cancel) || _snapshot.Controls.HasFlag(WorkflowControls.DeclineReplace)) && !IsUpdatingOrders;
 
         // ── the order and its steps ──
 

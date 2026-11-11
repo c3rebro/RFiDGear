@@ -275,6 +275,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var vm = page.Vm;
 
             await page.PushAsync(WorkflowState.ConfirmingReplace);
+            Assert.True(vm.ShowCancel);
             Assert.True(vm.CancelCommand.CanExecute(null));
             vm.CancelCommand.Execute(null);
 
