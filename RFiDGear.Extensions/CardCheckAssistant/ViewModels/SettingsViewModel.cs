@@ -62,6 +62,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private readonly ISettingsPrompts _prompts;
         private readonly IFolderChecker _folderChecker;
         private readonly IPathChecker _pathChecker;
+        private readonly ISettingsFileTransfer _transfer;
 
         private int _disposed;
         private int _loadStarted;
@@ -84,6 +85,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private CancellationTokenSource? _testCancellation;
         private TextBlockViewModel? _selectedTextBlock;
         private ProjectLanguageFinding? _languageFinding;
+        private string? _transferKey;
+        private bool _transferFailed;
         private int _languageLookup;
 
         /// <param name="editor">Reads, saves and tests the settings.</param>
@@ -92,13 +95,15 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <param name="strings">The page's texts; the same instance as the page's, so a language change reaches this window.</param>
         /// <param name="folderChecker">The file-system check of a folder; the real one when omitted.</param>
         /// <param name="pathChecker">The file-system check of a project; the real one when omitted.</param>
+        /// <param name="transfer">Writes and reads a settings file; the real one when omitted.</param>
         public SettingsViewModel(
             IAssistantSettingsEditor editor,
             IFileDialogService dialogs,
             ISettingsPrompts prompts,
             LocalizedStrings strings,
             IFolderChecker? folderChecker = null,
-            IPathChecker? pathChecker = null)
+            IPathChecker? pathChecker = null,
+            ISettingsFileTransfer? transfer = null)
         {
             _editor = editor ?? throw new ArgumentNullException(nameof(editor));
             _dialogs = dialogs ?? throw new ArgumentNullException(nameof(dialogs));
@@ -106,6 +111,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             Strings = strings ?? throw new ArgumentNullException(nameof(strings));
             _folderChecker = folderChecker ?? new FileSystemFolderChecker();
             _pathChecker = pathChecker ?? new FileSystemPathChecker();
+            _transfer = transfer ?? new SettingsFileTransfer();
 
             OutputFolder = new PathFieldViewModel(strings, OnDraftChanged, BrowseFolder, () => InputsEnabled);
             DefaultProject = new PathFieldViewModel(strings, OnDraftChanged, BrowseProject, () => InputsEnabled);
@@ -114,6 +120,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OkCommand = new AsyncCommand(SaveAsync, () => CanSave, _ => SetSaveError(Keys.SaveFailed));
             CancelCommand = new DelegateCommand(Cancel, () => !_isSaving);
             TestConnectionCommand = new AsyncCommand(TestConnectionAsync, () => InputsEnabled, _ => SetTest(ConnectionTestState.Failed, Keys.TestFailed));
+            ExportCommand = new AsyncCommand(ExportAsync, () => InputsEnabled, _ => SetTransfer(Keys.ExportFailed, failed: true));
+            ImportCommand = new AsyncCommand(ImportAsync, () => InputsEnabled, _ => SetTransfer(Keys.ImportFailed, failed: true));
             AddTextBlockCommand = new DelegateCommand(AddTextBlock, () => InputsEnabled);
             RemoveTextBlockCommand = new DelegateCommand(RemoveTextBlock, () => InputsEnabled && _selectedTextBlock != null);
 
@@ -152,6 +160,21 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         /// <summary>Asks the window to close without saving.</summary>
         public DelegateCommand CancelCommand { get; }
+
+        /// <summary>Writes the settings as they are in this window to a file the operator picks.</summary>
+        public AsyncCommand ExportCommand { get; }
+
+        /// <summary>Reads a settings file and, after asking, puts its settings into this window; nothing is saved by it.</summary>
+        public AsyncCommand ImportCommand { get; }
+
+        /// <summary>Gets what the last export or import came to, or <c>null</c> if none was made.</summary>
+        public string? TransferText => _transferKey == null ? null : Strings[_transferKey];
+
+        /// <summary>Gets a value indicating whether <see cref="TransferText"/> has something to show.</summary>
+        public bool HasTransferText => _transferKey != null;
+
+        /// <summary>Gets a value indicating whether the last export or import failed.</summary>
+        public bool TransferFailed => _transferKey != null && _transferFailed;
 
         /// <summary>Tries the order database as entered.</summary>
         public AsyncCommand TestConnectionCommand { get; }
@@ -906,6 +929,85 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OnPropertyChanged(nameof(TestFailed));
         }
 
+        // ── export and import ──
+
+        private const string SuggestedFileName = "CardCheckAssistant-settings.json";
+
+        private async Task ExportAsync()
+        {
+            if (!InputsEnabled)
+            {
+                return;
+            }
+
+            var path = _dialogs.PickSettingsFileToSave(SuggestedFileName, Strings[Keys.SettingsExportTitle], Strings[Keys.SettingsFileFilter]);
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return;
+            }
+
+            // What the window shows is written, also what has not been saved yet.
+            var data = ToData();
+            var outcome = await Task.Run(() => _transfer.Export(path, data));
+            if (!IsDisposed)
+            {
+                SetTransfer(outcome == SettingsTransferOutcome.Done ? Keys.ExportDone : Keys.ExportFailed, outcome != SettingsTransferOutcome.Done);
+            }
+        }
+
+        private async Task ImportAsync()
+        {
+            if (!InputsEnabled)
+            {
+                return;
+            }
+
+            var path = _dialogs.PickSettingsFileToOpen(Strings[Keys.SettingsImportTitle], Strings[Keys.SettingsFileFilter]);
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return;
+            }
+
+            var result = await Task.Run(() => _transfer.Import(path));
+            if (IsDisposed || !InputsEnabled)
+            {
+                return;
+            }
+
+            if (result.Outcome != SettingsTransferOutcome.Done || result.Data == null)
+            {
+                SetTransfer(ImportFailureKey(result.Outcome), failed: true);
+                return;
+            }
+
+            // The file replaces what is in the window, so that is asked first; "no" is what Escape and the close button mean.
+            if (!_prompts.ConfirmDiscard(Strings[Keys.ImportAskTitle], Strings[Keys.ImportAskMessage]))
+            {
+                return;
+            }
+
+            Show(Normalize(result.Data));
+            SetTransfer(Keys.ImportDone, failed: false);
+            OnPropertyChanged(nameof(IsDirty));
+        }
+
+        private static string ImportFailureKey(SettingsTransferOutcome outcome) => outcome switch
+        {
+            SettingsTransferOutcome.NotSettings => Keys.ImportNotSettings,
+            SettingsTransferOutcome.NewerVersion => Keys.ImportNewerVersion,
+            SettingsTransferOutcome.TooLarge => Keys.ImportTooLarge,
+            _ => Keys.ImportFailed
+        };
+
+        private void SetTransfer(string key, bool failed)
+        {
+            _transferKey = key;
+            _transferFailed = failed;
+            OnPropertyChanged(nameof(TransferText));
+            OnPropertyChanged(nameof(HasTransferText));
+            OnPropertyChanged(nameof(TransferFailed));
+        }
+
         // ── messages and state ──
 
         private string? ProblemKey() => _problem switch
@@ -959,6 +1061,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OkCommand.RaiseCanExecuteChanged();
             CancelCommand.RaiseCanExecuteChanged();
             TestConnectionCommand.RaiseCanExecuteChanged();
+            ExportCommand.RaiseCanExecuteChanged();
+            ImportCommand.RaiseCanExecuteChanged();
             AddTextBlockCommand.RaiseCanExecuteChanged();
             RemoveTextBlockCommand.RaiseCanExecuteChanged();
             OutputFolder.BrowseCommand.RaiseCanExecuteChanged();
@@ -978,6 +1082,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OnPropertyChanged(nameof(SaveErrorText));
             OnPropertyChanged(nameof(DatabaseError));
             OnPropertyChanged(nameof(TestResultText));
+            OnPropertyChanged(nameof(TransferText));
             OutputFolder.RefreshText();
             DefaultProject.RefreshText();
             OnPropertyChanged(nameof(DefaultProjectNote));

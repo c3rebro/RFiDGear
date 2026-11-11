@@ -20,6 +20,19 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         /// <param name="title">The dialog title, in the page's language.</param>
         /// <returns>The chosen full path of the folder, or <c>null</c> if the user cancelled.</returns>
         string? PickFolder(string? currentPath, string title);
+
+        /// <summary>Asks for the file the settings are to be written to.</summary>
+        /// <param name="suggestedName">The name offered first.</param>
+        /// <param name="title">The title of the dialog.</param>
+        /// <param name="filter">The filter of the dialog.</param>
+        /// <returns>The file, or <c>null</c> if the operator cancelled.</returns>
+        string? PickSettingsFileToSave(string suggestedName, string title, string filter);
+
+        /// <summary>Asks for a settings file to read.</summary>
+        /// <param name="title">The title of the dialog.</param>
+        /// <param name="filter">The filter of the dialog.</param>
+        /// <returns>The file, or <c>null</c> if the operator cancelled.</returns>
+        string? PickSettingsFileToOpen(string title, string filter);
     }
 
     /// <summary>The Windows open-file and open-folder dialogs.</summary>
@@ -52,6 +65,34 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         }
 
         /// <inheritdoc/>
+        public string? PickSettingsFileToSave(string suggestedName, string title, string filter)
+        {
+            var dialog = new SaveFileDialog
+            {
+                Title = title,
+                Filter = filter,
+                FileName = suggestedName,
+                DefaultExt = ".json",
+                AddExtension = true,
+                OverwritePrompt = true
+            };
+
+            return dialog.ShowDialog() == true ? dialog.FileName : null;
+        }
+
+        public string? PickSettingsFileToOpen(string title, string filter)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = title,
+                Filter = filter,
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            return dialog.ShowDialog() == true ? dialog.FileName : null;
+        }
+
         public string? PickProjectFile(string? currentPath, string title, string filter)
         {
             var dialog = new OpenFileDialog

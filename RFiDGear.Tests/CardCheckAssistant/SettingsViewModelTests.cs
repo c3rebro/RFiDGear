@@ -105,6 +105,29 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
         }
 
+        internal sealed class FakeSettingsFileTransfer : ISettingsFileTransfer
+        {
+            public SettingsTransferOutcome ExportOutcome { get; set; } = SettingsTransferOutcome.Done;
+
+            public SettingsImport ImportResult { get; set; } = new SettingsImport(SettingsTransferOutcome.Failed, null);
+
+            public List<(string Path, SettingsData Data)> Exported { get; } = new List<(string, SettingsData)>();
+
+            public List<string> Imported { get; } = new List<string>();
+
+            public SettingsTransferOutcome Export(string path, SettingsData data)
+            {
+                Exported.Add((path, data));
+                return ExportOutcome;
+            }
+
+            public SettingsImport Import(string path)
+            {
+                Imported.Add(path);
+                return ImportResult;
+            }
+        }
+
         internal sealed class FakeFolderChecker : IFolderChecker
         {
             private readonly List<string?> _requests = new List<string?>();
@@ -166,7 +189,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                     Editor.LoadResult = load;
                 }
 
-                Vm = new SettingsViewModel(Editor, Dialogs, Prompts, Strings, Folders, Paths);
+                Vm = new SettingsViewModel(Editor, Dialogs, Prompts, Strings, Folders, Paths, Transfer);
 
                 // The window answers the request by closing, which asks the view model again: it must be allowed by then.
                 Vm.CloseRequested += (_, e) =>
@@ -185,6 +208,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
             public FakeFolderChecker Folders { get; } = new FakeFolderChecker();
 
             public FakePathChecker Paths { get; } = new FakePathChecker();
+
+            public FakeSettingsFileTransfer Transfer { get; } = new FakeSettingsFileTransfer();
 
             public LocalizedStrings Strings { get; } = new LocalizedStrings("en-US");
 
@@ -488,6 +513,135 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
                 Assert.Equal(new[] { false }, rig.Closed);
                 Assert.Empty(rig.Editor.Saves);
+            });
+        }
+
+        // ── export and import of the settings ──
+
+        private static SettingsData Elsewhere() => new SettingsData
+        {
+            OutputFolder = "D:\\reports",
+            OneFolderPerJob = false,
+            RemoveTemporaryReports = true,
+            ReportLanguage = ReportLanguageChoice.German,
+            DefaultProjectPath = "D:\\p\\other.rfPrj",
+            MemoryProjectPath = "D:\\p\\memory.rfPrj",
+            Database = new DatabaseData("other-srv", "other-db", "dbo.T_Other"),
+            UseStubJobs = false,
+            TextBlocks = new[] { new TextBlockData("Only", "One") },
+        };
+
+        [Fact]
+        public async Task Export_WritesTheDraftAsItIsShown_AndSaysSo()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var rig = await Rig.OpenAsync(Loaded());
+                var vm = rig.Vm;
+                rig.Dialogs.SaveAnswer = "C:\\out\\mine.json";
+                vm.DefaultProject.Value = "other.rfPrj";
+
+                await vm.ExportCommand.ExecuteAsync();
+
+                var (path, data) = Assert.Single(rig.Transfer.Exported);
+                Assert.Equal("C:\\out\\mine.json", path);
+                Assert.Equal("other.rfPrj", data.DefaultProjectPath);
+                Assert.Equal(new[] { "Greeting", "Closing" }, data.TextBlocks.Select(block => block.Name));
+                Assert.Equal(rig.Strings[Keys.ExportDone], vm.TransferText);
+                Assert.False(vm.TransferFailed);
+            });
+        }
+
+        [Fact]
+        public async Task Export_SaysItFailed_AndDoesNothingWhenThePickerIsCancelled()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var rig = await Rig.OpenAsync(Loaded());
+                var vm = rig.Vm;
+
+                await vm.ExportCommand.ExecuteAsync();
+                Assert.Empty(rig.Transfer.Exported);
+                Assert.False(vm.HasTransferText);
+
+                rig.Dialogs.SaveAnswer = "C:\\out\\mine.json";
+                rig.Transfer.ExportOutcome = SettingsTransferOutcome.Failed;
+                await vm.ExportCommand.ExecuteAsync();
+
+                Assert.Equal(rig.Strings[Keys.ExportFailed], vm.TransferText);
+                Assert.True(vm.TransferFailed);
+            });
+        }
+
+        [Fact]
+        public async Task Import_AsksFirst_AndOnlyThenPutsTheSettingsOfTheFileIntoTheWindow_WithoutSavingThem()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var rig = await Rig.OpenAsync(Loaded());
+                var vm = rig.Vm;
+                rig.Dialogs.OpenAnswer = "C:\\in\\theirs.json";
+                rig.Transfer.ImportResult = new SettingsImport(SettingsTransferOutcome.Done, Elsewhere());
+
+                // Not agreed: the window stays as it was.
+                rig.Prompts.WillAnswer(false);
+                await vm.ImportCommand.ExecuteAsync();
+
+                Assert.Equal((rig.Strings[Keys.ImportAskTitle], rig.Strings[Keys.ImportAskMessage]), Assert.Single(rig.Prompts.Asked));
+                Assert.Equal("check.rfPrj", vm.DefaultProject.Value);
+                Assert.False(vm.IsDirty);
+                Assert.False(vm.HasTransferText);
+
+                // Agreed: everything of the file is in the window, and nothing is saved until the operator saves.
+                rig.Prompts.WillAnswer(true);
+                await vm.ImportCommand.ExecuteAsync();
+
+                Assert.Equal(("D:\\reports", false, true, false), (vm.OutputFolder.Value, vm.OneFolderPerJob, vm.RemoveTemporaryReports, vm.UseStubJobs));
+                Assert.Equal(("D:\\p\\other.rfPrj", "D:\\p\\memory.rfPrj"), (vm.DefaultProject.Value, vm.MemoryProject.Value));
+                Assert.Equal(("other-srv", "other-db", "dbo.T_Other"), (vm.DatabaseServer, vm.DatabaseName, vm.DatabaseTable));
+                Assert.Equal(new[] { "Only" }, vm.TextBlocks.Select(block => block.Name));
+                Assert.True(vm.IsGermanReport);
+                Assert.True(vm.IsDirty);
+                Assert.Equal(rig.Strings[Keys.ImportDone], vm.TransferText);
+                Assert.Empty(rig.Editor.Saves);
+            });
+        }
+
+        [Theory]
+        [InlineData("NotSettings", "ImportNotSettings")]
+        [InlineData("NewerVersion", "ImportNewerVersion")]
+        [InlineData("TooLarge", "ImportTooLarge")]
+        [InlineData("Failed", "ImportFailed")]
+        public async Task Import_OfAFileThatCannotBeUsed_SaysWhy_WithoutAskingOrChangingAnything(string outcomeName, string key)
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var rig = await Rig.OpenAsync(Loaded());
+                var vm = rig.Vm;
+                rig.Dialogs.OpenAnswer = "C:\\in\\theirs.json";
+                rig.Transfer.ImportResult = new SettingsImport(Enum.Parse<SettingsTransferOutcome>(outcomeName), null);
+
+                await vm.ImportCommand.ExecuteAsync();
+
+                Assert.Equal(rig.Strings[key], vm.TransferText);
+                Assert.True(vm.TransferFailed);
+                Assert.Empty(rig.Prompts.Asked);
+                Assert.False(vm.IsDirty);
+            });
+        }
+
+        [Fact]
+        public async Task Import_DoesNothing_WhenThePickerIsCancelled()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var rig = await Rig.OpenAsync(Loaded());
+
+                await rig.Vm.ImportCommand.ExecuteAsync();
+
+                Assert.Equal(1, rig.Dialogs.OpenRequests);
+                Assert.Empty(rig.Transfer.Imported);
+                Assert.False(rig.Vm.HasTransferText);
             });
         }
 
