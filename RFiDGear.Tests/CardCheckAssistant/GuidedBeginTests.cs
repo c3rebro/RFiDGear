@@ -15,10 +15,10 @@ namespace RFiDGear.Tests.CardCheckAssistant
     /// <summary>The way into the programming: the verdict of a chip that can be programmed, and the texts around it.</summary>
     public sealed class GuidedBeginTests
     {
-        private static Func<WorkflowSnapshot, WorkflowSnapshot> Verdict(ChipVerdict verdict, Failure? problem = null) => s => s with
+        private static Func<WorkflowSnapshot, WorkflowSnapshot> Verdict(ChipVerdict chip, Failure? problem = null) => s => s with
         {
             Order = new WorkflowOrder("A", "JA", "1"),
-            Selection = new TemplateSelection(verdict, FreeMemory.Unknown, Array.Empty<LsmTemplate>(), null),
+            Selection = new TemplateSelection(chip,FreeMemory.Unknown, Array.Empty<LsmTemplate>(), null),
             ProgrammingProblem = problem,
         };
 
