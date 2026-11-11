@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,6 +11,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
     // it elsewhere (in the LSM); the workflow only watches the reader. Everything here follows the rules of the engine in
     // CardCheckWorkflow.cs: a command is a synchronous request that starts at most one operation, and the operation ends in
     // a state in which nothing runs.
+    [SuppressMessage("Minor Code Smell", "S2333:Partial is gratuitous in this context", Justification = "The class is split over two files to keep each of them short; the analysis reads one file at a time.")]
     internal sealed partial class CardCheckWorkflow
     {
         /// <summary>

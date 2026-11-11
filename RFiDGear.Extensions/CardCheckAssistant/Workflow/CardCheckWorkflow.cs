@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -33,6 +34,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
     /// the window does not cancel it. Nothing that happens after <see cref="Dispose"/> raises an event.
     /// </para>
     /// </summary>
+    [SuppressMessage("Minor Code Smell", "S2333:Partial is gratuitous in this context", Justification = "The class is split over two files to keep each of them short; the analysis reads one file at a time.")]
     internal sealed partial class CardCheckWorkflow : IGuidedWorkflow, IDisposable
     {
         /// <summary>How long the workflow waits for a card before it gives up, so that a window nobody uses does not look at the reader for ever.</summary>
