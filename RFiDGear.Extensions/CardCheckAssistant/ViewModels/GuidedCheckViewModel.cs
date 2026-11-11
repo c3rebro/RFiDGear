@@ -124,7 +124,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OpenReportCommand = new AsyncCommand(() => OpenInViewerAsync(ReadOutReport), () => CanOpen(ReadOutReport));
             OpenFolderCommand = new AsyncCommand(() => OpenInViewerAsync(ReadOutFolder), () => CanOpen(ReadOutFolder));
             RetryCommand = new DelegateCommand(() => _workflow.Retry(), () => Offers(WorkflowControls.Retry));
-            CancelCommand = new DelegateCommand(Cancel, () => Offers(WorkflowControls.Cancel));
+            // While the question about the earlier reports is asked, Cancel at the foot of the page is the same as the button
+            // of the question: back to the list.
+            CancelCommand = new DelegateCommand(Cancel, () => Offers(WorkflowControls.Cancel) || Offers(WorkflowControls.DeclineReplace));
             BackCommand = new DelegateCommand(Back, () => Offers(WorkflowControls.Back));
             OpenSettingsCommand = new AsyncCommand(OpenSettingsAsync, () => _settingsDialog != null && _modal == 0 && Offers(WorkflowControls.Refresh));
 
@@ -611,6 +613,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         private void Cancel()
         {
+            if (Offers(WorkflowControls.DeclineReplace))
+            {
+                _workflow.ConfirmReplace(false);
+                return;
+            }
+
             // From the programming on, nothing resumes what is ended here: one click on a button that is always at the foot
             // of the page must not do it.
             if (GuidedTexts.CancelNeedsQuestion(_snapshot.State) && !Ask(Strings[Keys.GuidedCancelTitle], GuidedTexts.Close(_snapshot, Strings)))

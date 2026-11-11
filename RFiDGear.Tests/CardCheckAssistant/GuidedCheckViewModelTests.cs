@@ -270,6 +270,18 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
+        public Task CancelAtTheFootOfThePage_LeavesTheQuestionAboutEarlierReports_LikeItsOwnButton() => Run(async page =>
+        {
+            var vm = page.Vm;
+
+            await page.PushAsync(WorkflowState.ConfirmingReplace);
+            Assert.True(vm.CancelCommand.CanExecute(null));
+            vm.CancelCommand.Execute(null);
+
+            Assert.Equal(new[] { "ConfirmReplace:False" }, page.Workflow.Calls);
+        });
+
+        [Fact]
         public Task EachCommand_CallsItsOwnEngineCommand() => Run(async page =>
         {
             var vm = page.Vm;

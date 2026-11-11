@@ -281,7 +281,7 @@
                     <Button x:Name="ReplaceButton" Style="{StaticResource StepButton}"
                             Command="{Binding ConfirmReplaceCommand}" Content="{Binding Strings[GuidedReplaceButton]}" />
                     <Button x:Name="KeepButton" Style="{StaticResource StepButton}" IsDefault="True"
-                            Command="{Binding KeepReportsCommand}" Content="{Binding Strings[GuidedKeepButton]}" />
+                            Command="{Binding KeepReportsCommand}" Content="{Binding Strings[GuidedReplaceCancelButton]}" />
                 </StackPanel>
             </StackPanel>
 

@@ -205,7 +205,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string GuidedRefreshButton = "GuidedRefreshButton";
             public const string GuidedCheckOrderButton = "GuidedCheckOrderButton";
             public const string GuidedReplaceButton = "GuidedReplaceButton";
-            public const string GuidedKeepButton = "GuidedKeepButton";
+            public const string GuidedReplaceCancelButton = "GuidedReplaceCancelButton";
             public const string GuidedStartCheckButton = "GuidedStartCheckButton";
             public const string GuidedRetryButton = "GuidedRetryButton";
             public const string GuidedReadOutRunning = "GuidedReadOutRunning";
@@ -358,7 +358,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedReportPathFormat] = "First report: {0}",
             [Keys.GuidedOpenReportHint] = "Open this file to look at the report.",
             [Keys.GuidedReplaceFormat] = "Reports of an earlier check of this order exist: {0}.",
-            [Keys.GuidedReplaceNote] = "The finished report of the earlier check is only replaced when you finish this order. Keep them to go back to the list.",
+            [Keys.GuidedReplaceNote] = "The finished report of the earlier check is only replaced when you finish this order. Cancel to go back to the list; the earlier reports stay as they are.",
             [Keys.GuidedFileStep1] = "first report",
             [Keys.GuidedFileStep2] = "programming report",
             [Keys.GuidedFileStep3] = "read-out report",
@@ -390,7 +390,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedRefreshButton] = "Refresh list",
             [Keys.GuidedCheckOrderButton] = "Check this order",
             [Keys.GuidedReplaceButton] = "Replace",
-            [Keys.GuidedKeepButton] = "Keep",
+            [Keys.GuidedReplaceCancelButton] = "Cancel, back to the list",
             [Keys.GuidedStartCheckButton] = "Start check",
             [Keys.GuidedRetryButton] = "Retry",
             [Keys.GuidedReadOutRunning] = "The memory of the chip is being read out. Keep the chip on the reader.",
@@ -614,7 +614,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedReportPathFormat] = "Erster Bericht: {0}",
             [Keys.GuidedOpenReportHint] = "Öffnen Sie diese Datei, um den Bericht anzusehen.",
             [Keys.GuidedReplaceFormat] = "Zu diesem Auftrag gibt es Berichte einer früheren Prüfung: {0}.",
-            [Keys.GuidedReplaceNote] = "Der fertige Bericht der früheren Prüfung wird erst ersetzt, wenn Sie diesen Auftrag abschließen. Mit Behalten kehren Sie zur Liste zurück.",
+            [Keys.GuidedReplaceNote] = "Der fertige Bericht der früheren Prüfung wird erst ersetzt, wenn Sie diesen Auftrag abschließen. Mit Abbrechen kehren Sie zur Liste zurück; die früheren Berichte bleiben unverändert.",
             [Keys.GuidedFileStep1] = "erster Bericht",
             [Keys.GuidedFileStep2] = "Programmierbericht",
             [Keys.GuidedFileStep3] = "Auslesebericht",
@@ -646,7 +646,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedRefreshButton] = "Liste aktualisieren",
             [Keys.GuidedCheckOrderButton] = "Diesen Auftrag prüfen",
             [Keys.GuidedReplaceButton] = "Ersetzen",
-            [Keys.GuidedKeepButton] = "Behalten",
+            [Keys.GuidedReplaceCancelButton] = "Abbrechen, zurück zur Liste",
             [Keys.GuidedStartCheckButton] = "Prüfung starten",
             [Keys.GuidedRetryButton] = "Wiederholen",
             [Keys.GuidedReadOutRunning] = "Der Speicher des Chips wird ausgelesen. Lassen Sie den Chip auf dem Leser.",
