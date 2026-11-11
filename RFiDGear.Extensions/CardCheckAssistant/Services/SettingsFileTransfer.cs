@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -80,20 +82,31 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
                 return SettingsTransferOutcome.Failed;
             }
 
-            var temporary = path + ".tmp";
+            // A file of its own for this export, beside the target: two exports to the same file, or a file that happens to
+            // have the name of a fixed temporary one, cannot meet.
+            string? temporary = null;
             try
             {
                 var text = JsonSerializer.Serialize(new Envelope(FormatName, CurrentVersion, data), Options);
+                var directory = Path.GetDirectoryName(Path.GetFullPath(path)) ?? string.Empty;
+                temporary = Path.Combine(directory, "." + Guid.NewGuid().ToString("N") + ".tmp");
 
-                // Written beside the target and moved over it, so a failure half way leaves the old file as it was.
-                File.WriteAllText(temporary, text);
+                using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                using (var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
+                {
+                    writer.Write(text);
+                }
+
                 File.Move(temporary, path, overwrite: true);
 
                 return SettingsTransferOutcome.Done;
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is ArgumentException || ex is NotSupportedException)
             {
-                TryDelete(temporary);
+                if (temporary != null)
+                {
+                    TryDelete(temporary);
+                }
 
                 return SettingsTransferOutcome.Failed;
             }
@@ -114,15 +127,33 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
                     return new SettingsImport(SettingsTransferOutcome.TooLarge, null);
                 }
 
-                var envelope = JsonSerializer.Deserialize<Envelope>(File.ReadAllText(path), Options);
-                if (envelope == null || envelope.Format != FormatName || envelope.Settings == null)
+                using var document = JsonDocument.Parse(File.ReadAllText(path));
+                var root = document.RootElement;
+
+                // The header first: a file of a newer version may have settings of a shape this build cannot read, and that
+                // is a newer file, not a foreign one.
+                if (root.ValueKind != JsonValueKind.Object
+                    || !TryGet(root, "format", out var format) || format.ValueKind != JsonValueKind.String || format.GetString() != FormatName
+                    || !TryGet(root, "version", out var version) || !version.TryGetInt32(out var versionNumber))
                 {
                     return new SettingsImport(SettingsTransferOutcome.NotSettings, null);
                 }
 
-                return envelope.Version > CurrentVersion
-                    ? new SettingsImport(SettingsTransferOutcome.NewerVersion, null)
-                    : new SettingsImport(SettingsTransferOutcome.Done, envelope.Settings);
+                if (versionNumber > CurrentVersion)
+                {
+                    return new SettingsImport(SettingsTransferOutcome.NewerVersion, null);
+                }
+
+                if (!TryGet(root, "settings", out var settings) || settings.ValueKind != JsonValueKind.Object)
+                {
+                    return new SettingsImport(SettingsTransferOutcome.NotSettings, null);
+                }
+
+                var data = settings.Deserialize<SettingsData>(Options);
+
+                return IsUsable(data)
+                    ? new SettingsImport(SettingsTransferOutcome.Done, data)
+                    : new SettingsImport(SettingsTransferOutcome.NotSettings, null);
             }
             catch (Exception ex) when (ex is JsonException || ex is NotSupportedException || ex is InvalidOperationException)
             {
@@ -134,6 +165,27 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
                 return new SettingsImport(SettingsTransferOutcome.Failed, null);
             }
         }
+
+        private static bool TryGet(JsonElement element, string name, out JsonElement value)
+        {
+            foreach (var property in element.EnumerateObject())
+            {
+                if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = property.Value;
+                    return true;
+                }
+            }
+
+            value = default;
+            return false;
+        }
+
+        // Settings the window can show: a language that exists and no empty entries in the list of texts.
+        private static bool IsUsable(SettingsData? data) =>
+            data != null
+            && Enum.IsDefined(typeof(ReportLanguageChoice), data.ReportLanguage)
+            && (data.TextBlocks == null || data.TextBlocks.All(block => block != null));
 
         private static void TryDelete(string path)
         {

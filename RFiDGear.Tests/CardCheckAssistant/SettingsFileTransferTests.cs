@@ -68,6 +68,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
         [InlineData("{\"format\":\"Something.Else\",\"version\":1,\"settings\":{}}")]
         [InlineData("{\"format\":\"RFiDGear.CardCheckAssistant.Settings\",\"version\":1}")]
         [InlineData("{\"format\":\"RFiDGear.CardCheckAssistant.Settings\",\"version\":1,\"settings\":{\"textBlocks\":7}}")]
+        [InlineData("{\"format\":\"RFiDGear.CardCheckAssistant.Settings\",\"version\":1,\"settings\":{\"textBlocks\":[null]}}")]
+        [InlineData("{\"format\":\"RFiDGear.CardCheckAssistant.Settings\",\"version\":1,\"settings\":{\"reportLanguage\":7}}")]
+        [InlineData("{\"format\":\"RFiDGear.CardCheckAssistant.Settings\",\"version\":\"one\",\"settings\":{}}")]
         public void AFileThatIsNoSettingsFile_IsRecognisedAsSuch(string text)
         {
             System.IO.File.WriteAllText(File("x.json"), text);
@@ -84,6 +87,28 @@ namespace RFiDGear.Tests.CardCheckAssistant
             System.IO.File.WriteAllText(File("n.json"), "{\"format\":\"" + SettingsFileTransfer.FormatName + "\",\"version\":" + (SettingsFileTransfer.CurrentVersion + 1) + ",\"settings\":{}}");
 
             Assert.Equal(SettingsTransferOutcome.NewerVersion, new SettingsFileTransfer().Import(File("n.json")).Outcome);
+        }
+
+        [Fact]
+        public void AFileOfANewerVersion_IsNewer_EvenWhenItsSettingsHaveAShapeThisBuildCannotRead()
+        {
+            System.IO.File.WriteAllText(File("n.json"), "{\"format\":\"" + SettingsFileTransfer.FormatName + "\",\"version\":" + (SettingsFileTransfer.CurrentVersion + 1) + ",\"settings\":{\"textBlocks\":{}}}");
+
+            Assert.Equal(SettingsTransferOutcome.NewerVersion, new SettingsFileTransfer().Import(File("n.json")).Outcome);
+        }
+
+        [Fact]
+        public void TwoExportsToOneFile_UseFilesOfTheirOwn_AndLeaveNothingBehind()
+        {
+            var transfer = new SettingsFileTransfer();
+            // A file that has the name a fixed temporary file would have had must not be touched.
+            System.IO.File.WriteAllText(File("s.json.tmp"), "somebody else's");
+
+            Assert.Equal(SettingsTransferOutcome.Done, transfer.Export(File("s.json"), Everything()));
+            Assert.Equal(SettingsTransferOutcome.Done, transfer.Export(File("s.json"), Everything()));
+
+            Assert.Equal("somebody else's", System.IO.File.ReadAllText(File("s.json.tmp")));
+            Assert.Equal(new[] { "s.json", "s.json.tmp" }, Directory.GetFiles(_folder).Select(Path.GetFileName).OrderBy(name => name));
         }
 
         [Fact]
