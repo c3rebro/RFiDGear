@@ -506,6 +506,9 @@ Ein zum Lesertyp passender RFID Chip muss sich in Leserreichweite befinden.</val
   <data name="dataGridHeaderMainWindowTaskDescription" xml:space="preserve">
     <value>Aufgabenbeschreibung</value>
   </data>
+  <data name="filterStringSaveChipTree" xml:space="preserve">
+    <value>Chip-Dateien (*.xml)|*.xml</value>
+  </data>
   <data name="windowCaptionSaveTasks" xml:space="preserve">
     <value>Aufgabenliste Speichern unter...</value>
   </data>

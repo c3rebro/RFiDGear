@@ -499,6 +499,9 @@ slot of an available reader</value>
   <data name="filterStringSaveTasks" xml:space="preserve">
     <value>Project files (*.rfPrj;*.xml)|*.rfPrj;*.xml</value>
   </data>
+  <data name="filterStringSaveChipTree" xml:space="preserve">
+    <value>Chip files (*.xml)|*.xml</value>
+  </data>
   <data name="windowCaptionSaveTasks" xml:space="preserve">
     <value>Save Tasks to File...</value>
   </data>
