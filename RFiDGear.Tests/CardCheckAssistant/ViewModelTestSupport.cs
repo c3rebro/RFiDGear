@@ -25,6 +25,26 @@ namespace RFiDGear.Tests.CardCheckAssistant
             return Answer;
         }
 
+        public string? SaveAnswer { get; set; }
+
+        public string? OpenAnswer { get; set; }
+
+        public List<string> SaveRequests { get; } = new List<string>();
+
+        public int OpenRequests { get; set; }
+
+        public string? PickSettingsFileToSave(string suggestedName, string title, string filter)
+        {
+            SaveRequests.Add(suggestedName);
+            return SaveAnswer;
+        }
+
+        public string? PickSettingsFileToOpen(string title, string filter)
+        {
+            OpenRequests++;
+            return OpenAnswer;
+        }
+
         public string? FolderAnswer { get; set; }
 
         public List<(string? Current, string Title)> FolderRequests { get; } = new List<(string?, string)>();
