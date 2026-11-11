@@ -502,6 +502,9 @@ slot of an available reader</value>
   <data name="filterStringSaveChipTree" xml:space="preserve">
     <value>Chip files (*.xml)|*.xml</value>
   </data>
+  <data name="messageBoxChipExportReplaceMessage" xml:space="preserve">
+    <value>A chip export is saved as an XML file, and '{0}' already exists. Replace it?</value>
+  </data>
   <data name="windowCaptionSaveTasks" xml:space="preserve">
     <value>Save Tasks to File...</value>
   </data>

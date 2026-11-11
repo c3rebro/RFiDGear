@@ -60,6 +60,24 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public void WriteProject_LeavesAFileNextToTheTargetAlone()
+        {
+            using (var folder = new TemporaryFolder())
+            {
+                var readerWriter = new DatabaseReaderWriter(new ProjectManager(folder.Combine("appdata")));
+                var target = folder.Combine("project.rfPrj");
+                var neighbour = folder.Combine("project.rfPrj.bak");
+                File.WriteAllText(target, "old content");
+                File.WriteAllText(neighbour, "somebody's backup");
+
+                readerWriter.WriteDatabase(new ChipTaskHandlerModel(), target);
+
+                Assert.Equal("somebody's backup", File.ReadAllText(neighbour));
+                Assert.Equal(new[] { target, neighbour }, folder.Files());
+            }
+        }
+
+        [Fact]
         public void WriteProject_WhenTheTargetCannotBeReplaced_KeepsTheOldFileAndCleansUp()
         {
             using (var folder = new TemporaryFolder())

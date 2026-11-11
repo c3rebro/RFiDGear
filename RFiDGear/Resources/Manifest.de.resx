@@ -509,6 +509,9 @@ Ein zum Lesertyp passender RFID Chip muss sich in Leserreichweite befinden.</val
   <data name="filterStringSaveChipTree" xml:space="preserve">
     <value>Chip-Dateien (*.xml)|*.xml</value>
   </data>
+  <data name="messageBoxChipExportReplaceMessage" xml:space="preserve">
+    <value>Ein Chip-Export wird als XML-Datei gespeichert, und '{0}' existiert bereits. Ersetzen?</value>
+  </data>
   <data name="windowCaptionSaveTasks" xml:space="preserve">
     <value>Aufgabenliste Speichern unter...</value>
   </data>

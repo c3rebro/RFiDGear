@@ -335,8 +335,10 @@ namespace RFiDGear.Infrastructure.FileAccess
         private void WriteFileAtomically(string targetPath, Action<string> writeTo)
         {
             var fullTargetPath = Path.GetFullPath(targetPath);
-            var temporaryPath = string.Concat(fullTargetPath, ".", Guid.NewGuid().ToString("N"), ".tmp");
-            var backupPath = string.Concat(fullTargetPath, ".bak");
+            // Both names are unique to this operation, so no file that happens to lie next to the target is touched.
+            var operationId = Guid.NewGuid().ToString("N");
+            var temporaryPath = string.Concat(fullTargetPath, ".", operationId, ".tmp");
+            var backupPath = string.Concat(fullTargetPath, ".", operationId, ".bak");
 
             try
             {

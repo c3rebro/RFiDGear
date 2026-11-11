@@ -1737,7 +1737,30 @@ namespace RFiDGear.ViewModel
 
             if (dlg.Show(Dialogs) && dlg.FileName != null)
             {
-                TrySaveChipTree(dlg.FileName);
+                // The file dialog confirmed replacing the name the user typed; the export is saved as .xml, which may
+                // be another file that exists. That one is not replaced without asking.
+                var target = DatabaseReaderWriter.ChipExportPath(dlg.FileName);
+                if (!string.Equals(target, dlg.FileName, StringComparison.OrdinalIgnoreCase) && File.Exists(target))
+                {
+                    Dialogs.Add(new CustomDialogViewModel
+                    {
+                        Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                        Message = string.Format(
+                            CultureInfo.CurrentCulture,
+                            ResourceLoader.GetResource("messageBoxChipExportReplaceMessage"),
+                            target),
+                        OnOk = sender =>
+                        {
+                            sender.Close();
+                            TrySaveChipTree(dlg.FileName);
+                        },
+                        OnCancel = sender => sender.Close()
+                    });
+                }
+                else
+                {
+                    TrySaveChipTree(dlg.FileName);
+                }
             }
 
             return Task.CompletedTask;
