@@ -25,6 +25,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>The verdict is shown and the order can be finished.</summary>
         Verdict,
 
+        /// <summary>The report of the read-out is checked by the operator before the order is finished.</summary>
+        Review,
+
         /// <summary>The finished report is made and stored, or that failed and can be repeated.</summary>
         Finish,
 
@@ -54,7 +57,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             WorkflowState.ProgrammingFailed => GuidedStep.Verdict,
             WorkflowState.ReadingOut => GuidedStep.Check,
             WorkflowState.ReadOutFailed => GuidedStep.Check,
-            WorkflowState.Reviewing => GuidedStep.Finish,
+            WorkflowState.Reviewing => GuidedStep.Review,
             WorkflowState.Completing => GuidedStep.Finish,
             WorkflowState.CompletionFailed => GuidedStep.Finish,
             WorkflowState.Completed => GuidedStep.End,

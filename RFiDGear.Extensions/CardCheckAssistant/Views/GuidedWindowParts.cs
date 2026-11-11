@@ -1,14 +1,38 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 
+using RFiDGear.ExtensionLibraries.CardCheck;
 using RFiDGear.Extensions.CardCheckAssistant.Services;
 
 namespace RFiDGear.Extensions.CardCheckAssistant.Views
 {
-    /// <summary>Asks with a message box whether the window may be closed in the middle of a check.</summary>
-    internal sealed class MessageBoxCloseConfirmation : ICloseConfirmation
+    /// <summary>
+    /// The questions of the guided page as message boxes, and the viewer for a report as the shell's: the page's window is
+    /// the owner of the question, and the report is opened by the guarded opener on a worker thread.
+    /// </summary>
+    internal sealed class GuidedPageServices : IGuidedPageServices
     {
+        private readonly IReportOpener _opener;
+
+        /// <summary>Creates the services.</summary>
+        /// <param name="opener">Opens a PDF file or a folder; nothing else.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="opener"/> is null.</exception>
+        public GuidedPageServices(IReportOpener opener) => _opener = opener ?? throw new ArgumentNullException(nameof(opener));
+
+        /// <inheritdoc/>
+        public Task<Failure?> OpenReportAsync(string path, CancellationToken ct) =>
+            Task.Run(
+                () =>
+                {
+                    var opened = _opener.Open(path);
+
+                    return opened.IsSuccess ? null : opened.Failure;
+                },
+                ct);
+
         /// <inheritdoc/>
         public bool Confirm(string title, string text)
         {

@@ -13,6 +13,7 @@ using RFiDGear.Extensions.CardCheckAssistant.Workflow;
 using Xunit;
 
 using Keys = RFiDGear.Extensions.CardCheckAssistant.Localization.ExtensionStrings.Keys;
+using Page = RFiDGear.Tests.CardCheckAssistant.GuidedPage;
 
 namespace RFiDGear.Tests.CardCheckAssistant
 {
@@ -33,11 +34,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             bool settings = true,
             string culture = "en-US",
             long firstVersion = 1) =>
-            StaTestRunner.RunOnStaThreadAsync(async () =>
-            {
-                using var page = new Page(state, settings, culture, firstVersion);
-                await body(page).WaitAsync(TimeSpan.FromSeconds(30));
-            });
+            Page.Run(body, state, settings, culture, firstVersion);
 
         // The mapping is written out here on purpose: a test that asks the code under test what it maps proves nothing.
         private static readonly Dictionary<WorkflowState, GuidedStep> ExpectedSteps = new Dictionary<WorkflowState, GuidedStep>
@@ -55,7 +52,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             [WorkflowState.ProgrammingFailed] = GuidedStep.Verdict,
             [WorkflowState.ReadingOut] = GuidedStep.Check,
             [WorkflowState.ReadOutFailed] = GuidedStep.Check,
-            [WorkflowState.Reviewing] = GuidedStep.Finish,
+            [WorkflowState.Reviewing] = GuidedStep.Review,
             [WorkflowState.Completing] = GuidedStep.Finish,
             [WorkflowState.CompletionFailed] = GuidedStep.Finish,
             [WorkflowState.Completed] = GuidedStep.End,
@@ -77,7 +74,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.Equal(ExpectedSteps[state], vm.Step);
                 Assert.Equal(ExpectedSteps[state], GuidedSteps.Of(state));
                 Assert.Single(
-                    new[] { vm.IsOrdersStep, vm.IsPrepareStep, vm.IsReplaceStep, vm.IsCardStep, vm.IsCheckStep, vm.IsVerdictStep, vm.IsFinishStep, vm.IsEndStep },
+                    new[] { vm.IsOrdersStep, vm.IsPrepareStep, vm.IsReplaceStep, vm.IsCardStep, vm.IsCheckStep, vm.IsVerdictStep, vm.IsReviewStep, vm.IsFinishStep, vm.IsEndStep },
                     shown => shown);
             }
         });
@@ -902,45 +899,6 @@ namespace RFiDGear.Tests.CardCheckAssistant
                     End(WorkflowState.Cancelled, s => s with { CancelledAt = at, Check = withReport, Selection = programmable }));
             }
             Assert.Equal(string.Empty, End(WorkflowState.Idle));
-        }
-
-        private sealed class Page : IDisposable
-        {
-            public Page(WorkflowState state, bool withSettings, string culture, long firstVersion)
-            {
-                Host = new FakeExtensionHost(culture);
-                Workflow = new ScriptedWorkflow(state, firstVersion);
-                Vm = new GuidedCheckViewModel(
-                    Host,
-                    Dispatcher.CurrentDispatcher,
-                    Workflow,
-                    withSettings ? Settings : null,
-                    Offer,
-                    Close,
-                    Timer.Start);
-            }
-
-            public FakeExtensionHost Host { get; }
-
-            public ScriptedWorkflow Workflow { get; }
-
-            public StubSettingsDialog Settings { get; } = new StubSettingsDialog();
-
-            public StubImportOffer Offer { get; } = new StubImportOffer();
-
-            public FakeCloseConfirmation Close { get; } = new FakeCloseConfirmation();
-
-            public ManualTimer Timer { get; } = new ManualTimer();
-
-            public GuidedCheckViewModel Vm { get; }
-
-            public async Task PushAsync(WorkflowState state, Func<WorkflowSnapshot, WorkflowSnapshot>? edit = null, bool busy = false)
-            {
-                Workflow.Push(state, edit, busy);
-                await ViewModelTestSupport.Flush();
-            }
-
-            public void Dispose() => Vm.Dispose();
         }
     }
 }

@@ -28,7 +28,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         private static readonly string[] Sections =
         {
-            "StepOrders", "StepPrepare", "StepReplace", "StepCard", "StepCheck", "StepVerdict", "StepFinish", "StepEnd",
+            "StepOrders", "StepPrepare", "StepReplace", "StepCard", "StepCheck", "StepVerdict", "StepReview", "StepFinish", "StepEnd",
         };
 
         private sealed class Scene
@@ -97,7 +97,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                         workflow,
                         new StubSettingsDialog(),
                         new StubImportOffer(),
-                        new FakeCloseConfirmation(),
+                        new FakePageServices(),
                         new ManualTimer().Start);
                     var view = new GuidedCheckView(viewModel);
                     var size = pageSize ?? Smallest;
@@ -207,6 +207,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var selection = new TemplateSelection(ChipVerdict.NotSupported, FreeMemory.Unknown, Array.Empty<LsmTemplate>(), null);
             var check = new CheckRunResult(CheckRunStatus.Finished, null, Rows(3), findings, "C:/a/very/long/path/to/the/reports/of/the/order/J1-1.step1.pdf");
             var failure = new Failure(FailureKind.Unexpected, CheckFailureCodes.RunFailed, "The run failed.");
+            var readOut = new CheckRunResult(CheckRunStatus.Finished, null, Rows(3), new ReportAnalysis { Supported = false, ChipType = "MIFARE DESFire EV2" }, "C:/a/very/long/path/to/the/reports/of/the/order/J1-1.step3.pdf");
+            var move = new CardMoveResult(CardWaitOutcome.Done, CardMoveStage.WaitingForReinsertion, "04AABBCC", "04DDEEFF", null);
             var expected = new Dictionary<WorkflowState, (string Section, string[] Buttons)>
             {
                 [WorkflowState.Idle] = ("StepOrders", new[] { "CheckOrderButton", "RefreshButton", "SettingsButton" }),
@@ -221,8 +223,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 [WorkflowState.WritingReport] = ("StepVerdict", new[] { "CancelButton" }),
                 [WorkflowState.ProgrammingFailed] = ("StepVerdict", new[] { "CancelButton" }),
                 [WorkflowState.ReadingOut] = ("StepCheck", new[] { "CancelButton" }),
-                [WorkflowState.ReadOutFailed] = ("StepCheck", new[] { "CancelButton" }),
-                [WorkflowState.Reviewing] = ("StepFinish", new[] { "CancelButton" }),
+                [WorkflowState.ReadOutFailed] = ("StepCheck", new[] { "RetryRunButton", "FinishWithoutReadOutButton", "CancelButton" }),
+                [WorkflowState.Reviewing] = ("StepReview", new[] { "ReviewFinishButton", "OpenReportButton", "OpenFolderButton", "CancelButton" }),
                 [WorkflowState.Completing] = ("StepFinish", new[] { "RetryFinishButton" }),
                 [WorkflowState.CompletionFailed] = ("StepFinish", new[] { "RetryFinishButton", "CancelButton" }),
                 [WorkflowState.Completed] = ("StepEnd", new[] { "BackButton" }),
@@ -233,7 +235,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal(WorkflowTables.States.Count, expected.Count);
             foreach (var state in WorkflowTables.States)
             {
-                var busy = state == WorkflowState.LoadingOrders || state == WorkflowState.Starting || state == WorkflowState.Checking || state == WorkflowState.Completing;
+                var busy = state is WorkflowState.LoadingOrders or WorkflowState.Starting or WorkflowState.Checking or WorkflowState.Completing
+                    or WorkflowState.WritingReport or WorkflowState.ReadingOut;
                 await scene.PushAsync(
                     state,
                     s => s with
@@ -245,7 +248,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
                         Check = check,
                         Findings = findings,
                         Selection = selection,
-                        Failure = state is WorkflowState.RunFailed or WorkflowState.CompletionFailed ? failure : null,
+                        ReadOut = readOut,
+                        Move = move,
+                        Failure = state is WorkflowState.RunFailed or WorkflowState.CompletionFailed or WorkflowState.ProgrammingFailed or WorkflowState.ReadOutFailed ? failure : null,
                         ExistingReports = new[] { ReportFile.Step1, ReportFile.Final },
                         IsTestMode = true,
                     },
@@ -267,6 +272,20 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.True(VisibleButtons(scene.View).Count(button => button.IsDefault) <= 1, "Enter must have one meaning.");
                 Assert.True(scene.Shown("ReaderLine"));
                 Assert.True(scene.Shown("TestModeBanner"));
+
+                // A failed step says so, with its text and its code, in every state that has one.
+                var failed = state is WorkflowState.RunFailed or WorkflowState.CompletionFailed or WorkflowState.ProgrammingFailed or WorkflowState.ReadOutFailed;
+                var messages = scene.Named<ItemsControl>("MessageList").Items;
+                Assert.Equal(failed ? 1 : 0, messages.Count);
+                if (failed)
+                {
+                    var message = Assert.IsType<GuidedCheckViewModel.FailureMessage>(messages[0]);
+                    Assert.Equal(failure.Code, message.Code);
+                    Assert.NotEmpty(message.Text);
+                }
+
+                // Finishing without the read-out is offered nowhere but after a failed read-out.
+                Assert.Equal(state == WorkflowState.ReadOutFailed, scene.Shown("FinishWithoutReadOutButton"));
             }
 
             // The page declares the smallest size it is laid out for, and is never smaller.
@@ -274,6 +293,42 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal(Smallest.Height, scene.View.MinHeight);
             Assert.True(scene.View.ActualWidth >= Smallest.Width - 0.5);
             Assert.True(scene.View.ActualHeight >= Smallest.Height - 0.5);
+        });
+
+        [Fact]
+        public Task TheReview_ShowsThePath_TheCommitSentenceAndTheWarnings_InsideThePage() => Show(async scene =>
+        {
+            var readOut = new CheckRunResult(
+                CheckRunStatus.Finished,
+                null,
+                Rows(3),
+                new ReportAnalysis { Supported = false, ChipType = "MIFARE DESFire EV2" },
+                "C:/a/very/long/path/to/the/reports/of/the/order/with/many/folders/J1-1.step3.pdf");
+            var move = new CardMoveResult(CardWaitOutcome.Done, CardMoveStage.WaitingForReinsertion, "04AABBCCDDEEFF", "04112233445566", null);
+
+            await scene.PushAsync(
+                WorkflowState.Reviewing,
+                s => s with { Order = new WorkflowOrder("A", "JA", "1"), Findings = new ReportAnalysis { ChipType = "DESFire EV1" }, ReadOut = readOut, Move = move });
+
+            Assert.True(scene.Shown("StepReview"));
+            Assert.Contains("step3.pdf", scene.Named<TextBox>("ReadOutPathBox").Text, StringComparison.Ordinal);
+            Assert.Equal(3, scene.Named<ItemsControl>("ReviewWarningList").Items.Count);
+            Assert.True(scene.Shown("ReviewWarningList"));
+            AssertInside(scene.View, scene.Named<ItemsControl>("ReviewWarningList"), "the warnings");
+
+            // What the button commits to is on the page, and inside it.
+            var commit = VisualDescendants<TextBlock>(scene.Named<Grid>("StepReview")).Single(block => block.Text == scene.Vm.Strings[Keys.GuidedReviewCommit]);
+            AssertInside(scene.View, commit, "the commit sentence");
+            Assert.True(scene.Button("ReviewFinishButton").IsEnabled);
+            Assert.True(scene.Button("OpenReportButton").IsEnabled);
+            Assert.True(scene.Button("OpenFolderButton").IsEnabled);
+            Assert.All(VisibleButtons(scene.View), button => AssertInside(scene.View, button, button.Name));
+
+            // Without anything odd there is no list at all.
+            await scene.PushAsync(
+                WorkflowState.Reviewing,
+                s => s with { Order = new WorkflowOrder("A", "JA", "1"), ReadOut = readOut with { Findings = new ReportAnalysis { Supported = true, ChipType = "DESFire EV1" } }, Findings = new ReportAnalysis { ChipType = "DESFire EV1" } });
+            Assert.False(scene.Shown("ReviewWarningList"));
         });
 
         [Fact]
@@ -320,11 +375,20 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Same(vm.RetryCommand, scene.Button("RetryRunButton").Command);
             Assert.Same(vm.RetryCommand, scene.Button("RetryFinishButton").Command);
             Assert.Same(vm.FinishCommand, scene.Button("FinishButton").Command);
+            Assert.Same(vm.FinishCommand, scene.Button("ReviewFinishButton").Command);
+            Assert.Same(vm.FinishWithoutReadOutCommand, scene.Button("FinishWithoutReadOutButton").Command);
+            Assert.Same(vm.OpenReportCommand, scene.Button("OpenReportButton").Command);
+            Assert.Same(vm.OpenFolderCommand, scene.Button("OpenFolderButton").Command);
             Assert.Same(vm.BackCommand, scene.Button("BackButton").Command);
             Assert.Same(vm.CancelCommand, scene.Button("CancelButton").Command);
 
-            // Finishing stores the report and finishes the order: that is not what Enter should do by accident.
+            // Finishing stores the report and finishes the order: that is not what Enter should do by accident. Neither is
+            // finishing without the read-out, nor opening a viewer.
             Assert.False(scene.Button("FinishButton").IsDefault);
+            Assert.False(scene.Button("ReviewFinishButton").IsDefault);
+            Assert.False(scene.Button("FinishWithoutReadOutButton").IsDefault);
+            Assert.False(scene.Button("OpenReportButton").IsDefault);
+            Assert.False(scene.Button("OpenFolderButton").IsDefault);
 
             return Task.CompletedTask;
         });

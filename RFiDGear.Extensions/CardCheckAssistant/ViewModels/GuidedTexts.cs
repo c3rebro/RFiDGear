@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -72,6 +73,87 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             _ => string.Empty
         };
 
+        /// <summary>The line of the check step: what runs, or what to do after a run failed.</summary>
+        /// <param name="snapshot">The workflow's picture.</param>
+        /// <param name="strings">The page's texts.</param>
+        /// <returns>The line, or empty.</returns>
+        public static string CheckText(WorkflowSnapshot snapshot, LocalizedStrings strings) => snapshot.State switch
+        {
+            WorkflowState.ReadingOut => strings[Keys.GuidedReadOutRunning],
+            WorkflowState.ReadOutFailed => strings[Keys.GuidedReadOutFailedHint],
+            WorkflowState.RunFailed => strings[Keys.GuidedRunFailedHint],
+            _ => Phase(snapshot.Phase, strings)
+        };
+
+        /// <summary>The label of the button that repeats a failed step.</summary>
+        /// <param name="snapshot">The workflow's picture.</param>
+        /// <param name="strings">The page's texts.</param>
+        /// <returns>The label.</returns>
+        public static string RetryText(WorkflowSnapshot snapshot, LocalizedStrings strings) =>
+            snapshot.State == WorkflowState.ReadOutFailed ? strings[Keys.GuidedRetryReadOutButton] : strings[Keys.GuidedRetryButton];
+
+        /// <summary>
+        /// The label of the button at the foot of the page. Where the order stays open and the chip may have been programmed
+        /// it says so; it is plain Cancel where something is being made or uploaded.
+        /// </summary>
+        /// <param name="snapshot">The workflow's picture.</param>
+        /// <param name="strings">The page's texts.</param>
+        /// <returns>The label.</returns>
+        public static string CancelText(WorkflowSnapshot snapshot, LocalizedStrings strings) => snapshot.State switch
+        {
+            WorkflowState.Assessing when snapshot.Selection?.Verdict == ChipVerdict.Programmable => strings[Keys.GuidedLeaveOpenButton],
+            WorkflowState.Programming or WorkflowState.ProgrammingFailed or WorkflowState.ReadOutFailed or WorkflowState.Reviewing => strings[Keys.GuidedLeaveOpenButton],
+            _ => strings[Keys.CancelButton]
+        };
+
+        /// <summary>
+        /// Whether leaving in a state needs a question first. After the chip was taken off the reader nothing resumes the
+        /// work (a new start begins at the check and asks about the reports), so a click on the button at the foot of the
+        /// page must not end it by mistake.
+        /// </summary>
+        /// <param name="state">The state of the workflow.</param>
+        /// <returns><c>true</c> from the programming on.</returns>
+        public static bool CancelNeedsQuestion(WorkflowState state) =>
+            state is WorkflowState.Programming or WorkflowState.WritingReport or WorkflowState.ProgrammingFailed
+                or WorkflowState.ReadingOut or WorkflowState.ReadOutFailed or WorkflowState.Reviewing;
+
+        /// <summary>What may be wrong with the chip or its report that the operator should know before the order is finished.</summary>
+        /// <param name="snapshot">The workflow's picture.</param>
+        /// <param name="strings">The page's texts.</param>
+        /// <returns>The warnings, none if nothing is odd. They never block anything.</returns>
+        public static IReadOnlyList<string> ReviewWarnings(WorkflowSnapshot snapshot, LocalizedStrings strings)
+        {
+            var warnings = new List<string>(3);
+
+            var uid = UidWarning(snapshot.Move, strings);
+            if (uid.Length > 0)
+            {
+                warnings.Add(uid);
+            }
+
+            // The two reports come from two different projects: the chip type is compared loosely, and both are shown.
+            var first = snapshot.Findings?.ChipType?.Trim();
+            var second = snapshot.ReadOut?.Findings?.ChipType?.Trim();
+            if (!string.IsNullOrEmpty(first) && !string.IsNullOrEmpty(second) && !string.Equals(first, second, StringComparison.OrdinalIgnoreCase))
+            {
+                warnings.Add(strings.Format(Keys.GuidedWarnChipTypeFormat, first!, second!));
+            }
+
+            if (snapshot.ReadOut?.Findings is { Supported: false })
+            {
+                warnings.Add(strings[Keys.GuidedWarnUnsupported]);
+            }
+
+            return warnings;
+        }
+
+        /// <summary>The warning that the chip put back is not the one taken off, with both UIDs.</summary>
+        /// <param name="move">How the chip's way off the reader and back on ended; may be <c>null</c>.</param>
+        /// <param name="strings">The page's texts.</param>
+        /// <returns>The sentence, or empty if the chip is the same or one of the UIDs is not known.</returns>
+        public static string UidWarning(CardMoveResult? move, LocalizedStrings strings) =>
+            move?.SameCard == false ? strings.Format(Keys.GuidedWarnUidFormat, move.UidBefore ?? string.Empty, move.UidAfter ?? string.Empty) : string.Empty;
+
         /// <summary>What the verdict means for the order.</summary>
         /// <param name="selection">What the rules made of the findings; may be <c>null</c>.</param>
         /// <param name="strings">The page's texts.</param>
@@ -139,7 +221,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             WorkflowState.CompletionFailed => strings[Keys.GuidedCloseUpload],
             WorkflowState.Assessing => strings[Keys.GuidedCloseVerdict],
             WorkflowState.RunFailed => strings[Keys.GuidedCloseVerdict],
-            WorkflowState.Programming or WorkflowState.ProgrammingFailed or WorkflowState.ReadOutFailed or WorkflowState.Reviewing => strings[Keys.GuidedCloseProgrammed],
+            WorkflowState.Programming or WorkflowState.WritingReport or WorkflowState.ProgrammingFailed or WorkflowState.ReadingOut
+                or WorkflowState.ReadOutFailed or WorkflowState.Reviewing => strings[Keys.GuidedCloseProgrammed],
             _ => strings[Keys.GuidedCloseNothing]
         };
 

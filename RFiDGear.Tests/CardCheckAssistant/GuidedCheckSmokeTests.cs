@@ -17,18 +17,22 @@ namespace RFiDGear.Tests.CardCheckAssistant
     public sealed class GuidedCheckSmokeTests
     {
         private static Task Smoke(Func<WorkflowEngineTests.Rig, GuidedCheckViewModel, Task> body) =>
+            Smoke((rig, vm, _) => body(rig, vm));
+
+        private static Task Smoke(Func<WorkflowEngineTests.Rig, GuidedCheckViewModel, FakePageServices, Task> body) =>
             WorkflowEngineTests.Sta(async rig =>
             {
+                var services = new FakePageServices();
                 using var vm = new GuidedCheckViewModel(
                     new FakeExtensionHost(),
                     Dispatcher.CurrentDispatcher,
                     rig.Engine,
                     null,
                     new StubImportOffer(),
-                    new FakeCloseConfirmation(),
+                    services,
                     new ManualTimer().Start);
 
-                await body(rig, vm);
+                await body(rig, vm, services);
             });
 
         private static async Task ShownAsync(WorkflowEngineTests.Rig rig)
@@ -68,6 +72,45 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.True(vm.IsEndStep);
             Assert.True(vm.IsCompleted);
             Assert.Equal(vm.Strings[Keys.GuidedEndCompleted], vm.EndText);
+        });
+
+        [Fact]
+        public Task TheReview_ShowsTheReadOutReport_AndReportCheckedFinishesTheOrder() => Smoke(async (rig, vm) =>
+        {
+            await rig.ReachAsync(WorkflowState.Reviewing);
+            await ViewModelTestSupport.Flush();
+
+            Assert.True(vm.IsReviewStep);
+            Assert.Contains(rig.Paths.PathOf(ReportFile.Step3), vm.ReadOutPathText, StringComparison.Ordinal);
+            Assert.Empty(vm.ReviewWarnings);
+            Assert.True(vm.FinishCommand.CanExecute(null));
+
+            vm.FinishCommand.Execute(null);
+            await ShownAsync(rig);
+
+            Assert.True(vm.IsEndStep);
+            Assert.True(vm.IsCompleted);
+        });
+
+        [Fact]
+        public Task AFailedReadOut_CanBeFinishedWithoutIt_OnlyAfterTheOperatorSaidYes() => Smoke(async (rig, vm, services) =>
+        {
+            await rig.ReachAsync(WorkflowState.ReadOutFailed);
+            await ViewModelTestSupport.Flush();
+            Assert.True(vm.IsCheckStep);
+            Assert.True(vm.ShowFinishWithoutReadOut);
+            Assert.Equal(vm.Strings[Keys.GuidedRetryReadOutButton], vm.RetryText);
+
+            services.Answer = false;
+            vm.FinishWithoutReadOutCommand.Execute(null);
+            await ShownAsync(rig);
+            Assert.True(vm.IsCheckStep);
+
+            services.Answer = true;
+            vm.FinishWithoutReadOutCommand.Execute(null);
+            await ShownAsync(rig);
+            Assert.True(vm.IsCompleted);
+            Assert.Equal(2, services.Asked.Count);
         });
 
         [Fact]

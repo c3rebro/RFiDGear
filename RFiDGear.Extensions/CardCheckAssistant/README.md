@@ -202,9 +202,9 @@ system. It appears in the Extensions menu of the main window.
   the operator can repeat that step; after a failed read-out the order can
   also be finished with the second report, by an explicit choice. A cancel
   is never turned into the review. `Finish` at the review makes the final
-  report from the report of the read-out. The page has no buttons for this
-  yet, so for a chip that can be programmed it still stops at the verdict and
-  only Cancel is
+  report from the report of the read-out. The page shows the read-out and
+  the review, but no button leads to them yet, so for a chip that can be
+  programmed it still stops at the verdict and only Cancel is
   offered. The page binds to `Current` (an immutable `WorkflowSnapshot`: state,
   what the operator may do, whether something runs, the orders, the card, the
   task outcomes, the verdict, the failure as a stable code) and `Changed`, and
@@ -252,10 +252,10 @@ system. It appears in the Extensions menu of the main window.
   kind, because the same kind stands for different causes; the code is shown
   with it. Closing the window asks the workflow: nothing in progress closes,
   a step that cannot be left refuses, and a check that can be abandoned asks
-  first, through `ICloseConfirmation`. `Views/GuidedCheckView` is its window:
+  first, through `IGuidedPageServices`. `Views/GuidedCheckView` is its window:
   one section for each step, shown at a minimum of 620 by 490, with the way
-  out (Cancel, or Leave order open for a chip that can be programmed, which
-  this version does not do) in the footer and the problems with their codes
+  out (Cancel, or Leave order open for a programmable chip; from the
+  programming on it asks first) in the footer and the problems with their codes
   below the step. It opens the page when it is loaded and asks the page
   before the window closes. `Services/GuidedWorkflowFactory` builds the real
   workflow of a window from the settings, the order system (or the made-up
@@ -265,6 +265,14 @@ system. It appears in the Extensions menu of the main window.
   It uses library types to build the workflow, so `AssistantServicesFactory`
   calls it only after the library is known to be there, and the exported
   class sees only `IGuidedWorkflow`.
+- The review step of the page shows the path of the report of the read-out (the
+  one the finished report is made from, as it is on disk when the operator
+  presses *Report checked*), warnings that never block (another chip put back, a
+  different chip type in the two reports, a read-out that marks the chip as not
+  supported) and buttons that open the report and its folder. After a failed
+  read-out the page offers *Read out again* and, after a question, *Finish
+  without read-out*. From the programming on, leaving the order open asks first,
+  because nothing resumes it.
 - `Services/ShellOpener` opens a report, or the folder it is in, in the
   program the operator has set up for it, so that a report can be looked at
   (and corrected) before the order is finished. It is the one place of the
@@ -274,4 +282,5 @@ system. It appears in the Extensions menu of the main window.
   and device paths are refused with a code (`OpenerFailureCodes`) and a text.
   Two tests keep it the only one: the assembly may use only four members of
   `Process` and `ProcessStartInfo`, and no other file of the extension may
-  name them. The page does not use it yet.
+  name them. The review step of the page uses it, through
+  `IGuidedPageServices`, off the window's thread.

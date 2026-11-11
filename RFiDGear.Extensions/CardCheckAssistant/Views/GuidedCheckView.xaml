@@ -315,7 +315,10 @@
                     <ContentControl Grid.Row="1" ContentTemplate="{StaticResource TaskTable}" Content="{Binding}" />
                 </Grid>
                 <StackPanel Grid.Row="3" Style="{StaticResource StepButtons}">
-                    <Button x:Name="RetryRunButton" Style="{StaticResource StepButton}" Command="{Binding RetryCommand}" Content="{Binding Strings[GuidedRetryButton]}" />
+                    <Button x:Name="RetryRunButton" Style="{StaticResource StepButton}" Command="{Binding RetryCommand}" Content="{Binding RetryText}" />
+                    <Button x:Name="FinishWithoutReadOutButton" Style="{StaticResource StepButton}" Command="{Binding FinishWithoutReadOutCommand}"
+                            Content="{Binding Strings[GuidedFinishWithoutButton]}"
+                            Visibility="{Binding ShowFinishWithoutReadOut, Converter={StaticResource BoolToVisibility}}" />
                 </StackPanel>
             </Grid>
 
@@ -347,12 +350,44 @@
                 </StackPanel>
             </Grid>
 
+            <!-- the report of the read-out is checked -->
+            <Grid x:Name="StepReview" Visibility="{Binding IsReviewStep, Converter={StaticResource BoolToVisibility}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <ScrollViewer x:Name="ReviewScroll" Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Prompt}" Text="{Binding ReviewPromptText}" />
+                        <TextBox x:Name="ReadOutPathBox" Padding="0" IsReadOnly="True" BorderThickness="0" Background="Transparent"
+                                 TextWrapping="Wrap" Text="{Binding ReadOutPathText, Mode=OneWay}" />
+                        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Text="{Binding ReviewCommitText}" />
+                        <ItemsControl x:Name="ReviewWarningList" Margin="0,8,0,0" ItemsSource="{Binding ReviewWarnings}"
+                                      Visibility="{Binding HasReviewWarnings, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Foreground="#9A5B00" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,2,0,0" Text="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+                <WrapPanel Grid.Row="1" Margin="0,12,0,0">
+                    <Button x:Name="ReviewFinishButton" Style="{StaticResource StepButton}" Margin="0,0,8,4"
+                            Command="{Binding FinishCommand}" Content="{Binding Strings[GuidedReviewFinishButton]}" />
+                    <Button x:Name="OpenReportButton" Style="{StaticResource StepButton}" Margin="0,0,8,4"
+                            Command="{Binding OpenReportCommand}" Content="{Binding Strings[GuidedOpenReportButton]}" />
+                    <Button x:Name="OpenFolderButton" Style="{StaticResource StepButton}" Margin="0,0,8,4"
+                            Command="{Binding OpenFolderCommand}" Content="{Binding Strings[GuidedOpenFolderButton]}" />
+                </WrapPanel>
+            </Grid>
+
             <!-- the finished report is made and stored -->
             <StackPanel x:Name="StepFinish" Visibility="{Binding IsFinishStep, Converter={StaticResource BoolToVisibility}}">
                 <TextBlock Style="{StaticResource Prompt}" Text="{Binding FinishText}" />
                 <ProgressBar Height="14" IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
                 <StackPanel Style="{StaticResource StepButtons}">
-                    <Button x:Name="RetryFinishButton" Style="{StaticResource StepButton}" Command="{Binding RetryCommand}" Content="{Binding Strings[GuidedRetryButton]}" />
+                    <Button x:Name="RetryFinishButton" Style="{StaticResource StepButton}" Command="{Binding RetryCommand}" Content="{Binding RetryText}" />
                 </StackPanel>
             </StackPanel>
 
@@ -377,18 +412,7 @@
         <!-- the way out of whatever is going on -->
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0"
                     Visibility="{Binding ShowCancel, Converter={StaticResource BoolToVisibility}}">
-            <Button x:Name="CancelButton" MinWidth="130" Padding="12,4" Command="{Binding CancelCommand}">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Content" Value="{Binding Strings[CancelButton]}" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsProgrammable}" Value="True">
-                                <Setter Property="Content" Value="{Binding Strings[GuidedLeaveOpenButton]}" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+            <Button x:Name="CancelButton" MinWidth="130" Padding="12,4" Command="{Binding CancelCommand}" Content="{Binding CancelText}" />
         </StackPanel>
     </Grid>
 </UserControl>

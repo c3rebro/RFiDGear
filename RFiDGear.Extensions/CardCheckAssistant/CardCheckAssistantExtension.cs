@@ -110,7 +110,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant
                 CreateWorkflow(host, services),
                 new SettingsDialog(services.Editor, dialogs),
                 services.ImportOffer,
-                new MessageBoxCloseConfirmation(),
+                new GuidedPageServices(new ShellOpener()),
                 DispatcherTimerStarter.For(dispatcher));
 
             try
