@@ -502,6 +502,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Same(vm.FinishCommand, scene.Button("FinishButton").Command);
             Assert.Same(vm.FinishCommand, scene.Button("ReviewFinishButton").Command);
             Assert.Same(vm.ContinueCommand, scene.Button("ContinueButton").Command);
+            Assert.Same(vm.BeginCommand, scene.Button("BeginButton").Command);
             Assert.Same(vm.RetryCommand, scene.Button("ProgramRetryButton").Command);
             Assert.Same(vm.Form.InsertTextBlockCommand, scene.Button("InsertButton").Command);
             Assert.Same(vm.FinishWithoutReadOutCommand, scene.Button("FinishWithoutReadOutButton").Command);
@@ -518,6 +519,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.False(scene.Button("OpenReportButton").IsDefault);
             Assert.False(scene.Button("OpenFolderButton").IsDefault);
             Assert.False(scene.Button("ContinueButton").IsDefault);
+            Assert.False(scene.Button("BeginButton").IsDefault);
             Assert.False(scene.Button("ProgramRetryButton").IsDefault);
             Assert.False(scene.Button("InsertButton").IsDefault);
 
@@ -550,20 +552,34 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
-        public Task AProgrammableVerdict_OffersOnlyToLeaveTheOrderOpen_AndAnUnclearOneIsAWarning() => Show(async scene =>
+        public Task AProgrammableVerdict_OffersToBeginProgramming_OrOnlyToLeaveTheOrderOpen_AndAnUnclearOneIsAWarning() => Show(async scene =>
         {
             var programmable = new TemplateSelection(ChipVerdict.Programmable, FreeMemory.Unknown, Array.Empty<LsmTemplate>(), null);
             await scene.PushAsync(
                 WorkflowState.Assessing,
-                s => s with { Selection = programmable, Controls = WorkflowControls.Cancel, Order = new WorkflowOrder("A", "JA", "1") });
+                s => s with { Selection = programmable, Order = new WorkflowOrder("A", "JA", "1") });
 
-            Assert.False(scene.Button("FinishButton").IsEnabled);
+            // A chip that can be programmed is not finished here: it is programmed.
+            Assert.False(scene.Shown("FinishButton"));
+            Assert.True(scene.Shown("BeginButton"));
+            Assert.True(scene.Button("BeginButton").IsEnabled);
             Assert.Equal(scene.Vm.Strings[Keys.GuidedLeaveOpenButton], scene.Button("CancelButton").Content);
             Assert.Equal(scene.Vm.Strings[Keys.GuidedVerdictProgrammable], scene.Text("VerdictLine"));
+
+            // When it cannot be programmed now, the way on is to leave the order open, and the reason is there.
+            var problem = new Failure(FailureKind.NotConfigured, WorkflowFailureCodes.MemoryProjectInvalid, "No project.");
+            await scene.PushAsync(WorkflowState.Assessing, s => s with { Selection = programmable, Order = new WorkflowOrder("A", "JA", "1"), ProgrammingProblem = problem });
+            Assert.True(scene.Shown("BeginButton"));
+            Assert.False(scene.Button("BeginButton").IsEnabled);
+            Assert.Equal(scene.Vm.Strings[Keys.GuidedVerdictProgrammableBlocked], scene.Text("VerdictLine"));
+            Assert.Single(scene.Named<ItemsControl>("MessageList").Items);
+            Assert.All(VisibleButtons(scene.View), button => AssertInside(scene.View, button, button.Name));
 
             var unclear = new TemplateSelection(ChipVerdict.Indeterminate, FreeMemory.Unknown, Array.Empty<LsmTemplate>(), null);
             await scene.PushAsync(WorkflowState.Assessing, s => s with { Selection = unclear, Order = new WorkflowOrder("A", "JA", "1") });
 
+            Assert.True(scene.Shown("FinishButton"));
+            Assert.False(scene.Shown("BeginButton"));
             Assert.True(scene.Button("FinishButton").IsEnabled);
             Assert.Equal(scene.Vm.Strings[Keys.CancelButton], scene.Button("CancelButton").Content);
             // A dark amber, not DarkOrange: the text has to be readable on the white window (at least 4.5 : 1).

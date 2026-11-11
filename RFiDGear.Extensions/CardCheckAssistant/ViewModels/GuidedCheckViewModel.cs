@@ -118,6 +118,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             KeepReportsCommand = new DelegateCommand(() => _workflow.ConfirmReplace(false), () => Offers(WorkflowControls.DeclineReplace));
             StartCheckCommand = new DelegateCommand(() => _workflow.StartCheck(), () => Offers(WorkflowControls.StartCheck));
             FinishCommand = new DelegateCommand(() => _workflow.Finish(), () => Offers(WorkflowControls.Finish));
+            BeginCommand = new DelegateCommand(() => _workflow.BeginProgramming(), () => Offers(WorkflowControls.BeginProgramming));
             FinishWithoutReadOutCommand = new DelegateCommand(FinishWithoutReadOut, () => Offers(WorkflowControls.FinishWithoutReadOut));
             ContinueCommand = new DelegateCommand(ContinueProgramming, () => Offers(WorkflowControls.ContinueProgramming) && Form.IsComplete);
             OpenReportCommand = new AsyncCommand(() => OpenInViewerAsync(ReadOutReport), () => CanOpen(ReadOutReport));
@@ -164,6 +165,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         /// <summary>Gets the command that makes the finished report and stores it.</summary>
         public DelegateCommand FinishCommand { get; }
+
+        /// <summary>Gets the command that begins to program the chip: the workflow waits for it to be taken off the reader and put back.</summary>
+        public DelegateCommand BeginCommand { get; }
 
         /// <summary>Gets the command that finishes the order with the report made before the read-out, after the read-out failed.</summary>
         public DelegateCommand FinishWithoutReadOutCommand { get; }
@@ -389,13 +393,19 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         // ── the verdict ──
 
         /// <summary>Gets what the verdict means for the order.</summary>
-        public string VerdictText => GuidedTexts.Verdict(_snapshot.Selection, Strings);
+        public string VerdictText => GuidedTexts.Verdict(_snapshot.Selection, _snapshot.ProgrammingProblem != null, Strings);
 
         /// <summary>Gets a value indicating whether the verdict is the unclear one, which is shown as a warning.</summary>
         public bool IsIndeterminate => _snapshot.Selection?.Verdict == ChipVerdict.Indeterminate;
 
-        /// <summary>Gets a value indicating whether the chip can be programmed, which this version does not do (only Cancel is offered).</summary>
+        /// <summary>Gets a value indicating whether the verdict is that the chip can be programmed: the way on is then to begin programming, not to finish the order.</summary>
         public bool IsProgrammable => _snapshot.Selection?.Verdict == ChipVerdict.Programmable;
+
+        /// <summary>Gets a value indicating whether the button that begins the programming is shown.</summary>
+        public bool ShowBegin => IsProgrammable;
+
+        /// <summary>Gets a value indicating whether the button that finishes the order at the verdict is shown (not for a chip that is to be programmed).</summary>
+        public bool ShowFinish => !IsProgrammable;
 
         /// <summary>Gets the chip type the report names, or empty.</summary>
         public string ChipTypeText => GuidedTexts.Line(Keys.GuidedChipTypeFormat, _snapshot.Findings?.ChipType, Strings);
@@ -478,6 +488,13 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 else
                 {
                     AddMessage(messages, _snapshot.Failure);
+
+                    // Why a chip that can be programmed is not offered for it: nothing went wrong, but the operator has to act.
+                    if (Step == GuidedStep.Verdict)
+                    {
+                        AddMessage(messages, _snapshot.ProgrammingProblem);
+                    }
+
                     if (Step == GuidedStep.Review)
                     {
                         AddMessage(messages, _openFailure);
@@ -1013,6 +1030,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             KeepReportsCommand.RaiseCanExecuteChanged();
             StartCheckCommand.RaiseCanExecuteChanged();
             FinishCommand.RaiseCanExecuteChanged();
+            BeginCommand.RaiseCanExecuteChanged();
             FinishWithoutReadOutCommand.RaiseCanExecuteChanged();
             ContinueCommand.RaiseCanExecuteChanged();
             OpenReportCommand.RaiseCanExecuteChanged();

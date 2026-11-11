@@ -870,8 +870,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var programmable = new TemplateSelection(ChipVerdict.Programmable, FreeMemory.Unknown, Array.Empty<LsmTemplate>(), null);
             var withReport = new CheckRunResult(CheckRunStatus.Finished, null, null, null, "C:\\reports\\first.pdf");
 
-            Assert.Equal(strings[Keys.GuidedVerdictProgrammable], GuidedTexts.Verdict(programmable, strings));
-            Assert.Equal(string.Empty, GuidedTexts.Verdict(null, strings));
+            Assert.Equal(strings[Keys.GuidedVerdictProgrammable], GuidedTexts.Verdict(programmable, false, strings));
+            Assert.Equal(strings[Keys.GuidedVerdictProgrammableBlocked], GuidedTexts.Verdict(programmable, true, strings));
+            Assert.Equal(string.Empty, GuidedTexts.Verdict(null, false, strings));
 
             string End(WorkflowState state, Func<WorkflowSnapshot, WorkflowSnapshot>? edit = null) =>
                 GuidedTexts.End((edit == null ? new WorkflowSnapshot() : edit(new WorkflowSnapshot())) with { State = state }, strings);
@@ -894,9 +895,10 @@ namespace RFiDGear.Tests.CardCheckAssistant
             // After a cancel while the chip was being programmed, the end text does not say that nothing was changed.
             foreach (var at in new[] { WorkflowState.Programming, WorkflowState.WritingReport, WorkflowState.ProgrammingFailed, WorkflowState.ReadingOut, WorkflowState.ReadOutFailed, WorkflowState.Reviewing })
             {
-                Assert.Equal(
+                Assert.StartsWith(
                     strings[Keys.GuidedEndCancelledProgrammed],
-                    End(WorkflowState.Cancelled, s => s with { CancelledAt = at, Check = withReport, Selection = programmable }));
+                    End(WorkflowState.Cancelled, s => s with { CancelledAt = at, Check = withReport, Selection = programmable }),
+                    StringComparison.Ordinal);
             }
             Assert.Equal(string.Empty, End(WorkflowState.Idle));
         }

@@ -53,8 +53,9 @@ system. It appears in the Extensions menu of the main window.
   the chip type, the free memory, the notes of the report and its path.
   **Finish order** makes the final report and stores it in the order system;
   if that fails it can be repeated or cancelled, and the page says what to
-  check. Programming a chip is not part of this version: for a chip that can
-  be programmed the only way out is **Leave order open**.
+  check. For a chip that can be programmed the verdict offers **Begin
+  programming** instead; if the project that reads out the memory cannot be
+  used, the page says why and the only way out is **Leave order open**.
 - Says what went wrong in words, chosen by the code of the failure (never by
   its kind, which stands for different causes), with the code in small print
   for support. A running step is stopped with Cancel; closing the window in
@@ -202,9 +203,9 @@ system. It appears in the Extensions menu of the main window.
   the operator can repeat that step; after a failed read-out the order can
   also be finished with the second report, by an explicit choice. A cancel
   is never turned into the review. `Finish` at the review makes the final
-  report from the report of the read-out. The page shows the answers, the
-  read-out and the review, but no button leads to them yet, so for a chip
-  that can be programmed it still stops at the verdict and only Cancel is
+  report from the report of the read-out. The page leads there with the
+  Begin programming button at the verdict of a chip that can be programmed;
+  without a usable read-out project it explains why it is not
   offered. The page binds to `Current` (an immutable `WorkflowSnapshot`: state,
   what the operator may do, whether something runs, the orders, the card, the
   task outcomes, the verdict, the failure as a stable code) and `Changed`, and
