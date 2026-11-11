@@ -182,9 +182,12 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="180" />
-                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="25" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
+                            <!-- the list of the texts on the left, creating and editing a text on the right -->
+                            <Border x:Name="TextBlockSeparator" Grid.Column="1" Width="1" HorizontalAlignment="Center"
+                                    Background="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" />
                             <DockPanel Grid.Column="0">
                                 <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
                                     <Button x:Name="AddTextBlockButton" MinWidth="70" Padding="10,2" Command="{Binding AddTextBlockCommand}"
