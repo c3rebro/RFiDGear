@@ -31,6 +31,13 @@ namespace RFiDGear.Tests.Reader
         /// <summary>Gets or sets whether the reader behaves like a PC/SC reader (see <see cref="ReaderDevice.IsPcscReader"/>).</summary>
         public bool Pcsc { get; set; }
 
+        /// <summary>
+        /// Gets or sets the chip that stays on the reader: every read that is not scripted leaves it behind, as a real
+        /// reader would, however often the application empties the shared chip first. An empty chip is no card.
+        /// <c>null</c> (the default) leaves the chip as it is.
+        /// </summary>
+        public GenericChipModel? Card { get; set; }
+
         /// <inheritdoc />
         public override bool IsPcscReader => Pcsc;
 
@@ -91,7 +98,7 @@ namespace RFiDGear.Tests.Reader
             {
                 number = Interlocked.Increment(ref _reads);
                 _chipWasEmptyAtStart.Add(GenericChip != null && GenericChip.UID == null && GenericChip.Childs == null);
-                step = _steps.Count > 0 ? _steps.Dequeue() : new Step(ERROR.NoError, null, null, null);
+                step = _steps.Count > 0 ? _steps.Dequeue() : new Step(ERROR.NoError, Card, null, null);
             }
 
             _ = ReadStarted(number);

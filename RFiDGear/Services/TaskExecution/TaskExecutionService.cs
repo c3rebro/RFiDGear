@@ -281,6 +281,13 @@ namespace RFiDGear.Services.TaskExecution
         /// (e.g. device discovery failed before any task ran).
         /// </summary>
         public TaskLoopTerminalStatus? TerminalStatus { get; set; }
+
+        /// <summary>
+        /// <c>true</c> when the per-task watchdog gave up the run: it flagged the running task as failed and stopped the
+        /// loop from starting further tasks (see <see cref="ITaskExecutionService.HandleTaskTimeout"/>). Such a run
+        /// ends like an ordinary failure, but the card state is unknown, so automatic mode stops after it.
+        /// </summary>
+        public bool Abandoned { get; internal set; }
     }
 
     /// <summary>
@@ -450,6 +457,7 @@ namespace RFiDGear.Services.TaskExecution
             }
 
             result.SelectedSetupViewModel = request.SelectedSetupViewModel;
+            result.Abandoned = abandoned;
             ExecutionCompleted?.Invoke(this, new TaskExecutionCompletedEventArgs(result));
             return result;
         }
