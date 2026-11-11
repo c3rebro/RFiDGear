@@ -114,7 +114,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public void TheAnswers_GoToTheWorkflow_AsTheReportNeedsThem()
         {
             var form = Seeded();
-            AnswerAll(form, programming: true, functionTest: false, restricted: false);
+            AnswerAll(form, programming: true, functionTest: false);
 
             // Not restricted: the text of the first report's notes is not sent (null keeps them), nothing for a DESFire chip.
             Assert.Equal(
@@ -144,11 +144,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public void OnlyTheProgrammingAndTheFunctionTest_AreWorthASecondLook_WhenAnsweredNo()
         {
             var form = Seeded();
-            AnswerAll(form, programming: false, functionTest: false, restricted: false);
+            AnswerAll(form, programming: false, functionTest: false);
 
             Assert.Equal(new[] { En[Keys.GuidedQuestionProgramming], En[Keys.GuidedQuestionFunctionTest] }, form.NoAnswers());
 
-            AnswerAll(form, programming: true, functionTest: true, restricted: false);
+            AnswerAll(form, programming: true, functionTest: true);
             Assert.Empty(form.NoAnswers());                       // "restricted: no" is the normal case
         }
 

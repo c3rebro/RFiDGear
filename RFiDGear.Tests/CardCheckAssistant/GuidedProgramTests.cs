@@ -173,9 +173,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public Task TheFormOfOneOrder_IsNotTheFormOfTheNext() => GuidedPage.Run(async page =>
         {
             var vm = page.Vm;
-            await page.PushAsync(WorkflowState.Programming, Programming(chipBack: true, "A"));
+            await page.PushAsync(WorkflowState.Programming, Programming(chipBack: true));
             Answer(page);
-            await page.PushAsync(WorkflowState.Cancelled, Programming(chipBack: true, "A"));
+            await page.PushAsync(WorkflowState.Cancelled, Programming(chipBack: true));
             Assert.True(vm.Form.Programming.Value);                              // the end shows what was answered until Back
             Assert.False(vm.Form.IsEditable);
 
