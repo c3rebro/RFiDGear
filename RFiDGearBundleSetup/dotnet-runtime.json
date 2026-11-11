@@ -1,0 +1,16 @@
+{
+  "version": "10.0.15",
+  "source": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json",
+  "packages": [
+    {
+      "file": "windowsdesktop-runtime-10.0.15-win-x64.exe",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/10.0.15/windowsdesktop-runtime-10.0.15-win-x64.exe",
+      "sha512": "f838960962172f1a769c49fa600e6f60f56f8d08a28e3cb878890ffc2e3a7a2e1b65697588e23efa767b8b8e8523ec01f55e875120507dde16d9a0869102dab3"
+    },
+    {
+      "file": "windowsdesktop-runtime-10.0.15-win-x86.exe",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/10.0.15/windowsdesktop-runtime-10.0.15-win-x86.exe",
+      "sha512": "9a6d83c00aa9e292085ca234c0074cff67070ae48832f64e9184b2f062b0af05052626bee633bd87e5df0837958435a5098d84e2e969a18cb43f3f65f73e0f74"
+    }
+  ]
+}

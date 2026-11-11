@@ -30,11 +30,9 @@
 /RFiDGear.Extensions/deploy.local.props
 /RFiDGear.ExtensionLibraries/CardCheck/obj
 /RFiDGear.ExtensionLibraries/CardCheck/bin
-/RFiDGearBundleSetup/RFiDGearBundleSetup.wixproj
 /RFiDGearSetup/RFiDGear_Setup_x64/bin
 /RFiDGearSetup/RFiDGear_Setup_x86/bin
 /RFiDGear.Extensions/VCNEditor
-/RFiDGearBundleSetup/Bundle.wxs
 /RFiDGearBundleSetup/obj
 /RFiDGearBundleSetup/bin
 /RFiDGear.Extensions/VCNEditor/RFiDGear.Extensions.VCNEditor.csproj
@@ -52,3 +50,6 @@ RFiDGear/.claude/settings.local.json
 /RFiDGear.ExtensionSdk/bin
 /RFiDGear.ExtensionSdk/obj
 /TestResults
+
+# Signing certificates never go into the repository.
+*.pfx
