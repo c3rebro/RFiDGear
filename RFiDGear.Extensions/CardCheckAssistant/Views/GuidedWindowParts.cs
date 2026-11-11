@@ -23,6 +23,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Views
         public GuidedPageServices(IReportOpener opener) => _opener = opener ?? throw new ArgumentNullException(nameof(opener));
 
         /// <inheritdoc/>
+        /// <remarks>The opener reads the disk and cannot be interrupted: a cancel ends the wait, and the request is left to finish by itself.</remarks>
         public Task<Failure?> OpenReportAsync(string path, CancellationToken ct) =>
             Task.Run(
                 () =>
@@ -31,7 +32,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Views
 
                     return opened.IsSuccess ? null : opened.Failure;
                 },
-                ct);
+                ct).WaitAsync(ct);
 
         /// <inheritdoc/>
         public bool Confirm(string title, string text)

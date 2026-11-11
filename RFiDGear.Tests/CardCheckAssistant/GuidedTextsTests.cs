@@ -26,7 +26,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             return edit == null ? snapshot : edit(snapshot);
         }
 
-        private static TemplateSelection Verdict(ChipVerdict verdict) => new TemplateSelection(verdict, FreeMemory.Unknown, Array.Empty<LsmTemplate>(), null);
+        private static TemplateSelection SelectionOf(ChipVerdict verdict) => new TemplateSelection(verdict, FreeMemory.Unknown, Array.Empty<LsmTemplate>(), null);
 
         [Theory]
         [InlineData("ReadingOut", "GuidedReadOutRunning")]
@@ -69,7 +69,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         [InlineData("WaitingForCard", true, "CancelButton")]
         public void TheButtonAtTheFootOfThePage_SaysLeaveOpen_WhereTheOrderStaysOpen(string state, bool programmable, string key)
         {
-            var snapshot = Snapshot(state, s => s with { Selection = Verdict(programmable ? ChipVerdict.Programmable : ChipVerdict.NotSupported) });
+            var snapshot = Snapshot(state, s => s with { Selection = SelectionOf(programmable ? ChipVerdict.Programmable : ChipVerdict.NotSupported) });
 
             Assert.Equal(En[key], GuidedTexts.CancelText(snapshot, En));
         }

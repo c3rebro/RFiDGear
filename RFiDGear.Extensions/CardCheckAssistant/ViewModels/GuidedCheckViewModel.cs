@@ -59,7 +59,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private IDisposable? _timer;
         private int _modal;
         private bool _asking;
-        private bool _opening;
+        private int _reviewId;
+        private bool _inReview;
+        private int _openingReview = -1;
         private Failure? _openFailure;
         private bool _syncingRows;
         private bool _tickRead;
@@ -116,8 +118,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             StartCheckCommand = new DelegateCommand(() => _workflow.StartCheck(), () => Offers(WorkflowControls.StartCheck));
             FinishCommand = new DelegateCommand(() => _workflow.Finish(), () => Offers(WorkflowControls.Finish));
             FinishWithoutReadOutCommand = new DelegateCommand(FinishWithoutReadOut, () => Offers(WorkflowControls.FinishWithoutReadOut));
-            OpenReportCommand = new AsyncCommand(() => OpenInViewerAsync(ReadOutReport), () => CanOpen(ReadOutReport), OnOpenFailed);
-            OpenFolderCommand = new AsyncCommand(() => OpenInViewerAsync(ReadOutFolder), () => CanOpen(ReadOutFolder), OnOpenFailed);
+            OpenReportCommand = new AsyncCommand(() => OpenInViewerAsync(ReadOutReport), () => CanOpen(ReadOutReport));
+            OpenFolderCommand = new AsyncCommand(() => OpenInViewerAsync(ReadOutFolder), () => CanOpen(ReadOutFolder));
             RetryCommand = new DelegateCommand(() => _workflow.Retry(), () => Offers(WorkflowControls.Retry));
             CancelCommand = new DelegateCommand(Cancel, () => Offers(WorkflowControls.Cancel));
             BackCommand = new DelegateCommand(Back, () => Offers(WorkflowControls.Back));
@@ -592,14 +594,17 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         private string? ReadOutFolder => string.IsNullOrWhiteSpace(ReadOutReport) ? null : Path.GetDirectoryName(ReadOutReport);
 
-        // Both buttons are one thing at a time: a second click, on either, waits for the viewer to have been asked.
+        // Both buttons are one thing at a time: a second click, on either, waits for the viewer to have been asked. A request
+        // of an earlier review that is still waiting (a share that is slow to answer) does not hold up the buttons of this one.
         private bool CanOpen(string? path) =>
-            !IsDisposed && !_opening && _snapshot.State == WorkflowState.Reviewing && !string.IsNullOrWhiteSpace(path);
+            !IsDisposed && _openingReview != _reviewId && _snapshot.State == WorkflowState.Reviewing && !string.IsNullOrWhiteSpace(path);
 
-        // The viewer is asked off this thread. What it answers counts only while the review is still shown.
+        // The viewer is asked off this thread. What it answers counts only for the review it was asked in, and only while that
+        // review is still shown: the answer of order A's viewer must not show against order B's review.
         private async Task OpenInViewerAsync(string? path)
         {
-            _opening = true;
+            var review = _reviewId;
+            _openingReview = review;
             _openFailure = null;
             RaiseOpenerState();
 
@@ -608,9 +613,17 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             {
                 failure = await _services.OpenReportAsync(path ?? string.Empty, _cancellation.Token);
             }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // A viewer that failed in a way nobody expected: the page says so, by the code that has a text.
+                failure = new Failure(FailureKind.Unexpected, OpenerFailureCodes.StartFailed, "The report could not be opened.");
+            }
             finally
             {
-                _opening = false;
+                if (_openingReview == review)
+                {
+                    _openingReview = -1;
+                }
             }
 
             if (IsDisposed)
@@ -618,23 +631,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 return;
             }
 
-            if (_snapshot.State == WorkflowState.Reviewing)
+            if (review == _reviewId && _snapshot.State == WorkflowState.Reviewing)
             {
                 _openFailure = failure;
             }
 
-            RaiseOpenerState();
-        }
-
-        // A viewer that failed in a way nobody expected: the page says so, by the code that has a text.
-        private void OnOpenFailed(Exception exception)
-        {
-            if (IsDisposed || exception is OperationCanceledException)
-            {
-                return;
-            }
-
-            _openFailure = new Failure(FailureKind.Unexpected, OpenerFailureCodes.StartFailed, "The report could not be opened.");
             RaiseOpenerState();
         }
 
@@ -832,7 +833,15 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             TrackNotice(snapshot);
             SyncRows(snapshot.Orders);
             SyncTaskRows(ShownExecution(snapshot));
-            if (snapshot.State != WorkflowState.Reviewing)
+            // Each time the review is entered it is a review of its own: answers of the viewer of an earlier one are not its.
+            var reviewing = snapshot.State == WorkflowState.Reviewing;
+            if (reviewing && !_inReview)
+            {
+                _reviewId++;
+            }
+
+            _inReview = reviewing;
+            if (!reviewing)
             {
                 _openFailure = null;
             }

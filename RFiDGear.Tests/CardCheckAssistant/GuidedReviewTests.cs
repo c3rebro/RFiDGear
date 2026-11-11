@@ -235,6 +235,48 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
+        public Task AnAnswerOfAnEarlierReview_DoesNotShowInTheNextOne_AndDoesNotHoldTheOtherButtonUp() => GuidedPage.Run(async page =>
+        {
+            var vm = page.Vm;
+            await page.PushAsync(WorkflowState.Reviewing, InReview());
+            var answer = new TaskCompletionSource<Failure?>();
+            page.Close.NextOpen = answer;
+            var pending = vm.OpenReportCommand.ExecuteAsync();
+
+            // The order is finished and the next one reaches its review while the first viewer is still being asked.
+            await page.PushAsync(WorkflowState.Completing, InReview(), busy: true);
+            await page.PushAsync(WorkflowState.Reviewing, InReview(@"C:\reports\J2\J2-1.step3.pdf"));
+
+            // The other button is free at once; the one whose request is still waiting is free when that request ends.
+            Assert.True(vm.OpenFolderCommand.CanExecute(null));
+            Assert.False(vm.OpenReportCommand.CanExecute(null));
+
+            answer.SetResult(new Failure(FailureKind.Io, OpenerFailureCodes.StartFailed, "Failed."));
+            await pending;
+
+            Assert.Empty(vm.Messages);
+            Assert.True(vm.OpenReportCommand.CanExecute(null));
+        });
+
+        [Fact]
+        public Task AViewerThatFailsInAWayNobodyExpected_IsToldByTheCodeThatHasAText() => GuidedPage.Run(async page =>
+        {
+            var vm = page.Vm;
+            await page.PushAsync(WorkflowState.Reviewing, InReview());
+            var answer = new TaskCompletionSource<Failure?>();
+            answer.SetException(new InvalidOperationException("a secret path of a share"));
+            page.Close.NextOpen = answer;
+
+            await vm.OpenReportCommand.ExecuteAsync();
+
+            var message = Assert.Single(vm.Messages);
+            Assert.Equal(OpenerFailureCodes.StartFailed, message.Code);
+            Assert.Equal(vm.Strings[Keys.FailOpenFailed], message.Text);
+            Assert.DoesNotContain("secret", message.Text, StringComparison.Ordinal);
+            Assert.True(vm.OpenReportCommand.CanExecute(null));
+        });
+
+        [Fact]
         public Task DisposingThePage_WhileTheViewerIsAsked_EndsQuietly() => GuidedPage.Run(async page =>
         {
             var vm = page.Vm;

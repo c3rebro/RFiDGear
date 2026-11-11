@@ -17,8 +17,12 @@ namespace RFiDGear.Tests.CardCheckAssistant
         private sealed class BlockingOpener : IReportOpener
         {
             private readonly TaskCompletionSource<bool> _release = new TaskCompletionSource<bool>();
+            private readonly TaskCompletionSource<bool> _entered = new TaskCompletionSource<bool>();
 
             public string? Path { get; private set; }
+
+            /// <summary>Completes when the opener has been called and is waiting on its share.</summary>
+            public Task Entered => _entered.Task;
 
             public Result Answer { get; set; } = Result.Ok();
 
@@ -27,6 +31,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             public Result Open(string path)
             {
                 Path = path;
+                _entered.TrySetResult(true);
                 _release.Task.GetAwaiter().GetResult();
 
                 return Answer;
@@ -48,6 +53,21 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             Assert.Equal(OpenerFailureCodes.NoViewer, failure!.Code);
             Assert.Equal(@"C:\reports\a.pdf", opener.Path);
+        }
+
+        [Fact]
+        public async Task ACancelledWait_EndsAtOnce_WhileTheOpenerIsStillBlocked()
+        {
+            var opener = new BlockingOpener();
+            using var cancel = new CancellationTokenSource();
+            var pending = new GuidedPageServices(opener).OpenReportAsync(@"C:\reports\a.pdf", cancel.Token);
+
+            await opener.Entered.WaitAsync(TimeSpan.FromSeconds(10));
+            cancel.Cancel();
+
+            // The opener is still blocked on its share, and nobody waits for it any more.
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending.WaitAsync(TimeSpan.FromSeconds(10)));
+            opener.Release();
         }
 
         [Fact]
