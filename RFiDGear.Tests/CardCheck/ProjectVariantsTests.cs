@@ -78,14 +78,15 @@ namespace RFiDGear.Tests.CardCheck
         }
 
         [Fact]
-        public void Resolve_KeepsTheExtensionAndInnerDotsOfTheName()
+        public void Resolve_KeepsTheExtensionOfTheName_AndUsesANameWithInnerDotsAsItIs()
         {
             var inner = Path.Combine(Folder, "my.project.v2.rfPrj");
             var innerGerman = Path.Combine(Folder, "my.project.v2.deutsch.rfPrj");
             var plain = Path.Combine(Folder, "check.xml");
             var plainGerman = Path.Combine(Folder, "check.deutsch.xml");
 
-            Assert.Equal(innerGerman, ProjectVariants.Resolve(inner, ReportLanguage.German, Existing(innerGerman)));
+            // More than one dot: the project is used as it is, even though a file that looks like a variant exists.
+            Assert.Equal(inner, ProjectVariants.Resolve(inner, ReportLanguage.German, Existing(innerGerman)));
             Assert.Equal(plainGerman, ProjectVariants.Resolve(plain, ReportLanguage.German, Existing(plainGerman)));
         }
 
@@ -108,6 +109,73 @@ namespace RFiDGear.Tests.CardCheck
         public void Resolve_WithoutAnExistenceCheck_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => ProjectVariants.Resolve(Default, ReportLanguage.German, null!));
+        }
+
+        // ── a name with more than one dot, and what Settings shows ──
+
+        [Theory]
+        [InlineData("my.check.rfPrj")]
+        [InlineData("check.deutsch.rfPrj")]
+        [InlineData("check.french.rfPrj")]
+        public void Resolve_OfANameWithMoreThanOneDot_UsesTheFileAsItIs_WithoutLookingForAVariant(string fileName)
+        {
+            var project = Path.Combine(Folder, fileName);
+            var asked = false;
+
+            var resolved = ProjectVariants.Resolve(project, ReportLanguage.German, _ =>
+            {
+                asked = true;
+                return true;
+            });
+
+            Assert.Equal(project, resolved);
+            Assert.False(asked);
+        }
+
+        private static IEnumerable<string> FolderWith(params string[] names)
+        {
+            var files = new List<string>();
+            foreach (var name in names)
+            {
+                files.Add(Path.Combine(Folder, name));
+            }
+
+            return files;
+        }
+
+        [Fact]
+        public void Inspect_OfAPlainProject_ListsEveryVariantNextToIt_SortedAndWithoutOtherFiles()
+        {
+            var info = ProjectVariants.Inspect(
+                Default,
+                _ => FolderWith("check.rfPrj", "check.french.rfPrj", "check.Deutsch.rfPrj", "other.deutsch.rfPrj", "check.deutsch.txt", "check.a.b.rfPrj", "checkx.rfPrj"));
+
+            Assert.Equal(ProjectNameKind.Plain, info.Kind);
+            Assert.Equal(new[] { "Deutsch", "french" }, info.Variants);
+            Assert.Null(info.ReservedWord);
+        }
+
+        [Fact]
+        public void Inspect_OfAProjectWithoutVariants_FindsNone()
+        {
+            var info = ProjectVariants.Inspect(Default, _ => FolderWith("check.rfPrj"));
+
+            Assert.Equal(ProjectNameKind.Plain, info.Kind);
+            Assert.Empty(info.Variants);
+        }
+
+        [Theory]
+        [InlineData("my.check.rfPrj", ProjectNameKind.MoreThanOneDot, null)]
+        [InlineData("check.french.rfPrj", ProjectNameKind.MoreThanOneDot, null)]
+        [InlineData("check.deutsch.rfPrj", ProjectNameKind.LooksLikeVariant, "deutsch")]
+        [InlineData("check.ENGLISCH.rfPrj", ProjectNameKind.LooksLikeVariant, "englisch")]
+        public void Inspect_OfADottedName_SaysSoWithoutLookingAtTheFolder(string fileName, ProjectNameKind kind, string? word)
+        {
+            var info = ProjectVariants.Inspect(Path.Combine(Folder, fileName), _ => throw new InvalidOperationException("The folder must not be read."));
+
+            Assert.Equal(kind, info.Kind);
+            Assert.Equal(word, info.ReservedWord);
+            Assert.Empty(info.Variants);
         }
     }
 }

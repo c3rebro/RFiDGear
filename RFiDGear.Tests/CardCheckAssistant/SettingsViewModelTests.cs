@@ -138,6 +138,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
                 return path != null && Answers.TryGetValue(path, out var answer) ? answer : ProjectPathCheck.Valid;
             }
+
+            public Dictionary<string, ProjectLanguageFinding> Findings { get; } = new Dictionary<string, ProjectLanguageFinding>();
+
+            public ProjectLanguageFinding? FindLanguageVariants(string path) =>
+                Findings.TryGetValue(path, out var finding) ? finding : null;
         }
 
         internal sealed class Rig : IDisposable
@@ -474,6 +479,90 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
                 Assert.Equal(new[] { false }, rig.Closed);
                 Assert.Empty(rig.Editor.Saves);
+            });
+        }
+
+        // ── language variants of the default project ──
+
+        private const string PlainProject = "C:\\p\\check.rfPrj";
+        private const string DottedProject = "C:\\p\\my.check.rfPrj";
+        private const string VariantProject = "C:\\p\\check.deutsch.rfPrj";
+
+        [Fact]
+        public async Task ThePickedProject_ShowsTheLanguageVariantsNextToIt_AndTheNoteLeavesWithThePath()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var rig = await Rig.OpenAsync(Loaded());
+                var vm = rig.Vm;
+                rig.Paths.Findings[PlainProject] = new ProjectLanguageFinding(LanguageNameKind.Plain, new[] { "deutsch", "french" }, null);
+
+                vm.DefaultProject.Value = PlainProject;
+                await WaitUntil(() => vm.HasDefaultProjectNote, "the finding");
+
+                Assert.Equal(rig.Strings.Format(Keys.ProjectVariantsFound, "deutsch, french"), vm.DefaultProjectNote);
+                Assert.False(vm.IsDefaultProjectNoteWarning);
+
+                vm.DefaultProject.Value = string.Empty;
+                await WaitUntil(() => !vm.HasDefaultProjectNote, "the note to go");
+                Assert.Equal(string.Empty, vm.DefaultProjectNote);
+            });
+        }
+
+        [Fact]
+        public async Task AProjectWithoutVariants_SaysItIsUsedForEveryLanguage()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var rig = await Rig.OpenAsync(Loaded());
+                var vm = rig.Vm;
+                rig.Paths.Findings[PlainProject] = new ProjectLanguageFinding(LanguageNameKind.Plain, Array.Empty<string>(), null);
+
+                vm.DefaultProject.Value = PlainProject;
+                await WaitUntil(() => vm.HasDefaultProjectNote, "the finding");
+
+                Assert.Equal(rig.Strings[Keys.ProjectNoVariants], vm.DefaultProjectNote);
+            });
+        }
+
+        [Fact]
+        public async Task AFileNameWithMoreThanOneDot_OrThatOfAVariant_IsWarnedAbout_AndTheSaveIsNotStopped()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var rig = await Rig.OpenAsync(Loaded());
+                var vm = rig.Vm;
+                rig.Paths.Findings[DottedProject] = new ProjectLanguageFinding(LanguageNameKind.MoreThanOneDot, Array.Empty<string>(), null);
+                rig.Paths.Findings[VariantProject] = new ProjectLanguageFinding(LanguageNameKind.LooksLikeVariant, Array.Empty<string>(), "deutsch");
+
+                vm.DefaultProject.Value = DottedProject;
+                await WaitUntil(() => vm.HasDefaultProjectNote, "the finding");
+                Assert.True(vm.IsDefaultProjectNoteWarning);
+                Assert.Equal(rig.Strings[Keys.ProjectMoreThanOneDot], vm.DefaultProjectNote);
+
+                vm.DefaultProject.Value = VariantProject;
+                await WaitUntil(() => vm.DefaultProjectNote == rig.Strings.Format(Keys.ProjectLooksLikeVariant, "deutsch"), "the finding of the variant");
+                Assert.True(vm.IsDefaultProjectNoteWarning);
+
+                // A warning, not an error: accepting it is saving.
+                Assert.False(vm.DefaultProject.IsError);
+                Assert.True(vm.OkCommand.CanExecute(null));
+            });
+        }
+
+        [Fact]
+        public async Task ARelativePath_HasNothingToInspect()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var rig = await Rig.OpenAsync(Loaded());
+                var vm = rig.Vm;
+                rig.Paths.Findings["other.rfPrj"] = new ProjectLanguageFinding(LanguageNameKind.MoreThanOneDot, Array.Empty<string>(), null);
+
+                vm.DefaultProject.Value = "other.rfPrj";
+                await Task.Delay(100);
+
+                Assert.False(vm.HasDefaultProjectNote);
             });
         }
 

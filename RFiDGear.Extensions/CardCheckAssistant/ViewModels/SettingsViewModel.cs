@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -82,6 +83,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private string? _testKey;
         private CancellationTokenSource? _testCancellation;
         private TextBlockViewModel? _selectedTextBlock;
+        private ProjectLanguageFinding? _languageFinding;
+        private int _languageLookup;
 
         /// <param name="editor">Reads, saves and tests the settings.</param>
         /// <param name="dialogs">The pickers.</param>
@@ -114,8 +117,29 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             AddTextBlockCommand = new DelegateCommand(AddTextBlock, () => InputsEnabled);
             RemoveTextBlockCommand = new DelegateCommand(RemoveTextBlock, () => InputsEnabled && _selectedTextBlock != null);
 
+            DefaultProject.PropertyChanged += OnDefaultProjectChanged;
             Strings.PropertyChanged += OnStringsChanged;
         }
+
+        /// <summary>
+        /// Gets what the folder of the default project says about language variants: the ones found, or a warning about a
+        /// name that stops the lookup. Empty when there is nothing to say. It is worked out on a worker thread after the
+        /// path changes, so it can lag behind the text.
+        /// </summary>
+        public string DefaultProjectNote => _languageFinding switch
+        {
+            null => string.Empty,
+            { Kind: LanguageNameKind.MoreThanOneDot } => Strings[Keys.ProjectMoreThanOneDot],
+            { Kind: LanguageNameKind.LooksLikeVariant } finding => Strings.Format(Keys.ProjectLooksLikeVariant, finding.ReservedWord ?? string.Empty),
+            { Variants.Count: 0 } => Strings[Keys.ProjectNoVariants],
+            var finding => Strings.Format(Keys.ProjectVariantsFound, string.Join(", ", finding.Variants))
+        };
+
+        /// <summary>Gets a value indicating whether <see cref="DefaultProjectNote"/> has something to show.</summary>
+        public bool HasDefaultProjectNote => _languageFinding != null;
+
+        /// <summary>Gets a value indicating whether <see cref="DefaultProjectNote"/> is a warning (a name that stops the lookup), not just information.</summary>
+        public bool IsDefaultProjectNoteWarning => _languageFinding != null && _languageFinding.Kind != LanguageNameKind.Plain;
 
         /// <summary>Tells the window to close, with or without the settings having been saved.</summary>
         public event EventHandler<CloseRequestedEventArgs>? CloseRequested;
@@ -642,6 +666,38 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             }
         }
 
+        private void OnDefaultProjectChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PathFieldViewModel.Value))
+            {
+                _ = ShowLanguageNoteAsync();
+            }
+        }
+
+        // Looks at the folder of the default project whenever the path changes, so the operator sees the finding when the
+        // file is picked, not only at the save. An answer that arrives after a newer path was entered is dropped.
+        private async Task ShowLanguageNoteAsync()
+        {
+            var lookup = Interlocked.Increment(ref _languageLookup);
+            var path = DefaultProject.Value.Trim();
+
+            ProjectLanguageFinding? finding = null;
+            if (path.Length > 0 && Path.IsPathFullyQualified(path))
+            {
+                finding = await Task.Run(() => _pathChecker.FindLanguageVariants(path));
+            }
+
+            if (IsDisposed || lookup != Volatile.Read(ref _languageLookup))
+            {
+                return;
+            }
+
+            _languageFinding = finding;
+            OnPropertyChanged(nameof(DefaultProjectNote));
+            OnPropertyChanged(nameof(HasDefaultProjectNote));
+            OnPropertyChanged(nameof(IsDefaultProjectNoteWarning));
+        }
+
         // Shows what is wrong with the draft. The disk checks run on a worker thread: on a network path they can block.
         private async Task<bool> ValidateAsync(SettingsData data)
         {
@@ -911,6 +967,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OnPropertyChanged(nameof(TestResultText));
             OutputFolder.RefreshText();
             DefaultProject.RefreshText();
+            OnPropertyChanged(nameof(DefaultProjectNote));
             MemoryProject.RefreshText();
             foreach (var block in TextBlocks)
             {
