@@ -96,6 +96,58 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         [Fact]
+        public void TheProgramPrompt_FollowsTheChipsWay_ReaderProblemsFirstWhileItIsNotBack()
+        {
+            var noReader = Snapshots.NoReader();
+            var reader = Snapshots.NoCard();
+            WorkflowSnapshot Programming(CardMoveStage? stage, CardWaitOutcome? outcome = null) => Snapshot("Programming", s => s with
+            {
+                MoveStage = stage,
+                Move = outcome == null ? null : new CardMoveResult(outcome.Value, CardMoveStage.WaitingForReinsertion, "04AA", "04AA", null),
+            });
+            string Prompt(WorkflowSnapshot s, ReaderSnapshot? host = null, bool running = false) => GuidedTexts.ProgramPrompt(s, host ?? reader, running, En);
+
+            Assert.Equal(En[Keys.GuidedPromptNoReader], Prompt(Programming(null), noReader));
+            Assert.Equal(En[Keys.GuidedPromptNoReader], Prompt(Programming(null, CardWaitOutcome.TimedOut), noReader));
+            Assert.Equal(En[Keys.GuidedPromptHostRunning], Prompt(Programming(null), running: true));
+
+            Assert.Equal(En[Keys.GuidedProgramRemove], Prompt(Programming(null)));
+            Assert.Equal(En[Keys.GuidedProgramRemove], Prompt(Programming(CardMoveStage.WaitingForRemoval)));
+            Assert.Equal(En[Keys.GuidedProgramReinsert], Prompt(Programming(CardMoveStage.WaitingForReinsertion)));
+            Assert.Equal(En[Keys.GuidedProgramTimedOut], Prompt(Programming(null, CardWaitOutcome.TimedOut)));
+
+            // A chip that is back is the news, whatever the reader says about itself.
+            Assert.Equal(En[Keys.GuidedProgramBack], Prompt(Programming(null, CardWaitOutcome.Done), noReader, true));
+
+            Assert.Equal(En[Keys.GuidedProgramWriting], Prompt(Snapshot("WritingReport"), noReader, true));
+            Assert.Equal(En[Keys.GuidedProgramFailed], Prompt(Snapshot("ProgrammingFailed")));
+            Assert.Equal(string.Empty, Prompt(Snapshot("Reviewing")));
+        }
+
+        [Fact]
+        public void TheProgramStatus_SaysWhatIsStillToAnswer_OrWhatContinueDoes_OnlyWhileTheAnswersAreOpen()
+        {
+            var back = Snapshot("Programming", s => s with { Move = new CardMoveResult(CardWaitOutcome.Done, CardMoveStage.WaitingForReinsertion, "04AA", "04AA", null) });
+            var waiting = Snapshot("Programming");
+
+            Assert.Equal(En.Format(Keys.GuidedStillToAnswerFormat, "A, B"), GuidedTexts.ProgramStatus(back, new[] { "A", "B" }, En));
+            Assert.Equal(En[Keys.GuidedContinueHint], GuidedTexts.ProgramStatus(back, Array.Empty<string>(), En));
+            Assert.Equal(string.Empty, GuidedTexts.ProgramStatus(waiting, Array.Empty<string>(), En));
+
+            // While the chip is away, what is still to answer is told all the same: that is when the questions are answered.
+            Assert.Equal(En.Format(Keys.GuidedStillToAnswerFormat, "A"), GuidedTexts.ProgramStatus(waiting, new[] { "A" }, En));
+            Assert.Equal(string.Empty, GuidedTexts.ProgramStatus(Snapshot("WritingReport"), new[] { "A" }, En));
+        }
+
+        [Theory]
+        [InlineData("Programming", "GuidedRetryWaitButton")]
+        [InlineData("ProgrammingFailed", "GuidedRetryWriteButton")]
+        public void TheRetryButton_SaysWhatItRepeats_InTheProgrammingStates(string state, string key)
+        {
+            Assert.Equal(En[key], GuidedTexts.RetryText(Snapshot(state), En));
+        }
+
+        [Fact]
         public void TheWarningAboutAnotherChip_NamesBothUids_AndOnlyWhenTheyAreKnownToDiffer()
         {
             var another = new CardMoveResult(CardWaitOutcome.Done, CardMoveStage.WaitingForReinsertion, "04AA", "04BB", null);

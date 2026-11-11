@@ -120,7 +120,19 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         public bool BeginProgramming() => Record("BeginProgramming");
 
-        public bool ContinueProgramming(LsmTemplate template, LsmAnswers answers) => Record("ContinueProgramming:" + template.Name);
+        /// <summary>The template of the last continue the page sent.</summary>
+        public LsmTemplate? LastTemplate { get; private set; }
+
+        /// <summary>The answers of the last continue the page sent.</summary>
+        public LsmAnswers? LastAnswers { get; private set; }
+
+        public bool ContinueProgramming(LsmTemplate template, LsmAnswers answers)
+        {
+            LastTemplate = template;
+            LastAnswers = answers;
+
+            return Record("ContinueProgramming:" + template.Name);
+        }
 
         public bool FinishWithoutReadOut() => Record("FinishWithoutReadOut");
 

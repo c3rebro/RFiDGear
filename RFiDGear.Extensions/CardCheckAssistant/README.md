@@ -202,9 +202,9 @@ system. It appears in the Extensions menu of the main window.
   the operator can repeat that step; after a failed read-out the order can
   also be finished with the second report, by an explicit choice. A cancel
   is never turned into the review. `Finish` at the review makes the final
-  report from the report of the read-out. The page shows the read-out and
-  the review, but no button leads to them yet, so for a chip that can be
-  programmed it still stops at the verdict and only Cancel is
+  report from the report of the read-out. The page shows the answers, the
+  read-out and the review, but no button leads to them yet, so for a chip
+  that can be programmed it still stops at the verdict and only Cancel is
   offered. The page binds to `Current` (an immutable `WorkflowSnapshot`: state,
   what the operator may do, whether something runs, the orders, the card, the
   task outcomes, the verdict, the failure as a stable code) and `Changed`, and
@@ -265,6 +265,18 @@ system. It appears in the Extensions menu of the main window.
   It uses library types to build the workflow, so `AssistantServicesFactory`
   calls it only after the library is known to be there, and the exported
   class sees only `IGuidedWorkflow`.
+- The programming step of the page keeps the operator's answers in one form
+  (`ViewModels/ProgrammingFormViewModel`) that belongs to the order: the
+  template used in the LSM, three yes-or-no questions (unanswered is not "no"),
+  the restriction text (it starts as the notes of the first report, which it
+  replaces; a text block is appended, never put in place of what was typed) and,
+  for a Classic template, the sectors used. The form has a data context of its
+  own, so what the page announces with every picture of the reader does not undo
+  what is being typed. It can be edited while the chip is awaited, so the
+  questions can be answered while the chip is programmed elsewhere. *Continue*
+  needs the chip back and a complete form, and asks once if the programming or
+  the function test was answered "no". Once the work has begun the engine has
+  the answers, so the form is shown locked.
 - The review step of the page shows the path of the report of the read-out (the
   one the finished report is made from, as it is on disk when the operator
   presses *Report checked*), warnings that never block (another chip put back, a

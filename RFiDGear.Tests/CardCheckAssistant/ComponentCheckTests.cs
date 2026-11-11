@@ -108,7 +108,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             // The page may name library classes (it is only created after the check), but an enum or a struct in a field
             // makes the runtime load the library when the type is loaded, which can be before the check has run.
             const BindingFlags fields = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            var pageTypes = new[] { typeof(GuidedCheckView), typeof(GuidedCheckViewModel), typeof(AssistantServices) };
+            var pageTypes = new[] { typeof(GuidedCheckView), typeof(GuidedCheckViewModel), typeof(ProgrammingFormViewModel), typeof(AssistantServices) };
             var offending = pageTypes
                 .SelectMany(type => type.GetFields(fields))
                 .Where(field => field.FieldType.IsValueType && field.FieldType.Assembly.GetName().Name == LibraryName)

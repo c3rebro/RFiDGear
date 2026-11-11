@@ -25,6 +25,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>The verdict is shown and the order can be finished.</summary>
         Verdict,
 
+        /// <summary>The chip is programmed elsewhere and the operator answers the questions about it, or the programming report could not be written.</summary>
+        Program,
+
         /// <summary>The report of the read-out is checked by the operator before the order is finished.</summary>
         Review,
 
@@ -52,9 +55,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             WorkflowState.Checking => GuidedStep.Check,
             WorkflowState.RunFailed => GuidedStep.Check,
             WorkflowState.Assessing => GuidedStep.Verdict,
-            WorkflowState.Programming => GuidedStep.Verdict,
-            WorkflowState.WritingReport => GuidedStep.Verdict,
-            WorkflowState.ProgrammingFailed => GuidedStep.Verdict,
+            WorkflowState.Programming => GuidedStep.Program,
+            WorkflowState.WritingReport => GuidedStep.Program,
+            WorkflowState.ProgrammingFailed => GuidedStep.Program,
             WorkflowState.ReadingOut => GuidedStep.Check,
             WorkflowState.ReadOutFailed => GuidedStep.Check,
             WorkflowState.Reviewing => GuidedStep.Review,

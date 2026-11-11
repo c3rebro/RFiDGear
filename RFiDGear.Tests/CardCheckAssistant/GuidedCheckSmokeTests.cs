@@ -93,6 +93,40 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
+        public Task TheAnswers_AreWrittenIntoTheSecondReport_AsTheFormHadThem_AndTheRetryWritesTheSame() => Smoke(async (rig, vm) =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            await ViewModelTestSupport.Flush();
+            Assert.True(vm.IsProgramStep);
+            Assert.True(vm.Form.IsEditable);
+            Assert.True(vm.Form.Templates.Count > 0);
+
+            vm.Form.Programming.IsYes = true;
+            vm.Form.FunctionTest.IsYes = true;
+            vm.Form.Restricted.IsNo = true;
+            Assert.True(vm.ContinueCommand.CanExecute(null));
+
+            // The date cannot be set the first time: the work stops after the report was written.
+            rig.Store.TouchAnswer = Result.Fail(new Failure(FailureKind.Unreachable, "orders.unreachable", "No server."));
+            vm.ContinueCommand.Execute(null);
+            await ShownAsync(rig);
+
+            Assert.True(vm.IsProgramStep);
+            Assert.False(vm.Form.IsEditable);                                   // the engine has the answers now
+            Assert.True(vm.CanRetry);
+            var first = Assert.Single(rig.Reports.Writes);
+            Assert.Equal(vm.Form.ToAnswers().ToFields(vm.Form.SelectedTemplate!).Value.OrderBy(p => p.Key), first.Fields.OrderBy(p => p.Key));
+
+            rig.Store.TouchAnswer = null;
+            vm.RetryCommand.Execute(null);
+            await ShownAsync(rig);
+
+            Assert.True(vm.IsReviewStep);
+            Assert.Equal(2, rig.Reports.Writes.Count);
+            Assert.Equal(first.Fields.OrderBy(p => p.Key), rig.Reports.Writes[1].Fields.OrderBy(p => p.Key));
+        });
+
+        [Fact]
         public Task AFailedReadOut_CanBeFinishedWithoutIt_OnlyAfterTheOperatorSaidYes() => Smoke(async (rig, vm, services) =>
         {
             await rig.ReachAsync(WorkflowState.ReadOutFailed);
