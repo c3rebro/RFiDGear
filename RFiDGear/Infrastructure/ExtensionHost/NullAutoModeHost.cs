@@ -19,7 +19,17 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public bool IsAutoModeEnabled => false;
 
         /// <inheritdoc/>
+        public AutoModeStopReason LastStopReason => AutoModeStopReason.None;
+
+        /// <inheritdoc/>
         public event EventHandler AutoModeStateChanged
+        {
+            add { }
+            remove { }
+        }
+
+        /// <inheritdoc/>
+        public event EventHandler<ExecResult> AutoModeRunCompleted
         {
             add { }
             remove { }

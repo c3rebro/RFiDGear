@@ -30,7 +30,7 @@ namespace RFiDGear.Tests.AutoMode
         private const string CardA = "0123456789";
 
         /// <summary>A main window whose project has one task, which is what a start of the host needs.</summary>
-        private static Task WithHost(
+        internal static Task WithHost(
             Func<MainWindowViewModel, IAutoModeHost, ScriptedReadProvider, FakeTaskExecutionService, ExtensionOperationCoordinator, Task> test) =>
             WithViewModel(async (viewModel, provider, exec, coordinator) =>
             {

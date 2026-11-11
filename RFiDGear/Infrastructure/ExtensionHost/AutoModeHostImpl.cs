@@ -38,13 +38,20 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
             // The controller and the host live for the whole session, so there is nothing to unsubscribe.
             _controller.StateChanged += (_, _) => RaiseStateChanged();
+            _controller.RunCompleted += (_, result) => RaiseRunCompleted(result);
         }
 
         /// <inheritdoc/>
         public bool IsAutoModeEnabled => _controller.IsEnabled;
 
         /// <inheritdoc/>
+        public AutoModeStopReason LastStopReason => _controller.LastStopReason;
+
+        /// <inheritdoc/>
         public event EventHandler? AutoModeStateChanged;
+
+        /// <inheritdoc/>
+        public event EventHandler<ExecResult>? AutoModeRunCompleted;
 
         /// <inheritdoc/>
         public void Start()
@@ -123,6 +130,34 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     Logger.Error(
                         "AutoModeStateChanged subscriber threw; the exception was not propagated. {ExceptionType}: {ExceptionMessage} {ExceptionStackTrace}",
                         error.TypeName, error.Message, error.StackTrace);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Raises <see cref="AutoModeRunCompleted"/> to each subscriber in isolation, with this host as the sender: a
+        /// throwing subscriber is logged and must not stop the mode, nor starve the subscribers after it.
+        /// </summary>
+        private void RaiseRunCompleted(ExecResult result)
+        {
+            var handlers = AutoModeRunCompleted;
+            if (handlers == null)
+            {
+                return;
+            }
+
+            foreach (var handler in handlers.GetInvocationList().Cast<EventHandler<ExecResult>>())
+            {
+                try
+                {
+                    handler(this, result);
+                }
+                catch (Exception ex)
+                {
+                    var error = new SanitizedException(ex);
+                    Logger.Error(
+                        "AutoModeRunCompleted subscriber threw for run {RunId}; the exception was not propagated. {ExceptionType}: {ExceptionMessage} {ExceptionStackTrace}",
+                        result.RunId, error.TypeName, error.Message, error.StackTrace);
                 }
             }
         }
