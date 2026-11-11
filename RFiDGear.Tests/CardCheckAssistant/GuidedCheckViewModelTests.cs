@@ -285,6 +285,41 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
+        public Task AnOrderTheSearchHides_IsNotSelected_NeitherWhenTheSearchChanges_NorWhenTheListIsReadAgain() => Run(async page =>
+        {
+            var vm = page.Vm;
+            await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "InProgress", "2026-10-20 09:30:00")));
+            vm.SelectedOrder = vm.Orders[1];
+
+            // The search narrows to the other order: the selected one goes, and with it the possibility to start it.
+            vm.OrderSearchText = "acme";
+            Assert.Null(vm.SelectedOrder);
+            Assert.False(vm.StartOrderCommand.CanExecute(null));
+
+            // Selected while shown, then hidden by a search that a refresh meets.
+            vm.OrderSearchText = string.Empty;
+            vm.SelectedOrder = vm.Orders[1];
+            vm.OrdersView.Filter = row => ((OrderRowViewModel)row).JobNumber == "JA";
+            await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "InProgress", "2026-10-21 09:30:00")));
+
+            Assert.Null(vm.SelectedOrder);
+            Assert.False(vm.StartOrderCommand.CanExecute(null));
+        });
+
+        [Fact]
+        public Task TheSearchWords_MayBeSeparatedByAnyWhitespace() => Run(async page =>
+        {
+            var vm = page.Vm;
+            await page.PushAsync(WorkflowState.Idle, WithOrders(Dated("A", "Acme", "InProgress", "2026-11-03 10:00:00"), Dated("B", "Beta", "Created", "2026-10-20 09:30:00")));
+
+            vm.OrderSearchText = "Acme\tInProgress";
+            Assert.Single(vm.OrdersView.Cast<object>());
+
+            vm.OrderSearchText = "Acme\u00A0InProgress";
+            Assert.Single(vm.OrdersView.Cast<object>());
+        });
+
+        [Fact]
         public Task AClosedGroup_StaysClosed_WhenTheListIsReadAgain_ButOnlyForTheGroupingItWasClosedIn() => Run(async page =>
         {
             var vm = page.Vm;

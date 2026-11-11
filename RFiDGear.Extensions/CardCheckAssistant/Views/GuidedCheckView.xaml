@@ -256,6 +256,7 @@
                 <ListBox x:Name="OrderList" Grid.Row="3" ItemsSource="{Binding OrdersView}" SelectedItem="{Binding SelectedOrder, Mode=TwoWay}"
                          ItemTemplate="{StaticResource OrderRow}" HorizontalContentAlignment="Stretch" BorderThickness="0"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible"
+                         VirtualizingPanel.IsVirtualizingWhenGrouping="True"
                          AutomationProperties.Name="{Binding Strings[GuidedHint]}">
                     <ListBox.GroupStyle>
                         <GroupStyle>

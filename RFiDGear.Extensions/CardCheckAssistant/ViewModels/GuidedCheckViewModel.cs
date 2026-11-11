@@ -302,6 +302,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 if (SetProperty(ref _orderSearch, value ?? string.Empty))
                 {
                     _ordersView.Refresh();
+                    if (_selectedOrder != null && !_ordersView.Contains(_selectedOrder))
+                    {
+                        SelectedOrder = null;
+                    }
+
                     OnPropertyChanged(nameof(OrdersEmptyText));
                     OnPropertyChanged(nameof(HasOrdersEmptyText));
                 }
@@ -1090,7 +1095,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                     _orders.Add(new OrderRowViewModel(order));
                 }
 
-                _selectedOrder = selectedId == null ? null : _orders.FirstOrDefault(row => row.Id == selectedId);
+                // An order the search hides cannot be selected in the list, so it is not selected here either.
+                _selectedOrder = selectedId == null ? null : _orders.FirstOrDefault(row => row.Id == selectedId && _ordersView.Contains(row));
             }
             finally
             {

@@ -62,7 +62,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             }
 
             var haystack = JobNumber + " " + ChipNumber + " " + Customer + " " + Status;
-            return search.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+            return search.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
                 .All(word => haystack.IndexOf(word, StringComparison.CurrentCultureIgnoreCase) >= 0);
         }
 
