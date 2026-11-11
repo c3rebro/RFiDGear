@@ -97,6 +97,35 @@ namespace RFiDGear.Tests
             }
         }
 
+        [Theory]
+        [InlineData(@"C:\jobs\job.rfPrj", @"C:\jobs\job.rfPrj")]
+        [InlineData(@"C:\jobs\job.RFPRJ", @"C:\jobs\job.RFPRJ")]
+        [InlineData(@"C:\jobs\job.xml", @"C:\jobs\job.xml")]
+        [InlineData(@"C:\jobs\job", @"C:\jobs\job.rfPrj")]
+        [InlineData(@"C:\jobs\job.", @"C:\jobs\job.rfPrj")]
+        [InlineData(@"C:\jobs\job.txt", @"C:\jobs\job.txt.rfPrj")]
+        [InlineData(@"C:\jobs\job.rfprj.bak", @"C:\jobs\job.rfprj.bak.rfPrj")]
+        public void ProjectSavePath_KeepsOnlyProjectExtensions(string chosen, string expected)
+        {
+            Assert.Equal(expected, DatabaseReaderWriter.ProjectSavePath(chosen));
+        }
+
+        [Fact]
+        public void WriteProject_WithAnUnknownExtension_WritesAnArchiveThatTheOpenerRecognises()
+        {
+            using (var folder = new TemporaryFolder())
+            {
+                var projectManager = new ProjectManager(folder.Combine("appdata"));
+                var readerWriter = new DatabaseReaderWriter(projectManager);
+
+                var written = readerWriter.WriteDatabase(new ChipTaskHandlerModel(), folder.Combine("job.txt"));
+
+                Assert.Equal(folder.Combine("job.txt.rfPrj"), written);
+                Assert.Equal(ProjectFileType.Archive, projectManager.GetProjectFileType(new FileInfo(written)));
+                Assert.False(File.Exists(folder.Combine("job.txt")));
+            }
+        }
+
         [Fact]
         public void WriteProject_AsXml_ReplacesAnExistingFileThroughATemporaryFile()
         {
