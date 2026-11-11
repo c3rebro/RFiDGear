@@ -1119,13 +1119,18 @@ namespace RFiDGear.ViewModel
         /// Runs a change of the task list, or of the state of its tasks, while the coordinator's project-edit slot
         /// is held. Clearing the state under a running task loop lets a finished task run a second time (it breaks
         /// the one-attempt rule), and changing the collection under it is worse, so these changes are admitted
-        /// only when no run, load, other edit or reader scan is in progress, as for an extension.
+        /// only when no run, load or other edit is in progress (a reader scan is waited for), as for an extension.
         /// </summary>
+        /// <remarks>
+        /// An edit that meets a reader scan of an extension waits for it, as a run does (see
+        /// <see cref="TryBeginAfterAScanAsync"/>): a scan is short, and the reset that starts an automatic run must not
+        /// be dropped because one was in progress, since the card is in the tree already and nothing would try it again.
+        /// </remarks>
         /// <param name="edit">The change to make.</param>
         /// <returns><c>false</c> when the slot was not free and nothing was changed.</returns>
         private async Task<bool> TryRunProjectEditAsync(Func<Task> edit)
         {
-            if (!_coordinator.TryBeginProjectOperation())
+            if (!await TryBeginAfterAScanAsync(_coordinator.TryBeginProjectOperation))
             {
                 return false;
             }
@@ -1394,15 +1399,23 @@ namespace RFiDGear.ViewModel
         // A scan is short. A run that meets one waits for it instead of being dropped: in automatic mode the card is in the
         // tree already, so nothing would ever try it again. Any other reason to refuse (a run, a load, an edit) still
         // refuses at once.
-        internal async Task<bool> TryBeginExecutionAfterAScanAsync()
+        internal Task<bool> TryBeginExecutionAfterAScanAsync() => TryBeginAfterAScanAsync(_coordinator.TryBeginExecution);
+
+        /// <summary>
+        /// Admits an operation with <paramref name="tryBegin"/>, waiting up to <see cref="MaxWaitForAScan"/> while the
+        /// only thing in the way is a reader scan.
+        /// </summary>
+        /// <param name="tryBegin">The coordinator's admission method for the operation.</param>
+        /// <returns><c>true</c> when the operation was admitted.</returns>
+        private async Task<bool> TryBeginAfterAScanAsync(Func<bool> tryBegin)
         {
             var giveUp = DateTime.UtcNow + MaxWaitForAScan;
-            while (!_coordinator.TryBeginExecution())
+            while (!tryBegin())
             {
                 if (!_coordinator.IsScanning)
                 {
                     // Not a scan, or a scan that ended since the attempt: one more attempt tells which.
-                    return _coordinator.TryBeginExecution();
+                    return tryBegin();
                 }
 
                 if (DateTime.UtcNow >= giveUp)

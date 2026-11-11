@@ -368,6 +368,30 @@ namespace RFiDGear.Tests.Reader
         }
 
         [Fact]
+        public async Task AResetThatMeetsAScan_WaitsForIt_AndThenResets()
+        {
+            await WithViewModel(async (viewModel, _, coordinator) =>
+            {
+                // The reader timer resets before it starts a run; a scan of an extension must not drop that step.
+                var task = FinishedTask();
+                viewModel.ChipTasks.TaskCollection.Add(task);
+                Assert.True(coordinator.TryBeginScan());
+
+                var reset = viewModel.ResetTaskStatusCommand.ExecuteAsync(null);
+                Assert.False(reset.IsCompleted);
+                Assert.True(task.IsTaskCompletedSuccessfully);
+
+                coordinator.EndScan();
+                await Within(reset);
+
+                Assert.Null(task.IsTaskCompletedSuccessfully);
+                Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+                Assert.True(coordinator.TryBeginProjectOperation());
+                coordinator.EndProjectOperation();
+            });
+        }
+
+        [Fact]
         public async Task TheRunsOwnReset_IsNotRefusedByTheGuard()
         {
             await WithViewModel(async (viewModel, _, coordinator) =>
