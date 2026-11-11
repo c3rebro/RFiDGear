@@ -312,6 +312,99 @@ namespace RFiDGear.Tests.AutoMode
             });
         }
 
+        // ── runs that the extension starts itself work on the card too ──
+
+        [Fact]
+        public async Task ARunTheExtensionStartedThroughTheHost_CountsAsProcessingTheCard_SoAStartAfterwardsDoesNotRepeatIt()
+        {
+            await WithHost(async (viewModel, host, provider, exec, _) =>
+            {
+                provider.Card = Card(CardA);
+
+                // The service reads the card once more before its first task; the host hears of that chip.
+                exec.OnExecute = request =>
+                {
+                    Assert.NotNull(request.ChipHydrated);
+                    request.ChipHydrated(Card(CardA));
+
+                    return new TaskExecutionResult { TerminalStatus = TaskLoopTerminalStatus.Success };
+                };
+                await viewModel.ExtensionHost.Execution.ExecuteAllAsync(ExecutionRequest.Empty);
+
+                host.Start();
+                await viewModel.AutoMode.TickAsync();
+                await viewModel.AutoMode.TickAsync();
+                Assert.Single(exec.Requests);
+
+                // The card taken away and put back is a new presence.
+                provider.Card = new GenericChipModel();
+                await viewModel.AutoMode.TickAsync();
+                provider.Card = Card(CardA);
+                await viewModel.AutoMode.TickAsync();
+                Assert.Equal(2, exec.Requests.Count);
+            });
+        }
+
+        [Fact]
+        public async Task ARunTheExtensionStarted_ThatFaults_StopsAModeThatIsOn_AfterItsOwnEventsHaveBeenRaised()
+        {
+            await WithHost(async (viewModel, host, _, exec, _) =>
+            {
+                exec.OnExecute = _ => throw new InvalidOperationException("The reader failed.");
+                var execution = viewModel.ExtensionHost.Execution;
+                var events = new List<string>();
+                host.AutoModeStateChanged += (_, _) => events.Add("mode:" + host.IsAutoModeEnabled);
+                execution.IsRunningChanged += (_, _) => events.Add("running:" + execution.IsRunning);
+                execution.ExecutionCompleted += (_, result) => events.Add("completed:" + result.FailureReason);
+                host.Start();
+
+                var result = await execution.ExecuteAllAsync(ExecutionRequest.Empty);
+
+                Assert.Equal(ExecutionFailureReason.Faulted, result.FailureReason);
+                Assert.False(host.IsAutoModeEnabled);
+                Assert.Equal(
+                    new[] { "mode:True", "running:True", "running:False", "completed:Faulted", "mode:False" },
+                    events);
+            });
+        }
+
+        [Fact]
+        public async Task ARunTheExtensionStarted_ThatTheWatchdogGaveUp_StopsAModeThatIsOn()
+        {
+            await WithHost(async (viewModel, host, _, exec, _) =>
+            {
+                exec.OnExecute = _ => new TaskExecutionResult { TerminalStatus = TaskLoopTerminalStatus.Failure, Abandoned = true };
+                host.Start();
+
+                await viewModel.ExtensionHost.Execution.ExecuteAllAsync(ExecutionRequest.Empty);
+
+                Assert.False(host.IsAutoModeEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task ARunTheExtensionStarted_WhoseTaskFailed_LeavesTheModeOn_AndWhenTheModeIsOffNothingChanges()
+        {
+            await WithHost(async (viewModel, host, _, exec, _) =>
+            {
+                var events = 0;
+                host.AutoModeStateChanged += (_, _) => events++;
+
+                // Off: a run that faults is no business of the mode.
+                exec.OnExecute = _ => throw new InvalidOperationException("The reader failed.");
+                await viewModel.ExtensionHost.Execution.ExecuteAllAsync(ExecutionRequest.Empty);
+                Assert.Equal(0, events);
+
+                // On: an ordinary failure of a task does not stop it.
+                host.Start();
+                exec.OnExecute = _ => new TaskExecutionResult { TerminalStatus = TaskLoopTerminalStatus.Failure };
+                await viewModel.ExtensionHost.Execution.ExecuteAllAsync(ExecutionRequest.Empty);
+
+                Assert.True(host.IsAutoModeEnabled);
+                Assert.Equal(1, events);
+            });
+        }
+
         [Fact]
         public async Task StopDuringARun_FromAnotherThread_LetsTheRunEnd_AndNothingFollows()
         {

@@ -139,10 +139,26 @@ namespace RFiDGear.Services.AutoMode
         private int _ticking;
         private int _pauseCount;
 
-        // Touched by the tick and by the calls that come from the UI thread only; the tick does not overlap itself.
+        // The card of the presence being processed or processed last. Guarded by _sync, because a run that an extension
+        // started remembers its card from any thread; _cardStamp changes with every write, so that a refused request puts
+        // back the value it replaced only if nobody wrote in the meantime.
         private string? _lastUid;
+        private int _cardStamp;
+
+        // Touched by the tick and by the calls that come from the UI thread only; the tick does not overlap itself.
         private bool _readerSeen;
         private int _failedPolls;
+
+        private string? LastUid
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _lastUid;
+                }
+            }
+        }
 
         /// <summary>Initializes the machine; it is off until <see cref="TryStart"/>.</summary>
         /// <param name="coordinator">The admission gate shared with the runs of the main window and of extensions.</param>
@@ -324,27 +340,33 @@ namespace RFiDGear.Services.AutoMode
         }
 
         /// <summary>
-        /// Says that a run was made on the card that is on the reader, by a click or by <c>AUTORUN=1</c>, so that
-        /// automatic mode, started now or later, does not run it a second time. The card counts as processed until a
-        /// poll finds the reader without a card.
+        /// Says that a run was made on the card that is on the reader, by a click, by <c>AUTORUN=1</c> or by an
+        /// extension through <c>ExecuteAllAsync</c>, so that automatic mode, started now or later, does not run it a
+        /// second time. The card counts as processed until a poll finds the reader without a card. May be called from
+        /// any thread.
         /// </summary>
         /// <param name="uid">The UID of the primary card, as the polls report it.</param>
         internal void RememberCard(string uid)
         {
             if (!string.IsNullOrEmpty(uid))
             {
-                _lastUid = uid;
+                lock (_sync)
+                {
+                    _lastUid = uid;
+                    _cardStamp++;
+                }
             }
         }
 
         /// <summary>
-        /// Says that a run made by hand (a click, or <c>AUTORUN=1</c>) has ended. Whoever started a run, one that ended
-        /// with a fault, a timeout, a cancellation or the watchdog's giving up leaves the card in a state nobody knows,
-        /// so a mode that is on stops, exactly as after a run of its own. An ordinary failure of a task leaves it on.
-        /// Nothing is reported through <see cref="RunCompleted"/>: that is for the runs the mode started itself.
+        /// Says that a run the mode did not start has ended: a click, <c>AUTORUN=1</c>, or an extension's
+        /// <c>ExecuteAllAsync</c>. Whoever started a run, one that ended with a fault, a timeout, a cancellation or the
+        /// watchdog's giving up leaves the card in a state nobody knows, so a mode that is on stops, exactly as after a
+        /// run of its own. An ordinary failure of a task leaves it on. Nothing is reported through
+        /// <see cref="RunCompleted"/>: that is for the runs the mode started itself. May be called from any thread.
         /// </summary>
         /// <param name="report">What came of the run; a run that was not admitted changes nothing.</param>
-        internal void OnRunByHandEnded(AutoModeRunReport report)
+        internal void OnOtherRunEnded(AutoModeRunReport report)
         {
             if (report == null || !report.Admitted)
             {
@@ -361,7 +383,12 @@ namespace RFiDGear.Services.AutoMode
         /// <summary>Forgets the card that was processed last, and whether the reader had answered.</summary>
         internal void ForgetCard()
         {
-            _lastUid = null;
+            lock (_sync)
+            {
+                _lastUid = null;
+                _cardStamp++;
+            }
+
             _readerSeen = false;
             _failedPolls = 0;
         }
@@ -440,9 +467,13 @@ namespace RFiDGear.Services.AutoMode
                 if (string.IsNullOrEmpty(poll.Value.Uid))
                 {
                     // A full poll without a card ends the presence.
-                    _lastUid = null;
+                    lock (_sync)
+                    {
+                        _lastUid = null;
+                        _cardStamp++;
+                    }
                 }
-                else if (!string.Equals(poll.Value.Uid, _lastUid, StringComparison.Ordinal))
+                else if (!string.Equals(poll.Value.Uid, LastUid, StringComparison.Ordinal))
                 {
                     await ProcessCardAsync(poll.Value.Uid!).ConfigureAwait(true);
                 }
@@ -466,8 +497,14 @@ namespace RFiDGear.Services.AutoMode
             // RememberCard once it has read the card itself (the card may have been swapped since the poll), and it is
             // put back when the run was not admitted, because then nothing happened to the card. Left as it is when the
             // run throws: whether the card was touched is unknown, so nothing may repeat it.
-            var previous = _lastUid;
-            _lastUid = uid;
+            string? previous;
+            int stamp;
+            lock (_sync)
+            {
+                previous = _lastUid;
+                _lastUid = uid;
+                stamp = ++_cardStamp;
+            }
 
             // The request may have to wait before it is admitted, and a Stop (or a Stop and a new Start) in the meantime
             // ends the session it was made in: it must not run afterwards.
@@ -503,7 +540,15 @@ namespace RFiDGear.Services.AutoMode
 
             if (!report.Admitted)
             {
-                _lastUid = previous;
+                lock (_sync)
+                {
+                    // Put back only if nothing remembered a card in the meantime: a run that an extension started can
+                    // do that from any thread, and what it remembered is the truth.
+                    if (_cardStamp == stamp)
+                    {
+                        _lastUid = previous;
+                    }
+                }
 
                 return;
             }

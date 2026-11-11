@@ -19,18 +19,23 @@ namespace RFiDGear.Contracts
     /// looked at. A presence ends when a look finds the reader without a card, so a card that is taken away and put
     /// back is processed again, and so is another card. A removal and a return within one look are not seen and count
     /// as the same presence. A card that is on the reader when the mode starts counts as newly presented, unless a run
-    /// was made on it by hand (or by <c>AUTORUN=1</c>) and it has not been taken away since. The same one-attempt rule
-    /// as for every run applies: nothing is retried, so a card whose run failed is processed again only after it was
-    /// taken away and put back, which is for the operator to do.
+    /// was made on it by hand, by <c>AUTORUN=1</c> or by an extension through
+    /// <see cref="ITaskExecHost.ExecuteAllAsync(ExecutionRequest, System.Threading.CancellationToken)"/>, and it has not
+    /// been taken away since: that run worked on the card, so the mode does not repeat it. The same one-attempt rule as
+    /// for every run applies: nothing is retried, so a card whose run failed is processed again only after it was taken
+    /// away and put back, which is for the operator to do.
     /// </para>
     /// <para>
     /// Stopping by itself: the mode stops, instead of guessing, when the state of the card or of the reader is unclear.
     /// That is the case when a run ends with a fault, a timeout or a cancellation, when the per-task watchdog gave a
-    /// run up (whoever started that run: a run by hand while the mode is on counts as well), when a reader that had
-    /// answered stops answering (three looks in a row), and when the user changes the reader in the settings. An
-    /// ordinary failure of a task does not stop it: the run is reported as failed, the card
-    /// is not retried while it stays, and the next card is processed. Whatever stops the mode,
-    /// <see cref="IsAutoModeEnabled"/> is <c>false</c> afterwards and <see cref="AutoModeStateChanged"/> has been raised.
+    /// run up, when a reader that had answered stops answering (three looks in a row), and when the user changes the
+    /// reader in the settings. It does not matter who started the run: a run by hand, or one that an extension started
+    /// with <see cref="ITaskExecHost.ExecuteAllAsync(ExecutionRequest, System.Threading.CancellationToken)"/>, stops a
+    /// mode that is on in the same way (for the extension's run, after <see cref="ITaskExecHost.IsRunningChanged"/> and
+    /// <see cref="ITaskExecHost.ExecutionCompleted"/> have been raised for it). An ordinary failure of a task does not
+    /// stop it: the run is reported as failed, the card is not retried while it stays, and the next card is processed.
+    /// Whatever stops the mode, <see cref="IsAutoModeEnabled"/> is <c>false</c> afterwards and
+    /// <see cref="AutoModeStateChanged"/> has been raised.
     /// </para>
     /// <para>
     /// Observing the cards: a run of a card is reported like every run of the main window.

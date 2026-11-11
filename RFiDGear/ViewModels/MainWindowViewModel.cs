@@ -1447,7 +1447,7 @@ namespace RFiDGear.ViewModel
 
             // Whoever started a run, one that ended in a way that leaves the card in an unknown state also stops a mode
             // that is on; otherwise the next card would be run on the strength of it.
-            _autoMode?.OnRunByHandEnded(report);
+            _autoMode?.OnOtherRunEnded(report);
         }
 
         /// <summary>

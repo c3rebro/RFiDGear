@@ -1,5 +1,6 @@
 #nullable enable
 using RFiDGear.Contracts;
+using RFiDGear.Models;
 using RFiDGear.Services.AutoMode;
 
 using Serilog;
@@ -14,8 +15,13 @@ namespace RFiDGear.Infrastructure.ExtensionHost
     /// state machine that the menu item and the <c>AUTOMODE=1</c> start-up argument drive as well. It adds nothing of its
     /// own to the way cards are found and processed, so a mode started through the host is the mode the user sees in the
     /// menu, and an extension that starts and stops it gets exactly what a click would.
+    /// <para>
+    /// It is also the <see cref="IRunObserver"/> of the execution host: a run that an extension starts with
+    /// <c>ExecuteAllAsync</c> works on the card on the reader just as a run of the mode does, so the mode remembers that
+    /// card and stops when the run leaves it in an unknown state.
+    /// </para>
     /// </summary>
-    internal sealed class AutoModeHostImpl : IAutoModeHost
+    internal sealed class AutoModeHostImpl : IAutoModeHost, IRunObserver
     {
         private static ILogger Logger => Log.ForContext<AutoModeHostImpl>();
 
@@ -66,6 +72,21 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
         /// <inheritdoc/>
         public void Stop() => _controller.Stop();
+
+        /// <inheritdoc/>
+        public void ChipHydrated(GenericChipModel chip)
+        {
+            // As the polls report the card, so that the mode compares like with like.
+            var uid = ReaderSnapshotBuilder.CredentialsOf(chip).FirstOrDefault()?.Uid;
+            if (uid != null)
+            {
+                _controller.RememberCard(uid);
+            }
+        }
+
+        /// <inheritdoc/>
+        public void RunEnded(ExecResult result, bool abandoned) =>
+            _controller.OnOtherRunEnded(new AutoModeRunReport(admitted: true, result, abandoned));
 
         /// <summary>
         /// Picks the message that matches what the coordinator is busy with. The state can change between the refused

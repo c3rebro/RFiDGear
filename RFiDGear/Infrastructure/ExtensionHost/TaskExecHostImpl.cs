@@ -29,15 +29,26 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         private readonly ITaskExecutionService _execService;
         private readonly ProjectHostImpl _project;
         private readonly ExtensionOperationCoordinator _coordinator;
+        private readonly IRunObserver? _runObserver;
 
+        /// <summary>Initializes the execution host.</summary>
+        /// <param name="execService">The execution service that runs the tasks.</param>
+        /// <param name="project">The project host, which owns the live task model.</param>
+        /// <param name="coordinator">The admission gate shared with the main window.</param>
+        /// <param name="runObserver">
+        /// Optional. Told which card each run works on and how each run ended, for automatic mode (see
+        /// <see cref="IRunObserver"/>).
+        /// </param>
         public TaskExecHostImpl(
             ITaskExecutionService execService,
             ProjectHostImpl project,
-            ExtensionOperationCoordinator coordinator)
+            ExtensionOperationCoordinator coordinator,
+            IRunObserver? runObserver = null)
         {
             _execService = execService ?? throw new ArgumentNullException(nameof(execService));
             _project = project ?? throw new ArgumentNullException(nameof(project));
             _coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
+            _runObserver = runObserver;
 
             // The coordinator is shared with the main window, so this also republishes its runs. The host and the
             // coordinator live for the whole session, which is why there is nothing to unsubscribe.
@@ -86,6 +97,7 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             // execution service throws and returns nothing. One fresh list per run.
             var observations = new List<TaskExecutionObservation>();
             IReadOnlyList<object?> snapshot = Array.Empty<object?>();
+            var abandoned = false;
 
             ExecResult execResult;
             try
@@ -115,9 +127,13 @@ namespace RFiDGear.Infrastructure.ExtensionHost
                     // The page that started the run has to stay open to show its result: a project that ends with the
                     // task %EXIT (the old assistant's way of closing RFiDGear) ends the run and not the application.
                     KeepApplicationOpen = true,
+
+                    // The run works on the card that is on the reader, so automatic mode must know which one.
+                    ChipHydrated = _runObserver == null ? null : chip => _runObserver.ChipHydrated(chip),
                 };
 
                 var rawResult = await _execService.ExecuteOnceAsync(taskRequest, ct).ConfigureAwait(false);
+                abandoned = rawResult.Abandoned;
 
                 if (rawResult.TerminalStatus == null)
                 {
@@ -144,7 +160,33 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             // Raised after the coordinator is released and outside try/finally, so exactly one
             // publication happens per accepted run and subscribers see IsRunning == false.
             RaiseExecutionCompleted(execResult);
+            NotifyRunEnded(execResult, abandoned);
             return execResult;
+        }
+
+        /// <summary>
+        /// Tells the observer (automatic mode) that the run has ended, after <see cref="IsRunningChanged"/> and
+        /// <see cref="ExecutionCompleted"/>, so a stop it causes is announced after both. The observer must not throw; if
+        /// it does anyway, that is logged and does not turn a finished card operation into an exception.
+        /// </summary>
+        private void NotifyRunEnded(ExecResult result, bool abandoned)
+        {
+            if (_runObserver == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _runObserver.RunEnded(result, abandoned);
+            }
+            catch (Exception ex)
+            {
+                var error = new SanitizedException(ex);
+                Logger.Error(
+                    "The observer of run {RunId} threw; the exception was not propagated. {ExceptionType}: {ExceptionMessage} {ExceptionStackTrace}",
+                    result.RunId, error.TypeName, error.Message, error.StackTrace);
+            }
         }
 
         /// <inheritdoc/>

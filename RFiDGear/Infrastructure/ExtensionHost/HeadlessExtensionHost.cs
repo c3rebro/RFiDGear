@@ -121,7 +121,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         /// <param name="autoMode">
         /// Optional host of automatic mode, backed by the application's state machine for continuous card processing.
         /// When omitted, <see cref="IRFiDGearExtensionHost.AutoMode"/> is the stand-in of a host without a reader loop, on
-        /// which <see cref="IAutoModeHost.Start"/> throws <see cref="NotSupportedException"/>.
+        /// which <see cref="IAutoModeHost.Start"/> throws <see cref="NotSupportedException"/>. The application's own host
+        /// is also told about the runs started through <see cref="IRFiDGearExtensionHost.Execution"/>: such a run counts
+        /// as processing the card on the reader, and one that ends in a fault, a timeout or a cancellation stops a mode
+        /// that is on.
         /// </param>
         public HeadlessExtensionHost(
             DatabaseReaderWriter dbRW,
@@ -147,7 +150,10 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             _execution = new TaskExecHostImpl(
                 execService ?? throw new ArgumentNullException(nameof(execService)),
                 _project,
-                coordinator);
+                coordinator,
+                // The application's automatic mode also hears of the runs an extension starts here: they work on the card
+                // on the reader too.
+                autoMode as IRunObserver);
             _reader = getReaderName != null
                 ? new ReaderHostImpl(getReaderName, coordinator, readerGate)
                 : new ReaderHostImpl(readerName ?? string.Empty, coordinator, readerGate);
