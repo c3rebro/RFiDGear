@@ -50,7 +50,24 @@ non-Windows dev environments. Tests use `StaTestRunner.cs` to run on an STA
 thread — required for any WPF-touching test.
 
 Setup/installer projects (`RFiDGearBundleSetup`, `RFiDGearSetup_x64/x86`) use
-WiX and are built separately; they are not part of `dotnet build`.
+WiX 3.14 and are built separately; they are not part of `dotnet build`. Build
+the host and `DesfirePluginSample` in Release for the platform first, then the
+MSI project, then the bundle, with the MSBuild of Visual Studio 2026 (the
+bundle references the host project, which needs SDK 10 and so MSBuild 18):
+
+```powershell
+$msbuild = "C:\Program Files\Microsoft Visual Studio\18\Professional\MSBuild\Current\Bin\MSBuild.exe"
+& $msbuild RFiDGearBundleSetup\RFiDGearBundleSetup.wixproj `
+  -p:Configuration=Release -p:Platform=x86
+```
+
+The bundle carries the .NET 10 Desktop Runtime (x64 and x86). The installers are
+not in the repository: `RFiDGearBundleSetup/Get-DotNetRuntime.ps1` downloads the
+versions pinned in `dotnet-runtime.json` (SHA-512 and Microsoft signature are
+checked) into the git-ignored `runtime/` folder, and the bundle project runs it
+before every build. A new runtime version means new file names in
+`dotnet-runtime.json` and in `Bundle.wxs`. Signing needs `RFIDGEAR_SIGN_PFX` and
+`RFIDGEAR_SIGN_PASSWORD`; no certificate is kept in the repository.
 
 ## Architecture
 
