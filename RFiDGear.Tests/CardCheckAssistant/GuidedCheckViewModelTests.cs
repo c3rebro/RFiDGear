@@ -47,9 +47,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
             [WorkflowState.Checking] = GuidedStep.Check,
             [WorkflowState.RunFailed] = GuidedStep.Check,
             [WorkflowState.Assessing] = GuidedStep.Verdict,
-            [WorkflowState.Programming] = GuidedStep.Verdict,
-            [WorkflowState.WritingReport] = GuidedStep.Verdict,
-            [WorkflowState.ProgrammingFailed] = GuidedStep.Verdict,
+            [WorkflowState.Programming] = GuidedStep.Program,
+            [WorkflowState.WritingReport] = GuidedStep.Program,
+            [WorkflowState.ProgrammingFailed] = GuidedStep.Program,
             [WorkflowState.ReadingOut] = GuidedStep.Check,
             [WorkflowState.ReadOutFailed] = GuidedStep.Check,
             [WorkflowState.Reviewing] = GuidedStep.Review,
@@ -74,7 +74,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.Equal(ExpectedSteps[state], vm.Step);
                 Assert.Equal(ExpectedSteps[state], GuidedSteps.Of(state));
                 Assert.Single(
-                    new[] { vm.IsOrdersStep, vm.IsPrepareStep, vm.IsReplaceStep, vm.IsCardStep, vm.IsCheckStep, vm.IsVerdictStep, vm.IsReviewStep, vm.IsFinishStep, vm.IsEndStep },
+                    new[] { vm.IsOrdersStep, vm.IsPrepareStep, vm.IsReplaceStep, vm.IsCardStep, vm.IsCheckStep, vm.IsVerdictStep, vm.IsProgramStep, vm.IsReviewStep, vm.IsFinishStep, vm.IsEndStep },
                     shown => shown);
             }
         });

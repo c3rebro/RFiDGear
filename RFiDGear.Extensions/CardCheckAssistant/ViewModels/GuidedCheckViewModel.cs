@@ -110,6 +110,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 new LanguageOption(ReportLanguage.English, Keys.LanguageEnglish, Strings)
             };
             _selectedLanguage = _languages[0];
+            Form = new ProgrammingFormViewModel(Strings, OnFormChanged);
 
             RefreshCommand = new DelegateCommand(Refresh, () => Offers(WorkflowControls.Refresh));
             StartOrderCommand = new DelegateCommand(StartOrder, () => Offers(WorkflowControls.Start) && _selectedOrder?.IsStartable == true);
@@ -118,6 +119,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             StartCheckCommand = new DelegateCommand(() => _workflow.StartCheck(), () => Offers(WorkflowControls.StartCheck));
             FinishCommand = new DelegateCommand(() => _workflow.Finish(), () => Offers(WorkflowControls.Finish));
             FinishWithoutReadOutCommand = new DelegateCommand(FinishWithoutReadOut, () => Offers(WorkflowControls.FinishWithoutReadOut));
+            ContinueCommand = new DelegateCommand(ContinueProgramming, () => Offers(WorkflowControls.ContinueProgramming) && Form.IsComplete);
             OpenReportCommand = new AsyncCommand(() => OpenInViewerAsync(ReadOutReport), () => CanOpen(ReadOutReport));
             OpenFolderCommand = new AsyncCommand(() => OpenInViewerAsync(ReadOutFolder), () => CanOpen(ReadOutFolder));
             RetryCommand = new DelegateCommand(() => _workflow.Retry(), () => Offers(WorkflowControls.Retry));
@@ -166,6 +168,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>Gets the command that finishes the order with the report made before the read-out, after the read-out failed.</summary>
         public DelegateCommand FinishWithoutReadOutCommand { get; }
 
+        /// <summary>Gets the command that goes on with the programming once the chip is back and the form is complete.</summary>
+        public DelegateCommand ContinueCommand { get; }
+
+        /// <summary>Gets the operator's answers about the programming; one form for the page, which keeps what is typed in it.</summary>
+        public ProgrammingFormViewModel Form { get; }
+
         /// <summary>Gets the command that opens the report of the read-out in the viewer the operator has set up.</summary>
         public AsyncCommand OpenReportCommand { get; }
 
@@ -209,6 +217,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         /// <summary>Gets a value indicating whether the verdict is shown.</summary>
         public bool IsVerdictStep => Step == GuidedStep.Verdict;
+
+        /// <summary>Gets a value indicating whether the chip is programmed and its answers are given.</summary>
+        public bool IsProgramStep => Step == GuidedStep.Program;
 
         /// <summary>Gets a value indicating whether the report of the read-out is being checked.</summary>
         public bool IsReviewStep => Step == GuidedStep.Review;
@@ -401,6 +412,23 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>Gets the hint to open the first report to look at it.</summary>
         public string OpenReportHint => Strings[Keys.GuidedOpenReportHint];
 
+        // ── the programming ──
+
+        /// <summary>Gets what the programming step asks of the operator.</summary>
+        public string ProgramPromptText => GuidedTexts.ProgramPrompt(_snapshot, _hostCard, _hostRunning, Strings);
+
+        /// <summary>Gets the warning that the chip put back is not the one taken off, or empty.</summary>
+        public string MoveWarningText => _snapshot.State == WorkflowState.Programming ? GuidedTexts.UidWarning(_snapshot.Move, Strings) : string.Empty;
+
+        /// <summary>Gets what is still to answer, or what the Continue button does, or empty.</summary>
+        public string ProgramStatusText => GuidedTexts.ProgramStatus(_snapshot, Form.Missing(), Strings);
+
+        /// <summary>Gets the note that the answers can no longer be changed, or empty while they can.</summary>
+        public string LockedNoteText => Form.IsSeeded && !Form.IsEditable ? Strings[Keys.GuidedAnswersLocked] : string.Empty;
+
+        /// <summary>Gets a value indicating whether the step offers to repeat what failed or ran out.</summary>
+        public bool CanRetry => Offers(WorkflowControls.Retry);
+
         // ── the review ──
 
         /// <summary>Gets what the operator is asked to do at the review.</summary>
@@ -576,6 +604,29 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             // A read that is cancelled ends in the list as it was, which looks like a read that found nothing.
             _readCancelled |= _snapshot.State == WorkflowState.LoadingOrders;
             _workflow.Cancel();
+        }
+
+        // The answers go to the workflow with the template: a "no" to the programming or the function test is a result the
+        // report will state, so the operator is asked once. The engine decides whether it is still offered.
+        private void ContinueProgramming()
+        {
+            // The command is offered only for a complete form, which has a template.
+            var template = Form.SelectedTemplate!;
+            var answers = Form.ToAnswers();
+            var no = Form.NoAnswers();
+            if (no.Count > 0 && !Ask(Strings[Keys.GuidedAskNoTitle], Strings.Format(Keys.GuidedAskNo, string.Join(", ", no))))
+            {
+                return;
+            }
+
+            _workflow.ContinueProgramming(template, answers);
+        }
+
+        private void OnFormChanged()
+        {
+            OnPropertyChanged(nameof(ProgramStatusText));
+            OnPropertyChanged(nameof(LockedNoteText));
+            RaiseCommandStates();
         }
 
         // The order is finished with the report made before the read-out, which holds no memory check: the operator is asked
@@ -832,6 +883,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             TrackList(snapshot);
             TrackNotice(snapshot);
             SyncRows(snapshot.Orders);
+            Form.Bind(snapshot);
             SyncTaskRows(ShownExecution(snapshot));
             // Each time the review is entered it is a review of its own: answers of the viewer of an earlier one are not its.
             var reviewing = snapshot.State == WorkflowState.Reviewing;
@@ -962,6 +1014,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             StartCheckCommand.RaiseCanExecuteChanged();
             FinishCommand.RaiseCanExecuteChanged();
             FinishWithoutReadOutCommand.RaiseCanExecuteChanged();
+            ContinueCommand.RaiseCanExecuteChanged();
             OpenReportCommand.RaiseCanExecuteChanged();
             OpenFolderCommand.RaiseCanExecuteChanged();
             RetryCommand.RaiseCanExecuteChanged();

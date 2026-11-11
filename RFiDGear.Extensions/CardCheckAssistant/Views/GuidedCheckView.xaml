@@ -350,6 +350,130 @@
                 </StackPanel>
             </Grid>
 
+            <!-- the chip is programmed elsewhere; the answers about it are given here -->
+            <Grid x:Name="StepProgram" Visibility="{Binding IsProgramStep, Converter={StaticResource BoolToVisibility}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <ScrollViewer x:Name="ProgramScroll" Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock x:Name="ProgramPrompt" Style="{StaticResource Prompt}" Text="{Binding ProgramPromptText}" />
+                        <ProgressBar Height="14" IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Style="{StaticResource OptionalText}" Text="{Binding ChipTypeText}" />
+                        <TextBlock Style="{StaticResource OptionalText}" Text="{Binding FreeMemoryText}" />
+                        <TextBlock x:Name="LockedNote" Style="{StaticResource OptionalText}" FontStyle="Italic" Text="{Binding LockedNoteText}" />
+                        <StackPanel x:Name="ProgramFormPanel" Margin="0,8,0,0">
+                            <!-- the form has a data context of its own: what the page announces about everything does not reach the boxes being typed in -->
+                            <StackPanel x:Name="ProgramForm" DataContext="{Binding Form}">
+                                <Label Content="{Binding Strings[GuidedFormTemplate]}" Target="{Binding ElementName=TemplateBox}" Padding="0,0,0,2" />
+                                <ComboBox x:Name="TemplateBox" IsEnabled="{Binding IsEditable}" ItemsSource="{Binding Templates}" DisplayMemberPath="DisplayText"
+                                          SelectedItem="{Binding SelectedTemplate, Mode=TwoWay}" AutomationProperties.Name="{Binding Strings[GuidedFormTemplate]}" />
+
+                                <TextBlock Margin="0,8,0,2" Text="{Binding Strings[GuidedQuestionProgramming]}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton x:Name="ProgrammingYes" GroupName="ProgrammingGroup" Margin="0,0,16,0" IsEnabled="{Binding IsEditable}" Content="{Binding Strings[GuidedAnswerYes]}" IsChecked="{Binding Programming.IsYes}">
+                                        <AutomationProperties.Name>
+                                            <MultiBinding StringFormat="{}{0}: {1}">
+                                                <Binding Path="Strings[GuidedQuestionProgramming]" />
+                                                <Binding Path="Strings[GuidedAnswerYes]" />
+                                            </MultiBinding>
+                                        </AutomationProperties.Name>
+                                    </RadioButton>
+                                    <RadioButton x:Name="ProgrammingNo" GroupName="ProgrammingGroup" IsEnabled="{Binding IsEditable}" Content="{Binding Strings[GuidedAnswerNo]}" IsChecked="{Binding Programming.IsNo}">
+                                        <AutomationProperties.Name>
+                                            <MultiBinding StringFormat="{}{0}: {1}">
+                                                <Binding Path="Strings[GuidedQuestionProgramming]" />
+                                                <Binding Path="Strings[GuidedAnswerNo]" />
+                                            </MultiBinding>
+                                        </AutomationProperties.Name>
+                                    </RadioButton>
+                                </StackPanel>
+
+                                <TextBlock Margin="0,8,0,2" Text="{Binding Strings[GuidedQuestionFunctionTest]}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton x:Name="FunctionTestYes" GroupName="FunctionTestGroup" Margin="0,0,16,0" IsEnabled="{Binding IsEditable}" Content="{Binding Strings[GuidedAnswerYes]}" IsChecked="{Binding FunctionTest.IsYes}">
+                                        <AutomationProperties.Name>
+                                            <MultiBinding StringFormat="{}{0}: {1}">
+                                                <Binding Path="Strings[GuidedQuestionFunctionTest]" />
+                                                <Binding Path="Strings[GuidedAnswerYes]" />
+                                            </MultiBinding>
+                                        </AutomationProperties.Name>
+                                    </RadioButton>
+                                    <RadioButton x:Name="FunctionTestNo" GroupName="FunctionTestGroup" IsEnabled="{Binding IsEditable}" Content="{Binding Strings[GuidedAnswerNo]}" IsChecked="{Binding FunctionTest.IsNo}">
+                                        <AutomationProperties.Name>
+                                            <MultiBinding StringFormat="{}{0}: {1}">
+                                                <Binding Path="Strings[GuidedQuestionFunctionTest]" />
+                                                <Binding Path="Strings[GuidedAnswerNo]" />
+                                            </MultiBinding>
+                                        </AutomationProperties.Name>
+                                    </RadioButton>
+                                </StackPanel>
+
+                                <TextBlock Margin="0,8,0,2" Text="{Binding Strings[GuidedQuestionRestricted]}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton x:Name="RestrictedYes" GroupName="RestrictedGroup" Margin="0,0,16,0" IsEnabled="{Binding IsEditable}" Content="{Binding Strings[GuidedAnswerYes]}" IsChecked="{Binding Restricted.IsYes}">
+                                        <AutomationProperties.Name>
+                                            <MultiBinding StringFormat="{}{0}: {1}">
+                                                <Binding Path="Strings[GuidedQuestionRestricted]" />
+                                                <Binding Path="Strings[GuidedAnswerYes]" />
+                                            </MultiBinding>
+                                        </AutomationProperties.Name>
+                                    </RadioButton>
+                                    <RadioButton x:Name="RestrictedNo" GroupName="RestrictedGroup" IsEnabled="{Binding IsEditable}" Content="{Binding Strings[GuidedAnswerNo]}" IsChecked="{Binding Restricted.IsNo}">
+                                        <AutomationProperties.Name>
+                                            <MultiBinding StringFormat="{}{0}: {1}">
+                                                <Binding Path="Strings[GuidedQuestionRestricted]" />
+                                                <Binding Path="Strings[GuidedAnswerNo]" />
+                                            </MultiBinding>
+                                        </AutomationProperties.Name>
+                                    </RadioButton>
+                                </StackPanel>
+
+                                <StackPanel x:Name="RestrictionPanel" Visibility="{Binding IsRestricted, Converter={StaticResource BoolToVisibility}}">
+                                    <Label Content="{Binding Strings[GuidedFormRestriction]}" Target="{Binding ElementName=RestrictionBox}" Padding="0,8,0,2" />
+                                    <!-- locked, the text can still be read, scrolled and copied -->
+                                    <TextBox x:Name="RestrictionBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="54" MaxHeight="90" VerticalScrollBarVisibility="Auto"
+                                             IsReadOnly="{Binding IsReadOnly, Mode=OneWay}" Text="{Binding RestrictionText, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{Binding Strings[GuidedFormRestriction]}" />
+                                    <StackPanel x:Name="BlockPanel" Margin="0,4,0,0" Visibility="{Binding HasTextBlocks, Converter={StaticResource BoolToVisibility}}">
+                                        <Label Content="{Binding Strings[GuidedFormBlock]}" Target="{Binding ElementName=BlockBox}" Padding="0,0,0,2" />
+                                        <!-- the list takes the width that is left, so a long name cannot push the button off the page -->
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox x:Name="BlockBox" Grid.Column="0" IsEnabled="{Binding IsEditable}" ItemsSource="{Binding TextBlocks}" DisplayMemberPath="Name"
+                                                      SelectedItem="{Binding SelectedTextBlock, Mode=TwoWay}" AutomationProperties.Name="{Binding Strings[GuidedFormBlock]}" />
+                                            <Button x:Name="InsertButton" Grid.Column="1" Margin="8,0,0,0" Padding="12,2" Command="{Binding InsertTextBlockCommand}" Content="{Binding Strings[GuidedFormInsert]}" />
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel x:Name="SectorsPanel" Visibility="{Binding IsClassic, Converter={StaticResource BoolToVisibility}}">
+                                    <Label Content="{Binding Strings[GuidedFormSectors]}" Target="{Binding ElementName=SectorsBox}" Padding="0,8,0,2" />
+                                    <TextBox x:Name="SectorsBox" IsReadOnly="{Binding IsReadOnly, Mode=OneWay}" Text="{Binding SectorsUsed, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{Binding Strings[GuidedFormSectors]}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+                <StackPanel Grid.Row="1" Margin="0,6,0,0">
+                    <TextBlock x:Name="MoveWarning" Style="{StaticResource OptionalText}" Foreground="#9A5B00" FontWeight="SemiBold" Text="{Binding MoveWarningText}" />
+                    <TextBlock x:Name="StatusLine" Style="{StaticResource OptionalText}" Text="{Binding ProgramStatusText}" />
+                </StackPanel>
+                <WrapPanel Grid.Row="2" Margin="0,8,0,0">
+                    <Button x:Name="ContinueButton" Style="{StaticResource StepButton}" Margin="0,0,8,4"
+                            Command="{Binding ContinueCommand}" Content="{Binding Strings[GuidedContinueButton]}" />
+                    <Button x:Name="ProgramRetryButton" Style="{StaticResource StepButton}" Margin="0,0,8,4"
+                            Command="{Binding RetryCommand}" Content="{Binding RetryText}"
+                            Visibility="{Binding CanRetry, Converter={StaticResource BoolToVisibility}}" />
+                </WrapPanel>
+            </Grid>
+
             <!-- the report of the read-out is checked -->
             <Grid x:Name="StepReview" Visibility="{Binding IsReviewStep, Converter={StaticResource BoolToVisibility}}">
                 <Grid.RowDefinitions>

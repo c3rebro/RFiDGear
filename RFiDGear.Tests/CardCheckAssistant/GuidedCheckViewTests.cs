@@ -28,7 +28,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         private static readonly string[] Sections =
         {
-            "StepOrders", "StepPrepare", "StepReplace", "StepCard", "StepCheck", "StepVerdict", "StepReview", "StepFinish", "StepEnd",
+            "StepOrders", "StepPrepare", "StepReplace", "StepCard", "StepCheck", "StepVerdict", "StepProgram", "StepReview", "StepFinish", "StepEnd",
         };
 
         private sealed class Scene
@@ -219,9 +219,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 [WorkflowState.Checking] = ("StepCheck", new[] { "RetryRunButton", "CancelButton" }),
                 [WorkflowState.RunFailed] = ("StepCheck", new[] { "RetryRunButton", "CancelButton" }),
                 [WorkflowState.Assessing] = ("StepVerdict", new[] { "FinishButton", "CancelButton" }),
-                [WorkflowState.Programming] = ("StepVerdict", new[] { "CancelButton" }),
-                [WorkflowState.WritingReport] = ("StepVerdict", new[] { "CancelButton" }),
-                [WorkflowState.ProgrammingFailed] = ("StepVerdict", new[] { "CancelButton" }),
+                [WorkflowState.Programming] = ("StepProgram", new[] { "ContinueButton", "CancelButton" }),
+                [WorkflowState.WritingReport] = ("StepProgram", new[] { "CancelButton" }),
+                [WorkflowState.ProgrammingFailed] = ("StepProgram", new[] { "ProgramRetryButton", "CancelButton" }),
                 [WorkflowState.ReadingOut] = ("StepCheck", new[] { "CancelButton" }),
                 [WorkflowState.ReadOutFailed] = ("StepCheck", new[] { "RetryRunButton", "FinishWithoutReadOutButton", "CancelButton" }),
                 [WorkflowState.Reviewing] = ("StepReview", new[] { "ReviewFinishButton", "OpenReportButton", "OpenFolderButton", "CancelButton" }),
@@ -293,6 +293,131 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal(Smallest.Height, scene.View.MinHeight);
             Assert.True(scene.View.ActualWidth >= Smallest.Width - 0.5);
             Assert.True(scene.View.ActualHeight >= Smallest.Height - 0.5);
+        });
+
+        [Theory]
+        [InlineData("en-US")]
+        [InlineData("de-DE")]
+        public Task TheProgramStep_FitsThePage_WithTheFullestForm_AndWhatIsTypedSurvivesTheHost(string culture) => Show(async scene =>
+        {
+            var templates = Enumerable.Range(1, 12)
+                .Select(i => new LsmTemplate("MD" + i, "Template number " + i + " with a long and descriptive name for the list", i == 12 ? TemplateFamily.Classic : TemplateFamily.Desfire, 100 * i, i))
+                .ToArray();
+            var blocks = new[]
+            {
+                new TextTemplate { Name = "A text block with quite a long name that has to fit the box", Content = "Block text one." },
+                new TextTemplate { Name = "Second", Content = "Block text two." },
+                new TextTemplate { Name = "Third", Content = "Block text three." },
+                new TextTemplate { Name = new string('W', 140), Content = "Long." },
+            };
+            var notes = string.Join(Environment.NewLine, Enumerable.Range(1, 12).Select(i => "Note line " + i));
+            await scene.PushAsync(
+                WorkflowState.Programming,
+                s => s with
+                {
+                    Order = new WorkflowOrder("A", "JA", "1"),
+                    Selection = new TemplateSelection(ChipVerdict.Programmable, FreeMemory.Unknown, templates, templates[0]),
+                    Findings = new ReportAnalysis { ChipType = "DESFire EV1 with a long type name", FreeMemoryText = "1760", Notes = notes },
+                    TextBlocks = blocks,
+                    Move = new CardMoveResult(CardWaitOutcome.Done, CardMoveStage.WaitingForReinsertion, "04AABBCCDDEEFF", "04112233445566", null),
+                });
+            var form = scene.Vm.Form;
+
+            Assert.True(scene.Shown("StepProgram"));
+            Assert.Equal(12, scene.Named<ComboBox>("TemplateBox").Items.Count);
+            Assert.False(scene.Shown("RestrictionPanel"));
+            Assert.False(scene.Shown("SectorsPanel"));
+            Assert.True(scene.Shown("MoveWarning"));                             // another chip was put back
+
+            // Everything that can be shown at once: a restriction with its text blocks, and a Classic chip's sectors.
+            form.Programming.IsNo = true;
+            form.FunctionTest.IsNo = true;
+            form.Restricted.IsYes = true;
+            form.SelectedTemplate = templates[11];
+            await Flush();
+            scene.Window.UpdateLayout();
+
+            Assert.True(scene.Shown("RestrictionPanel"));
+            Assert.True(scene.Shown("BlockPanel"));
+            Assert.True(scene.Shown("SectorsPanel"));
+
+            // Screen readers hear the question with the answer, not just "Yes" three times.
+            Assert.Equal(scene.Vm.Strings[Keys.GuidedQuestionFunctionTest] + ": " + scene.Vm.Strings[Keys.GuidedAnswerNo],
+                System.Windows.Automation.AutomationProperties.GetName(scene.Named<RadioButton>("FunctionTestNo")));
+            Assert.Equal(scene.Vm.Strings[Keys.GuidedQuestionRestricted] + ": " + scene.Vm.Strings[Keys.GuidedAnswerYes],
+                System.Windows.Automation.AutomationProperties.GetName(scene.Named<RadioButton>("RestrictedYes")));
+
+            // The form scrolls in its own area (at the smallest page it does not all fit); what is outside it never leaves the page.
+            var scroll = scene.Named<ScrollViewer>("ProgramScroll");
+            AssertInside(scene.View, scroll, "the area of the form");
+            Assert.True(scroll.ScrollableHeight > 0, "The fullest form should need the scroll area at the smallest page.");
+            var inTheForm = VisualDescendants<Button>(scroll).ToList();
+            Assert.All(VisibleButtons(scene.View).Where(button => !inTheForm.Contains(button)), button => AssertInside(scene.View, button, button.Name));
+            AssertInside(scene.View, scene.Named<TextBlock>("StatusLine"), "the status line");
+            AssertInside(scene.View, scene.Named<TextBlock>("MoveWarning"), "the warning");
+            Assert.False(scene.Button("ContinueButton").IsEnabled);              // the sectors are still open
+
+            // Typing is not undone by what the host announces while the chip goes off and on again.
+            var box = scene.Named<TextBox>("RestrictionBox");
+            box.Text = "Typed by the operator.";
+            var sectors = scene.Named<TextBox>("SectorsBox");
+            sectors.Text = "1-3";
+            scene.Host.ReaderHost.Show(Snapshots.NoCard());
+            scene.Host.ExecutionHost.SetRunning(true);
+            await Flush();
+            scene.Host.ExecutionHost.SetRunning(false);
+            scene.Host.ReaderHost.Show(Snapshots.Card("04AA"));
+            await Flush();
+
+            Assert.Equal("Typed by the operator.", box.Text);
+            Assert.Equal("Typed by the operator.", form.RestrictionText);
+            Assert.Equal("1-3", sectors.Text);
+            Assert.Equal("1-3", form.SectorsUsed);
+            Assert.True(scene.Button("ContinueButton").IsEnabled);
+
+            // A text block with a very long name takes the width that is left; the button next to it stays on the page.
+            scene.Named<ComboBox>("BlockBox").SelectedItem = blocks[3];
+            await Flush();
+            scene.Window.UpdateLayout();
+            var insert = scene.Button("InsertButton");
+            var right = insert.TransformToAncestor(scroll).TransformBounds(new Rect(0, 0, insert.ActualWidth, insert.ActualHeight)).Right;
+            Assert.True(right <= scroll.ViewportWidth + 0.5, "The insert button lies outside the form: " + right + " > " + scroll.ViewportWidth);
+
+            // A text block is appended, not put in place of what was typed.
+            scene.Named<ComboBox>("BlockBox").SelectedItem = blocks[1];
+            scene.Button("InsertButton").Command.Execute(null);
+            await Flush();
+            Assert.StartsWith("Typed by the operator.", box.Text, StringComparison.Ordinal);
+            Assert.EndsWith("Block text two.", box.Text, StringComparison.Ordinal);
+        }, culture: culture);
+
+        [Fact]
+        public Task TheAnswers_AreShownLocked_WhenTheWorkflowHasTakenThem() => Show(async scene =>
+        {
+            var selection = new TemplateSelection(ChipVerdict.Programmable, FreeMemory.Unknown, new[] { new LsmTemplate("MD1", "One", TemplateFamily.Desfire, 1, 0) }, null);
+            Func<WorkflowSnapshot, WorkflowSnapshot> shared = s => s with { Order = new WorkflowOrder("A", "JA", "1"), Selection = selection, Findings = new ReportAnalysis { Notes = "N" } };
+            await scene.PushAsync(WorkflowState.Programming, shared);
+            scene.Vm.Form.Restricted.IsYes = true;
+            await Flush();
+            Assert.True(scene.Named<ComboBox>("TemplateBox").IsEnabled);
+            Assert.True(scene.Named<RadioButton>("ProgrammingYes").IsEnabled);
+            Assert.False(scene.Named<TextBox>("RestrictionBox").IsReadOnly);
+            Assert.False(scene.Shown("LockedNote"));
+
+            // Locked: nothing can be changed, but the text can still be read, scrolled and copied (a disabled box cannot).
+            await scene.PushAsync(WorkflowState.ProgrammingFailed, shared);
+            Assert.False(scene.Named<ComboBox>("TemplateBox").IsEnabled);
+            Assert.False(scene.Named<RadioButton>("ProgrammingYes").IsEnabled);
+            Assert.False(scene.Named<RadioButton>("RestrictedNo").IsEnabled);
+            Assert.True(scene.Named<TextBox>("RestrictionBox").IsReadOnly);
+            Assert.True(scene.Named<TextBox>("RestrictionBox").IsEnabled);
+            Assert.True(scene.Shown("LockedNote"));
+            Assert.Equal(scene.Vm.Strings[Keys.GuidedAnswersLocked], scene.Text("LockedNote"));
+
+            // The retry button is the only way on, and it is the retry of the workflow, nothing else.
+            scene.Workflow.Calls.Clear();
+            scene.Button("ProgramRetryButton").Command.Execute(null);
+            Assert.Equal(new[] { "Retry" }, scene.Workflow.Calls);
         });
 
         [Fact]
@@ -376,6 +501,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Same(vm.RetryCommand, scene.Button("RetryFinishButton").Command);
             Assert.Same(vm.FinishCommand, scene.Button("FinishButton").Command);
             Assert.Same(vm.FinishCommand, scene.Button("ReviewFinishButton").Command);
+            Assert.Same(vm.ContinueCommand, scene.Button("ContinueButton").Command);
+            Assert.Same(vm.RetryCommand, scene.Button("ProgramRetryButton").Command);
+            Assert.Same(vm.Form.InsertTextBlockCommand, scene.Button("InsertButton").Command);
             Assert.Same(vm.FinishWithoutReadOutCommand, scene.Button("FinishWithoutReadOutButton").Command);
             Assert.Same(vm.OpenReportCommand, scene.Button("OpenReportButton").Command);
             Assert.Same(vm.OpenFolderCommand, scene.Button("OpenFolderButton").Command);
@@ -389,6 +517,9 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.False(scene.Button("FinishWithoutReadOutButton").IsDefault);
             Assert.False(scene.Button("OpenReportButton").IsDefault);
             Assert.False(scene.Button("OpenFolderButton").IsDefault);
+            Assert.False(scene.Button("ContinueButton").IsDefault);
+            Assert.False(scene.Button("ProgramRetryButton").IsDefault);
+            Assert.False(scene.Button("InsertButton").IsDefault);
 
             return Task.CompletedTask;
         });

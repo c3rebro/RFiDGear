@@ -73,6 +73,63 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             _ => string.Empty
         };
 
+        /// <summary>
+        /// What the programming step asks of the operator. While the chip is awaited a missing reader comes first, then
+        /// RFiDGear running tasks (the reader is not available then); then the stage of the chip's way off the reader and
+        /// back on; after that what is being written or what failed.
+        /// </summary>
+        /// <param name="snapshot">The workflow's picture.</param>
+        /// <param name="hostCard">The host's own picture of the reader; may be <c>null</c>.</param>
+        /// <param name="hostRunning">Whether RFiDGear is running tasks.</param>
+        /// <param name="strings">The page's texts.</param>
+        /// <returns>The sentence, or empty outside the programming states.</returns>
+        public static string ProgramPrompt(WorkflowSnapshot snapshot, ReaderSnapshot? hostCard, bool hostRunning, LocalizedStrings strings)
+        {
+            var awaiting = snapshot.State == WorkflowState.Programming && snapshot.Move?.Outcome != CardWaitOutcome.Done;
+            if (awaiting && hostCard != null && hostCard.State == ReaderScanState.NoReader)
+            {
+                return strings[Keys.GuidedPromptNoReader];
+            }
+
+            if (awaiting && hostRunning)
+            {
+                return strings[Keys.GuidedPromptHostRunning];
+            }
+
+            return snapshot.State switch
+            {
+                WorkflowState.Programming => snapshot.Move?.Outcome switch
+                {
+                    CardWaitOutcome.Done => strings[Keys.GuidedProgramBack],
+                    CardWaitOutcome.TimedOut => strings[Keys.GuidedProgramTimedOut],
+                    _ => snapshot.MoveStage == CardMoveStage.WaitingForReinsertion ? strings[Keys.GuidedProgramReinsert] : strings[Keys.GuidedProgramRemove]
+                },
+                WorkflowState.WritingReport => strings[Keys.GuidedProgramWriting],
+                WorkflowState.ProgrammingFailed => strings[Keys.GuidedProgramFailed],
+                _ => string.Empty
+            };
+        }
+
+        /// <summary>What is still to do before the programming can go on.</summary>
+        /// <param name="snapshot">The workflow's picture.</param>
+        /// <param name="missing">The names of what is still unanswered in the form.</param>
+        /// <param name="strings">The page's texts.</param>
+        /// <returns>What is still to answer, or that Continue writes and reads out, or empty.</returns>
+        public static string ProgramStatus(WorkflowSnapshot snapshot, IReadOnlyList<string> missing, LocalizedStrings strings)
+        {
+            if (snapshot.State != WorkflowState.Programming)
+            {
+                return string.Empty;
+            }
+
+            if (missing.Count > 0)
+            {
+                return strings.Format(Keys.GuidedStillToAnswerFormat, string.Join(", ", missing));
+            }
+
+            return snapshot.Move?.Outcome == CardWaitOutcome.Done ? strings[Keys.GuidedContinueHint] : string.Empty;
+        }
+
         /// <summary>The line of the check step: what runs, or what to do after a run failed.</summary>
         /// <param name="snapshot">The workflow's picture.</param>
         /// <param name="strings">The page's texts.</param>
@@ -89,8 +146,13 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <param name="snapshot">The workflow's picture.</param>
         /// <param name="strings">The page's texts.</param>
         /// <returns>The label.</returns>
-        public static string RetryText(WorkflowSnapshot snapshot, LocalizedStrings strings) =>
-            snapshot.State == WorkflowState.ReadOutFailed ? strings[Keys.GuidedRetryReadOutButton] : strings[Keys.GuidedRetryButton];
+        public static string RetryText(WorkflowSnapshot snapshot, LocalizedStrings strings) => snapshot.State switch
+        {
+            WorkflowState.ReadOutFailed => strings[Keys.GuidedRetryReadOutButton],
+            WorkflowState.Programming => strings[Keys.GuidedRetryWaitButton],
+            WorkflowState.ProgrammingFailed => strings[Keys.GuidedRetryWriteButton],
+            _ => strings[Keys.GuidedRetryButton]
+        };
 
         /// <summary>
         /// The label of the button at the foot of the page. Where the order stays open and the chip may have been programmed
