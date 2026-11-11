@@ -634,6 +634,66 @@ namespace RFiDGear.Tests
                 position, id, new LoggingStubTaskModel { CurrentTaskIndex = id, CurrentTaskErrorLevel = ERROR.NoError },
                 "Executed", true, ERROR.NoError);
 
+        // ── the answer "no" of a check is not a failure ──
+
+        private static TaskExecutionObservation FailedTask(int position, string id, string type, ERROR error) =>
+            new TaskExecutionObservation(
+                position, id, new LoggingStubTaskModel { CurrentTaskIndex = id, CurrentTaskErrorLevel = error, SelectedTaskType = type },
+                "Executed", false, error);
+
+        [Theory]
+        [InlineData(ERROR.IsNotTrue)]
+        [InlineData(ERROR.IsNotFalse)]
+        public void TerminalEvaluator_AcceptsTheNoOfACheck_WithoutAHandler(ERROR answer)
+        {
+            // A check that says "no" is its result; nothing has to be conditioned on it.
+            var observations = new List<TaskExecutionObservation> { FailedTask(0, "10", "ChipIsOfType", answer), ExecutedOk(1, "11") };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(2, observations);
+
+            Assert.Equal(TaskLoopTerminalStatus.CompletedWithIntentionalFailures, result.TerminalStatus);
+            Assert.Equal(1, result.AcceptedFailures);
+            Assert.Equal(0, result.UnhandledFailures);
+        }
+
+        [Theory]
+        [InlineData(ERROR.IsNotTrue)]
+        [InlineData(ERROR.IsNotFalse)]
+        public void TerminalEvaluator_FailsAProgramThatDidNotStart_EvenWithTheCodeOfACheck(ERROR answer)
+        {
+            // A missing batch file reports IsNotTrue as well, and that is a failed run.
+            var observations = new List<TaskExecutionObservation> { FailedTask(0, "10", "ExecuteProgram", answer), ExecutedOk(1, "11") };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(2, observations);
+
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+            Assert.Equal(0, result.AcceptedFailures);
+            Assert.Equal(1, result.UnhandledFailures);
+        }
+
+        [Fact]
+        public void TerminalEvaluator_StillFailsACheckThatFailedForARealReason()
+        {
+            var observations = new List<TaskExecutionObservation> { FailedTask(0, "10", "ChipIsOfType", ERROR.TransportError), ExecutedOk(1, "11") };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(2, observations);
+
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+            Assert.Equal(1, result.UnhandledFailures);
+        }
+
+        [Fact]
+        public void TerminalEvaluator_FailsAnAnswerOfNo_WhenTheRunDidNotGetToItsEnd()
+        {
+            // The answer is fine; the run that stopped after it is not.
+            var observations = new List<TaskExecutionObservation> { FailedTask(0, "10", "ChipIsOfType", ERROR.IsNotTrue) };
+
+            var result = TaskLoopTerminalEvaluator.Evaluate(3, observations);
+
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+            Assert.Equal(2, result.NotReached);
+        }
+
         [Fact]
         public void TerminalEvaluator_FailsWhenTasksRemainAfterTheLastReachedTask()
         {

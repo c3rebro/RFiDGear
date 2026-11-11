@@ -17,11 +17,15 @@ namespace RFiDGear.Contracts
         /// </summary>
         Success,
 
-        /// <summary>Every failure had a downstream handler that explicitly targets it — intentional by design.</summary>
+        /// <summary>
+        /// Every failure was intentional: it had a downstream handler that explicitly targets it, or it was only the
+        /// answer "no" of a check (<c>IsNotTrue</c> or <c>IsNotFalse</c>, not a program that failed to start).
+        /// </summary>
         CompletedWithIntentionalFailures,
 
         /// <summary>
-        /// At least one task failed without a downstream handler, the run stopped before it reached its last task
+        /// At least one task failed without a downstream handler and not as the answer "no" of a check (a program
+        /// that failed to start is such a task), the run stopped before it reached its last task
         /// other than at a <c>%EXIT</c> task that ended it on purpose (the unreached tasks are reported as
         /// <see cref="TaskSkipReasons.NotReached"/>), or the run ended without a
         /// terminal evaluation (see <see cref="ExecResult.FailureReason"/>). Operator intervention required.

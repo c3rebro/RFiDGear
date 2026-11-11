@@ -119,6 +119,9 @@ namespace RFiDGear.Services.TaskExecution
         /// <summary>The decision recorded for a task the loop ran.</summary>
         internal const string ExecutedDecision = "Executed";
 
+        /// <summary>The name of the task type that starts a program; its failure is never an answer.</summary>
+        private const string ExecuteProgramTaskType = "ExecuteProgram";
+
         /// <summary>The decision recorded for a task the loop deliberately skipped.</summary>
         internal const string SkippedDecision = "Skipped";
 
@@ -153,7 +156,7 @@ namespace RFiDGear.Services.TaskExecution
             var items = observations?.ToList() ?? new List<TaskExecutionObservation>();
             var executed = items.Where(item => string.Equals(item.Decision, ExecutedDecision, StringComparison.Ordinal)).ToList();
             var failed = executed.Where(item => item.WasSuccessful == false).ToList();
-            var acceptedFailures = failed.Count(item => IsFailureConsumed(item, executed, errorRouting));
+            var acceptedFailures = failed.Count(item => IsLogicAnswer(item) || IsFailureConsumed(item, executed, errorRouting));
             var skipped = items.Where(item => string.Equals(item.Decision, SkippedDecision, StringComparison.Ordinal)).ToList();
             var unknown = executed.Count(item => !item.WasSuccessful.HasValue);
             var invalidSkips = skipped.Count(item => !IsPermittedConditionalSkip(item, items));
@@ -190,6 +193,35 @@ namespace RFiDGear.Services.TaskExecution
                 InvalidSkips = invalidSkips,
                 NotReached = notReached
             };
+        }
+
+        /// <summary>
+        /// Whether a failed task only gave the answer "no" to a question: it ended with
+        /// <see cref="ERROR.IsNotTrue"/> or <see cref="ERROR.IsNotFalse"/>, which a check task reports when its
+        /// condition does not hold. That is the result of the check, not a fault, so it does not need a handler
+        /// downstream. A program start (<c>ExecuteProgram</c>) is not a check: when it fails, the run failed.
+        /// </summary>
+        private static bool IsLogicAnswer(TaskExecutionObservation failedTask)
+        {
+            if (failedTask.ErrorLevel != ERROR.IsNotTrue && failedTask.ErrorLevel != ERROR.IsNotFalse)
+            {
+                return false;
+            }
+
+            return !string.Equals(TaskTypeOf(failedTask.Task), ExecuteProgramTaskType, StringComparison.Ordinal);
+        }
+
+        private static string TaskTypeOf(IGenericTask task)
+        {
+            try
+            {
+                return task?.GetType().GetProperty("SelectedTaskType")?.GetValue(task)?.ToString();
+            }
+            catch (Exception ex) when (ex is System.Reflection.TargetInvocationException || ex is System.Reflection.AmbiguousMatchException)
+            {
+                // A task whose type cannot be read is not known to be a check: its failure stays a failure.
+                return ExecuteProgramTaskType;
+            }
         }
 
         private static bool IsFailureConsumed(
