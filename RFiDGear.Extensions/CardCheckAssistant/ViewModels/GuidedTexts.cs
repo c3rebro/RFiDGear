@@ -139,22 +139,25 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             WorkflowState.CompletionFailed => strings[Keys.GuidedCloseUpload],
             WorkflowState.Assessing => strings[Keys.GuidedCloseVerdict],
             WorkflowState.RunFailed => strings[Keys.GuidedCloseVerdict],
-            WorkflowState.Programming => strings[Keys.GuidedCloseProgrammed],
+            WorkflowState.Programming or WorkflowState.ProgrammingFailed or WorkflowState.ReadOutFailed or WorkflowState.Reviewing => strings[Keys.GuidedCloseProgrammed],
             _ => strings[Keys.GuidedCloseNothing]
         };
 
         private static string Cancelled(WorkflowSnapshot snapshot, LocalizedStrings strings)
         {
-            // A cancel while the chip was being programmed: it may be programmed all the same, and the order is not finished.
-            if (snapshot.CancelledAt == WorkflowState.Programming)
+            // A cancel while the chip was being programmed, or after: it may be programmed all the same, and the order is not
+            // finished.
+            if (snapshot.CancelledAt is WorkflowState.Programming or WorkflowState.WritingReport or WorkflowState.ProgrammingFailed
+                or WorkflowState.ReadingOut or WorkflowState.ReadOutFailed or WorkflowState.Reviewing)
             {
                 return strings[Keys.GuidedEndCancelledProgrammed];
             }
 
-            // A cancel after the report was being made or stored: the order may or may not have been finished.
+            // A cancel after the report was being made or stored: the order may or may not have been finished. For a chip that
+            // was programmed, a new check is not "safe": it would replace the reports made so far.
             if (snapshot.CancelledAt == WorkflowState.CompletionFailed || snapshot.CancelledAt == WorkflowState.Completing)
             {
-                return strings[Keys.GuidedEndCancelledMaybe];
+                return strings[snapshot.Selection?.Verdict == ChipVerdict.Programmable ? Keys.GuidedEndCancelledMaybeProgrammed : Keys.GuidedEndCancelledMaybe];
             }
 
             var path = snapshot.Check?.ReportPath;

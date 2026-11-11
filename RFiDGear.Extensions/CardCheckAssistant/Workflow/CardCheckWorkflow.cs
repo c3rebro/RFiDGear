@@ -12,9 +12,9 @@ using RFiDGear.ExtensionLibraries.CardCheck;
 namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
 {
     /// <summary>
-    /// The guided check, without a window: from the list of orders to a finished, uploaded report, for the verdicts
-    /// that do not lead to programming, and the first step of programming (the rest of it is added later; that leg is
-    /// in <c>CardCheckWorkflow.Programming.cs</c>). The page binds to
+    /// The guided check, without a window: from the list of orders to a finished, uploaded report, also for a chip that
+    /// is programmed (waiting while it is programmed elsewhere, writing the second report, reading the memory out, the
+    /// review; that leg is in <c>CardCheckWorkflow.Programming.cs</c>). The page binds to
     /// <see cref="Current"/> and <see cref="Changed"/> and calls the commands.
     /// <para>
     /// A command is a synchronous request: it returns <c>false</c> if the state does not offer it (see
@@ -221,8 +221,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// <summary>
         /// Tries the failed step again, or waits again. After a failed check the workflow waits for the card again (the one
         /// that was seen stays until the look before the check says otherwise); after a wait for the chip to be taken off
-        /// and put back ran out, it waits again, from where it was. Which state does what is written out here: a state
-        /// that is given the retry control must be given its case too.
+        /// and put back ran out, it waits again, from where it was; after the second report or the change date could not be
+        /// written, or the read-out failed, that step is done again by the operator's request. Which state does what is
+        /// written out here: a state that is given the retry control must be given its case too.
         /// </summary>
         /// <returns><c>true</c> if the state offers it.</returns>
         public bool Retry()
@@ -246,6 +247,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
                 case WorkflowState.Programming:
                     WaitForMoveAgain();
                     return true;
+                case WorkflowState.ProgrammingFailed:
+                    Run(WorkflowState.WritingReport, ProgramAsync, null);
+                    return true;
+                case WorkflowState.ReadOutFailed:
+                    Run(WorkflowState.ReadingOut, ReadOutAsync, s => s with { ReadOut = null });
+                    return true;
                 default:
                     return false;
             }
@@ -265,9 +272,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
 
             if (!_busy)
             {
-                // After a failed upload the failure stays: it says whether the report was not made or the order system did
-                // not answer, and the page needs that to tell the operator what to check.
-                Move(WorkflowState.Cancelled, s => s with { CancelledAt = s.State, Failure = s.State == WorkflowState.CompletionFailed ? s.Failure : null });
+                // After a failed step the failure stays: it says whether the report was not made or the order system did not
+                // answer, and the page needs that to tell the operator what to check.
+                Move(WorkflowState.Cancelled, s => s with { CancelledAt = s.State, Failure = s.State is WorkflowState.CompletionFailed or WorkflowState.ProgrammingFailed or WorkflowState.ReadOutFailed ? s.Failure : null });
 
                 return true;
             }
@@ -608,7 +615,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
                 return true;
             }
 
-            if (look.Last != null && look.Last.State == ReaderScanState.Ready && !look.Last.HasCard)
+            if (ReaderIsEmpty(look))
             {
                 // The card is gone: wait for one again.
                 Move(WorkflowState.WaitingForCard, s => s with { Card = null });
@@ -617,12 +624,16 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
                 return false;
             }
 
-            Settle(
-                WorkflowState.WaitingForCard,
-                s => s with { Failure = new Failure(FailureKind.Unreachable, WorkflowFailureCodes.CardUnclear, "The reader gave no clear answer.") });
+            Settle(WorkflowState.WaitingForCard, s => s with { Failure = CardUnclear() });
 
             return false;
         }
+
+        // The reader answered, and there is no card on it (as against an answer that says nothing: busy, failed, not there).
+        private static bool ReaderIsEmpty(CardWaitResult look) =>
+            look.Last != null && look.Last.State == ReaderScanState.Ready && !look.Last.HasCard;
+
+        private static Failure CardUnclear() => new Failure(FailureKind.Unreachable, WorkflowFailureCodes.CardUnclear, "The reader gave no clear answer.");
 
         private void Assess(Job job, CheckRunResult result)
         {
@@ -772,6 +783,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             Phase = null,
             MoveStage = null,
             Move = null,
+            ReadOut = null,
             Check = null,
             Findings = null,
             Selection = null,
@@ -939,10 +951,19 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
                 }
             }
 
-            // Only a wait that ran out can be started again.
-            if (s.State == WorkflowState.Programming && s.Move?.Outcome != CardWaitOutcome.TimedOut)
+            // Only a wait that ran out can be started again, and only a chip that was put back can go on.
+            if (s.State == WorkflowState.Programming)
             {
-                controls &= ~WorkflowControls.Retry;
+                var outcome = s.Move?.Outcome;
+                if (outcome != CardWaitOutcome.TimedOut)
+                {
+                    controls &= ~WorkflowControls.Retry;
+                }
+
+                if (outcome != CardWaitOutcome.Done)
+                {
+                    controls &= ~WorkflowControls.ContinueProgramming;
+                }
             }
 
             return s with { IsBusy = _busy, IsCancelling = _cancelRequested, Controls = controls, Close = WorkflowTables.CloseAdviceOf(s.State) };
@@ -1040,6 +1061,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
 
             // How the check ends; there from the verdict on, and null for a chip that is to be programmed.
             public FinishPlan? Plan { get; set; }
+
+            // The report fields the operator's answers make; there from the moment the answers were accepted, and kept for a
+            // repeat of the write.
+            public IReadOnlyDictionary<string, string>? Fields { get; set; }
         }
     }
 }

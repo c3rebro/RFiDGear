@@ -1182,10 +1182,12 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Files = CardCheckServices.CreateReportFiles(Log);
                 Session = CardCheckServices.CreateWorkflowSession(Log);
                 Location = new ReportLocation(_area.Directory, true);
-                _settings = new WorkflowSettings(Location, removeTemporary, ReportLanguage.German, _area.ProjectPath, true) { MemoryProjectPath = _area.ProjectPath };
+                _settings = new WorkflowSettings(Location, removeTemporary, ReportLanguage.German, _area.ProjectPath, true) { MemoryProjectPath = Path.Combine(_area.Directory, "memory.rfPrj") };
                 UseSettings(s => s);
-                var reports = CardCheckServices.CreateReportService(Log);
-                Engine = new CardCheckWorkflow(Context, Session, wrapFiles == null ? Files : wrapFiles(Files), wrapReports == null ? reports : wrapReports(reports), Runner, Waiter, Reservations, Log);
+                Reports = new RecordingReportService(CardCheckServices.CreateReportService(Log), Calls);
+                Store.Calls = Calls;
+                Runner.Calls = Calls;
+                Engine = new CardCheckWorkflow(Context, Session, wrapFiles == null ? Files : wrapFiles(Files), wrapReports == null ? Reports : wrapReports(Reports), Runner, Waiter, Reservations, Log);
                 if (record)
                 {
                     Engine.Changed += (_, snapshot) => Events.Add(snapshot);
@@ -1195,6 +1197,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
             }
 
             public RecordingCardCheckLog Log { get; }
+
+            /// <summary>What the store, the report service and the runner were asked, in the order they were asked.</summary>
+            public List<string> Calls { get; } = new List<string>();
+
+            public RecordingReportService Reports { get; }
 
             public IOrderStore Stub { get; }
 
@@ -1317,6 +1324,19 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Assert.Equal(WorkflowState.Assessing, Now.State);
             }
 
+            /// <summary>The first template that fits the chip.</summary>
+            public LsmTemplate Template => Now.Selection!.Available[0];
+
+            /// <summary>Answers that are complete: the programming succeeded, the function test passed, nothing is restricted.</summary>
+            public static LsmAnswers GoodAnswers { get; } = new LsmAnswers { ProgrammingSucceeded = true, FunctionTestPassed = true, HasRestrictions = false };
+
+            // The chip has been put back; the operator's answers go in and the work after them is done as far as it goes.
+            public async Task ContinueAsync()
+            {
+                Assert.True(Engine.ContinueProgramming(Template, GoodAnswers));
+                await Settled();
+            }
+
             // Brings the workflow to a state in which nothing runs.
             public async Task ReachAsync(WorkflowState state)
             {
@@ -1339,6 +1359,20 @@ namespace RFiDGear.Tests.CardCheckAssistant
                         await AssessedAsync(ChipVerdict.Programmable);
                         Assert.True(Engine.BeginProgramming());
                         await Settled();
+                        break;
+                    case WorkflowState.Reviewing:
+                        await ReachAsync(WorkflowState.Programming);
+                        await ContinueAsync();
+                        break;
+                    case WorkflowState.ProgrammingFailed:
+                        await ReachAsync(WorkflowState.Programming);
+                        Store.TouchAnswer = Result.Fail(new Failure(FailureKind.Unreachable, "orders.unreachable", "No server."));
+                        await ContinueAsync();
+                        break;
+                    case WorkflowState.ReadOutFailed:
+                        await ReachAsync(WorkflowState.Programming);
+                        Runner.Answer = _ => new CheckRunResult(CheckRunStatus.Failed, new Failure(FailureKind.Unexpected, CheckFailureCodes.ReportMissing, "No report."), null, null, null);
+                        await ContinueAsync();
                         break;
                     case WorkflowState.CompletionFailed:
                         await AssessedAsync(ChipVerdict.NotSupported);
