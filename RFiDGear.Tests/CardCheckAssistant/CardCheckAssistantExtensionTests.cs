@@ -234,7 +234,6 @@ namespace RFiDGear.Tests.CardCheckAssistant
         [InlineData("GemBox")]
         [InlineData("Newtonsoft")]
         [InlineData("CommunityToolkit")]
-        [InlineData("System.Diagnostics.Process")]
         [InlineData("System.Data.SqlClient")]   // the database driver belongs to the library, never to the page
         [InlineData("System.Data.SQLite")]
         [InlineData("Microsoft.Data")]
@@ -249,20 +248,104 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         [Fact]
-        public void TheAssembly_NeverStartsAProcess()
+        public void TheAssembly_UsesNoMoreOfProcessThanTheShellOpenerNeeds_AndHasNoPInvokeAtAll()
         {
+            // The one place that starts a program opens a document in the shell (ShellOpener). Whatever else of Process or
+            // ProcessStartInfo the assembly would use (Arguments, Verb, WorkingDirectory, redirects, Kill...) fails here by
+            // name, and so does every other way to start one that needs a declaration in the assembly: a P/Invoke.
             using var stream = File.OpenRead(ExtensionAssembly.Location);
             using var pe = new PEReader(stream);
             var metadata = pe.GetMetadataReader();
 
-            var types = metadata.TypeReferences
-                .Select(handle => metadata.GetTypeReference(handle))
-                .Select(type => metadata.GetString(type.Namespace) + "." + metadata.GetString(type.Name))
+            var used = new Dictionary<string, List<byte[]>>();
+            foreach (var handle in metadata.MemberReferences)
+            {
+                var member = metadata.GetMemberReference(handle);
+                if (member.Parent.Kind != HandleKind.TypeReference)
+                {
+                    continue;
+                }
+
+                var type = metadata.GetTypeReference((TypeReferenceHandle)member.Parent);
+                if (metadata.GetString(type.Namespace) == "System.Diagnostics" && metadata.GetString(type.Name).StartsWith("Process", StringComparison.Ordinal))
+                {
+                    var name = metadata.GetString(type.Name) + "::" + metadata.GetString(member.Name);
+                    if (!used.TryGetValue(name, out var signatures))
+                    {
+                        used[name] = signatures = new List<byte[]>();
+                    }
+
+                    signatures.Add(metadata.GetBlobBytes(member.Signature));
+                }
+            }
+
+            var allowed = new[] { "Process::Start", "ProcessStartInfo::.ctor", "ProcessStartInfo::set_FileName", "ProcessStartInfo::set_UseShellExecute" };
+            Assert.Contains("Process::Start", used.Keys);   // not vacuous: the opener is in this assembly
+            Assert.All(used.Keys, name => Assert.Contains(name, allowed));
+
+            // The members by name are not enough: Start has overloads that take a program name and arguments, and the
+            // constructor one that takes both.
+            var start = Assert.Single(used["Process::Start"]);
+            Assert.Equal(0x00, start[0]);                       // static
+            Assert.Equal(1, start[1]);                          // one parameter ...
+            Assert.NotEqual((byte)0x0E, start[^1]);             // ... which is not a string
+            Assert.Equal(new byte[] { 0x20, 0x00, 0x01 }, Assert.Single(used["ProcessStartInfo::.ctor"]));   // instance, no parameter, void
+
+            var imports = metadata.MethodDefinitions
+                .Select(handle => metadata.GetMethodDefinition(handle))
+                .Where(method => !method.GetImport().Module.IsNil)
+                .Select(method => metadata.GetString(method.Name))
+                .ToList();
+            Assert.Empty(imports);
+        }
+
+        [Fact]
+        public void ProcessAndTheOtherWaysToStartAProgram_AreNamedInNoFileOfTheExtension_ButTheShellOpener()
+        {
+            var root = Path.GetFullPath(Path.Combine(RepositoryRoot(), "RFiDGear.Extensions", "CardCheckAssistant"));
+            var opener = Path.Combine(root, "Services", "ShellOpener.cs");
+            var sep = Path.DirectorySeparatorChar;
+            const string Names = @"\b(Process|ProcessStartInfo|ShellExecute\w*|CreateProcess\w*|WinExec|DllImport|LibraryImport|NativeLibrary|ObjectDataProvider)\b";
+
+            var offenders = Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories)
+                .Where(file => file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase))
+                .Where(file => !file.Contains(sep + "obj" + sep) && !file.Contains(sep + "bin" + sep))
+                .Where(file => !string.Equals(Path.GetFullPath(file), opener, StringComparison.OrdinalIgnoreCase))
+                .Where(file =>
+                {
+                    var text = File.ReadAllText(file);
+                    var code = file.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase) ? Regex.Replace(text, @"<!--[\s\S]*?-->", string.Empty) : WithoutCommentsAndStrings(text);
+
+                    // The name may also be spelled in a text that is handed to reflection.
+                    return Regex.IsMatch(code, Names) || text.Contains("System.Diagnostics.Process", StringComparison.Ordinal);
+                })
+                .Select(Path.GetFileName)
                 .ToList();
 
-            Assert.DoesNotContain("System.Diagnostics.Process", types);
-            Assert.DoesNotContain("System.Diagnostics.ProcessStartInfo", types);
+            Assert.Empty(offenders);
         }
+
+        [Fact]
+        public void TheScanForProcess_SeesCode_AndNotWhatLooksLikeIt()
+        {
+            Assert.DoesNotContain("Process", WithoutCommentsAndStrings("var text = \"Process\"; // Process.Start\n/* ProcessStartInfo */"), StringComparison.Ordinal);
+            Assert.Contains("Process", WithoutCommentsAndStrings("Process.Start(x);"), StringComparison.Ordinal);
+
+            // Order must not matter: a // in a text is not a comment, a */ in a text does not end one, a quote in a char
+            // is not a text.
+            Assert.Contains("Process", WithoutCommentsAndStrings("var u = \"https://x\"; Process.Start(u);"), StringComparison.Ordinal);
+            Assert.Contains("Process", WithoutCommentsAndStrings("var s = \"*/*\"; Process.Start(s); /* c */"), StringComparison.Ordinal);
+            Assert.Contains("Process", WithoutCommentsAndStrings("var q = '\"'; Process.Start(q);"), StringComparison.Ordinal);
+            Assert.Contains("Process", WithoutCommentsAndStrings("var v = @\"a \"\"b\"\" c\"; Process.Start(v);"), StringComparison.Ordinal);
+        }
+
+        // Comments and texts are not code: one pass over all of them, so the first one that starts wins.
+        private static readonly Regex NotCode = new Regex(
+            @"@""(?:[^""]|"""")*""|""(?:[^""\\\r\n]|\\.)*""|'(?:[^'\\\r\n]|\\.)*'|//[^\r\n]*|/\*[\s\S]*?\*/",
+            RegexOptions.Compiled);
+
+        private static string WithoutCommentsAndStrings(string source) =>
+            NotCode.Replace(source, match => match.Value.StartsWith("/", StringComparison.Ordinal) ? string.Empty : "\"\"");
 
         [Fact]
         public void TheProject_ReferencesTheContractAndTheSdkWithoutCopyingThem_AndItsOwnLibraryWithACopy()

@@ -207,6 +207,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string GuidedBackButton = "GuidedBackButton";
             public const string GuidedCodeLabel = "GuidedCodeLabel";
             public const string GuidedDetailsHeader = "GuidedDetailsHeader";
+            public const string FailOpenPathInvalid = "FailOpenPathInvalid";
+            public const string FailOpenNotFound = "FailOpenNotFound";
+            public const string FailOpenNotAllowed = "FailOpenNotAllowed";
+            public const string FailOpenNoViewer = "FailOpenNoViewer";
+            public const string FailOpenFailed = "FailOpenFailed";
         }
 
         private static readonly IReadOnlyDictionary<string, string> English = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -335,6 +340,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedBackButton] = "Back to the list",
             [Keys.GuidedCodeLabel] = "Code for support:",
             [Keys.GuidedDetailsHeader] = "Tasks of the check",
+            [Keys.FailOpenPathInvalid] = "The path is not a full path, so it cannot be opened.",
+            [Keys.FailOpenNotFound] = "The file or folder is not at its place any more. It may have been moved or deleted.",
+            [Keys.FailOpenNotAllowed] = "Only a PDF file or a folder is opened from here.",
+            [Keys.FailOpenNoViewer] = "No program is set up to open this kind of file. Open it from its folder.",
+            [Keys.FailOpenFailed] = "It could not be opened. Open it from its folder.",
             [Keys.ComponentMissing] = "The Card Check Assistant cannot start. The file {0} was not found next to {1}, or it does not match this version. Copy both files to the Extensions folder of RFiDGear (%ProgramData%\\RFiDGear\\Extensions) and restart RFiDGear.",
             [Keys.ImportTitle] = "Settings of the old Card Check Assistant",
             [Keys.ImportFound] = "Settings of the old Card Check Assistant were found:\n{0}\n(last changed {1})\n\nDo you want to take them over into this version? The old files are only read, never changed.",
@@ -534,6 +544,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedBackButton] = "Zurück zur Liste",
             [Keys.GuidedCodeLabel] = "Code für den Support:",
             [Keys.GuidedDetailsHeader] = "Aufgaben der Prüfung",
+            [Keys.FailOpenPathInvalid] = "Der Pfad ist kein vollständiger Pfad und kann deshalb nicht geöffnet werden.",
+            [Keys.FailOpenNotFound] = "Die Datei oder der Ordner liegt nicht mehr an ihrem Platz. Sie oder er wurde vielleicht verschoben oder gelöscht.",
+            [Keys.FailOpenNotAllowed] = "Von hier aus wird nur eine PDF-Datei oder ein Ordner geöffnet.",
+            [Keys.FailOpenNoViewer] = "Für diese Dateiart ist kein Programm eingerichtet. Öffnen Sie die Datei aus ihrem Ordner.",
+            [Keys.FailOpenFailed] = "Es konnte nicht geöffnet werden. Öffnen Sie es aus seinem Ordner.",
             [Keys.ComponentMissing] = "Der Card Check Assistant kann nicht starten. Die Datei {0} fehlt neben {1} oder passt nicht zu dieser Version. Kopieren Sie beide Dateien in den Ordner Extensions von RFiDGear (%ProgramData%\\RFiDGear\\Extensions) und starten Sie RFiDGear neu.",
             [Keys.ImportTitle] = "Einstellungen des alten Card Check Assistant",
             [Keys.ImportFound] = "Einstellungen des alten Card Check Assistant wurden gefunden:\n{0}\n(zuletzt geändert {1})\n\nMöchten Sie sie in diese Version übernehmen? Die alten Dateien werden nur gelesen, nie verändert.",
