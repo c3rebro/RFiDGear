@@ -2,8 +2,8 @@
 /.vs
 /RFiDGear/bin
 /RFiDGear/obj
-/RFiDGear/Mifare_4k_1_57.jpg
-/RFiDGear/mvvmdialogsample.txt
+/RFiDGearBundleSetup/signtool
+/RFiDGearBundleSetup/runtime
 /Setup/bin
 /Setup/obj
 *.pdf
