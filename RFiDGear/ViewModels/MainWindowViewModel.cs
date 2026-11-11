@@ -237,7 +237,8 @@ namespace RFiDGear.ViewModel
             _autoMode = new AutoModeController(
                 _coordinator,
                 poll: PollReaderForAutoModeAsync,
-                runCard: RunCardForAutoModeAsync,
+                // The run reads the card itself (the card may have been swapped since the poll), so it needs no UID.
+                runCard: (_, keepApplicationOpen) => RunCardForAutoModeAsync(keepApplicationOpen),
                 setClock: enabled => triggerReadChip.IsEnabled = enabled,
                 post: action =>
                 {
@@ -690,10 +691,9 @@ namespace RFiDGear.ViewModel
         /// Processes a card that automatic mode found newly presented: the same run as "Run all tasks once", with the
         /// card put in the tree by the run's own read.
         /// </summary>
-        /// <param name="uid">The UID of the card.</param>
         /// <param name="keepApplicationOpen">Whether a program task <c>%EXIT</c> ends the run instead of closing the application.</param>
         /// <returns>What came of it; not admitted when something else held the execution slot.</returns>
-        private async Task<AutoModeRunReport> RunCardForAutoModeAsync(string uid, bool keepApplicationOpen)
+        private async Task<AutoModeRunReport> RunCardForAutoModeAsync(bool keepApplicationOpen)
         {
             foreach (var item in treeViewParentNodes)
             {
