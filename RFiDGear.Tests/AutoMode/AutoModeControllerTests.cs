@@ -666,6 +666,27 @@ namespace RFiDGear.Tests.AutoMode
             Assert.Equal(new[] { "A" }, rig.Runs);
         }
 
+        [Fact]
+        public async Task ACardRememberedByAnotherRunWhileTheRequestWasRefused_IsNotPutBackToTheOldValue()
+        {
+            var rig = StartedRig();
+
+            // The run of an extension remembers its card (from any thread) while the request of the mode is refused.
+            rig.RunBehavior = _ =>
+            {
+                rig.Controller.RememberCard("X");
+
+                return Task.FromResult(AutoModeRunReport.NotAdmitted);
+            };
+            rig.Present("X");
+            await rig.Tick();
+
+            rig.RunBehavior = null;
+            await rig.Tick();
+
+            Assert.Equal(new[] { "X" }, rig.Runs);   // the refused attempt only: X is not run again
+        }
+
         // ── a run made by hand is judged by the same safety rules ──
 
         [Theory]
@@ -676,7 +697,7 @@ namespace RFiDGear.Tests.AutoMode
         {
             var rig = StartedRig();
 
-            rig.Controller.OnRunByHandEnded(rig.Admitted(ExecutionOutcome.Failure, reason));
+            rig.Controller.OnOtherRunEnded(rig.Admitted(ExecutionOutcome.Failure, reason));
 
             Assert.False(rig.Controller.IsEnabled);
             Assert.DoesNotContain(rig.Events, e => e.StartsWith("run:"));
@@ -687,11 +708,11 @@ namespace RFiDGear.Tests.AutoMode
         {
             var rig = StartedRig();
 
-            rig.Controller.OnRunByHandEnded(rig.Admitted(ExecutionOutcome.Failure));
-            rig.Controller.OnRunByHandEnded(AutoModeRunReport.NotAdmitted);
+            rig.Controller.OnOtherRunEnded(rig.Admitted(ExecutionOutcome.Failure));
+            rig.Controller.OnOtherRunEnded(AutoModeRunReport.NotAdmitted);
             Assert.True(rig.Controller.IsEnabled);
 
-            rig.Controller.OnRunByHandEnded(rig.Admitted(ExecutionOutcome.Failure, abandoned: true));
+            rig.Controller.OnOtherRunEnded(rig.Admitted(ExecutionOutcome.Failure, abandoned: true));
             Assert.False(rig.Controller.IsEnabled);
             Assert.Equal(AutoModeStopReason.RunTimedOut, rig.Controller.LastStopReason);
         }
@@ -701,7 +722,7 @@ namespace RFiDGear.Tests.AutoMode
         {
             var rig = new Rig();
 
-            rig.Controller.OnRunByHandEnded(rig.Admitted(ExecutionOutcome.Failure, ExecutionFailureReason.Faulted));
+            rig.Controller.OnOtherRunEnded(rig.Admitted(ExecutionOutcome.Failure, ExecutionFailureReason.Faulted));
 
             Assert.Empty(rig.Events);
             Assert.Equal(AutoModeStopReason.None, rig.Controller.LastStopReason);

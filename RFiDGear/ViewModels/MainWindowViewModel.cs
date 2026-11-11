@@ -293,7 +293,8 @@ namespace RFiDGear.ViewModel
                 getConfiguredLanguage: () => culture?.Name == "de-DE" ? "german" : "english",
                 isOnUiThread: () => owningDispatcher.CheckAccess(),
                 getReaderName: () => CurrentReader,
-                readerGate: _readerGate);
+                readerGate: _readerGate,
+                autoMode: new AutoModeHostImpl(_autoMode, _coordinator));
 
             // The Extensions menu entries were built when MEF composed this view model, before the host existed, and
             // stay disabled until now.
@@ -1446,7 +1447,7 @@ namespace RFiDGear.ViewModel
 
             // Whoever started a run, one that ended in a way that leaves the card in an unknown state also stops a mode
             // that is on; otherwise the next card would be run on the strength of it.
-            _autoMode?.OnRunByHandEnded(report);
+            _autoMode?.OnOtherRunEnded(report);
         }
 
         /// <summary>

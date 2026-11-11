@@ -98,6 +98,14 @@ namespace RFiDGear.Contracts
         /// <see cref="ExecutionFailureReason.Cancelled"/> when cancelled mid-run.
         /// </para>
         /// <para>
+        /// Automatic mode: in the main application a run started through this method works on the card that is on the
+        /// reader, as a run of <see cref="IAutoModeHost"/> does. The mode therefore counts the card as processed, and does
+        /// not run it again until it has been taken away and put back, and a run that ends with a fault, a timeout, a
+        /// cancellation or the watchdog's giving up stops a mode that is on. The mode's own events follow
+        /// <see cref="ExecutionCompleted"/>. A run of the mode itself is not reported here; see
+        /// <see cref="IAutoModeHost.AutoModeStateChanged"/>.
+        /// </para>
+        /// <para>
         /// Event ordering: <see cref="ExecutionCompleted"/> is raised exactly once for every accepted run,
         /// after <see cref="IsRunning"/> has returned to <c>false</c> (and <see cref="IsRunningChanged"/> has been
         /// raised for it) and before the returned task completes.
