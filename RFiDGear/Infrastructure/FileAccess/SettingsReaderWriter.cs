@@ -129,11 +129,20 @@ namespace RFiDGear.Infrastructure.FileAccess
                 using var fs = new FileStream(filePath, FileMode.Open, System.IO.FileAccess.Read, FileShare.ReadWrite);
                 using var reader = new StreamReader(fs);
 
-                DefaultSpecification = serializer.Deserialize(reader) as DefaultSpecification ?? new DefaultSpecification();
+                DefaultSpecification = SafeXml.Deserialize<DefaultSpecification>(serializer, reader) ?? new DefaultSpecification();
             }
-            catch (Exception e) when (e is IOException || e is InvalidOperationException)
+            catch (IOException e)
             {
                 logger.Error(e, "Failed to read settings from {SettingsFilePath}", filePath);
+            }
+            catch (InvalidOperationException e)
+            {
+                // Not the exception itself: the text of a serializer exception can echo values from the file.
+                logger.Error(
+                    "Failed to read settings from {SettingsFilePath}: {Failure} {FailureStackTrace}",
+                    filePath,
+                    SafeXml.Describe(e),
+                    SafeXml.InnermostStackTrace(e));
             }
 
             return DefaultSpecification;

@@ -160,7 +160,13 @@ namespace RFiDGear.Infrastructure.FileAccess
                 }
                 catch (Exception e)
                 {
-                    logger.Error(e, "Failed to process database file {DatabaseFile}", fileName);
+                    // Not the exception itself: the text of a parser or serializer exception can echo values from the
+                    // file (the attribute value it could not convert, an element name), and the file may be someone else's.
+                    logger.Error(
+                        "Failed to process database file {DatabaseFile}: {Failure} {FailureStackTrace}",
+                        fileName,
+                        SafeXml.Describe(e),
+                        SafeXml.InnermostStackTrace(e));
                     return (DatabaseReadResult.Failed(DatabaseReadFailureReason.DeserializationFailed), null);
                 }
             }).ConfigureAwait(false);
@@ -183,7 +189,7 @@ namespace RFiDGear.Infrastructure.FileAccess
                     var projectXml = ReadProjectXml(projectLoadResult.Reader);
                     var serializer = new XmlSerializer(typeof(ChipTaskHandlerModel));
                     using var stringReader = new StringReader(projectXml);
-                    model = serializer.Deserialize(stringReader) as ChipTaskHandlerModel;
+                    model = SafeXml.Deserialize<ChipTaskHandlerModel>(serializer, stringReader);
                 });
             }
 
