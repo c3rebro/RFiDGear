@@ -881,6 +881,118 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task ARunTheWatchdogGaveUp_EndsAsFailureInsteadOfFaulting()
+        {
+            // The watchdog fires while the second task is still busy; the task then returns. The loop must stop
+            // cleanly: no fault, the stalled task recorded as failed, the third task never started.
+            var logger = new CapturingTaskExecutionLogger();
+            var observations = new List<TaskExecutionObservation>();
+            var service = BuildService(logger);
+            var tasks = new[]
+            {
+                new StubTaskModel { CurrentTaskIndex = "10" },
+                new StubTaskModel { CurrentTaskIndex = "11" },
+                new StubTaskModel { CurrentTaskIndex = "12" }
+            };
+            var thirdRan = 0;
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, tasks[0], ct => { tasks[0].IsTaskCompletedSuccessfully = true; return Task.CompletedTask; }),
+                new TaskDescriptor(1, tasks[1], ct =>
+                {
+                    service.AbandonRun();
+                    tasks[1].IsTaskCompletedSuccessfully = true;   // reports success when it finally returns
+                    return Task.CompletedTask;
+                }),
+                new TaskDescriptor(2, tasks[2], ct => { thirdRan++; return Task.CompletedTask; })
+            };
+            var request = BuildRequest(descriptors);
+            request.Observations = observations;
+
+            TaskExecutionResult? result = null;
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                result = await service.ExecuteOnceAsync(request);
+            });
+
+            Assert.NotNull(result);
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+            Assert.Equal(0, thirdRan);
+            Assert.Equal(2, service.CurrentTaskIndex);   // the stalled task's own increment, no sentinel
+            Assert.Equal(new[] { 0, 1 }, observations.Select(o => o.TaskPosition));
+            Assert.False(observations[1].WasSuccessful);
+            Assert.Single(logger.Entries.Where(entry => entry.Stage == "TaskLoop.Abandoned"));
+        }
+
+        [Fact]
+        public async Task ErrorRoutingAfterTheWatchdogGaveUp_DoesNotReviveTheLoop()
+        {
+            var failing = new StubTaskModel { CurrentTaskIndex = "10" };
+            var recovery = new StubTaskModel { CurrentTaskIndex = "90" };
+            var recoveryRan = 0;
+            var service = BuildService();
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, failing, ct =>
+                {
+                    service.AbandonRun();
+                    failing.CurrentTaskErrorLevel = ERROR.AuthFailure;   // would be routed to the recovery task
+                    failing.IsTaskCompletedSuccessfully = false;
+                    return Task.CompletedTask;
+                }),
+                new TaskDescriptor(1, new StubTaskModel { CurrentTaskIndex = "11" }, ct => Task.CompletedTask),
+                new TaskDescriptor(2, recovery, ct => { recoveryRan++; return Task.CompletedTask; })
+            };
+            var request = BuildRequest(descriptors);
+            request.ErrorRouting = new Dictionary<ERROR, string> { [ERROR.AuthFailure] = "90" };
+
+            TaskExecutionResult? result = null;
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                result = await service.ExecuteOnceAsync(request);
+            });
+
+            Assert.NotNull(result);
+            Assert.Equal(0, recoveryRan);
+            Assert.Equal(1, service.CurrentTaskIndex);   // only the task's own increment, not moved by routing
+            Assert.Equal(TaskLoopTerminalStatus.Failure, result.TerminalStatus);
+        }
+
+        [Fact]
+        public async Task ATaskThatRunsAgainAfterABackwardJump_IsEvaluatedOnItsLatestAttempt()
+        {
+            // The first task fails once, is routed back to itself and succeeds on the second attempt. The evaluator
+            // must see the second attempt only; the caller's sink receives both.
+            var task = new StubTaskModel { CurrentTaskIndex = "10" };
+            var attempts = 0;
+            var observations = new List<TaskExecutionObservation>();
+            var descriptors = new List<TaskDescriptor>
+            {
+                new TaskDescriptor(0, task, ct =>
+                {
+                    attempts++;
+                    task.CurrentTaskErrorLevel = attempts == 1 ? ERROR.AuthFailure : ERROR.NoError;
+                    task.IsTaskCompletedSuccessfully = attempts > 1;
+                    return Task.CompletedTask;
+                })
+            };
+            var request = BuildRequest(descriptors);
+            request.ErrorRouting = new Dictionary<ERROR, string> { [ERROR.AuthFailure] = "10" };
+            request.Observations = observations;
+
+            TaskExecutionResult? result = null;
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                result = await BuildService().ExecuteOnceAsync(request);
+            });
+
+            Assert.NotNull(result);
+            Assert.Equal(2, attempts);
+            Assert.Equal(new bool?[] { false, true }, observations.Select(o => o.WasSuccessful));
+            Assert.Equal(TaskLoopTerminalStatus.Success, result.TerminalStatus);
+        }
+
+        [Fact]
         public async Task ARunCutShortByAFault_LogsHowManyTasksWereNeverReached()
         {
             var logger = new CapturingTaskExecutionLogger();
