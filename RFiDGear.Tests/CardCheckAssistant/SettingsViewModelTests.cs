@@ -141,8 +141,17 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             public Dictionary<string, ProjectLanguageFinding> Findings { get; } = new Dictionary<string, ProjectLanguageFinding>();
 
-            public ProjectLanguageFinding? FindLanguageVariants(string path) =>
-                Findings.TryGetValue(path, out var finding) ? finding : null;
+            public List<string> Looked { get; } = new List<string>();
+
+            public ProjectLanguageFinding? FindLanguageVariants(string path)
+            {
+                lock (Looked)
+                {
+                    Looked.Add(path);
+                }
+
+                return Findings.TryGetValue(path, out var finding) ? finding : null;
+            }
         }
 
         internal sealed class Rig : IDisposable
@@ -547,6 +556,28 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 // A warning, not an error: accepting it is saving.
                 Assert.False(vm.DefaultProject.IsError);
                 Assert.True(vm.OkCommand.CanExecute(null));
+            });
+        }
+
+        [Fact]
+        public async Task TypingAPath_LooksAtTheFolderOnlyOnce_ForThePathItStopsAt()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                using var rig = await Rig.OpenAsync(Loaded());
+                var vm = rig.Vm;
+                vm.LanguageLookupDelay = TimeSpan.FromMilliseconds(150);
+                rig.Paths.Findings[PlainProject] = new ProjectLanguageFinding(LanguageNameKind.Plain, new[] { "deutsch" }, null);
+
+                vm.DefaultProject.Value = "C:\\p\\c";
+                vm.DefaultProject.Value = "C:\\p\\che";
+                vm.DefaultProject.Value = PlainProject;
+                await WaitUntil(() => vm.HasDefaultProjectNote, "the finding");
+
+                lock (rig.Paths.Looked)
+                {
+                    Assert.Equal(new[] { PlainProject }, rig.Paths.Looked);
+                }
             });
         }
 

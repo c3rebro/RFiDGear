@@ -674,8 +674,15 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             }
         }
 
-        // Looks at the folder of the default project whenever the path changes, so the operator sees the finding when the
-        // file is picked, not only at the save. An answer that arrives after a newer path was entered is dropped.
+        /// <summary>
+        /// Gets or sets how long the path has to stay as it is before the folder of the default project is looked at, so that
+        /// typing does not start a scan for every key, which on a network share would pile up blocking work.
+        /// </summary>
+        internal TimeSpan LanguageLookupDelay { get; set; } = TimeSpan.FromMilliseconds(300);
+
+        // Looks at the folder of the default project when the path has stopped changing, so the operator sees the finding
+        // when the file is picked, not only at the save. A newer path (or closing the window) cancels the older lookup before
+        // it touches the disk, and an answer that arrives after a newer path was entered is dropped.
         private async Task ShowLanguageNoteAsync()
         {
             var lookup = Interlocked.Increment(ref _languageLookup);
@@ -684,6 +691,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             ProjectLanguageFinding? finding = null;
             if (path.Length > 0 && Path.IsPathFullyQualified(path))
             {
+                await Task.Delay(LanguageLookupDelay);
+                if (IsDisposed || lookup != Volatile.Read(ref _languageLookup))
+                {
+                    return;
+                }
+
                 finding = await Task.Run(() => _pathChecker.FindLanguageVariants(path));
             }
 
