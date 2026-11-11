@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,7 +43,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private readonly IGuidedWorkflow _workflow;
         private readonly ISettingsDialog? _settingsDialog;
         private readonly IImportOffer _importOffer;
-        private readonly ICloseConfirmation _closeConfirmation;
+        private readonly IGuidedPageServices _services;
         private readonly Func<TimeSpan, Action, IDisposable> _startTimer;
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
         private readonly EventHandler<WorkflowSnapshot> _onWorkflowChanged;
@@ -57,7 +58,11 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         private Task _openTask = Task.CompletedTask;
         private IDisposable? _timer;
         private int _modal;
-        private bool _closing;
+        private bool _asking;
+        private int _reviewId;
+        private bool _inReview;
+        private int _openingReview = -1;
+        private Failure? _openFailure;
         private bool _syncingRows;
         private bool _tickRead;
         private bool _sawLoading;
@@ -78,7 +83,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <param name="workflow">The guided workflow this page is the window of; the page disposes it.</param>
         /// <param name="settingsDialog">Opens the settings window; <c>null</c> when the page has no settings button.</param>
         /// <param name="importOffer">The one-time offer to import the old assistant's settings.</param>
-        /// <param name="closeConfirmation">The question asked when the window is closed in the middle of a check.</param>
+        /// <param name="pageServices">The questions the page asks the operator, and the viewer for a report.</param>
         /// <param name="startTimer">Starts the repeating timer of the list refresh; the action may be called on any thread.</param>
         /// <exception cref="ArgumentNullException">An argument other than <paramref name="settingsDialog"/> is null.</exception>
         public GuidedCheckViewModel(
@@ -87,7 +92,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             IGuidedWorkflow workflow,
             ISettingsDialog? settingsDialog,
             IImportOffer importOffer,
-            ICloseConfirmation closeConfirmation,
+            IGuidedPageServices pageServices,
             Func<TimeSpan, Action, IDisposable> startTimer)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
@@ -95,7 +100,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             _workflow = workflow ?? throw new ArgumentNullException(nameof(workflow));
             _settingsDialog = settingsDialog;
             _importOffer = importOffer ?? throw new ArgumentNullException(nameof(importOffer));
-            _closeConfirmation = closeConfirmation ?? throw new ArgumentNullException(nameof(closeConfirmation));
+            _services = pageServices ?? throw new ArgumentNullException(nameof(pageServices));
             _startTimer = startTimer ?? throw new ArgumentNullException(nameof(startTimer));
 
             Strings = new LocalizedStrings(SafeRead(() => host.AppContext.UICultureName, string.Empty));
@@ -112,6 +117,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             KeepReportsCommand = new DelegateCommand(() => _workflow.ConfirmReplace(false), () => Offers(WorkflowControls.DeclineReplace));
             StartCheckCommand = new DelegateCommand(() => _workflow.StartCheck(), () => Offers(WorkflowControls.StartCheck));
             FinishCommand = new DelegateCommand(() => _workflow.Finish(), () => Offers(WorkflowControls.Finish));
+            FinishWithoutReadOutCommand = new DelegateCommand(FinishWithoutReadOut, () => Offers(WorkflowControls.FinishWithoutReadOut));
+            OpenReportCommand = new AsyncCommand(() => OpenInViewerAsync(ReadOutReport), () => CanOpen(ReadOutReport));
+            OpenFolderCommand = new AsyncCommand(() => OpenInViewerAsync(ReadOutFolder), () => CanOpen(ReadOutFolder));
             RetryCommand = new DelegateCommand(() => _workflow.Retry(), () => Offers(WorkflowControls.Retry));
             CancelCommand = new DelegateCommand(Cancel, () => Offers(WorkflowControls.Cancel));
             BackCommand = new DelegateCommand(Back, () => Offers(WorkflowControls.Back));
@@ -155,6 +163,15 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>Gets the command that makes the finished report and stores it.</summary>
         public DelegateCommand FinishCommand { get; }
 
+        /// <summary>Gets the command that finishes the order with the report made before the read-out, after the read-out failed.</summary>
+        public DelegateCommand FinishWithoutReadOutCommand { get; }
+
+        /// <summary>Gets the command that opens the report of the read-out in the viewer the operator has set up.</summary>
+        public AsyncCommand OpenReportCommand { get; }
+
+        /// <summary>Gets the command that opens the folder of the report of the read-out.</summary>
+        public AsyncCommand OpenFolderCommand { get; }
+
         /// <summary>Gets the command that repeats the step that failed.</summary>
         public DelegateCommand RetryCommand { get; }
 
@@ -192,6 +209,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         /// <summary>Gets a value indicating whether the verdict is shown.</summary>
         public bool IsVerdictStep => Step == GuidedStep.Verdict;
+
+        /// <summary>Gets a value indicating whether the report of the read-out is being checked.</summary>
+        public bool IsReviewStep => Step == GuidedStep.Review;
 
         /// <summary>Gets a value indicating whether the finished report is made and stored, or that failed.</summary>
         public bool IsFinishStep => Step == GuidedStep.Finish;
@@ -329,10 +349,17 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <summary>Gets what the card step asks of the operator.</summary>
         public string PromptText => GuidedTexts.Prompt(_snapshot, _hostCard, _hostRunning, Strings);
 
-        /// <summary>Gets the line for the phase the check is in, or the hint after a failed check.</summary>
-        public string CheckText => _snapshot.State == WorkflowState.RunFailed
-            ? Strings[Keys.GuidedRunFailedHint]
-            : GuidedTexts.Phase(_snapshot.Phase, Strings);
+        /// <summary>Gets the line for the phase the check is in, or the hint after a failed check or read-out.</summary>
+        public string CheckText => GuidedTexts.CheckText(_snapshot, Strings);
+
+        /// <summary>Gets the label of the button that repeats a failed step.</summary>
+        public string RetryText => GuidedTexts.RetryText(_snapshot, Strings);
+
+        /// <summary>Gets the label of the button at the foot of the page.</summary>
+        public string CancelText => GuidedTexts.CancelText(_snapshot, Strings);
+
+        /// <summary>Gets a value indicating whether the button that finishes without the read-out is shown (only after the read-out failed).</summary>
+        public bool ShowFinishWithoutReadOut => _snapshot.State == WorkflowState.ReadOutFailed;
 
         /// <summary>Gets the note to keep the chip on the reader.</summary>
         public string KeepChipText => Strings[Keys.GuidedKeepChip];
@@ -344,7 +371,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         public bool HasRows => _rows.Count > 0;
 
         /// <summary>Gets how many tasks failed, as a sentence, or empty.</summary>
-        public string SummaryText => _snapshot.Check?.Execution is { } result
+        public string SummaryText => ShownExecution(_snapshot) is { } result
             ? Strings.Format(Keys.SummaryFormat, result.FailedTasks, result.TotalTasks)
             : string.Empty;
 
@@ -373,6 +400,23 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         /// <summary>Gets the hint to open the first report to look at it.</summary>
         public string OpenReportHint => Strings[Keys.GuidedOpenReportHint];
+
+        // ── the review ──
+
+        /// <summary>Gets what the operator is asked to do at the review.</summary>
+        public string ReviewPromptText => Strings[Keys.GuidedReviewPrompt];
+
+        /// <summary>Gets the path of the report of the read-out, or empty.</summary>
+        public string ReadOutPathText => GuidedTexts.Line(Keys.GuidedReadOutPathFormat, ReadOutReport, Strings);
+
+        /// <summary>Gets what pressing the finish button commits to.</summary>
+        public string ReviewCommitText => Strings[Keys.GuidedReviewCommit];
+
+        /// <summary>Gets what is odd about the chip or its report; none if nothing is.</summary>
+        public IReadOnlyList<string> ReviewWarnings => GuidedTexts.ReviewWarnings(_snapshot, Strings);
+
+        /// <summary>Gets a value indicating whether there is a warning to show.</summary>
+        public bool HasReviewWarnings => ReviewWarnings.Count > 0;
 
         // ── finishing and the end ──
 
@@ -406,6 +450,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
                 else
                 {
                     AddMessage(messages, _snapshot.Failure);
+                    if (Step == GuidedStep.Review)
+                    {
+                        AddMessage(messages, _openFailure);
+                    }
                 }
 
                 return messages;
@@ -518,9 +566,84 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         private void Cancel()
         {
+            // From the programming on, nothing resumes what is ended here: one click on a button that is always at the foot
+            // of the page must not do it.
+            if (GuidedTexts.CancelNeedsQuestion(_snapshot.State) && !Ask(Strings[Keys.GuidedCancelTitle], GuidedTexts.Close(_snapshot, Strings)))
+            {
+                return;
+            }
+
             // A read that is cancelled ends in the list as it was, which looks like a read that found nothing.
             _readCancelled |= _snapshot.State == WorkflowState.LoadingOrders;
             _workflow.Cancel();
+        }
+
+        // The order is finished with the report made before the read-out, which holds no memory check: the operator is asked
+        // first. Whatever was offered when the question was shown, the engine decides when it is answered.
+        private void FinishWithoutReadOut()
+        {
+            if (Ask(Strings[Keys.GuidedAskFinishWithoutTitle], Strings[Keys.GuidedAskFinishWithout]))
+            {
+                _workflow.FinishWithoutReadOut();
+            }
+        }
+
+        // ── the report of the read-out ──
+
+        private string? ReadOutReport => _snapshot.ReadOut?.ReportPath;
+
+        private string? ReadOutFolder => string.IsNullOrWhiteSpace(ReadOutReport) ? null : Path.GetDirectoryName(ReadOutReport);
+
+        // Both buttons are one thing at a time: a second click, on either, waits for the viewer to have been asked. A request
+        // of an earlier review that is still waiting (a share that is slow to answer) does not hold up the buttons of this one.
+        private bool CanOpen(string? path) =>
+            !IsDisposed && _openingReview != _reviewId && _snapshot.State == WorkflowState.Reviewing && !string.IsNullOrWhiteSpace(path);
+
+        // The viewer is asked off this thread. What it answers counts only for the review it was asked in, and only while that
+        // review is still shown: the answer of order A's viewer must not show against order B's review.
+        private async Task OpenInViewerAsync(string? path)
+        {
+            var review = _reviewId;
+            _openingReview = review;
+            _openFailure = null;
+            RaiseOpenerState();
+
+            Failure? failure;
+            try
+            {
+                failure = await _services.OpenReportAsync(path ?? string.Empty, _cancellation.Token);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // A viewer that failed in a way nobody expected: the page says so, by the code that has a text.
+                failure = new Failure(FailureKind.Unexpected, OpenerFailureCodes.StartFailed, "The report could not be opened.");
+            }
+            finally
+            {
+                if (_openingReview == review)
+                {
+                    _openingReview = -1;
+                }
+            }
+
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (review == _reviewId && _snapshot.State == WorkflowState.Reviewing)
+            {
+                _openFailure = failure;
+            }
+
+            RaiseOpenerState();
+        }
+
+        private void RaiseOpenerState()
+        {
+            OnPropertyChanged(nameof(Messages));
+            OnPropertyChanged(nameof(HasMessages));
+            RaiseCommandStates();
         }
 
         private void Back()
@@ -575,23 +698,27 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OnPropertyChanged(nameof(HasMessages));
         }
 
-        private bool Confirm(WorkflowSnapshot snapshot)
+        private bool Confirm(WorkflowSnapshot snapshot) => Ask(Strings[Keys.GuidedCloseTitle], GuidedTexts.Close(snapshot, Strings));
+
+        // One question at a time: while one is open the page's own timer and refresh stand still (it counts as a modal
+        // window), and a second question is answered "no" at once.
+        private bool Ask(string title, string text)
         {
-            if (_closing)
+            if (_asking)
             {
                 return false;
             }
 
-            _closing = true;
+            _asking = true;
             _modal++;
             try
             {
-                return _closeConfirmation.Confirm(Strings[Keys.GuidedCloseTitle], GuidedTexts.Close(snapshot, Strings));
+                return _services.Confirm(title, text);
             }
             finally
             {
                 _modal--;
-                _closing = false;
+                _asking = false;
             }
         }
 
@@ -705,7 +832,20 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             TrackList(snapshot);
             TrackNotice(snapshot);
             SyncRows(snapshot.Orders);
-            SyncTaskRows(snapshot.Check?.Execution);
+            SyncTaskRows(ShownExecution(snapshot));
+            // Each time the review is entered it is a review of its own: answers of the viewer of an earlier one are not its.
+            var reviewing = snapshot.State == WorkflowState.Reviewing;
+            if (reviewing && !_inReview)
+            {
+                _reviewId++;
+            }
+
+            _inReview = reviewing;
+            if (!reviewing)
+            {
+                _openFailure = null;
+            }
+
             if (!_languageTouched)
             {
                 _selectedLanguage = _languages.First(option => option.Language == snapshot.DefaultLanguage);
@@ -777,6 +917,13 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             OnPropertyChanged(nameof(SelectedOrder));
         }
 
+        // The task results the page shows: those of the read-out from the read-out on (and none until it has run: the first
+        // check's rows under a read-out would be a lie), those of the first check otherwise.
+        private static ExecResult? ShownExecution(WorkflowSnapshot snapshot) =>
+            snapshot.State is WorkflowState.ReadingOut or WorkflowState.ReadOutFailed or WorkflowState.Reviewing
+                ? snapshot.ReadOut?.Execution
+                : snapshot.Check?.Execution;
+
         // The rows follow the result the snapshot carries: a new result (another run) is a new set of rows, however many
         // tasks it has; the same result in a later snapshot leaves them alone.
         private void SyncTaskRows(ExecResult? result)
@@ -814,6 +961,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             KeepReportsCommand.RaiseCanExecuteChanged();
             StartCheckCommand.RaiseCanExecuteChanged();
             FinishCommand.RaiseCanExecuteChanged();
+            FinishWithoutReadOutCommand.RaiseCanExecuteChanged();
+            OpenReportCommand.RaiseCanExecuteChanged();
+            OpenFolderCommand.RaiseCanExecuteChanged();
             RetryCommand.RaiseCanExecuteChanged();
             CancelCommand.RaiseCanExecuteChanged();
             BackCommand.RaiseCanExecuteChanged();
