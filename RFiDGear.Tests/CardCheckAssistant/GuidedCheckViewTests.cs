@@ -214,7 +214,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 [WorkflowState.Idle] = ("StepOrders", new[] { "CheckOrderButton", "RefreshButton", "SettingsButton" }),
                 [WorkflowState.LoadingOrders] = ("StepOrders", new[] { "CheckOrderButton", "RefreshButton", "SettingsButton", "CancelButton" }),
                 [WorkflowState.Starting] = ("StepPrepare", new[] { "CancelButton" }),
-                [WorkflowState.ConfirmingReplace] = ("StepReplace", new[] { "ReplaceButton", "KeepButton" }),
+                [WorkflowState.ConfirmingReplace] = ("StepReplace", new[] { "ReplaceButton", "KeepButton", "CancelButton" }),
                 [WorkflowState.WaitingForCard] = ("StepCard", new[] { "StartCheckButton", "CancelButton" }),
                 [WorkflowState.Checking] = ("StepCheck", new[] { "RetryRunButton", "CancelButton" }),
                 [WorkflowState.RunFailed] = ("StepCheck", new[] { "RetryRunButton", "CancelButton" }),
