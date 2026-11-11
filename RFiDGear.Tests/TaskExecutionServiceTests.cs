@@ -1133,6 +1133,55 @@ namespace RFiDGear.Tests
             }
         }
 
+        [Fact]
+        public async Task ChipHydrated_IsCalledWithTheChipTheRunsOwnReadFound_NotWithWhatWasReadBefore()
+        {
+            // The caller read card A before the run; by the time the run reads, the card on the reader is B.
+            var reader = new RFiDGear.Tests.Reader.ScriptedReadProvider
+            {
+                Card = new RFiDGear.Models.GenericChipModel("9876543210", CARD_TYPE.EM4102)
+            };
+            string seen = null;
+            var request = new TaskExecutionRequest { ChipHydrated = chip => seen = chip.UID };
+            var service = new TaskExecutionService(
+                new FixedReaderDeviceProvider(reader),
+                new StubDispatcherTimerAdapter(),
+                new StubDispatcherTimerAdapter());
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await service.ExecuteOnceAsync(request);
+            });
+
+            Assert.Equal("9876543210", seen);
+            Assert.Equal(1, reader.ReadCount);
+        }
+
+        [Fact]
+        public async Task ChipHydrated_IsNotCalled_ByARunThatHasNoReadOfItsOwn()
+        {
+            var called = false;
+            var task = new StubTaskModel { CurrentTaskIndex = "0" };
+            var request = BuildRequest(new List<TaskDescriptor> { new TaskDescriptor(0, task, _ => Task.CompletedTask) });
+            request.ChipHydrated = _ => called = true;
+
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                await BuildService().ExecuteOnceAsync(request);
+            });
+
+            Assert.False(called);
+        }
+
+        private sealed class FixedReaderDeviceProvider : IReaderDeviceProvider
+        {
+            private readonly RFiDGear.Infrastructure.ReaderProviders.ReaderDevice _device;
+
+            public FixedReaderDeviceProvider(RFiDGear.Infrastructure.ReaderProviders.ReaderDevice device) => _device = device;
+
+            public RFiDGear.Infrastructure.ReaderProviders.ReaderDevice GetInstance() => _device;
+        }
+
         private sealed class StubReaderDeviceProvider : IReaderDeviceProvider
         {
             public RFiDGear.Infrastructure.ReaderProviders.ReaderDevice GetInstance() => null;

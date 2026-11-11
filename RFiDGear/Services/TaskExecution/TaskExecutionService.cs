@@ -258,6 +258,14 @@ namespace RFiDGear.Services.TaskExecution
         /// closes the application, as it always did.
         /// </summary>
         public bool KeepApplicationOpen { get; set; }
+
+        /// <summary>
+        /// Optional. Called once per run, with the chip the run's <em>own</em> read found, after that read and before the
+        /// first task starts. The run reads the card again after anything the caller read before it, and the card can be
+        /// another one by then; automatic mode uses this to remember the card the tasks really work on. It is not called
+        /// by a run that has no reader read of its own (one driven by task descriptors).
+        /// </summary>
+        public Action<GenericChipModel> ChipHydrated { get; set; }
     }
 
     /// <summary>
@@ -427,6 +435,8 @@ namespace RFiDGear.Services.TaskExecution
                             request.Timeouts?.ChipHydrationTimeout,
                             cancellationToken,
                         runId);
+
+                        request.ChipHydrated?.Invoke(hydrationResult.Chip);
 
                         _ = await ExecuteStageWithTimeout(
                             "SelectionSync",

@@ -345,5 +345,107 @@ namespace RFiDGear.Tests.AutoMode
                 Assert.Single(exec.Requests);
             });
         }
+
+        // ── findings of the review of the pull request ──
+
+        [Fact]
+        public async Task AStopWhileTheRunWaitsForAScanThatAnExtensionStartedFromTheNotification_MeansNoRunAfterIt()
+        {
+            await WithViewModel(async (viewModel, provider, exec, coordinator) =>
+            {
+                var results = new List<ExecResult>();
+                var machine = Start(viewModel);
+                machine.RunCompleted += (_, result) => results.Add(result);
+
+                // A subscriber that scans the reader as soon as it hears of the card, from inside the poll's notification.
+                var scanStarted = false;
+                viewModel.ExtensionHost.Reader.ReaderStateChanged += (_, _) => scanStarted = scanStarted || coordinator.TryBeginScan();
+                provider.Card = Card(CardA);
+
+                var tick = machine.TickAsync();
+                Assert.True(scanStarted);
+                Assert.False(tick.IsCompleted, "the run waits for the scan");
+
+                machine.Stop();
+                coordinator.EndScan();
+                await Within(tick);
+
+                Assert.Empty(exec.Requests);
+                Assert.Empty(results);
+                Assert.False(coordinator.IsExecuting);
+                Assert.False(machine.IsEnabled);
+            });
+        }
+
+        [Fact]
+        public async Task ARunByHandThatFaults_StopsAModeThatIsOn_ButAFailedTaskDoesNot()
+        {
+            await WithViewModel(async (viewModel, provider, exec, _) =>
+            {
+                var machine = Start(viewModel);
+                provider.Card = Card(CardA);
+
+                exec.OnExecute = _ => new TaskExecutionResult { TerminalStatus = TaskLoopTerminalStatus.Failure };
+                await viewModel.WriteToChipOnceCommand.ExecuteAsync(null);
+                Assert.True(machine.IsEnabled);
+
+                exec.OnExecute = _ => throw new InvalidOperationException("The reader failed.");
+                await viewModel.WriteToChipOnceCommand.ExecuteAsync(null);
+
+                Assert.False(machine.IsEnabled);
+                Assert.Equal("RunAborted", machine.LastStopReason.ToString());
+            });
+        }
+
+        [Fact]
+        public async Task TheCardThatIsRemembered_IsTheOneTheExecutionServiceRead_NotTheOneTheWindowReadBefore()
+        {
+            await WithViewModel(async (viewModel, provider, exec, _) =>
+            {
+                var results = new List<ExecResult>();
+                var machine = Start(viewModel);
+                machine.RunCompleted += (_, result) => results.Add(result);
+                provider.Card = Card(CardA);
+
+                // The service reads the card once more before its first task, and the card was swapped meanwhile.
+                exec.OnExecute = request =>
+                {
+                    Assert.NotNull(request.ChipHydrated);
+                    request.ChipHydrated(Card("9876543210"));
+
+                    return new TaskExecutionResult { TerminalStatus = TaskLoopTerminalStatus.Success };
+                };
+                await machine.TickAsync();
+
+                provider.Card = Card("9876543210");
+                await machine.TickAsync();
+                await machine.TickAsync();
+
+                // A single, successful run, and the mode is still on: not a run that fell over and stopped it.
+                Assert.Equal(ExecutionOutcome.Success, Assert.Single(results).Outcome);
+                Assert.True(machine.IsEnabled);
+                Assert.Single(exec.Requests);
+            });
+        }
+
+        [Fact]
+        public async Task ThePoll_EmptiesTheSharedChipBeforeItReads_SoATagThatWasTakenAwayDoesNotStayInThePicture()
+        {
+            await WithViewModel(async (viewModel, provider, _, _) =>
+            {
+                var machine = Start(viewModel);
+                provider.Card = Card(CardA);
+
+                await machine.TickAsync();
+                var readsSoFar = provider.ReadCount;
+                await machine.TickAsync();
+                await machine.TickAsync();
+
+                // A provider that finds the same card again returns without touching the chip. Only a chip that was
+                // emptied first has no leftover children of the read before.
+                Assert.True(provider.ReadCount > readsSoFar);
+                Assert.All(provider.ChipWasEmptyAtStart, empty => Assert.True(empty));
+            });
+        }
     }
 }

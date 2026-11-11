@@ -126,13 +126,14 @@ namespace RFiDGear.Services.AutoMode
         private readonly object _sync = new object();
         private readonly ExtensionOperationCoordinator _coordinator;
         private readonly Func<Task<AutoModePoll?>> _poll;
-        private readonly Func<string, bool, Task<AutoModeRunReport>> _runCard;
+        private readonly Func<string, bool, Func<bool>, Task<AutoModeRunReport>> _runCard;
         private readonly Action<bool> _setClock;
         private readonly Action<Action> _post;
         private readonly Func<bool> _isReaderSelected;
         private readonly Func<bool> _hasTasks;
 
         private bool _enabled;
+        private int _session;
         private AutoModeStopReason _stopReason;
         private bool _keepApplicationOpen;
         private int _ticking;
@@ -151,8 +152,12 @@ namespace RFiDGear.Services.AutoMode
         /// </param>
         /// <param name="runCard">
         /// Processes a card that was just presented (first argument: its UID; second: whether a program task <c>%EXIT</c>
-        /// must leave the application open) and says what came of it. It reports a run that fails or throws as a result
-        /// of the run; an exception that escapes it is taken as "the card state is unknown".
+        /// must leave the application open; third: whether the request is still wanted) and says what came of it. It
+        /// reports a run that fails or throws as a result of the run; an exception that escapes it is taken as "the card
+        /// state is unknown". The run may have to wait before it is admitted (a reader scan of an extension is waited
+        /// for), and the mode can be stopped, or stopped and started again, meanwhile: it must ask the third argument
+        /// again whenever it has waited, and report the request as not admitted when it is no longer wanted. A run that
+        /// is admitted is never interrupted.
         /// </param>
         /// <param name="setClock">Switches the clock on or off. Called on the UI thread only (see <paramref name="post"/>).</param>
         /// <param name="post">Runs an action on the UI thread, at once when the caller is on it.</param>
@@ -161,7 +166,7 @@ namespace RFiDGear.Services.AutoMode
         internal AutoModeController(
             ExtensionOperationCoordinator coordinator,
             Func<Task<AutoModePoll?>> poll,
-            Func<string, bool, Task<AutoModeRunReport>> runCard,
+            Func<string, bool, Func<bool>, Task<AutoModeRunReport>> runCard,
             Action<bool> setClock,
             Action<Action> post,
             Func<bool> isReaderSelected,
@@ -270,6 +275,7 @@ namespace RFiDGear.Services.AutoMode
                 }
 
                 _enabled = true;
+                _session++;
                 _stopReason = AutoModeStopReason.None;
                 _keepApplicationOpen = keepApplicationOpen;
                 _readerSeen = false;
@@ -328,6 +334,27 @@ namespace RFiDGear.Services.AutoMode
             if (!string.IsNullOrEmpty(uid))
             {
                 _lastUid = uid;
+            }
+        }
+
+        /// <summary>
+        /// Says that a run made by hand (a click, or <c>AUTORUN=1</c>) has ended. Whoever started a run, one that ended
+        /// with a fault, a timeout, a cancellation or the watchdog's giving up leaves the card in a state nobody knows,
+        /// so a mode that is on stops, exactly as after a run of its own. An ordinary failure of a task leaves it on.
+        /// Nothing is reported through <see cref="RunCompleted"/>: that is for the runs the mode started itself.
+        /// </summary>
+        /// <param name="report">What came of the run; a run that was not admitted changes nothing.</param>
+        internal void OnRunByHandEnded(AutoModeRunReport report)
+        {
+            if (report == null || !report.Admitted)
+            {
+                return;
+            }
+
+            var stopReason = StopReasonOf(report);
+            if (stopReason != AutoModeStopReason.None)
+            {
+                Stop(stopReason);
             }
         }
 
@@ -442,10 +469,26 @@ namespace RFiDGear.Services.AutoMode
             var previous = _lastUid;
             _lastUid = uid;
 
+            // The request may have to wait before it is admitted, and a Stop (or a Stop and a new Start) in the meantime
+            // ends the session it was made in: it must not run afterwards.
+            int session;
+            lock (_sync)
+            {
+                session = _session;
+            }
+
+            bool IsCurrent()
+            {
+                lock (_sync)
+                {
+                    return _enabled && _session == session;
+                }
+            }
+
             AutoModeRunReport report;
             try
             {
-                report = await _runCard(uid, _keepApplicationOpen).ConfigureAwait(true);
+                report = await _runCard(uid, _keepApplicationOpen, IsCurrent).ConfigureAwait(true);
             }
             catch (Exception ex)
             {

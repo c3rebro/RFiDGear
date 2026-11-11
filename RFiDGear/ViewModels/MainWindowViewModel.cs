@@ -238,7 +238,7 @@ namespace RFiDGear.ViewModel
                 _coordinator,
                 poll: PollReaderForAutoModeAsync,
                 // The run reads the card itself (the card may have been swapped since the poll), so it needs no UID.
-                runCard: (_, keepApplicationOpen) => RunCardForAutoModeAsync(keepApplicationOpen),
+                runCard: (_, keepApplicationOpen, isStillWanted) => RunCardForAutoModeAsync(keepApplicationOpen, isStillWanted),
                 setClock: enabled => triggerReadChip.IsEnabled = enabled,
                 post: action =>
                 {
@@ -654,6 +654,11 @@ namespace RFiDGear.ViewModel
                     try
                     {
                         IsReaderBusy = true;
+
+                        // Emptied first, as the Read button does: a provider that finds the same high-frequency card again
+                        // returns without touching the chip, so the low-frequency and LEGIC children of the read before
+                        // would stay on it, and the picture would show a tag that was taken away.
+                        device.GenericChip = new GenericChipModel();
                         var result = await device.ReadChipPublic();
 
                         // The one place that says what a read means (a PC/SC reader without a card answers with an error).
@@ -692,15 +697,19 @@ namespace RFiDGear.ViewModel
         /// card put in the tree by the run's own read.
         /// </summary>
         /// <param name="keepApplicationOpen">Whether a program task <c>%EXIT</c> ends the run instead of closing the application.</param>
-        /// <returns>What came of it; not admitted when something else held the execution slot.</returns>
-        private async Task<AutoModeRunReport> RunCardForAutoModeAsync(bool keepApplicationOpen)
+        /// <param name="isStillWanted">
+        /// Whether automatic mode, in the session that asked for this run, is still on. The run may wait for a reader scan
+        /// of an extension before it is admitted, and a stop meanwhile must not be followed by a run.
+        /// </param>
+        /// <returns>What came of it; not admitted when something else held the execution slot or the request was withdrawn.</returns>
+        private async Task<AutoModeRunReport> RunCardForAutoModeAsync(bool keepApplicationOpen, Func<bool> isStillWanted)
         {
             foreach (var item in treeViewParentNodes)
             {
                 item.IsExpanded = false;
             }
 
-            return await RunAllOnceCoreAsync(keepApplicationOpen);
+            return await RunAllOnceCoreAsync(keepApplicationOpen, isStillWanted);
         }
 
         /// <summary>
@@ -1433,7 +1442,11 @@ namespace RFiDGear.ViewModel
         public IAsyncRelayCommand WriteToChipOnceCommand => new AsyncRelayCommand(OnNewWriteToChipOnceCommand);
         private async Task OnNewWriteToChipOnceCommand()
         {
-            await RunAllOnceCoreAsync(keepApplicationOpen: false);
+            var report = await RunAllOnceCoreAsync(keepApplicationOpen: false);
+
+            // Whoever started a run, one that ended in a way that leaves the card in an unknown state also stops a mode
+            // that is on; otherwise the next card would be run on the strength of it.
+            _autoMode?.OnRunByHandEnded(report);
         }
 
         /// <summary>
@@ -1447,10 +1460,14 @@ namespace RFiDGear.ViewModel
         /// first task starts, so that the machine does not run it a second time, however the run ends.
         /// </remarks>
         /// <param name="keepApplicationOpen">Whether a program task <c>%EXIT</c> ends the run instead of closing the application.</param>
+        /// <param name="isStillWanted">
+        /// Asked while the run waits for a reader scan of an extension to end: when it returns <c>false</c> the run is
+        /// given up (not admitted). <c>null</c> for a run by hand, which is always wanted.
+        /// </param>
         /// <returns>What came of it; <see cref="AutoModeRunReport.NotAdmitted"/> when nothing ran.</returns>
-        private async Task<AutoModeRunReport> RunAllOnceCoreAsync(bool keepApplicationOpen)
+        private async Task<AutoModeRunReport> RunAllOnceCoreAsync(bool keepApplicationOpen, Func<bool> isStillWanted = null)
         {
-            if (!await TryBeginExecutionAfterAScanAsync())
+            if (!await TryBeginExecutionAfterAScanAsync(isStillWanted))
             {
                 Mouse.OverrideCursor = null;
                 return AutoModeRunReport.NotAdmitted;
@@ -1477,7 +1494,9 @@ namespace RFiDGear.ViewModel
                 OnPropertyChanged(nameof(TreeViewParentNodes));
                 OnPropertyChanged(nameof(ChipTasks));
 
-                RememberCardOnReader();
+                // What the reader showed so far. The run reads the card once more before its first task (see ChipHydrated
+                // below), and that read is the one that counts if the card was swapped in between.
+                RememberCard(ReaderDevice.Instance?.GenericChip);
 
                 // The positions of the observations index into the list as it is now; the live one may change meanwhile.
                 snapshot = taskHandler?.TaskCollection?.ToList() ?? new List<object>();
@@ -1487,6 +1506,7 @@ namespace RFiDGear.ViewModel
                     RunId = runId,
                     Observations = observations,
                     KeepApplicationOpen = keepApplicationOpen,
+                    ChipHydrated = RememberCard,
                     TaskHandler = taskHandler,
                     TreeViewParentNodes = treeViewParentNodes,
                     VariablesFromArgs = variablesFromArgs,
@@ -1536,12 +1556,14 @@ namespace RFiDGear.ViewModel
         }
 
         /// <summary>
-        /// Tells automatic mode which card the run is about to work on, as the polls would report it, so that automatic
-        /// mode does not run that card again while it stays on the reader. Read from the chip the run has just read.
+        /// Tells automatic mode which card a run works on, as the polls would report it, so that automatic mode does not
+        /// run that card again while it stays on the reader. Called with what the run's reads found: the preliminary read
+        /// of the window first, then the read of the execution service, which is the one the tasks work on.
         /// </summary>
-        private void RememberCardOnReader()
+        /// <param name="chip">The chip a read left behind; none or an empty chip changes nothing.</param>
+        private void RememberCard(GenericChipModel chip)
         {
-            var uid = ReaderSnapshotBuilder.CredentialsOf(ReaderDevice.Instance?.GenericChip).FirstOrDefault()?.Uid;
+            var uid = ReaderSnapshotBuilder.CredentialsOf(chip).FirstOrDefault()?.Uid;
             if (uid != null)
             {
                 _autoMode?.RememberCard(uid);
@@ -1551,26 +1573,36 @@ namespace RFiDGear.ViewModel
         /// <summary>The longest a run waits for a reader scan of an extension to end before it gives up.</summary>
         internal TimeSpan MaxWaitForAScan { get; set; } = TimeSpan.FromSeconds(20);
 
-        // A scan is short. A run that meets one waits for it instead of being dropped: in automatic mode the card is in the
-        // tree already, so nothing would ever try it again. Any other reason to refuse (a run, a load, an edit) still
-        // refuses at once.
-        internal Task<bool> TryBeginExecutionAfterAScanAsync() => TryBeginAfterAScanAsync(_coordinator.TryBeginExecution);
+        // A scan is short. A run that meets one waits for it instead of being dropped, so that a click is not lost and a
+        // card of automatic mode does not wait for the next tick. Any other reason to refuse (a run, a load, an edit)
+        // still refuses at once. A request of automatic mode can be withdrawn while it waits (isStillWanted).
+        internal Task<bool> TryBeginExecutionAfterAScanAsync(Func<bool> isStillWanted = null) =>
+            TryBeginAfterAScanAsync(_coordinator.TryBeginExecution, isStillWanted);
 
         /// <summary>
         /// Admits an operation with <paramref name="tryBegin"/>, waiting up to <see cref="MaxWaitForAScan"/> while the
         /// only thing in the way is a reader scan.
         /// </summary>
         /// <param name="tryBegin">The coordinator's admission method for the operation.</param>
+        /// <param name="isStillWanted">
+        /// Asked before every attempt, so before the one that succeeds when the scan has ended: when it returns
+        /// <c>false</c> the operation is not admitted. <c>null</c> means it is always wanted.
+        /// </param>
         /// <returns><c>true</c> when the operation was admitted.</returns>
-        private async Task<bool> TryBeginAfterAScanAsync(Func<bool> tryBegin)
+        private async Task<bool> TryBeginAfterAScanAsync(Func<bool> tryBegin, Func<bool> isStillWanted = null)
         {
             var giveUp = DateTime.UtcNow + MaxWaitForAScan;
-            while (!tryBegin())
+            while (isStillWanted == null || isStillWanted())
             {
+                if (tryBegin())
+                {
+                    return true;
+                }
+
                 if (!_coordinator.IsScanning)
                 {
                     // Not a scan, or a scan that ended since the attempt: one more attempt tells which.
-                    return tryBegin();
+                    return (isStillWanted == null || isStillWanted()) && tryBegin();
                 }
 
                 if (DateTime.UtcNow >= giveUp)
@@ -1581,7 +1613,7 @@ namespace RFiDGear.ViewModel
                 await Task.Delay(TimeSpan.FromMilliseconds(25));
             }
 
-            return true;
+            return false;
         }
 
         private void TaskExecutionService_ExecutionCompleted(object sender, TaskExecutionCompletedEventArgs e)

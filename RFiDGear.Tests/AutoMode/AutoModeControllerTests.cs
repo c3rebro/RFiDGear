@@ -72,8 +72,22 @@ namespace RFiDGear.Tests.AutoMode
                 return new AutoModeRunReport(admitted: true, result, abandoned);
             }
 
-            private async Task<AutoModeRunReport> RunAsync(string uid, bool keepOpen)
+            /// <summary>Stands for the wait for a reader scan that a run may have to make before it is admitted.</summary>
+            public Func<Task>? WaitForAdmission;
+
+            private async Task<AutoModeRunReport> RunAsync(string uid, bool keepOpen, Func<bool> isStillWanted)
             {
+                if (WaitForAdmission != null)
+                {
+                    await WaitForAdmission();
+
+                    // As the main window does: a request that was withdrawn while it waited is not admitted.
+                    if (!isStillWanted())
+                    {
+                        return AutoModeRunReport.NotAdmitted;
+                    }
+                }
+
                 Runs.Add(uid);
                 KeepOpen.Add(keepOpen);
 
@@ -603,6 +617,94 @@ namespace RFiDGear.Tests.AutoMode
             rig.Controller.TryStart(requireReady: false, keepApplicationOpen: false);
             await rig.Tick();
             Assert.Equal(2, rig.Runs.Count);
+        }
+
+        // ── a request that waits for admission must not outlive the session that made it ──
+
+        [Fact]
+        public async Task AStopWhileTheRunWaitsForAdmission_WithdrawsTheRequest_SoNothingRunsAfterIt()
+        {
+            var rig = StartedRig();
+            var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.WaitForAdmission = () => release.Task;
+            rig.Present("A");
+
+            var tick = rig.Tick();
+            rig.Controller.Stop();
+            release.SetResult(true);
+            await tick;
+
+            Assert.Empty(rig.Runs);
+            Assert.DoesNotContain(rig.Events, e => e.StartsWith("run:"));
+
+            // Nothing happened to the card, so it is not remembered: a later start takes it.
+            rig.WaitForAdmission = null;
+            rig.Controller.TryStart(requireReady: false, keepApplicationOpen: false);
+            await rig.Tick();
+            Assert.Equal(new[] { "A" }, rig.Runs);
+        }
+
+        [Fact]
+        public async Task AStopAndANewStartWhileTheRunWaits_AlsoWithdrawTheRequestOfTheOldSession()
+        {
+            var rig = StartedRig();
+            var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            rig.WaitForAdmission = () => release.Task;
+            rig.Present("A");
+
+            var tick = rig.Tick();
+            rig.Controller.Stop();
+            rig.Controller.TryStart(requireReady: false, keepApplicationOpen: false);
+            release.SetResult(true);
+            await tick;
+            Assert.Empty(rig.Runs);
+
+            // The new session takes the card, once.
+            rig.WaitForAdmission = null;
+            await rig.Tick();
+            await rig.Tick();
+            Assert.Equal(new[] { "A" }, rig.Runs);
+        }
+
+        // ── a run made by hand is judged by the same safety rules ──
+
+        [Theory]
+        [InlineData(ExecutionFailureReason.Faulted)]
+        [InlineData(ExecutionFailureReason.TimedOut)]
+        [InlineData(ExecutionFailureReason.Cancelled)]
+        public void ARunByHandThatEndedBadly_StopsAModeThatIsOn_WithoutReportingItAsARunOfTheMode(ExecutionFailureReason reason)
+        {
+            var rig = StartedRig();
+
+            rig.Controller.OnRunByHandEnded(rig.Admitted(ExecutionOutcome.Failure, reason));
+
+            Assert.False(rig.Controller.IsEnabled);
+            Assert.DoesNotContain(rig.Events, e => e.StartsWith("run:"));
+        }
+
+        [Fact]
+        public void ARunByHandThatTheWatchdogGaveUp_StopsAModeThatIsOn_ButAnOrdinaryFailureDoesNot()
+        {
+            var rig = StartedRig();
+
+            rig.Controller.OnRunByHandEnded(rig.Admitted(ExecutionOutcome.Failure));
+            rig.Controller.OnRunByHandEnded(AutoModeRunReport.NotAdmitted);
+            Assert.True(rig.Controller.IsEnabled);
+
+            rig.Controller.OnRunByHandEnded(rig.Admitted(ExecutionOutcome.Failure, abandoned: true));
+            Assert.False(rig.Controller.IsEnabled);
+            Assert.Equal(AutoModeStopReason.RunTimedOut, rig.Controller.LastStopReason);
+        }
+
+        [Fact]
+        public void ARunByHand_ChangesNothing_WhenTheModeIsOff()
+        {
+            var rig = new Rig();
+
+            rig.Controller.OnRunByHandEnded(rig.Admitted(ExecutionOutcome.Failure, ExecutionFailureReason.Faulted));
+
+            Assert.Empty(rig.Events);
+            Assert.Equal(AutoModeStopReason.None, rig.Controller.LastStopReason);
         }
 
         // ── the clock follows the state, whatever else touches it ──
