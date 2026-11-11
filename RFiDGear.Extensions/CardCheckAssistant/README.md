@@ -191,8 +191,13 @@ system. It appears in the Extensions menu of the main window.
   of orders, starting an order, waiting for a card, the check run, the verdict
   and the finish (the final report is made, uploaded with `IOrderStore`, the
   working reports are cleaned up). It covers the verdicts that do not lead to
-  programming; programming, the read-out and the review come later, and for a
-  chip that can be programmed it stops at the verdict with only Cancel
+  programming, and the first step of programming: for a chip that can be
+  programmed (and when the project that reads out its memory can be used),
+  `BeginProgramming` waits for the chip to be taken off the reader and put
+  back while the operator programs it elsewhere. A wait that runs out cancels
+  nothing; the operator can wait again. Writing the second report, the
+  read-out and the review come later, so once the chip is put back only
+  Cancel is
   offered. The page binds to `Current` (an immutable `WorkflowSnapshot`: state,
   what the operator may do, whether something runs, the orders, the card, the
   task outcomes, the verdict, the failure as a stable code) and `Changed`, and

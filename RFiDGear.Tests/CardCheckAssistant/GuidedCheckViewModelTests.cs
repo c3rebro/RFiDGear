@@ -50,6 +50,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             [WorkflowState.Checking] = GuidedStep.Check,
             [WorkflowState.RunFailed] = GuidedStep.Check,
             [WorkflowState.Assessing] = GuidedStep.Verdict,
+            [WorkflowState.Programming] = GuidedStep.Verdict,
             [WorkflowState.Completing] = GuidedStep.Finish,
             [WorkflowState.CompletionFailed] = GuidedStep.Finish,
             [WorkflowState.Completed] = GuidedStep.End,
@@ -771,6 +772,10 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.True(vm.TryRequestClose());
             Assert.Equal(vm.Strings[Keys.GuidedCloseUpload], page.Close.Asked[3].Text);
 
+            await page.PushAsync(WorkflowState.Programming);
+            Assert.True(vm.TryRequestClose());
+            Assert.Equal(vm.Strings[Keys.GuidedCloseProgrammed], page.Close.Asked[4].Text);
+
             // The workflow decides, not the picture the page shows: a change that was not applied yet counts.
             await page.PushAsync(WorkflowState.Idle);
             page.Close.WhileAsking = null;
@@ -864,6 +869,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal(
                 strings.Format(Keys.GuidedEndCancelledProgrammableFormat, "C:\\reports\\first.pdf"),
                 End(WorkflowState.Cancelled, s => s with { CancelledAt = WorkflowState.Assessing, Check = withReport, Selection = programmable }));
+
+            // After a cancel while the chip was being programmed, the end text does not say that nothing was changed.
+            Assert.Equal(
+                strings[Keys.GuidedEndCancelledProgrammed],
+                End(WorkflowState.Cancelled, s => s with { CancelledAt = WorkflowState.Programming, Check = withReport, Selection = programmable }));
             Assert.Equal(string.Empty, End(WorkflowState.Idle));
         }
 

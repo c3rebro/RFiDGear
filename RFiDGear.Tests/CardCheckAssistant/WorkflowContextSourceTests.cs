@@ -6,6 +6,7 @@ using System.Security.Principal;
 
 using RFiDGear.ExtensionLibraries.CardCheck;
 using RFiDGear.Extensions.CardCheckAssistant.Services;
+using RFiDGear.Extensions.CardCheckAssistant.Workflow;
 using RFiDGear.Tests.CardCheck;
 
 using Xunit;
@@ -74,6 +75,49 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal("C:\\Projects\\check.rfPrj", result.Value.Settings.DefaultProjectPath);
             Assert.Equal(1, _stubStores);
             Assert.Equal(0, _realStores);
+        }
+
+        [Fact]
+        public void TheReadOutProject_IsCheckedOnTheDisk_AndTheTextBlocksArePassedOn()
+        {
+            var reports = Reports();
+            var project = Path.Combine(_folder.Path, "memory.rfPrj");
+            File.WriteAllText(project, "x");
+            var blocks = new[] { new TextTemplate { Name = "A", Content = "a" } };
+
+            WorkflowSettings Resolve(string path, bool testMode)
+            {
+                _settings.Set(new CardCheckSettings { UseStubJobs = testMode, CustomProjectPath = path, TextTemplates = blocks, Report = new ReportSettings { OutputPath = reports } });
+                var result = Source().Resolve();
+                Assert.True(result.IsSuccess);
+
+                return result.Value.Settings;
+            }
+
+            // A project that is there is passed on as it is written without the blanks around it, in either mode.
+            foreach (var testMode in new[] { true, false })
+            {
+                var usable = Resolve("  " + project + " ", testMode);
+                Assert.Equal(project, usable.MemoryProjectPath);
+                Assert.Null(usable.MemoryProjectProblem);
+                Assert.Equal(blocks, usable.TextBlocks);
+            }
+
+            // One that cannot be used has no path, and one problem with one code whatever is wrong with it.
+            var missing = Path.Combine(_folder.Path, "missing.rfPrj");
+            foreach (var (path, kind) in new[]
+            {
+                (string.Empty, FailureKind.NotConfigured),
+                ("   ", FailureKind.NotConfigured),
+                ("memory.rfPrj", FailureKind.InvalidConfiguration),
+                (missing, FailureKind.NotFound),
+            })
+            {
+                var unusable = Resolve(path, true);
+                Assert.Equal(string.Empty, unusable.MemoryProjectPath);
+                Assert.Equal(WorkflowFailureCodes.MemoryProjectInvalid, unusable.MemoryProjectProblem!.Code);
+                Assert.Equal(kind, unusable.MemoryProjectProblem.Kind);
+            }
         }
 
         [Theory]

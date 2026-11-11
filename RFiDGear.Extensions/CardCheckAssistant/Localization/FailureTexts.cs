@@ -54,6 +54,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [WorkflowFailureCodes.WaitTimedOut] = Keys.FailWaitTimedOut,
             [WorkflowFailureCodes.CardChanged] = Keys.FailCardChanged,
             [WorkflowFailureCodes.CardUnclear] = Keys.FailCardUnclear,
+            [WorkflowFailureCodes.MemoryProjectInvalid] = Keys.FailMemoryProjectInvalid,
+            [WorkflowFailureCodes.CardMoveTimedOut] = Keys.FailCardMoveTimedOut,
 
             // The check run.
             [CheckFailureCodes.ProjectRequired] = Keys.FailProjectSetting,

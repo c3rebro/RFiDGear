@@ -82,6 +82,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         public bool Finish() => Record("Finish");
 
+        public bool BeginProgramming() => Record("BeginProgramming");
+
         public bool Retry() => Record("Retry");
 
         public bool Cancel() => Record("Cancel");

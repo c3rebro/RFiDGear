@@ -38,6 +38,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// <summary>The finished report was made but cannot be read.</summary>
         public const string FinalUnreadable = "workflow.final.unreadable";
 
+        /// <summary>The project that reads out the memory of the chip is not set, or its file is not there.</summary>
+        public const string MemoryProjectInvalid = "workflow.memoryProject.invalid";
+
+        /// <summary>Nobody took the chip off the reader and put it back for a long time, so the wait ended.</summary>
+        public const string CardMoveTimedOut = "workflow.card.moveTimedOut";
+
         /// <summary>Something nobody expected went wrong; nothing about the exception but its type is kept.</summary>
         public const string Faulted = "workflow.faulted";
     }
@@ -53,7 +59,17 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         bool RemoveTemporaryReports,
         ReportLanguage DefaultLanguage,
         string DefaultProjectPath,
-        bool IsTestMode);
+        bool IsTestMode)
+    {
+        /// <summary>The project that reads out the memory of a programmed chip; empty if it is not usable (see <see cref="MemoryProjectProblem"/>).</summary>
+        public string MemoryProjectPath { get; init; } = string.Empty;
+
+        /// <summary>Why that project cannot be used (not set, not a full path, not there); <c>null</c> if it can. Without it a chip is not programmed, since the read-out would fail after the chip was changed.</summary>
+        public Failure? MemoryProjectProblem { get; init; }
+
+        /// <summary>The text blocks the operator can put into the notes of a report, in the order of the settings.</summary>
+        public IReadOnlyList<TextTemplate> TextBlocks { get; init; } = Array.Empty<TextTemplate>();
+    }
 
     /// <summary>The order store and the settings that belong together: an order is listed, checked and finished with the same pair.</summary>
     /// <param name="Store">The orders: the order system, or the made-up orders of the test mode.</param>
@@ -87,6 +103,14 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// <param name="ct">Cancels the wait.</param>
         /// <returns>How the wait ended.</returns>
         Task<CardWaitResult> WaitForCardAsync(TimeSpan? timeout, CancellationToken ct);
+
+        /// <summary>Waits until the card is taken off the reader and a card is put on it; see <see cref="CardWaiter.WaitForRemovalAndReinsertionAsync"/>.</summary>
+        /// <param name="timeout">How long to wait for both together; <c>null</c> to wait until cancelled.</param>
+        /// <param name="cardBeforeUid">The UID of the card that is on the reader now, if known.</param>
+        /// <param name="stageChanged">Called when the stage is known and every time it changes; may be <c>null</c>.</param>
+        /// <param name="ct">Cancels the wait.</param>
+        /// <returns>How the wait ended, with the UIDs before and after.</returns>
+        Task<CardMoveResult> WaitForRemovalAndReinsertionAsync(TimeSpan? timeout, string? cardBeforeUid, Action<CardMoveStage>? stageChanged, CancellationToken ct);
     }
 
     /// <summary>
@@ -137,6 +161,19 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// <summary>Where the check run is, while it runs.</summary>
         public CheckPhase? Phase { get; init; }
 
+        /// <summary>The text blocks for the notes of a report, as last read from the settings (like <see cref="DefaultLanguage"/>, they stay when the check ends).</summary>
+        public IReadOnlyList<TextTemplate> TextBlocks { get; init; } = Array.Empty<TextTemplate>();
+
+        /// <summary>Where the card's way off the reader and back on is, while the workflow waits for it; <c>null</c> before the first look.</summary>
+        public CardMoveStage? MoveStage { get; init; }
+
+        /// <summary>
+        /// How the last wait for the card's way off the reader and back on ended: <see cref="CardMoveResult.Outcome"/> says
+        /// whether the card was put back or the wait ran out, and <see cref="CardMoveResult.SameCard"/> whether it is the one
+        /// that was taken off. <c>null</c> before that, and while it is awaited again.
+        /// </summary>
+        public CardMoveResult? Move { get; init; }
+
         /// <summary>What the check run came to (the task outcomes are in <see cref="CheckRunResult.Execution"/>).</summary>
         public CheckRunResult? Check { get; init; }
 
@@ -145,6 +182,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
 
         /// <summary>What the rules make of the findings: the verdict, the memory and the templates.</summary>
         public TemplateSelection? Selection { get; init; }
+
+        /// <summary>Why a chip that could be programmed is not offered for programming (the project that reads out its memory cannot be used); <c>null</c> if it is offered, or if the chip cannot be programmed anyway. It is not a <see cref="Failure"/>: nothing went wrong, the page shows it next to the verdict when it has a button to explain.</summary>
+        public Failure? ProgrammingProblem { get; init; }
 
         /// <summary>Why the last step did not work, or a note the operator should see (a refused start, a failed run or upload, a wait that ran out); <c>null</c> if there is none.</summary>
         public Failure? Failure { get; init; }

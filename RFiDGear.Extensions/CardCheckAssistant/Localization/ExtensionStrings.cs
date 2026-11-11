@@ -132,6 +132,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string FailWaitTimedOut = "FailWaitTimedOut";
             public const string FailCardChanged = "FailCardChanged";
             public const string FailCardUnclear = "FailCardUnclear";
+            public const string FailMemoryProjectInvalid = "FailMemoryProjectInvalid";
+            public const string FailCardMoveTimedOut = "FailCardMoveTimedOut";
             public const string FailProjectSetting = "FailProjectSetting";
             public const string FailLoadFormat = "FailLoadFormat";
             public const string FailProjectChanged = "FailProjectChanged";
@@ -181,6 +183,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string GuidedEndCancelledKeptFormat = "GuidedEndCancelledKeptFormat";
             public const string GuidedEndCancelledProgrammableFormat = "GuidedEndCancelledProgrammableFormat";
             public const string GuidedEndCancelledMaybe = "GuidedEndCancelledMaybe";
+            public const string GuidedEndCancelledProgrammed = "GuidedEndCancelledProgrammed";
             public const string GuidedEndFaulted = "GuidedEndFaulted";
             public const string GuidedOrdersLoading = "GuidedOrdersLoading";
             public const string GuidedOrdersNone = "GuidedOrdersNone";
@@ -193,6 +196,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string GuidedCloseNothing = "GuidedCloseNothing";
             public const string GuidedCloseVerdict = "GuidedCloseVerdict";
             public const string GuidedCloseUpload = "GuidedCloseUpload";
+            public const string GuidedCloseProgrammed = "GuidedCloseProgrammed";
             public const string GuidedHint = "GuidedHint";
             public const string GuidedCustomerLabel = "GuidedCustomerLabel";
             public const string GuidedOrderStatusLabel = "GuidedOrderStatusLabel";
@@ -265,6 +269,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.FailWaitTimedOut] = "No chip was put on the reader for 30 minutes, so the wait ended.",
             [Keys.FailCardChanged] = "Another chip is on the reader now. Put the first chip back, or cancel and start again.",
             [Keys.FailCardUnclear] = "The reader gave no clear answer. It may be busy with other tasks or have lost its connection. Try again.",
+            [Keys.FailMemoryProjectInvalid] = "The chip cannot be programmed: the project that reads out its memory is not set, or its file cannot be found. Fix it in the settings.",
+            [Keys.FailCardMoveTimedOut] = "The wait for the chip to be taken off the reader and put back ended after 30 minutes. What was done to the chip meanwhile stays. Wait again, or cancel and check the order before you check the chip again.",
             [Keys.FailProjectSetting] = "The check project is missing or its path is wrong. Cancel, then fix it in the settings.",
             [Keys.FailLoadFormat] = "RFiDGear cannot open the check project: the file format is not supported. Cancel, then choose another file in the settings.",
             [Keys.FailProjectChanged] = "The project in RFiDGear was changed while the check was starting. Try again and leave RFiDGear alone until the check has finished.",
@@ -314,6 +320,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedEndCancelledKeptFormat] = "Cancelled. The order is unchanged. The first report stays at {0}.",
             [Keys.GuidedEndCancelledProgrammableFormat] = "Cancelled. The order is unchanged. The first report is at {0}. Programming is not part of this version.",
             [Keys.GuidedEndCancelledMaybe] = "Cancelled. The order may not have been finished in the order system. Check it there before you check the chip again; repeating the check is safe.",
+            [Keys.GuidedEndCancelledProgrammed] = "Cancelled. The chip may already be programmed and the order is not finished. The reports made so far stay in the report folder. Check the order before you check the chip again.",
             [Keys.GuidedEndFaulted] = "Something unexpected went wrong. If the check had reached the upload, check the order in the order system.",
             [Keys.GuidedOrdersLoading] = "Reading the orders...",
             [Keys.GuidedOrdersNone] = "There are no orders.",
@@ -326,6 +333,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedCloseNothing] = "The check of this order is abandoned. Nothing has been changed in the order system.",
             [Keys.GuidedCloseVerdict] = "The check of this order is abandoned and the verdict is dropped. The first report stays on disk and the order stays as it is.",
             [Keys.GuidedCloseUpload] = "The finished report could not be stored yet. If you close now, the order may stay unfinished in the order system. Check it there afterwards.",
+            [Keys.GuidedCloseProgrammed] = "The programming of this chip is abandoned. The chip may already be programmed and the order is not finished; the reports made so far stay on disk. Check the order afterwards.",
             [Keys.GuidedHint] = "Checks the chip of an order, step by step.",
             [Keys.GuidedCustomerLabel] = "Customer",
             [Keys.GuidedOrderStatusLabel] = "Order status",
@@ -469,6 +477,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.FailWaitTimedOut] = "30 Minuten lang wurde kein Chip auf den Leser gelegt, deshalb wurde das Warten beendet.",
             [Keys.FailCardChanged] = "Jetzt liegt ein anderer Chip auf dem Leser. Legen Sie den ersten Chip zurück oder brechen Sie ab und beginnen Sie neu.",
             [Keys.FailCardUnclear] = "Der Leser hat keine eindeutige Antwort gegeben. Er ist vielleicht mit anderen Aufgaben beschäftigt oder hat die Verbindung verloren. Versuchen Sie es erneut.",
+            [Keys.FailMemoryProjectInvalid] = "Der Chip kann nicht programmiert werden: Das Projekt, das seinen Speicher ausliest, ist nicht eingestellt oder seine Datei wurde nicht gefunden. Korrigieren Sie es in den Einstellungen.",
+            [Keys.FailCardMoveTimedOut] = "Das Warten darauf, dass der Chip vom Leser genommen und wieder aufgelegt wird, wurde nach 30 Minuten beendet. Was in der Zwischenzeit mit dem Chip gemacht wurde, bleibt bestehen. Warten Sie erneut, oder brechen Sie ab und prüfen Sie den Auftrag, bevor Sie den Chip erneut prüfen.",
             [Keys.FailProjectSetting] = "Das Prüfprojekt fehlt oder sein Pfad ist falsch. Brechen Sie ab und korrigieren Sie es in den Einstellungen.",
             [Keys.FailLoadFormat] = "RFiDGear kann das Prüfprojekt nicht öffnen: Das Dateiformat wird nicht unterstützt. Brechen Sie ab und wählen Sie in den Einstellungen eine andere Datei.",
             [Keys.FailProjectChanged] = "Das Projekt in RFiDGear wurde geändert, während die Prüfung startete. Versuchen Sie es erneut und lassen Sie RFiDGear bis zum Ende der Prüfung unberührt.",
@@ -518,6 +528,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedEndCancelledKeptFormat] = "Abgebrochen. Der Auftrag ist unverändert. Der erste Bericht bleibt unter {0}.",
             [Keys.GuidedEndCancelledProgrammableFormat] = "Abgebrochen. Der Auftrag ist unverändert. Der erste Bericht liegt unter {0}. Das Programmieren gehört nicht zu dieser Version.",
             [Keys.GuidedEndCancelledMaybe] = "Abgebrochen. Der Auftrag ist im Auftragssystem möglicherweise nicht abgeschlossen. Prüfen Sie ihn dort, bevor Sie den Chip erneut prüfen; eine Wiederholung ist gefahrlos.",
+            [Keys.GuidedEndCancelledProgrammed] = "Abgebrochen. Der Chip ist möglicherweise schon programmiert und der Auftrag ist nicht abgeschlossen. Die bisher erstellten Berichte bleiben im Berichtsordner. Prüfen Sie den Auftrag, bevor Sie den Chip erneut prüfen.",
             [Keys.GuidedEndFaulted] = "Etwas Unerwartetes ist schiefgegangen. Falls die Prüfung schon beim Speichern war, prüfen Sie den Auftrag im Auftragssystem.",
             [Keys.GuidedOrdersLoading] = "Die Aufträge werden gelesen...",
             [Keys.GuidedOrdersNone] = "Es gibt keine Aufträge.",
@@ -530,6 +541,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedCloseNothing] = "Die Prüfung dieses Auftrags wird abgebrochen. Im Auftragssystem wurde nichts geändert.",
             [Keys.GuidedCloseVerdict] = "Die Prüfung dieses Auftrags wird abgebrochen und das Ergebnis verworfen. Der erste Bericht bleibt auf dem Datenträger und der Auftrag bleibt unverändert.",
             [Keys.GuidedCloseUpload] = "Der fertige Bericht konnte noch nicht gespeichert werden. Wenn Sie jetzt schließen, bleibt der Auftrag im Auftragssystem möglicherweise offen. Prüfen Sie ihn danach dort.",
+            [Keys.GuidedCloseProgrammed] = "Das Programmieren dieses Chips wird abgebrochen. Der Chip ist möglicherweise schon programmiert und der Auftrag ist nicht abgeschlossen; die bisher erstellten Berichte bleiben auf dem Datenträger. Prüfen Sie den Auftrag danach.",
             [Keys.GuidedHint] = "Prüft den Chip eines Auftrags, Schritt für Schritt.",
             [Keys.GuidedCustomerLabel] = "Kunde",
             [Keys.GuidedOrderStatusLabel] = "Auftragsstatus",

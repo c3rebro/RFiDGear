@@ -40,6 +40,13 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// <returns><c>true</c> if the state offers it and the upload has begun.</returns>
         bool Finish();
 
+        /// <summary>
+        /// Begins to program the chip: the workflow waits for it to be taken off the reader and put back, while the
+        /// operator programs it elsewhere.
+        /// </summary>
+        /// <returns><c>true</c> if the verdict leads to programming and the wait has begun.</returns>
+        bool BeginProgramming();
+
         /// <summary>Tries the failed step again.</summary>
         /// <returns><c>true</c> if the state offers it.</returns>
         bool Retry();
