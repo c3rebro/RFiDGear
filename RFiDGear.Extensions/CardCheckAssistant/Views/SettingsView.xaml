@@ -104,6 +104,7 @@
                             <RadioButton x:Name="EnglishReportButton" GroupName="ReportLanguage" IsChecked="{Binding IsEnglishReport}"
                                          Content="{Binding Strings[LanguageEnglish]}" />
                         </StackPanel>
+                        <TextBlock Style="{StaticResource HintText}" Text="{Binding Strings[ReportLanguageHint]}" />
                     </StackPanel>
                 </GroupBox>
 
@@ -113,6 +114,20 @@
                         <ContentControl x:Name="DefaultProjectField" Content="{Binding DefaultProject}" ContentTemplate="{StaticResource PathField}"
                                         AutomationProperties.Name="{Binding Strings[DefaultProjectLabel]}" />
                         <TextBlock Style="{StaticResource HintText}" Text="{Binding Strings[DefaultProjectHint]}" />
+                        <!-- what the folder says about language variants: information is plain, a name that stops the lookup is amber -->
+                        <TextBlock x:Name="DefaultProjectNoteText" Text="{Binding DefaultProjectNote}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                   Visibility="{Binding HasDefaultProjectNote, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDefaultProjectNoteWarning}" Value="True">
+                                            <Setter Property="Foreground" Value="DarkGoldenrod" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <TextBlock Style="{StaticResource Label}" Text="{Binding Strings[MemoryProjectLabel]}" />
                         <ContentControl x:Name="MemoryProjectField" Content="{Binding MemoryProject}" ContentTemplate="{StaticResource PathField}"
                                         AutomationProperties.Name="{Binding Strings[MemoryProjectLabel]}" />

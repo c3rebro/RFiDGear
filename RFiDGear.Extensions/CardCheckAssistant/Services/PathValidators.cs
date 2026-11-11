@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+
+using RFiDGear.ExtensionLibraries.CardCheck;
 
 namespace RFiDGear.Extensions.CardCheckAssistant.Services
 {
@@ -30,13 +33,65 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
         /// <param name="path">What the user typed or picked.</param>
         /// <returns>The verdict.</returns>
         ProjectPathCheck CheckProject(string? path);
+
+        /// <summary>Says what the name of the default project means for the language lookup, and which variants lie next to it.</summary>
+        /// <param name="path">A full path to the default project.</param>
+        /// <returns>The finding, or <c>null</c> when there is nothing to say: the file is not there, or the folder cannot be read.</returns>
+        ProjectLanguageFinding? FindLanguageVariants(string path);
     }
+
+    /// <summary>What the name of a default project says about language variants.</summary>
+    internal enum LanguageNameKind
+    {
+        /// <summary><c>name.rfPrj</c>: variants may lie next to it.</summary>
+        Plain,
+
+        /// <summary>More than one dot: the file is used as it is.</summary>
+        MoreThanOneDot,
+
+        /// <summary>The name ends in the word of a variant: a reserved name, the file is used as it is.</summary>
+        LooksLikeVariant
+    }
+
+    /// <summary>What <see cref="IPathChecker.FindLanguageVariants"/> found.</summary>
+    /// <param name="Kind">What the name says.</param>
+    /// <param name="Variants">The words of the variants next to a plain project, sorted.</param>
+    /// <param name="ReservedWord">The variant word a reserved name ends in, otherwise <c>null</c>.</param>
+    internal sealed record ProjectLanguageFinding(LanguageNameKind Kind, IReadOnlyList<string> Variants, string? ReservedWord);
 
     /// <summary>The real checks, against the file system.</summary>
     internal sealed class FileSystemPathChecker : IPathChecker
     {
         /// <inheritdoc/>
         public ProjectPathCheck CheckProject(string? path) => ProjectPathValidator.Check(path);
+
+        /// <inheritdoc/>
+        public ProjectLanguageFinding? FindLanguageVariants(string path)
+        {
+            try
+            {
+                var info = ProjectVariants.Inspect(path, folder => Directory.EnumerateFiles(folder));
+                if (info.Kind == ProjectNameKind.Plain && !File.Exists(path))
+                {
+                    return null;
+                }
+
+                return new ProjectLanguageFinding(
+                    info.Kind switch
+                    {
+                        ProjectNameKind.MoreThanOneDot => LanguageNameKind.MoreThanOneDot,
+                        ProjectNameKind.LooksLikeVariant => LanguageNameKind.LooksLikeVariant,
+                        _ => LanguageNameKind.Plain
+                    },
+                    info.Variants,
+                    info.ReservedWord);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is ArgumentException || ex is NotSupportedException)
+            {
+                // A folder that cannot be read says nothing; the project check reports what is wrong with the path.
+                return null;
+            }
+        }
     }
 
     /// <summary>
