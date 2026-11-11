@@ -326,6 +326,10 @@ namespace RFiDGear.Services.TaskExecution
         private readonly ITaskExecutionLogger logger;
         private TaskExecutionRequest activeRequest;
         private int endedByProjectAt = -1;
+
+        // Set by the per-task watchdog: the run is given up. The loop checks it instead of reading a sentinel from
+        // CurrentTaskIndex, so incrementing, error routing and indexing never see a made-up position.
+        private volatile bool abandoned;
         private static readonly HashSet<ERROR> RoutedErrorLevels = new HashSet<ERROR>
         {
             ERROR.AuthFailure,
@@ -354,6 +358,7 @@ namespace RFiDGear.Services.TaskExecution
         {
             activeRequest = request;
             CurrentTaskIndex = 0;
+            abandoned = false;
 
             var result = new TaskExecutionResult
             {
@@ -459,6 +464,17 @@ namespace RFiDGear.Services.TaskExecution
 
             SetTaskFailed(CurrentTaskIndex);
 #else
+            AbandonRun();
+#endif
+        }
+
+        /// <summary>
+        /// Gives up the run in progress: the task the watchdog was timing is marked failed and the loop stops at its
+        /// next check. The task index is left alone, so a task that returns afterwards neither wraps it nor finds
+        /// it moved by error routing.
+        /// </summary>
+        internal void AbandonRun()
+        {
             taskTimeout.IsEnabled = false;
             taskTimeout.Stop();
 
@@ -467,16 +483,18 @@ namespace RFiDGear.Services.TaskExecution
                 SetTaskFailed(taskIndex);
             }
 
-            CurrentTaskIndex = int.MaxValue;
-#endif
+            abandoned = true;
         }
 
         private void SetTaskFailed(int taskIndex)
         {
-            if (activeRequest?.TaskHandler.TaskCollection != null &&
-                activeRequest.TaskHandler.TaskCollection.Count > taskIndex)
+            // A run given as descriptors has no task handler.
+            if (taskIndex >= 0 &&
+                activeRequest?.TaskHandler?.TaskCollection != null &&
+                activeRequest.TaskHandler.TaskCollection.Count > taskIndex &&
+                activeRequest.TaskHandler.TaskCollection[taskIndex] is IGenericTask task)
             {
-                (activeRequest.TaskHandler.TaskCollection[taskIndex] as IGenericTask).IsTaskCompletedSuccessfully = false;
+                task.IsTaskCompletedSuccessfully = false;
             }
         }
 
@@ -640,7 +658,7 @@ namespace RFiDGear.Services.TaskExecution
 
             try
             {
-                while (descriptors != null && descriptors.Count > 0 && CurrentTaskIndex < descriptors.Count)
+                while (!abandoned && descriptors != null && descriptors.Count > 0 && CurrentTaskIndex < descriptors.Count)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     await Task.Delay(50, cancellationToken);
@@ -723,11 +741,12 @@ namespace RFiDGear.Services.TaskExecution
                     if (executedTask)
                     {
                         RecordTaskAttempt(taskModel);
-                        ApplyErrorRouting(taskModel, request, descriptors);
+                        var routed = ApplyErrorRouting(taskModel, request, descriptors);
 
                         if (loggedTaskPositions.Add(taskPosition))
                         {
-                            var success = GetTaskSuccess(taskModel);
+                            // A task the watchdog gave up on failed, whatever it reports when it finally returns.
+                            var success = abandoned ? false : GetTaskSuccess(taskModel);
                             RecordObservation(observations, request, CreateTaskObservation(taskPosition, descriptor, taskModel, "Executed", success));
 
                             LogTaskOutcome(
@@ -736,6 +755,13 @@ namespace RFiDGear.Services.TaskExecution
                                 taskModel,
                                 "Executed",
                                 success == true ? "Successful" : success == false ? "Failed" : "Unknown");
+                        }
+
+                        // A jump back runs tasks again: their earlier outcome no longer stands for the position, so the
+                        // next attempt is logged and recorded in its place.
+                        if (routed && CurrentTaskIndex <= taskPosition)
+                        {
+                            loggedTaskPositions.RemoveWhere(position => position >= CurrentTaskIndex);
                         }
                     }
                     else if (!executedTask && CurrentTaskIndex != taskPosition && loggedTaskPositions.Add(taskPosition))
@@ -749,6 +775,12 @@ namespace RFiDGear.Services.TaskExecution
                             "Skipped",
                             "Skipped",
                             skipReason);
+                    }
+
+                    if (abandoned)
+                    {
+                        logger.LogInformation("TaskLoop.Abandoned", new { RunId = runId, TaskPosition = taskPosition, Timestamp = DateTimeOffset.UtcNow });
+                        break;
                     }
 
                     if (request.RunSelectedOnly)
@@ -799,14 +831,24 @@ namespace RFiDGear.Services.TaskExecution
         /// <summary>
         /// Adds an observation to the loop's own list, which feeds the terminal evaluation, and mirrors it
         /// into the caller's optional sink. Keeping the two separate means a caller's sink can never
-        /// influence the evaluated result.
+        /// influence the evaluated result. The evaluated list keeps one observation per position, the latest
+        /// (a task runs again after a backward jump of error routing); the caller's sink receives every attempt.
         /// </summary>
         private static void RecordObservation(
             List<TaskExecutionObservation> evaluated,
             TaskExecutionRequest request,
             TaskExecutionObservation observation)
         {
-            evaluated.Add(observation);
+            var earlier = evaluated.FindIndex(item => item.TaskPosition == observation.TaskPosition);
+            if (earlier >= 0)
+            {
+                evaluated[earlier] = observation;
+            }
+            else
+            {
+                evaluated.Add(observation);
+            }
+
             request.Observations?.Add(observation);
         }
 
@@ -1079,23 +1121,30 @@ namespace RFiDGear.Services.TaskExecution
             });
         }
 
-        private void ApplyErrorRouting(IGenericTask taskModel, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors)
+        /// <summary>
+        /// Moves the loop to the recovery task of the error the task ended with, if the request routes that error.
+        /// </summary>
+        /// <returns><see langword="true"/> when the task index was set.</returns>
+        private bool ApplyErrorRouting(IGenericTask taskModel, TaskExecutionRequest request, IReadOnlyList<TaskDescriptor> descriptors)
         {
-            if (taskModel == null || request?.ErrorRouting == null || descriptors == null)
+            if (abandoned || taskModel == null || request?.ErrorRouting == null || descriptors == null)
             {
-                return;
+                return false;
             }
 
             if (!RoutedErrorLevels.Contains(taskModel.CurrentTaskErrorLevel))
             {
-                return;
+                return false;
             }
 
             if (request.ErrorRouting.TryGetValue(taskModel.CurrentTaskErrorLevel, out var descriptorId) &&
                 TryResolveTaskIndex(descriptors, descriptorId, out var targetIndex))
             {
                 CurrentTaskIndex = targetIndex;
+                return true;
             }
+
+            return false;
         }
 
         // Starts the program of a program task. A project that asks for the application to close (the task %EXIT) closes it
