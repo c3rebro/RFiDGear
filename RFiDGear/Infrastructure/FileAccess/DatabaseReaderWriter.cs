@@ -261,12 +261,12 @@ namespace RFiDGear.Infrastructure.FileAccess
             tcs.Task.GetAwaiter().GetResult();
         }
 
-        private void LogNewerManifest(int manifestVersion)
+        private void LogNewerManifest(string manifestVersion)
         {
             logger.Warning(
                 "Database manifest version {ManifestVersion} is newer than supported version {SupportedVersion} at {Timestamp}",
                 manifestVersion,
-                Convert.ToInt32(string.Format("{0}{1}{2}", Version.Major, Version.Minor, Version.Build)),
+                ProjectManager.FormatManifestVersion(Version),
                 DateTime.Now);
         }
 
@@ -490,10 +490,10 @@ namespace RFiDGear.Infrastructure.FileAccess
             /// Initializes a new result.
             /// </summary>
             /// <param name="success">Whether the read succeeded.</param>
-            /// <param name="manifestVersion">The numeric manifest version extracted from the file.</param>
+            /// <param name="manifestVersion">The manifest text exactly as stored in the file (for example <c>2.0.10</c>), or <c>null</c> if it has none.</param>
             /// <param name="isSupportedVersion">Whether the manifest version is within the supported range.</param>
             /// <param name="failureReason">Root-cause classification; <see cref="DatabaseReadFailureReason.None"/> on success.</param>
-            public DatabaseReadResult(bool success, int manifestVersion, bool isSupportedVersion,
+            public DatabaseReadResult(bool success, string manifestVersion, bool isSupportedVersion,
                 DatabaseReadFailureReason failureReason = DatabaseReadFailureReason.None)
             {
                 Success = success;
@@ -505,8 +505,8 @@ namespace RFiDGear.Infrastructure.FileAccess
             /// <summary>Whether the read completed without error.</summary>
             public bool Success { get; }
 
-            /// <summary>Numeric manifest version extracted from the file, or 0 on failure.</summary>
-            public int ManifestVersion { get; }
+            /// <summary>The manifest text as stored in the file (for example <c>2.0.10</c>), or <c>null</c> if it has none or the read failed.</summary>
+            public string ManifestVersion { get; }
 
             /// <summary>
             /// <c>true</c> when the file's manifest version is within the range this application supports.
@@ -525,7 +525,7 @@ namespace RFiDGear.Infrastructure.FileAccess
             /// <summary>Creates a failure result with an explicit cause.</summary>
             /// <param name="reason">Root-cause classification for the failure.</param>
             public static DatabaseReadResult Failed(DatabaseReadFailureReason reason = DatabaseReadFailureReason.IoFailure)
-                => new DatabaseReadResult(false, 0, false, reason);
+                => new DatabaseReadResult(false, null, false, reason);
         }
     }
 }

@@ -1,10 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.FileAccess;
+
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 
 using Xunit;
 
@@ -110,15 +116,20 @@ namespace RFiDGear.Tests
             Assert.Throws<ArgumentNullException>(() => _manager.ValidateManifestVersion("1.0.0", null));
         }
 
-#pragma warning disable CS0618 // the obsolete overload is pinned on purpose
-        [Fact]
-        public void ValidateManifestVersion_ObsoleteNumberOverload_StillComparesDigits()
+        [Theory]
+        [InlineData("2.0.10.0", "2.0.10")]
+        [InlineData("1.10.9054.7", "1.10.9054")]
+        [InlineData("3.1.0", "3.1.0")]
+        public void FormatManifestVersion_IsMajorMinorBuild(string version, string expected)
         {
-            Assert.True(_manager.ValidateManifestVersion(2010, App));
-            Assert.False(_manager.ValidateManifestVersion(2011, App));
-            Assert.False(_manager.ValidateManifestVersion(1109054, App));
+            Assert.Equal(expected, ProjectManager.FormatManifestVersion(Version.Parse(version)));
         }
-#pragma warning restore CS0618
+
+        [Fact]
+        public void FormatManifestVersion_AnUndefinedBuildCountsAsZero()
+        {
+            Assert.Equal("2.1.0", ProjectManager.FormatManifestVersion(new Version(2, 1)));
+        }
     }
 
     /// <summary>
@@ -194,7 +205,7 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
-        public async Task ReadProjectAsync_ReportsTheSupportedVerdictAndTheDigitsForDiagnostics()
+        public async Task ReadProjectAsync_ReportsTheSupportedVerdictAndTheManifestAsStored()
         {
             var file = Track(ProjectFixtures.CreateProject(1, manifestVersion: "1.10.9054"));
             var reader = new DatabaseReaderWriter(new ProjectManager(_root));
@@ -204,8 +215,60 @@ namespace RFiDGear.Tests
             Assert.True(read.Success);
             Assert.True(read.IsSupportedVersion);
             Assert.Equal(DatabaseReaderWriter.DatabaseReadFailureReason.None, read.FailureReason);
-            Assert.Equal(1109054, read.ManifestVersion);
+            Assert.Equal("1.10.9054", read.ManifestVersion);
             Assert.NotNull(model);
+        }
+
+        [Fact]
+        public async Task ReadProjectAsync_ANewerManifest_LogsBothVersionsAsMajorMinorBuild()
+        {
+            var file = Track(ProjectFixtures.CreateProject(1, manifestVersion: NewerMinorThanApp));
+            var sink = new ListSink();
+            var previous = Log.Logger;
+            Log.Logger = new LoggerConfiguration().WriteTo.Sink(sink).CreateLogger();
+
+            try
+            {
+                var reader = new DatabaseReaderWriter(new ProjectManager(_root));
+                var (read, _) = await reader.ReadProjectAsync(file);
+
+                Assert.False(read.IsSupportedVersion);
+                Assert.Equal(NewerMinorThanApp, read.ManifestVersion);
+            }
+            finally
+            {
+                Log.Logger = previous;
+            }
+
+            var warning = Assert.Single(sink.Events, logged => logged.MessageTemplate.Text.Contains("newer than supported"));
+            var message = warning.RenderMessage();
+            Assert.Contains(NewerMinorThanApp, message);
+            Assert.Contains(SameAsApp, message);
+            Assert.DoesNotContain(string.Concat(AppVersion.Major, AppVersion.Minor, AppVersion.Build), message);
+        }
+
+        private sealed class ListSink : ILogEventSink
+        {
+            private readonly List<LogEvent> _events = new();
+
+            public IReadOnlyList<LogEvent> Events
+            {
+                get
+                {
+                    lock (_events)
+                    {
+                        return _events.ToList();
+                    }
+                }
+            }
+
+            public void Emit(LogEvent logEvent)
+            {
+                lock (_events)
+                {
+                    _events.Add(logEvent);
+                }
+            }
         }
 
         [Fact]

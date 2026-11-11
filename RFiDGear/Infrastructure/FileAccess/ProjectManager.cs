@@ -225,19 +225,6 @@ namespace RFiDGear.Infrastructure.FileAccess
         }
 
         /// <summary>
-        /// Compares concatenated digits, which orders versions wrongly (<c>1.10.9054</c> becomes 1109054 and looks
-        /// newer than <c>2.0.10</c>, which becomes 2010). Kept only for callers that still hold the number.
-        /// </summary>
-        /// <param name="manifestVersion">The manifest's digits run together, as in <see cref="ProjectLoadResult.ManifestVersion"/>.</param>
-        /// <param name="appVersion">The running application's version.</param>
-        /// <returns><c>true</c> when the run-together number is not larger than the application's.</returns>
-        [Obsolete("Compares concatenated digits, so 1.10.9054 sorts after 2.0.10. Use ValidateManifestVersion(string, Version).")]
-        public bool ValidateManifestVersion(int manifestVersion, Version appVersion)
-        {
-            return manifestVersion <= LegacyVersionNumber(appVersion);
-        }
-
-        /// <summary>
         /// Decides whether a file written with the given manifest version can be read by the running application,
         /// that is whether it was written by this release or an older one.
         /// <para>
@@ -325,7 +312,7 @@ namespace RFiDGear.Infrastructure.FileAccess
 
             return new SettingsLoadResult(
                 success: true,
-                manifestVersion: ToDiagnosticNumber(manifestText),
+                manifestVersion: manifestText,
                 isSupportedVersion: ValidateManifestVersion(manifestText, versionToCompare),
                 defaultSpecification: specification,
                 settingsPath: resolvedPath);
@@ -368,7 +355,7 @@ namespace RFiDGear.Infrastructure.FileAccess
 
             return new ProjectLoadResult(
                 success: true,
-                manifestVersion: ToDiagnosticNumber(manifestText),
+                manifestVersion: manifestText,
                 isSupportedVersion: isSupportedVersion,
                 reader: DecodeText(projectBytes),
                 fileType: projectFileType);
@@ -393,7 +380,7 @@ namespace RFiDGear.Infrastructure.FileAccess
 
             return new ProjectLoadResult(
                 success: true,
-                manifestVersion: ToDiagnosticNumber(manifestText),
+                manifestVersion: manifestText,
                 isSupportedVersion: isSupportedVersion,
                 reader: new StreamReader(path),
                 fileType: projectFileType);
@@ -427,13 +414,12 @@ namespace RFiDGear.Infrastructure.FileAccess
         }
 
         /// <summary>
-        /// The concatenated-digit number that results and logs have always carried (<c>1.10.9054</c> becomes
-        /// 1109054). It is for display only; it is not used to decide whether a file is supported.
+        /// A version as <c>major.minor.build</c>, the form a manifest is written in. An undefined build counts as 0.
         /// </summary>
-        private static int ToDiagnosticNumber(string manifestText) =>
-            int.TryParse(manifestText?.Replace(".", string.Empty), NumberStyles.None, CultureInfo.InvariantCulture, out var number)
-                ? number
-                : 0;
+        /// <param name="version">The version to describe.</param>
+        /// <returns>For example <c>2.0.10</c>.</returns>
+        internal static string FormatManifestVersion(Version version) =>
+            string.Format(CultureInfo.InvariantCulture, "{0}.{1}.{2}", version.Major, version.Minor, Math.Max(version.Build, 0));
 
         /// <summary>
         /// Reads the project text out of an archive without extracting anything. The entry is chosen from the
@@ -607,7 +593,13 @@ namespace RFiDGear.Infrastructure.FileAccess
 
     public class ProjectLoadResult
     {
-        public ProjectLoadResult(bool success, int manifestVersion, bool isSupportedVersion, TextReader reader, ProjectFileType fileType)
+        /// <summary>Creates the result of preparing a project file for reading.</summary>
+        /// <param name="success">Whether the file could be prepared.</param>
+        /// <param name="manifestVersion">The manifest text exactly as stored in the file, or <c>null</c> if it has none.</param>
+        /// <param name="isSupportedVersion">Whether the running application can read a file of that manifest version.</param>
+        /// <param name="reader">The project text.</param>
+        /// <param name="fileType">How the file is stored.</param>
+        public ProjectLoadResult(bool success, string manifestVersion, bool isSupportedVersion, TextReader reader, ProjectFileType fileType)
         {
             Success = success;
             ManifestVersion = manifestVersion;
@@ -618,7 +610,8 @@ namespace RFiDGear.Infrastructure.FileAccess
 
         public bool Success { get; }
 
-        public int ManifestVersion { get; }
+        /// <summary>The manifest text as stored in the file (for example <c>2.0.10</c>), or <c>null</c> if it has none.</summary>
+        public string ManifestVersion { get; }
 
         public bool IsSupportedVersion { get; }
 
@@ -628,13 +621,19 @@ namespace RFiDGear.Infrastructure.FileAccess
 
         public static ProjectLoadResult Failed()
         {
-            return new ProjectLoadResult(false, 0, false, TextReader.Null, ProjectFileType.Unknown);
+            return new ProjectLoadResult(false, null, false, TextReader.Null, ProjectFileType.Unknown);
         }
     }
 
     public class SettingsLoadResult
     {
-        public SettingsLoadResult(bool success, int manifestVersion, bool isSupportedVersion, DefaultSpecification defaultSpecification, string settingsPath)
+        /// <summary>Creates the result of loading the settings file.</summary>
+        /// <param name="success">Whether the settings could be loaded.</param>
+        /// <param name="manifestVersion">The manifest text exactly as stored in the file, or <c>null</c> if it has none.</param>
+        /// <param name="isSupportedVersion">Whether the running application can read a file of that manifest version.</param>
+        /// <param name="defaultSpecification">The settings.</param>
+        /// <param name="settingsPath">The file the settings came from.</param>
+        public SettingsLoadResult(bool success, string manifestVersion, bool isSupportedVersion, DefaultSpecification defaultSpecification, string settingsPath)
         {
             Success = success;
             ManifestVersion = manifestVersion;
@@ -645,7 +644,8 @@ namespace RFiDGear.Infrastructure.FileAccess
 
         public bool Success { get; }
 
-        public int ManifestVersion { get; }
+        /// <summary>The manifest text as stored in the file (for example <c>2.0.10</c>), or <c>null</c> if it has none.</summary>
+        public string ManifestVersion { get; }
 
         public bool IsSupportedVersion { get; }
 
@@ -655,7 +655,7 @@ namespace RFiDGear.Infrastructure.FileAccess
 
         public static SettingsLoadResult Failed()
         {
-            return new SettingsLoadResult(false, 0, false, new DefaultSpecification(), string.Empty);
+            return new SettingsLoadResult(false, null, false, new DefaultSpecification(), string.Empty);
         }
     }
 }
