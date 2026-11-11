@@ -2222,7 +2222,8 @@ namespace RFiDGear.ViewModel
             mw.Title = string.Format("RFiDGear v{0}.{1}.{2}", Version.Major, Version.Minor, Version.Build);
 
             updateScheduler.Begin(() => AskForUpdateNow());
-            readerMonitor.StartMonitoring(CheckReader);
+            // The timer callback is async void; CheckReaderAsync lets nothing escape, so it cannot end the application.
+            readerMonitor.StartMonitoring(async _ => await CheckReaderAsync());
 
             var startupArguments = startupArgumentProcessor.Process(args);
             ApplyStartupArguments(startupArguments);
@@ -2281,9 +2282,6 @@ namespace RFiDGear.ViewModel
 
         // The probe does nothing while somebody reads the card: the main window (the flag) or a reader scan (the gate).
         internal bool? ReaderBusyForProbe() => _readerGate.IsHeld ? true : IsReaderBusy;
-
-        // The callback of the reader monitor. Everything it does is in CheckReaderAsync, which lets nothing escape.
-        private async void CheckReader(object sender) => await CheckReaderAsync();
 
         /// <summary>
         /// One look at the reader, as the reader monitor makes it every few seconds: connects a reader that is not
