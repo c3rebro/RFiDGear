@@ -38,19 +38,22 @@ namespace RFiDGear.Contracts
     /// <see cref="AutoModeStateChanged"/> has been raised.
     /// </para>
     /// <para>
-    /// Observing the cards: a run of a card is reported like every run of the main window.
-    /// <see cref="ITaskExecHost.IsRunning"/> and <see cref="ITaskExecHost.IsRunningChanged"/> cover it, and
-    /// <see cref="IReaderHost.ReaderStateChanged"/> tells when a card comes or goes while the mode is on.
+    /// Observing the cards: every run that the mode starts is reported with its result through
+    /// <see cref="AutoModeRunCompleted"/>, under a <see cref="ExecResult.RunId"/> that also labels its lines in the
+    /// application log. <see cref="ITaskExecHost.IsRunning"/> and <see cref="ITaskExecHost.IsRunningChanged"/> cover the
+    /// run as well, and <see cref="IReaderHost.ReaderStateChanged"/> tells when a card comes or goes while the mode is
+    /// on. Why the mode ended is in <see cref="LastStopReason"/>.
     /// </para>
     /// <para>
     /// Threading: <see cref="IsAutoModeEnabled"/>, <see cref="Start"/> and <see cref="Stop"/> may be used from any
     /// thread and never wait for the UI thread. <see cref="AutoModeStateChanged"/> is raised synchronously on the thread
     /// that made the change: the caller of <see cref="Start"/> or <see cref="Stop"/>, or the UI thread when the mode
-    /// stops by itself or the user toggles it. It is never marshalled, so a subscriber that updates UI must marshal to
-    /// its own dispatcher, and it should return quickly. Per card, in this order: the run starts
-    /// (<see cref="ITaskExecHost.IsRunningChanged"/>, running), its tasks run, it ends
-    /// (<see cref="ITaskExecHost.IsRunningChanged"/>, not running), and only then, if that run made the mode stop,
-    /// <see cref="AutoModeStateChanged"/>.
+    /// stops by itself or the user toggles it. <see cref="AutoModeRunCompleted"/> is raised on the UI thread. Neither is
+    /// marshalled, so a subscriber that updates UI must marshal to its own dispatcher, and it should return quickly.
+    /// Per card, in this order: the run starts (<see cref="ITaskExecHost.IsRunningChanged"/>, running), its tasks run, it
+    /// ends (<see cref="ITaskExecHost.IsRunningChanged"/>, not running), <see cref="AutoModeRunCompleted"/> reports it,
+    /// and only then, if that run made the mode stop, <see cref="AutoModeStateChanged"/>. A subscriber to
+    /// <see cref="AutoModeStateChanged"/> therefore already has the result of the run that ended the mode.
     /// </para>
     /// <para>
     /// Headless hosts: a host without the main application's reader loop (the one the HIL tests create) cannot run the
@@ -124,5 +127,52 @@ namespace RFiDGear.Contracts
         /// </para>
         /// </summary>
         event EventHandler AutoModeStateChanged;
+
+        /// <summary>
+        /// Why continuous automatic mode last ended: <see cref="AutoModeStopReason.StopRequested"/> after
+        /// <see cref="Stop"/> or the menu toggle, another reason when the mode stopped by itself. It is
+        /// <see cref="AutoModeStopReason.None"/> until the mode has ended for the first time, and again from the moment it
+        /// is started anew. Read it when <see cref="AutoModeStateChanged"/> reports that the mode is off.
+        /// <para>Threading: safe to read from any thread. It is set before <see cref="AutoModeStateChanged"/> is raised.</para>
+        /// </summary>
+        AutoModeStopReason LastStopReason { get; }
+
+        /// <summary>
+        /// Raised once for every run that continuous automatic mode started for a card, whatever the run ended with:
+        /// success, a task that failed, a fault, a timeout. The payload is the result that
+        /// <see cref="ITaskExecHost.ExecuteAllAsync(ExecutionRequest, System.Threading.CancellationToken)"/> returns for
+        /// its own runs, with the same rules: <see cref="ExecResult.RunId"/> labels the run in the application log, the
+        /// ordered <see cref="ExecResult.TaskOutcomes"/> say which task ran, was skipped or was not reached, and
+        /// <see cref="ExecResult.Outcome"/> and <see cref="ExecResult.FailureReason"/> give the end of the run. So a run of a
+        /// card can be judged without reading a log file.
+        /// <para>
+        /// Not raised for a run that was not started by this mode: a run by hand, <c>AUTORUN=1</c>, and a run that an
+        /// extension started with <see cref="ITaskExecHost.ExecuteAllAsync(ExecutionRequest, System.Threading.CancellationToken)"/>
+        /// (that one is reported to its caller and through <see cref="ITaskExecHost.ExecutionCompleted"/>, which is
+        /// <em>not</em> raised for runs of this mode). Exactly one event is raised per run, and none for a card whose run
+        /// was refused because something else was busy, since nothing ran; that card is tried again at the next look.
+        /// </para>
+        /// <para>
+        /// Ordering: after <see cref="ITaskExecHost.IsRunning"/> has returned to <c>false</c> (and
+        /// <see cref="ITaskExecHost.IsRunningChanged"/> has been raised for it), before the next card is looked at, and
+        /// before <see cref="AutoModeStateChanged"/> if this run makes the mode stop. When the handler runs, the mode has
+        /// not been stopped yet, so <see cref="IsAutoModeEnabled"/> still reads <c>true</c>; if the run makes it stop, that
+        /// follows at once on the same thread, and <see cref="AutoModeStateChanged"/> and <see cref="LastStopReason"/>
+        /// tell it then.
+        /// </para>
+        /// <para>
+        /// Threading: raised synchronously on the UI thread, never marshalled, one subscriber after another. The next
+        /// card is not looked at until the subscribers have returned, so keep them short. An exception from an ordinary
+        /// (non-async) subscriber is logged (type name, redacted message and the start of the redacted stack trace) and
+        /// reaches neither the mode nor the other subscribers.
+        /// </para>
+        /// <para>
+        /// Sensitive data: the payload is built like the result of <c>ExecuteAllAsync</c>, so the same exclusions apply:
+        /// no key values, payload bytes, card data or task descriptions are added by the host (see
+        /// <see cref="ITaskExecHost.ExecuteAllAsync(ExecutionRequest, System.Threading.CancellationToken)"/>). The UID of
+        /// the card is not part of it; an extension that needs it reads it through <see cref="IReaderHost"/>.
+        /// </para>
+        /// </summary>
+        event EventHandler<ExecResult> AutoModeRunCompleted;
     }
 }

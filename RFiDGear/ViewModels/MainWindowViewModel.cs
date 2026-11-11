@@ -1536,7 +1536,7 @@ namespace RFiDGear.ViewModel
             }
             catch (Exception ex)
             {
-                Log.ForContext<MainWindowViewModel>().Error(ex, "Task execution failed.");
+                Log.ForContext<MainWindowViewModel>().Error(ex, "Task execution failed. Run {RunId}", runId);
                 Dialogs.Add(new CustomDialogViewModel
                 {
                     Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),

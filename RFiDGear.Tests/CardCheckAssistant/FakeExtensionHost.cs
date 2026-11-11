@@ -526,6 +526,16 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         private EventHandler? AutoModeStateChangedHandlers { get; set; }
 
+        public AutoModeStopReason LastStopReason => AutoModeStopReason.None;
+
+        public event EventHandler<ExecResult> AutoModeRunCompleted
+        {
+            add => AutoModeRunCompletedHandlers += value;
+            remove => AutoModeRunCompletedHandlers -= value;
+        }
+
+        private EventHandler<ExecResult>? AutoModeRunCompletedHandlers { get; set; }
+
         public void Start() => throw new NotSupportedException();
 
         public void Stop() => throw new NotSupportedException();

@@ -11,28 +11,6 @@ using System.Threading.Tasks;
 
 namespace RFiDGear.Services.AutoMode
 {
-    /// <summary>Why automatic mode ended.</summary>
-    internal enum AutoModeStopReason
-    {
-        /// <summary>Automatic mode has not been stopped since the application started.</summary>
-        None = 0,
-
-        /// <summary>The user or the host asked for it.</summary>
-        StopRequested,
-
-        /// <summary>The reader that had answered stopped answering.</summary>
-        ReaderLost,
-
-        /// <summary>The reader or its provider was changed in the settings.</summary>
-        ReaderChanged,
-
-        /// <summary>A run ended with a fault, a cancellation or an exception: the state of the card is unknown.</summary>
-        RunAborted,
-
-        /// <summary>A run was given up by the watchdog or ended with a timeout: the state of the card is unknown.</summary>
-        RunTimedOut,
-    }
-
     /// <summary>What <see cref="AutoModeController.TryStart"/> did.</summary>
     internal enum AutoModeStartResult
     {
