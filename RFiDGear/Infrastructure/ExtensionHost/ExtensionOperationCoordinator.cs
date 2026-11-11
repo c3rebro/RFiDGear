@@ -101,6 +101,13 @@ namespace RFiDGear.Infrastructure.ExtensionHost
         public void EndScan() =>
             ReleaseToIdle();
 
+        /// <summary>
+        /// <c>true</c> when nothing is in progress: no load, run, project edit or reader scan. A hint for callers that only
+        /// want to look; the state can change right after it is read, so admission still goes through the
+        /// <c>TryBegin*</c> methods.
+        /// </summary>
+        public bool IsIdle => Volatile.Read(ref _state) == Idle;
+
         /// <summary><c>true</c> when a task execution is in progress.</summary>
         public bool IsExecuting => Volatile.Read(ref _state) == Executing;
 

@@ -258,6 +258,14 @@ namespace RFiDGear.Services.TaskExecution
         /// closes the application, as it always did.
         /// </summary>
         public bool KeepApplicationOpen { get; set; }
+
+        /// <summary>
+        /// Optional. Called once per run, with the chip the run's <em>own</em> read found, after that read and before the
+        /// first task starts. The run reads the card again after anything the caller read before it, and the card can be
+        /// another one by then; automatic mode uses this to remember the card the tasks really work on. It is not called
+        /// by a run that has no reader read of its own (one driven by task descriptors).
+        /// </summary>
+        public Action<GenericChipModel> ChipHydrated { get; set; }
     }
 
     /// <summary>
@@ -281,6 +289,13 @@ namespace RFiDGear.Services.TaskExecution
         /// (e.g. device discovery failed before any task ran).
         /// </summary>
         public TaskLoopTerminalStatus? TerminalStatus { get; set; }
+
+        /// <summary>
+        /// <c>true</c> when the per-task watchdog gave up the run: it flagged the running task as failed and stopped the
+        /// loop from starting further tasks (see <see cref="ITaskExecutionService.HandleTaskTimeout"/>). Such a run
+        /// ends like an ordinary failure, but the card state is unknown, so automatic mode stops after it.
+        /// </summary>
+        public bool Abandoned { get; internal set; }
     }
 
     /// <summary>
@@ -421,6 +436,8 @@ namespace RFiDGear.Services.TaskExecution
                             cancellationToken,
                         runId);
 
+                        request.ChipHydrated?.Invoke(hydrationResult.Chip);
+
                         _ = await ExecuteStageWithTimeout(
                             "SelectionSync",
                             () => Task.FromResult(SynchronizeSelection(request, hydrationResult.Chip)),
@@ -450,6 +467,7 @@ namespace RFiDGear.Services.TaskExecution
             }
 
             result.SelectedSetupViewModel = request.SelectedSetupViewModel;
+            result.Abandoned = abandoned;
             ExecutionCompleted?.Invoke(this, new TaskExecutionCompletedEventArgs(result));
             return result;
         }

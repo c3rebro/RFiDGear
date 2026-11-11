@@ -119,49 +119,22 @@ namespace RFiDGear.Infrastructure.ExtensionHost
 
                 var rawResult = await _execService.ExecuteOnceAsync(taskRequest, ct).ConfigureAwait(false);
 
-                var completedAt = DateTimeOffset.UtcNow;
-                var outcome = MapOutcome(rawResult.TerminalStatus);
-                var failureReason = ExecutionFailureReason.None;
                 if (rawResult.TerminalStatus == null)
                 {
                     // The service returned without evaluating the task loop; never report that as a clean result.
-                    failureReason = ExecutionFailureReason.Faulted;
                     Logger.Warning("Extension-triggered run {RunId} ended without a terminal evaluation", runId);
                 }
 
-                var taskOutcomes = TaskOutcomeMapper.Build(snapshot, observations);
-                var failedCount = taskOutcomes.Count(t => t.IsSuccess == false);
-
-                execResult = new ExecResult(
-                    runId,
-                    outcome,
-                    snapshot.Count,
-                    failedCount,
-                    startedAt,
-                    completedAt,
-                    taskOutcomes,
-                    failureReason);
+                execResult = ExecResultBuilder.FromCompletion(runId, startedAt, rawResult.TerminalStatus, snapshot, observations);
             }
             catch (Exception ex)
             {
                 // Cancelled or faulted runs still produce a terminal ExecResult. Preserve
                 // partial task outcomes so the caller can correlate completed tasks with logs.
-                var failureReason = Classify(ex, ct);
+                var failureReason = ExecResultBuilder.Classify(ex, ct);
                 LogFailedRun(runId, failureReason, ex);
 
-                var completedAt = DateTimeOffset.UtcNow;
-                var taskOutcomes = TaskOutcomeMapper.Build(snapshot, observations);
-                var failedCount = taskOutcomes.Count(t => t.IsSuccess == false);
-
-                execResult = new ExecResult(
-                    runId,
-                    ExecutionOutcome.Failure,
-                    snapshot.Count,
-                    failedCount,
-                    startedAt,
-                    completedAt,
-                    taskOutcomes,
-                    failureReason);
+                execResult = ExecResultBuilder.FromFailure(runId, startedAt, failureReason, snapshot, observations);
             }
             finally
             {
@@ -216,25 +189,6 @@ namespace RFiDGear.Infrastructure.ExtensionHost
             : _coordinator.IsMutating ? whenEditing
             : _coordinator.IsScanning ? whenScanning
             : whenRunning;
-
-        private static ExecutionOutcome MapOutcome(TaskLoopTerminalStatus? status) => status switch
-        {
-            TaskLoopTerminalStatus.Success                          => ExecutionOutcome.Success,
-            TaskLoopTerminalStatus.CompletedWithIntentionalFailures => ExecutionOutcome.CompletedWithIntentionalFailures,
-            _                                                       => ExecutionOutcome.Failure,
-        };
-
-        /// <summary>
-        /// Maps an exception from the execution service to a non-sensitive reason. A bare
-        /// <see cref="OperationCanceledException"/> only counts as caller cancellation when the
-        /// caller's token was actually cancelled; anything else is an unexpected fault.
-        /// </summary>
-        private static ExecutionFailureReason Classify(Exception ex, CancellationToken ct) => ex switch
-        {
-            OperationCanceledException when ct.IsCancellationRequested => ExecutionFailureReason.Cancelled,
-            TimeoutException                                            => ExecutionFailureReason.TimedOut,
-            _                                                           => ExecutionFailureReason.Faulted,
-        };
 
         /// <summary>
         /// Logs a run that ended abnormally. The exception is described through <see cref="SanitizedException"/>

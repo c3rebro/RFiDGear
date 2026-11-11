@@ -122,6 +122,24 @@ Task categories:
 `TaskExecutionService` drives sequential execution with error handling;
 individual task VMs implement `ITaskViewModel`.
 
+### Automatic Mode
+
+Continuous card handling is one state machine, `AutoModeController`
+(`Services/AutoMode`). The menu toggle, the `AUTOMODE=1` start-up argument and
+the host API all drive it, and nothing else polls the reader for new cards.
+Its `IsEnabled` flag is the state; the reader timer is only a clock, because
+every run switches the timer off and puts it back.
+
+A card is run once per *presence*: a poll that finds the reader empty ends the
+presence, so a card that stays is not run again, and a card that is taken away
+and put back is. The card is remembered when its run is admitted, so a run that
+fails is never repeated by the machine (the one-attempt rule). A run made by
+hand counts as processing the card on the reader, and the card it really read
+(the execution service reads once more) is the one remembered. A fault, a
+timeout, a run the watchdog gave up or a lost reader stops the mode instead of
+guessing, whoever started the run; an ordinary task failure does not. A run of
+the mode that waits for a reader scan of an extension is withdrawn by a stop.
+
 ### Key Design Rule
 
 **One-attempt rule**: Card-state-changing operations (write, authenticate,
