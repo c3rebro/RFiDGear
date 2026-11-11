@@ -140,7 +140,28 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
             return Result<WorkflowContext>.Ok(new WorkflowContext(_createOrderStore(s.Database), SettingsOf(s, location, false)));
         }
 
-        private static WorkflowSettings SettingsOf(CardCheckSettings s, ReportLocation location, bool isTestMode) =>
-            new WorkflowSettings(location, s.Report.RemoveTemporaryReports, s.Report.DefaultLanguage, s.DefaultProjectPath, isTestMode);
+        // The read-out project is checked here, on the worker thread, since that touches the disk: a chip must not be
+        // programmed when the project that reads its memory afterwards is not there.
+        private static WorkflowSettings SettingsOf(CardCheckSettings s, ReportLocation location, bool isTestMode)
+        {
+            var memoryProject = s.CustomProjectPath?.Trim() ?? string.Empty;
+            var problem = ProjectPathValidator.Check(memoryProject) switch
+            {
+                ProjectPathCheck.Valid => null,
+                ProjectPathCheck.Required => MemoryProjectProblem(FailureKind.NotConfigured, "No project for reading out the memory is set."),
+                ProjectPathCheck.NotFullyQualified => MemoryProjectProblem(FailureKind.InvalidConfiguration, "The path of the project for reading out the memory is not a full path."),
+                _ => MemoryProjectProblem(FailureKind.NotFound, "The project for reading out the memory does not exist."),
+            };
+
+            return new WorkflowSettings(location, s.Report.RemoveTemporaryReports, s.Report.DefaultLanguage, s.DefaultProjectPath, isTestMode)
+            {
+                MemoryProjectPath = problem == null ? memoryProject : string.Empty,
+                MemoryProjectProblem = problem,
+                TextBlocks = s.TextTemplates,
+            };
+        }
+
+        private static Failure MemoryProjectProblem(FailureKind kind, string message) =>
+            new Failure(kind, WorkflowFailureCodes.MemoryProjectInvalid, message);
     }
 }

@@ -49,6 +49,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             WorkflowState.Checking => GuidedStep.Check,
             WorkflowState.RunFailed => GuidedStep.Check,
             WorkflowState.Assessing => GuidedStep.Verdict,
+            WorkflowState.Programming => GuidedStep.Verdict,
             WorkflowState.Completing => GuidedStep.Finish,
             WorkflowState.CompletionFailed => GuidedStep.Finish,
             WorkflowState.Completed => GuidedStep.End,

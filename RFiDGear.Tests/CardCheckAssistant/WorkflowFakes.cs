@@ -149,6 +149,22 @@ namespace RFiDGear.Tests.CardCheckAssistant
         public void ThenFindsTheReaderEmpty() =>
             _script.Enqueue((_, _) => Task.FromResult(new CardWaitResult(CardWaitOutcome.TimedOut, Snapshots.NoCard())));
 
+        /// <summary>The next wait for a card lasts until it is cancelled, and then says so without an answer of the reader.</summary>
+        public void ThenWaitsUntilCancelled() =>
+            _script.Enqueue(async (_, ct) =>
+            {
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    // The cancel is what is waited for.
+                }
+
+                return new CardWaitResult(CardWaitOutcome.Cancelled, null);
+            });
+
         public void ThenGetsNoClearAnswer() =>
             _script.Enqueue((_, _) => Task.FromResult(new CardWaitResult(CardWaitOutcome.TimedOut, Snapshots.Busy())));
 
@@ -168,7 +184,108 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
             return _script.Count > 0
                 ? _script.Dequeue()(timeout, ct)
-                : Task.FromResult(new CardWaitResult(CardWaitOutcome.Done, Snapshots.Card("04AABBCCDD")));
+                : Task.FromResult(new CardWaitResult(CardWaitOutcome.Done, Snapshots.Card(DefaultUid)));
+        }
+
+        // ── the card's way off the reader and back on (a script of its own, so the waits for a card are not disturbed) ──
+
+        /// <summary>The UID of the card the waiter shows when nothing else is scripted.</summary>
+        public const string DefaultUid = "04AABBCCDD";
+
+        private readonly Queue<Func<string?, Action<CardMoveStage>?, CancellationToken, Task<CardMoveResult>>> _moves =
+            new Queue<Func<string?, Action<CardMoveStage>?, CancellationToken, Task<CardMoveResult>>>();
+
+        /// <summary>The calls of the wait for the card to be taken off and put back: the time, and the UID that was given as the card before.</summary>
+        public List<(TimeSpan? Timeout, string? UidBefore)> Moves { get; } = new List<(TimeSpan? Timeout, string? UidBefore)>();
+
+        /// <summary>The next move ends well: the card is taken off and this one is put on (<c>null</c> if no UID is known).</summary>
+        public void ThenTheCardIsMoved(string? before, string? after) =>
+            _moves.Enqueue((_, stages, _) =>
+            {
+                Announce(stages, CardMoveStage.WaitingForReinsertion);
+
+                return Task.FromResult(new CardMoveResult(
+                    CardWaitOutcome.Done,
+                    CardMoveStage.WaitingForReinsertion,
+                    before,
+                    after,
+                    after == null ? Snapshots.NoCard() : Snapshots.Card(after)));
+            });
+
+        /// <summary>The next move runs out of time in this stage.</summary>
+        public void ThenTheMoveTimesOut(CardMoveStage stage) =>
+            _moves.Enqueue((uid, stages, _) =>
+            {
+                Announce(stages, stage);
+
+                return Task.FromResult(new CardMoveResult(
+                    CardWaitOutcome.TimedOut,
+                    stage,
+                    uid,
+                    null,
+                    stage == CardMoveStage.WaitingForRemoval ? Snapshots.Card(uid ?? DefaultUid) : Snapshots.NoCard()));
+            });
+
+        /// <summary>The next move waits in this stage until it is cancelled, and then says so.</summary>
+        public void ThenTheMoveWaitsInStageUntilCancelled(CardMoveStage stage) =>
+            _moves.Enqueue(async (uid, stages, ct) =>
+            {
+                Announce(stages, stage);
+
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    // The cancel is what is waited for.
+                }
+
+                return new CardMoveResult(CardWaitOutcome.Cancelled, stage, uid, null, null);
+            });
+
+        /// <summary>The next move is held until the gate opens and then ends well whatever the token says, as a look that has begun does.</summary>
+        public void ThenTheMoveHoldsUntil(TaskCompletionSource<bool> gate, string? after) =>
+            _moves.Enqueue(async (uid, stages, _) =>
+            {
+                Announce(stages, CardMoveStage.WaitingForReinsertion);
+                await gate.Task;
+
+                return new CardMoveResult(CardWaitOutcome.Done, CardMoveStage.WaitingForReinsertion, uid, after, Snapshots.Card(after ?? DefaultUid));
+            });
+
+        /// <summary>The next move announces the first stage and then fails with an exception.</summary>
+        public void ThenTheMoveThrows(Exception exception) =>
+            _moves.Enqueue((_, stages, _) =>
+            {
+                Announce(stages, CardMoveStage.WaitingForRemoval);
+
+                throw exception;
+            });
+
+        public Task<CardMoveResult> WaitForRemovalAndReinsertionAsync(TimeSpan? timeout, string? cardBeforeUid, Action<CardMoveStage>? stageChanged, CancellationToken ct)
+        {
+            Moves.Add((timeout, cardBeforeUid));
+            if (_moves.Count > 0)
+            {
+                return _moves.Dequeue()(cardBeforeUid, stageChanged, ct);
+            }
+
+            // Nothing scripted: the card that was on the reader is taken off and put back at once.
+            var uid = cardBeforeUid ?? DefaultUid;
+            Announce(stageChanged, CardMoveStage.WaitingForReinsertion);
+
+            return Task.FromResult(new CardMoveResult(CardWaitOutcome.Done, CardMoveStage.WaitingForReinsertion, uid, uid, Snapshots.Card(uid)));
+        }
+
+        // The stages are announced as the real waiter does: the removal first (the card is still there), then the reinsertion.
+        private static void Announce(Action<CardMoveStage>? stages, CardMoveStage upTo)
+        {
+            stages?.Invoke(CardMoveStage.WaitingForRemoval);
+            if (upTo == CardMoveStage.WaitingForReinsertion)
+            {
+                stages?.Invoke(CardMoveStage.WaitingForReinsertion);
+            }
         }
     }
 

@@ -139,11 +139,18 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             WorkflowState.CompletionFailed => strings[Keys.GuidedCloseUpload],
             WorkflowState.Assessing => strings[Keys.GuidedCloseVerdict],
             WorkflowState.RunFailed => strings[Keys.GuidedCloseVerdict],
+            WorkflowState.Programming => strings[Keys.GuidedCloseProgrammed],
             _ => strings[Keys.GuidedCloseNothing]
         };
 
         private static string Cancelled(WorkflowSnapshot snapshot, LocalizedStrings strings)
         {
+            // A cancel while the chip was being programmed: it may be programmed all the same, and the order is not finished.
+            if (snapshot.CancelledAt == WorkflowState.Programming)
+            {
+                return strings[Keys.GuidedEndCancelledProgrammed];
+            }
+
             // A cancel after the report was being made or stored: the order may or may not have been finished.
             if (snapshot.CancelledAt == WorkflowState.CompletionFailed || snapshot.CancelledAt == WorkflowState.Completing)
             {

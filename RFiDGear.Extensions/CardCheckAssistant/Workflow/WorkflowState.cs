@@ -28,6 +28,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// <summary>The check ran and the verdict is shown.</summary>
         Assessing,
 
+        /// <summary>The chip is being programmed: it is taken off the reader, programmed elsewhere and put back.</summary>
+        Programming,
+
         /// <summary>The check run failed; the operator can try again or cancel.</summary>
         RunFailed,
 
@@ -79,7 +82,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         Cancel = 128,
 
         /// <summary>Go back to the order list.</summary>
-        Back = 256
+        Back = 256,
+
+        /// <summary>Begin to program the chip: wait for it to be taken off the reader and put back.</summary>
+        BeginProgramming = 512
     }
 
     /// <summary>What closing the window means in a state.</summary>
@@ -109,7 +115,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             [WorkflowState.ConfirmingReplace] = new[] { WorkflowState.WaitingForCard, WorkflowState.Idle, WorkflowState.Faulted },
             [WorkflowState.WaitingForCard] = new[] { WorkflowState.Checking, WorkflowState.Cancelled, WorkflowState.Faulted },
             [WorkflowState.Checking] = new[] { WorkflowState.Assessing, WorkflowState.RunFailed, WorkflowState.WaitingForCard, WorkflowState.Cancelled, WorkflowState.Faulted },
-            [WorkflowState.Assessing] = new[] { WorkflowState.Completing, WorkflowState.Cancelled, WorkflowState.Faulted },
+            [WorkflowState.Assessing] = new[] { WorkflowState.Completing, WorkflowState.Programming, WorkflowState.Cancelled, WorkflowState.Faulted },
+            [WorkflowState.Programming] = new[] { WorkflowState.Cancelled, WorkflowState.Faulted },
             [WorkflowState.RunFailed] = new[] { WorkflowState.WaitingForCard, WorkflowState.Cancelled, WorkflowState.Faulted },
             [WorkflowState.Completing] = new[] { WorkflowState.Completed, WorkflowState.CompletionFailed, WorkflowState.Faulted },
             [WorkflowState.CompletionFailed] = new[] { WorkflowState.Completing, WorkflowState.Cancelled, WorkflowState.Faulted },
@@ -128,7 +135,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             [WorkflowState.ConfirmingReplace] = WorkflowControls.ConfirmReplace | WorkflowControls.DeclineReplace,
             [WorkflowState.WaitingForCard] = WorkflowControls.StartCheck | WorkflowControls.Cancel,
             [WorkflowState.Checking] = WorkflowControls.Cancel,
-            [WorkflowState.Assessing] = WorkflowControls.Finish | WorkflowControls.Cancel,
+            [WorkflowState.Assessing] = WorkflowControls.Finish | WorkflowControls.BeginProgramming | WorkflowControls.Cancel,
+            [WorkflowState.Programming] = WorkflowControls.Retry | WorkflowControls.Cancel,
             [WorkflowState.RunFailed] = WorkflowControls.Retry | WorkflowControls.Cancel,
             [WorkflowState.Completing] = WorkflowControls.None,
             [WorkflowState.CompletionFailed] = WorkflowControls.Retry | WorkflowControls.Cancel,
@@ -146,6 +154,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
             [WorkflowState.WaitingForCard] = CloseAdvice.Confirm,
             [WorkflowState.Checking] = CloseAdvice.Refuse,
             [WorkflowState.Assessing] = CloseAdvice.Confirm,
+            [WorkflowState.Programming] = CloseAdvice.Confirm,
             [WorkflowState.RunFailed] = CloseAdvice.Confirm,
             [WorkflowState.Completing] = CloseAdvice.Refuse,
             [WorkflowState.CompletionFailed] = CloseAdvice.Confirm,

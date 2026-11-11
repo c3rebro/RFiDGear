@@ -1182,7 +1182,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 Files = CardCheckServices.CreateReportFiles(Log);
                 Session = CardCheckServices.CreateWorkflowSession(Log);
                 Location = new ReportLocation(_area.Directory, true);
-                _settings = new WorkflowSettings(Location, removeTemporary, ReportLanguage.German, _area.ProjectPath, true);
+                _settings = new WorkflowSettings(Location, removeTemporary, ReportLanguage.German, _area.ProjectPath, true) { MemoryProjectPath = _area.ProjectPath };
                 UseSettings(s => s);
                 var reports = CardCheckServices.CreateReportService(Log);
                 Engine = new CardCheckWorkflow(Context, Session, wrapFiles == null ? Files : wrapFiles(Files), wrapReports == null ? reports : wrapReports(reports), Runner, Waiter, Reservations, Log);
@@ -1332,6 +1332,12 @@ namespace RFiDGear.Tests.CardCheckAssistant
                         await WaitingForCardAsync();
                         Runner.Answer = _ => new CheckRunResult(CheckRunStatus.Failed, new Failure(FailureKind.Unexpected, CheckFailureCodes.RunFailed, "The run failed."), null, null, null);
                         Engine.StartCheck();
+                        await Settled();
+                        break;
+                    case WorkflowState.Programming:
+                        // The test scripts the waiter first: with nothing scripted the chip is taken off and put back at once.
+                        await AssessedAsync(ChipVerdict.Programmable);
+                        Assert.True(Engine.BeginProgramming());
                         await Settled();
                         break;
                     case WorkflowState.CompletionFailed:
