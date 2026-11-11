@@ -631,6 +631,10 @@
                                         <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="False">
                                             <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
+                                        <!-- Last, so it wins: the reader is not IDLE before the first look at it. -->
+                                        <DataTrigger Binding="{Binding IsReaderInitializing, Mode=OneWay}" Value="True">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </TextBlock.Style>
@@ -647,6 +651,26 @@
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="{x:Null}">
                                             <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <!-- Last, so it wins: the state of the reader is not unknown, it is not looked at yet. -->
+                                        <DataTrigger Binding="{Binding IsReaderInitializing, Mode=OneWay}" Value="True">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="{Binding Data.LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='statusHeaderReaderIsInitializing', Source={StaticResource proxy}}" Width="auto" Height="auto" FontWeight="Bold" HorizontalAlignment="Left">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Hidden" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsReaderInitializing, Mode=OneWay}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <!-- Last, so it wins: a reader that is in use is BUSY, also at start-up. -->
+                                        <DataTrigger Binding="{Binding IsReaderBusy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" Value="True">
+                                            <Setter Property="Visibility" Value="Hidden" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
