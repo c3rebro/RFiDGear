@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -19,18 +20,33 @@ namespace RFiDGear.Tests.CardCheckAssistant
         private static CardMoveStage Stage(string name) => Enum.Parse<CardMoveStage>(name);
 
         [Fact]
-        public void TheProgrammingStep_HasItsEdges_ItsControls_AndItsCloseAdvice()
+        public void TheProgrammingStates_HaveTheirEdges_TheirControls_AndTheirCloseAdvice()
         {
-            Assert.Equal(
-                new[] { WorkflowState.Completing, WorkflowState.Programming, WorkflowState.Cancelled, WorkflowState.Faulted }.OrderBy(s => s),
-                WorkflowTables.Next(WorkflowState.Assessing).OrderBy(s => s));
-            Assert.Equal(
-                new[] { WorkflowState.Cancelled, WorkflowState.Faulted }.OrderBy(s => s),
-                WorkflowTables.Next(WorkflowState.Programming).OrderBy(s => s));
+            // Written out on purpose: the one test that catches an edge or a control that is too many.
+            var rows = new (WorkflowState State, WorkflowState[] Next, WorkflowControls Controls, CloseAdvice Close)[]
+            {
+                (WorkflowState.Assessing, new[] { WorkflowState.Completing, WorkflowState.Programming, WorkflowState.Cancelled, WorkflowState.Faulted }, WorkflowControls.Finish | WorkflowControls.BeginProgramming | WorkflowControls.Cancel, CloseAdvice.Confirm),
+                (WorkflowState.Programming, new[] { WorkflowState.WritingReport, WorkflowState.Cancelled, WorkflowState.Faulted }, WorkflowControls.ContinueProgramming | WorkflowControls.Retry | WorkflowControls.Cancel, CloseAdvice.Confirm),
+                (WorkflowState.WritingReport, new[] { WorkflowState.ReadingOut, WorkflowState.ProgrammingFailed, WorkflowState.Cancelled, WorkflowState.Faulted }, WorkflowControls.Cancel, CloseAdvice.Refuse),
+                (WorkflowState.ProgrammingFailed, new[] { WorkflowState.WritingReport, WorkflowState.Cancelled, WorkflowState.Faulted }, WorkflowControls.Retry | WorkflowControls.Cancel, CloseAdvice.Confirm),
+                (WorkflowState.ReadingOut, new[] { WorkflowState.Reviewing, WorkflowState.ReadOutFailed, WorkflowState.Cancelled, WorkflowState.Faulted }, WorkflowControls.Cancel, CloseAdvice.Refuse),
+                (WorkflowState.ReadOutFailed, new[] { WorkflowState.ReadingOut, WorkflowState.Completing, WorkflowState.Cancelled, WorkflowState.Faulted }, WorkflowControls.Retry | WorkflowControls.FinishWithoutReadOut | WorkflowControls.Cancel, CloseAdvice.Confirm),
+                (WorkflowState.Reviewing, new[] { WorkflowState.Completing, WorkflowState.Cancelled, WorkflowState.Faulted }, WorkflowControls.Finish | WorkflowControls.Cancel, CloseAdvice.Confirm),
+            };
+
+            foreach (var row in rows)
+            {
+                Assert.Equal(row.Next.OrderBy(s => s), WorkflowTables.Next(row.State).OrderBy(s => s));
+                Assert.Equal(row.Controls, WorkflowTables.ControlsOf(row.State));
+                Assert.Equal(row.Close, WorkflowTables.CloseAdviceOf(row.State));
+            }
+
+            // Who can lead where: the finish is reached from the verdict, the review, the failed read-out and the failed upload.
             Assert.Equal(new[] { WorkflowState.Assessing }, WorkflowTables.States.Where(s => WorkflowTables.IsAllowed(s, WorkflowState.Programming)));
-            Assert.Equal(WorkflowControls.Finish | WorkflowControls.BeginProgramming | WorkflowControls.Cancel, WorkflowTables.ControlsOf(WorkflowState.Assessing));
-            Assert.Equal(WorkflowControls.Retry | WorkflowControls.Cancel, WorkflowTables.ControlsOf(WorkflowState.Programming));
-            Assert.Equal(CloseAdvice.Confirm, WorkflowTables.CloseAdviceOf(WorkflowState.Programming));
+            Assert.Equal(new[] { WorkflowState.ReadingOut }, WorkflowTables.States.Where(s => WorkflowTables.IsAllowed(s, WorkflowState.Reviewing)));
+            Assert.Equal(
+                new[] { WorkflowState.Assessing, WorkflowState.CompletionFailed, WorkflowState.ReadOutFailed, WorkflowState.Reviewing }.OrderBy(s => s),
+                WorkflowTables.States.Where(s => WorkflowTables.IsAllowed(s, WorkflowState.Completing)).OrderBy(s => s));
         }
 
         [Theory]
@@ -84,7 +100,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal(new CardMoveStage?[] { null, CardMoveStage.WaitingForRemoval, CardMoveStage.WaitingForReinsertion, null }, rig.Events.Select(e => e.MoveStage));
             Assert.Equal(WorkflowState.Programming, rig.Now.State);
             Assert.False(rig.Now.IsBusy);
-            Assert.Equal(WorkflowControls.Cancel, rig.Now.Controls);
+            Assert.Equal(WorkflowControls.ContinueProgramming | WorkflowControls.Cancel, rig.Now.Controls);
             Assert.Null(rig.Now.Failure);
             Assert.Equal(CardWaitOutcome.Done, rig.Now.Move!.Outcome);
             Assert.True(rig.Now.Move.SameCard);
@@ -248,7 +264,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.True(rig.Engine.Retry());
             await rig.Settled();
 
-            Assert.Equal(WorkflowControls.Cancel, rig.Now.Controls);
+            Assert.Equal(WorkflowControls.ContinueProgramming | WorkflowControls.Cancel, rig.Now.Controls);
             Assert.Null(rig.Now.Failure);
             Assert.Equal(CardWaitOutcome.Done, rig.Now.Move!.Outcome);
             Assert.Equal(new (TimeSpan?, string?)[] { (CardCheckWorkflow.WaitCeiling, Uid), (CardCheckWorkflow.WaitCeiling, Uid), (CardCheckWorkflow.WaitCeiling, Uid) }, rig.Waiter.Moves);
@@ -284,7 +300,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal(new TimeSpan?[] { CardCheckWorkflow.WaitCeiling }, rig.Waiter.Timeouts);
             Assert.Equal(WorkflowState.Programming, rig.Now.State);
             Assert.False(rig.Now.IsBusy);
-            Assert.Equal(WorkflowControls.Cancel, rig.Now.Controls);
+            Assert.Equal(WorkflowControls.ContinueProgramming | WorkflowControls.Cancel, rig.Now.Controls);
             Assert.Null(rig.Now.MoveStage);
             var move = rig.Now.Move!;
             Assert.Equal(CardWaitOutcome.Done, move.Outcome);
@@ -299,7 +315,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         {
             // A state that is given the retry control must be given its case in Retry(): this list is the reminder.
             Assert.Equal(
-                new[] { "CompletionFailed", "Programming", "RunFailed" },
+                new[] { "CompletionFailed", "Programming", "ProgrammingFailed", "ReadOutFailed", "RunFailed" },
                 WorkflowTables.States.Where(s => WorkflowTables.ControlsOf(s).HasFlag(WorkflowControls.Retry)).Select(s => s.ToString()).OrderBy(n => n, StringComparer.Ordinal));
         }
 
@@ -307,6 +323,8 @@ namespace RFiDGear.Tests.CardCheckAssistant
         [InlineData("RunFailed")]
         [InlineData("CompletionFailed")]
         [InlineData("Programming")]
+        [InlineData("ProgrammingFailed")]
+        [InlineData("ReadOutFailed")]
         public Task EveryStateThatOffersRetry_AcceptsIt(string name) => WorkflowEngineTests.Sta(async rig =>
         {
             var state = Enum.Parse<WorkflowState>(name);
@@ -360,6 +378,459 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.True(rig.Engine.Back());
 
             // Only what belongs to the window, not to the order, stays: the list, the mode, the language, the text blocks.
+            var now = rig.Now;
+            Assert.Equal(
+                new WorkflowSnapshot
+                {
+                    State = WorkflowState.Idle,
+                    Controls = WorkflowControls.Refresh | WorkflowControls.Start,
+                    Close = CloseAdvice.Allow,
+                    Orders = now.Orders,
+                    IsTestMode = now.IsTestMode,
+                    DefaultLanguage = now.DefaultLanguage,
+                    TextBlocks = now.TextBlocks,
+                    Version = now.Version,
+                },
+                now);
+        });
+
+        [Fact]
+        public Task TheAnswers_AreWrittenIntoTheSecondReport_ThenTheDateIsSet_ThenTheMemoryIsReadOut_AndTheReadOutReportIsFinished() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            Assert.Equal(WorkflowControls.ContinueProgramming | WorkflowControls.Cancel, rig.Now.Controls);
+            rig.Calls.Clear();
+            rig.Waiter.Timeouts.Clear();
+            rig.Events.Clear();
+            var template = rig.Template;
+            var answers = WorkflowEngineTests.Rig.GoodAnswers;
+
+            Assert.True(rig.Engine.ContinueProgramming(template, answers));
+
+            // The first picture says that the report is being written, and that only Cancel is left.
+            Assert.Equal(WorkflowState.WritingReport, rig.Events[0].State);
+            Assert.True(rig.Events[0].IsBusy);
+            Assert.Equal(WorkflowControls.Cancel, rig.Events[0].Controls);
+
+            await rig.Settled();
+
+            Assert.Equal(new[] { WorkflowState.WritingReport, WorkflowState.ReadingOut, WorkflowState.Reviewing }, rig.Events.Select(e => e.State).Distinct());
+            Assert.Equal(WorkflowState.Reviewing, rig.Now.State);
+            Assert.False(rig.Now.IsBusy);
+            Assert.Equal(WorkflowControls.Finish | WorkflowControls.Cancel, rig.Now.Controls);
+            Assert.Null(rig.Now.Failure);
+            Assert.Equal(CheckRunStatus.Finished, rig.Now.ReadOut!.Status);
+
+            // The second report is the first with the fields of the answers; then the date; then the run, in that order.
+            Assert.Equal(new[] { "write", "touch", "run" }, rig.Calls);
+            var write = rig.Reports.Writes.Single();
+            Assert.Equal(rig.Paths.PathOf(ReportFile.Step1), write.Source);
+            Assert.Equal(rig.Paths.PathOf(ReportFile.Step2), write.Target);
+            Assert.Equal(answers.ToFields(template).Value.OrderBy(p => p.Key), write.Fields.OrderBy(p => p.Key));
+            Assert.Equal(WorkflowEngineTests.Rig.OrderId, rig.Store.Touched.Single());
+
+            // The run continues from the second report, with the project that reads the memory out, as it is (no language variant).
+            var request = rig.Runner.Requests.Last();
+            Assert.Equal(ReportFile.Step3, request.Report);
+            Assert.Equal(ReportFile.Step2, request.TemplateReport);
+            Assert.Equal(rig.Settings.MemoryProjectPath, request.ProjectPath);
+            Assert.NotEqual(rig.Settings.DefaultProjectPath, request.ProjectPath);   // not the project of the check
+            Assert.Null(request.ProjectLanguage);
+            Assert.Equal(WorkflowEngineTests.Rig.Job, request.JobNumber);
+            Assert.Equal(WorkflowEngineTests.Rig.Chip, request.ChipNumber);
+
+            // The chip was looked at once before the run, not waited for.
+            Assert.Equal(new TimeSpan?[] { TimeSpan.Zero }, rig.Waiter.Timeouts);
+
+            // The session knows what was chosen and answered.
+            Assert.Equal(template, rig.Session.Current.ChosenTemplate);
+            Assert.Equal(answers, rig.Session.Current.Answers);
+
+            // "Report checked": the finished report is made from the report of the read-out.
+            Assert.True(rig.Engine.Finish());
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Completed, rig.Now.State);
+            Assert.Equal(rig.Paths.PathOf(ReportFile.Step3), rig.Reports.Locked.Single().Source);
+            Assert.Equal(WorkflowEngineTests.Rig.OrderId, rig.Store.Finalized.Single().Id);
+        });
+
+        [Fact]
+        public Task TheWorkingReports_AreRemovedAfterAProgrammedFinish_WhenTheSettingSaysSo() => WorkflowEngineTests.Sta(
+            async rig =>
+            {
+                await rig.ReachAsync(WorkflowState.Reviewing);
+                Assert.True(File.Exists(rig.Paths.PathOf(ReportFile.Step1)));
+                Assert.True(File.Exists(rig.Paths.PathOf(ReportFile.Step2)));
+                Assert.True(File.Exists(rig.Paths.PathOf(ReportFile.Step3)));
+
+                Assert.True(rig.Engine.Finish());
+                await rig.Settled();
+
+                Assert.Equal(WorkflowState.Completed, rig.Now.State);
+                Assert.False(File.Exists(rig.Paths.PathOf(ReportFile.Step1)));
+                Assert.False(File.Exists(rig.Paths.PathOf(ReportFile.Step2)));
+                Assert.False(File.Exists(rig.Paths.PathOf(ReportFile.Step3)));
+                Assert.True(File.Exists(rig.Paths.PathOf(ReportFile.Final)));
+            },
+            removeTemporary: true);
+
+        [Fact]
+        public Task WhenTheSecondReportCannotBeWritten_NothingElseHappens_AndRetryWritesItAgain() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            var failure = new Failure(FailureKind.Io, "report.unreadable", "The report cannot be read.");
+            rig.Reports.WriteAnswer = Result.Fail(failure);
+            rig.Calls.Clear();
+            rig.Runner.Requests.Clear();
+
+            await rig.ContinueAsync();
+
+            Assert.Equal(WorkflowState.ProgrammingFailed, rig.Now.State);
+            Assert.False(rig.Now.IsBusy);
+            Assert.Equal(WorkflowControls.Retry | WorkflowControls.Cancel, rig.Now.Controls);
+            Assert.Same(failure, rig.Now.Failure);
+            Assert.Equal(new[] { "write" }, rig.Calls);   // the date is not set, the memory is not read
+            Assert.Empty(rig.Runner.Requests);
+
+            rig.Reports.WriteAnswer = null;
+            Assert.True(rig.Engine.Retry());
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Reviewing, rig.Now.State);
+            Assert.Null(rig.Now.Failure);
+            Assert.Equal(new[] { "write", "write", "touch", "run" }, rig.Calls);
+        });
+
+        [Fact]
+        public Task WhenTheDateCannotBeSet_TheReadOutDoesNotRun_AndRetryDoesBothAgain() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.ProgrammingFailed);
+
+            Assert.Equal("orders.unreachable", rig.Now.Failure!.Code);
+            Assert.Equal(WorkflowControls.Retry | WorkflowControls.Cancel, rig.Now.Controls);
+            Assert.True(File.Exists(rig.Paths.PathOf(ReportFile.Step2)));   // the report was written; the order system did not answer
+            Assert.Equal(new[] { "write", "touch" }, rig.Calls.Skip(rig.Calls.Count - 2));
+            var runs = rig.Runner.Requests.Count;
+
+            rig.Store.TouchAnswer = null;
+            Assert.True(rig.Engine.Retry());
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Reviewing, rig.Now.State);
+            Assert.Equal(runs + 1, rig.Runner.Requests.Count);
+            Assert.Equal(new[] { "write", "touch", "write", "touch", "run" }, rig.Calls.Skip(rig.Calls.Count - 5));
+        });
+
+        [Fact]
+        public Task AReadOutThatFails_LeavesTheOrderOpen_AndRetryRunsOnlyTheReadOutAgain() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.ReadOutFailed);
+
+            Assert.False(rig.Now.IsBusy);
+            Assert.Equal(WorkflowControls.Retry | WorkflowControls.FinishWithoutReadOut | WorkflowControls.Cancel, rig.Now.Controls);
+            Assert.Equal(CheckFailureCodes.ReportMissing, rig.Now.Failure!.Code);
+            Assert.Equal(CheckRunStatus.Failed, rig.Now.ReadOut!.Status);
+            rig.Calls.Clear();
+            rig.RunnerWritesFirstReport(true, true, "1760");
+            var gate = new TaskCompletionSource<bool>();
+            rig.Runner.Gate = gate;
+
+            Assert.True(rig.Engine.Retry());
+
+            // While it runs again: busy, and the old result and failure are gone.
+            Assert.True(rig.Now.IsBusy);
+            Assert.Equal(WorkflowState.ReadingOut, rig.Now.State);
+            Assert.Null(rig.Now.ReadOut);
+            Assert.Null(rig.Now.Failure);
+
+            gate.SetResult(true);
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Reviewing, rig.Now.State);
+            Assert.Equal(CheckRunStatus.Finished, rig.Now.ReadOut!.Status);
+            Assert.Equal(new[] { "run" }, rig.Calls);   // the report and the date are not done a second time
+        });
+
+        [Fact]
+        public Task WithoutAChipOnTheReader_TheReadOutDoesNotRun_AndTheReasonIsTold() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            rig.Runner.Requests.Clear();
+            rig.Waiter.Timeouts.Clear();
+            rig.Waiter.ThenFindsTheReaderEmpty();
+
+            await rig.ContinueAsync();
+
+            Assert.Equal(WorkflowState.ReadOutFailed, rig.Now.State);
+            Assert.Equal(WorkflowFailureCodes.CardMissing, rig.Now.Failure!.Code);
+            Assert.Empty(rig.Runner.Requests);
+            Assert.Equal(new TimeSpan?[] { TimeSpan.Zero }, rig.Waiter.Timeouts);
+
+            // A reader that gives no clear answer is told apart from an empty one.
+            rig.Waiter.ThenGetsNoClearAnswer();
+            Assert.True(rig.Engine.Retry());
+            await rig.Settled();
+            Assert.Equal(WorkflowState.ReadOutFailed, rig.Now.State);
+            Assert.Equal(WorkflowFailureCodes.CardUnclear, rig.Now.Failure!.Code);
+            Assert.Empty(rig.Runner.Requests);
+
+            // With the chip back, the same retry runs the project.
+            Assert.True(rig.Engine.Retry());
+            await rig.Settled();
+            Assert.Equal(WorkflowState.Reviewing, rig.Now.State);
+            Assert.Single(rig.Runner.Requests);
+        });
+
+        [Fact]
+        public Task AReadOutThatCouldNotStart_CanAlsoBeFinishedWithTheSecondReport() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            rig.Waiter.ThenFindsTheReaderEmpty();
+            await rig.ContinueAsync();
+            Assert.Equal(WorkflowState.ReadOutFailed, rig.Now.State);
+
+            Assert.True(rig.Engine.FinishWithoutReadOut());
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Completed, rig.Now.State);
+            Assert.Equal(rig.Paths.PathOf(ReportFile.Step2), rig.Reports.Locked.Single().Source);
+        });
+
+        [Fact]
+        public Task AReadOutThatSaysItWasCancelled_EndsCancelled_WhereItCame() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            rig.Runner.Answer = _ => new CheckRunResult(CheckRunStatus.Cancelled, null, null, null, null);
+
+            await rig.ContinueAsync();
+
+            Assert.Equal(WorkflowState.Cancelled, rig.Now.State);
+            Assert.Equal(WorkflowState.ReadingOut, rig.Now.CancelledAt);
+            Assert.Null(rig.Now.ReadOut);
+        });
+
+        [Fact]
+        public Task FinishWithoutReadOut_IsAChoice_AndFinishesWithTheSecondReport() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.ReadOutFailed);
+            Assert.False(rig.Engine.Finish());   // the review's button is not the failed read-out's
+
+            Assert.True(rig.Engine.FinishWithoutReadOut());
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Completed, rig.Now.State);
+            Assert.Equal(rig.Paths.PathOf(ReportFile.Step2), rig.Reports.Locked.Single().Source);
+            Assert.Equal(WorkflowEngineTests.Rig.OrderId, rig.Store.Finalized.Single().Id);
+        });
+
+        [Fact]
+        public Task TheFinishWithoutReadOut_IsNotOfferedAtTheReview() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Reviewing);
+
+            Assert.False(rig.Engine.FinishWithoutReadOut());
+            Assert.Equal(WorkflowState.Reviewing, rig.Now.State);
+        });
+
+        [Fact]
+        public Task Answers_ThatAreNotGood_AreRefusedBeforeAnythingIsWritten() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            var before = rig.Calls.Count;
+            var template = rig.Template;
+
+            Assert.Throws<ArgumentNullException>(() => rig.Engine.ContinueProgramming(null!, WorkflowEngineTests.Rig.GoodAnswers));
+            Assert.Throws<ArgumentNullException>(() => rig.Engine.ContinueProgramming(template, null!));
+
+            // A question that is not answered.
+            Assert.False(rig.Engine.ContinueProgramming(template, new LsmAnswers { ProgrammingSucceeded = true }));
+            Assert.Equal(WorkflowState.Programming, rig.Now.State);
+            Assert.False(rig.Now.IsBusy);
+            Assert.Equal("answers.functionTest.missing", rig.Now.Failure!.Code);
+
+            // A template that does not fit the chip.
+            var foreign = new LsmTemplate("Foreign", "Foreign", TemplateFamily.Classic, 1, 1);
+            Assert.False(rig.Engine.ContinueProgramming(foreign, WorkflowEngineTests.Rig.GoodAnswers));
+            Assert.Equal(WorkflowState.Programming, rig.Now.State);
+            Assert.NotNull(rig.Now.Failure);
+            Assert.NotEqual("answers.functionTest.missing", rig.Now.Failure!.Code);
+
+            Assert.Equal(before, rig.Calls.Count);   // nothing was written, nothing was touched, nothing was run
+            Assert.Empty(rig.Reports.Writes);
+
+            // The good answers go through, and the note of the refusal is gone.
+            Assert.True(rig.Engine.ContinueProgramming(template, WorkflowEngineTests.Rig.GoodAnswers));
+            Assert.Null(rig.Now.Failure);
+            await rig.Settled();
+            Assert.Equal(WorkflowState.Reviewing, rig.Now.State);
+        });
+
+        [Fact]
+        public Task Continuing_IsRefused_UntilTheChipWasPutBack() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.AssessedAsync(ChipVerdict.Programmable);
+            rig.Waiter.ThenTheMoveTimesOut(CardMoveStage.WaitingForRemoval);
+            Assert.True(rig.Engine.BeginProgramming());
+            await rig.Settled();
+
+            Assert.False(rig.Now.Controls.HasFlag(WorkflowControls.ContinueProgramming));
+            Assert.False(rig.Engine.ContinueProgramming(rig.Template, WorkflowEngineTests.Rig.GoodAnswers));
+            Assert.Equal(WorkflowState.Programming, rig.Now.State);
+            Assert.Empty(rig.Reports.Writes);
+        });
+
+        [Fact]
+        public Task ACancel_WhileTheReportIsWritten_IsLookedAtBeforeTheDateIsSet() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            var gate = new TaskCompletionSource<bool>();
+            rig.Reports.WriteGate = gate;
+            rig.Calls.Clear();
+            rig.Runner.Requests.Clear();
+            Assert.True(rig.Engine.ContinueProgramming(rig.Template, WorkflowEngineTests.Rig.GoodAnswers));
+
+            try
+            {
+                await rig.UntilAsync(() => rig.Calls.Contains("write"));
+
+                // While the second report is written only Cancel is accepted.
+                Assert.Equal(WorkflowState.WritingReport, rig.Now.State);
+                Assert.Equal(WorkflowControls.Cancel, rig.Now.Controls);
+                Assert.False(rig.Engine.Retry());
+                Assert.False(rig.Engine.Finish());
+                Assert.False(rig.Engine.FinishWithoutReadOut());
+                Assert.False(rig.Engine.BeginProgramming());
+                Assert.False(rig.Engine.ContinueProgramming(rig.Template, WorkflowEngineTests.Rig.GoodAnswers));
+                Assert.True(rig.Engine.Cancel());
+            }
+            finally
+            {
+                gate.SetResult(true);   // the write that had begun ends all the same
+            }
+
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Cancelled, rig.Now.State);
+            Assert.Equal(WorkflowState.WritingReport, rig.Now.CancelledAt);
+            Assert.Empty(rig.Store.Touched);
+            Assert.Empty(rig.Runner.Requests);
+        });
+
+        [Fact]
+        public Task ACancel_WinsOverAFailureThatTheWriteBringsBack() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            var gate = new TaskCompletionSource<bool>();
+            rig.Reports.WriteGate = gate;
+            rig.Reports.WriteAnswer = Result.Fail(new Failure(FailureKind.Io, "report.unreadable", "The report cannot be read."));
+            rig.Calls.Clear();
+            Assert.True(rig.Engine.ContinueProgramming(rig.Template, WorkflowEngineTests.Rig.GoodAnswers));
+            await rig.UntilAsync(() => rig.Calls.Contains("write"));
+
+            Assert.True(rig.Engine.Cancel());
+            gate.SetResult(true);
+            await rig.Settled();
+
+            // The cancel was asked for first: the state is not a failed one, and the failure is not shown.
+            Assert.Equal(WorkflowState.Cancelled, rig.Now.State);
+            Assert.Equal(WorkflowState.WritingReport, rig.Now.CancelledAt);
+            Assert.Null(rig.Now.Failure);
+            Assert.Empty(rig.Store.Touched);
+        });
+
+        [Fact]
+        public Task ACancel_WinsOverAFailureThatTheReadOutBringsBack() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            var gate = new TaskCompletionSource<bool>();
+            rig.Runner.Gate = gate;
+            rig.Runner.Answer = _ => new CheckRunResult(CheckRunStatus.Failed, new Failure(FailureKind.Unexpected, CheckFailureCodes.ReportMissing, "No report."), null, null, null);
+            rig.Runner.Requests.Clear();
+            Assert.True(rig.Engine.ContinueProgramming(rig.Template, WorkflowEngineTests.Rig.GoodAnswers));
+            await rig.UntilAsync(() => rig.Runner.Requests.Count == 1);
+
+            Assert.True(rig.Engine.Cancel());
+            gate.SetResult(true);
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Cancelled, rig.Now.State);
+            Assert.Equal(WorkflowState.ReadingOut, rig.Now.CancelledAt);
+            Assert.Null(rig.Now.Failure);
+            Assert.Null(rig.Now.ReadOut);
+        });
+
+        [Fact]
+        public Task ACancel_WhileTheDateIsSet_EndsCancelled_AndTheReadOutDoesNotRun() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            var gate = new TaskCompletionSource<bool>();
+            rig.Store.TouchGate = gate;
+            rig.Runner.Requests.Clear();
+            Assert.True(rig.Engine.ContinueProgramming(rig.Template, WorkflowEngineTests.Rig.GoodAnswers));
+            await rig.UntilAsync(() => rig.Store.Touched.Count == 1);
+            Assert.Equal(WorkflowState.WritingReport, rig.Now.State);
+
+            Assert.True(rig.Engine.Cancel());
+            gate.SetResult(true);   // the call that had begun answers all the same, and the answer is thrown away
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Cancelled, rig.Now.State);
+            Assert.Equal(WorkflowState.WritingReport, rig.Now.CancelledAt);
+            Assert.Empty(rig.Runner.Requests);
+        });
+
+        [Fact]
+        public Task ACancel_WhileTheMemoryIsRead_NeverEndsInTheReview() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            var gate = new TaskCompletionSource<bool>();
+            rig.Runner.Gate = gate;
+            rig.Runner.Requests.Clear();
+            Assert.True(rig.Engine.ContinueProgramming(rig.Template, WorkflowEngineTests.Rig.GoodAnswers));
+            await rig.UntilAsync(() => rig.Runner.Requests.Count == 1);
+            Assert.Equal(WorkflowState.ReadingOut, rig.Now.State);
+            Assert.Equal(WorkflowControls.Cancel, rig.Now.Controls);
+
+            // The host stops a run only between two tasks: a held run ignores the token, and what it brings back is thrown away.
+            Assert.True(rig.Engine.Cancel());
+            gate.SetResult(true);
+            await rig.Settled();
+
+            Assert.Equal(WorkflowState.Cancelled, rig.Now.State);
+            Assert.Equal(WorkflowState.ReadingOut, rig.Now.CancelledAt);
+            Assert.Null(rig.Now.ReadOut);
+        });
+
+        [Theory]
+        [InlineData("Programming", false)]
+        [InlineData("ProgrammingFailed", true)]
+        [InlineData("ReadOutFailed", true)]
+        [InlineData("Reviewing", false)]
+        public Task ACancel_WhereNothingRuns_EndsCancelled_AndKeepsTheFailureOfAFailedStep(string name, bool keepsFailure) => WorkflowEngineTests.Sta(async rig =>
+        {
+            var state = Enum.Parse<WorkflowState>(name);
+            await rig.ReachAsync(state);
+            var failure = rig.Now.Failure;
+            Assert.Equal(keepsFailure, failure != null);
+
+            Assert.True(rig.Engine.Cancel());
+
+            Assert.Equal(WorkflowState.Cancelled, rig.Now.State);
+            Assert.Equal(state, rig.Now.CancelledAt);
+            Assert.Same(failure, rig.Now.Failure);
+        });
+
+        [Fact]
+        public Task Back_AfterTheReview_LeavesNothingOfTheOrderBehind() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Reviewing);
+            Assert.NotNull(rig.Now.ReadOut);
+            Assert.NotNull(rig.Now.Move);
+
+            Assert.True(rig.Engine.Cancel());
+            Assert.True(rig.Engine.Back());
+
             var now = rig.Now;
             Assert.Equal(
                 new WorkflowSnapshot

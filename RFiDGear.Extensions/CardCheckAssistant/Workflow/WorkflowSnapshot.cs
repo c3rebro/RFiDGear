@@ -44,6 +44,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// <summary>Nobody took the chip off the reader and put it back for a long time, so the wait ended.</summary>
         public const string CardMoveTimedOut = "workflow.card.moveTimedOut";
 
+        /// <summary>No chip is on the reader, so the memory could not be read out.</summary>
+        public const string CardMissing = "workflow.card.missing";
+
         /// <summary>Something nobody expected went wrong; nothing about the exception but its type is kept.</summary>
         public const string Faulted = "workflow.faulted";
     }
@@ -173,6 +176,9 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// that was taken off. <c>null</c> before that, and while it is awaited again.
         /// </summary>
         public CardMoveResult? Move { get; init; }
+
+        /// <summary>What the run that read the memory out came to (its report is in <see cref="CheckRunResult.ReportPath"/>); <c>null</c> before it ran and while it is run again. Kept apart from <see cref="Check"/>, which is the first run.</summary>
+        public CheckRunResult? ReadOut { get; init; }
 
         /// <summary>What the check run came to (the task outcomes are in <see cref="CheckRunResult.Execution"/>).</summary>
         public CheckRunResult? Check { get; init; }

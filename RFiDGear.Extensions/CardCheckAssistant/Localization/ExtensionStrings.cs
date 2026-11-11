@@ -134,6 +134,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string FailCardUnclear = "FailCardUnclear";
             public const string FailMemoryProjectInvalid = "FailMemoryProjectInvalid";
             public const string FailCardMoveTimedOut = "FailCardMoveTimedOut";
+            public const string FailCardMissing = "FailCardMissing";
             public const string FailProjectSetting = "FailProjectSetting";
             public const string FailLoadFormat = "FailLoadFormat";
             public const string FailProjectChanged = "FailProjectChanged";
@@ -184,6 +185,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string GuidedEndCancelledProgrammableFormat = "GuidedEndCancelledProgrammableFormat";
             public const string GuidedEndCancelledMaybe = "GuidedEndCancelledMaybe";
             public const string GuidedEndCancelledProgrammed = "GuidedEndCancelledProgrammed";
+            public const string GuidedEndCancelledMaybeProgrammed = "GuidedEndCancelledMaybeProgrammed";
             public const string GuidedEndFaulted = "GuidedEndFaulted";
             public const string GuidedOrdersLoading = "GuidedOrdersLoading";
             public const string GuidedOrdersNone = "GuidedOrdersNone";
@@ -270,6 +272,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.FailCardChanged] = "Another chip is on the reader now. Put the first chip back, or cancel and start again.",
             [Keys.FailCardUnclear] = "The reader gave no clear answer. It may be busy with other tasks or have lost its connection. Try again.",
             [Keys.FailMemoryProjectInvalid] = "The chip cannot be programmed: the project that reads out its memory is not set, or its file cannot be found. Fix it in the settings.",
+            [Keys.FailCardMissing] = "No chip is on the reader, so its memory could not be read out. Put the chip on the reader and try again.",
             [Keys.FailCardMoveTimedOut] = "The wait for the chip to be taken off the reader and put back ended after 30 minutes. What was done to the chip meanwhile stays. Wait again, or cancel and check the order before you check the chip again.",
             [Keys.FailProjectSetting] = "The check project is missing or its path is wrong. Cancel, then fix it in the settings.",
             [Keys.FailLoadFormat] = "RFiDGear cannot open the check project: the file format is not supported. Cancel, then choose another file in the settings.",
@@ -320,6 +323,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedEndCancelledKeptFormat] = "Cancelled. The order is unchanged. The first report stays at {0}.",
             [Keys.GuidedEndCancelledProgrammableFormat] = "Cancelled. The order is unchanged. The first report is at {0}. Programming is not part of this version.",
             [Keys.GuidedEndCancelledMaybe] = "Cancelled. The order may not have been finished in the order system. Check it there before you check the chip again; repeating the check is safe.",
+            [Keys.GuidedEndCancelledMaybeProgrammed] = "Cancelled. The chip was programmed, and the order may not have been finished in the order system. Check it there. Do not check the chip again before that: a new check replaces the reports made so far.",
             [Keys.GuidedEndCancelledProgrammed] = "Cancelled. The chip may already be programmed and the order is not finished. The reports made so far stay in the report folder. Check the order before you check the chip again.",
             [Keys.GuidedEndFaulted] = "Something unexpected went wrong. If the check had reached the upload, check the order in the order system.",
             [Keys.GuidedOrdersLoading] = "Reading the orders...",
@@ -478,6 +482,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.FailCardChanged] = "Jetzt liegt ein anderer Chip auf dem Leser. Legen Sie den ersten Chip zurück oder brechen Sie ab und beginnen Sie neu.",
             [Keys.FailCardUnclear] = "Der Leser hat keine eindeutige Antwort gegeben. Er ist vielleicht mit anderen Aufgaben beschäftigt oder hat die Verbindung verloren. Versuchen Sie es erneut.",
             [Keys.FailMemoryProjectInvalid] = "Der Chip kann nicht programmiert werden: Das Projekt, das seinen Speicher ausliest, ist nicht eingestellt oder seine Datei wurde nicht gefunden. Korrigieren Sie es in den Einstellungen.",
+            [Keys.FailCardMissing] = "Auf dem Leser liegt kein Chip, deshalb konnte sein Speicher nicht ausgelesen werden. Legen Sie den Chip auf den Leser und versuchen Sie es erneut.",
             [Keys.FailCardMoveTimedOut] = "Das Warten darauf, dass der Chip vom Leser genommen und wieder aufgelegt wird, wurde nach 30 Minuten beendet. Was in der Zwischenzeit mit dem Chip gemacht wurde, bleibt bestehen. Warten Sie erneut, oder brechen Sie ab und prüfen Sie den Auftrag, bevor Sie den Chip erneut prüfen.",
             [Keys.FailProjectSetting] = "Das Prüfprojekt fehlt oder sein Pfad ist falsch. Brechen Sie ab und korrigieren Sie es in den Einstellungen.",
             [Keys.FailLoadFormat] = "RFiDGear kann das Prüfprojekt nicht öffnen: Das Dateiformat wird nicht unterstützt. Brechen Sie ab und wählen Sie in den Einstellungen eine andere Datei.",
@@ -528,6 +533,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedEndCancelledKeptFormat] = "Abgebrochen. Der Auftrag ist unverändert. Der erste Bericht bleibt unter {0}.",
             [Keys.GuidedEndCancelledProgrammableFormat] = "Abgebrochen. Der Auftrag ist unverändert. Der erste Bericht liegt unter {0}. Das Programmieren gehört nicht zu dieser Version.",
             [Keys.GuidedEndCancelledMaybe] = "Abgebrochen. Der Auftrag ist im Auftragssystem möglicherweise nicht abgeschlossen. Prüfen Sie ihn dort, bevor Sie den Chip erneut prüfen; eine Wiederholung ist gefahrlos.",
+            [Keys.GuidedEndCancelledMaybeProgrammed] = "Abgebrochen. Der Chip wurde programmiert, und der Auftrag ist im Auftragssystem möglicherweise nicht abgeschlossen. Prüfen Sie ihn dort. Prüfen Sie den Chip vorher nicht erneut: eine neue Prüfung ersetzt die bisher erstellten Berichte.",
             [Keys.GuidedEndCancelledProgrammed] = "Abgebrochen. Der Chip ist möglicherweise schon programmiert und der Auftrag ist nicht abgeschlossen. Die bisher erstellten Berichte bleiben im Berichtsordner. Prüfen Sie den Auftrag, bevor Sie den Chip erneut prüfen.",
             [Keys.GuidedEndFaulted] = "Etwas Unerwartetes ist schiefgegangen. Falls die Prüfung schon beim Speichern war, prüfen Sie den Auftrag im Auftragssystem.",
             [Keys.GuidedOrdersLoading] = "Die Aufträge werden gelesen...",

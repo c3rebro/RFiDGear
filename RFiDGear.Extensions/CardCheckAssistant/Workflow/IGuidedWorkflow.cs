@@ -47,6 +47,20 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         /// <returns><c>true</c> if the verdict leads to programming and the wait has begun.</returns>
         bool BeginProgramming();
 
+        /// <summary>
+        /// Goes on after the chip was put back: checks the answers, writes the second report and sets the change date of
+        /// the order, reads the memory out. The answers are refused, with the reason in <see cref="WorkflowSnapshot.Failure"/>,
+        /// if they are incomplete or the template does not fit; nothing is written then.
+        /// </summary>
+        /// <param name="template">The template of the programming, one of those that fit the chip.</param>
+        /// <param name="answers">What the operator answered about the programming.</param>
+        /// <returns><c>true</c> if the state offers it, the answers are good and the work has begun.</returns>
+        bool ContinueProgramming(LsmTemplate template, LsmAnswers answers);
+
+        /// <summary>Finishes the order with the report made before programming, because the memory could not be read out.</summary>
+        /// <returns><c>true</c> if the state offers it and the finish has begun.</returns>
+        bool FinishWithoutReadOut();
+
         /// <summary>Tries the failed step again.</summary>
         /// <returns><c>true</c> if the state offers it.</returns>
         bool Retry();

@@ -51,6 +51,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
             [WorkflowState.RunFailed] = GuidedStep.Check,
             [WorkflowState.Assessing] = GuidedStep.Verdict,
             [WorkflowState.Programming] = GuidedStep.Verdict,
+            [WorkflowState.WritingReport] = GuidedStep.Verdict,
+            [WorkflowState.ProgrammingFailed] = GuidedStep.Verdict,
+            [WorkflowState.ReadingOut] = GuidedStep.Check,
+            [WorkflowState.ReadOutFailed] = GuidedStep.Check,
+            [WorkflowState.Reviewing] = GuidedStep.Finish,
             [WorkflowState.Completing] = GuidedStep.Finish,
             [WorkflowState.CompletionFailed] = GuidedStep.Finish,
             [WorkflowState.Completed] = GuidedStep.End,
@@ -772,9 +777,23 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.True(vm.TryRequestClose());
             Assert.Equal(vm.Strings[Keys.GuidedCloseUpload], page.Close.Asked[3].Text);
 
-            await page.PushAsync(WorkflowState.Programming);
-            Assert.True(vm.TryRequestClose());
-            Assert.Equal(vm.Strings[Keys.GuidedCloseProgrammed], page.Close.Asked[4].Text);
+            // From the programming on, closing says that the chip may be programmed all the same; while the report is written
+            // or the memory read, closing is refused like during the check.
+            var next = 4;
+            foreach (var state in new[] { WorkflowState.Programming, WorkflowState.ProgrammingFailed, WorkflowState.ReadOutFailed, WorkflowState.Reviewing })
+            {
+                await page.PushAsync(state);
+                Assert.True(vm.TryRequestClose());
+                Assert.Equal(vm.Strings[Keys.GuidedCloseProgrammed], page.Close.Asked[next++].Text);
+            }
+
+            foreach (var state in new[] { WorkflowState.WritingReport, WorkflowState.ReadingOut })
+            {
+                await page.PushAsync(state, busy: true);
+                Assert.False(vm.TryRequestClose());
+            }
+
+            Assert.Equal(next, page.Close.Asked.Count);
 
             // The workflow decides, not the picture the page shows: a change that was not applied yet counts.
             await page.PushAsync(WorkflowState.Idle);
@@ -865,15 +884,23 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Equal(strings[Keys.GuidedEndFaulted], End(WorkflowState.Faulted));
             Assert.Equal(strings[Keys.GuidedEndCancelledNothing], End(WorkflowState.Cancelled, s => s with { CancelledAt = WorkflowState.WaitingForCard }));
             Assert.Equal(strings[Keys.GuidedEndCancelledMaybe], End(WorkflowState.Cancelled, s => s with { CancelledAt = WorkflowState.CompletionFailed, Check = withReport }));
+
+            // After the upload of a programmed chip failed, a new check is not safe: it would replace the reports.
+            Assert.Equal(
+                strings[Keys.GuidedEndCancelledMaybeProgrammed],
+                End(WorkflowState.Cancelled, s => s with { CancelledAt = WorkflowState.CompletionFailed, Check = withReport, Selection = programmable }));
             Assert.Contains("first.pdf", End(WorkflowState.Cancelled, s => s with { CancelledAt = WorkflowState.Assessing, Check = withReport }), StringComparison.Ordinal);
             Assert.Equal(
                 strings.Format(Keys.GuidedEndCancelledProgrammableFormat, "C:\\reports\\first.pdf"),
                 End(WorkflowState.Cancelled, s => s with { CancelledAt = WorkflowState.Assessing, Check = withReport, Selection = programmable }));
 
             // After a cancel while the chip was being programmed, the end text does not say that nothing was changed.
-            Assert.Equal(
-                strings[Keys.GuidedEndCancelledProgrammed],
-                End(WorkflowState.Cancelled, s => s with { CancelledAt = WorkflowState.Programming, Check = withReport, Selection = programmable }));
+            foreach (var at in new[] { WorkflowState.Programming, WorkflowState.WritingReport, WorkflowState.ProgrammingFailed, WorkflowState.ReadingOut, WorkflowState.ReadOutFailed, WorkflowState.Reviewing })
+            {
+                Assert.Equal(
+                    strings[Keys.GuidedEndCancelledProgrammed],
+                    End(WorkflowState.Cancelled, s => s with { CancelledAt = at, Check = withReport, Selection = programmable }));
+            }
             Assert.Equal(string.Empty, End(WorkflowState.Idle));
         }
 

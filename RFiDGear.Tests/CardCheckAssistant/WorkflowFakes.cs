@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -47,6 +48,15 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         public TaskCompletionSource<bool>? FinalizeGate { get; set; }
 
+        public Result? TouchAnswer { get; set; }
+
+        public TaskCompletionSource<bool>? TouchGate { get; set; }
+
+        public List<string> Touched { get; } = new List<string>();
+
+        /// <summary>A record of the calls of the whole check in the order they were made; the rig shares it with the report service and the runner.</summary>
+        public List<string> Calls { get; set; } = new List<string>();
+
         public int ListCalls { get; private set; }
 
         public List<(string Id, byte[] Report)> Finalized { get; } = new List<(string Id, byte[] Report)>();
@@ -88,8 +98,17 @@ namespace RFiDGear.Tests.CardCheckAssistant
             return FinalizeAnswer ?? await _inner.FinalizeAsync(orderId, report, cancellationToken);
         }
 
-        public Task<Result> TouchChangedDateAsync(string orderId, CancellationToken cancellationToken) =>
-            _inner.TouchChangedDateAsync(orderId, cancellationToken);
+        public async Task<Result> TouchChangedDateAsync(string orderId, CancellationToken cancellationToken)
+        {
+            Calls.Add("touch");
+            Touched.Add(orderId);
+            if (TouchGate != null)
+            {
+                await TouchGate.Task;
+            }
+
+            return TouchAnswer ?? await _inner.TouchChangedDateAsync(orderId, cancellationToken);
+        }
 
         public Task<Result> TestConnectionAsync(CancellationToken cancellationToken) =>
             _inner.TestConnectionAsync(cancellationToken);
@@ -111,8 +130,11 @@ namespace RFiDGear.Tests.CardCheckAssistant
 
         public List<CancellationToken> Tokens { get; } = new List<CancellationToken>();
 
+        public List<string>? Calls { get; set; }
+
         public async Task<CheckRunResult> RunAsync(CheckRunRequest request, Action<CheckPhase>? phaseChanged, CancellationToken ct)
         {
+            Calls?.Add("run");
             Requests.Add(request);
             Tokens.Add(ct);
 
@@ -286,6 +308,55 @@ namespace RFiDGear.Tests.CardCheckAssistant
             {
                 stages?.Invoke(CardMoveStage.WaitingForReinsertion);
             }
+        }
+    }
+
+    /// <summary>
+    /// The report service with a record of what it was asked, and hooks: the write of the second report can fail, be held
+    /// (the write runs on a worker thread, so the hold blocks that thread), or copy the first report instead of filling
+    /// its form (the fixtures have no form for the answers; the form is the library's business). The rest is forwarded.
+    /// </summary>
+    internal sealed class RecordingReportService : IReportService
+    {
+        private readonly IReportService _inner;
+        private readonly List<string> _calls;
+
+        public RecordingReportService(IReportService inner, List<string> calls)
+        {
+            _inner = inner;
+            _calls = calls;
+        }
+
+        public Result? WriteAnswer { get; set; }
+
+        public TaskCompletionSource<bool>? WriteGate { get; set; }
+
+        public List<(string Source, string Target, Dictionary<string, string> Fields)> Writes { get; } = new List<(string Source, string Target, Dictionary<string, string> Fields)>();
+
+        public List<(string Source, string Target, bool ReadOnly)> Locked { get; } = new List<(string Source, string Target, bool ReadOnly)>();
+
+        public Result<ReportAnalysis> Analyze(string reportPath) => _inner.Analyze(reportPath);
+
+        public Result WriteFields(string sourcePath, string targetPath, IReadOnlyDictionary<string, string> fields)
+        {
+            _calls.Add("write");
+            Writes.Add((sourcePath, targetPath, new Dictionary<string, string>(fields)));
+            WriteGate?.Task.GetAwaiter().GetResult();
+            if (WriteAnswer != null)
+            {
+                return WriteAnswer;
+            }
+
+            File.Copy(sourcePath, targetPath, true);
+
+            return Result.Ok();
+        }
+
+        public Result SetFieldsReadOnly(string sourcePath, string targetPath, bool readOnly)
+        {
+            Locked.Add((sourcePath, targetPath, readOnly));
+
+            return _inner.SetFieldsReadOnly(sourcePath, targetPath, readOnly);
         }
     }
 
