@@ -1668,14 +1668,38 @@ namespace RFiDGear.ViewModel
             catch (Exception ex) when (ex is InvalidOperationException || ex is IOException || ex is UnauthorizedAccessException)
             {
                 Log.ForContext<MainWindowViewModel>().Error(ex, "Saving the project to {ProjectPath} failed.", path);
-                Dialogs.Add(new CustomDialogViewModel
-                {
-                    Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
-                    Message = ex.Message,
-                    OnOk = sender => sender.Close()
-                });
+                ShowSaveFailure(ex);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Exports the chip tree through the database writer. A failure (an unwritable location, a chip tree that
+        /// cannot be serialized) is logged and shown; the application keeps running and an existing file is kept.
+        /// </summary>
+        internal bool TrySaveChipTree(string path)
+        {
+            try
+            {
+                databaseReaderWriter.WriteDatabase(TreeViewParentNodes, path);
+                return true;
+            }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is IOException || ex is UnauthorizedAccessException)
+            {
+                Log.ForContext<MainWindowViewModel>().Error(ex, "Saving the chip tree to {ChipPath} failed.", path);
+                ShowSaveFailure(ex);
+                return false;
+            }
+        }
+
+        private void ShowSaveFailure(Exception ex)
+        {
+            Dialogs.Add(new CustomDialogViewModel
+            {
+                Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                Message = ex.Message,
+                OnOk = sender => sender.Close()
+            });
         }
 
         private static bool IsValidProjectSavePath(string projectPath)
@@ -1707,12 +1731,36 @@ namespace RFiDGear.ViewModel
             var dlg = new SaveFileDialogViewModel
             {
                 Title = ResourceLoader.GetResource("windowCaptionSaveTasks"),
-                Filter = ResourceLoader.GetResource("filterStringSaveTasks")
+                // A chip export is XML, not a project archive: it must not be offered under a project's extension.
+                Filter = ResourceLoader.GetResource("filterStringSaveChipTree")
             };
 
             if (dlg.Show(Dialogs) && dlg.FileName != null)
             {
-                databaseReaderWriter.WriteDatabase(TreeViewParentNodes, dlg.FileName);
+                // The file dialog confirmed replacing the name the user typed; the export is saved as .xml, which may
+                // be another file that exists. That one is not replaced without asking.
+                var target = DatabaseReaderWriter.ChipExportPath(dlg.FileName);
+                if (!string.Equals(target, dlg.FileName, StringComparison.OrdinalIgnoreCase) && File.Exists(target))
+                {
+                    Dialogs.Add(new CustomDialogViewModel
+                    {
+                        Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                        Message = string.Format(
+                            CultureInfo.CurrentCulture,
+                            ResourceLoader.GetResource("messageBoxChipExportReplaceMessage"),
+                            target),
+                        OnOk = sender =>
+                        {
+                            sender.Close();
+                            TrySaveChipTree(dlg.FileName);
+                        },
+                        OnCancel = sender => sender.Close()
+                    });
+                }
+                else
+                {
+                    TrySaveChipTree(dlg.FileName);
+                }
             }
 
             return Task.CompletedTask;

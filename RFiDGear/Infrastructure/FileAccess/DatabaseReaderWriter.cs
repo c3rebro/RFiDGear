@@ -270,37 +270,114 @@ namespace RFiDGear.Infrastructure.FileAccess
                 DateTime.Now);
         }
 
-        public void WriteDatabase(ObservableCollection<RFiDChipParentLayerViewModel> objModel, string _path)
+        /// <summary>
+        /// Exports the chip tree as plain XML. The file is written next to the target and replaces it only when
+        /// the write succeeded, so a failed export leaves an existing file as it was. A chip export always has
+        /// the extension <c>.xml</c> (appended, or replacing <c>.rfPrj</c>) so it cannot be taken for a project;
+        /// an empty path writes to the application data folder.
+        /// </summary>
+        /// <param name="objModel">The chip tree to write.</param>
+        /// <param name="_path">Target path as chosen by the user, or empty for the application data folder.</param>
+        /// <returns>The path that was actually written.</returns>
+        /// <exception cref="InvalidOperationException">The chip tree could not be serialized.</exception>
+        /// <exception cref="IOException">The file could not be written.</exception>
+        /// <exception cref="UnauthorizedAccessException">The location is not writable.</exception>
+        public string WriteDatabase(ObservableCollection<RFiDChipParentLayerViewModel> objModel, string _path)
         {
+            var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
+            var target = string.IsNullOrEmpty(_path)
+                ? projectManager.ChipDatabasePath
+                : ChipExportPath(_path);
+
+            WriteFileAtomically(target, temporaryPath => SerializeToFile(serializer, objModel, temporaryPath));
+
+            return target;
+        }
+
+        /// <summary>
+        /// The path a chip export is written to: <paramref name="path"/> with the extension <c>.xml</c>.
+        /// </summary>
+        /// <param name="path">Path chosen by the user.</param>
+        /// <returns>
+        /// <paramref name="path"/> if it already ends in <c>.xml</c>, with <c>.rfPrj</c> replaced by <c>.xml</c>,
+        /// otherwise with <c>.xml</c> appended.
+        /// </returns>
+        internal static string ChipExportPath(string path)
+        {
+            var extension = Path.GetExtension(path);
+
+            if (extension.Equals(".xml", StringComparison.OrdinalIgnoreCase))
+            {
+                return path;
+            }
+
+            return extension.Equals(".rfPrj", StringComparison.OrdinalIgnoreCase)
+                ? Path.ChangeExtension(path, ".xml")
+                : string.Concat(path, ".xml");
+        }
+
+        private static void SerializeToFile(XmlSerializer serializer, object model, string path)
+        {
+            using (var writer = new StreamWriter(path, false, new UTF8Encoding(false)))
+            {
+                serializer.Serialize(writer, model);
+            }
+        }
+
+        /// <summary>
+        /// Produces <paramref name="targetPath"/> through a temporary file in the same folder: the file is
+        /// written first and replaces the target only when that succeeded, so a failure at any point leaves an
+        /// existing target as it was. The replaced file is kept as <c>.bak</c> while the replacement runs and
+        /// removed afterwards.
+        /// </summary>
+        /// <param name="targetPath">The file to create or replace.</param>
+        /// <param name="writeTo">Writes the complete new content to the path it is given.</param>
+        private void WriteFileAtomically(string targetPath, Action<string> writeTo)
+        {
+            var fullTargetPath = Path.GetFullPath(targetPath);
+            // Both names are unique to this operation, so no file that happens to lie next to the target is touched.
+            var operationId = Guid.NewGuid().ToString("N");
+            var temporaryPath = string.Concat(fullTargetPath, ".", operationId, ".tmp");
+            var backupPath = string.Concat(fullTargetPath, ".", operationId, ".bak");
+
             try
             {
-                TextWriter writer;
-                var serializer = new XmlSerializer(typeof(ObservableCollection<RFiDChipParentLayerViewModel>));
+                writeTo(temporaryPath);
 
-                if (!string.IsNullOrEmpty(_path))
+                if (File.Exists(fullTargetPath))
                 {
-                    writer = new StreamWriter(@_path);
+                    File.Replace(temporaryPath, fullTargetPath, backupPath, true);
+                    TryDeleteFile(backupPath);
                 }
                 else
                 {
-                    writer = new StreamWriter(projectManager.ChipDatabasePath, false, new UTF8Encoding(false));
+                    File.Move(temporaryPath, fullTargetPath);
                 }
-
-                serializer.Serialize(writer, objModel);
-
-                writer.Close();
             }
-            catch (XmlException e)
+            catch
             {
-                logger.Error(e, "Failed to write chip database");
-                Environment.Exit(0);
+                TryDeleteFile(temporaryPath);
+                throw;
+            }
+        }
+
+        private void TryDeleteFile(string path)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+            {
+                logger.Warning(e, "Could not remove the leftover file {Path}", path);
             }
         }
 
         /// <summary>
         /// Writes a task project: plain XML for a <c>.xml</c> path, otherwise a ZIP archive containing
         /// <c>taskdatabase.xml</c>. A path without an extension gets <c>.rfPrj</c> appended; an empty path
-        /// writes to the application data folder.
+        /// writes to the application data folder. The file is written next to the target and replaces it only
+        /// when the write succeeded, so a failed save leaves an existing project as it was.
         /// </summary>
         /// <param name="objModel">The project to write.</param>
         /// <param name="_path">Target path as chosen by the user or caller.</param>
@@ -308,6 +385,8 @@ namespace RFiDGear.Infrastructure.FileAccess
         /// The path that was actually written, which differs from <paramref name="_path"/> when an extension
         /// was appended, or <c>null</c> when the project could not be serialized (the failure is logged).
         /// </returns>
+        /// <exception cref="IOException">The file could not be written.</exception>
+        /// <exception cref="UnauthorizedAccessException">The location is not writable.</exception>
         public string WriteDatabase(ChipTaskHandlerModel objModel, string _path = "")
         {
             try
@@ -319,19 +398,15 @@ namespace RFiDGear.Infrastructure.FileAccess
                     : Path.GetExtension(_path);
                 var saveAsXml = extension.Equals(".xml", StringComparison.OrdinalIgnoreCase);
 
-                var xmlOutputPath = saveAsXml && !string.IsNullOrWhiteSpace(_path)
-                    ? _path
-                    : projectManager.TaskDatabasePath;
-
-                using (var writer = new StreamWriter(xmlOutputPath, false, new UTF8Encoding(false)))
-                {
-                    serializer.Serialize(writer, objModel);
-                }
-
                 if (saveAsXml)
                 {
+                    WriteFileAtomically(_path, temporaryPath => SerializeToFile(serializer, objModel, temporaryPath));
                     return _path;
                 }
+
+                // The archive entry is staged in the application data folder; only the archive is the user's file.
+                var xmlOutputPath = projectManager.TaskDatabasePath;
+                SerializeToFile(serializer, objModel, xmlOutputPath);
 
                 var archivePath = string.IsNullOrWhiteSpace(_path)
                     ? projectManager.CompressedTaskDatabasePath
@@ -339,18 +414,16 @@ namespace RFiDGear.Infrastructure.FileAccess
                         ? string.Concat(_path, ".rfPrj")
                         : _path;
 
-                if (File.Exists(archivePath))
+                WriteFileAtomically(archivePath, temporaryPath =>
                 {
-                    File.Delete(archivePath);
-                }
-
-                using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
-                {
-                    archive.CreateEntryFromFile(
-                        xmlOutputPath,
-                        Path.GetFileName(projectManager.TaskDatabasePath),
-                        CompressionLevel.Optimal);
-                }
+                    using (var archive = ZipFile.Open(temporaryPath, ZipArchiveMode.Create))
+                    {
+                        archive.CreateEntryFromFile(
+                            xmlOutputPath,
+                            Path.GetFileName(projectManager.TaskDatabasePath),
+                            CompressionLevel.Optimal);
+                    }
+                });
 
                 return archivePath;
             }
