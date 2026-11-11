@@ -31,6 +31,18 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Views
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+
+            // The groups of the list are made anew whenever the list changes; the page remembers which ones are closed.
+            OrderList.AddHandler(System.Windows.Controls.Expander.ExpandedEvent, new RoutedEventHandler(OnGroupToggled));
+            OrderList.AddHandler(System.Windows.Controls.Expander.CollapsedEvent, new RoutedEventHandler(OnGroupToggled));
+        }
+
+        private void OnGroupToggled(object sender, RoutedEventArgs e)
+        {
+            if (e.OriginalSource is System.Windows.Controls.Expander { DataContext: System.Windows.Data.CollectionViewGroup group } expander)
+            {
+                _viewModel.SetGroupExpanded(group.Name as string, expander.IsExpanded);
+            }
         }
 
         /// <summary>Gets the page this view shows.</summary>

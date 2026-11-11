@@ -4,11 +4,13 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="clr-namespace:RFiDGear.Extensions.CardCheckAssistant.ViewModels"
+    xmlns:local="clr-namespace:RFiDGear.Extensions.CardCheckAssistant.Views"
     MinWidth="620"
     MinHeight="490">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <local:GroupExpandedConverter x:Key="GroupExpanded" />
 
         <Style x:Key="ErrorText" TargetType="TextBlock">
             <Setter Property="Foreground" Value="Firebrick" />
@@ -71,11 +73,15 @@
                     <ColumnDefinition Width="Auto" SharedSizeGroup="OrderChip" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" SharedSizeGroup="OrderStatus" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="OrderCreated" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="OrderModified" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Style="{StaticResource Cell}" MinWidth="90" FontWeight="SemiBold" Text="{Binding JobNumber}" />
                 <TextBlock Grid.Column="1" Style="{StaticResource Cell}" MinWidth="50" Text="{Binding ChipNumber}" />
                 <TextBlock Grid.Column="2" Style="{StaticResource Cell}" Text="{Binding Customer}" />
                 <TextBlock Grid.Column="3" Style="{StaticResource Cell}" MinWidth="90" Text="{Binding Status}" />
+                <TextBlock Grid.Column="4" Style="{StaticResource Cell}" MinWidth="100" Text="{Binding Created}" />
+                <TextBlock Grid.Column="5" Style="{StaticResource Cell}" MinWidth="100" Text="{Binding Modified}" />
             </Grid>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsStartable}" Value="False">
@@ -202,6 +208,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -211,34 +218,84 @@
                     <ComboBox x:Name="LanguageBox" MinWidth="140" ItemsSource="{Binding Languages}" DisplayMemberPath="Name"
                               SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}" AutomationProperties.Name="{Binding Strings[ReportLanguageLabel]}" />
                 </StackPanel>
-                <Border Grid.Row="1" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
+                <Grid Grid.Row="1" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="{Binding Strings[GuidedGroupByLabel]}" Target="{Binding ElementName=GroupingBox}" Padding="0,0,8,0" VerticalAlignment="Center" />
+                    <ComboBox x:Name="GroupingBox" Grid.Column="1" MinWidth="140" ItemsSource="{Binding Groupings}" DisplayMemberPath="Name"
+                              SelectedItem="{Binding SelectedGrouping, Mode=TwoWay}" AutomationProperties.Name="{Binding Strings[GuidedGroupByLabel]}" />
+                    <DockPanel Grid.Column="2" Margin="16,0,0,0">
+                        <Label DockPanel.Dock="Left" Content="{Binding Strings[GuidedSearchLabel]}" Target="{Binding ElementName=SearchBox}" Padding="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBox x:Name="SearchBox" Text="{Binding OrderSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.Name="{Binding Strings[GuidedSearchLabel]}" />
+                    </DockPanel>
+                </Grid>
+                <Border Grid.Row="2" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="OrderJob" />
                             <ColumnDefinition Width="Auto" SharedSizeGroup="OrderChip" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" SharedSizeGroup="OrderStatus" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="OrderCreated" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="OrderModified" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource ColumnHeader}" MinWidth="90" Text="{Binding Strings[JobNumberLabel]}" />
                         <TextBlock Grid.Column="1" Style="{StaticResource ColumnHeader}" MinWidth="50" Text="{Binding Strings[ChipNumberLabel]}" />
                         <TextBlock Grid.Column="2" Style="{StaticResource ColumnHeader}" Text="{Binding Strings[GuidedCustomerLabel]}" />
                         <TextBlock Grid.Column="3" Style="{StaticResource ColumnHeader}" MinWidth="90" Text="{Binding Strings[GuidedOrderStatusLabel]}" />
-                        <Border Grid.Column="4" Width="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" />
+                        <TextBlock Grid.Column="4" Style="{StaticResource ColumnHeader}" MinWidth="100" Text="{Binding Strings[GuidedCreatedLabel]}" />
+                        <TextBlock Grid.Column="5" Style="{StaticResource ColumnHeader}" MinWidth="100" Text="{Binding Strings[GuidedModifiedLabel]}" />
+                        <Border Grid.Column="6" Width="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" />
                     </Grid>
                 </Border>
-                <ListBox x:Name="OrderList" Grid.Row="2" ItemsSource="{Binding Orders}" SelectedItem="{Binding SelectedOrder, Mode=TwoWay}"
+                <ListBox x:Name="OrderList" Grid.Row="3" ItemsSource="{Binding OrdersView}" SelectedItem="{Binding SelectedOrder, Mode=TwoWay}"
                          ItemTemplate="{StaticResource OrderRow}" HorizontalContentAlignment="Stretch" BorderThickness="0"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible"
-                         AutomationProperties.Name="{Binding Strings[GuidedHint]}" />
-                <StackPanel Grid.Row="3" Margin="0,4,0,0">
+                         AutomationProperties.Name="{Binding Strings[GuidedHint]}">
+                    <ListBox.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.ContainerStyle>
+                                <Style TargetType="GroupItem">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="GroupItem">
+                                                <Expander x:Name="GroupExpander" Margin="0,2,0,0">
+                                                    <Expander.IsExpanded>
+                                                        <MultiBinding Converter="{StaticResource GroupExpanded}" Mode="OneWay">
+                                                            <Binding Path="Name" />
+                                                            <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                                        </MultiBinding>
+                                                    </Expander.IsExpanded>
+                                                    <Expander.Header>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
+                                                            <TextBlock Margin="6,0,0,0" Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                                                                       Text="{Binding ItemCount, StringFormat=({0})}" />
+                                                        </StackPanel>
+                                                    </Expander.Header>
+                                                    <ItemsPresenter />
+                                                </Expander>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </GroupStyle.ContainerStyle>
+                        </GroupStyle>
+                    </ListBox.GroupStyle>
+                </ListBox>
+                <StackPanel Grid.Row="4" Margin="0,4,0,0">
                     <TextBlock x:Name="OrdersEmptyText" Style="{StaticResource OptionalText}" Text="{Binding OrdersEmptyText}"
                                Visibility="{Binding HasOrdersEmptyText, Converter={StaticResource BoolToVisibility}}" />
                     <TextBlock x:Name="UpdatingLine" Style="{StaticResource OptionalText}" Text="{Binding UpdatingText}"
                                Visibility="{Binding IsUpdatingOrders, Converter={StaticResource BoolToVisibility}}" />
                     <TextBlock x:Name="OrderHint" Style="{StaticResource OptionalText}" Text="{Binding SelectedOrderHint}" />
                 </StackPanel>
-                <Grid Grid.Row="4" Margin="0,12,0,0">
+                <Grid Grid.Row="5" Margin="0,12,0,0">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                         <Button x:Name="CheckOrderButton" Style="{StaticResource StepButton}" IsDefault="True"
                                 Command="{Binding StartOrderCommand}" Content="{Binding Strings[GuidedCheckOrderButton]}" />

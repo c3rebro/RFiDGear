@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 using RFiDGear.Contracts;
@@ -478,6 +480,46 @@ namespace RFiDGear.Tests.CardCheckAssistant
             scene.Workflow.Calls.Clear();
             scene.Button("CheckOrderButton").Command.Execute(null);
             Assert.Equal(new[] { "Start:A:German" }, scene.Workflow.Calls);
+        });
+
+        private static IEnumerable<T> Descendants<T>(DependencyObject root)
+            where T : DependencyObject
+        {
+            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                if (child is T match)
+                {
+                    yield return match;
+                }
+
+                foreach (var nested in Descendants<T>(child))
+                {
+                    yield return nested;
+                }
+            }
+        }
+
+        private static Expander GroupExpander(DependencyObject list, string name) =>
+            Descendants<Expander>(list).Single(expander => expander.DataContext is CollectionViewGroup group && Equals(group.Name, name));
+
+        [Fact]
+        public Task TheGroupsOfTheList_CanBeClosed_AndStayClosedWhenTheListIsReadAgain() => Show(async scene =>
+        {
+            await scene.PushAsync(WorkflowState.Idle, s => s with { Orders = new[] { Order("A"), Order("B", OrderStatus.Created) } });
+            var list = scene.Named<ListBox>("OrderList");
+            Assert.True(GroupExpander(list, "Created").IsExpanded);
+
+            GroupExpander(list, "Created").IsExpanded = false;
+            await Flush();
+            Assert.False(scene.Vm.IsGroupExpanded("Created"));
+
+            // The list changes, its groups are made anew, and the one that was closed is closed again.
+            await scene.PushAsync(WorkflowState.Idle, s => s with { Orders = new[] { Order("A"), Order("B", OrderStatus.Created), Order("C", OrderStatus.Created) } });
+            await Flush();
+
+            Assert.False(GroupExpander(list, "Created").IsExpanded);
+            Assert.True(GroupExpander(list, "InProgress").IsExpanded);
         });
 
         [Fact]
