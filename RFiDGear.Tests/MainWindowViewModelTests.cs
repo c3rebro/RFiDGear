@@ -413,6 +413,38 @@ namespace RFiDGear.Tests
                     Assert.True(File.Exists(target));
                     Assert.Equal(Path.GetFullPath(target), viewModel.ExtensionHost.Project.CurrentPath);
                     Assert.Equal(Path.GetFullPath(projectPath), RememberedProjectPath(tempRoot));
+                    Assert.Empty(viewModel.Dialogs);   // the name is the one typed: nothing to announce
+                }
+                finally
+                {
+                    File.Delete(projectPath);
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task SaveProjectAs_WithAnUnknownExtension_AppendsRfPrjAnnouncesTheNameAndCanBeReopened()
+        {
+            await StaTestRunner.RunOnStaThreadAsync(async () =>
+            {
+                var tempRoot = NewTempRoot();
+                var projectPath = ProjectFixtures.CreateProject(2);
+                try
+                {
+                    var viewModel = await CreateInitializedViewModelAsync(tempRoot);
+                    await OpenProjectAsync(viewModel, projectPath);
+                    var typed = Path.Combine(tempRoot, "job.txt");
+
+                    await viewModel.SaveProjectAsAsync(typed, setAsDefault: false);
+
+                    var written = Path.GetFullPath(typed + ".rfPrj");
+                    Assert.True(File.Exists(written));
+                    Assert.False(File.Exists(typed));
+                    Assert.Equal(written, viewModel.ExtensionHost.Project.CurrentPath);
+                    Assert.Single(viewModel.Dialogs);   // tells the user which file was written
+                    var reloaded = await viewModel.ExtensionHost.Project.LoadAsync(written);
+                    Assert.True(reloaded.Success, $"LoadAsync failed: {reloaded.Error}");
                 }
                 finally
                 {

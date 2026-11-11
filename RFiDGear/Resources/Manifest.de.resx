@@ -512,6 +512,12 @@ Ein zum Lesertyp passender RFID Chip muss sich in Leserreichweite befinden.</val
   <data name="messageBoxChipExportReplaceMessage" xml:space="preserve">
     <value>Ein Chip-Export wird als XML-Datei gespeichert, und '{0}' existiert bereits. Ersetzen?</value>
   </data>
+  <data name="messageBoxProjectReplaceMessage" xml:space="preserve">
+    <value>Ein Projekt wird als .xml- oder .rfPrj-Datei gespeichert, und '{0}' existiert bereits. Ersetzen?</value>
+  </data>
+  <data name="messageBoxProjectSavedAsMessage" xml:space="preserve">
+    <value>Das Projekt wurde als '{0}' gespeichert.</value>
+  </data>
   <data name="windowCaptionSaveTasks" xml:space="preserve">
     <value>Aufgabenliste Speichern unter...</value>
   </data>

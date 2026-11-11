@@ -1615,6 +1615,11 @@ namespace RFiDGear.ViewModel
                 return;
             }
 
+            if (!ConfirmReplacingRenamedProject(fileName))
+            {
+                return;
+            }
+
             var mbox = new MessageBoxViewModel
             {
                 ParentWindow = mw,
@@ -1644,6 +1649,8 @@ namespace RFiDGear.ViewModel
                 return;
             }
 
+            AnnounceSavedName(fileName);
+
             if (setAsDefault)
             {
                 using (var settings = settingsReaderWriterFactory())
@@ -1652,6 +1659,59 @@ namespace RFiDGear.ViewModel
                     await settings.SaveSettings();
                 }
             }
+        }
+
+        /// <summary>
+        /// A project is saved as <c>.xml</c> or <c>.rfPrj</c>; any other name gets <c>.rfPrj</c> appended. The file
+        /// dialog only confirmed replacing the name the user typed, so when the saved name is another file that
+        /// exists, the user is asked before it is replaced.
+        /// </summary>
+        /// <param name="chosenPath">The path chosen in the Save As dialog.</param>
+        /// <returns><c>false</c> when the user declined to replace the other file.</returns>
+        private bool ConfirmReplacingRenamedProject(string chosenPath)
+        {
+            var target = DatabaseReaderWriter.ProjectSavePath(chosenPath);
+            if (string.Equals(target, chosenPath, StringComparison.OrdinalIgnoreCase) || !File.Exists(target))
+            {
+                return true;
+            }
+
+            var mbox = new MessageBoxViewModel
+            {
+                ParentWindow = mw,
+                Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                Message = string.Format(
+                    CultureInfo.CurrentCulture,
+                    ResourceLoader.GetResource("messageBoxProjectReplaceMessage"),
+                    target),
+                Buttons = MessageBoxButton.YesNo
+            };
+
+            return mbox.Show(Dialogs) == MessageBoxResult.Yes;
+        }
+
+        /// <summary>
+        /// Tells the user the name the project was saved under when it is not the one typed (an extension was
+        /// appended), so it is clear which file to open again.
+        /// </summary>
+        /// <param name="chosenPath">The path chosen in the Save As dialog.</param>
+        private void AnnounceSavedName(string chosenPath)
+        {
+            var written = extensionHost.Project.CurrentPath;
+            if (written == null || string.Equals(written, Path.GetFullPath(chosenPath), StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            Dialogs.Add(new CustomDialogViewModel
+            {
+                Caption = ResourceLoader.GetResource("messageBoxDefaultCaption"),
+                Message = string.Format(
+                    CultureInfo.CurrentCulture,
+                    ResourceLoader.GetResource("messageBoxProjectSavedAsMessage"),
+                    written),
+                OnOk = sender => sender.Close()
+            });
         }
 
         /// <summary>

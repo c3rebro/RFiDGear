@@ -374,10 +374,34 @@ namespace RFiDGear.Infrastructure.FileAccess
         }
 
         /// <summary>
+        /// The path a project is saved to: only <c>.xml</c> (plain XML) and <c>.rfPrj</c> (ZIP archive) are
+        /// project formats the opener recognises, so any other extension, or none, gets <c>.rfPrj</c> appended.
+        /// </summary>
+        /// <param name="path">Path chosen by the user or caller.</param>
+        /// <returns>
+        /// <paramref name="path"/> if it ends in <c>.xml</c> or <c>.rfPrj</c> (any letter case), otherwise
+        /// <paramref name="path"/> with <c>.rfPrj</c> appended.
+        /// </returns>
+        internal static string ProjectSavePath(string path)
+        {
+            var extension = Path.GetExtension(path);
+
+            if (extension.Equals(".xml", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".rfPrj", StringComparison.OrdinalIgnoreCase))
+            {
+                return path;
+            }
+
+            // A name that ends in dots ("job.") would otherwise become "job..rfPrj".
+            return string.Concat(path.TrimEnd('.'), ".rfPrj");
+        }
+
+        /// <summary>
         /// Writes a task project: plain XML for a <c>.xml</c> path, otherwise a ZIP archive containing
-        /// <c>taskdatabase.xml</c>. A path without an extension gets <c>.rfPrj</c> appended; an empty path
-        /// writes to the application data folder. The file is written next to the target and replaces it only
-        /// when the write succeeded, so a failed save leaves an existing project as it was.
+        /// <c>taskdatabase.xml</c>. A path with any extension other than <c>.xml</c> or <c>.rfPrj</c> gets
+        /// <c>.rfPrj</c> appended (see <see cref="ProjectSavePath"/>), so what is written can be opened again;
+        /// an empty path writes to the application data folder. The file is written next to the target and
+        /// replaces it only when the write succeeded, so a failed save leaves an existing project as it was.
         /// </summary>
         /// <param name="objModel">The project to write.</param>
         /// <param name="_path">Target path as chosen by the user or caller.</param>
@@ -410,9 +434,7 @@ namespace RFiDGear.Infrastructure.FileAccess
 
                 var archivePath = string.IsNullOrWhiteSpace(_path)
                     ? projectManager.CompressedTaskDatabasePath
-                    : string.IsNullOrWhiteSpace(extension)
-                        ? string.Concat(_path, ".rfPrj")
-                        : _path;
+                    : ProjectSavePath(_path);
 
                 WriteFileAtomically(archivePath, temporaryPath =>
                 {
