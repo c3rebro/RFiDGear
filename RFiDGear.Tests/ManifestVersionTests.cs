@@ -220,6 +220,18 @@ namespace RFiDGear.Tests
         }
 
         [Fact]
+        public async Task ReadProjectAsync_ReportsTheManifestWithoutSurroundingWhitespace()
+        {
+            var file = Track(ProjectFixtures.CreateProject(1, manifestVersion: "  1.10.9054\r\n"));
+            var reader = new DatabaseReaderWriter(new ProjectManager(_root));
+
+            var (read, _) = await reader.ReadProjectAsync(file);
+
+            Assert.True(read.Success);
+            Assert.Equal("1.10.9054", read.ManifestVersion);
+        }
+
+        [Fact]
         public async Task ReadProjectAsync_ANewerManifest_LogsBothVersionsAsMajorMinorBuild()
         {
             var file = Track(ProjectFixtures.CreateProject(1, manifestVersion: NewerMinorThanApp));

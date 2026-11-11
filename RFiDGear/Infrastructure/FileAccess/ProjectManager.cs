@@ -234,7 +234,7 @@ namespace RFiDGear.Infrastructure.FileAccess
         /// original concatenated-digit meaning.
         /// </para>
         /// </summary>
-        /// <param name="manifestVersion">The manifest text exactly as stored in the file; may be empty.</param>
+        /// <param name="manifestVersion">The manifest text from the file; surrounding whitespace is ignored; may be empty.</param>
         /// <param name="appVersion">The running application's version.</param>
         /// <returns><c>true</c> when the manifest is not newer than <paramref name="appVersion"/>.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="appVersion"/> is <c>null</c>.</exception>
@@ -595,7 +595,7 @@ namespace RFiDGear.Infrastructure.FileAccess
     {
         /// <summary>Creates the result of preparing a project file for reading.</summary>
         /// <param name="success">Whether the file could be prepared.</param>
-        /// <param name="manifestVersion">The manifest text exactly as stored in the file, or <c>null</c> if it has none.</param>
+        /// <param name="manifestVersion">The manifest text as stored in the file, without surrounding whitespace, or <c>null</c> if it has none.</param>
         /// <param name="isSupportedVersion">Whether the running application can read a file of that manifest version.</param>
         /// <param name="reader">The project text.</param>
         /// <param name="fileType">How the file is stored.</param>
@@ -610,7 +610,7 @@ namespace RFiDGear.Infrastructure.FileAccess
 
         public bool Success { get; }
 
-        /// <summary>The manifest text as stored in the file (for example <c>2.0.10</c>), or <c>null</c> if it has none.</summary>
+        /// <summary>The manifest text as stored in the file, without surrounding whitespace (for example <c>2.0.10</c>), or <c>null</c> if it has none.</summary>
         public string ManifestVersion { get; }
 
         public bool IsSupportedVersion { get; }
@@ -629,7 +629,7 @@ namespace RFiDGear.Infrastructure.FileAccess
     {
         /// <summary>Creates the result of loading the settings file.</summary>
         /// <param name="success">Whether the settings could be loaded.</param>
-        /// <param name="manifestVersion">The manifest text exactly as stored in the file, or <c>null</c> if it has none.</param>
+        /// <param name="manifestVersion">The manifest text as stored in the file, without surrounding whitespace, or <c>null</c> if it has none.</param>
         /// <param name="isSupportedVersion">Whether the running application can read a file of that manifest version.</param>
         /// <param name="defaultSpecification">The settings.</param>
         /// <param name="settingsPath">The file the settings came from.</param>
@@ -644,7 +644,7 @@ namespace RFiDGear.Infrastructure.FileAccess
 
         public bool Success { get; }
 
-        /// <summary>The manifest text as stored in the file (for example <c>2.0.10</c>), or <c>null</c> if it has none.</summary>
+        /// <summary>The manifest text as stored in the file, without surrounding whitespace (for example <c>2.0.10</c>), or <c>null</c> if it has none.</summary>
         public string ManifestVersion { get; }
 
         public bool IsSupportedVersion { get; }

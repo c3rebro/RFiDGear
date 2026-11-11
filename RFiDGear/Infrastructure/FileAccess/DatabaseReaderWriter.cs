@@ -490,7 +490,7 @@ namespace RFiDGear.Infrastructure.FileAccess
             /// Initializes a new result.
             /// </summary>
             /// <param name="success">Whether the read succeeded.</param>
-            /// <param name="manifestVersion">The manifest text exactly as stored in the file (for example <c>2.0.10</c>), or <c>null</c> if it has none.</param>
+            /// <param name="manifestVersion">The manifest text as stored in the file, without surrounding whitespace (for example <c>2.0.10</c>), or <c>null</c> if it has none.</param>
             /// <param name="isSupportedVersion">Whether the manifest version is within the supported range.</param>
             /// <param name="failureReason">Root-cause classification; <see cref="DatabaseReadFailureReason.None"/> on success.</param>
             public DatabaseReadResult(bool success, string manifestVersion, bool isSupportedVersion,
@@ -505,7 +505,7 @@ namespace RFiDGear.Infrastructure.FileAccess
             /// <summary>Whether the read completed without error.</summary>
             public bool Success { get; }
 
-            /// <summary>The manifest text as stored in the file (for example <c>2.0.10</c>), or <c>null</c> if it has none or the read failed.</summary>
+            /// <summary>The manifest text as stored in the file, without surrounding whitespace (for example <c>2.0.10</c>), or <c>null</c> if it has none or the read failed.</summary>
             public string ManifestVersion { get; }
 
             /// <summary>
