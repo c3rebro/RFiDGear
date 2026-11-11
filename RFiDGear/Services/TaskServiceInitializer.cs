@@ -13,7 +13,8 @@ namespace RFiDGear.Services
             Action<bool> updateReaderBusy,
             EventHandler<TaskExecutionCompletedEventArgs> executionCompletedHandler,
             DispatcherTimer triggerReadChip,
-            DispatcherTimer taskTimeout);
+            DispatcherTimer taskTimeout,
+            ITaskListEditGate taskListEdit);
     }
 
     public class TaskServiceInitialization
@@ -37,7 +38,8 @@ namespace RFiDGear.Services
             Action<bool> updateReaderBusy,
             EventHandler<TaskExecutionCompletedEventArgs> executionCompletedHandler,
             DispatcherTimer triggerReadChip,
-            DispatcherTimer taskTimeout)
+            DispatcherTimer taskTimeout,
+            ITaskListEditGate taskListEdit)
         {
             if (triggerReadChip == null)
             {
@@ -52,7 +54,8 @@ namespace RFiDGear.Services
             var taskDialogFactory = new TaskDialogFactory(
                 notifyChipTasksChanged,
                 activateMainWindow,
-                updateReaderBusy);
+                updateReaderBusy,
+                taskListEdit);
 
             var triggerReadChipAdapter = new DispatcherTimerAdapter(triggerReadChip);
             var taskTimeoutAdapter = new DispatcherTimerAdapter(taskTimeout);

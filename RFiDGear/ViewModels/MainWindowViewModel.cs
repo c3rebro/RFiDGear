@@ -61,6 +61,7 @@ namespace RFiDGear.ViewModel
         private readonly Dictionary<string, string> variablesFromArgs = new Dictionary<string, string>();
         private readonly Updater updater;
         private TaskDialogFactory taskDialogFactory;
+        private ITaskListEditGate taskListEditGate;
         private ITaskExecutionService taskExecutionService;
         private readonly ISettingsBootstrapper settingsBootstrapper;
         private readonly Func<SettingsReaderWriter> settingsReaderWriterFactory;
@@ -208,18 +209,21 @@ namespace RFiDGear.ViewModel
             databaseReaderWriter = databaseReaderWriterFactory();
             resLoader = new ResourceLoader();
 
+            _coordinator = new ExtensionOperationCoordinator();
+            taskListEditGate = new CoordinatorTaskListEditGate(_coordinator, ShowProjectBusy);
+
             var taskServices = taskServiceInitializer.Initialize(
                 () => OnPropertyChanged(nameof(ChipTasks)),
                 () => mw?.Activate(),
                 status => IsReaderBusy = status,
                 TaskExecutionService_ExecutionCompleted,
                 triggerReadChip,
-                taskTimeout);
+                taskTimeout,
+                taskListEditGate);
 
             taskDialogFactory = taskServices.TaskDialogFactory;
             taskExecutionService = taskServices.TaskExecutionService;
 
-            _coordinator = new ExtensionOperationCoordinator();
             uiDispatcher = Dispatcher.CurrentDispatcher;
             var owningDispatcher = uiDispatcher;
             extensionHost = new HeadlessExtensionHost(
@@ -259,10 +263,7 @@ namespace RFiDGear.ViewModel
             // stay disabled until now.
             NotifyApplicationExtensionCommandsCanExecuteChanged();
 
-            var deleteSelectedCommand = new RelayCommand(() =>
-            {
-                taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
-            });
+            var deleteSelectedCommand = new RelayCommand(() => TryDeleteSelectedTask());
 
             var menuInitialization = menuInitializer.Initialize(
                 contextMenuBuilder,
@@ -758,25 +759,36 @@ namespace RFiDGear.ViewModel
                             sender.SelectedTaskType == TaskType_CommonTask.CheckLogicCondition ||
                             sender.SelectedTaskType == TaskType_CommonTask.ExecuteProgram)
                         {
-                            if (!TryValidateTaskIndices(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel))
+                            // The list changes only while no run, load or other edit is in progress. Otherwise the user
+                            // is told, and the dialog stays open so the confirmation can be repeated.
+                            var listChanged = taskListEditGate.TryEdit(() =>
+                            {
+                                if (!TryValidateTaskIndices(sender.CurrentTaskIndex, sender.SelectedExecuteConditionTaskIndex, sender.SelectedExecuteConditionErrorLevel))
+                                {
+                                    return false;
+                                }
+
+                                if (ChipTasks.TaskCollection.OfType<CommonTaskViewModel>().Where(x => (x as CommonTaskViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any())
+                                {
+                                    ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
+                                }
+
+                                ChipTasks.TaskCollection.Add(sender);
+
+                                ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTask).SelectedTaskIndexAsInt));
+
+                                OnPropertyChanged(nameof(ChipTasks));
+                                return true;
+                            });
+
+                            if (!listChanged)
                             {
                                 return;
                             }
-
-                            if (ChipTasks.TaskCollection.OfType<CommonTaskViewModel>().Where(x => (x as CommonTaskViewModel).SelectedTaskIndexAsInt == sender.SelectedTaskIndexAsInt).Any())
-                            {
-                                ChipTasks.TaskCollection.RemoveAt(ChipTasks.TaskCollection.IndexOf(SelectedSetupViewModel));
-                            }
-
-                            ChipTasks.TaskCollection.Add(sender);
-
-                            ChipTasks.TaskCollection = new ObservableCollection<object>(ChipTasks.TaskCollection.OrderBy(x => (x as IGenericTask).SelectedTaskIndexAsInt));
-
-                            OnPropertyChanged(nameof(ChipTasks));
                         }
                         sender.Close();
 
-                        mw.Activate();
+                        mw?.Activate();
                     },
 
                     OnCancel = (sender) =>
@@ -1114,6 +1126,18 @@ namespace RFiDGear.ViewModel
                 _readerGate.Exit();
             }
         }
+
+        /// <summary>
+        /// Removes the selected task from the task list, if no run, load or other edit is in progress. Otherwise the
+        /// user is told and nothing is removed.
+        /// </summary>
+        /// <returns><c>true</c> when the task was removed.</returns>
+        internal bool TryDeleteSelectedTask() =>
+            taskListEditGate.TryEdit(() =>
+            {
+                taskHandler.TaskCollection.Remove(SelectedSetupViewModel);
+                return true;
+            });
 
         /// <summary>
         /// Runs a change of the task list, or of the state of its tasks, while the coordinator's project-edit slot
