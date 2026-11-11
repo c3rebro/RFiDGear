@@ -131,11 +131,15 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Services
             new ProcessStartInfo { FileName = canonicalPath, UseShellExecute = true };
 
         /// <summary>What a refusal of the shell means, by the error it gives.</summary>
-        /// <param name="nativeErrorCode">The Win32 error: 31 and 1155 (no program for the file type), 2 and 3 (not there any more).</param>
+        /// <param name="nativeErrorCode">
+        /// The Win32 error of the exception: 1155 (no program for the file type; .NET maps the shell's own "no association"
+        /// answer, which is 31 in the shell's scheme, to it), 2 and 3 (not there any more). 31 as a Win32 error is a general
+        /// failure, so it is not a missing viewer.
+        /// </param>
         /// <returns>The failure.</returns>
         internal static Failure FailureOf(int nativeErrorCode) => nativeErrorCode switch
         {
-            31 or 1155 => new Failure(FailureKind.NotFound, OpenerFailureCodes.NoViewer, "No program is set up to open this."),
+            1155 => new Failure(FailureKind.NotFound, OpenerFailureCodes.NoViewer, "No program is set up to open this."),
             2 or 3 => new Failure(FailureKind.NotFound, OpenerFailureCodes.NotFound, "There is nothing at the path any more."),
             _ => new Failure(FailureKind.Io, OpenerFailureCodes.StartFailed, "The program could not be started."),
         };

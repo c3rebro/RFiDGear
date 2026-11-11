@@ -171,7 +171,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         [Theory]
-        [InlineData(31, OpenerFailureCodes.NoViewer)]
+        [InlineData(31, OpenerFailureCodes.StartFailed)]   // ERROR_GEN_FAILURE; the shell's "no association" arrives as 1155
         [InlineData(1155, OpenerFailureCodes.NoViewer)]
         [InlineData(2, OpenerFailureCodes.NotFound)]
         [InlineData(3, OpenerFailureCodes.NotFound)]

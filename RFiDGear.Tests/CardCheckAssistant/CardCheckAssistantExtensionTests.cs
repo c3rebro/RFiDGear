@@ -305,20 +305,12 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var root = Path.GetFullPath(Path.Combine(RepositoryRoot(), "RFiDGear.Extensions", "CardCheckAssistant"));
             var opener = Path.Combine(root, "Services", "ShellOpener.cs");
             var sep = Path.DirectorySeparatorChar;
-            const string Names = @"\b(Process|ProcessStartInfo|ShellExecute\w*|CreateProcess\w*|WinExec|DllImport|LibraryImport|NativeLibrary|ObjectDataProvider)\b";
 
             var offenders = Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories)
                 .Where(file => file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase))
                 .Where(file => !file.Contains(sep + "obj" + sep) && !file.Contains(sep + "bin" + sep))
                 .Where(file => !string.Equals(Path.GetFullPath(file), opener, StringComparison.OrdinalIgnoreCase))
-                .Where(file =>
-                {
-                    var text = File.ReadAllText(file);
-                    var code = file.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase) ? Regex.Replace(text, @"<!--[\s\S]*?-->", string.Empty) : WithoutCommentsAndStrings(text);
-
-                    // The name may also be spelled in a text that is handed to reflection.
-                    return Regex.IsMatch(code, Names) || text.Contains("System.Diagnostics.Process", StringComparison.Ordinal);
-                })
+                .Where(file => NamesAProgramStart(File.ReadAllText(file), file.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase)))
                 .Select(Path.GetFileName)
                 .ToList();
 
@@ -339,13 +331,71 @@ namespace RFiDGear.Tests.CardCheckAssistant
             Assert.Contains("Process", WithoutCommentsAndStrings("var v = @\"a \"\"b\"\" c\"; Process.Start(v);"), StringComparison.Ordinal);
         }
 
-        // Comments and texts are not code: one pass over all of them, so the first one that starts wins.
+        [Fact]
+        public void TheScanForProcess_ReadsTheHolesOfAnInterpolatedText_AsCode()
+        {
+            // The holes of $"..." are code, with braces of their own and texts inside, and the rest is text.
+            Assert.True(NamesAProgramStart("var r = $\"{Process.Start(new ProcessStartInfo { FileName = p, UseShellExecute = true })}\";", false));
+            Assert.True(NamesAProgramStart("var r = $\"{Get(\"a\") + Process.Start(p)}\";", false));       // a text in the hole does not end the text
+            Assert.True(NamesAProgramStart("var r = $@\"a \"\"b\"\" {Process.Start(p)} c\";", false));
+            Assert.True(NamesAProgramStart("var r = @$\"{Process.Start(p)}\";", false));
+            Assert.True(NamesAProgramStart("var r = $\"{(a ? $\"{Process.Start(p)}\" : \"b\")}\";", false));   // an interpolated text in a hole
+            Assert.False(NamesAProgramStart("var r = $\"Process: {name} and {Get(\"Process\")}\"; // Process.Start", false));
+
+            // Whatever the scan cannot read, it does not vouch for: a raw interpolated text, and a quote that is left over.
+            Assert.True(NamesAProgramStart("var r = $\"\"\"{Process.Start(p)}\"\"\";", false));
+            Assert.True(NamesAProgramStart("var r = \"unfinished;", false));
+            Assert.False(NamesAProgramStart("<Window x:Name=\"w\"><!-- Process --></Window>", true));
+            Assert.True(NamesAProgramStart("<ObjectDataProvider MethodName=\"Start\" />", true));
+        }
+
+        // Whether a file names a way to start a program: Process and the other names, in code (not in comments and texts,
+        // but in the holes of an interpolated text), or as the type's full name in a text handed to reflection.
+        private static bool NamesAProgramStart(string text, bool isXaml)
+        {
+            const string Names = @"\b(Process|ProcessStartInfo|ShellExecute\w*|CreateProcess\w*|WinExec|DllImport|LibraryImport|NativeLibrary|ObjectDataProvider)\b";
+
+            if (isXaml)
+            {
+                return Regex.IsMatch(Regex.Replace(text, @"<!--[\s\S]*?-->", string.Empty), Names);
+            }
+
+            var code = WithoutCommentsAndStrings(text);
+
+            // A quote that is left over means the scan lost track of where a text begins and ends; a raw interpolated text
+            // ($\"\"\"...\"\"\") has holes it does not read. Neither is vouched for.
+            return Regex.IsMatch(code, Names)
+                || text.Contains("System.Diagnostics.Process", StringComparison.Ordinal)
+                || code.Contains('"')
+                || Regex.IsMatch(text, @"\$+""{3,}");
+        }
+
+        // The holes of an interpolated text: {expression}, with braces of its own balanced (an object initializer) and texts
+        // inside it that may hold braces.
+        private const string Hole = @"\{(?:[^{}""]|""(?:[^""\\\r\n]|\\.)*""|(?<open>\{)|(?<-open>\}))*(?(open)(?!))\}";
+
+        // Comments and texts are not code: one pass over all of them, so the first one that starts wins. An interpolated
+        // text is matched whole, holes included, so that a quote inside a hole cannot end it early.
         private static readonly Regex NotCode = new Regex(
-            @"@""(?:[^""]|"""")*""|""(?:[^""\\\r\n]|\\.)*""|'(?:[^'\\\r\n]|\\.)*'|//[^\r\n]*|/\*[\s\S]*?\*/",
+            @"(?<interpolated>\$""(?:[^""\\\r\n{}]|\\.|\{\{|\}\}|" + Hole + @")*""|(?:\$@|@\$)""(?:[^""{}]|""""|\{\{|\}\}|" + Hole + @")*"")"
+            + @"|@""(?:[^""]|"""")*""|""(?:[^""\\\r\n]|\\.)*""|'(?:[^'\\\r\n]|\\.)*'|//[^\r\n]*|/\*[\s\S]*?\*/",
             RegexOptions.Compiled);
 
+        private static readonly Regex Holes = new Regex(Hole, RegexOptions.Compiled);
+
         private static string WithoutCommentsAndStrings(string source) =>
-            NotCode.Replace(source, match => match.Value.StartsWith("/", StringComparison.Ordinal) ? string.Empty : "\"\"");
+            NotCode.Replace(source, match =>
+            {
+                if (match.Value.StartsWith("/", StringComparison.Ordinal))
+                {
+                    return string.Empty;
+                }
+
+                // What is left of a text is a mark; of an interpolated one, also the code of its holes (with their own texts gone).
+                return match.Groups["interpolated"].Success
+                    ? "\u0001" + string.Join(" ", Holes.Matches(match.Value).Select(hole => WithoutCommentsAndStrings(hole.Value.Substring(1, hole.Value.Length - 2))))
+                    : "\u0001";
+            });
 
         [Fact]
         public void TheProject_ReferencesTheContractAndTheSdkWithoutCopyingThem_AndItsOwnLibraryWithACopy()
