@@ -253,3 +253,13 @@ system. It appears in the Extensions menu of the main window.
   It uses library types to build the workflow, so `AssistantServicesFactory`
   calls it only after the library is known to be there, and the exported
   class sees only `IGuidedWorkflow`.
+- `Services/ShellOpener` opens a report, or the folder it is in, in the
+  program the operator has set up for it, so that a report can be looked at
+  (and corrected) before the order is finished. It is the one place of the
+  extension that starts a program, and only in the way the shell opens a
+  document: an existing PDF file or an existing folder given by a full path;
+  never a program by name, never arguments. Other file types, relative paths
+  and device paths are refused with a code (`OpenerFailureCodes`) and a text.
+  Two tests keep it the only one: the assembly may use only four members of
+  `Process` and `ProcessStartInfo`, and no other file of the extension may
+  name them. The page does not use it yet.

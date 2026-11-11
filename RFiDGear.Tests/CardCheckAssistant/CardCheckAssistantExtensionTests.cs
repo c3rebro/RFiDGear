@@ -234,7 +234,6 @@ namespace RFiDGear.Tests.CardCheckAssistant
         [InlineData("GemBox")]
         [InlineData("Newtonsoft")]
         [InlineData("CommunityToolkit")]
-        [InlineData("System.Diagnostics.Process")]
         [InlineData("System.Data.SqlClient")]   // the database driver belongs to the library, never to the page
         [InlineData("System.Data.SQLite")]
         [InlineData("Microsoft.Data")]
@@ -249,20 +248,154 @@ namespace RFiDGear.Tests.CardCheckAssistant
         }
 
         [Fact]
-        public void TheAssembly_NeverStartsAProcess()
+        public void TheAssembly_UsesNoMoreOfProcessThanTheShellOpenerNeeds_AndHasNoPInvokeAtAll()
         {
+            // The one place that starts a program opens a document in the shell (ShellOpener). Whatever else of Process or
+            // ProcessStartInfo the assembly would use (Arguments, Verb, WorkingDirectory, redirects, Kill...) fails here by
+            // name, and so does every other way to start one that needs a declaration in the assembly: a P/Invoke.
             using var stream = File.OpenRead(ExtensionAssembly.Location);
             using var pe = new PEReader(stream);
             var metadata = pe.GetMetadataReader();
 
-            var types = metadata.TypeReferences
-                .Select(handle => metadata.GetTypeReference(handle))
-                .Select(type => metadata.GetString(type.Namespace) + "." + metadata.GetString(type.Name))
+            var used = new Dictionary<string, List<byte[]>>();
+            foreach (var handle in metadata.MemberReferences)
+            {
+                var member = metadata.GetMemberReference(handle);
+                if (member.Parent.Kind != HandleKind.TypeReference)
+                {
+                    continue;
+                }
+
+                var type = metadata.GetTypeReference((TypeReferenceHandle)member.Parent);
+                if (metadata.GetString(type.Namespace) == "System.Diagnostics" && metadata.GetString(type.Name).StartsWith("Process", StringComparison.Ordinal))
+                {
+                    var name = metadata.GetString(type.Name) + "::" + metadata.GetString(member.Name);
+                    if (!used.TryGetValue(name, out var signatures))
+                    {
+                        used[name] = signatures = new List<byte[]>();
+                    }
+
+                    signatures.Add(metadata.GetBlobBytes(member.Signature));
+                }
+            }
+
+            var allowed = new[] { "Process::Start", "ProcessStartInfo::.ctor", "ProcessStartInfo::set_FileName", "ProcessStartInfo::set_UseShellExecute" };
+            Assert.Contains("Process::Start", used.Keys);   // not vacuous: the opener is in this assembly
+            Assert.All(used.Keys, name => Assert.Contains(name, allowed));
+
+            // The members by name are not enough: Start has overloads that take a program name and arguments, and the
+            // constructor one that takes both.
+            var start = Assert.Single(used["Process::Start"]);
+            Assert.Equal(0x00, start[0]);                       // static
+            Assert.Equal(1, start[1]);                          // one parameter ...
+            Assert.NotEqual((byte)0x0E, start[^1]);             // ... which is not a string
+            Assert.Equal(new byte[] { 0x20, 0x00, 0x01 }, Assert.Single(used["ProcessStartInfo::.ctor"]));   // instance, no parameter, void
+
+            var imports = metadata.MethodDefinitions
+                .Select(handle => metadata.GetMethodDefinition(handle))
+                .Where(method => !method.GetImport().Module.IsNil)
+                .Select(method => metadata.GetString(method.Name))
+                .ToList();
+            Assert.Empty(imports);
+        }
+
+        [Fact]
+        public void ProcessAndTheOtherWaysToStartAProgram_AreNamedInNoFileOfTheExtension_ButTheShellOpener()
+        {
+            var root = Path.GetFullPath(Path.Combine(RepositoryRoot(), "RFiDGear.Extensions", "CardCheckAssistant"));
+            var opener = Path.Combine(root, "Services", "ShellOpener.cs");
+            var sep = Path.DirectorySeparatorChar;
+
+            var offenders = Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories)
+                .Where(file => file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase))
+                .Where(file => !file.Contains(sep + "obj" + sep) && !file.Contains(sep + "bin" + sep))
+                .Where(file => !string.Equals(Path.GetFullPath(file), opener, StringComparison.OrdinalIgnoreCase))
+                .Where(file => NamesAProgramStart(File.ReadAllText(file), file.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase)))
+                .Select(Path.GetFileName)
                 .ToList();
 
-            Assert.DoesNotContain("System.Diagnostics.Process", types);
-            Assert.DoesNotContain("System.Diagnostics.ProcessStartInfo", types);
+            Assert.Empty(offenders);
         }
+
+        [Fact]
+        public void TheScanForProcess_SeesCode_AndNotWhatLooksLikeIt()
+        {
+            Assert.DoesNotContain("Process", WithoutCommentsAndStrings("var text = \"Process\"; // Process.Start\n/* ProcessStartInfo */"), StringComparison.Ordinal);
+            Assert.Contains("Process", WithoutCommentsAndStrings("Process.Start(x);"), StringComparison.Ordinal);
+
+            // Order must not matter: a // in a text is not a comment, a */ in a text does not end one, a quote in a char
+            // is not a text.
+            Assert.Contains("Process", WithoutCommentsAndStrings("var u = \"https://x\"; Process.Start(u);"), StringComparison.Ordinal);
+            Assert.Contains("Process", WithoutCommentsAndStrings("var s = \"*/*\"; Process.Start(s); /* c */"), StringComparison.Ordinal);
+            Assert.Contains("Process", WithoutCommentsAndStrings("var q = '\"'; Process.Start(q);"), StringComparison.Ordinal);
+            Assert.Contains("Process", WithoutCommentsAndStrings("var v = @\"a \"\"b\"\" c\"; Process.Start(v);"), StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void TheScanForProcess_ReadsTheHolesOfAnInterpolatedText_AsCode()
+        {
+            // The holes of $"..." are code, with braces of their own and texts inside, and the rest is text.
+            Assert.True(NamesAProgramStart("var r = $\"{Process.Start(new ProcessStartInfo { FileName = p, UseShellExecute = true })}\";", false));
+            Assert.True(NamesAProgramStart("var r = $\"{Get(\"a\") + Process.Start(p)}\";", false));       // a text in the hole does not end the text
+            Assert.True(NamesAProgramStart("var r = $@\"a \"\"b\"\" {Process.Start(p)} c\";", false));
+            Assert.True(NamesAProgramStart("var r = @$\"{Process.Start(p)}\";", false));
+            Assert.True(NamesAProgramStart("var r = $\"{(a ? $\"{Process.Start(p)}\" : \"b\")}\";", false));   // an interpolated text in a hole
+            Assert.False(NamesAProgramStart("var r = $\"Process: {name} and {Get(\"Process\")}\"; // Process.Start", false));
+
+            // Whatever the scan cannot read, it does not vouch for: a raw interpolated text, and a quote that is left over.
+            Assert.True(NamesAProgramStart("var r = $\"\"\"{Process.Start(p)}\"\"\";", false));
+            Assert.True(NamesAProgramStart("var r = \"unfinished;", false));
+            Assert.False(NamesAProgramStart("<Window x:Name=\"w\"><!-- Process --></Window>", true));
+            Assert.True(NamesAProgramStart("<ObjectDataProvider MethodName=\"Start\" />", true));
+        }
+
+        // Whether a file names a way to start a program: Process and the other names, in code (not in comments and texts,
+        // but in the holes of an interpolated text), or as the type's full name in a text handed to reflection.
+        private static bool NamesAProgramStart(string text, bool isXaml)
+        {
+            const string Names = @"\b(Process|ProcessStartInfo|ShellExecute\w*|CreateProcess\w*|WinExec|DllImport|LibraryImport|NativeLibrary|ObjectDataProvider)\b";
+
+            if (isXaml)
+            {
+                return Regex.IsMatch(Regex.Replace(text, @"<!--[\s\S]*?-->", string.Empty), Names);
+            }
+
+            var code = WithoutCommentsAndStrings(text);
+
+            // A quote that is left over means the scan lost track of where a text begins and ends; a raw interpolated text
+            // ($\"\"\"...\"\"\") has holes it does not read. Neither is vouched for.
+            return Regex.IsMatch(code, Names)
+                || text.Contains("System.Diagnostics.Process", StringComparison.Ordinal)
+                || code.Contains('"')
+                || Regex.IsMatch(text, @"\$+""{3,}");
+        }
+
+        // The holes of an interpolated text: {expression}, with braces of its own balanced (an object initializer) and texts
+        // inside it that may hold braces.
+        private const string Hole = @"\{(?:[^{}""]|""(?:[^""\\\r\n]|\\.)*""|(?<open>\{)|(?<-open>\}))*(?(open)(?!))\}";
+
+        // Comments and texts are not code: one pass over all of them, so the first one that starts wins. An interpolated
+        // text is matched whole, holes included, so that a quote inside a hole cannot end it early.
+        private static readonly Regex NotCode = new Regex(
+            @"(?<interpolated>\$""(?:[^""\\\r\n{}]|\\.|\{\{|\}\}|" + Hole + @")*""|(?:\$@|@\$)""(?:[^""{}]|""""|\{\{|\}\}|" + Hole + @")*"")"
+            + @"|@""(?:[^""]|"""")*""|""(?:[^""\\\r\n]|\\.)*""|'(?:[^'\\\r\n]|\\.)*'|//[^\r\n]*|/\*[\s\S]*?\*/",
+            RegexOptions.Compiled);
+
+        private static readonly Regex Holes = new Regex(Hole, RegexOptions.Compiled);
+
+        private static string WithoutCommentsAndStrings(string source) =>
+            NotCode.Replace(source, match =>
+            {
+                if (match.Value.StartsWith("/", StringComparison.Ordinal))
+                {
+                    return string.Empty;
+                }
+
+                // What is left of a text is a mark; of an interpolated one, also the code of its holes (with their own texts gone).
+                return match.Groups["interpolated"].Success
+                    ? "\u0001" + string.Join(" ", Holes.Matches(match.Value).Select(hole => WithoutCommentsAndStrings(hole.Value.Substring(1, hole.Value.Length - 2))))
+                    : "\u0001";
+            });
 
         [Fact]
         public void TheProject_ReferencesTheContractAndTheSdkWithoutCopyingThem_AndItsOwnLibraryWithACopy()

@@ -5,6 +5,7 @@ using System.Reflection;
 
 using RFiDGear.ExtensionLibraries.CardCheck;
 using RFiDGear.Extensions.CardCheckAssistant.Localization;
+using RFiDGear.Extensions.CardCheckAssistant.Services;
 using RFiDGear.Extensions.CardCheckAssistant.Workflow;
 
 using Xunit;
@@ -35,6 +36,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
             var codes = CodesOf(typeof(WorkflowFailureCodes))
                 .Concat(CodesOf(typeof(CheckFailureCodes)))
                 .Concat(CodesOf(typeof(ContextFailureCodes)))
+                .Concat(CodesOf(typeof(OpenerFailureCodes)))
                 .ToList();
 
             Assert.NotEmpty(codes);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 
 using RFiDGear.ExtensionLibraries.CardCheck;
+using RFiDGear.Extensions.CardCheckAssistant.Services;
 using RFiDGear.Extensions.CardCheckAssistant.Workflow;
 
 using Keys = RFiDGear.Extensions.CardCheckAssistant.Localization.ExtensionStrings.Keys;
@@ -67,6 +68,13 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [CheckFailureCodes.RunFailed] = Keys.FailRunFailed,
             [CheckFailureCodes.RunUnexpected] = Keys.FailUnexpected,
             [CheckFailureCodes.ReportMissing] = Keys.FailReportMissing,
+
+            // Opening a report or a folder.
+            [OpenerFailureCodes.PathInvalid] = Keys.FailOpenPathInvalid,
+            [OpenerFailureCodes.NotFound] = Keys.FailOpenNotFound,
+            [OpenerFailureCodes.NotAllowed] = Keys.FailOpenNotAllowed,
+            [OpenerFailureCodes.NoViewer] = Keys.FailOpenNoViewer,
+            [OpenerFailureCodes.StartFailed] = Keys.FailOpenFailed,
 
             // The reports.
             ["report.source.missing"] = Keys.FailReportFileMissing,
