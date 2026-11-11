@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -8,6 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ExtensionHost;
+using RFiDGear.Infrastructure.Tasks;
 using RFiDGear.Models;
 using RFiDGear.ViewModel;
 using RFiDGear.ViewModel.TaskSetupViewModels;
@@ -386,6 +388,66 @@ namespace RFiDGear.Tests.Reader
 
                 Assert.Null(task.IsTaskCompletedSuccessfully);
                 Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+                Assert.True(coordinator.TryBeginProjectOperation());
+                coordinator.EndProjectOperation();
+            });
+        }
+
+        [Fact]
+        public async Task DeletingTheSelectedTask_IsRefusedWhileARunIsInProgress_AndWorksOtherwise()
+        {
+            await WithViewModel(async (viewModel, _, coordinator) =>
+            {
+                var task = FinishedTask();
+                viewModel.ChipTasks.TaskCollection.Add(task);
+                viewModel.SelectedSetupViewModel = task;
+                var dialogsBefore = viewModel.Dialogs.Count;
+                Assert.True(coordinator.TryBeginExecution());
+
+                Assert.False(viewModel.TryDeleteSelectedTask());
+
+                Assert.Single(viewModel.ChipTasks.TaskCollection);
+                Assert.Equal(dialogsBefore + 1, viewModel.Dialogs.Count);   // the user is told
+                Assert.True(coordinator.IsExecuting);
+                coordinator.EndExecution();
+
+                Assert.True(viewModel.TryDeleteSelectedTask());
+
+                Assert.Empty(viewModel.ChipTasks.TaskCollection);
+                Assert.Equal(dialogsBefore + 1, viewModel.Dialogs.Count);
+                Assert.True(coordinator.TryBeginProjectOperation());   // the slot was given back
+                coordinator.EndProjectOperation();
+                await Task.CompletedTask;
+            });
+        }
+
+        [Fact]
+        public async Task ConfirmingTheCommonTaskDialog_IsRefusedWhileARunIsInProgress_AndKeepsTheDialogOpen()
+        {
+            await WithViewModel(async (viewModel, _, coordinator) =>
+            {
+                await Within(viewModel.CreateGenericTaskCommand.ExecuteAsync(null));
+                var dialog = viewModel.Dialogs.OfType<CommonTaskViewModel>().Single();
+                dialog.SelectedTaskType = TaskType_CommonTask.CheckLogicCondition;
+                dialog.CurrentTaskIndex = "7";
+                var closed = 0;
+                dialog.DialogClosing += (_, _) => closed++;
+                var dialogsBefore = viewModel.Dialogs.Count;
+
+                // A run starts while the dialog is open; confirming it now must not change the list under the run.
+                Assert.True(coordinator.TryBeginExecution());
+                dialog.OnOk(dialog);
+
+                Assert.Empty(viewModel.ChipTasks.TaskCollection);
+                Assert.Equal(0, closed);
+                Assert.Equal(dialogsBefore + 1, viewModel.Dialogs.Count);   // the message
+                coordinator.EndExecution();
+
+                // After the run the same confirmation goes through.
+                dialog.OnOk(dialog);
+
+                Assert.Contains(dialog, viewModel.ChipTasks.TaskCollection);
+                Assert.Equal(1, closed);
                 Assert.True(coordinator.TryBeginProjectOperation());
                 coordinator.EndProjectOperation();
             });

@@ -789,7 +789,8 @@ namespace RFiDGear.Tests
             Action<bool> updateReaderBusy,
             EventHandler<TaskExecutionCompletedEventArgs> executionCompletedHandler,
             DispatcherTimer triggerReadChip,
-            DispatcherTimer taskTimeout)
+            DispatcherTimer taskTimeout,
+            ITaskListEditGate taskListEdit)
         {
             var taskExecutionService = new FakeTaskExecutionService();
             if (executionCompletedHandler != null)
@@ -797,7 +798,7 @@ namespace RFiDGear.Tests
                 taskExecutionService.ExecutionCompleted += executionCompletedHandler;
             }
 
-            return new TaskServiceInitialization(new TaskDialogFactory(notifyChipTasksChanged, activateMainWindow, updateReaderBusy), taskExecutionService);
+            return new TaskServiceInitialization(new TaskDialogFactory(notifyChipTasksChanged, activateMainWindow, updateReaderBusy, taskListEdit), taskExecutionService);
         }
     }
 
