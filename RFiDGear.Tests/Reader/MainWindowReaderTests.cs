@@ -3,11 +3,14 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 
+using CommunityToolkit.Mvvm.Input;
+
 using RFiDGear.Contracts;
 using RFiDGear.Infrastructure;
 using RFiDGear.Infrastructure.ExtensionHost;
 using RFiDGear.Models;
 using RFiDGear.ViewModel;
+using RFiDGear.ViewModel.TaskSetupViewModels;
 
 using Xunit;
 
@@ -285,6 +288,123 @@ namespace RFiDGear.Tests.Reader
                 Assert.True(start.IsCompleted);
                 Assert.False(await start);
                 coordinator.EndExecution();
+            });
+        }
+
+        // ── changes of the task list are coordinated with runs ──
+
+        private static CommonTaskViewModel FinishedTask() => new CommonTaskViewModel
+        {
+            CurrentTaskIndex = "1",
+            IsTaskCompletedSuccessfully = true,
+            CurrentTaskErrorLevel = ERROR.AuthFailure
+        };
+
+        [Fact]
+        public async Task TheResetAndRemoveCommands_AreRefusedWhileARunIsInProgress_AndTellTheUser()
+        {
+            await WithViewModel(async (viewModel, _, coordinator) =>
+            {
+                var task = FinishedTask();
+                viewModel.ChipTasks.TaskCollection.Add(task);
+                viewModel.SelectedSetupViewModel = task;
+                var dialogsBefore = viewModel.Dialogs.Count;
+                Assert.True(coordinator.TryBeginExecution());
+
+                var commands = new IAsyncRelayCommand[]
+                {
+                    viewModel.ResetTaskStatusCommand,
+                    viewModel.ResetSelectedTaskStatusCommand,
+                    viewModel.ResetReportTaskDirectoryCommand,
+                    viewModel.RemoveAllTasksCommand
+                };
+
+                foreach (var command in commands)
+                {
+                    await Within(command.ExecuteAsync(null));
+                }
+
+                // A finished task keeps its result (so it cannot run a second time) and stays in the list.
+                Assert.True(task.IsTaskCompletedSuccessfully);
+                Assert.Equal(ERROR.AuthFailure, task.CurrentTaskErrorLevel);
+                Assert.Single(viewModel.ChipTasks.TaskCollection);
+                Assert.Equal(dialogsBefore + commands.Length, viewModel.Dialogs.Count);
+                Assert.True(coordinator.IsExecuting);   // the run's slot is not touched
+                coordinator.EndExecution();
+            });
+        }
+
+        [Fact]
+        public async Task TheResetAndRemoveCommands_WorkWhenNothingIsRunning_AndGiveTheSlotBack()
+        {
+            await WithViewModel(async (viewModel, _, coordinator) =>
+            {
+                var task = FinishedTask();
+                viewModel.ChipTasks.TaskCollection.Add(task);
+                viewModel.SelectedSetupViewModel = task;
+                var dialogsBefore = viewModel.Dialogs.Count;
+
+                await Within(viewModel.ResetTaskStatusCommand.ExecuteAsync(null));
+                Assert.Null(task.IsTaskCompletedSuccessfully);
+                Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+
+                task.IsTaskCompletedSuccessfully = true;
+                task.CurrentTaskErrorLevel = ERROR.AuthFailure;
+                await Within(viewModel.ResetSelectedTaskStatusCommand.ExecuteAsync(null));
+                Assert.Null(task.IsTaskCompletedSuccessfully);
+                Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+
+                task.IsTaskCompletedSuccessfully = true;
+                await Within(viewModel.ResetReportTaskDirectoryCommand.ExecuteAsync(null));
+                Assert.Null(task.IsTaskCompletedSuccessfully);
+
+                await Within(viewModel.RemoveAllTasksCommand.ExecuteAsync(null));
+                Assert.Empty(viewModel.ChipTasks.TaskCollection);
+
+                Assert.Equal(dialogsBefore, viewModel.Dialogs.Count);
+                Assert.True(coordinator.TryBeginProjectOperation());   // every command gave the slot back
+                coordinator.EndProjectOperation();
+            });
+        }
+
+        [Fact]
+        public async Task AResetThatMeetsAScan_WaitsForIt_AndThenResets()
+        {
+            await WithViewModel(async (viewModel, _, coordinator) =>
+            {
+                // The reader timer resets before it starts a run; a scan of an extension must not drop that step.
+                var task = FinishedTask();
+                viewModel.ChipTasks.TaskCollection.Add(task);
+                Assert.True(coordinator.TryBeginScan());
+
+                var reset = viewModel.ResetTaskStatusCommand.ExecuteAsync(null);
+                Assert.False(reset.IsCompleted);
+                Assert.True(task.IsTaskCompletedSuccessfully);
+
+                coordinator.EndScan();
+                await Within(reset);
+
+                Assert.Null(task.IsTaskCompletedSuccessfully);
+                Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+                Assert.True(coordinator.TryBeginProjectOperation());
+                coordinator.EndProjectOperation();
+            });
+        }
+
+        [Fact]
+        public async Task TheRunsOwnReset_IsNotRefusedByTheGuard()
+        {
+            await WithViewModel(async (viewModel, _, coordinator) =>
+            {
+                var task = FinishedTask();
+                viewModel.ChipTasks.TaskCollection.Add(task);
+
+                // The run holds the execution slot; its reset at the start must not ask for the project-edit slot.
+                await Within(viewModel.WriteToChipOnceCommand.ExecuteAsync(null));
+
+                Assert.Null(task.IsTaskCompletedSuccessfully);
+                Assert.Equal(ERROR.Empty, task.CurrentTaskErrorLevel);
+                Assert.False(coordinator.IsExecuting);
             });
         }
 

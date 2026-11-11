@@ -511,6 +511,9 @@ slot of an available reader</value>
   <data name="messageBoxProjectSavedAsMessage" xml:space="preserve">
     <value>The project was saved as '{0}'.</value>
   </data>
+  <data name="messageBoxProjectBusyMessage" xml:space="preserve">
+    <value>The task list cannot be changed while a task run, a project load or another change is in progress. Try again when it has finished.</value>
+  </data>
   <data name="windowCaptionSaveTasks" xml:space="preserve">
     <value>Save Tasks to File...</value>
   </data>
