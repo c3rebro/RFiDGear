@@ -57,7 +57,8 @@ bundle references the host project, which needs SDK 10 and so MSBuild 18):
 
 ```powershell
 $msbuild = "C:\Program Files\Microsoft Visual Studio\18\Professional\MSBuild\Current\Bin\MSBuild.exe"
-& $msbuild RFiDGearBundleSetup\RFiDGearBundleSetup.wixproj -p:Configuration=Release -p:Platform=x86
+& $msbuild RFiDGearBundleSetup\RFiDGearBundleSetup.wixproj `
+  -p:Configuration=Release -p:Platform=x86
 ```
 
 The bundle carries the .NET 10 Desktop Runtime (x64 and x86). The installers are
