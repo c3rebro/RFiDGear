@@ -1,6 +1,6 @@
 # Elatec TWN4 MIFARE Sample CLI
 
-A .NET 8 console application demonstrating both MIFARE Classic and DESFire
+A .NET 10 console application demonstrating both MIFARE Classic and DESFire
 operations using the Elatec.NET library (v0.6.1) and TWN4 reader.
 
 ## Features
@@ -34,7 +34,7 @@ workflow:
 
 ## Prerequisites
 
-- .NET 8 SDK
+- .NET 10 SDK
 - Elatec TWN4 reader (USB or serial connection)
 - **MIFARE Classic**: 1K, 2K, 4K, or Plus SL1 card/tag
 - **DESFire**: EV0, EV1, EV2, or EV3 card/tag

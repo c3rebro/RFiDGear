@@ -17,7 +17,7 @@
 
     Prerequisites
     -------------
-    - dotnet 8 SDK installed
+    - dotnet 10 SDK installed
     - An Elatec TWN4 or a PC/SC-compatible reader connected via USB
     - A factory-default DESFire EV1/EV2/EV3 card on the reader
       (all keys must be zero -- no custom keys)
@@ -160,7 +160,7 @@ $TrxFile     = Join-Path $ResultsDir $TrxFileName
 $SampleFile   = Join-Path $ScriptDir 'hil.settings.sample.json'
 $SettingsFile = Join-Path $ScriptDir 'hil.settings.json'
 $nearer       = $false
-for ($directory = Join-Path $ScriptDir "RFiDGear.HIL.Tests\bin\$Configuration\net8.0-windows"; $directory; $directory = Split-Path -Parent $directory) {
+for ($directory = Join-Path $ScriptDir "RFiDGear.HIL.Tests\bin\$Configuration\net10.0-windows"; $directory; $directory = Split-Path -Parent $directory) {
     $candidate = Join-Path $directory 'hil.settings.json'
     if (Test-Path $candidate) {
         $nearer       = $candidate -ne $SettingsFile
@@ -252,7 +252,7 @@ try {
     $dotnetVersion = & dotnet --version 2>&1
     Write-Host "dotnet SDK : $dotnetVersion" -ForegroundColor DarkGray
 } catch {
-    Write-Host "ERROR: 'dotnet' command not found. Install the .NET 8 SDK." -ForegroundColor Red
+    Write-Host "ERROR: 'dotnet' command not found. Install the .NET 10 SDK." -ForegroundColor Red
     exit 2
 }
 
