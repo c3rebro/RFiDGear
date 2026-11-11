@@ -301,6 +301,7 @@ namespace RFiDGear.Tests.CardCheckAssistant
                 (WorkflowState.ConfirmingReplace, WorkflowControls.DeclineReplace, vm.KeepReportsCommand),
                 (WorkflowState.WaitingForCard, WorkflowControls.StartCheck, vm.StartCheckCommand),
                 (WorkflowState.Reviewing, WorkflowControls.Finish, vm.FinishCommand),
+                (WorkflowState.Assessing, WorkflowControls.BeginProgramming, vm.BeginCommand),
                 (WorkflowState.ReadOutFailed, WorkflowControls.FinishWithoutReadOut, vm.FinishWithoutReadOutCommand),
                 (WorkflowState.RunFailed, WorkflowControls.Retry, vm.RetryCommand),
                 (WorkflowState.Reviewing, WorkflowControls.Cancel, vm.CancelCommand),

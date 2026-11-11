@@ -93,6 +93,68 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
+        public Task AChipThatCanBeProgrammed_IsProgrammedAndFinished_ThroughThePage_FromTheVerdictToTheEnd() => Smoke(async (rig, vm, services) =>
+        {
+            rig.Verdict(ChipVerdict.Programmable);
+            await ChooseTheTestOrderAsync(rig, vm);
+            vm.StartOrderCommand.Execute(null);
+            await ShownAsync(rig);
+            vm.StartCheckCommand.Execute(null);
+            await ShownAsync(rig);
+
+            // The verdict: begin, not finish.
+            Assert.True(vm.IsVerdictStep);
+            Assert.True(vm.ShowBegin);
+            Assert.False(vm.ShowFinish);
+            Assert.True(vm.BeginCommand.CanExecute(null));
+
+            // The chip is taken off and put back (the fake reader does it at once), and the questions are answered; one with "no".
+            vm.BeginCommand.Execute(null);
+            await ShownAsync(rig);
+            Assert.True(vm.IsProgramStep);
+            Assert.True(vm.Form.IsEditable);
+            vm.Form.Programming.IsYes = true;
+            vm.Form.FunctionTest.IsNo = true;
+            vm.Form.Restricted.IsNo = true;
+            Assert.True(vm.ContinueCommand.CanExecute(null));
+
+            // The question about the "no" is answered yes, the report is written, the date set, the memory read out.
+            services.Answer = true;
+            vm.ContinueCommand.Execute(null);
+            await ShownAsync(rig);
+            Assert.Single(services.Asked);
+            Assert.True(vm.IsReviewStep);
+            Assert.Contains(rig.Paths.PathOf(ReportFile.Step3), vm.ReadOutPathText, StringComparison.Ordinal);
+            Assert.Equal(WorkflowEngineTests.Rig.OrderId, Assert.Single(rig.Store.Touched));
+
+            // "Report checked": the order is finished.
+            vm.FinishCommand.Execute(null);
+            await ShownAsync(rig);
+            Assert.True(vm.IsCompleted);
+        });
+
+        [Fact]
+        public Task LeavingTheOrderOpenAtTheReview_NeedsAYes_AndTheEndSaysWhatHappened() => Smoke(async (rig, vm, services) =>
+        {
+            await rig.ReachAsync(WorkflowState.Reviewing);
+            await ViewModelTestSupport.Flush();
+
+            services.Answer = false;
+            vm.CancelCommand.Execute(null);
+            await ViewModelTestSupport.Flush();
+            Assert.True(vm.IsReviewStep);                                            // nothing happened
+
+            services.Answer = true;
+            vm.CancelCommand.Execute(null);
+            await ViewModelTestSupport.Flush();
+
+            Assert.True(vm.IsEndStep);
+            Assert.StartsWith(vm.Strings[Keys.GuidedEndCancelledProgrammed], vm.EndText, StringComparison.Ordinal);
+            Assert.Contains(vm.Strings[Keys.GuidedEndDateTouched], vm.EndText, StringComparison.Ordinal);
+            Assert.Contains(rig.Paths.PathOf(ReportFile.Step3), vm.EndText, StringComparison.Ordinal);
+        });
+
+        [Fact]
         public Task TheAnswers_AreWrittenIntoTheSecondReport_AsTheFormHadThem_AndTheRetryWritesTheSame() => Smoke(async (rig, vm) =>
         {
             await rig.ReachAsync(WorkflowState.Programming);

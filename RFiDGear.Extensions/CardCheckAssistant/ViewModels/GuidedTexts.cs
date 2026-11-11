@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 using RFiDGear.Contracts;
@@ -218,9 +219,10 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
 
         /// <summary>What the verdict means for the order.</summary>
         /// <param name="selection">What the rules made of the findings; may be <c>null</c>.</param>
+        /// <param name="programmingBlocked">Whether the chip could be programmed but something stops it (the project that reads out its memory cannot be used).</param>
         /// <param name="strings">The page's texts.</param>
         /// <returns>The sentence, or empty if there is no verdict.</returns>
-        public static string Verdict(TemplateSelection? selection, LocalizedStrings strings)
+        public static string Verdict(TemplateSelection? selection, bool programmingBlocked, LocalizedStrings strings)
         {
             if (selection == null)
             {
@@ -231,7 +233,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             {
                 ChipVerdict.NotSupported => strings[Keys.GuidedVerdictNotSupported],
                 ChipVerdict.SupportedOnly => strings[Keys.GuidedVerdictSupportedOnly],
-                ChipVerdict.Programmable => strings[Keys.GuidedVerdictProgrammable],
+                ChipVerdict.Programmable => strings[programmingBlocked ? Keys.GuidedVerdictProgrammableBlocked : Keys.GuidedVerdictProgrammable],
                 _ => strings[Keys.GuidedVerdictIndeterminate]
             };
         }
@@ -248,10 +250,18 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
         /// <param name="existing">The files that exist.</param>
         /// <param name="strings">The page's texts.</param>
         /// <returns>The sentence, or empty if there are none.</returns>
-        public static string Replace(IReadOnlyList<ReportFile> existing, LocalizedStrings strings) =>
-            existing.Count == 0
-                ? string.Empty
-                : strings.Format(Keys.GuidedReplaceFormat, string.Join(", ", existing.Select(file => FileName(file, strings))));
+        public static string Replace(IReadOnlyList<ReportFile> existing, LocalizedStrings strings)
+        {
+            if (existing.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var text = strings.Format(Keys.GuidedReplaceFormat, string.Join(", ", existing.Select(file => FileName(file, strings))));
+
+            // The second and third report only exist once the chip was programmed: a new check of it starts from the beginning.
+            return existing.Contains(ReportFile.Step2) || existing.Contains(ReportFile.Step3) ? text + " " + strings[Keys.GuidedReplaceProgrammed] : text;
+        }
 
         /// <summary>What the end of the check came to, and what the operator should do about it.</summary>
         /// <param name="snapshot">The workflow's picture.</param>
@@ -295,7 +305,32 @@ namespace RFiDGear.Extensions.CardCheckAssistant.ViewModels
             if (snapshot.CancelledAt is WorkflowState.Programming or WorkflowState.WritingReport or WorkflowState.ProgrammingFailed
                 or WorkflowState.ReadingOut or WorkflowState.ReadOutFailed or WorkflowState.Reviewing)
             {
-                return strings[Keys.GuidedEndCancelledProgrammed];
+                var text = strings[Keys.GuidedEndCancelledProgrammed];
+
+                // From the writing of the second report on, the change date of the order may have been set.
+                if (snapshot.CancelledAt != WorkflowState.Programming)
+                {
+                    text += " " + strings[Keys.GuidedEndDateTouched];
+                }
+
+                // The newest report is named only where its path is known and the file is there: the first one while the chip is
+                // away, the read-out's at the review. In between the second report may or may not have been written and the
+                // third one may be missing, so only the folder is named.
+                var newest = snapshot.CancelledAt switch
+                {
+                    WorkflowState.Programming => snapshot.Check?.ReportPath,
+                    WorkflowState.Reviewing => snapshot.ReadOut?.ReportPath,
+                    _ => null
+                };
+
+                if (!string.IsNullOrWhiteSpace(newest))
+                {
+                    return text + " " + strings.Format(Keys.GuidedEndNewestReportFormat, newest!);
+                }
+
+                var folder = string.IsNullOrWhiteSpace(snapshot.Check?.ReportPath) ? null : Path.GetDirectoryName(snapshot.Check!.ReportPath);
+
+                return string.IsNullOrWhiteSpace(folder) ? text : text + " " + strings.Format(Keys.GuidedEndReportsFolderFormat, folder!);
             }
 
             // A cancel after the report was being made or stored: the order may or may not have been finished. For a chip that

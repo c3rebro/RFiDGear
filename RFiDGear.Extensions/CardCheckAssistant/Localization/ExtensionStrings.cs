@@ -248,6 +248,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             public const string GuidedFormInsert = "GuidedFormInsert";
             public const string GuidedAskNoTitle = "GuidedAskNoTitle";
             public const string GuidedAskNo = "GuidedAskNo";
+            public const string GuidedBeginButton = "GuidedBeginButton";
+            public const string GuidedVerdictProgrammableBlocked = "GuidedVerdictProgrammableBlocked";
+            public const string GuidedReplaceProgrammed = "GuidedReplaceProgrammed";
+            public const string GuidedEndDateTouched = "GuidedEndDateTouched";
+            public const string GuidedEndNewestReportFormat = "GuidedEndNewestReportFormat";
+            public const string GuidedEndReportsFolderFormat = "GuidedEndReportsFolderFormat";
             public const string GuidedFinishButton = "GuidedFinishButton";
             public const string GuidedLeaveOpenButton = "GuidedLeaveOpenButton";
             public const string GuidedBackButton = "GuidedBackButton";
@@ -344,7 +350,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedCompletionFailedHint] = "The finished report could not be stored. Retry, or cancel and check the order in the order system.",
             [Keys.GuidedVerdictNotSupported] = "The chip is not supported.",
             [Keys.GuidedVerdictSupportedOnly] = "The chip is supported and can be programmed, but its free memory is not enough for any template.",
-            [Keys.GuidedVerdictProgrammable] = "The chip can be programmed. Programming is not part of this version, so the order stays open.",
+            [Keys.GuidedVerdictProgrammable] = "The chip can be programmed. Press Begin programming, take the chip off the reader, program it in the LSM and put it back.",
             [Keys.GuidedVerdictIndeterminate] = "The result is unclear: the chip is not reported as supported, but it may be programmable. Look at the report before you finish the order.",
             [Keys.GuidedChipTypeFormat] = "Chip type: {0}",
             [Keys.GuidedFreeMemoryFormat] = "Free memory: {0}",
@@ -361,7 +367,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedEndCleanupFailed] = "Some working files could not be removed. They do no harm; you can delete them later.",
             [Keys.GuidedEndCancelledNothing] = "Cancelled. Nothing was changed.",
             [Keys.GuidedEndCancelledKeptFormat] = "Cancelled. The order is unchanged. The first report stays at {0}.",
-            [Keys.GuidedEndCancelledProgrammableFormat] = "Cancelled. The order is unchanged. The first report is at {0}. Programming is not part of this version.",
+            [Keys.GuidedEndCancelledProgrammableFormat] = "Left open. The order is unchanged. The first report is at {0}.",
             [Keys.GuidedEndCancelledMaybe] = "Cancelled. The order may not have been finished in the order system. Check it there before you check the chip again; repeating the check is safe.",
             [Keys.GuidedEndCancelledMaybeProgrammed] = "Cancelled. The chip was programmed, and the order may not have been finished in the order system. Check it there. Do not check the chip again before that: a new check replaces the reports made so far.",
             [Keys.GuidedEndCancelledProgrammed] = "Cancelled. The chip may already be programmed and the order is not finished. The reports made so far stay in the report folder. Check the order before you check the chip again.",
@@ -427,6 +433,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedFormInsert] = "Insert",
             [Keys.GuidedAskNoTitle] = "Continue with a 'no'?",
             [Keys.GuidedAskNo] = "You answered 'no' to: {0}. The report will say so, and the order is finished after the review unless you leave it open. Continue?",
+            [Keys.GuidedBeginButton] = "Begin programming",
+            [Keys.GuidedVerdictProgrammableBlocked] = "The chip is suitable for programming, but programming is not possible now. Leave the order open, fix it in the settings (Settings on the list of orders), then check the order again.",
+            [Keys.GuidedReplaceProgrammed] = "This chip may already be programmed. Replace the reports only if you want to check it again from the beginning.",
+            [Keys.GuidedEndDateTouched] = "The change date of the order may have been set.",
+            [Keys.GuidedEndNewestReportFormat] = "The newest report is {0}.",
+            [Keys.GuidedEndReportsFolderFormat] = "The reports of the order are in {0}.",
             [Keys.GuidedFinishButton] = "Finish order",
             [Keys.GuidedLeaveOpenButton] = "Leave order open",
             [Keys.GuidedBackButton] = "Back to the list",
@@ -594,7 +606,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedCompletionFailedHint] = "Der fertige Bericht konnte nicht gespeichert werden. Versuchen Sie es erneut oder brechen Sie ab und prüfen Sie den Auftrag im Auftragssystem.",
             [Keys.GuidedVerdictNotSupported] = "Der Chip wird nicht unterstützt.",
             [Keys.GuidedVerdictSupportedOnly] = "Der Chip wird unterstützt und kann programmiert werden, aber der freie Speicher reicht für keine Vorlage.",
-            [Keys.GuidedVerdictProgrammable] = "Der Chip kann programmiert werden. Das Programmieren gehört nicht zu dieser Version, deshalb bleibt der Auftrag offen.",
+            [Keys.GuidedVerdictProgrammable] = "Der Chip kann programmiert werden. Wählen Sie Programmieren starten, nehmen Sie den Chip vom Leser, programmieren Sie ihn im LSM und legen Sie ihn wieder auf.",
             [Keys.GuidedVerdictIndeterminate] = "Das Ergebnis ist unklar: Der Chip wird nicht als unterstützt gemeldet, ist aber vielleicht programmierbar. Sehen Sie sich den Bericht an, bevor Sie den Auftrag abschließen.",
             [Keys.GuidedChipTypeFormat] = "Chiptyp: {0}",
             [Keys.GuidedFreeMemoryFormat] = "Freier Speicher: {0}",
@@ -611,7 +623,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedEndCleanupFailed] = "Einige Arbeitsdateien konnten nicht entfernt werden. Sie schaden nicht und können später gelöscht werden.",
             [Keys.GuidedEndCancelledNothing] = "Abgebrochen. Es wurde nichts geändert.",
             [Keys.GuidedEndCancelledKeptFormat] = "Abgebrochen. Der Auftrag ist unverändert. Der erste Bericht bleibt unter {0}.",
-            [Keys.GuidedEndCancelledProgrammableFormat] = "Abgebrochen. Der Auftrag ist unverändert. Der erste Bericht liegt unter {0}. Das Programmieren gehört nicht zu dieser Version.",
+            [Keys.GuidedEndCancelledProgrammableFormat] = "Offen gelassen. Der Auftrag ist unverändert. Der erste Bericht liegt unter {0}.",
             [Keys.GuidedEndCancelledMaybe] = "Abgebrochen. Der Auftrag ist im Auftragssystem möglicherweise nicht abgeschlossen. Prüfen Sie ihn dort, bevor Sie den Chip erneut prüfen; eine Wiederholung ist gefahrlos.",
             [Keys.GuidedEndCancelledMaybeProgrammed] = "Abgebrochen. Der Chip wurde programmiert, und der Auftrag ist im Auftragssystem möglicherweise nicht abgeschlossen. Prüfen Sie ihn dort. Prüfen Sie den Chip vorher nicht erneut: eine neue Prüfung ersetzt die bisher erstellten Berichte.",
             [Keys.GuidedEndCancelledProgrammed] = "Abgebrochen. Der Chip ist möglicherweise schon programmiert und der Auftrag ist nicht abgeschlossen. Die bisher erstellten Berichte bleiben im Berichtsordner. Prüfen Sie den Auftrag, bevor Sie den Chip erneut prüfen.",
@@ -677,6 +689,12 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Localization
             [Keys.GuidedFormInsert] = "Einfügen",
             [Keys.GuidedAskNoTitle] = "Mit „Nein“ fortfahren?",
             [Keys.GuidedAskNo] = "Sie haben mit „Nein“ geantwortet auf: {0}. Der Bericht gibt das so wieder, und der Auftrag wird nach der Prüfung abgeschlossen, wenn Sie ihn nicht offen lassen. Fortfahren?",
+            [Keys.GuidedBeginButton] = "Programmieren starten",
+            [Keys.GuidedVerdictProgrammableBlocked] = "Der Chip ist für die Programmierung geeignet, die Programmierung ist aber gerade nicht möglich. Lassen Sie den Auftrag offen, beheben Sie das in den Einstellungen (Einstellungen in der Auftragsliste) und prüfen Sie den Auftrag dann erneut.",
+            [Keys.GuidedReplaceProgrammed] = "Dieser Chip ist möglicherweise bereits programmiert. Ersetzen Sie die Berichte nur, wenn Sie ihn von vorn prüfen wollen.",
+            [Keys.GuidedEndDateTouched] = "Das Änderungsdatum des Auftrags wurde möglicherweise gesetzt.",
+            [Keys.GuidedEndNewestReportFormat] = "Der neueste Bericht liegt unter {0}.",
+            [Keys.GuidedEndReportsFolderFormat] = "Die Berichte des Auftrags liegen unter {0}.",
             [Keys.GuidedFinishButton] = "Auftrag abschließen",
             [Keys.GuidedLeaveOpenButton] = "Auftrag offen lassen",
             [Keys.GuidedBackButton] = "Zurück zur Liste",

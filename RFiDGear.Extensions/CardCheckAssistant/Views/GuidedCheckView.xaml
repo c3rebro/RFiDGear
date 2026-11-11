@@ -346,7 +346,11 @@
                 </Expander>
                 <StackPanel Grid.Row="2" Style="{StaticResource StepButtons}">
                     <Button x:Name="FinishButton" Style="{StaticResource StepButton}"
-                            Command="{Binding FinishCommand}" Content="{Binding Strings[GuidedFinishButton]}" />
+                            Command="{Binding FinishCommand}" Content="{Binding Strings[GuidedFinishButton]}"
+                            Visibility="{Binding ShowFinish, Converter={StaticResource BoolToVisibility}}" />
+                    <Button x:Name="BeginButton" Style="{StaticResource StepButton}"
+                            Command="{Binding BeginCommand}" Content="{Binding Strings[GuidedBeginButton]}"
+                            Visibility="{Binding ShowBegin, Converter={StaticResource BoolToVisibility}}" />
                 </StackPanel>
             </Grid>
 
