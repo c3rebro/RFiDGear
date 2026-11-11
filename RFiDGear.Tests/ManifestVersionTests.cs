@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -9,8 +7,6 @@ using RFiDGear.Contracts;
 using RFiDGear.Infrastructure.FileAccess;
 
 using Serilog;
-using Serilog.Core;
-using Serilog.Events;
 
 using Xunit;
 
@@ -235,7 +231,7 @@ namespace RFiDGear.Tests
         public async Task ReadProjectAsync_ANewerManifest_LogsBothVersionsAsMajorMinorBuild()
         {
             var file = Track(ProjectFixtures.CreateProject(1, manifestVersion: NewerMinorThanApp));
-            var sink = new ListSink();
+            var sink = new CapturingLogSink();
             var previous = Log.Logger;
             Log.Logger = new LoggerConfiguration().WriteTo.Sink(sink).CreateLogger();
 
@@ -257,30 +253,6 @@ namespace RFiDGear.Tests
             Assert.Contains(NewerMinorThanApp, message);
             Assert.Contains(SameAsApp, message);
             Assert.DoesNotContain(string.Concat(AppVersion.Major, AppVersion.Minor, AppVersion.Build), message);
-        }
-
-        private sealed class ListSink : ILogEventSink
-        {
-            private readonly List<LogEvent> _events = new();
-
-            public IReadOnlyList<LogEvent> Events
-            {
-                get
-                {
-                    lock (_events)
-                    {
-                        return _events.ToList();
-                    }
-                }
-            }
-
-            public void Emit(LogEvent logEvent)
-            {
-                lock (_events)
-                {
-                    _events.Add(logEvent);
-                }
-            }
         }
 
         [Fact]

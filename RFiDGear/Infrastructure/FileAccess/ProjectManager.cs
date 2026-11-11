@@ -386,13 +386,16 @@ namespace RFiDGear.Infrastructure.FileAccess
                 fileType: projectFileType);
         }
 
-        /// <summary>Reads the <c>ManifestVersion</c> element of a project or settings file, or <c>null</c> if it has none.</summary>
+        /// <summary>
+        /// Reads the <c>ManifestVersion</c> element of a project or settings file, or <c>null</c> if it has none. The file
+        /// may come from someone else: a document type declaration is refused and nothing external is resolved (see
+        /// <see cref="SafeXml"/>).
+        /// </summary>
         private static string ReadManifestVersionText(string path)
         {
-            var doc = new XmlDocument();
-            doc.Load(path);
+            using var xmlReader = XmlReader.Create(path, SafeXml.CreateReaderSettings());
 
-            return doc.SelectSingleNode("//ManifestVersion")?.InnerText.Trim();
+            return SafeXml.ReadManifestVersion(xmlReader);
         }
 
         /// <summary>
@@ -403,14 +406,10 @@ namespace RFiDGear.Infrastructure.FileAccess
         /// </summary>
         private static string ReadManifestVersionTextFromBytes(byte[] projectBytes)
         {
-            var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
-
             using var bytes = new MemoryStream(projectBytes, writable: false);
-            using var xmlReader = XmlReader.Create(bytes, settings);
-            var doc = new XmlDocument { XmlResolver = null };
-            doc.Load(xmlReader);
+            using var xmlReader = XmlReader.Create(bytes, SafeXml.CreateReaderSettings());
 
-            return doc.SelectSingleNode("//ManifestVersion")?.InnerText.Trim();
+            return SafeXml.ReadManifestVersion(xmlReader);
         }
 
         /// <summary>
