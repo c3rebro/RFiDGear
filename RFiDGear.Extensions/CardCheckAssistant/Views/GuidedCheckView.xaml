@@ -168,11 +168,7 @@
 
         <!-- what this page does, the reader, and the test mode -->
         <Grid Grid.Row="0" Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
+            <StackPanel>
                 <TextBlock Text="{Binding Strings[GuidedHint]}" TextWrapping="Wrap" Margin="0,0,0,4" />
                 <TextBlock x:Name="ReaderLine" Text="{Binding ReaderText}" TextTrimming="CharacterEllipsis" />
                 <Border x:Name="TestModeBanner" Margin="0,6,0,0" Padding="6,3" BorderThickness="1" BorderBrush="#C9A227" Background="#FFF4CC"
@@ -180,23 +176,6 @@
                     <TextBlock Foreground="Black" TextWrapping="Wrap" Text="{Binding TestModeText}" />
                 </Border>
             </StackPanel>
-            <Button x:Name="SettingsButton" Grid.Column="1" VerticalAlignment="Top" Margin="12,0,0,0" Padding="12,3"
-                    Command="{Binding OpenSettingsCommand}" Content="{Binding Strings[SettingsButton]}">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                            <MultiDataTrigger>
-                                <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding HasSettings}" Value="True" />
-                                    <Condition Binding="{Binding IsOrdersStep}" Value="True" />
-                                </MultiDataTrigger.Conditions>
-                                <Setter Property="Visibility" Value="Visible" />
-                            </MultiDataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
         </Grid>
 
         <!-- the order being checked -->
@@ -259,12 +238,17 @@
                                Visibility="{Binding IsUpdatingOrders, Converter={StaticResource BoolToVisibility}}" />
                     <TextBlock x:Name="OrderHint" Style="{StaticResource OptionalText}" Text="{Binding SelectedOrderHint}" />
                 </StackPanel>
-                <StackPanel Grid.Row="4" Style="{StaticResource StepButtons}">
-                    <Button x:Name="CheckOrderButton" Style="{StaticResource StepButton}" IsDefault="True"
-                            Command="{Binding StartOrderCommand}" Content="{Binding Strings[GuidedCheckOrderButton]}" />
-                    <Button x:Name="RefreshButton" Style="{StaticResource StepButton}"
-                            Command="{Binding RefreshCommand}" Content="{Binding Strings[GuidedRefreshButton]}" />
-                </StackPanel>
+                <Grid Grid.Row="4" Margin="0,12,0,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <Button x:Name="CheckOrderButton" Style="{StaticResource StepButton}" IsDefault="True"
+                                Command="{Binding StartOrderCommand}" Content="{Binding Strings[GuidedCheckOrderButton]}" />
+                        <Button x:Name="RefreshButton" Style="{StaticResource StepButton}"
+                                Command="{Binding RefreshCommand}" Content="{Binding Strings[GuidedRefreshButton]}" />
+                    </StackPanel>
+                    <Button x:Name="SettingsButton" HorizontalAlignment="Right" MinWidth="130" Padding="12,4"
+                            Command="{Binding OpenSettingsCommand}" Content="{Binding Strings[SettingsButton]}"
+                            Visibility="{Binding HasSettings, Converter={StaticResource BoolToVisibility}}" />
+                </Grid>
             </Grid>
 
             <!-- the order is being prepared -->
