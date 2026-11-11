@@ -97,7 +97,8 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
         }
 
         // The template is chosen and the answers are recorded in the session, which refuses what does not fit; the fields
-        // are what the report gets.
+        // are what the report gets. The session finds the template of the chip by its name: the fields are made from the one
+        // it chose, not from what the caller passed under that name (another family or text would write other fields).
         private Result<IReadOnlyDictionary<string, string>> FieldsOf(Job job, LsmTemplate template, LsmAnswers answers)
         {
             var chosen = _session.ChooseTemplate(job.Order.Id, template);
@@ -108,7 +109,7 @@ namespace RFiDGear.Extensions.CardCheckAssistant.Workflow
 
             var recorded = _session.RecordAnswers(job.Order.Id, answers);
 
-            return recorded.IsSuccess ? answers.ToFields(template) : Result<IReadOnlyDictionary<string, string>>.Fail(recorded.Failure!);
+            return recorded.IsSuccess ? answers.ToFields(_session.Current.ChosenTemplate!) : Result<IReadOnlyDictionary<string, string>>.Fail(recorded.Failure!);
         }
 
         // The second report is the first with the operator's answers in it, and the change date tells the order system that

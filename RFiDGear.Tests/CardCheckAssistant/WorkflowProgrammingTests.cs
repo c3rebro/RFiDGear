@@ -667,6 +667,24 @@ namespace RFiDGear.Tests.CardCheckAssistant
         });
 
         [Fact]
+        public Task ATemplate_ThatOnlyHasTheNameOfAnAvailableOne_WritesTheFieldsOfTheAvailableOne() => WorkflowEngineTests.Sta(async rig =>
+        {
+            await rig.ReachAsync(WorkflowState.Programming);
+            var available = rig.Template;
+            var other = available.Family == TemplateFamily.Classic ? TemplateFamily.Desfire : TemplateFamily.Classic;
+            var lookalike = new LsmTemplate(available.Name, "Another text", other, 1, 1);
+            var answers = WorkflowEngineTests.Rig.GoodAnswers with { SectorsUsed = "1-3" };
+
+            // The two would write different fields, or this test proves nothing.
+            Assert.NotEqual(answers.ToFields(available).Value.OrderBy(p => p.Key), answers.ToFields(lookalike).Value.OrderBy(p => p.Key));
+
+            Assert.True(rig.Engine.ContinueProgramming(lookalike, answers));
+            await rig.Settled();
+
+            Assert.Equal(answers.ToFields(available).Value.OrderBy(p => p.Key), rig.Reports.Writes.Single().Fields.OrderBy(p => p.Key));
+        });
+
+        [Fact]
         public Task Continuing_IsRefused_UntilTheChipWasPutBack() => WorkflowEngineTests.Sta(async rig =>
         {
             await rig.AssessedAsync(ChipVerdict.Programmable);
