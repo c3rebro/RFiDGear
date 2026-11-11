@@ -190,6 +190,9 @@ ein Kartenlesegerät auswählen</value>
   <data name="menuItemEditHeader" xml:space="preserve">
     <value>_Bearbeiten</value>
   </data>
+  <data name="menuItemExtensionsHeader" xml:space="preserve">
+    <value>E_rweiterungen</value>
+  </data>
   <data name="menuItemOptionsHeader" xml:space="preserve">
     <value>_Extras</value>
   </data>

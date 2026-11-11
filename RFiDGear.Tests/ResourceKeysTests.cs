@@ -65,6 +65,7 @@ namespace RFiDGear.Tests
             "textBoxStatusComparePass",
             "textBoxStatusCompareFail",
             "statusHeaderReaderIsInitializing",
+            "menuItemExtensionsHeader",
         };
 
         // The unit of a size, and the INIT of the status bar, read the same in both languages.

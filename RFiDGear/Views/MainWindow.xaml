@@ -561,7 +561,7 @@
                 <MenuItem
                     VerticalAlignment="Top"
                     VerticalContentAlignment="Center"
-                    Header="_Extensions"
+                    Header="{Binding LocalizationResourceSet, Converter={StaticResource Localization}, ConverterParameter='menuItemExtensionsHeader'}"
                     ItemsSource="{Binding ApplicationExtensionMenuItems}"
                     Visibility="{Binding HasApplicationExtensions, Converter={StaticResource BoolToVisibilityConverter}}">
                     <MenuItem.ItemContainerStyle>
